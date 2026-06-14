@@ -316,6 +316,37 @@ private suspend fun WorkspaceRepository.readImageInRootfs(
     )
 }
 
+private fun rootfsPathToAreaAndRelative(path: String): Pair<WorkspaceStorageArea, String> {
+    val trimmed = path.trimEnd('/')
+    return if (trimmed == "/workspace" || trimmed.startsWith("/workspace/")) {
+        WorkspaceStorageArea.FILES to trimmed.removePrefix("/workspace").trimStart('/')
+    } else {
+        WorkspaceStorageArea.LINUX to trimmed.trimStart('/')
+    }
+}
+
+private suspend fun WorkspaceRepository.readImageInRootfs(
+    workspaceId: String,
+    path: String,
+): List<UIMessagePart> {
+    val (area, relativePath) = rootfsPathToAreaAndRelative(path)
+    val buffer = ByteArrayOutputStream()
+    exportFile(workspaceId, area, relativePath, buffer)
+    val bytes = buffer.toByteArray()
+
+    val filesManager = getKoin().get<FilesManager>()
+    val uris = filesManager.createChatFilesByByteArrays(listOf(bytes))
+    return listOf(
+        UIMessagePart.Image(url = uris.first().toString()),
+        UIMessagePart.Text(
+            buildJsonObject {
+                put("path", path)
+                put("description", "Image file read successfully")
+            }.toString()
+        ),
+    )
+}
+
 private suspend fun WorkspaceRepository.writeTextInRootfs(
     workspaceId: String,
     path: String,
