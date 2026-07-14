@@ -34,7 +34,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -642,7 +643,7 @@ private fun ColumnScope.ModelList(
             contentPadding = PaddingValues(horizontal = 8.dp),
             state = providerBadgeListState
         ) {
-            items(providers, key = { it.id }) { provider ->
+            items(providers) { provider ->
                 AssistChip(
                     onClick = {
                         val position = providerPositions[provider.id] ?: 0
