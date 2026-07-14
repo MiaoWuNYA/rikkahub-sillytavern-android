@@ -1,7 +1,6 @@
 package me.rerere.rikkahub.ui.pages.setting
 
 import me.rerere.ai.core.ReasoningLevel
-import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Earth
 import me.rerere.hugeicons.stroke.View
 import me.rerere.hugeicons.stroke.FileZip

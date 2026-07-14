@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -15,6 +14,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -52,63 +52,41 @@ fun ProviderConfigure(
     onEdit: (provider: ProviderSetting) -> Unit
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = modifier
     ) {
-        // Type
         if (!provider.builtIn) {
-            SingleChoiceSegmentedButtonRow(
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 ProviderSetting.Types.forEachIndexed { index, type ->
                     SegmentedButton(
                         shape = SegmentedButtonDefaults.itemShape(
                             index = index,
                             count = ProviderSetting.Types.size
                         ),
-                        label = {
-                            Text(type.simpleName ?: "")
-                        },
+                        label = { Text(type.simpleName ?: "") },
                         selected = provider::class == type,
-                        onClick = {
-                            onEdit(provider.convertTo(type))
-                        }
+                        onClick = { onEdit(provider.convertTo(type)) }
                     )
                 }
             }
         }
 
-        // [!] just for debugging
-        // Text(JsonInstant.encodeToString(provider), fontSize = 10.sp)
-
-        // Provider Configure
         when (provider) {
-            is ProviderSetting.OpenAI -> {
-                ProviderConfigureOpenAI(provider, onEdit)
-            }
-
-            is ProviderSetting.Google -> {
-                ProviderConfigureGoogle(provider, onEdit)
-            }
-
-            is ProviderSetting.Claude -> {
-                ProviderConfigureClaude(provider, onEdit)
-            }
+            is ProviderSetting.OpenAI -> ProviderConfigureOpenAI(provider, onEdit)
+            is ProviderSetting.Google -> ProviderConfigureGoogle(provider, onEdit)
+            is ProviderSetting.Claude -> ProviderConfigureClaude(provider, onEdit)
         }
     }
 }
 
 fun ProviderSetting.convertTo(type: KClass<out ProviderSetting>): ProviderSetting {
-    if (this::class == type) {
-        return this
-    }
+    if (this::class == type) return this
 
     val apiKey = when (this) {
         is ProviderSetting.OpenAI -> this.apiKey
         is ProviderSetting.Google -> this.apiKey
         is ProviderSetting.Claude -> this.apiKey
     }
-
     val sourceBaseUrl = when (this) {
         is ProviderSetting.OpenAI -> this.baseUrl
         is ProviderSetting.Google -> this.baseUrl
@@ -124,44 +102,23 @@ fun ProviderSetting.convertTo(type: KClass<out ProviderSetting>): ProviderSettin
 
     return when (type) {
         ProviderSetting.OpenAI::class -> ProviderSetting.OpenAI(
-            id = this.id,
-            enabled = this.enabled,
-            name = this.name,
-            models = this.models,
-            balanceOption = this.balanceOption,
-            builtIn = this.builtIn,
-            description = this.description,
-            shortDescription = this.shortDescription,
-            apiKey = apiKey,
-            baseUrl = convertedBaseUrl
+            id = this.id, enabled = this.enabled, name = this.name, models = this.models,
+            balanceOption = this.balanceOption, builtIn = this.builtIn,
+            description = this.description, shortDescription = this.shortDescription,
+            apiKey = apiKey, baseUrl = convertedBaseUrl
         )
-
         ProviderSetting.Google::class -> ProviderSetting.Google(
-            id = this.id,
-            enabled = this.enabled,
-            name = this.name,
-            models = this.models,
-            balanceOption = this.balanceOption,
-            builtIn = this.builtIn,
-            description = this.description,
-            shortDescription = this.shortDescription,
-            apiKey = apiKey,
-            baseUrl = convertedBaseUrl
+            id = this.id, enabled = this.enabled, name = this.name, models = this.models,
+            balanceOption = this.balanceOption, builtIn = this.builtIn,
+            description = this.description, shortDescription = this.shortDescription,
+            apiKey = apiKey, baseUrl = convertedBaseUrl
         )
-
         ProviderSetting.Claude::class -> ProviderSetting.Claude(
-            id = this.id,
-            enabled = this.enabled,
-            name = this.name,
-            models = this.models,
-            balanceOption = this.balanceOption,
-            builtIn = this.builtIn,
-            description = this.description,
-            shortDescription = this.shortDescription,
-            apiKey = apiKey,
-            baseUrl = convertedBaseUrl
+            id = this.id, enabled = this.enabled, name = this.name, models = this.models,
+            balanceOption = this.balanceOption, builtIn = this.builtIn,
+            description = this.description, shortDescription = this.shortDescription,
+            apiKey = apiKey, baseUrl = convertedBaseUrl
         )
-
         else -> error("Unsupported provider type: $type")
     }
 }
@@ -175,7 +132,6 @@ internal fun ProviderSetting.defaultBaseUrlForReset(): String {
             is ProviderSetting.Claude -> if (defaultProvider is ProviderSetting.Claude) return defaultProvider.baseUrl
         }
     }
-
     return when (this) {
         is ProviderSetting.OpenAI -> ProviderSetting.OpenAI().baseUrl
         is ProviderSetting.Google -> ProviderSetting.Google().baseUrl
@@ -204,37 +160,27 @@ internal fun ProviderSetting.isUsingDefaultBaseUrl(): Boolean {
 private fun String.convertToTargetBaseUrl(targetDefaultBaseUrl: String): String {
     val sourceUrl = this.toHttpUrlOrNull() ?: return this
     val sourceHost = sourceUrl.host.lowercase()
-    if (sourceHost in OFFICIAL_PROVIDER_HOSTS) {
-        return targetDefaultBaseUrl
-    }
-
+    if (sourceHost in OFFICIAL_PROVIDER_HOSTS) return targetDefaultBaseUrl
     val targetUrl = targetDefaultBaseUrl.toHttpUrlOrNull() ?: return this
     val convertedPath = sourceUrl.encodedPath.convertToTargetPath(targetUrl.encodedPath)
-    return sourceUrl.newBuilder()
-        .encodedPath(convertedPath)
-        .build()
-        .toString()
+    return sourceUrl.newBuilder().encodedPath(convertedPath).build().toString()
 }
 
 private fun String.convertToTargetPath(targetPath: String): String {
     val source = this.normalizePath()
     val target = targetPath.normalizePath()
-
     val replaced = when {
         source.lowercase().endsWith(V1_BETA_SUFFIX) -> source.dropLast(V1_BETA_SUFFIX.length) + target
         source.lowercase().endsWith(V1_SUFFIX) -> source.dropLast(V1_SUFFIX.length) + target
         source.isBlank() -> target
         else -> source + target
     }
-
     return replaced.normalizePath()
 }
 
 private fun String.normalizePath(): String {
     val value = this.trim()
-    if (value.isEmpty() || value == "/") {
-        return ""
-    }
+    if (value.isEmpty() || value == "/") return ""
     val path = if (value.startsWith("/")) value else "/$value"
     return path.trimEnd('/')
 }
@@ -253,7 +199,7 @@ private val OFFICIAL_PROVIDER_HOSTS = setOf(
 )
 
 @Composable
-private fun ColumnScope.ProviderConfigureOpenAI(
+private fun ProviderConfigureOpenAI(
     provider: ProviderSetting.OpenAI,
     onEdit: (provider: ProviderSetting.OpenAI) -> Unit
 ) {
@@ -328,32 +274,6 @@ private fun ColumnScope.ProviderConfigureOpenAI(
                     toaster.show(message = responseAPIWarning, type = ToastType.Warning)
                 }
             }
-        },
-    )
-
-    OutlinedTextField(
-        value = provider.baseUrl,
-        onValueChange = {
-            onEdit(provider.copy(baseUrl = it.trim()))
-        },
-        label = {
-            Text(stringResource(id = R.string.setting_provider_page_api_base_url))
-        },
-        modifier = Modifier.fillMaxWidth(),
-        isError = provider.baseUrl.isNotBlank() && !provider.baseUrl.isValidBaseUrl()
-    )
-
-    if (!provider.useResponseApi) {
-        OutlinedTextField(
-            value = provider.chatCompletionsPath,
-            onValueChange = {
-                onEdit(provider.copy(chatCompletionsPath = it.trim()))
-            },
-            label = {
-                Text(stringResource(id = R.string.setting_provider_page_api_path))
-            },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !provider.builtIn
         )
     }
 
@@ -371,7 +291,7 @@ private fun ColumnScope.ProviderConfigureOpenAI(
 }
 
 @Composable
-private fun ColumnScope.ProviderConfigureClaude(
+private fun ProviderConfigureClaude(
     provider: ProviderSetting.Claude,
     onEdit: (provider: ProviderSetting.Claude) -> Unit
 ) {
@@ -433,10 +353,8 @@ private fun ColumnScope.ProviderConfigureClaude(
     }
 
     if (provider.promptCaching) {
-        Text(stringResource(id = R.string.setting_provider_page_claude_prompt_cache_ttl))
-        SingleChoiceSegmentedButtonRow(
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Text(stringResource(R.string.setting_provider_page_claude_prompt_cache_ttl))
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             ClaudePromptCacheTtl.entries.forEachIndexed { index, ttl ->
                 SegmentedButton(
                     shape = SegmentedButtonDefaults.itemShape(
@@ -446,24 +364,13 @@ private fun ColumnScope.ProviderConfigureClaude(
                     label = {
                         Text(
                             when (ttl) {
-                                ClaudePromptCacheTtl.FIVE_MINUTES -> {
-                                    stringResource(
-                                        id = R.string.setting_provider_page_claude_prompt_cache_ttl_5m
-                                    )
-                                }
-
-                                ClaudePromptCacheTtl.ONE_HOUR -> {
-                                    stringResource(
-                                        id = R.string.setting_provider_page_claude_prompt_cache_ttl_1h
-                                    )
-                                }
+                                ClaudePromptCacheTtl.FIVE_MINUTES -> stringResource(R.string.setting_provider_page_claude_prompt_cache_ttl_5m)
+                                ClaudePromptCacheTtl.ONE_HOUR -> stringResource(R.string.setting_provider_page_claude_prompt_cache_ttl_1h)
                             }
                         )
                     },
                     selected = provider.promptCacheTtl == ttl,
-                    onClick = {
-                        onEdit(provider.copy(promptCacheTtl = ttl))
-                    }
+                    onClick = { onEdit(provider.copy(promptCacheTtl = ttl)) }
                 )
             }
         }
@@ -471,7 +378,7 @@ private fun ColumnScope.ProviderConfigureClaude(
 }
 
 @Composable
-private fun ColumnScope.ProviderConfigureGoogle(
+private fun ProviderConfigureGoogle(
     provider: ProviderSetting.Google,
     onEdit: (provider: ProviderSetting.Google) -> Unit
 ) {
@@ -489,12 +396,9 @@ private fun ColumnScope.ProviderConfigureGoogle(
             val json = Json.parseToJsonElement(content).jsonObject
             onEdit(
                 provider.copy(
-                    projectId = json["project_id"]?.jsonPrimitive?.contentOrNull?.ifEmpty { null }
-                        ?: provider.projectId,
-                    serviceAccountEmail = json["client_email"]?.jsonPrimitive?.contentOrNull?.ifEmpty { null }
-                        ?: provider.serviceAccountEmail,
-                    privateKey = json["private_key"]?.jsonPrimitive?.contentOrNull?.ifEmpty { null }
-                        ?: provider.privateKey,
+                    projectId = json["project_id"]?.jsonPrimitive?.contentOrNull?.ifEmpty { null } ?: provider.projectId,
+                    serviceAccountEmail = json["client_email"]?.jsonPrimitive?.contentOrNull?.ifEmpty { null } ?: provider.serviceAccountEmail,
+                    privateKey = json["private_key"]?.jsonPrimitive?.contentOrNull?.ifEmpty { null } ?: provider.privateKey,
                 )
             )
             toaster.show("Service account imported", type = ToastType.Success)
@@ -582,60 +486,12 @@ private fun ColumnScope.ProviderConfigureGoogle(
         }
     }
 
-    if (!(provider.vertexAI && provider.useServiceAccount)) {
-        var googleKeyVisible by remember { mutableStateOf(false) }
-        OutlinedTextField(
-            value = provider.apiKey,
-            onValueChange = {
-                onEdit(provider.copy(apiKey = it.trim()))
-            },
-            label = {
-                Text(stringResource(id = R.string.setting_provider_page_api_key))
-            },
-            modifier = Modifier.fillMaxWidth(),
-            maxLines = 3,
-            visualTransformation = if (googleKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { googleKeyVisible = !googleKeyVisible }) {
-                    Icon(if (googleKeyVisible) HugeIcons.ViewOff else HugeIcons.View, contentDescription = null)
-                }
-            },
-        )
-    }
-
-    if (!provider.vertexAI) {
-        OutlinedTextField(
-            value = provider.baseUrl,
-            onValueChange = {
-                onEdit(provider.copy(baseUrl = it.trim()))
-            },
-            label = {
-                Text(stringResource(id = R.string.setting_provider_page_api_base_url))
-            },
-            modifier = Modifier.fillMaxWidth(),
-            isError = provider.baseUrl.isNotBlank() && (
-                !provider.baseUrl.isValidBaseUrl() || !provider.baseUrl.endsWith("/v1beta")
-            ),
-            supportingText = if (!provider.baseUrl.endsWith("/v1beta")) {
-                {
-                    Text("The base URL usually ends with `/v1beta`")
-                }
-            } else null
-        )
-    } else {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
+    if (provider.vertexAI && provider.useServiceAccount) {
+        OutlinedButton(
+            onClick = { serviceAccountJsonLauncher.launch(arrayOf("application/json", "*/*")) },
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                stringResource(id = R.string.setting_provider_page_use_service_account),
-                modifier = Modifier.weight(1f)
-            )
-            Checkbox(
-                checked = provider.useServiceAccount,
-                onCheckedChange = {
-                    onEdit(provider.copy(useServiceAccount = it))
-                }
-            )
+            Text(stringResource(R.string.setting_provider_page_import_service_account_json))
         }
 
         OutlinedTextField(

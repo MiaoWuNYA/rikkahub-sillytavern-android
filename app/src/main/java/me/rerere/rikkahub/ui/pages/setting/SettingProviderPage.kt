@@ -8,6 +8,7 @@ import me.rerere.hugeicons.stroke.Image02
 import me.rerere.hugeicons.stroke.FileImport
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.Search01
+import me.rerere.hugeicons.stroke.Sparkles
 import me.rerere.hugeicons.stroke.Cancel01
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,10 +25,9 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.items
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -38,19 +38,21 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,6 +71,7 @@ import io.github.g00fy2.quickie.ScanQRCode
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
+import me.rerere.rikkahub.data.datastore.RECOMMENDED_PROVIDERS
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
 import me.rerere.rikkahub.ui.components.ui.Tag
@@ -83,20 +86,17 @@ import me.rerere.rikkahub.utils.ImageUtils
 import me.rerere.rikkahub.utils.plus
 import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
-import sh.calvin.reorderable.rememberReorderableLazyStaggeredGridState
-import java.util.Locale
-import kotlinx.coroutines.launch
+import sh.calvin.reorderable.rememberReorderableLazyListState
 import kotlin.uuid.Uuid
 
 @Composable
 fun SettingProviderPage(vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
-    val scope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var searchQuery by remember { mutableStateOf("") }
-    val lazyListState = rememberLazyStaggeredGridState()
-    val reorderableState = rememberReorderableLazyStaggeredGridState(lazyListState) { from, to ->
+    val lazyListState = rememberLazyListState()
+    val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
         val newProviders = settings.providers.toMutableList().apply {
             add(to.index, removeAt(from.index))
         }
@@ -123,21 +123,12 @@ fun SettingProviderPage(vm: SettingVM = koinViewModel()) {
                     BackButton()
                 },
                 actions = {
-                    if(Locale.getDefault().language == "zh") {
-                        IconButton(
-                            onClick = {
-                                val aihubmixIndex = filteredProviders.indexOfFirst {
-                                    it.id.toString() == "1b1395ed-b702-4aeb-8bc1-b681c4456953"
-                                }
-                                if (aihubmixIndex != -1) {
-                                    scope.launch {
-                                        lazyListState.animateScrollToItem(aihubmixIndex)
-                                    }
-                                }
-                            }
-                        ) {
-                            AutoAIIcon("AiHubMix")
-                        }
+                    RecommendProviderButton { provider ->
+                        vm.updateSettings(
+                            settings.copy(
+                                providers = listOf(provider.copyProvider(Uuid.random())) + settings.providers
+                            )
+                        )
                     }
                     ImportProviderButton {
                         vm.updateSettings(
@@ -189,7 +180,7 @@ fun SettingProviderPage(vm: SettingVM = koinViewModel()) {
             )
 
 
-            LazyVerticalStaggeredGrid(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
@@ -198,7 +189,6 @@ fun SettingProviderPage(vm: SettingVM = koinViewModel()) {
                     PaddingValues(bottom = innerPadding.calculateBottomPadding()),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 state = lazyListState,
-                columns = StaggeredGridCells.Fixed(2)
             ) {
                 items(filteredProviders, key = { it.id }) { provider ->
                     ReorderableItem(
@@ -612,29 +602,23 @@ private fun ProviderItem(
             onClick()
         }
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                AutoAIIcon(
-                    name = provider.name,
-                    modifier = Modifier.size(36.dp)
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                dragHandle()
-            }
+            AutoAIIcon(
+                name = provider.name,
+                modifier = Modifier.size(40.dp)
+            )
             Column(
-                modifier = Modifier,
+                modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
                     text = provider.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    maxLines = 2,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 ProvideTextStyle(MaterialTheme.typography.labelSmall) {
@@ -664,6 +648,7 @@ private fun ProviderItem(
                     }
                 }
             }
+            dragHandle()
         }
     }
 }

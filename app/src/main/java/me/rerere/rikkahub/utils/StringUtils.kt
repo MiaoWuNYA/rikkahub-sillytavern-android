@@ -130,3 +130,15 @@ fun String.extractQuotedContentAsText(separator: String = "\n"): String? {
         null
     }
 }
+
+/**
+ * 移除字符串中所有括号内的内容（包括英文括号 `()` 和中文括号 `（）`）
+ * @return 移除后的字符串，如果全部被移除则返回 null
+ */
+fun String.removeBracketedContent(): String? {
+    val result = this
+        .replace(Regex("\\([^()]*\\)"), "")
+        .replace(Regex("（[^（）]*）"), "")
+        .trim()
+    return if (result.isBlank()) null else result
+}
