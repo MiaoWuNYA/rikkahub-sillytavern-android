@@ -63,6 +63,22 @@ data class UpdateConversationInjectionsRequest(
 )
 
 @Serializable
+data class CreateFolderRequest(
+    val name: String
+)
+
+@Serializable
+data class RenameFolderRequest(
+    val name: String
+)
+
+@Serializable
+data class MoveConversationToFolderRequest(
+    // null 表示移出文件夹（未归类）
+    val folderId: String? = null
+)
+
+@Serializable
 data class UpdateAssistantRequest(
     val assistantId: String
 )

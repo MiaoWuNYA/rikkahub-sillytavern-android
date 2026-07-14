@@ -4,7 +4,10 @@ import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.onFailure
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -220,7 +223,9 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
                     }
                 }
 
-                trySend(messageChunk)
+                trySend(messageChunk).onFailure { e ->
+                    Log.w(TAG, "onEvent: chunk dropped (${e?.message})")
+                }
             }
 
             override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
@@ -256,7 +261,7 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
             Log.d(TAG, "Closing eventSource")
             eventSource.cancel()
         }
-    }
+    }.buffer(Channel.UNLIMITED)
 
     private fun buildMessageRequest(
         providerSetting: ProviderSetting.Claude,
