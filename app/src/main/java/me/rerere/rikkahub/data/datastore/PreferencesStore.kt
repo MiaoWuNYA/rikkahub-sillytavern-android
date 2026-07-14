@@ -546,6 +546,7 @@ data class Settings(
     @Transient
     val init: Boolean = false,
     val dynamicColor: Boolean = true,
+    val enableWebSearch: Boolean = true, // 全局网络搜索开关
     val themeId: String = PresetThemes[0].id,
     val customThemes: List<CustomTheme> = emptyList(),
     val developerMode: Boolean = false,
