@@ -6,6 +6,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -25,7 +25,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -183,19 +184,9 @@ fun UIAvatar(
                     }
 
                     is Avatar.Dummy -> {
-                        Text(
-                            text = name
-                                .ifBlank { stringResource(R.string.user_default_name) }
-                                .takeIf { it.isNotEmpty() }
-                                ?.firstOrNull()?.toString()?.uppercase() ?: "A",
-                            maxLines = 1,
-                            overflow = TextOverflow.Clip,
-                            autoSize = TextAutoSize.StepBased(
-                                minFontSize = 8.sp,
-                                maxFontSize = 20.sp,
-                                stepSize = 1.sp
-                            ),
-                            lineHeight = 0.8.em
+                        ProceduralAvatar(
+                            name = name,
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
                 }
@@ -292,7 +283,7 @@ fun UIAvatar(
             onDismissRequest = {
                 showEmojiPicker = false
             },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
         ) {
             EmojiPicker(
                 onEmojiSelected = { emoji ->

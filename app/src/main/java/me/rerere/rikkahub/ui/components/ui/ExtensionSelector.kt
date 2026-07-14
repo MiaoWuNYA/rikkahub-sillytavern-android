@@ -2,7 +2,6 @@ package me.rerere.rikkahub.ui.components.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -21,9 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.files.SkillManager
@@ -54,9 +51,9 @@ fun ExtensionSelector(
     var skills by remember { mutableStateOf<List<SkillMetadata>>(emptyList()) }
 
     LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) {
-            skills = skillManager.listSkills()
-        }
+        // 打开扩展面板时清理运行时被删除的技能（残留的 enabledSkills 引用），
+        // prune 顺带返回现存技能列表，避免重复读盘
+        skills = skillManager.pruneOrphanedEnabledSkills()
     }
 
     val useConversationInjections =
@@ -175,26 +172,23 @@ fun ExtensionSelector(
 
                 2 -> {
                     if (settings.lorebooks.isNotEmpty()) {
-                        Column(modifier = Modifier.fillMaxSize()) {
-                            LorebooksContent(
-                                modifier = Modifier.weight(1f),
-                                lorebooks = settings.lorebooks,
-                                selectedIds = selectedLorebookIds,
-                                onToggle = { id, checked ->
-                                    val newIds = if (checked) {
-                                        selectedLorebookIds + id
-                                    } else {
-                                        selectedLorebookIds - id
-                                    }
-                                    if (useConversationInjections) {
-                                        onUpdateConversation(conversation.copy(lorebookIds = newIds))
-                                    } else {
-                                        onUpdate(assistant.copy(lorebookIds = newIds))
-                                    }
-                                },
-                                onManage = onNavigateToPrompts,
-                            )
-                        }
+                        LorebooksContent(
+                            lorebooks = settings.lorebooks,
+                            selectedIds = selectedLorebookIds,
+                            onToggle = { id, checked ->
+                                val newIds = if (checked) {
+                                    selectedLorebookIds + id
+                                } else {
+                                    selectedLorebookIds - id
+                                }
+                                if (useConversationInjections) {
+                                    onUpdateConversation(conversation.copy(lorebookIds = newIds))
+                                } else {
+                                    onUpdate(assistant.copy(lorebookIds = newIds))
+                                }
+                            },
+                            onManage = onNavigateToPrompts,
+                        )
                     } else {
                         ExtensionEmptyState(
                             message = stringResource(R.string.extension_selector_lorebooks_empty),
@@ -206,22 +200,19 @@ fun ExtensionSelector(
 
                 3 -> {
                     if (skills.isNotEmpty()) {
-                        Column(modifier = Modifier.fillMaxSize()) {
-                            SkillsContent(
-                                modifier = Modifier.weight(1f),
-                                skills = skills,
-                                enabledSkills = assistant.enabledSkills,
-                                onToggle = { name, checked ->
-                                    val newSkills = if (checked) {
-                                        assistant.enabledSkills + name
-                                    } else {
-                                        assistant.enabledSkills - name
-                                    }
-                                    onUpdate(assistant.copy(enabledSkills = newSkills))
-                                },
-                                onManage = onNavigateToSkills,
-                            )
-                        }
+                        SkillsContent(
+                            skills = skills,
+                            enabledSkills = assistant.enabledSkills,
+                            onToggle = { name, checked ->
+                                val newSkills = if (checked) {
+                                    assistant.enabledSkills + name
+                                } else {
+                                    assistant.enabledSkills - name
+                                }
+                                onUpdate(assistant.copy(enabledSkills = newSkills))
+                            },
+                            onManage = onNavigateToSkills,
+                        )
                     } else {
                         ExtensionEmptyState(
                             message = stringResource(R.string.extension_selector_skills_empty),
