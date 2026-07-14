@@ -27,11 +27,26 @@ data class McpOAuthState(
     val clientSecret: String? = null,
     val authorizationEndpoint: String? = null,
     val tokenEndpoint: String? = null,
+    val registrationEndpoint: String? = null,
     val accessToken: String? = null,
     val refreshToken: String? = null,
     val expiresAt: Long? = null,
     val scope: String? = null,
-)
+) {
+    val isAuthorized: Boolean get() = !accessToken.isNullOrBlank()
+
+    override fun toString(): String =
+        "McpOAuthState(enabled=$enabled, clientId=$clientId" +
+            ", authorizationEndpoint=$authorizationEndpoint, tokenEndpoint=$tokenEndpoint" +
+            ", registrationEndpoint=$registrationEndpoint, scope=$scope" +
+            ", accessToken=${accessToken.masked()}, refreshToken=${refreshToken.masked()}, expiresAt=$expiresAt)"
+
+    private fun String?.masked(): String = when {
+        this == null -> "null"
+        isBlank() -> "***"
+        else -> "***(${length})"
+    }
+}
 
 @Serializable
 data class McpTool(
@@ -76,3 +91,10 @@ sealed class McpServerConfig {
         }
     }
 }
+
+/** MCP Server 的连接地址（作为 OAuth 的 canonical resource 标识）。 */
+val McpServerConfig.serverUrl: String
+    get() = when (this) {
+        is McpServerConfig.SseTransportServer -> url
+        is McpServerConfig.StreamableHTTPServer -> url
+    }
