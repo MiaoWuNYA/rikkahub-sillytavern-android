@@ -193,7 +193,7 @@ val dataSourceModule = module {
     }
 
     single {
-        me.rerere.rikkahub.data.repository.FolderRepository(get())
+        me.rerere.rikkahub.data.repository.FolderRepository(get(), get())
     }
 
     single {

@@ -534,7 +534,7 @@ class ChatService(
 
             // memory tool
             if (!model.abilities.contains(ModelAbility.TOOL)) {
-                if (settings.enableWebSearch || mcpManager.getAllAvailableTools().isNotEmpty()) {
+                if (assistant.enableWebSearch || mcpManager.getAllAvailableTools().isNotEmpty()) {
                     addError(
                         IllegalStateException(context.getString(R.string.tools_warning)),
                         conversationId,
@@ -608,7 +608,7 @@ class ChatService(
                     if (assistant.localTools.contains(LocalToolOption.DataProcess)) {
                         add(createDataProcessTool())
                     }
-                    if (settings.enableWebSearch) {
+                    if (assistant.enableWebSearch) {
                         addAll(createSearchTools(settings))
                     }
                     addAll(createWorkspaceToolsIfReady(assistant.workspaceId?.toString(), conversation.workspaceCwd))
@@ -645,7 +645,7 @@ class ChatService(
                             )
                         )
                     }
-                    mcpManager.getAllAvailableTools().forEach { (serverId, tool) ->
+                    mcpManager.getAllAvailableTools().forEach { (serverId, _, tool) ->
                         add(
                             Tool(
                                 name = "mcp__" + tool.name,
@@ -712,7 +712,7 @@ Provide all needed context in the context parameter.""".trimIndent().replace("\n
                                     val skillDirs = assistant.enabledSkills
                                         .mapNotNull { skillManager.getSkillDir(it)?.absolutePath }
                                     val subTools = buildList {
-                                        if (settings.enableWebSearch) {
+                                        if (assistant.enableWebSearch) {
                                             addAll(createSearchTools(settings))
                                         }
                                         if (assistant.localTools.contains(LocalToolOption.FileTools)) {
@@ -1123,7 +1123,7 @@ Provide all needed context in the context parameter.""".trimIndent().replace("\n
                 if (assistant.localTools.contains(LocalToolOption.FileTools)) {
                     addAll(createFileTools(skillDirs = skillDirs))
                 }
-                if (settings.enableWebSearch) {
+                if (assistant.enableWebSearch) {
                     addAll(createSearchTools(settings))
                 }
                 addAll(localTools.getTools(assistant.localTools))
@@ -1156,7 +1156,7 @@ Provide all needed context in the context parameter.""".trimIndent().replace("\n
                         )
                     )
                 }
-                mcpManager.getAllAvailableTools().forEach { (serverId, tool) ->
+                mcpManager.getAllAvailableTools().forEach { (serverId, _, tool) ->
                     add(
                         Tool(
                             name = "mcp__" + tool.name,

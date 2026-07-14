@@ -20,7 +20,7 @@ fun rememberColorMode(): MutableState<ColorMode> {
                 }
 
             override fun component1(): ColorMode = value
-            override fun component2(): ColorMode = value
+            override fun component2(): (ColorMode) -> Unit = { this.value = it }
         }
     }
 }

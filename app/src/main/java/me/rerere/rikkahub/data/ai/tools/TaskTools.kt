@@ -306,7 +306,7 @@ fun createTaskTools(): List<Tool> = buildList {
             listOf(UIMessagePart.Text("[${task.id}] created: ${task.subject}"))
         },
     ),
-    Tool(name = "task_get", description = "Get details of a task by ID. Returns the full task including status, description, owner, and dependencies.", permissionMode = PermissionMode.READ_ONLY,
+    Tool(name = "task_get", description = "Get details of a task by ID. Returns the full task including status, description, owner, and dependencies.",
         parameters = {
             InputSchema.Obj(properties = buildJsonObject {
                 put("id", buildJsonObject { put("type", "string"); put("description", "Task ID") })
@@ -317,7 +317,7 @@ fun createTaskTools(): List<Tool> = buildList {
             listOf(UIMessagePart.Text(TaskManager.taskOutput(id) ?: error("Task $id not found")))
         },
     ),
-    Tool(name = "task_list", description = "List all tasks, optionally filtered by status or owner. Shows task IDs, subjects, statuses, and owners.", permissionMode = PermissionMode.READ_ONLY,
+    Tool(name = "task_list", description = "List all tasks, optionally filtered by status or owner. Shows task IDs, subjects, statuses, and owners.",
         parameters = {
             InputSchema.Obj(properties = buildJsonObject {
                 put("status", buildJsonObject { put("type", "string"); put("enum", buildJsonArray { add("pending"); add("in_progress"); add("completed"); add("failed"); add("cancelled") }) })

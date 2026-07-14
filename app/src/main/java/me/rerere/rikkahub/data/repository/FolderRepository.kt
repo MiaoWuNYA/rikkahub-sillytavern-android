@@ -43,6 +43,10 @@ class FolderRepository(
         conversationDAO.clearFolder(id.toString())
         folderDAO.deleteById(id.toString())
     }
+
+    suspend fun moveConversationToFolder(conversationId: Uuid, folderId: Uuid?) {
+        conversationDAO.updateFolderId(conversationId.toString(), folderId?.toString() ?: "")
+    }
 }
 
 private fun FolderEntity.toFolder(): Folder = Folder(

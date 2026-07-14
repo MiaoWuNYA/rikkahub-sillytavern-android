@@ -27,7 +27,6 @@ fun createPlanModeTools(): List<Tool> = listOf(
     Tool(
         name = "plan_mode",
         description = "Switch between planning mode (read-only) and execution mode. Use action=enter to create a plan, action=exit to start executing.",
-        permissionMode = PermissionMode.READ_ONLY,
         parameters = {
             InputSchema.Obj(
                 properties = buildJsonObject {
