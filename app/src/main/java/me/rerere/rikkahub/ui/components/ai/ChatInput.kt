@@ -596,7 +596,7 @@ private fun TextInputRow(
                                     var text = cmd.content
                                         .replace("\$ARGUMENTS", slashArgs)
                                         .replace("\$ARGS", slashArgs)
-                                    // \$ARGS.0, \$ARGS.1 ... 按位置替换
+                                    // $ARGS.0, $ARGS.1 ... 按位置替换
                                     for (i in 0..9) {
                                         val value = argsList.getOrElse(i) { "" }
                                         text = text.replace("\$ARGS.$i", value)
