@@ -86,6 +86,7 @@ import me.rerere.rikkahub.data.datastore.getCurrentChatModel
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Conversation
+import me.rerere.rikkahub.data.repository.WorkspaceRepository
 import me.rerere.rikkahub.service.ChatError
 import me.rerere.rikkahub.ui.components.ai.ChatInput
 import me.rerere.rikkahub.ui.components.ai.FilesPicker
@@ -342,6 +343,7 @@ private fun ChatPageContent(
 ) {
     val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
+    val workspaceRepository: WorkspaceRepository = koinInject()
     var previewMode by rememberSaveable { mutableStateOf(false) }
     val hazeState = rememberHazeState()
     val assistant = setting.getCurrentAssistant()
@@ -430,6 +432,9 @@ private fun ChatPageContent(
                             vm.handleMessageSend(inputState.getContents())
                             inputState.clearInput()
                         }
+                        scope.launch {
+                            chatListState.requestScrollToItem(conversation.currentMessages.size + 5)
+                        }
                     },
                     onLongSendClick = {
                         if (inputState.isEditing()) {
@@ -489,9 +494,18 @@ private fun ChatPageContent(
                     inputState.editingMessage = msg.id
                 },
                 onForkMessage = { msg ->
-                    scope.launch { vm.forkMessage(msg) }
+                    scope.launch {
+                        val fork = vm.forkMessage(message = msg)
+                        navigateToChatPage(navController, chatId = fork.id)
+                    }
                 },
-                onDelete = { vm.deleteMessage(it) },
+                onDelete = {
+                    if (loadingJob != null) {
+                        vm.showDeleteBlockedWhileGeneratingError()
+                    } else {
+                        vm.deleteMessage(it)
+                    }
+                },
                 onUpdateMessage = { node ->
                     val convo = conversation
                     vm.updateConversation(convo.copy(
