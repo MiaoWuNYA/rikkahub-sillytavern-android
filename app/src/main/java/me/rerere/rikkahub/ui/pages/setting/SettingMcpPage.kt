@@ -1,23 +1,11 @@
 package me.rerere.rikkahub.ui.pages.setting
 
-import me.rerere.hugeicons.HugeIcons
-import me.rerere.hugeicons.stroke.AlertCircle
-import me.rerere.hugeicons.stroke.ArrowDown01
-import me.rerere.hugeicons.stroke.ArrowUp01
-import me.rerere.hugeicons.stroke.FileImport
-import me.rerere.hugeicons.stroke.MessageBlocked
-import me.rerere.hugeicons.stroke.Add01
-import me.rerere.hugeicons.stroke.Settings03
-import me.rerere.hugeicons.stroke.Console
-import me.rerere.hugeicons.stroke.Delete01
-import me.rerere.hugeicons.stroke.Upload02
-import me.rerere.hugeicons.stroke.Cancel01
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.FlowRowOverflow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
@@ -27,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -36,8 +25,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -53,17 +44,16 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SwipeToDismissBox
-import me.rerere.rikkahub.ui.components.ui.Switch
-import me.rerere.rikkahub.ui.components.ui.SwitchSize
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -84,20 +74,31 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.contentOrNull
 import me.rerere.ai.core.InputSchema
+import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.Add01
+import me.rerere.hugeicons.stroke.AlertCircle
+import me.rerere.hugeicons.stroke.ArrowDown01
+import me.rerere.hugeicons.stroke.ArrowUp01
+import me.rerere.hugeicons.stroke.Cancel01
+import me.rerere.hugeicons.stroke.Delete01
+import me.rerere.hugeicons.stroke.FileImport
 import me.rerere.hugeicons.stroke.McpServer
+import me.rerere.hugeicons.stroke.MessageBlocked
+import me.rerere.hugeicons.stroke.Settings03
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.ai.mcp.McpCommonOptions
 import me.rerere.rikkahub.data.ai.mcp.McpManager
 import me.rerere.rikkahub.data.ai.mcp.McpServerConfig
-import me.rerere.rikkahub.data.ai.mcp.McpCommonOptions
 import me.rerere.rikkahub.data.ai.mcp.McpStatus
 import me.rerere.rikkahub.data.ai.mcp.McpTool
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.FormItem
+import me.rerere.rikkahub.ui.components.ui.Switch
+import me.rerere.rikkahub.ui.components.ui.SwitchSize
 import me.rerere.rikkahub.ui.components.ui.Tag
 import me.rerere.rikkahub.ui.components.ui.TagType
 import me.rerere.rikkahub.ui.hooks.EditState
@@ -105,6 +106,7 @@ import me.rerere.rikkahub.ui.hooks.EditStateContent
 import me.rerere.rikkahub.ui.hooks.useEditState
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.ui.theme.extendColors
+import me.rerere.rikkahub.utils.writeClipboardText
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
@@ -251,6 +253,42 @@ private fun McpServerItem(
     val status by mcpManager.getStatus(item).collectAsStateWithLifecycle(McpStatus.Idle)
     val dismissBoxState = rememberSwipeToDismissBoxState()
     val scope = rememberCoroutineScope()
+    var errorDetail by remember { mutableStateOf<McpStatus.Error?>(null) }
+
+    errorDetail?.let { error ->
+        val context = LocalContext.current
+        val fullText = error.detail ?: error.message
+        AlertDialog(
+            onDismissRequest = { errorDetail = null },
+            title = { Text(item.commonOptions.name.ifBlank { "MCP" }) },
+            text = {
+                SelectionContainer {
+                    Text(
+                        text = fullText,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier
+                            .heightIn(max = 320.dp)
+                            .verticalScroll(rememberScrollState()),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        context.writeClipboardText(fullText)
+                        errorDetail = null
+                    }
+                ) {
+                    Text(stringResource(R.string.copy))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { errorDetail = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
     SwipeToDismissBox(
         state = dismissBoxState,
         backgroundContent = {
@@ -304,6 +342,10 @@ private fun McpServerItem(
                         modifier = Modifier.size(24.dp)
                     )
                     is McpStatus.Error -> Icon(HugeIcons.AlertCircle, null)
+                    McpStatus.NeedsAuthorization -> Icon(HugeIcons.AlertCircle, null)
+                    McpStatus.Authorizing -> CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
 
                 Column(
@@ -341,6 +383,43 @@ private fun McpServerItem(
                             }
                         }
                     }
+                    if (status is McpStatus.Error) {
+                        val error = status as McpStatus.Error
+                        Text(
+                            text = error.message,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.clickable { errorDetail = error },
+                        )
+                    }
+                    if (status == McpStatus.NeedsAuthorization) {
+                        val context = LocalContext.current
+                        Text(
+                            text = "需要 OAuth 授权",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        Button(
+                            onClick = { mcpManager.startAuthorization(item, context) },
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                        ) {
+                            Text("OAuth 授权")
+                        }
+                    }
+                    if (status == McpStatus.Authorizing) {
+                        Text(
+                            text = "正在授权，请在浏览器中完成…",
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                        TextButton(
+                            onClick = { mcpManager.cancelAuthorization(item) },
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                        ) {
+                            Text("取消授权")
+                        }
+                    }
                 }
 
                 IconButton(
@@ -364,7 +443,7 @@ private fun McpServerConfigModal(state: EditState<McpServerConfig>) {
             onDismissRequest = {
                 state.dismiss()
             },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
         ) {
             Column(
                 modifier = Modifier
@@ -428,7 +507,7 @@ private fun McpServerConfigModal(state: EditState<McpServerConfig>) {
                 ) {
                     TextButton(
                         onClick = {
-                            if (config.commonOptions.name.isNotBlank()) {
+                            if (config.commonOptions.name.isNotBlank() && isValidMcpName(config.commonOptions.name)) {
                                 state.confirm()
                             }
                         }
@@ -500,6 +579,7 @@ private fun McpCommonOptionsConfigure(
                 Text(stringResource(R.string.setting_mcp_page_name_desc))
             }
         ) {
+            val nameInvalid = !isValidMcpName(config.commonOptions.name)
             OutlinedTextField(
                 value = config.commonOptions.name,
                 onValueChange = { name ->
@@ -517,7 +597,11 @@ private fun McpCommonOptionsConfigure(
                 },
                 label = { Text(stringResource(R.string.setting_mcp_page_name)) },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(stringResource(R.string.setting_mcp_page_name_placeholder)) }
+                placeholder = { Text(stringResource(R.string.setting_mcp_page_name_placeholder)) },
+                isError = nameInvalid,
+                supportingText = if (nameInvalid) {
+                    { Text(stringResource(R.string.setting_mcp_page_name_invalid)) }
+                } else null
             )
         }
 
@@ -764,7 +848,7 @@ private fun McpToolsConfigure(
                 Text(stringResource(R.string.setting_mcp_page_tools_unavailable_message))
             }
         }
-        items(config.commonOptions.tools, key = { it.name }) { tool ->
+        items(config.commonOptions.tools) { tool ->
             McpToolCard(
                 tool = tool,
                 onEnableChange = { newVal ->
@@ -911,6 +995,10 @@ private fun McpToolCard(
     }
 }
 
+private fun isValidMcpName(name: String): Boolean {
+    return name.isEmpty() || name.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' }
+}
+
 private fun parseMcpServersFromJson(json: String): List<McpServerConfig> {
     val root = Json.parseToJsonElement(json).jsonObject
     val mcpServers = root["mcpServers"]?.jsonObject ?: return emptyList()
@@ -941,7 +1029,7 @@ private fun McpImportModal(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     ) {
         Column(
             modifier = Modifier

@@ -22,12 +22,14 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -114,7 +116,7 @@ fun McpPickerButton(
     if (showMcpPicker) {
         ModalBottomSheet(
             onDismissRequest = { showMcpPicker = false },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
         ) {
             Column(
                 modifier = Modifier.Companion
@@ -196,6 +198,9 @@ fun McpPickerListItem(
                 )
             }
         },
+        colors = ListItemDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
         modifier = modifier
             .clip(MaterialTheme.shapes.large)
             .clickable {
@@ -224,7 +229,7 @@ private fun McpPickerSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     ) {
         Column(
             modifier = Modifier
@@ -281,7 +286,7 @@ fun McpPicker(
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        items(servers.fastFilter { it.commonOptions.enable }, key = { it.id }) { server ->
+        items(servers.fastFilter { it.commonOptions.enable }) { server ->
             val status by mcpManager.getStatus(server).collectAsStateWithLifecycle(McpStatus.Idle)
             Card {
                 Row(
@@ -304,6 +309,10 @@ fun McpPicker(
                             modifier = Modifier.size(24.dp)
                         )
                         is McpStatus.Error -> Icon(HugeIcons.Alert01, null)
+                        McpStatus.NeedsAuthorization -> Icon(HugeIcons.Alert01, null)
+                        McpStatus.Authorizing -> CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                     Column(
                         modifier = Modifier.weight(1f),
@@ -320,6 +329,8 @@ fun McpPicker(
                                 is McpStatus.Connected -> "Connected"
                                 is McpStatus.Reconnecting -> "Reconnecting (${s.attempt}/${s.maxAttempts})"
                                 is McpStatus.Error -> "Error: ${s.message}"
+                                is McpStatus.NeedsAuthorization -> "Needs authorization"
+                                is McpStatus.Authorizing -> "Authorizing"
                             },
                             style = MaterialTheme.typography.labelSmall,
                             color = LocalContentColor.current.copy(alpha = 0.8f),
