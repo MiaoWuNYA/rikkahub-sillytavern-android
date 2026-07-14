@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.data.ai.mcp
 
+import android.content.Context
 import android.util.Log
 import androidx.core.net.toUri
 import io.ktor.client.HttpClient
