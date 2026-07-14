@@ -28,6 +28,8 @@ import kotlinx.serialization.json.putJsonArray
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.core.ReasoningLevel
 import me.rerere.ai.core.TextGenerationParams
+import me.rerere.ai.core.TokenUsage
+import me.rerere.ai.provider.ClaudePromptCacheTtl
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.ai.provider.cacheControlEphemeral
 import me.rerere.ai.ui.ClaudeReasoningMetadata
