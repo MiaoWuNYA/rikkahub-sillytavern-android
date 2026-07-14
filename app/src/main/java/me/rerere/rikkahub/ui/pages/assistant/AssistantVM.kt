@@ -94,7 +94,7 @@ class AssistantVM(
     /**
      * 添加 Lorebook 到 settings，返回新创建的 ID 列表
      */
-    fun addLorebooks(lorebooks: List<Lorebook>): List<kotlin.uuid.Uuid> {
+    fun addLorebooks(lorebooks: List<Lorebook>): List<Uuid> {
         val ids = lorebooks.map { it.id }
         viewModelScope.launch {
             val s = settings.value
