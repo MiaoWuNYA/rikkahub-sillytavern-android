@@ -84,6 +84,7 @@ class GenerationHandler(
         conversationSystemPrompt: String? = null,
         conversationModeInjectionIds: Set<Uuid> = emptySet(),
         conversationLorebookIds: Set<Uuid> = emptySet(),
+        workspaceCwd: String? = null,
     ): Flow<GenerationChunk> = flow {
         val provider = model.findProvider(settings.providers) ?: error("Provider not found")
         val providerImpl = providerManager.getProviderByType(provider)
@@ -316,7 +317,8 @@ class GenerationHandler(
                             context = context,
                             model = model,
                             assistant = assistant,
-                            settings = settings
+                            settings = settings,
+                            workspaceCwd = workspaceCwd,
                         )
                         emit(
                             GenerationChunk.Messages(
@@ -325,7 +327,8 @@ class GenerationHandler(
                                     context = context,
                                     model = model,
                                     assistant = assistant,
-                                    settings = settings
+                                    settings = settings,
+                                    workspaceCwd = workspaceCwd,
                                 ).filter { it.role != MessageRole.SYSTEM }
                             )
                         )
@@ -342,20 +345,23 @@ class GenerationHandler(
                     conversationModeInjectionIds = conversationModeInjectionIds,
                     conversationLorebookIds = conversationLorebookIds,
                     prebuiltSystemPrompt = prebuiltSystemPrompt,
+                    workspaceCwd = workspaceCwd,
                 )
                 messages = messages.visualTransforms(
                     transformers = outputTransformers,
                     context = context,
                     model = model,
                     assistant = assistant,
-                    settings = settings
+                    settings = settings,
+                    workspaceCwd = workspaceCwd,
                 )
                 messages = messages.onGenerationFinish(
                     transformers = outputTransformers,
                     context = context,
                     model = model,
                     assistant = assistant,
-                    settings = settings
+                    settings = settings,
+                    workspaceCwd = workspaceCwd,
                 )
                 messages = messages.slice(0 until messages.lastIndex) + messages.last().copy(
                     finishedAt = Clock.System.now()
@@ -492,7 +498,8 @@ class GenerationHandler(
                         context = context,
                         model = model,
                         assistant = assistant,
-                        settings = settings
+                        settings = settings,
+                        workspaceCwd = workspaceCwd,
                     ).filter { it.role != MessageRole.SYSTEM }
                 )
             )
@@ -517,6 +524,7 @@ class GenerationHandler(
         conversationModeInjectionIds: Set<Uuid> = emptySet(),
         conversationLorebookIds: Set<Uuid> = emptySet(),
         prebuiltSystemPrompt: String = "",
+        workspaceCwd: String? = null,
     ) {
         val internalMessages = buildList {
             val fullSystem = if (prebuiltSystemPrompt.isNotBlank()) prebuiltSystemPrompt else buildString {
@@ -584,6 +592,7 @@ class GenerationHandler(
             conversationModeInjectionIds = conversationModeInjectionIds,
             conversationLorebookIds = conversationLorebookIds,
             processingStatus = processingStatus,
+            workspaceCwd = workspaceCwd,
         )
 
         var messages: List<UIMessage> = messages

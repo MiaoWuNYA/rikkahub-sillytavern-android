@@ -16,6 +16,7 @@ class TransformerContext(
     val conversationModeInjectionIds: Set<Uuid> = emptySet(),
     val conversationLorebookIds: Set<Uuid> = emptySet(),
     val processingStatus: MutableStateFlow<String?> = MutableStateFlow(null),
+    val workspaceCwd: String? = null,
 )
 
 interface MessageTransformer {
@@ -69,6 +70,7 @@ suspend fun List<UIMessage>.transforms(
     conversationModeInjectionIds: Set<Uuid> = emptySet(),
     conversationLorebookIds: Set<Uuid> = emptySet(),
     processingStatus: MutableStateFlow<String?> = MutableStateFlow(null),
+    workspaceCwd: String? = null,
 ): List<UIMessage> {
     val ctx = TransformerContext(
         context = context,
@@ -77,7 +79,8 @@ suspend fun List<UIMessage>.transforms(
         settings = settings,
         conversationModeInjectionIds = conversationModeInjectionIds,
         conversationLorebookIds = conversationLorebookIds,
-        processingStatus = processingStatus
+        processingStatus = processingStatus,
+        workspaceCwd = workspaceCwd,
     )
     return transformers.fold(this) { acc, transformer ->
         transformer.transform(ctx, acc)
@@ -90,8 +93,15 @@ suspend fun List<UIMessage>.visualTransforms(
     model: Model,
     assistant: Assistant,
     settings: Settings,
+    workspaceCwd: String? = null,
 ): List<UIMessage> {
-    val ctx = TransformerContext(context, model, assistant, settings)
+    val ctx = TransformerContext(
+        context = context,
+        model = model,
+        assistant = assistant,
+        settings = settings,
+        workspaceCwd = workspaceCwd,
+    )
     return transformers.fold(this) { acc, transformer ->
         if (transformer is OutputMessageTransformer) {
             transformer.visualTransform(ctx, acc)
@@ -107,8 +117,15 @@ suspend fun List<UIMessage>.onGenerationFinish(
     model: Model,
     assistant: Assistant,
     settings: Settings,
+    workspaceCwd: String? = null,
 ): List<UIMessage> {
-    val ctx = TransformerContext(context, model, assistant, settings)
+    val ctx = TransformerContext(
+        context = context,
+        model = model,
+        assistant = assistant,
+        settings = settings,
+        workspaceCwd = workspaceCwd,
+    )
     return transformers.fold(this) { acc, transformer ->
         if (transformer is OutputMessageTransformer) {
             transformer.onGenerationFinish(ctx, acc)
