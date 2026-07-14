@@ -13,6 +13,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -214,5 +215,20 @@ fun Context.exportImageFile(
         Log.e(TAG, "Failed to save image file", e)
     } finally {
         outputStream?.close()
+    }
+}
+
+/**
+ * Open Android's Usage Access settings page.
+ * Call this to prompt the user to grant the
+ * PACKAGE_USAGE_STATS permission manually.
+ */
+fun Context.openUsageAccessSettings() {
+    runCatching {
+        startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        })
+    }.onFailure {
+        Log.e(TAG, "openUsageAccessSettings failed", it)
     }
 }
