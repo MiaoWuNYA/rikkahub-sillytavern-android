@@ -529,6 +529,10 @@ class RouteActivity : ComponentActivity() {
                                 )
                             }
 
+                            entry<Screen.Workspaces> {
+                                WorkspacePage()
+                            }
+
                             entry<Screen.MessageSearch> {
                                 SearchPage()
                             }
@@ -743,6 +747,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data class WorkspaceFileEditor(val id: String, val area: String, val path: String) : Screen
+
+    @Serializable
+    data object Workspaces : Screen
 
     @Serializable
     data object MessageSearch : Screen

@@ -30,6 +30,8 @@ data class Conversation(
     val lorebookIds: Set<Uuid> = emptySet(),
     // Absolute path inside the workspace rootfs
     val workspaceCwd: String? = null,
+    // 所属文件夹 ID（null = 未归类）
+    val folderId: Uuid? = null,
     @Transient
     val newConversation: Boolean = false
 ) {
