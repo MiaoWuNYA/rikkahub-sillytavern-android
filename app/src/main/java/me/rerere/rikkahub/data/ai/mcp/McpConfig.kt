@@ -35,11 +35,12 @@ data class McpOAuthState(
 ) {
     val isAuthorized: Boolean get() = !accessToken.isNullOrBlank()
 
+    // 脱敏 toString，避免 client_secret / token 随 config 打印到日志
     override fun toString(): String =
-        "McpOAuthState(enabled=$enabled, clientId=$clientId" +
-            ", authorizationEndpoint=$authorizationEndpoint, tokenEndpoint=$tokenEndpoint" +
-            ", registrationEndpoint=$registrationEndpoint, scope=$scope" +
-            ", accessToken=${accessToken.masked()}, refreshToken=${refreshToken.masked()}, expiresAt=$expiresAt)"
+        "McpOAuthState(enabled=$enabled, clientId=$clientId, clientSecret=${clientSecret.masked()}, " +
+            "authorizationEndpoint=$authorizationEndpoint, tokenEndpoint=$tokenEndpoint, " +
+            "registrationEndpoint=$registrationEndpoint, scope=$scope, " +
+            "accessToken=${accessToken.masked()}, refreshToken=${refreshToken.masked()}, expiresAt=$expiresAt)"
 
     private fun String?.masked(): String = when {
         this == null -> "null"

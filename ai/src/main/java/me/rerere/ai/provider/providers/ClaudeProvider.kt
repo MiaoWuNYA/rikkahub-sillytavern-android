@@ -264,6 +264,7 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
         }
     }.buffer(Channel.UNLIMITED)
 
+    // trySend 在缓冲满时会静默丢弃 delta，导致回复中间缺字 (#1295)，因此缓冲必须无界
     private fun buildMessageRequest(
         providerSetting: ProviderSetting.Claude,
         messages: List<UIMessage>,
@@ -277,6 +278,11 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
                 buildMessages(messages, providerSetting.promptCaching, providerSetting.promptCacheTtl)
             )
             put("max_tokens", params.maxTokens ?: 64_000)
+
+            // 顶层 cache_control: 让 Anthropic 自动管理缓存断点
+            if (providerSetting.promptCaching) {
+                put("cache_control", cacheControlEphemeral(providerSetting.promptCacheTtl))
+            }
 
             if (params.temperature != null && !params.reasoningLevel.isEnabled) put(
                 "temperature",
