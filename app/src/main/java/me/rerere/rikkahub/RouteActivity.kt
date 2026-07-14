@@ -96,6 +96,7 @@ import me.rerere.rikkahub.ui.pages.debug.DebugPage
 import me.rerere.rikkahub.ui.pages.developer.DeveloperPage
 import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspacePage
 import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspaceDetailPage
+import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspaceFileEditorPage
 import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspaceTerminalPage
 import me.rerere.rikkahub.ui.pages.extensions.ExtensionsPage
 import me.rerere.rikkahub.ui.pages.extensions.PromptPage
@@ -132,6 +133,7 @@ import me.rerere.rikkahub.ui.pages.webview.WebViewPage
 import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import me.rerere.rikkahub.ui.theme.RikkahubTheme
 import me.rerere.rikkahub.utils.CrashHandler
+import me.rerere.workspace.WorkspaceStorageArea
 import okhttp3.OkHttpClient
 import org.koin.android.ext.android.inject
 import org.koin.compose.koinInject
@@ -514,6 +516,14 @@ class RouteActivity : ComponentActivity() {
                                 SkillDetailPage(skillName = key.skillName)
                             }
 
+                            entry<Screen.WorkspaceFileEditor> { key ->
+                                WorkspaceFileEditorPage(
+                                    id = key.id,
+                                    area = WorkspaceStorageArea.valueOf(key.area),
+                                    path = key.path,
+                                )
+                            }
+
                             entry<Screen.MessageSearch> {
                                 SearchPage()
                             }
@@ -725,6 +735,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data class SkillDetail(val skillName: String) : Screen
+
+    @Serializable
+    data class WorkspaceFileEditor(val id: String, val area: String, val path: String) : Screen
 
     @Serializable
     data object MessageSearch : Screen
