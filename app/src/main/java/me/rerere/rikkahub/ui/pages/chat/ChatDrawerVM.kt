@@ -9,29 +9,54 @@ import androidx.paging.cachedIn
 import androidx.paging.insertSeparators
 import androidx.paging.map
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.SettingsStore
+import me.rerere.rikkahub.data.model.Folder
 import me.rerere.rikkahub.data.repository.ConversationRepository
+import me.rerere.rikkahub.data.repository.FolderRepository
 import me.rerere.rikkahub.utils.toLocalString
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlin.uuid.Uuid
 
 class ChatDrawerVM(
     private val context: Application,
     settingsStore: SettingsStore,
     conversationRepo: ConversationRepository,
+    private val folderRepo: FolderRepository,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
+    private val _selectedFolderId = MutableStateFlow<Uuid?>(null)
+    val selectedFolderId: StateFlow<Uuid?> = _selectedFolderId.asStateFlow()
+
+    private val assistantIdFlow = settingsStore.settingsFlow
+        .map { it.assistantId }
+        .distinctUntilChanged()
+
+    val folders: StateFlow<List<Folder>> = assistantIdFlow
+        .flatMapLatest { folderRepo.getFoldersOfAssistant(it) }
+        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Lazily, emptyList())
+
     val conversations: Flow<PagingData<ConversationListItem>> =
-        settingsStore.settingsFlow
-            .map { it.assistantId }
+        combine(assistantIdFlow, _selectedFolderId) { assistantId, folderId ->
+            assistantId to folderId
+        }
             .distinctUntilChanged()
-            .flatMapLatest { assistantId ->
-                conversationRepo.getConversationsOfAssistantPaging(assistantId)
+            .flatMapLatest { (assistantId, folderId) ->
+                if (folderId == null) {
+                    conversationRepo.getConversationsOfAssistantPaging(assistantId)
+                } else {
+                    conversationRepo.getConversationsOfFolderPaging(folderId)
+                }
             }
             .map { pagingData ->
                 pagingData
@@ -94,6 +119,39 @@ class ChatDrawerVM(
     fun saveScrollPosition(index: Int, offset: Int) {
         savedStateHandle["scrollIndex"] = index
         savedStateHandle["scrollOffset"] = offset
+    }
+
+    fun selectFolder(folderId: Uuid?) {
+        _selectedFolderId.value = folderId
+    }
+
+    fun createFolder(name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isBlank()) return
+        viewModelScope.launch {
+            val assistantId = assistantIdFlow.value
+            folderRepo.createFolder(assistantId, trimmed)
+        }
+    }
+
+    fun renameFolder(folderId: Uuid, name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isBlank()) return
+        viewModelScope.launch {
+            folderRepo.renameFolder(folderId, trimmed)
+        }
+    }
+
+    fun deleteFolder(folderId: Uuid) {
+        viewModelScope.launch {
+            folderRepo.deleteFolder(folderId)
+        }
+    }
+
+    fun moveConversationToFolder(conversationId: Uuid, folderId: Uuid?) {
+        viewModelScope.launch {
+            folderRepo.moveConversationToFolder(conversationId.toString(), folderId?.toString())
+        }
     }
 
     private fun getDateLabel(date: LocalDate): String {

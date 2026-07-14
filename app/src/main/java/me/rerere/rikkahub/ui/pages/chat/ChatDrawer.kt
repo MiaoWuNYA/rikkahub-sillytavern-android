@@ -3,6 +3,7 @@ package me.rerere.rikkahub.ui.pages.chat
 import androidx.activity.ComponentActivity
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -42,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -63,11 +66,14 @@ import me.rerere.hugeicons.stroke.Search01
 import me.rerere.hugeicons.stroke.Settings03
 import me.rerere.hugeicons.stroke.Sparkles
 import me.rerere.hugeicons.stroke.TransactionHistory
+import me.rerere.hugeicons.stroke.Folder01
+import me.rerere.hugeicons.stroke.FolderAdd
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Conversation
+import me.rerere.rikkahub.data.model.Folder
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.ui.components.ai.AssistantPicker
 import me.rerere.rikkahub.ui.components.ui.BackupReminderCard
@@ -139,6 +145,16 @@ fun ChatDrawerContent(
     var showMoveToAssistantSheet by remember { mutableStateOf(false) }
     var conversationToMove by remember { mutableStateOf<Conversation?>(null) }
     val bottomSheetState = rememberModalBottomSheetState()
+
+    // 文件夹相关状态
+    val folders by drawerVm.folders.collectAsStateWithLifecycle()
+    val selectedFolderId by drawerVm.selectedFolderId.collectAsStateWithLifecycle()
+    var showMoveToFolderSheet by remember { mutableStateOf(false) }
+    var conversationToMoveFolder by remember { mutableStateOf<Conversation?>(null) }
+    val folderSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var showCreateFolderDialog by remember { mutableStateOf(false) }
+    var folderToRename by remember { mutableStateOf<Folder?>(null) }
+    var folderToDelete by remember { mutableStateOf<Folder?>(null) }
 
     // Menu popup 状态
     var showMenuPopup by remember { mutableStateOf(false) }
@@ -218,6 +234,15 @@ fun ChatDrawerContent(
 
             DrawerActions(navController = navController)
 
+            FolderBar(
+                folders = folders,
+                selectedFolderId = selectedFolderId,
+                onSelect = drawerVm::selectFolder,
+                onCreate = { showCreateFolderDialog = true },
+                onRename = { folderToRename = it },
+                onDelete = { folderToDelete = it },
+            )
+
             ConversationList(
                 current = current,
                 conversations = conversations,
@@ -250,6 +275,10 @@ fun ChatDrawerContent(
                 onMoveToAssistant = {
                     conversationToMove = it
                     showMoveToAssistantSheet = true
+                },
+                onMoveToFolder = {
+                    conversationToMoveFolder = it
+                    showMoveToFolderSheet = true
                 }
             )
 
@@ -458,6 +487,162 @@ fun ChatDrawerContent(
             }
         }
     }
+
+    // 移动到文件夹 Bottom Sheet
+    if (showMoveToFolderSheet) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                showMoveToFolderSheet = false
+                conversationToMoveFolder = null
+            },
+            sheetState = folderSheetState
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 400.dp)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.chat_page_move_to_folder),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                Surface(
+                    onClick = {
+                        conversationToMoveFolder?.let { conv ->
+                            drawerVm.moveConversationToFolder(conv.id, null)
+                        }
+                        scope.launch {
+                            folderSheetState.hide()
+                            showMoveToFolderSheet = false
+                            conversationToMoveFolder = null
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(HugeIcons.Folder01, null)
+                        Text(stringResource(R.string.chat_page_folder_default))
+                    }
+                }
+                folders.forEach { folder ->
+                    Surface(
+                        onClick = {
+                            conversationToMoveFolder?.let { conv ->
+                                drawerVm.moveConversationToFolder(conv.id, folder.id)
+                            }
+                            scope.launch {
+                                folderSheetState.hide()
+                                showMoveToFolderSheet = false
+                                conversationToMoveFolder = null
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium,
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(HugeIcons.Folder01, null)
+                            Text(folder.name)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // 创建文件夹对话框
+    if (showCreateFolderDialog) {
+        var folderName by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showCreateFolderDialog = false },
+            title = { Text(stringResource(R.string.chat_page_create_folder)) },
+            text = {
+                OutlinedTextField(
+                    value = folderName,
+                    onValueChange = { folderName = it },
+                    label = { Text(stringResource(R.string.chat_page_folder_name)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        drawerVm.createFolder(folderName)
+                        showCreateFolderDialog = false
+                    },
+                    enabled = folderName.isNotBlank()
+                ) { Text(stringResource(R.string.common_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCreateFolderDialog = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            }
+        )
+    }
+    // 重命名文件夹对话框
+    folderToRename?.let { folder ->
+        var newName by remember(folder.id) { mutableStateOf(folder.name) }
+        AlertDialog(
+            onDismissRequest = { folderToRename = null },
+            title = { Text(stringResource(R.string.chat_page_rename_folder)) },
+            text = {
+                OutlinedTextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    label = { Text(stringResource(R.string.chat_page_folder_name)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        drawerVm.renameFolder(folder.id, newName)
+                        folderToRename = null
+                    },
+                    enabled = newName.isNotBlank()
+                ) { Text(stringResource(R.string.common_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { folderToRename = null }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            }
+        )
+    }
+    // 删除文件夹确认
+    folderToDelete?.let { folder ->
+        AlertDialog(
+            onDismissRequest = { folderToDelete = null },
+            title = { Text(stringResource(R.string.chat_page_delete_folder)) },
+            text = { Text(stringResource(R.string.chat_page_delete_folder_confirm, folder.name)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        drawerVm.deleteFolder(folder.id)
+                        folderToDelete = null
+                    }
+                ) { Text(stringResource(R.string.common_delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { folderToDelete = null }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -602,6 +787,115 @@ private fun AssistantItem(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun FolderBar(
+    folders: List<Folder>,
+    selectedFolderId: Uuid?,
+    onSelect: (Uuid?) -> Unit,
+    onCreate: () -> Unit,
+    onRename: (Folder) -> Unit,
+    onDelete: (Folder) -> Unit,
+) {
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        item {
+            FolderChip(
+                label = stringResource(R.string.chat_page_folder_default),
+                selected = selectedFolderId == null,
+                onClick = { onSelect(null) },
+                onLongClick = {},
+            )
+        }
+        items(folders) { folder ->
+            var menuExpanded by remember { mutableStateOf(false) }
+            Box {
+                FolderChip(
+                    label = folder.name,
+                    icon = HugeIcons.Folder01,
+                    selected = selectedFolderId == folder.id,
+                    onClick = { onSelect(folder.id) },
+                    onLongClick = { menuExpanded = true },
+                )
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.chat_page_rename)) },
+                        leadingIcon = { Icon(HugeIcons.PencilEdit01, null) },
+                        onClick = {
+                            onRename(folder)
+                            menuExpanded = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.chat_page_delete)) },
+                        leadingIcon = { Icon(HugeIcons.Delete01, null) },
+                        onClick = {
+                            onDelete(folder)
+                            menuExpanded = false
+                        }
+                    )
+                }
+            }
+        }
+        item {
+            FolderChip(
+                label = stringResource(R.string.chat_page_folder_add),
+                icon = HugeIcons.FolderAdd,
+                selected = false,
+                onClick = onCreate,
+                onLongClick = {},
+            )
+        }
+    }
+}
+
+@Composable
+private fun FolderChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+) {
+    Surface(
+        shape = CircleShape,
+        color = if (selected) {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerLow
+        },
+        modifier = Modifier
+            .clip(CircleShape)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+            )
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            if (icon != null) {
+                Icon(icon, null, modifier = Modifier.size(14.dp))
+            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
