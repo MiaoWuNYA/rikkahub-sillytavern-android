@@ -30,14 +30,14 @@ import me.rerere.ai.core.ReasoningLevel
 import me.rerere.ai.core.TextGenerationParams
 import me.rerere.ai.core.TokenUsage
 import me.rerere.ai.provider.ClaudePromptCacheTtl
+import me.rerere.ai.provider.ImageGenerationParams
+import me.rerere.ai.provider.Model
+import me.rerere.ai.provider.ModelAbility
 import me.rerere.ai.provider.ProviderSetting
-import me.rerere.ai.provider.cacheControlEphemeral
 import me.rerere.ai.ui.ClaudeReasoningMetadata
 import me.rerere.ai.ui.metadataAs
 import me.rerere.ai.ui.toMetadata
 import me.rerere.ai.provider.Provider
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.ai.provider.TextGenerationParams
 import me.rerere.ai.ui.ImageGenerationItem
 import me.rerere.ai.ui.MessageChunk
 import me.rerere.ai.ui.UIMessage
