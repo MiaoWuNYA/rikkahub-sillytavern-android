@@ -10,7 +10,27 @@ data class McpCommonOptions(
     val enable: Boolean = true,
     val name: String = "",
     val headers: List<Pair<String, String>> = emptyList(),
-    val tools: List<McpTool> = emptyList()
+    val tools: List<McpTool> = emptyList(),
+    val oauth: McpOAuthState? = null,
+)
+
+/**
+ * OAuth 2.1 授权状态，遵循 MCP 授权规范 (2025-11-25)。
+ *
+ * 持久化了动态客户端注册结果、授权服务器端点以及令牌，用于对需要
+ * OAuth 授权的 MCP Server 注入 `Authorization: Bearer` 请求头并支持刷新。
+ */
+@Serializable
+data class McpOAuthState(
+    val enabled: Boolean = false,
+    val clientId: String? = null,
+    val clientSecret: String? = null,
+    val authorizationEndpoint: String? = null,
+    val tokenEndpoint: String? = null,
+    val accessToken: String? = null,
+    val refreshToken: String? = null,
+    val expiresAt: Long? = null,
+    val scope: String? = null,
 )
 
 @Serializable

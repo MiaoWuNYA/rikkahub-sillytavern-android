@@ -81,6 +81,8 @@ class McpManager(
     private val reconnectJobs: MutableMap<Uuid, Job> = mutableMapOf()
     private val reconnectAttempts: MutableMap<Uuid, Int> = mutableMapOf()
     val syncingStatus = MutableStateFlow<Map<Uuid, McpStatus>>(mapOf())
+    private val authorizationJobs: MutableMap<Uuid, Job> = mutableMapOf()
+    private val oauthClient = McpOAuthClient(okHttpClient)
 
     init {
         appScope.launch {

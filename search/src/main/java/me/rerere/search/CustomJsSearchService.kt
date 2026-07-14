@@ -99,64 +99,6 @@ object CustomJsSearchService : SearchService<SearchServiceOptions.CustomJsOption
         }
     }
 
-    private fun injectApis(context: QuickJSContext) {
-        context.globalObject.setProperty("__httpRequest", JSCallFunction { args ->
-            val url = args[0] as? String ?: error("url is required")
-            val method = (args[1] as? String ?: "GET").uppercase()
-            val headersJson = args[2] as? String
-            val body = args[3] as? String
-
-            val requestBuilder = Request.Builder().url(url)
-
-            val parsedHeaders = if (!headersJson.isNullOrBlank() && headersJson != "null") {
-                json.parseToJsonElement(headersJson).jsonObject
-            } else null
-
-            parsedHeaders?.entries?.forEach { (key, value) ->
-                requestBuilder.addHeader(key, value.jsonPrimitive.content)
-            }
-
-            val contentType = try {
-                parsedHeaders?.get("Content-Type")?.jsonPrimitive?.content
-            } catch (_: Exception) {
-                null
-            }
-
-            val mediaType = (contentType ?: "application/json").toMediaType()
-            when (method) {
-                "GET" -> requestBuilder.get()
-                "HEAD" -> requestBuilder.head()
-                else -> {
-                    val reqBody = body?.toRequestBody(mediaType)
-                        ?: if (method in setOf("POST", "PUT", "PATCH")) {
-                            "".toRequestBody(mediaType)
-                        } else {
-                            null
-                        }
-                    requestBuilder.method(method, reqBody)
-                }
-            }
-
-            val response = httpClient.newCall(requestBuilder.build()).execute()
-            val responseBody = response.body!!.string()
-            val code = response.code
-            val message = response.message
-            response.close()
-
-            json.encodeToString(
-                HttpResponseDto.serializer(),
-                HttpResponseDto(
-                    status = code,
-                    ok = code in 200..299,
-                    statusText = message,
-                    body = responseBody,
-                )
-            )
-        })
-
-        context.evaluate(FETCH_POLYFILL)
-    }
-
     private fun quoteJsString(s: String): String {
         val sb = StringBuilder("\"")
         for (ch in s) {
