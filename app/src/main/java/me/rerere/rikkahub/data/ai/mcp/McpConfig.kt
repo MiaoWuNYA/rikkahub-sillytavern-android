@@ -28,10 +28,10 @@ data class McpOAuthState(
     val authorizationEndpoint: String? = null,
     val tokenEndpoint: String? = null,
     val registrationEndpoint: String? = null,
+    val scope: String? = null,
     val accessToken: String? = null,
     val refreshToken: String? = null,
-    val expiresAt: Long? = null,
-    val scope: String? = null,
+    val expiresAt: Long = 0L, // epoch millis, 0 表示未知/不过期
 ) {
     val isAuthorized: Boolean get() = !accessToken.isNullOrBlank()
 
