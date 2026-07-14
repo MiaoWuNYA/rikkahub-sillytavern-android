@@ -38,6 +38,9 @@ import me.rerere.rikkahub.data.ai.mcp.McpManager
 import me.rerere.rikkahub.data.sync.webdav.WebDavSync
 import me.rerere.search.SearchService
 import me.rerere.rikkahub.data.sync.S3Sync
+import me.rerere.rikkahub.data.files.FileFolders
+import me.rerere.workspace.ProotShellRunner
+import me.rerere.workspace.WorkspaceBindMount
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -154,6 +157,23 @@ val dataSourceModule = module {
         val ctx: android.content.Context = get()
         me.rerere.workspace.WorkspaceManager(
             baseDir = java.io.File(ctx.filesDir, "workspaces"),
+            shellRunner = ProotShellRunner(
+                nativeLibraryDir = java.io.File(ctx.applicationInfo.nativeLibraryDir),
+                extraBindMounts = listOf(
+                    WorkspaceBindMount(
+                        source = java.io.File(ctx.filesDir, FileFolders.SKILLS).apply { mkdirs() },
+                        target = "/skills",
+                    ),
+                    WorkspaceBindMount(
+                        source = java.io.File(ctx.filesDir, FileFolders.TOOL_OUTPUTS).apply { mkdirs() },
+                        target = "/tool_outputs",
+                    ),
+                    WorkspaceBindMount(
+                        source = java.io.File(ctx.filesDir, FileFolders.UPLOAD).apply { mkdirs() },
+                        target = "/upload",
+                    ),
+                ),
+            ),
         )
     }
 
