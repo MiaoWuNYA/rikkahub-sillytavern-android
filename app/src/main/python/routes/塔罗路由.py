@@ -117,52 +117,52 @@
                        │     dc.contextual_meanings  # 4语境                    │
                        │                                                      │
                        │                                                      │
-                       │ STEP 4: Kaabalah 卡巴拉对应（与 arcanite 互补深化）   │
-                       │   arcanite 给出传统解读后, Kaabalah 补充秘传维度:      │
+                       │ STEP 4: Kaabalah 卡巴拉对应（全量自动补充）              │
+                       │   eval_javascript(library='kaabalah-engine') 后可用:      │
+                       │   Object.keys(Kaabalah) 自探索全部 API                   │
+                       │   tarot 模块独立导出 21 项（仅列核心）:                    │
                        │                                                      │
-                       │   4a. 单牌卡巴拉对应（每张牌调一次）:                   │
-                       │     eval_javascript(library='kaabalah-engine',         │
-                       │       code="JSON.stringify(Kaabalah.getTarotCorrespondenceProfile({tarotCardNumber:N}))")
-                       │       → 返回: {path, hebrewLetter, sephiroth,          │
-                       │          treeOfLifePosition, planetary, zodiac}        │
-                       │     例: 大牌N°1(The Magician)→Path 12(Beth)→Chokmah   │
+                       │   4a. 卡巴拉对应（每牌调一次）:                           │
+                       │     getTarotCorrespondenceProfile({tarotCardNumber:N})  │
+                       │       → {path, hebrewLetter, sephiroth, planetary,     │
+                       │          zodiac, treeOfLifePosition}                   │
+                       │     大牌例: N°1(The Magician)→Path12(Beth)→Chokmah    │
                        │                                                      │
-                       │   4b. 牌原型（archetype）:                              │
+                       │   4b. 牌原型 archetype:                                │
                        │     getTarotArchetype({tarotCardNumber:N})             │
-                       │       → {pathId, pathName, hebrewLetter, astrology,    │
-                       │          element, tarotCardNumber}                     │
-                       │     ⚠️ 仅22张大牌有原型, 小牌返回空                   │
+                       │       → {pathId, hebrewLetter, astrology, element}     │
+                       │     ⚠️ 仅22张大牌, 小牌返回空                          │
                        │                                                      │
-                       │   4c. 主题对应（planet+zodiac+element）:                │
+                       │   4c. 主题对应:                                        │
                        │     getTarotThemeProfile({tarotCardNumber:N})          │
                        │       → {planet, zodiac, element, hebrewLetter}        │
                        │                                                      │
-                       │   4d. 跨牌桌表示（同一张牌在不同体系中的差异）:         │
+                       │   4d. 跨牌桌表示（同一张牌在5牌桌中的差异）:              │
                        │     getTarotRepresentations({tarotCardNumber:N})       │
                        │       → {rider-waite, papus_pt, papus, mythic,        │
                        │          egyptian} 各牌桌的 cardName/suit/meaning     │
-                       │     特定牌桌: getTarotRepresentation(N, deckId)        │
+                       │     getTarotRepresentation(N, deckId) 单牌桌查询        │
                        │                                                      │
                        │   4e. 777全对应表常数:                                  │
-                       │     Kaabalah.COLORS_DATA[sphere]    # 颜色对应         │
-                       │     Kaabalah.MUSICAL_NOTES_DATA    # 音阶对应          │
-                       │     Kaabalah.PLANETS               # 行星对应          │
-                       │     Kaabalah.SPHERES_DATA[\"KETHER\"] # 源质全部属性     │
-                       │     Kaabalah.FOUR_WORLDS[\"ATZILUTH\"] # 四世界          │
-                       │     Kaabalah.HEBREW_LETTERS_DATA[\"ALEPH\"] # 字母全属性 │
+                       │     COLORS_DATA[sphere] / MUSICAL_NOTES_DATA          │
+                       │     PLANETS / SPHERES_DATA / FOUR_WORLDS              │
+                       │     HEBREW_LETTERS_DATA / LURIANIC_PATHS              │
                        │                                                      │
-                       │   4f. 备选牌阵（当 arcanite 牌阵不适用时）:              │
-                       │     tree-of-life-reading: 11位(10源质+Da'ath)          │
-                       │     conscious-reading: 用户自选位置(仅大牌)             │
-                       │     event-reading: 帕普斯事件阅读法                    │
-                       │     deckId 可选: rider-waite(默认) | papus_pt(卡巴拉)  │
-                       │       papus(占卜) | mythic(神话) | egyptian(埃及)      │
+                       │   4f. 备选牌阵（arcanite 无匹配时自动切换）:             │
+                       │     drawTarotSpread({spreadId, deckId, ...})          │
+                       │     drawConsciousTarotSpread({indices, ...})          │
+                       │     牌阵列表: listTarotSpreads() / getTarotSpread(id)  │
+                       │     牌桌列表: listTarotDecks()                        │
                        │                                                      │
-                       │   用法: STEP 1→2→3→4 为标准流程, 每次必走:                │
-                       │     STEP 1: arcanite 抽牌                                │
-                       │     STEP 2: EE 元素分析                                  │
-                       │     STEP 3: arcanite 逐牌全字段解读                       │
-                       │     STEP 4: Kaabalah 卡巴拉对应(4a-4e)全量补充            │
+                       │   4g. 快速查牌辅助:                                     │
+                       │     getTarotCardProfile({tarotCardNumber:N})          │
+                       │       → {meaning, type, deck}                         │
+                       │     getTarotCardByNumber(n)  /  getTarotCardNumber({}) │
+                       │     listTarotThemeProfiles()  22张大牌概览             │
+                       │     ARKANNUS / majorArcana  大牌列表                   │
+                       │                                                      │
+                       │   用法: 每次塔罗阅读必走 STEP 1→2→3→4,                 │
+                       │   4a-4e 用 drawn 的 card_number 逐个补卡巴拉对应       │
                        │   4f 备选牌阵在 arcanite 无匹配时自动切换                 │
                        └──────────────────────────────────────────────────────┘
 
@@ -510,12 +510,9 @@ AI 先感受牌阵整体，再用7层结构组织语言
 ╚══════════════════ 塔罗数据 ═════════════════╝
 
 【Kaabalah JS引擎塔罗（卡巴拉对应体系）】
-arcanite(STEP 1-3) + Kaabalah(STEP 4) 互补使用，见上方互补模式。
-用法:
-eval_javascript(library='kaabalah-engine', code="Kaabalah.drawTarotSpread({spreadId:'celtic-cross', deckId:'rider-waite', includeInverted:true})")
-• 7牌阵: quick-insight | conscious-reading | time-reading | dialectic-reading | tree-of-life-reading | celtic-cross | event-reading
-• 5牌桌: rider-waite | papus_pt | papus | mythic | egyptian
-• 查牌/对应/卡巴拉映射详见 STEP 4
+Kaabalah tarot 模块 21 项导出，全部集成到 STEP 4a-4g 中。
+用法: eval_javascript(library='kaabalah-engine') 后 Object.keys(Kaabalah) 自探索
+完整说明见上方互补模式 STEP 4
 
 ╔══════════════════ 塔罗核心参考字典 ═══════════════╗
 本字典为LLM内部参考, 不直接输出。
