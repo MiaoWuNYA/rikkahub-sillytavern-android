@@ -183,7 +183,7 @@ class GenerationHandler(
                 appendLine("  紫微斗数 → from routes.紫微斗数路由 import __doc__ as R; print(R)")
                 appendLine("    (Iztro JS⭐3841原版 · ziwei_paipan Python返回AstrolabeResult全字段 · ZiweiNihai倪海夏天纪+古籍 三引擎确定性算法对照)")
                 appendLine("  塔罗 → from routes.塔罗路由 import __doc__ as R; print(R)")
-                appendLine("    (arcanite Python STEP1-3: 78张/11牌阵/18字段/元素尊贵EE · Kaabalah JS STEP4: 卡巴拉对应/牌原型/777表/跨5牌桌 · 互补流程自动执行)")
+                appendLine("    (arcanite-unified Python: arcanite核心+Waite原版+TarotKit双语 三源合一 · 18字段/78张/11牌阵/seed条件分支 · 搭配 Kaabalah JS STEP4: 卡巴拉对应/牌原型/777/5牌桌/生命之树 · 互补自动流程)")
                 appendLine("  雷诺曼 → from routes.雷诺曼路由 import __doc__ as R; print(R)")
                 appendLine("    (arcanite 36张语义getter · Greer两步法+语法体系 · 扑克插片字典(花色/数字/宫廷用神) · FE引擎6方法:parse_karmic_mirrors/GT_portrait/骑士步/镜像/反射/mod/intersection)")
                 appendLine("  西洋占星 → from routes.西洋占星 import __doc__ as R; print(R)")
