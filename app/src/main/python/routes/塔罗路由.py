@@ -36,6 +36,8 @@
                        │   from arcanite.core import TarotDeck                │
                        │   from arcanite.core.spread import load_spread       │
                        │   from tarot_elemental_engine import ElementalDignityEngine as EE  │
+                       │   # ⚠️ 自探索: dir(TarotDeck) / dir(drawn[0]) /      │
+                       │   #   type(drawn[0]).__dict__.keys() # 查所有字段    │
                        │                                                      │
                        │ STEP 1: arcanite 抽牌 + 加载牌阵                      │
                        │   deck = TarotDeck.load(system="tarot")              │
@@ -120,6 +122,7 @@
                        │   ⚠️ 全部通过 eval_javascript 调用:                   │
                        │     action='load', library='kaabalah-engine'  首次     │
                        │     action='eval', code="Kaabalah.xxx(...)"    后续    │
+                       │   ⚠️ 自探索: code="Object.keys(Kaabalah)" 列出全部API │
                        │   一次 eval 调多个: code="a=F1(...); b=F2(...); JSON.stringify({a,b})"
                        │                                                      │
                        │   数据流: Python 拿 dc.card_number → 拼进 JS code →     │
