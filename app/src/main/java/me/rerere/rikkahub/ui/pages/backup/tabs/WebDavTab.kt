@@ -36,7 +36,8 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -308,9 +309,7 @@ fun WebDavTab(
             onDismissRequest = {
                 showBackupFiles = false
             },
-            sheetState = rememberModalBottomSheetState(
-                skipPartiallyExpanded = true
-            ),
+            sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)),
         ) {
             Column(
                 modifier = Modifier
@@ -330,7 +329,7 @@ fun WebDavTab(
                         contentPadding = PaddingValues(bottom = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(it, key = { it.displayName }) { item ->
+                        items(it) { item ->
                             WebDavBackupItemCard(
                                 item = item,
                                 isRestoring = restoringItemId == item.displayName,

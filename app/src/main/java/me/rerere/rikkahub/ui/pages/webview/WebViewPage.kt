@@ -23,26 +23,29 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import me.rerere.hugeicons.stroke.MoreVertical
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.webview.WebView
+import me.rerere.rikkahub.ui.components.webview.WebViewContentCache
 import me.rerere.rikkahub.ui.components.webview.rememberWebViewState
 import me.rerere.rikkahub.ui.theme.JetbrainsMono
-import me.rerere.rikkahub.utils.base64Decode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WebViewPage(url: String, content: String) {
+fun WebViewPage(url: String, contentId: String) {
+    val context = LocalContext.current
     val state = if (url.isNotEmpty()) {
         rememberWebViewState(
             url = url,
@@ -53,8 +56,11 @@ fun WebViewPage(url: String, content: String) {
                 loadWithOverviewMode = true
             })
     } else {
+        val content = remember(contentId) {
+            WebViewContentCache.load(context.cacheDir, contentId).orEmpty()
+        }
         rememberWebViewState(
-            data = content.base64Decode(),
+            data = content,
             baseUrl = "https://rikkahub.local",
             mimeType = "text/html",
             settings = {
@@ -68,7 +74,7 @@ fun WebViewPage(url: String, content: String) {
 
     var showDropdown by remember { mutableStateOf(false) }
     var showConsoleSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
 
     BackHandler(state.canGoBack) {
         state.goBack()
@@ -162,7 +168,7 @@ fun WebViewPage(url: String, content: String) {
 
                 SelectionContainer {
                     LazyColumn {
-                        items(state.consoleMessages, key = { it.hashCode() }) { message ->
+                        items(state.consoleMessages) { message ->
                             Text(
                                 text = "${message.messageLevel().name}: ${message.message()}\n" +
                                     "Source: ${message.sourceId()}:${message.lineNumber()}",

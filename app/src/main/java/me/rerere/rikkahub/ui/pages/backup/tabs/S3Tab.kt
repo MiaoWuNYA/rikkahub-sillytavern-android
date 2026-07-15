@@ -36,7 +36,9 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.Switch
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -179,6 +181,16 @@ fun S3Tab(
                     },
                 )
                 item(
+                    headlineContent = { Text(stringResource(R.string.backup_page_s3_path_style)) },
+                    supportingContent = { Text(stringResource(R.string.backup_page_s3_path_style_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = s3Config.pathStyle,
+                            onCheckedChange = { updateS3Config(s3Config.copy(pathStyle = it)) },
+                        )
+                    },
+                )
+                item(
                     headlineContent = { Text(stringResource(R.string.backup_page_s3_region)) },
                     supportingContent = {
                         OutlinedTextField(
@@ -316,9 +328,7 @@ fun S3Tab(
             onDismissRequest = {
                 showBackupFiles = false
             },
-            sheetState = rememberModalBottomSheetState(
-                skipPartiallyExpanded = true
-            ),
+            sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)),
         ) {
             Column(
                 modifier = Modifier
@@ -338,7 +348,7 @@ fun S3Tab(
                         contentPadding = PaddingValues(bottom = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(it, key = { it.key }) { item ->
+                        items(it) { item ->
                             S3BackupItemCard(
                                 item = item,
                                 isRestoring = restoringItemId == item.displayName,
