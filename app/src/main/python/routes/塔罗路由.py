@@ -465,6 +465,15 @@ AI 先感受牌阵整体，再用7层结构组织语言
   秘传附录(Kaabalah JS引擎按需调用:hebrew_letters/tree_of_life/777/four_worlds/sephiroth，不在正文展开，仅当NNL确认与解读相关时取用)
 ╚══════════════════ 塔罗数据 ═════════════════╝
 
+【Kaabalah JS引擎塔罗（备选）】
+若 arcanite 不可用，可通过 Kaabalah JS引擎直接抽塔罗：
+eval_javascript(library='kaabalah-engine', code="Kaabalah.drawTarotSpread({spreadId:'celtic-cross', deckId:'rider-waite', includeInverted:true})")
+• 7牌阵: quick-insight(单张) | conscious-reading(意识3层·仅大牌) | time-reading(过去现在未来·仅大牌) | dialectic-reading(正反合·仅大牌) | tree-of-life-reading(11位) | celtic-cross(经典10张) | event-reading(帕普斯)
+• 5牌桌: rider-waite | papus_pt(卡巴拉) | papus(占卜) | mythic(神话) | egyptian(埃及)
+• 查牌/对应: getTarotCardByNumber(n) 又 getTarotCardProfile({tarotCardNumber:n})
+• 卡巴拉对应: getTarotCorrespondenceProfile({tarotCardNumber:n}) 又 getTarotArchetype({tarotCardNumber:n})
+• 完整用法见 from routes.灵数卡巴拉数秘 import __doc__ as R; print(R)
+
 ╔══════════════════ 塔罗核心参考字典 ═══════════════╗
 本字典为LLM内部参考, 不直接输出。
 花色/数字/宫廷牌/逆位/元素/叙事补充规则:

@@ -32,12 +32,19 @@ getCanonicalTree()  → 完整生命之树结构
 getTreeTopology()  → 树拓扑
 SPHERES["Kether"]  SPHERES_DATA["Kether"]  FOUR_WORLDS  FOUR_WORLDS_DATA
 HEBREW_LETTERS["Aleph"]  HEBREW_LETTERS_DATA["Aleph"]
-LURIANIC_PATHS["11"]  COLORS_DATA  MUSICAL_NOTES_DATA  PLANETS
+LATIN_LETTERS  LATIN_LETTERS_DATA
+LURIANIC_PATHS["11"]  MELKITZEDEKI_PATHS
+COLORS_DATA  MUSICAL_NOTES_DATA  PLANETS
+GematriaData  NumerologyData
 
-╔══════════════════ 参数坑 ══════════════════╗ ║ 日期: local noon构造 new Date(y,m-1,d,12) ║ ║ chart映射: sign是{name}对象 不是字符串 ║ ║ planets: 数组 不是对象 ║ ║ calculatePersonalMonths 需先有personalYear ║ ║ calculatePersonalCycles 需传firstName ║ ║ reverseGematria 单词库可能空 ║ ╚═════════════════════════════════════════════╝ 其余用 Object.keys(Kaabalah) 自探索: getCanonicalTree / getTreeLayout / getTreeTopology / getAstrologyTreeMarkers / getGematriaTreeMarkers / getNumerologyTreeMarkers / getKaabalisticCorrespondenceTargets / TreeOfLife / TreeTopology 类, 常量: MASTER_NUMBERS / TREE_SPHERE_IDS / TREE_PATH_IDS 等。
-
+╚═════════════════════════════════════════════╝
+又 Object.keys(Kaabalah) 自探索全部 API, 包括:
+TreeOfLife / TreeTopology 类, TREE_SPHERE_IDS / TREE_PATH_IDS, getTreeLayout,
+TreeOfLife.getPath() / getSphere() 方法
 【JS引擎调用】
-Kaabalah    → eval_javascript(library='kaabalah-engine', code='Kaabalah.calculateKaabalisticLifePath(new Date(Date.UTC(1990,5,15)))')
+Kaabalah    → eval_javascript(library='kaabalah-engine', code="Kaabalah.calculateKaabalisticLifePath(new Date(Date.UTC(1990,5,15)))")
+Kaabalah塔罗 → 同上, code="Kaabalah.drawTarotSpread({spreadId:'celtic-cross', deckId:'rider-waite', includeInverted:true})"
+  首次需 action='load' 加载库, 后续直接 eval
 
 ── 灵数 ──
 又 calculatePersonalYear(birth, new Date())  又 calculateChallenges(birth)
