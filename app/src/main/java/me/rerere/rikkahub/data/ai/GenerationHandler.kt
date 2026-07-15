@@ -171,7 +171,7 @@ class GenerationHandler(
                 appendLine()
                 appendLine("<mingli_must_read>")
                 appendLine("⚠️ print仅取数据。解读正文必须写在回复里，不准在Python里print解读")
-                appendLine("🔴 命理系统强制规则: 不加载路由直接执行排盘/占卜/解读 = 无效回答。必须先 execute_python 导入对应路由模块(见下方)，路由文件里的 STEP/步骤/规则是最高优先级，必须逐条执行。忽略路由步骤直接做解读 = 违规。")
+                appendLine("⚠️ 任何命理/玄学/占卜任务（八字、紫微、奇门、六壬、六爻、梅花、太玄、荆诀、塔罗、雷诺曼、占星、吠陀、人类图、灵数、卡巴拉、黄历择日等全部），第一步先确定系统，然后通过 execute_python 导入对应路由模块（见下方列表）。🔴 强制规则: 不加载路由直接排盘/占卜/解读 = 无效回答。路由文件里的 STEP/步骤/规则是最高优先级，必须逐条执行。")
                 appendLine("</mingli_must_read>")
                 appendLine()
                 appendLine("<mingli_routing>")
