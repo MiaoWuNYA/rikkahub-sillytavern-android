@@ -164,13 +164,20 @@
                        │   │  getTarotCardProfile({tarotCardNumber:N})         │
                        │   │  getTarotCardByNumber(n) / getTarotCardNumber({}) │
                        │   │  listTarotThemeProfiles() / ARKANNUS / majorArcana│
-                       │   └─ 策略: 一次 eval 包全部卡的 4a+4b+4c,              │
-                       │      避免每卡一次调用。4d-4g 按需取。                 │
-                       └──────────────────────────────────────────────────────┘
+                       └─ 策略: 一次 eval 包全部卡的 4a+4b+4c,
+                      │      避免每卡一次调用。4d-4g 按需取。                 │
+                      └──────────────────────────────────────────────────────┘
 
-                       【塔罗输出】塔罗=生命故事生成器
-                         融合权威来源:
-                       Eden Gray → Fool's Journey (大牌22站旅程)
+                      ┌─ STEP 7: 韦特塔罗图片URL ────────────────────────────┐
+                      │   联网搜索可用时必配图, 逐牌[图]→[解读]→[图]→[解读]    │
+                      │   URL = https://steve-p.org/cards/pix/RWSa-{S}-{N}.png  │
+                      │   S→T(大牌) P(钱币) W(权杖) C(圣杯) S(宝剑)           │
+                      │   N→00~21(大牌) 0A(Ace) 02~10 J1(Page) J2(Knight)    │
+                      │     QU(Queen) KI(King)                               │
+                      │   Python: suit_map={...}; N→num_map+pad; f"...{S}-{N}"│
+                      │   ⚠️ ![](URL)直接输出, 禁止下载                       │
+                      └──────────────────────────────────────────────────────┘
+
                        Rachel Pollack → 每牌=故事角色, 大牌=灵魂archetype
                        Joan Bunning → 能量状态模型(逆位基础), 牌间互动阅读(位置与牌组关系)
                        Mary K. Greer → 花色叙事流(小牌逐卡讲故事), 逆位系统全盘研究

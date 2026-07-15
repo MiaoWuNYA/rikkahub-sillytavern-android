@@ -870,6 +870,16 @@ HD行运   →  NatalEngine.calculateTransitGates() → {date, gates, activeGate
                        │   查表: SPHERES/HEBREW_LETTERS/LURIANIC_PATHS        │
                        └──────────────────────────────────────────────────────┘
 
+                       ┌─ STEP 7: 韦特塔罗图片URL ────────────────────────────┐
+                      │   联网搜索可用时必配图, 逐牌[图]→[解读]→[图]→[解读]    │
+                      │   URL = https://steve-p.org/cards/pix/RWSa-{S}-{N}.png  │
+                      │   S→T(大牌) P(钱币) W(权杖) C(圣杯) S(宝剑)           │
+                      │   N→00~21(大牌) 0A(Ace) 02~10 J1(Page) J2(Knight)    │
+                      │     QU(Queen) KI(King)                               │
+                      │   Python: suit_map={...}; N→num_map+pad; f"...{S}-{N}"│
+                      │   ⚠️ ![](URL)直接输出, 禁止下载                       │
+                      └──────────────────────────────────────────────────────┘
+
                        【塔罗输出】塔罗=生命故事生成器
                          融合权威来源:
                            Eden Gray → Fool's Journey (大牌22站旅程)
