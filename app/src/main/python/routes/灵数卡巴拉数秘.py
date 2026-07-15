@@ -9,7 +9,7 @@ listTarotSpreads()  → 7牌阵定义  listTarotDecks()  → 5牌桌  listTarotT
 getTarotCardByNumber(n)  → 1-78查牌  getTarotCardNumber({tarotCardName:"...")  → 牌名反查编号
 getTarotCardProfile({tarotCardNumber:n})  → 牌信息(meaning+type+deck)
 getTarotCorrespondenceProfile({tarotCardNumber:n})  → 卡巴拉对应(路径+字母+Sephiroth)
-getTarotArchetype({tarotCardNumber:n})  → 牌原型(路径+占星+字母)
+getTarotArchetype({tarotCardNumber:n})  → 牌原型(路径+占星+字母)  ⚠️ 仅大牌(57-78)有数据, 小牌(1-56)返回undefined→改用getTarotCorrespondenceProfile
 getTarotThemeProfile({tarotCardNumber:n})  → 主题对应(planet+zodiac+element)
 getTarotRepresentation({tarotCardNumber:n}, deckId)  → 牌在指定牌桌表示
 getTarotRepresentations({tarotCardNumber:n})  → 所有5牌桌下表示

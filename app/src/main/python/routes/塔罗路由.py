@@ -138,7 +138,8 @@
                        │   ├─ 4b. 牌原型 ───────────────────────────────────── │
                        │   │  getTarotArchetype({tarotCardNumber:N})            │
                        │   │  → {pathId, hebrewLetter, astrology, element}      │
-                       │   │  ⚠️ 仅22张大牌, 小牌=空                           │
+                       │   │  ⚠️ 仅大牌(57-78)有效, 小牌宫廷返回undefined       │
+                       │   │  全78张统一用 getTarotCorrespondenceProfile 代替    │
                        │   ├─ 4c. 主题对应 ─────────────────────────────────── │
                        │   │  getTarotThemeProfile({tarotCardNumber:N})         │
                        │   │  → {planet, zodiac, element, hebrewLetter}         │
