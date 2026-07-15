@@ -326,6 +326,9 @@ jobs:
           sed -i 's/function getAstrologyTreeMarkers(input) {/function getAstrologyTreeMarkers(input) { if(typeof input!=="object"||!input)return[];/' dist/chunk-4XS3UZEI.js
           # Patch: getNumerologyTreeMarkers 数字→Date
           sed -i 's/function resolveNumerologyInput(input) {/function resolveNumerologyInput(input) { if(typeof input==="number"){input=new Date(input,0,1,12)}if(typeof input==="string"){input=new Date(input+"T12:00:00")/' dist/chunk-4XS3UZEI.js
+          # Patch: getKaabalisticCorrespondenceTargets 空值保护
+          sed -i 's/if (lookup.kind === "hebrewLetter") {/if (lookup.kind === "hebrewLetter") { if (!lookup.hebrewLetterId) { return void 0; }/' dist/chunk-4XS3UZEI.js
+          sed -i 's/const sign = normalizeSignName(lookup.sign);/const sign = lookup.sign != null ? normalizeSignName(lookup.sign) : void 0;/' dist/chunk-4XS3UZEI.js
           # export * 覆盖全部(含tarot, index.d.ts已re-export所有子模块)
           cat > kaabalah-entry.mjs << 'ENTRYEOF'
           export * from "./dist/index";
