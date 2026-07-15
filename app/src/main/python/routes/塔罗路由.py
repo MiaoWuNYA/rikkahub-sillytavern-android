@@ -131,9 +131,9 @@
                        │        code=f"Kaabalah.getTarotCorrespondenceProfile({{tarotCardNumber:{n}}})")
                        │                                                      │
                        │   ├─ 4a. 卡巴拉对应 ───────────────────────────────── │
-                       │   │  getTarotCorrespondenceProfile({tarotCardNumber:N})│
-                       │   │  → {path, hebrewLetter, sephiroth, planetary,      │
-                       │   │     zodiac, treeOfLifePosition}                    │
+                       │   │  getTarotCorrespondenceProfile({tarotCardNumber:N})  → 全78张通用 │
+                       │   │  大牌→{path,hebrewLetter,sephiroth,planetary,zodiac}│
+                       │   │  小牌→{sphere,planets}  宫廷→{sign,planets}         │
                        │   │  大牌例: N=1(The Magician)→Beth(Path12)→Chokmah   │
                        │   ├─ 4b. 牌原型 ───────────────────────────────────── │
                        │   │  getTarotArchetype({tarotCardNumber:N})            │

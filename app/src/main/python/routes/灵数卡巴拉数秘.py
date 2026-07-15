@@ -8,8 +8,9 @@ shuffleTarotDeck(cards, includeInvertedCards=false, shuffleCount=6, shuffleDelay
 listTarotSpreads()  → 7牌阵定义  listTarotDecks()  → 5牌桌  listTarotTrees()  → 3树系统
 getTarotCardByNumber(n)  → 1-78查牌  getTarotCardNumber({tarotCardName:"...")  → 牌名反查编号
 getTarotCardProfile({tarotCardNumber:n})  → 牌信息(meaning+type+deck)
-getTarotCorrespondenceProfile({tarotCardNumber:n})  → 卡巴拉对应(路径+字母+Sephiroth)
-getTarotArchetype({tarotCardNumber:n})  → 牌原型(路径+占星+字母)  ⚠️ 仅大牌(57-78)有数据, 小牌(1-56)返回undefined→改用getTarotCorrespondenceProfile
+getTarotCorrespondenceProfile({tarotCardNumber:n})  → 全78张通用:
+  大牌→路径+字母+源质+占星  小牌→源质+行星  宫廷→星座+行星
+getTarotArchetype({tarotCardNumber:n})  → ⚠️ 仅大牌(57-78), 小牌宫廷返回undefined
 getTarotThemeProfile({tarotCardNumber:n})  → 主题对应(planet+zodiac+element)
 getTarotRepresentation({tarotCardNumber:n}, deckId)  → 牌在指定牌桌表示
 getTarotRepresentations({tarotCardNumber:n})  → 所有5牌桌下表示
@@ -64,8 +65,8 @@ Kaabalah塔罗 → 同上, code="Kaabalah.drawTarotSpread({spreadId:'celtic-cros
 又 getTarotCardByNumber(cardNumber)  → 1-78查牌
 又 getTarotCardNumber({tarotCardName:"The Magician"})  → 牌名反查编号
 又 getTarotCardProfile({tarotCardNumber:n})  → 牌信息+含义
-又 getTarotCorrespondenceProfile({tarotCardNumber:n})  → 卡巴拉对应(路径+字母+Sephiroth)
-又 getTarotArchetype({tarotCardNumber:n})  → 牌原型
+又 getTarotCorrespondenceProfile({tarotCardNumber:n})  → 78张通用: 大牌路径+字母+源质 小牌源质+行星 宫廷星座+行星
+又 getTarotArchetype({tarotCardNumber:n})  → ⚠️ 仅大牌(57-78)
 又 getTarotThemeProfile({tarotCardNumber:n})  → 主题对应(planet+zodiac+element)
 又 getTarotRepresentation({tarotCardNumber:n}, deckId)  又 getTarotRepresentations({tarotCardNumber:n})
 又 listTarotThemeProfiles()  又 ARKANNUS(22大牌)  又 majorArcana(22文件名)
