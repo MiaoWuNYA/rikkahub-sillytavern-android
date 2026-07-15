@@ -1,9 +1,7 @@
 package me.rerere.rikkahub.ui.components.message
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,7 +32,7 @@ fun ChatMessageUserAvatar(
     val settings = LocalSettings.current
     if (message.role == MessageRole.USER && !message.parts.isEmptyUIMessage() && settings.displaySetting.showUserAvatar) {
         Row(
-            modifier = modifier.padding(vertical = 8.dp),
+            modifier = modifier,
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -79,10 +77,12 @@ fun ChatMessageAssistantAvatar(
                         loading = loading,
                     )
                 }
-                Column(
-                    modifier = Modifier.weight(1f)
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    if(settings.displaySetting.showModelName) {
+                    if (settings.displaySetting.showModelName) {
                         Text(
                             text = assistant.name.ifEmpty { stringResource(R.string.assistant_page_default_assistant) },
                             style = MaterialTheme.typography.labelLargeEmphasized,
@@ -98,10 +98,12 @@ fun ChatMessageAssistantAvatar(
                         loading = loading
                     )
                 }
-                Column(
-                    modifier = Modifier.weight(1f)
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    if(settings.displaySetting.showModelName) {
+                    if (settings.displaySetting.showModelName) {
                         Text(
                             text = model.displayName,
                             style = MaterialTheme.typography.labelLargeEmphasized,
