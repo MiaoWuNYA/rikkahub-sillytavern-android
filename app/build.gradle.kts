@@ -167,6 +167,13 @@ android {
         compilerOptions.optIn.add("androidx.navigation3.runtime.ExperimentalNavigation3Api")
     }
 }
+
+composeCompiler {
+    stabilityConfigurationFiles.add(
+        project.layout.projectDirectory.file("compose_compiler_config.conf")
+    )
+}
+
 tasks.register("buildAll") {
     dependsOn("assembleRelease", "bundleRelease")
     description = "Build both APK and AAB"
@@ -174,11 +181,13 @@ tasks.register("buildAll") {
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile>().configureEach {
+
+kotlin {
     compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -222,6 +231,7 @@ dependencies {
     implementation(libs.koin.androidx.workmanager)
     implementation(libs.diffutils)
     implementation(libs.termux.terminal.view)
+    implementation(libs.guava.listenablefuture)
     // jetbrains markdown parser
     implementation(libs.jetbrains.markdown)
     // okhttp

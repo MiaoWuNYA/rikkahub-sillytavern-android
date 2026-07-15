@@ -27,13 +27,13 @@ retrofit = "3.0.0"
 coil = "3.4.0"
 quickjs = "3.2.3"
 room = "2.8.4"
-koin-bom = "4.0.0"
-datastore = "1.1.1"
+koin-bom = "4.2.1"
+datastore = "1.2.1"
 serialization-json = "1.11.0"
 kotlin-coroutines-core = "1.11.0"
 kotlinx-datetime = "0.8.0"
 ksp = "2.3.4"
-paging = "3.3.2"
+paging = "3.5.0"
 lucide-icons = "1.1.0"
 huge-icons = "1.3"
 image-viewer = "1.1.0-alpha.7"
@@ -149,6 +149,8 @@ androidx-browser = { group = "androidx.browser", name = "browser", version.ref =
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 ucrop = { group = "com.github.yalantis", name = "ucrop", version.ref = "ucrop" }
+floatingx = { group = "io.github.petterpx", name = "floatingx", version.ref = "floatingx" }
+floatingx-compose = { group = "io.github.petterpx", name = "floatingx-compose", version.ref = "floatingx" }
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
 haze-blur = { module = "dev.chrisbanes.haze:haze-blur", version.ref = "haze" }
 haze-blur-materials = { module = "dev.chrisbanes.haze:haze-blur-materials", version.ref = "haze" }
@@ -179,6 +181,7 @@ slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-android = { module = "uk.uuid.slf4j:slf4j-android", version = "2.0.17-0" }
 sqlite-android = { module = "com.github.rikkahub:sqlite-android", version.ref = "sqlite-android" }
 termux-terminal-view = { module = "com.termux.termux-app:terminal-view", version.ref = "termux" }
+guava-listenablefuture = { module = "com.google.guava:listenablefuture", version = "9999.0-empty-to-avoid-conflict-with-guava" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
