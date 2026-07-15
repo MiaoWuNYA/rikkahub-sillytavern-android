@@ -466,9 +466,13 @@ AI 先感受牌阵整体，再用7层结构组织语言
 ╚══════════════════ 塔罗数据 ═════════════════╝
 
 【Kaabalah JS引擎塔罗（卡巴拉对应体系）】
-Kaabalah 与 arcanite 互补: arcanite 负责传统抽牌解读(元素尊贵+叙事)，
-Kaabalah 负责卡巴拉对应层(路径+希伯来字母+源质+777全表)。
-用法:
+arcanite 与 Kaabalah 互补:
+  arcanite(主力) → 韦特78张, 11牌阵, 元素尊贵法, 多角度叙事解读
+  Kaabalah(秘传) → 5种牌桌(韦特/帕普斯占卜/帕普斯卡巴拉/神话/埃及),
+    7牌阵(含生命之树11位/意识3层), 每张牌→希伯来字母→生命之树路径+源质,
+    777全对应表(颜色/音阶/行星/星座), 5牌桌间交叉对比
+
+用法: 先用 arcanite 抽牌做传统解读, 再调 Kaabalah 取卡巴拉对应深化
 eval_javascript(library='kaabalah-engine', code="Kaabalah.drawTarotSpread({spreadId:'celtic-cross', deckId:'rider-waite', includeInverted:true})")
 • 7牌阵: quick-insight(单张) | conscious-reading(意识3层·仅大牌) | time-reading(过去现在未来·仅大牌) | dialectic-reading(正反合·仅大牌) | tree-of-life-reading(11位) | celtic-cross(经典10张) | event-reading(帕普斯)
 • 5牌桌: rider-waite | papus_pt(卡巴拉) | papus(占卜) | mythic(神话) | egyptian(埃及)
