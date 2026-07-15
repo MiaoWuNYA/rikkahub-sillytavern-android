@@ -448,7 +448,8 @@ private fun ChatPageContent(
                                     } else {
                                         assistant
                                     }
-                                }
+                                },
+                                assistantId = it.id
                             )
                         )
                     },
