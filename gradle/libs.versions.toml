@@ -65,6 +65,7 @@ jmdns = "3.6.3"
 slf4j = "2.0.17"
 sqlite-android = "-SNAPSHOT"
 diffutils = "4.17"
+termux = "0.118.0"
 
 [libraries]
 androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "cameraCore" }
@@ -177,6 +178,7 @@ xz = { module = "org.tukaani:xz", version = "1.12" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-android = { module = "uk.uuid.slf4j:slf4j-android", version = "2.0.17-0" }
 sqlite-android = { module = "com.github.rikkahub:sqlite-android", version.ref = "sqlite-android" }
+termux-terminal-view = { module = "com.termux.termux-app:terminal-view", version.ref = "termux" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

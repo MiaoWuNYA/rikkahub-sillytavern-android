@@ -9,6 +9,7 @@ import me.rerere.hugeicons.stroke.Message01
 import me.rerere.hugeicons.stroke.MessageMultiple01
 import me.rerere.hugeicons.stroke.Notebook01
 import me.rerere.hugeicons.stroke.Tools
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -73,6 +74,8 @@ import kotlin.uuid.Uuid
 fun SettingModelPage(vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val pagerState = rememberPagerState { 2 }
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         containerColor = CustomColors.topBarColors.containerColor,

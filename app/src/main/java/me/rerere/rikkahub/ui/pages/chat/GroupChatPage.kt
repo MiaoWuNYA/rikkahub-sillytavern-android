@@ -243,13 +243,7 @@ fun GroupChatPage(groupId: String) {
                         ChatInput(
                             state = inputState,
                             loading = isGenerating,
-                            conversation = conversation ?: Conversation(
-                                id = currentConvId,
-                                assistantId = gc.memberIds.firstOrNull() ?: Uuid.random(),
-                                messageNodes = emptyList(),
-                            ),
                             settings = settings,
-                            mcpManager = chatService.mcpManager,
                             hazeState = hazeState,
                             enableSearch = false,
                             onToggleSearch = {},

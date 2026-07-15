@@ -533,6 +533,14 @@ class RouteActivity : ComponentActivity() {
                                 WorkspacePage()
                             }
 
+                            entry<Screen.WorkspaceDetail> { key ->
+                                WorkspaceDetailPage(key.id)
+                            }
+
+                            entry<Screen.WorkspaceTerminal> { key ->
+                                WorkspaceTerminalPage(key.id)
+                            }
+
                             entry<Screen.MessageSearch> {
                                 SearchPage()
                             }
@@ -750,6 +758,12 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object Workspaces : Screen
+
+    @Serializable
+    data class WorkspaceDetail(val id: String) : Screen
+
+    @Serializable
+    data class WorkspaceTerminal(val id: String) : Screen
 
     @Serializable
     data object MessageSearch : Screen

@@ -414,12 +414,8 @@ private fun ChatPageContent(
                             assistantId = assistant.id
                         ))
                     },
-                    onUpdateConversation = { vm.updateConversation(it) },
                     onUpdateSearchService = { index ->
                         vm.updateSettings(setting.copy(searchServiceSelected = index))
-                    },
-                    onCompressContext = { prompt, tokens, keep ->
-                        vm.handleCompressContext(prompt, tokens, keep)
                     },
                     onCancelClick = { vm.stopGeneration() },
                     onSendClick = {
