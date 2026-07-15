@@ -150,8 +150,8 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = true
+            pickFirsts += "lib/*/libtermux.so"
         }
-        jniLibs.pickFirsts.add("lib/arm64-v8a/libtermux.so")
     }
     tasks.withType<KotlinCompile>().configureEach {
         compilerOptions.optIn.add("androidx.compose.material3.ExperimentalMaterial3Api")
