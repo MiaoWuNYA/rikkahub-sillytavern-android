@@ -753,6 +753,12 @@
   <string name="setting_display_page_volume_key_scroll_desc">使用音量键翻页，非常适合电子墨水屏</string>
   <string name="setting_display_page_volume_key_scroll_ratio">滚动幅度</string>
   <string name="setting_display_page_volume_key_scroll_title">音量键翻页</string>
+  <string name="setting_files_page_clean_action">清理</string>
+  <string name="setting_files_page_clean_confirmation">将永久删除此分类中的全部文件，此操作无法撤销。</string>
+  <string name="setting_files_page_clean_content_description">清理文件</string>
+  <string name="setting_files_page_clean_failed_toast">部分文件清理失败</string>
+  <string name="setting_files_page_clean_title">清理文件？</string>
+  <string name="setting_files_page_cleaned_toast">文件已清理</string>
   <string name="setting_files_page_cancel_action">取消</string>
   <string name="setting_files_page_delete_action">删除</string>
   <string name="setting_files_page_delete_content_description">删除</string>

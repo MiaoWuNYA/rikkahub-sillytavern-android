@@ -692,6 +692,12 @@
   <string name="setting_display_page_volume_key_scroll_desc">볼륨 키로 페이지를 스크롤합니다. 전자 잉크 화면에 적합합니다.</string>
   <string name="setting_display_page_volume_key_scroll_ratio">스크롤 양</string>
   <string name="setting_display_page_volume_key_scroll_title">볼륨 키 페이지 스크롤</string>
+  <string name="setting_files_page_clean_action">정리</string>
+  <string name="setting_files_page_clean_confirmation">이 카테고리의 모든 파일이 영구적으로 삭제됩니다. 이 작업은 실행 취소할 수 없습니다.</string>
+  <string name="setting_files_page_clean_content_description">파일 정리</string>
+  <string name="setting_files_page_clean_failed_toast">일부 파일을 정리하지 못했습니다</string>
+  <string name="setting_files_page_clean_title">파일을 정리할까요?</string>
+  <string name="setting_files_page_cleaned_toast">파일을 정리했습니다</string>
   <string name="setting_files_page_cancel_action">취소</string>
   <string name="setting_files_page_delete_action">삭제</string>
   <string name="setting_files_page_delete_content_description">삭제</string>
