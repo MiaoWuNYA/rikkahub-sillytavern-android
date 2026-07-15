@@ -465,8 +465,10 @@ AI 先感受牌阵整体，再用7层结构组织语言
   秘传附录(Kaabalah JS引擎按需调用:hebrew_letters/tree_of_life/777/four_worlds/sephiroth，不在正文展开，仅当NNL确认与解读相关时取用)
 ╚══════════════════ 塔罗数据 ═════════════════╝
 
-【Kaabalah JS引擎塔罗（备选）】
-若 arcanite 不可用，可通过 Kaabalah JS引擎直接抽塔罗：
+【Kaabalah JS引擎塔罗（卡巴拉对应体系）】
+Kaabalah 与 arcanite 互补: arcanite 负责传统抽牌解读(元素尊贵+叙事)，
+Kaabalah 负责卡巴拉对应层(路径+希伯来字母+源质+777全表)。
+用法:
 eval_javascript(library='kaabalah-engine', code="Kaabalah.drawTarotSpread({spreadId:'celtic-cross', deckId:'rider-waite', includeInverted:true})")
 • 7牌阵: quick-insight(单张) | conscious-reading(意识3层·仅大牌) | time-reading(过去现在未来·仅大牌) | dialectic-reading(正反合·仅大牌) | tree-of-life-reading(11位) | celtic-cross(经典10张) | event-reading(帕普斯)
 • 5牌桌: rider-waite | papus_pt(卡巴拉) | papus(占卜) | mythic(神话) | egyptian(埃及)
