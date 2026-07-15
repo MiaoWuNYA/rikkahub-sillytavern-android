@@ -1,0 +1,30 @@
+﻿2026-07-15T03:31:50.0154738Z ##[group]Run git clone --depth 1 https://github.com/perfhelf/bigfishmarquis-qimen.git /tmp/qimen_ts
+2026-07-15T03:31:50.0155479Z [36;1mgit clone --depth 1 https://github.com/perfhelf/bigfishmarquis-qimen.git /tmp/qimen_ts[0m
+2026-07-15T03:31:50.0156017Z [36;1mcd /tmp/qimen_ts[0m
+2026-07-15T03:31:50.0156446Z [36;1mecho 'export { generateQimenChart as generate } from "./src/engine";' > entry.ts[0m
+2026-07-15T03:31:50.0156979Z [36;1mnpm install esbuild typescript lunar-typescript 2>&1 | tail -3[0m
+2026-07-15T03:31:50.0157745Z [36;1mnpx esbuild entry.ts --bundle --platform=node --format=iife --global-name=QimenEngine --target=es2020 --tree-shaking=false --outfile=qimen-engine.js 2>&1[0m
+2026-07-15T03:31:50.0158659Z [36;1mmkdir -p ${GITHUB_WORKSPACE}/app/src/main/assets/[0m
+2026-07-15T03:31:50.0159081Z [36;1mcp qimen-engine.js ${GITHUB_WORKSPACE}/app/src/main/assets/[0m
+2026-07-15T03:31:50.0159538Z [36;1mecho "Qimen TS engine compiled: $(wc -c < qimen-engine.js) bytes"[0m
+2026-07-15T03:31:50.0197309Z shell: /usr/bin/bash -e {0}
+2026-07-15T03:31:50.0197578Z env:
+2026-07-15T03:31:50.0197915Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:31:50.0198497Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:31:50.0198960Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:31:50.0199375Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+2026-07-15T03:31:50.0199784Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:31:50.0200165Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:31:50.0200535Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:31:50.0200902Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+2026-07-15T03:31:50.0201649Z   PIP_FIND_LINKS: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/offline_pkgs
+2026-07-15T03:31:50.0202117Z ##[endgroup]
+2026-07-15T03:31:50.0278420Z Cloning into '/tmp/qimen_ts'...
+2026-07-15T03:31:52.9468668Z added 5 packages, and audited 6 packages in 2s
+2026-07-15T03:31:52.9469033Z 
+2026-07-15T03:31:52.9469149Z found 0 vulnerabilities
+2026-07-15T03:31:53.3067887Z 
+2026-07-15T03:31:53.3075132Z   qimen-engine.js  485.7kb
+2026-07-15T03:31:53.3075380Z 
+2026-07-15T03:31:53.3075742Z ⚡ Done in 19ms
+2026-07-15T03:31:53.3260824Z Qimen TS engine compiled: 497386 bytes

@@ -1,0 +1,21 @@
+﻿2026-07-15T03:41:47.7425936Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-07-15T03:41:47.7427154Z Post job cleanup.
+2026-07-15T03:41:47.8538940Z [command]/usr/bin/git version
+2026-07-15T03:41:47.8652779Z git version 2.54.0
+2026-07-15T03:41:47.8751127Z Temporarily overriding HOME='/home/runner/work/_temp/af8ec1c8-04e0-4028-90db-094744b63586' before making global git config changes
+2026-07-15T03:41:47.8752910Z Adding repository directory to the temporary git global config as a safe directory
+2026-07-15T03:41:47.8759836Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh
+2026-07-15T03:41:47.8808695Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-07-15T03:41:47.8887905Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-07-15T03:41:47.9171021Z Entering 'material3/material-color-utilities'
+2026-07-15T03:41:47.9252410Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-07-15T03:41:47.9284515Z http.https://github.com/.extraheader
+2026-07-15T03:41:47.9297578Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-07-15T03:41:47.9339213Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-07-15T03:41:47.9624622Z Entering 'material3/material-color-utilities'
+2026-07-15T03:41:47.9650573Z http.https://github.com/.extraheader
+2026-07-15T03:41:47.9724333Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-07-15T03:41:47.9765993Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-07-15T03:41:48.0034817Z Entering 'material3/material-color-utilities'
+2026-07-15T03:41:48.0056105Z file:/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/.git/modules/material3/material-color-utilities/config	remote.origin.url
+2026-07-15T03:41:48.0096552Z [command]/usr/bin/git config --file /home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/.git/modules/material3/material-color-utilities/config --name-only --get-regexp ^includeIf\.gitdir:

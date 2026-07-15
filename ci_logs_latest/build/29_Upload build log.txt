@@ -1,0 +1,34 @@
+﻿2026-07-15T03:41:46.8061040Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-07-15T03:41:46.8062611Z ##[group]Run actions/upload-artifact@v4
+2026-07-15T03:41:46.8062883Z with:
+2026-07-15T03:41:46.8063077Z   name: build-log
+2026-07-15T03:41:46.8063280Z   path: build.log
+2026-07-15T03:41:46.8063488Z   if-no-files-found: warn
+2026-07-15T03:41:46.8063724Z   compression-level: 6
+2026-07-15T03:41:46.8063944Z   overwrite: false
+2026-07-15T03:41:46.8064178Z   include-hidden-files: false
+2026-07-15T03:41:46.8064414Z env:
+2026-07-15T03:41:46.8064713Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:41:46.8065201Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:41:46.8065637Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:41:46.8066074Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+2026-07-15T03:41:46.8066483Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:41:46.8066860Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:41:46.8067228Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:41:46.8067599Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+2026-07-15T03:41:46.8068114Z   PIP_FIND_LINKS: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/offline_pkgs
+2026-07-15T03:41:46.8068559Z ##[endgroup]
+2026-07-15T03:41:47.0781078Z (node:7292) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-07-15T03:41:47.0782145Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-07-15T03:41:47.0830735Z With the provided path, there will be 1 file uploaded
+2026-07-15T03:41:47.0837686Z Artifact name is valid!
+2026-07-15T03:41:47.0838408Z Root directory input is valid!
+2026-07-15T03:41:47.2364034Z Beginning upload of artifact content to blob storage
+2026-07-15T03:41:47.2650834Z (node:7292) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-07-15T03:41:47.2840389Z Uploaded bytes 12666
+2026-07-15T03:41:47.2964408Z Finished uploading artifact content to blob storage!
+2026-07-15T03:41:47.2965419Z SHA256 digest of uploaded artifact zip is 226fbc7ec3e63b116cd3acc8e244b37f06ba06a51869b6718b4538b26b097988
+2026-07-15T03:41:47.2967353Z Finalizing artifact upload
+2026-07-15T03:41:47.5686338Z Artifact build-log.zip successfully finalized. Artifact ID 8331847678
+2026-07-15T03:41:47.5687352Z Artifact build-log has been successfully uploaded! Final size is 12666 bytes. Artifact ID is 8331847678
+2026-07-15T03:41:47.5693651Z Artifact download URL: https://github.com/heikeyangle-code/rikkahub-plus-fresh/actions/runs/29386577849/artifacts/8331847678

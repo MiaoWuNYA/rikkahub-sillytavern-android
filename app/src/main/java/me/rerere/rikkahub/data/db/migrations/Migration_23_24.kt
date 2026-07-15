@@ -25,17 +25,18 @@ val Migration_23_24 = object : Migration(23, 24) {
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_workspaces_root` ON `workspaces`(`root`)")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_workspaces_updated_at` ON `workspaces`(`updated_at`)")
 
-        // folders 表（会话文件夹分组，上游 v2.4.0+）
+        // conversation_folder 表（FolderEntity 实际使用的表名，上游旧版叫 folders）
         db.execSQL("""
-            CREATE TABLE IF NOT EXISTS `folders` (
+            CREATE TABLE IF NOT EXISTS `conversation_folder` (
                 `id` TEXT NOT NULL,
+                `assistant_id` TEXT NOT NULL,
                 `name` TEXT NOT NULL,
-                `conversation_ids` TEXT NOT NULL DEFAULT '[]',
-                `created_at` INTEGER NOT NULL,
-                `updated_at` INTEGER NOT NULL,
+                `sort_index` INTEGER NOT NULL DEFAULT 0,
+                `create_at` INTEGER NOT NULL,
                 PRIMARY KEY(`id`)
             )
-        """)
+        """.trimIndent())
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_conversation_folder_assistant_id` ON `conversation_folder`(`assistant_id`)")
 
         // upstream 版本 v24 通过 AutoMigration(from=23, to=24) 自动添加了 folder_id
         db.execSQL("ALTER TABLE `ConversationEntity` ADD COLUMN `folder_id` TEXT NOT NULL DEFAULT ''")

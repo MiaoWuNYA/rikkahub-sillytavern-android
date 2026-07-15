@@ -1,0 +1,398 @@
+﻿2026-07-15T03:35:45.6789064Z ##[group]Run python3 ci/cross_compile_wheels.py 2>&1
+2026-07-15T03:35:45.6789460Z [36;1mpython3 ci/cross_compile_wheels.py 2>&1[0m
+2026-07-15T03:35:45.6789804Z [36;1mecho "=== offline_pkgs for pyjhora ==="[0m
+2026-07-15T03:35:45.6790168Z [36;1mls -la app/offline_pkgs/pyswisseph-*.whl 2>/dev/null[0m
+2026-07-15T03:35:45.6827128Z shell: /usr/bin/bash -e {0}
+2026-07-15T03:35:45.6827399Z env:
+2026-07-15T03:35:45.6827712Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:35:45.6828209Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:35:45.6828653Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:35:45.6829274Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+2026-07-15T03:35:45.6829700Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:35:45.6830074Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:35:45.6830446Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:35:45.6830855Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+2026-07-15T03:35:45.6831577Z   PIP_FIND_LINKS: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/offline_pkgs
+2026-07-15T03:35:45.6832053Z ##[endgroup]
+2026-07-15T03:35:45.7349947Z [cross-compile] Installing Android NDK...
+2026-07-15T03:35:45.7351494Z [cross-compile] Running: curl -sL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o /tmp/android-sdk/cmdline-tools.zip
+2026-07-15T03:35:46.2445327Z [cross-compile] Running: unzip -q /tmp/android-sdk/cmdline-tools.zip -d /tmp/android-sdk/cmdline-tools-tmp
+2026-07-15T03:35:47.0368738Z [cross-compile] Running: yes | /tmp/android-sdk/cmdline-tools/latest/bin/sdkmanager --install 'ndk;27.0.12077973' --sdk_root=/tmp/android-sdk
+2026-07-15T03:35:47.2980522Z Loading package information...                                                  
+2026-07-15T03:35:47.3019442Z Loading local repository...                                                     
+2026-07-15T03:35:47.3024244Z [                                       ] 3% Loading local repository...        
+2026-07-15T03:35:47.7616881Z [                                       ] 3% Fetch remote repository...         
+2026-07-15T03:35:48.6992680Z [=                                      ] 3% Fetch remote repository...         
+2026-07-15T03:35:48.7982769Z [=                                      ] 4% Fetch remote repository...         
+2026-07-15T03:35:48.8325345Z [=                                      ] 5% Fetch remote repository...         
+2026-07-15T03:35:48.8835342Z [==                                     ] 5% Fetch remote repository...         
+2026-07-15T03:35:48.9656661Z [==                                     ] 6% Fetch remote repository...         
+2026-07-15T03:35:49.1082757Z [==                                     ] 7% Fetch remote repository...         
+2026-07-15T03:35:49.1083517Z [==                                     ] 7% Computing updates...               
+2026-07-15T03:35:49.1235113Z [===                                    ] 8% Computing updates...               
+2026-07-15T03:35:49.1276490Z [===                                    ] 10% Computing updates...              
+2026-07-15T03:35:49.1288758Z License android-sdk-license:
+2026-07-15T03:35:49.1289397Z ---------------------------------------
+2026-07-15T03:35:49.1290147Z Terms and Conditions
+2026-07-15T03:35:49.1290537Z 
+2026-07-15T03:35:49.1290961Z This is the Android Software Development Kit License Agreement
+2026-07-15T03:35:49.1291777Z 
+2026-07-15T03:35:49.1292043Z 1. Introduction
+2026-07-15T03:35:49.1292365Z 
+2026-07-15T03:35:49.1294392Z 1.1 The Android Software Development Kit (referred to in the License Agreement as the "SDK" and specifically including the Android system files, packaged APIs, and Google APIs add-ons) is licensed to you subject to the terms of the License Agreement. The License Agreement forms a legally binding contract between you and Google in relation to your use of the SDK.
+2026-07-15T03:35:49.1297180Z 
+2026-07-15T03:35:49.1298435Z 1.2 "Android" means the Android software stack for devices, as made available under the Android Open Source Project, which is located at the following URL: http://source.android.com/, as updated from time to time.
+2026-07-15T03:35:49.1299845Z 
+2026-07-15T03:35:49.1301465Z 1.3 A "compatible implementation" means any Android device that (i) complies with the Android Compatibility Definition document, which can be found at the Android compatibility website (http://source.android.com/compatibility) and which may be updated from time to time; and (ii) successfully passes the Android Compatibility Test Suite (CTS).
+2026-07-15T03:35:49.1304016Z 
+2026-07-15T03:35:49.1304971Z 1.4 "Google" means Google Inc., a Delaware corporation with principal place of business at 1600 Amphitheatre Parkway, Mountain View, CA 94043, United States.
+2026-07-15T03:35:49.1306060Z 
+2026-07-15T03:35:49.1306237Z 
+2026-07-15T03:35:49.1306583Z 2. Accepting the License Agreement
+2026-07-15T03:35:49.1307060Z 
+2026-07-15T03:35:49.1307875Z 2.1 In order to use the SDK, you must first agree to the License Agreement. You may not use the SDK if you do not accept the License Agreement.
+2026-07-15T03:35:49.1308852Z 
+2026-07-15T03:35:49.1309354Z 2.2 By clicking to accept, you hereby agree to the terms of the License Agreement.
+2026-07-15T03:35:49.1310020Z 
+2026-07-15T03:35:49.1311648Z 2.3 You may not use the SDK and may not accept the License Agreement if you are a person barred from receiving the SDK under the laws of the United States or other countries, including the country in which you are resident or from which you use the SDK.
+2026-07-15T03:35:49.1313329Z 
+2026-07-15T03:35:49.1315407Z 2.4 If you are agreeing to be bound by the License Agreement on behalf of your employer or other entity, you represent and warrant that you have full legal authority to bind your employer or such entity to the License Agreement. If you do not have the requisite authority, you may not accept the License Agreement or use the SDK on behalf of your employer or other entity.
+2026-07-15T03:35:49.1351806Z 
+2026-07-15T03:35:49.1352032Z 
+2026-07-15T03:35:49.1354988Z 3. SDK License from Google
+2026-07-15T03:35:49.1355452Z 
+2026-07-15T03:35:49.1357001Z 3.1 Subject to the terms of the License Agreement, Google grants you a limited, worldwide, royalty-free, non-assignable, non-exclusive, and non-sublicensable license to use the SDK solely to develop applications for compatible implementations of Android.
+2026-07-15T03:35:49.1358681Z 
+2026-07-15T03:35:49.1360456Z 3.2 You may not use this SDK to develop applications for other platforms (including non-compatible implementations of Android) or to develop another SDK. You are of course free to develop applications for other platforms, including non-compatible implementations of Android, provided that this SDK is not used for that purpose.
+2026-07-15T03:35:49.1362813Z 
+2026-07-15T03:35:49.1364994Z 3.3 You agree that Google or third parties own all legal right, title and interest in and to the SDK, including any Intellectual Property Rights that subsist in the SDK. "Intellectual Property Rights" means any and all rights under patent law, copyright law, trade secret law, trademark law, and any and all other proprietary rights. Google reserves all rights not expressly granted to you.
+2026-07-15T03:35:49.1367445Z 
+2026-07-15T03:35:49.1369408Z 3.4 You may not use the SDK for any purpose not expressly permitted by the License Agreement. Except to the extent required by applicable third party licenses, you may not copy (except for backup purposes), modify, adapt, redistribute, decompile, reverse engineer, disassemble, or create derivative works of the SDK or any part of the SDK.
+2026-07-15T03:35:49.1375351Z 
+2026-07-15T03:35:49.1376644Z 3.5 Use, reproduction and distribution of components of the SDK licensed under an open source software license are governed solely by the terms of that open source software license and not the License Agreement.
+2026-07-15T03:35:49.1377921Z 
+2026-07-15T03:35:49.1380417Z 3.6 You agree that the form and nature of the SDK that Google provides may change without prior notice to you and that future versions of the SDK may be incompatible with applications developed on previous versions of the SDK. You agree that Google may stop (permanently or temporarily) providing the SDK (or any features within the SDK) to you or to users generally at Google's sole discretion, without prior notice to you.
+2026-07-15T03:35:49.1383189Z 
+2026-07-15T03:35:49.1384306Z 3.7 Nothing in the License Agreement gives you a right to use any of Google's trade names, trademarks, service marks, logos, domain names, or other distinctive brand features.
+2026-07-15T03:35:49.1385504Z 
+2026-07-15T03:35:49.1386838Z 3.8 You agree that you will not remove, obscure, or alter any proprietary rights notices (including copyright and trademark notices) that may be affixed to or contained within the SDK.
+2026-07-15T03:35:49.1388090Z 
+2026-07-15T03:35:49.1388256Z 
+2026-07-15T03:35:49.1388551Z 4. Use of the SDK by You
+2026-07-15T03:35:49.1388956Z 
+2026-07-15T03:35:49.1390434Z 4.1 Google agrees that it obtains no right, title or interest from you (or your licensors) under the License Agreement in or to any software applications that you develop using the SDK, including any intellectual property rights that subsist in those applications.
+2026-07-15T03:35:49.1392353Z 
+2026-07-15T03:35:49.1394302Z 4.2 You agree to use the SDK and write applications only for purposes that are permitted by (a) the License Agreement and (b) any applicable law, regulation or generally accepted practices or guidelines in the relevant jurisdictions (including any laws regarding the export of data or software to and from the United States or other relevant countries).
+2026-07-15T03:35:49.1399015Z 
+2026-07-15T03:35:49.1403492Z 4.3 You agree that if you use the SDK to develop applications for general public users, you will protect the privacy and legal rights of those users. If the users provide you with user names, passwords, or other login information or personal information, you must make the users aware that the information will be available to your application, and you must provide legally adequate privacy notice and protection for those users. If your application stores personal or sensitive information provided by users, it must do so securely. If the user provides your application with Google Account information, your application may only use that information to access the user's Google Account when, and for the limited purposes for which, the user has given you permission to do so.
+2026-07-15T03:35:49.1426089Z 
+2026-07-15T03:35:49.1428139Z 4.4 You agree that you will not engage in any activity with the SDK, including the development or distribution of an application, that interferes with, disrupts, damages, or accesses in an unauthorized manner the servers, networks, or other properties or services of any third party including, but not limited to, Google or any mobile communications carrier.
+2026-07-15T03:35:49.1432954Z 
+2026-07-15T03:35:49.1434814Z 4.5 You agree that you are solely responsible for (and that Google has no responsibility to you or to any third party for) any data, content, or resources that you create, transmit or display through Android and/or applications for Android, and for the consequences of your actions (including any loss or damage which Google may suffer) by doing so.
+2026-07-15T03:35:49.1436148Z 
+2026-07-15T03:35:49.1437489Z 4.6 You agree that you are solely responsible for (and that Google has no responsibility to you or to any third party for) any breach of your obligations under the License Agreement, any applicable third party contract or Terms of Service, or any applicable law or regulation, and for the consequences (including any loss or damage which Google or any third party may suffer) of any such breach.
+2026-07-15T03:35:49.1438878Z 
+2026-07-15T03:35:49.1439131Z 5. Your Developer Credentials
+2026-07-15T03:35:49.1439429Z 
+2026-07-15T03:35:49.1440415Z 5.1 You agree that you are responsible for maintaining the confidentiality of any developer credentials that may be issued to you by Google or which you may choose yourself and that you will be solely responsible for all applications that are developed under your developer credentials.
+2026-07-15T03:35:49.1442115Z 
+2026-07-15T03:35:49.1442307Z 6. Privacy and Information
+2026-07-15T03:35:49.1442551Z 
+2026-07-15T03:35:49.1444481Z 6.1 In order to continually innovate and improve the SDK, Google may collect certain usage statistics from the software including but not limited to a unique identifier, associated IP address, version number of the software, and information on which tools and/or services in the SDK are being used and how they are being used. Before any of this information is collected, the SDK will notify you and seek your consent. If you withhold consent, the information will not be collected.
+2026-07-15T03:35:49.1446169Z 
+2026-07-15T03:35:49.1446546Z 6.2 The data collected is examined in the aggregate to improve the SDK and is maintained in accordance with Google's Privacy Policy.
+2026-07-15T03:35:49.1447013Z 
+2026-07-15T03:35:49.1447018Z 
+2026-07-15T03:35:49.1447123Z 7. Third Party Applications
+2026-07-15T03:35:49.1447291Z 
+2026-07-15T03:35:49.1449080Z 7.1 If you use the SDK to run applications developed by a third party or that access data, content or resources provided by a third party, you agree that Google is not responsible for those applications, data, content, or resources. You understand that all data, content or resources which you may access through such third party applications are the sole responsibility of the person from which they originated and that Google is not liable for any loss or damage that you may experience as a result of the use or access of any of those third party applications, data, content, or resources.
+2026-07-15T03:35:49.1450855Z 
+2026-07-15T03:35:49.1453016Z 7.2 You should be aware the data, content, and resources presented to you through such a third party application may be protected by intellectual property rights which are owned by the providers (or by other persons or companies on their behalf). You may not modify, rent, lease, loan, sell, distribute or create derivative works based on these data, content, or resources (either in whole or in part) unless you have been specifically given permission to do so by the relevant owners.
+2026-07-15T03:35:49.1455544Z 
+2026-07-15T03:35:49.1456897Z 7.3 You acknowledge that your use of such third party applications, data, content, or resources may be subject to separate terms between you and the relevant third party. In that case, the License Agreement does not affect your legal relationship with these third parties.
+2026-07-15T03:35:49.1458390Z 
+2026-07-15T03:35:49.1458408Z 
+2026-07-15T03:35:49.1458550Z 8. Using Android APIs
+2026-07-15T03:35:49.1458749Z 
+2026-07-15T03:35:49.1458835Z 8.1 Google Data APIs
+2026-07-15T03:35:49.1458970Z 
+2026-07-15T03:35:49.1460422Z 8.1.1 If you use any API to retrieve data from Google, you acknowledge that the data may be protected by intellectual property rights which are owned by Google or those parties that provide the data (or by other persons or companies on their behalf). Your use of any such API may be subject to additional Terms of Service. You may not modify, rent, lease, loan, sell, distribute or create derivative works based on this data (either in whole or in part) unless allowed by the relevant Terms of Service.
+2026-07-15T03:35:49.1462222Z 
+2026-07-15T03:35:49.1464734Z 8.1.2 If you use any API to retrieve a user's data from Google, you acknowledge and agree that you shall retrieve data only with the user's explicit consent and only when, and for the limited purposes for which, the user has given you permission to do so. If you use the Android Recognition Service API, documented at the following URL: https://developer.android.com/reference/android/speech/RecognitionService, as updated from time to time, you acknowledge that the use of the API is subject to the Data Processing Addendum for Products where Google is a Data Processor, which is located at the following URL: https://privacy.google.com/businesses/gdprprocessorterms/, as updated from time to time. By clicking to accept, you hereby agree to the terms of the Data Processing Addendum for Products where Google is a Data Processor.
+2026-07-15T03:35:49.1467480Z 
+2026-07-15T03:35:49.1467486Z 
+2026-07-15T03:35:49.1467596Z 9. Terminating the License Agreement
+2026-07-15T03:35:49.1467780Z 
+2026-07-15T03:35:49.1468079Z 9.1 The License Agreement will continue to apply until terminated by either you or Google as set out below.
+2026-07-15T03:35:49.1468466Z 
+2026-07-15T03:35:49.1468829Z 9.2 If you want to terminate the License Agreement, you may do so by ceasing your use of the SDK and any relevant developer credentials.
+2026-07-15T03:35:49.1469410Z 
+2026-07-15T03:35:49.1471437Z 9.3 Google may at any time, terminate the License Agreement with you if: (A) you have breached any provision of the License Agreement; or (B) Google is required to do so by law; or (C) the partner with whom Google offered certain parts of SDK (such as APIs) to you has terminated its relationship with Google or ceased to offer certain parts of the SDK to you; or (D) Google decides to no longer provide the SDK or certain parts of the SDK to users in the country in which you are resident or from which you use the service, or the provision of the SDK or certain SDK services to you by Google is, in Google's sole discretion, no longer commercially viable.
+2026-07-15T03:35:49.1473340Z 
+2026-07-15T03:35:49.1474646Z 9.4 When the License Agreement comes to an end, all of the legal rights, obligations and liabilities that you and Google have benefited from, been subject to (or which have accrued over time whilst the License Agreement has been in force) or which are expressed to continue indefinitely, shall be unaffected by this cessation, and the provisions of paragraph 14.7 shall continue to apply to such rights, obligations and liabilities indefinitely.
+2026-07-15T03:35:49.1476010Z 
+2026-07-15T03:35:49.1476014Z 
+2026-07-15T03:35:49.1476117Z 10. DISCLAIMER OF WARRANTIES
+2026-07-15T03:35:49.1476278Z 
+2026-07-15T03:35:49.1476775Z 10.1 YOU EXPRESSLY UNDERSTAND AND AGREE THAT YOUR USE OF THE SDK IS AT YOUR SOLE RISK AND THAT THE SDK IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTY OF ANY KIND FROM GOOGLE.
+2026-07-15T03:35:49.1477348Z 
+2026-07-15T03:35:49.1478103Z 10.2 YOUR USE OF THE SDK AND ANY MATERIAL DOWNLOADED OR OTHERWISE OBTAINED THROUGH THE USE OF THE SDK IS AT YOUR OWN DISCRETION AND RISK AND YOU ARE SOLELY RESPONSIBLE FOR ANY DAMAGE TO YOUR COMPUTER SYSTEM OR OTHER DEVICE OR LOSS OF DATA THAT RESULTS FROM SUCH USE.
+2026-07-15T03:35:49.1478918Z 
+2026-07-15T03:35:49.1479709Z 10.3 GOOGLE FURTHER EXPRESSLY DISCLAIMS ALL WARRANTIES AND CONDITIONS OF ANY KIND, WHETHER EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO THE IMPLIED WARRANTIES AND CONDITIONS OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
+2026-07-15T03:35:49.1480550Z 
+2026-07-15T03:35:49.1480556Z 
+2026-07-15T03:35:49.1480649Z 11. LIMITATION OF LIABILITY
+2026-07-15T03:35:49.1480807Z 
+2026-07-15T03:35:49.1482275Z 11.1 YOU EXPRESSLY UNDERSTAND AND AGREE THAT GOOGLE, ITS SUBSIDIARIES AND AFFILIATES, AND ITS LICENSORS SHALL NOT BE LIABLE TO YOU UNDER ANY THEORY OF LIABILITY FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL OR EXEMPLARY DAMAGES THAT MAY BE INCURRED BY YOU, INCLUDING ANY LOSS OF DATA, WHETHER OR NOT GOOGLE OR ITS REPRESENTATIVES HAVE BEEN ADVISED OF OR SHOULD HAVE BEEN AWARE OF THE POSSIBILITY OF ANY SUCH LOSSES ARISING.
+2026-07-15T03:35:49.1483617Z 
+2026-07-15T03:35:49.1483623Z 
+2026-07-15T03:35:49.1483714Z 12. Indemnification
+2026-07-15T03:35:49.1483838Z 
+2026-07-15T03:35:49.1485995Z 12.1 To the maximum extent permitted by law, you agree to defend, indemnify and hold harmless Google, its affiliates and their respective directors, officers, employees and agents from and against any and all claims, actions, suits or proceedings, as well as any and all losses, liabilities, damages, costs and expenses (including reasonable attorneys fees) arising out of or accruing from (a) your use of the SDK, (b) any application you develop on the SDK that infringes any copyright, trademark, trade secret, trade dress, patent or other intellectual property right of any person or defames any person or violates their rights of publicity or privacy, and (c) any non-compliance by you with the License Agreement.
+2026-07-15T03:35:49.1488286Z 
+2026-07-15T03:35:49.1488292Z 
+2026-07-15T03:35:49.1488395Z 13. Changes to the License Agreement
+2026-07-15T03:35:49.1488583Z 
+2026-07-15T03:35:49.1489269Z 13.1 Google may make changes to the License Agreement as it distributes new versions of the SDK. When these changes are made, Google will make a new version of the License Agreement available on the website where the SDK is made available.
+2026-07-15T03:35:49.1490146Z 
+2026-07-15T03:35:49.1490152Z 
+2026-07-15T03:35:49.1490245Z 14. General Legal Terms
+2026-07-15T03:35:49.1490380Z 
+2026-07-15T03:35:49.1491276Z 14.1 The License Agreement constitutes the whole legal agreement between you and Google and governs your use of the SDK (excluding any services which Google may provide to you under a separate written agreement), and completely replaces any prior agreements between you and Google in relation to the SDK.
+2026-07-15T03:35:49.1492480Z 
+2026-07-15T03:35:49.1493416Z 14.2 You agree that if Google does not exercise or enforce any legal right or remedy which is contained in the License Agreement (or which Google has the benefit of under any applicable law), this will not be taken to be a formal waiver of Google's rights and that those rights or remedies will still be available to Google.
+2026-07-15T03:35:49.1494436Z 
+2026-07-15T03:35:49.1495458Z 14.3 If any court of law, having the jurisdiction to decide on this matter, rules that any provision of the License Agreement is invalid, then that provision will be removed from the License Agreement without affecting the rest of the License Agreement. The remaining provisions of the License Agreement will continue to be valid and enforceable.
+2026-07-15T03:35:49.1496551Z 
+2026-07-15T03:35:49.1497852Z 14.4 You acknowledge and agree that each member of the group of companies of which Google is the parent shall be third party beneficiaries to the License Agreement and that such other companies shall be entitled to directly enforce, and rely upon, any provision of the License Agreement that confers a benefit on (or rights in favor of) them. Other than this, no other person or company shall be third party beneficiaries to the License Agreement.
+2026-07-15T03:35:49.1499204Z 
+2026-07-15T03:35:49.1499993Z 14.5 EXPORT RESTRICTIONS. THE SDK IS SUBJECT TO UNITED STATES EXPORT LAWS AND REGULATIONS. YOU MUST COMPLY WITH ALL DOMESTIC AND INTERNATIONAL EXPORT LAWS AND REGULATIONS THAT APPLY TO THE SDK. THESE LAWS INCLUDE RESTRICTIONS ON DESTINATIONS, END USERS AND END USE.
+2026-07-15T03:35:49.1500854Z 
+2026-07-15T03:35:49.1502070Z 14.6 The rights granted in the License Agreement may not be assigned or transferred by either you or Google without the prior written approval of the other party. Neither you nor Google shall be permitted to delegate their responsibilities or obligations under the License Agreement without the prior written approval of the other party.
+2026-07-15T03:35:49.1503175Z 
+2026-07-15T03:35:49.1504835Z 14.7 The License Agreement, and your relationship with Google under the License Agreement, shall be governed by the laws of the State of California without regard to its conflict of laws provisions. You and Google agree to submit to the exclusive jurisdiction of the courts located within the county of Santa Clara, California to resolve any legal matter arising from the License Agreement. Notwithstanding this, you agree that Google shall still be allowed to apply for injunctive remedies (or an equivalent type of urgent legal relief) in any jurisdiction.
+2026-07-15T03:35:49.1506946Z 
+2026-07-15T03:35:49.1506952Z 
+2026-07-15T03:35:49.1507045Z January 16, 2019
+2026-07-15T03:35:49.1507266Z ---------------------------------------
+2026-07-15T03:35:49.1769785Z Accept? (y/N): [===                                    ] 10% Installing NDK (Side by side) 27.0
+2026-07-15T03:35:49.5217420Z [===                                    ] 10% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:49.5919787Z [====                                   ] 10% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:49.6965118Z [====                                   ] 11% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:49.8017057Z [====                                   ] 12% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:49.8814004Z [=====                                  ] 13% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:49.9580373Z [=====                                  ] 14% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:50.0139240Z [=====                                  ] 15% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:50.0474806Z [======                                 ] 15% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:50.1163856Z [======                                 ] 16% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:50.2016931Z [======                                 ] 17% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:50.2688570Z [=======                                ] 18% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:50.3532566Z [=======                                ] 19% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:50.3866654Z [=======                                ] 20% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:50.4204009Z [========                               ] 20% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:50.5035643Z [========                               ] 21% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:50.5715149Z [========                               ] 22% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:50.6401052Z [=========                              ] 23% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:50.7266172Z [=========                              ] 24% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:50.7613637Z [=========                              ] 25% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:50.7950764Z [==========                             ] 25% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:50.8703563Z [==========                             ] 26% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:50.9224695Z [==========                             ] 27% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:50.9864183Z [===========                            ] 28% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:51.0372593Z [===========                            ] 29% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:51.0626366Z [===========                            ] 30% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:51.1007201Z [============                           ] 30% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:51.1518554Z [============                           ] 31% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:51.2025618Z [============                           ] 32% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:51.2029891Z [============                           ] 33% Downloading android-ndk-r27-linux.
+2026-07-15T03:35:51.5632999Z [============                           ] 33% Unzipping...                      
+2026-07-15T03:35:51.5640923Z [============                           ] 33% Unzipping... android-ndk-r27/     
+2026-07-15T03:35:51.5672203Z [============                           ] 33% Unzipping... android-ndk-r27/READM
+2026-07-15T03:35:51.5681947Z [=============                          ] 33% Unzipping... android-ndk-r27/READM
+2026-07-15T03:35:51.5682689Z [=============                          ] 33% Unzipping... android-ndk-r27/meta/
+2026-07-15T03:35:51.7214101Z [=============                          ] 33% Unzipping... android-ndk-r27/shade
+2026-07-15T03:35:51.7242826Z [=============                          ] 33% Unzipping... android-ndk-r27/ndk-l
+2026-07-15T03:35:51.7272426Z [=============                          ] 33% Unzipping... android-ndk-r27/wrap.
+2026-07-15T03:35:51.7282325Z [=============                          ] 33% Unzipping... android-ndk-r27/ndk-w
+2026-07-15T03:35:52.1225652Z [=============                          ] 33% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:35:52.6201501Z [=============                          ] 34% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:35:52.8800363Z [=============                          ] 35% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:35:53.0318969Z [==============                         ] 35% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:35:53.4646610Z [==============                         ] 36% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:35:53.9241675Z [==============                         ] 37% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:35:54.3755103Z [===============                        ] 38% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:35:54.8639504Z [===============                        ] 39% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:35:55.0684513Z [===============                        ] 40% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:35:55.2926509Z [================                       ] 40% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:35:55.8026785Z [================                       ] 41% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:35:56.2948949Z [================                       ] 42% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:35:57.0738457Z [=================                      ] 43% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:35:57.6414920Z [=================                      ] 44% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:35:58.1780324Z [=================                      ] 45% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:35:58.3894063Z [==================                     ] 45% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:35:58.7915328Z [==================                     ] 46% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:35:59.2193711Z [==================                     ] 47% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:35:59.6625018Z [===================                    ] 48% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:36:00.0537025Z [===================                    ] 49% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:36:00.2636804Z [===================                    ] 50% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:36:00.4860024Z [====================                   ] 50% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:36:00.8851846Z [====================                   ] 51% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:36:01.3178801Z [====================                   ] 52% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:36:01.7604818Z [=====================                  ] 53% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:36:02.0080983Z [=====================                  ] 54% Unzipping... android-ndk-r27/toolc
+2026-07-15T03:36:02.0187786Z [=====================                  ] 54% Unzipping... android-ndk-r27/build
+2026-07-15T03:36:02.2517425Z [=====================                  ] 54% Unzipping... android-ndk-r27/sourc
+2026-07-15T03:36:02.2542368Z [=====================                  ] 54% Unzipping... android-ndk-r27/NOTIC
+2026-07-15T03:36:02.2543367Z [=====================                  ] 54% Unzipping... android-ndk-r27/ndk-g
+2026-07-15T03:36:02.2556277Z [=====================                  ] 54% Unzipping... android-ndk-r27/NOTIC
+2026-07-15T03:36:02.2588601Z [=====================                  ] 54% Unzipping... android-ndk-r27/pytho
+2026-07-15T03:36:02.3023103Z [=====================                  ] 54% Unzipping... android-ndk-r27/prebu
+2026-07-15T03:36:02.3024134Z [=====================                  ] 54% Unzipping... android-ndk-r27/ndk-s
+2026-07-15T03:36:02.3025542Z [=====================                  ] 54% Unzipping... android-ndk-r27/ndk-b
+2026-07-15T03:36:02.3027290Z [=====================                  ] 54% Unzipping... android-ndk-r27/sourc
+2026-07-15T03:36:02.3591526Z [=====================                  ] 54% Unzipping... android-ndk-r27/simpl
+2026-07-15T03:36:02.5146484Z [=====================                  ] 55% Unzipping... android-ndk-r27/simpl
+2026-07-15T03:36:02.6409917Z [=====================                  ] 55% Unzipping... android-ndk-r27/CHANG
+2026-07-15T03:36:02.6411155Z [=======================================] 100% Unzipping... android-ndk-r27/CHAN
+2026-07-15T03:36:03.0137499Z 
+2026-07-15T03:36:03.1051045Z [cross-compile] Installed NDK at: /tmp/android-sdk/ndk/27.0.12077973
+2026-07-15T03:36:03.1052503Z [cross-compile] Using Chaquopy Python target at /home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release
+2026-07-15T03:36:03.1053999Z [cross-compile] Using Chaquopy Python headers (ABI-compatible)
+2026-07-15T03:36:03.1054768Z [cross-compile] Created compiler wrapper: /tmp/compiler-wrapper.sh
+2026-07-15T03:36:03.1056420Z [cross-compile] Android Python include: /home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12
+2026-07-15T03:36:03.1057675Z [cross-compile] Android Python lib: /home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/lib
+2026-07-15T03:36:03.1058389Z [cross-compile] Running: rustup target add aarch64-linux-android 2>&1 | tail -1
+2026-07-15T03:36:03.1543255Z info: component rust-std for target aarch64-linux-android is up to date
+2026-07-15T03:36:03.1545945Z [cross-compile] Running: pip install maturin 2>&1 | tail -3
+2026-07-15T03:36:04.2439413Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 10.6/10.6 MB 44.6 MB/s  0:00:00
+2026-07-15T03:36:04.2440155Z Installing collected packages: maturin
+2026-07-15T03:36:04.2440625Z Successfully installed maturin-1.14.1
+2026-07-15T03:36:04.2442120Z [cross-compile] 
+2026-07-15T03:36:04.2442551Z === Cross-compiling pyswisseph==2.10.3.2 (c) ===
+2026-07-15T03:36:04.2443304Z [cross-compile] Running: pip download --no-deps --no-build-isolation --no-binary :all: 'pyswisseph==2.10.3.2' -d /tmp/ 2>&1 | tail -1
+2026-07-15T03:36:05.4938180Z Successfully downloaded pyswisseph
+2026-07-15T03:36:05.5112951Z [cross-compile] Source: /tmp/pyswisseph-2.10.3.2.tar.gz
+2026-07-15T03:36:05.5114173Z [cross-compile] Running: tar xfz '/tmp/pyswisseph-2.10.3.2.tar.gz' -C /tmp/build_pyswisseph_2.10.3.2
+2026-07-15T03:36:05.6761258Z [cross-compile] Running: cd '/tmp/build_pyswisseph_2.10.3.2/pyswisseph-2.10.3.2' && sed -i 's/swe_detection = True/swe_detection = False/' setup.py
+2026-07-15T03:36:05.6789235Z [cross-compile] Running: cd '/tmp/build_pyswisseph_2.10.3.2/pyswisseph-2.10.3.2' && sed -i 's/sqlite3_detection = True/sqlite3_detection = False/' setup.py
+2026-07-15T03:36:05.6813728Z [cross-compile] Running: find '/tmp/build_pyswisseph_2.10.3.2/pyswisseph-2.10.3.2' -name '*.so' -delete
+2026-07-15T03:36:05.6845937Z [cross-compile] Downloading 5 ephemeris files to /tmp/ephe_cache...
+2026-07-15T03:36:05.7711798Z [cross-compile]   ✅ sepl_18.se1 (472KB)
+2026-07-15T03:36:05.8350122Z [cross-compile]   ✅ semo_18.se1 (1274KB)
+2026-07-15T03:36:05.8733829Z [cross-compile]   ✅ seas_18.se1 (217KB)
+2026-07-15T03:36:06.0204358Z [cross-compile]   ✅ seplm48.se1 (520KB)
+2026-07-15T03:36:06.0981708Z [cross-compile]   ✅ sepl_36.se1 (473KB)
+2026-07-15T03:36:06.0998378Z [cross-compile] Copied 5 ephe files from cache
+2026-07-15T03:36:06.0999673Z [cross-compile] Running: cd '/tmp/build_pyswisseph_2.10.3.2/pyswisseph-2.10.3.2' && CC='/tmp/compiler-wrapper.sh' CXX='/tmp/compiler-wrapper++.sh' CFLAGS='--target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahu
+2026-07-15T03:36:06.2305534Z /opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/setuptools/__init__.py:92: _DeprecatedInstaller: setuptools.installer and fetch_build_eggs are deprecated.
+2026-07-15T03:36:06.2306390Z !!
+2026-07-15T03:36:06.2306497Z 
+2026-07-15T03:36:06.2306654Z         ********************************************************************************
+2026-07-15T03:36:06.2307441Z         Requirements should be satisfied by a PEP 517 installer.
+2026-07-15T03:36:06.2307872Z         If you are using pip, you can try `pip install --use-pep517`.
+2026-07-15T03:36:06.2308128Z 
+2026-07-15T03:36:06.2308355Z         This deprecation is overdue, please update your project and remove deprecated
+2026-07-15T03:36:06.2308781Z         calls to avoid build errors in the future.
+2026-07-15T03:36:06.2309114Z         ********************************************************************************
+2026-07-15T03:36:06.2309349Z 
+2026-07-15T03:36:06.2309424Z !!
+2026-07-15T03:36:06.2309648Z   dist.fetch_build_eggs(dist.setup_requires)
+2026-07-15T03:36:06.2332405Z /opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/setuptools/_distutils/dist.py:288: UserWarning: Unknown distribution option: 'test_suite'
+2026-07-15T03:36:06.2333413Z   warnings.warn(msg)
+2026-07-15T03:36:06.2360523Z /opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/setuptools/dist.py:332: InformationOnly: Normalizing '2.10.03.2' to '2.10.3.2'
+2026-07-15T03:36:06.2361490Z   self.metadata.version = self._normalize_version(self.metadata.version)
+2026-07-15T03:36:06.2365681Z /opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/setuptools/dist.py:765: SetuptoolsDeprecationWarning: License classifiers are deprecated.
+2026-07-15T03:36:06.2366375Z !!
+2026-07-15T03:36:06.2366477Z 
+2026-07-15T03:36:06.2366628Z         ********************************************************************************
+2026-07-15T03:36:06.2367151Z         Please consider removing the following classifiers in favor of a SPDX license expression:
+2026-07-15T03:36:06.2367512Z 
+2026-07-15T03:36:06.2367735Z         License :: OSI Approved :: GNU Affero General Public License v3
+2026-07-15T03:36:06.2368003Z 
+2026-07-15T03:36:06.2368313Z         See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+2026-07-15T03:36:06.2368817Z         ********************************************************************************
+2026-07-15T03:36:06.2369049Z 
+2026-07-15T03:36:06.2369124Z !!
+2026-07-15T03:36:06.2369328Z   self._finalize_license_expression()
+2026-07-15T03:36:06.2413267Z Using internal libswe
+2026-07-15T03:36:06.2413692Z Using internal sqlite3
+2026-07-15T03:36:06.2413930Z running build_ext
+2026-07-15T03:36:06.2444235Z building 'swisseph' extension
+2026-07-15T03:36:06.2456524Z creating build/temp.aarch64-linux-android-cpython-312/libswe
+2026-07-15T03:36:06.2462042Z creating build/temp.aarch64-linux-android-cpython-312/swephelp/sqlite3
+2026-07-15T03:36:06.2470029Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c libswe/swecl.c -o build/temp.aarch64-linux-android-cpython-312/libswe/swecl.o
+2026-07-15T03:36:06.8692548Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c libswe/swedate.c -o build/temp.aarch64-linux-android-cpython-312/libswe/swedate.o
+2026-07-15T03:36:06.9423313Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c libswe/swehel.c -o build/temp.aarch64-linux-android-cpython-312/libswe/swehel.o
+2026-07-15T03:36:07.2598199Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c libswe/swehouse.c -o build/temp.aarch64-linux-android-cpython-312/libswe/swehouse.o
+2026-07-15T03:36:07.6039409Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c libswe/swejpl.c -o build/temp.aarch64-linux-android-cpython-312/libswe/swejpl.o
+2026-07-15T03:36:07.7388716Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c libswe/swemmoon.c -o build/temp.aarch64-linux-android-cpython-312/libswe/swemmoon.o
+2026-07-15T03:36:07.8664669Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c libswe/swemplan.c -o build/temp.aarch64-linux-android-cpython-312/libswe/swemplan.o
+2026-07-15T03:36:07.9995786Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c libswe/sweph.c -o build/temp.aarch64-linux-android-cpython-312/libswe/sweph.o
+2026-07-15T03:36:08.9024984Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c libswe/swephlib.c -o build/temp.aarch64-linux-android-cpython-312/libswe/swephlib.o
+2026-07-15T03:36:09.2809694Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c pyswisseph.c -o build/temp.aarch64-linux-android-cpython-312/pyswisseph.o
+2026-07-15T03:36:09.7167030Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c swephelp/sqlite3/sqlite3.c -o build/temp.aarch64-linux-android-cpython-312/swephelp/sqlite3/sqlite3.o
+2026-07-15T03:36:27.0444558Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c swephelp/swhaspect.c -o build/temp.aarch64-linux-android-cpython-312/swephelp/swhaspect.o
+2026-07-15T03:36:27.0872189Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c swephelp/swhatlas.c -o build/temp.aarch64-linux-android-cpython-312/swephelp/swhatlas.o
+2026-07-15T03:36:27.1298955Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c swephelp/swhdatetime.c -o build/temp.aarch64-linux-android-cpython-312/swephelp/swhdatetime.o
+2026-07-15T03:36:27.1829937Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c swephelp/swhdb.c -o build/temp.aarch64-linux-android-cpython-312/swephelp/swhdb.o
+2026-07-15T03:36:27.2261968Z /tmp/compiler-wrapper++.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c swephelp/swhdbxx.cpp -o build/temp.aarch64-linux-android-cpython-312/swephelp/swhdbxx.o
+2026-07-15T03:36:27.6984124Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c swephelp/swhformat.c -o build/temp.aarch64-linux-android-cpython-312/swephelp/swhformat.o
+2026-07-15T03:36:27.7356795Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c swephelp/swhgeo.c -o build/temp.aarch64-linux-android-cpython-312/swephelp/swhgeo.o
+2026-07-15T03:36:27.7761711Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c swephelp/swhmisc.c -o build/temp.aarch64-linux-android-cpython-312/swephelp/swhmisc.o
+2026-07-15T03:36:27.8116604Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c swephelp/swhraman.c -o build/temp.aarch64-linux-android-cpython-312/swephelp/swhraman.o
+2026-07-15T03:36:27.8589465Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c swephelp/swhsearch.c -o build/temp.aarch64-linux-android-cpython-312/swephelp/swhsearch.o
+2026-07-15T03:36:27.8835891Z swephelp/swhsearch.c:178:57: warning: implicit conversion from 'double' to '_Bool' changes value from 0.5 to true [-Wliteral-conversion]
+2026-07-15T03:36:27.8837145Z   178 |     const double step = swh_approx_retrotime(planet) || STEP;
+2026-07-15T03:36:27.8837791Z       |                                                      ~~ ^~~~
+2026-07-15T03:36:27.8838432Z swephelp/swhsearch.c:26:18: note: expanded from macro 'STEP'
+2026-07-15T03:36:27.8839028Z    26 | #define STEP    (0.5)
+2026-07-15T03:36:27.8839424Z       |                  ^~~
+2026-07-15T03:36:27.8847411Z swephelp/swhsearch.c:283:57: warning: implicit conversion from 'double' to '_Bool' changes value from 0.5 to true [-Wliteral-conversion]
+2026-07-15T03:36:27.8848603Z   283 |     const double step = swh_approx_retrotime(planet) || STEP;
+2026-07-15T03:36:27.8849237Z       |                                                      ~~ ^~~~
+2026-07-15T03:36:27.8849865Z swephelp/swhsearch.c:26:18: note: expanded from macro 'STEP'
+2026-07-15T03:36:27.8850446Z    26 | #define STEP    (0.5)
+2026-07-15T03:36:27.8850815Z       |                  ^~~
+2026-07-15T03:36:27.8852256Z swephelp/swhsearch.c:310:57: warning: implicit conversion from 'double' to '_Bool' changes value from 0.5 to true [-Wliteral-conversion]
+2026-07-15T03:36:27.8853306Z   310 |     const double step = swh_approx_retrotime(planet) || STEP;
+2026-07-15T03:36:27.8853886Z       |                                                      ~~ ^~~~
+2026-07-15T03:36:27.8854478Z swephelp/swhsearch.c:26:18: note: expanded from macro 'STEP'
+2026-07-15T03:36:27.8855045Z    26 | #define STEP    (0.5)
+2026-07-15T03:36:27.8855428Z       |                  ^~~
+2026-07-15T03:36:27.9487803Z 3 warnings generated.
+2026-07-15T03:36:27.9516928Z /tmp/compiler-wrapper.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c swephelp/swhtimezone.c -o build/temp.aarch64-linux-android-cpython-312/swephelp/swhtimezone.o
+2026-07-15T03:36:27.9843433Z /tmp/compiler-wrapper++.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -fPIC -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_DEFAULT_FOREIGN_KEYS=1 -DSQLITE_DEFAULT_MEMSTATUS=0 -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1 -DSQLITE_DOESNT_MATCH_BLOBS=1 -DSQLITE_DQS=0 -DSQLITE_ENABLE_COLUMN_METADATA=1 -DSQLITE_ENABLE_FTS4=1 -DSQLITE_MAX_EXPR_DEPTH=0 -DSQLITE_OMIT_DEPRECATED=1 -DSQLITE_OMIT_SHARED_CACHE=1 -DSQLITE_SECURE_DELETE=1 -DSQLITE_THREADSAFE=1 -Ilibswe -Iswephelp -Iswephelp/sqlite3 -I/opt/hostedtoolcache/Python/3.12.13/x64/include/python3.12 -c swephelp/swhxx.cpp -o build/temp.aarch64-linux-android-cpython-312/swephelp/swhxx.o
+2026-07-15T03:36:28.3459621Z creating build/lib.aarch64-linux-android-cpython-312
+2026-07-15T03:36:28.3469225Z /tmp/compiler-wrapper++.sh --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 -shared -Wl,--rpath=/opt/hostedtoolcache/Python/3.12.13/x64/lib -Wl,--rpath=/opt/hostedtoolcache/Python/3.12.13/x64/lib --target=aarch64-linux-android21 -L/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/lib --target=aarch64-linux-android21 -O2 -fPIC -I/home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/build/python/env/release/include/python3.12 build/temp.aarch64-linux-android-cpython-312/libswe/swecl.o build/temp.aarch64-linux-android-cpython-312/libswe/swedate.o build/temp.aarch64-linux-android-cpython-312/libswe/swehel.o build/temp.aarch64-linux-android-cpython-312/libswe/swehouse.o build/temp.aarch64-linux-android-cpython-312/libswe/swejpl.o build/temp.aarch64-linux-android-cpython-312/libswe/swemmoon.o build/temp.aarch64-linux-android-cpython-312/libswe/swemplan.o build/temp.aarch64-linux-android-cpython-312/libswe/sweph.o build/temp.aarch64-linux-android-cpython-312/libswe/swephlib.o build/temp.aarch64-linux-android-cpython-312/pyswisseph.o build/temp.aarch64-linux-android-cpython-312/swephelp/sqlite3/sqlite3.o build/temp.aarch64-linux-android-cpython-312/swephelp/swhaspect.o build/temp.aarch64-linux-android-cpython-312/swephelp/swhatlas.o build/temp.aarch64-linux-android-cpython-312/swephelp/swhdatetime.o build/temp.aarch64-linux-android-cpython-312/swephelp/swhdb.o build/temp.aarch64-linux-android-cpython-312/swephelp/swhdbxx.o build/temp.aarch64-linux-android-cpython-312/swephelp/swhformat.o build/temp.aarch64-linux-android-cpython-312/swephelp/swhgeo.o build/temp.aarch64-linux-android-cpython-312/swephelp/swhmisc.o build/temp.aarch64-linux-android-cpython-312/swephelp/swhraman.o build/temp.aarch64-linux-android-cpython-312/swephelp/swhsearch.o build/temp.aarch64-linux-android-cpython-312/swephelp/swhtimezone.o build/temp.aarch64-linux-android-cpython-312/swephelp/swhxx.o -L/opt/hostedtoolcache/Python/3.12.13/x64/lib -o build/lib.aarch64-linux-android-cpython-312/swisseph.cpython-312-x86_64-linux-gnu.so
+2026-07-15T03:36:28.3797352Z copying build/lib.aarch64-linux-android-cpython-312/swisseph.cpython-312-x86_64-linux-gnu.so -> 
+2026-07-15T03:36:28.4299879Z [cross-compile] Running: pip install patchelf 2>&1 | tail -1
+2026-07-15T03:36:29.0438701Z Successfully installed patchelf-0.17.2.4
+2026-07-15T03:36:29.0442907Z [cross-compile] Running: patchelf --add-needed libpython3.12.so '/tmp/build_pyswisseph_2.10.3.2/pyswisseph-2.10.3.2/swisseph.cpython-312-x86_64-linux-gnu.so' 2>&1
+2026-07-15T03:36:29.0509044Z [cross-compile]   ✅ swisseph.cpython-312-aarch64-linux-android.so: added NEEDED libpython3.12.so
+2026-07-15T03:36:29.0511129Z [cross-compile] Running: patchelf --add-needed libpython3.12.so '/tmp/build_pyswisseph_2.10.3.2/pyswisseph-2.10.3.2/build/lib.aarch64-linux-android-cpython-312/swisseph.cpython-312-x86_64-linux-gnu.so' 2>&1
+2026-07-15T03:36:29.0571479Z [cross-compile]   ✅ swisseph.cpython-312-aarch64-linux-android.so: added NEEDED libpython3.12.so
+2026-07-15T03:36:29.0573316Z [cross-compile] Found .so: ['/tmp/build_pyswisseph_2.10.3.2/pyswisseph-2.10.3.2/swisseph.cpython-312-x86_64-linux-gnu.so', '/tmp/build_pyswisseph_2.10.3.2/pyswisseph-2.10.3.2/build/lib.aarch64-linux-android-cpython-312/swisseph.cpython-312-x86_64-linux-gnu.so']
+2026-07-15T03:36:29.0575032Z [cross-compile] Running: file '/tmp/build_pyswisseph_2.10.3.2/pyswisseph-2.10.3.2/swisseph.cpython-312-x86_64-linux-gnu.so'
+2026-07-15T03:36:29.0663709Z [cross-compile]   file output: /tmp/build_pyswisseph_2.10.3.2/pyswisseph-2.10.3.2/swisseph.cpython-312-x86_64-linux-gnu.so: ELF 64-bit LSB shared object, ARM aarch64, version 1 (SYSV), dynamically linked, not stripped
+2026-07-15T03:36:29.0665467Z [cross-compile]   ✅ swisseph.cpython-312-x86_64-linux-gnu.so: ARM64
+2026-07-15T03:36:29.0666311Z [cross-compile] Running: file '/tmp/build_pyswisseph_2.10.3.2/pyswisseph-2.10.3.2/build/lib.aarch64-linux-android-cpython-312/swisseph.cpython-312-x86_64-linux-gnu.so'
+2026-07-15T03:36:29.0710341Z [cross-compile]   file output: /tmp/build_pyswisseph_2.10.3.2/pyswisseph-2.10.3.2/build/lib.aarch64-linux-android-cpython-312/swisseph.cpython-312-x86_64-linux-gnu.so: ELF 64-bit LSB shared object, ARM aarch64, version 1 (SYSV), dy
+2026-07-15T03:36:29.0711840Z [cross-compile]   ✅ swisseph.cpython-312-x86_64-linux-gnu.so: ARM64
+2026-07-15T03:36:29.0719946Z [cross-compile]   Copied swisseph.cpython-312-aarch64-linux-android.so
+2026-07-15T03:36:29.0730322Z [cross-compile]   Copied swisseph.cpython-312-aarch64-linux-android.so
+2026-07-15T03:36:29.0747107Z [cross-compile]   Copied dir ephe (5 files)
+2026-07-15T03:36:29.0811579Z [cross-compile] Running: zip -qr /tmp/wheels/pyswisseph-2.10.3.2-cp312-cp312-android_21_arm64_v8a.whl .
+2026-07-15T03:36:29.3442496Z [cross-compile] Created wheel: /tmp/wheels/pyswisseph-2.10.3.2-cp312-cp312-android_21_arm64_v8a.whl (3813938 bytes)
+2026-07-15T03:36:29.3457238Z [cross-compile] ARM64 .whl: /home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/offline_pkgs/pyswisseph-2.10.3.2-cp312-cp312-android_21_arm64_v8a.whl
+2026-07-15T03:36:29.3458234Z [cross-compile]   ✅ done
+2026-07-15T03:36:29.3464593Z [cross-compile] 
+2026-07-15T03:36:29.3464991Z === offline_pkgs ===
+2026-07-15T03:36:29.3465623Z [cross-compile]   pyswisseph-2.10.3.2-cp312-cp312-android_21_arm64_v8a.whl (3813938 bytes)
+2026-07-15T03:36:29.3473458Z [cross-compile] 
+2026-07-15T03:36:29.3474497Z ✅ Copied libc++_shared.so to /home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/jniLibs/arm64-v8a
+2026-07-15T03:36:29.3475403Z [cross-compile]    libsimple.so (9076576 bytes)
+2026-07-15T03:36:29.3475970Z [cross-compile]    libc++_shared.so (1794776 bytes)
+2026-07-15T03:36:29.3476411Z [cross-compile] 
+2026-07-15T03:36:29.3476695Z Done!
+2026-07-15T03:36:29.3589833Z === offline_pkgs for pyjhora ===
+2026-07-15T03:36:29.3608640Z -rw-r--r-- 1 runner runner 3813938 Jul 15 03:36 app/offline_pkgs/pyswisseph-2.10.3.2-cp312-cp312-android_21_arm64_v8a.whl
