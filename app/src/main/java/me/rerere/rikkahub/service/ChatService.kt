@@ -120,6 +120,16 @@ import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
 
+internal fun backgroundTextGenerationParams(
+    model: Model,
+    reasoningLevel: ReasoningLevel = ReasoningLevel.AUTO,
+): TextGenerationParams = TextGenerationParams(
+    model = model,
+    reasoningLevel = reasoningLevel,
+    customHeaders = model.customHeaders,
+    customBody = model.customBodies,
+)
+
 private const val TAG = "ChatService"
 
 data class ChatError(
@@ -1016,10 +1026,7 @@ Provide all needed context in the context parameter.""".trimIndent().replace("\n
                                 .takeLast(4).joinToString("\n\n") { it.summaryAsText() })
                     ),
                 ),
-                params = TextGenerationParams(
-                    model = model,
-                    reasoningLevel = ReasoningLevel.OFF,
-                ),
+                params = backgroundTextGenerationParams(model),
             )
 
             // 生成完，conversation可能不是最新了，因此需要重新获取
@@ -1066,10 +1073,7 @@ Provide all needed context in the context parameter.""".trimIndent().replace("\n
                                 .takeLast(8).joinToString("\n\n") { it.summaryAsText() }),
                     )
                 ),
-                params = TextGenerationParams(
-                    model = model,
-                    reasoningLevel = ReasoningLevel.OFF,
-                ),
+                params = backgroundTextGenerationParams(model),
             )
             val suggestions =
                 result.choices[0].message?.toText()?.split("\n")?.map { it.trim() }
@@ -1248,9 +1252,7 @@ Provide all needed context in the context parameter.""".trimIndent().replace("\n
             val result = providerHandler.generateText(
                 providerSetting = provider,
                 messages = listOf(UIMessage.user(prompt)),
-                params = TextGenerationParams(
-                    model = model,
-                ),
+                params = backgroundTextGenerationParams(model),
             )
 
             return result.choices[0].message?.toText()?.trim()
