@@ -1800,12 +1800,12 @@ houses: {ascendant:{sign:{name:"Virgo"}}, mc:{sign:{name:"Gemini"}},
 ascmc:{vertex:{sign:{name:"Leo"}}}}
 }})   ⚠️ sign 必须是对象 {name:"Gemini"} 不是字符串
 数据查询 (按需):
-Kaabalah.SPHERES_DATA["Kether"]   → {name,hebrew,number,meaning,colors,...}
+Kaabalah.SPHERES_DATA["KETHER"]   → {name,hebrew,number,meaning,colors,...}
 Kaabalah.LURIANIC_PATHS["11"]     → {from:"Kether",to:"Chokhmah",letter:"Aleph",...}
 Kaabalah.HEBREW_LETTERS_DATA["Aleph"] → {value:1,symbol:"א",meaning:"Ox",...}
 Kaabalah.FOUR_WORLDS → ["ATZILUTH","BRIAH","YETZIRAH","ASSIAH"]
 Kaabalah.FOUR_WORLDS_DATA["ATZILUTH"] → {name,meaning,...}
-Kaabalah.SPHERES["Kether"] → {id,name,number,...}
+Kaabalah.SPHERES["KETHER"] → {id,name,number,...}
 Kaabalah.GematriaData → {hebrewLetters:{}, latinLetters:{}, ...}
 11球体: Kether→Chokhmah→Binah→Daath→Chesed→Geburah→
 Tiphareth→Netzach→Hod→Yesod→Malkuth
