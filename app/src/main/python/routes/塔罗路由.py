@@ -101,7 +101,6 @@
                        │     dc.get_relationships()                           │
                        │     dc.archetype                                     │
                        │     dc.raw_data["meditation_focus"]                 │
-                       │     # 统一引擎新增字段(调用示例):                │
                        │     dc.description["waite"]  # 韦特原版画面描述(英文)   │
                        │     dc.description["tk_en"]  # 现代画面描述(英文)       │
                        │     dc.description["tk_zh"]  # 现代画面描述(中文)       │
