@@ -397,6 +397,7 @@ private fun ChatPageContent(
                     loading = loadingJob != null,
                     settings = setting,
                     hazeState = hazeState,
+                    completionProviders = completionProviders,
                     enableSearch = enableWebSearch,
                     onToggleSearch = {
                         val current = setting.getCurrentAssistant()
@@ -417,7 +418,9 @@ private fun ChatPageContent(
                     onSendClick = {
                         if (currentChatModel == null) {
                             toaster.show("请先选择模型", type = ToastType.Error)
-                        } else if (inputState.isEditing()) {
+                            return@ChatInput
+                        }
+                        if (inputState.isEditing()) {
                             vm.handleMessageEdit(inputState.getContents(), inputState.editingMessage!!)
                             inputState.clearInput()
                         } else {
