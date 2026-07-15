@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
@@ -428,6 +431,9 @@ private fun ChatPageContent(
                     onUpdateSearchService = { index ->
                         vm.updateSettings(setting.copy(searchServiceSelected = index))
                     },
+                    onMoreClick = {
+                        showFilesSheet = true
+                    },
                     onCancelClick = { vm.stopGeneration() },
                     onSendClick = {
                         if (currentChatModel == null) {
@@ -450,32 +456,6 @@ private fun ChatPageContent(
                             vm.handleMessageSend(content = inputState.getContents(), answer = false)
                         }
                         inputState.clearInput()
-                    },
-                    onUpdateChatModel = {
-                        vm.setChatModel(assistant = setting.getCurrentAssistant(), model = it)
-                    },
-                    onUpdateAssistant = {
-                        vm.updateSettings(
-                            setting.copy(
-                                assistants = setting.assistants.map { assistant ->
-                                    if (assistant.id == it.id) {
-                                        it
-                                    } else {
-                                        assistant
-                                    }
-                                }
-                            )
-                        )
-                    },
-                    onUpdateSearchService = { index ->
-                        vm.updateSettings(
-                            setting.copy(
-                                searchServiceSelected = index
-                            )
-                        )
-                    },
-                    onMoreClick = {
-                        showFilesSheet = true
                     },
                 )
             },
@@ -512,12 +492,6 @@ private fun ChatPageContent(
                     } else {
                         vm.deleteMessage(it)
                     }
-                },
-                onUpdateMessage = { node ->
-                    val convo = conversation
-                    vm.updateConversation(convo.copy(
-                        messageNodes = convo.messageNodes.map { if (it.id == node.id) node else it }
-                    ))
                 },
                 onUpdateMessage = { newNode ->
                     vm.updateConversation(
@@ -561,8 +535,6 @@ private fun ChatPageContent(
                     vm.updateConversation(conversation.copy(customSystemPrompt = newPrompt))
                     vm.saveConversationAsync()
                 },
-                onToolAnswer = { callId, answer -> vm.handleToolAnswer(callId, answer) },
-                onToggleFavorite = { vm.toggleMessageFavorite(it) },
             )
         }
 

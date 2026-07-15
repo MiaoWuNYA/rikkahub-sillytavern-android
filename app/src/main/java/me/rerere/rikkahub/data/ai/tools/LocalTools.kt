@@ -21,6 +21,9 @@ import me.rerere.ai.core.InputSchema
 import me.rerere.ai.core.Tool
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.event.AppEvent
+import me.rerere.rikkahub.data.ai.tools.local.buildCalendarCreateTool
+import me.rerere.rikkahub.data.ai.tools.local.buildCalendarQueryTool
+import me.rerere.rikkahub.data.ai.tools.local.buildScreenTimeTool
 import me.rerere.rikkahub.data.event.AppEventBus
 import me.rerere.rikkahub.utils.readClipboardText
 import me.rerere.rikkahub.utils.writeClipboardText

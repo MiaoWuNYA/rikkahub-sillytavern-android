@@ -434,6 +434,7 @@ fun GroupChatPage(groupId: String) {
                                 chatService.sendMessage(currentConvId, inputState.getContents(), answer = false)
                                 inputState.clearInput()
                             },
+                            onMoreClick = {},
                             modifier = Modifier.weight(1f),
                         )
                     }
