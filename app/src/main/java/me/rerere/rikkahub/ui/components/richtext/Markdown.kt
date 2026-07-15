@@ -550,7 +550,7 @@ private fun MarkdownNode(
                 modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // 这里可以使用Coil等图片加载库加载图片
-                key(imageUrl) {
+                key("img_${imageUrl.hashCode()}") {
                 ZoomableAsyncImage(
                     model = imageUrl,
                     contentDescription = altText,
