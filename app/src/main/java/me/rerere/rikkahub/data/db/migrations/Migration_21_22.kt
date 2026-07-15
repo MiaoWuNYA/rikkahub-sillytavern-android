@@ -10,5 +10,7 @@ val Migration_21_22 = object : Migration(21, 22) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE `knowledge_sources` ADD COLUMN `tags` TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE `knowledge_chunks` ADD COLUMN `parent_chunk_id` TEXT")
+        // upstream 版本 v22 通过 AutoMigration(from=21, to=22) 自动添加了 workspace_cwd
+        db.execSQL("ALTER TABLE `ConversationEntity` ADD COLUMN `workspace_cwd` TEXT NOT NULL DEFAULT ''")
     }
 }

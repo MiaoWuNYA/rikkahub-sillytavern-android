@@ -36,5 +36,8 @@ val Migration_23_24 = object : Migration(23, 24) {
                 PRIMARY KEY(`id`)
             )
         """)
+
+        // upstream 版本 v24 通过 AutoMigration(from=23, to=24) 自动添加了 folder_id
+        db.execSQL("ALTER TABLE `ConversationEntity` ADD COLUMN `folder_id` TEXT NOT NULL DEFAULT ''")
     }
 }

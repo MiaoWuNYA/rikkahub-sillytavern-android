@@ -522,6 +522,7 @@ fun ChatDrawerContent(
                             folderSheetState.hide()
                             showMoveToFolderSheet = false
                             conversationToMoveFolder = null
+                            conversations.refresh()
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -546,6 +547,7 @@ fun ChatDrawerContent(
                                 folderSheetState.hide()
                                 showMoveToFolderSheet = false
                                 conversationToMoveFolder = null
+                                conversations.refresh()
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -637,6 +639,7 @@ fun ChatDrawerContent(
                     onClick = {
                         if (drawerVm.deleteFolder(folder.id)) {
                             folderToDelete = null
+                            conversations.refresh()
                         } else {
                             toaster.show(context.getString(R.string.chat_page_delete_folder_generating), type = ToastType.Warning)
                         }
