@@ -132,17 +132,18 @@
                        │                                                      │
                        │   ├─ 4a. 卡巴拉对应 ───────────────────────────────── │
                        │   │  getTarotCorrespondenceProfile({tarotCardNumber:N})  → 全78张通用 │
-                       │   │  大牌→{path,hebrewLetter,sephiroth,planetary,zodiac}│
-                       │   │  小牌→{sphere,planets}  宫廷→{sign,planets}         │
+                       │   │  大牌→{correspondences:{path:{hebrewLetter,fromSphere,toSphere}, astrology:[{planet,zodiacSign,element}]}}│
+                       │   │  小牌→{correspondences:{sphere,planets}}              │
+                       │   │  宫廷→{correspondences:{sign,planets}}  ⚠️ Page→{element}│
                        │   │  大牌例: N=1(The Magician)→Beth(Path12)→Chokmah   │
                        │   ├─ 4b. 牌原型 ───────────────────────────────────── │
                        │   │  getTarotArchetype({tarotCardNumber:N})            │
-                       │   │  → {pathId, hebrewLetter, astrology, element}      │
+                       │   │  → {pathId,hebrewLetter,astrology:[{element,planet,zodiacSign}]}│
                        │   │  ⚠️ 仅大牌(57-78)有效, 小牌宫廷返回undefined       │
                        │   │  全78张统一用 getTarotCorrespondenceProfile 代替    │
                        │   ├─ 4c. 主题对应 ─────────────────────────────────── │
                        │   │  getTarotThemeProfile({tarotCardNumber:N})         │
-                       │   │  → {planet, zodiac, element, hebrewLetter}         │
+                       │   │  → {correspondences:{planets,signs,elements,spheres,paths}, majorArchetype:{hebrewLetter}}│
                        │   ├─ 4d. 跨牌桌 ───────────────────────────────────── │
                        │   │  getTarotRepresentations({tarotCardNumber:N})      │
                        │   │  → 5牌桌: rider-waite / papus_pt / papus /        │

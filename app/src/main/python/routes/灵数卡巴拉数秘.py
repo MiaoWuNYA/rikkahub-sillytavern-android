@@ -9,8 +9,8 @@ listTarotSpreads()  → 7牌阵定义  listTarotDecks()  → 5牌桌  listTarotT
 getTarotCardByNumber(n)  → 1-78查牌  getTarotCardNumber({tarotCardName:"...")  → 牌名反查编号
 getTarotCardProfile({tarotCardNumber:n})  → 牌信息(meaning+type+deck)
 getTarotCorrespondenceProfile({tarotCardNumber:n})  → 全78张通用:
-  大牌→路径+字母+源质+占星  小牌→源质+行星  宫廷→星座+行星
-getTarotArchetype({tarotCardNumber:n})  → ⚠️ 仅大牌(57-78), 小牌宫廷返回undefined
+  大牌→路径(fromSphere→toSphere)+字母+占星[{planet,zodiac}]  小牌→源质+行星  宫廷→星座+行星(⚠️Page→元素)
+getTarotArchetype({tarotCardNumber:n})  → ⚠️ 仅大牌(57-78): {pathId,hebrewLetter,astrology:[{element,planet,zodiac}]}
 getTarotThemeProfile({tarotCardNumber:n})  → 主题对应(planet+zodiac+element)
 getTarotRepresentation({tarotCardNumber:n}, deckId)  → 牌在指定牌桌表示
 getTarotRepresentations({tarotCardNumber:n})  → 所有5牌桌下表示
