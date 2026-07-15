@@ -315,17 +315,17 @@ jobs:
           cd /tmp/kaabalah_build && tar xzf kaabalah-*.tgz && cd package
           npm install --production 2>&1 | tail -3
           # Patch: Math.random→crypto (shuffleTarotDeck/shuffleArray 默认RNG用硬件熵)
-          sed -i 's/rng = Math\\.random/rng = cryptoRandom/g' dist/chunk-GET23WEG.js
-          sed -i 's/options\\.rng ?? Math\\.random/options.rng ?? cryptoRandom/g' dist/chunk-GET23WEG.js
+          sed -i 's/rng = Math\.random/rng = cryptoRandom/g' dist/chunk-GET23WEG.js
+          sed -i 's/options\.rng ?? Math\.random/options.rng ?? cryptoRandom/g' dist/chunk-GET23WEG.js
           grep -n "Math.random" dist/chunk-GET23WEG.js && echo "WARNING: Math.random still present!" || echo "OK: no Math.random remaining"
           # Patch: setTimeout → 删 await sleep (QuickJS无事件循环)
           sed -i 's/async function shuffleTarotDeck/function shuffleTarotDeck/' dist/chunk-GET23WEG.js
           sed -i '/await sleep(shuffleDelay);/d' dist/chunk-GET23WEG.js
           grep -n "await sleep" dist/chunk-GET23WEG.js && echo "WARNING: await sleep still present!" || echo "OK: no await sleep remaining"
           # Patch: getAstrologyTreeMarkers 输入类型检查
-          sed -i 's/function getAstrologyTreeMarkers(input) {/function getAstrologyTreeMarkers(input) { if(typeof input!==\"object\"||!input)return[];/' dist/chunk-4XS3UZEI.js
+          sed -i 's/function getAstrologyTreeMarkers(input) {/function getAstrologyTreeMarkers(input) { if(typeof input!=="object"||!input)return[];/' dist/chunk-4XS3UZEI.js
           # Patch: getNumerologyTreeMarkers 数字→Date
-          sed -i 's/function resolveNumerologyInput(input) {/function resolveNumerologyInput(input) { if(typeof input===\"number\"){input=new Date(input,0,1,12)}if(typeof input===\"string\"){input=new Date(input+\"T12:00:00\")/' dist/chunk-4XS3UZEI.js
+          sed -i 's/function resolveNumerologyInput(input) {/function resolveNumerologyInput(input) { if(typeof input==="number"){input=new Date(input,0,1,12)}if(typeof input==="string"){input=new Date(input+"T12:00:00")/' dist/chunk-4XS3UZEI.js
           # export * 覆盖全部(含tarot, index.d.ts已re-export所有子模块)
           cat > kaabalah-entry.mjs << 'ENTRYEOF'
           export * from "./dist/index";
