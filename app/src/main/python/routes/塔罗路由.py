@@ -158,9 +158,12 @@
                        │     deckId 可选: rider-waite(默认) | papus_pt(卡巴拉)  │
                        │       papus(占卜) | mythic(神话) | egyptian(埃及)      │
                        │                                                      │
-                       │   用法: arcanite STEP 1-3 走完后, 按需调 Kaabalah      │
-                       │   4a-4e 补充秘传维度, 无需每次全调。秘传仅当用户        │
-                       │   明确问卡巴拉/神秘学/灵修维度或NNL判断适合时取用。     │
+                       │   用法: STEP 1→2→3→4 为标准流程, 每次必走:                │
+                       │     STEP 1: arcanite 抽牌                                │
+                       │     STEP 2: EE 元素分析                                  │
+                       │     STEP 3: arcanite 逐牌全字段解读                       │
+                       │     STEP 4: Kaabalah 卡巴拉对应(4a-4e)全量补充            │
+                       │   4f 备选牌阵在 arcanite 无匹配时自动切换                 │
                        └──────────────────────────────────────────────────────┘
 
                        【塔罗输出】塔罗=生命故事生成器
