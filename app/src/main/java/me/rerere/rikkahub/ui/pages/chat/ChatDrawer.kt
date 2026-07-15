@@ -82,7 +82,9 @@ import me.rerere.rikkahub.ui.components.ui.Greeting
 import me.rerere.rikkahub.ui.components.ui.Tooltip
 import me.rerere.rikkahub.ui.components.ui.UIAvatar
 import me.rerere.rikkahub.ui.components.ui.UpdateCard
+import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.context.Navigator
+import com.dokar.sonner.ToastType
 import me.rerere.rikkahub.ui.hooks.EditStateContent
 import me.rerere.rikkahub.ui.hooks.readBooleanPreference
 import me.rerere.rikkahub.ui.hooks.rememberIsPlayStoreVersion
@@ -104,6 +106,7 @@ fun ChatDrawerContent(
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val toaster = LocalToaster.current
     val isPlayStore = rememberIsPlayStoreVersion()
     val repo = koinInject<ConversationRepository>()
 
@@ -632,8 +635,11 @@ fun ChatDrawerContent(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        drawerVm.deleteFolder(folder.id)
-                        folderToDelete = null
+                        if (drawerVm.deleteFolder(folder.id)) {
+                            folderToDelete = null
+                        } else {
+                            toaster.show(context.getString(R.string.chat_page_delete_folder_generating), type = ToastType.Warning)
+                        }
                     }
                 ) { Text(stringResource(R.string.common_delete)) }
             },

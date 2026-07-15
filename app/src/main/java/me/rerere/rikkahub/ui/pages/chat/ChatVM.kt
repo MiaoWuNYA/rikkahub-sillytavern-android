@@ -101,9 +101,9 @@ class ChatVM(
     val settings: StateFlow<Settings> =
         settingsStore.settingsFlow.stateIn(viewModelScope, SharingStarted.Eagerly, Settings.dummy())
 
-    // 网络搜索
+    // 网络搜索(每个助手独立)
     val enableWebSearch = settings.map {
-        it.enableWebSearch
+        it.getCurrentAssistant().enableWebSearch
     }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     // 当前模型

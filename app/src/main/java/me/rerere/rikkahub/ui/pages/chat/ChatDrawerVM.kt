@@ -144,10 +144,14 @@ class ChatDrawerVM(
         }
     }
 
-    fun deleteFolder(folderId: Uuid) {
+    fun deleteFolder(folderId: Uuid): Boolean {
         viewModelScope.launch {
             folderRepo.deleteFolder(folderId)
+            if (_selectedFolderId.value == folderId) {
+                _selectedFolderId.value = null
+            }
         }
+        return true
     }
 
     fun moveConversationToFolder(conversationId: Uuid, folderId: Uuid?) {

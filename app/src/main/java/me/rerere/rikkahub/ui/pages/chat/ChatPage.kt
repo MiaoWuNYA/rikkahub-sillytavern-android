@@ -396,7 +396,18 @@ private fun ChatPageContent(
                     hazeState = hazeState,
                     enableSearch = enableWebSearch,
                     onToggleSearch = {
-                        vm.updateSettings(setting.copy(enableWebSearch = it))
+                        val current = setting.getCurrentAssistant()
+                        vm.updateSettings(
+                            setting.copy(
+                                assistants = setting.assistants.map { assistant ->
+                                    if (assistant.id == current.id) {
+                                        assistant.copy(enableWebSearch = !enableWebSearch)
+                                    } else {
+                                        assistant
+                                    }
+                                }
+                            )
+                        )
                     },
                     onUpdateChatModel = { model ->
                         val assistant = setting.getCurrentAssistant()
