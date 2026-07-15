@@ -1,0 +1,24 @@
+﻿2026-07-15T03:36:33.5854607Z ##[group]Run cd /tmp
+2026-07-15T03:36:33.5854883Z [36;1mcd /tmp[0m
+2026-07-15T03:36:33.5855322Z [36;1munzip -q ${GITHUB_WORKSPACE}/app/offline_pkgs/flatlib-0.2.3-py3-none-any.whl -d flatlib-0.2.3[0m
+2026-07-15T03:36:33.5855977Z [36;1mpython3 ${GITHUB_WORKSPACE}/ci/patch_flatlib_swetransit.py flatlib-0.2.3[0m
+2026-07-15T03:36:33.5856391Z [36;1mcd flatlib-0.2.3[0m
+2026-07-15T03:36:33.5856768Z [36;1mzip -qr ${GITHUB_WORKSPACE}/app/offline_pkgs/flatlib-0.2.3-py3-none-any.whl .[0m
+2026-07-15T03:36:33.5857292Z [36;1mecho "✅ flatlib patched: sweNextTransit uses geopos tuple"[0m
+2026-07-15T03:36:33.5894300Z shell: /usr/bin/bash -e {0}
+2026-07-15T03:36:33.5894559Z env:
+2026-07-15T03:36:33.5894872Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:36:33.5895397Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:36:33.5895837Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:36:33.5896253Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+2026-07-15T03:36:33.5896720Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:36:33.5897094Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:36:33.5897470Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:36:33.5897832Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+2026-07-15T03:36:33.5898346Z   PIP_FIND_LINKS: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/offline_pkgs
+2026-07-15T03:36:33.5898799Z ##[endgroup]
+2026-07-15T03:36:33.6679466Z ✅ Patched flatlib-0.2.3/flatlib/ephem/swe.py
+2026-07-15T03:36:33.6679993Z    sweNextTransit: now uses rsmi + geopos tuple, 4 args total
+2026-07-15T03:36:33.6680857Z    Old: rise_trans(jd, sweObj, lon, lat, 0, 0, 0, flag)   ← 8 args, wrong order
+2026-07-15T03:36:33.6681653Z    New: rise_trans(jd, sweObj, rsmi, (lon, lat, 0))        ← 4 args, correct API
+2026-07-15T03:36:33.9398926Z ✅ flatlib patched: sweNextTransit uses geopos tuple

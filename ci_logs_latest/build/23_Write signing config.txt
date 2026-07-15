@@ -1,0 +1,19 @@
+﻿2026-07-15T03:34:21.3566490Z ##[group]Run cat > local.properties << 'EOF'
+2026-07-15T03:34:21.3566856Z [36;1mcat > local.properties << 'EOF'[0m
+2026-07-15T03:34:21.3567139Z [36;1mstoreFile=app.key[0m
+2026-07-15T03:34:21.3567384Z [36;1mstorePassword=android[0m
+2026-07-15T03:34:21.3567642Z [36;1mkeyAlias=androiddebugkey[0m
+2026-07-15T03:34:21.3567908Z [36;1mkeyPassword=android[0m
+2026-07-15T03:34:21.3568140Z [36;1mEOF[0m
+2026-07-15T03:34:21.3604535Z shell: /usr/bin/bash -e {0}
+2026-07-15T03:34:21.3604785Z env:
+2026-07-15T03:34:21.3605101Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:34:21.3605599Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:34:21.3606050Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:34:21.3606476Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+2026-07-15T03:34:21.3606916Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:34:21.3607292Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:34:21.3607682Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:34:21.3608045Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+2026-07-15T03:34:21.3608561Z   PIP_FIND_LINKS: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/offline_pkgs
+2026-07-15T03:34:21.3609019Z ##[endgroup]

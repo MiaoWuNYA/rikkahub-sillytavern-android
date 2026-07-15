@@ -1,0 +1,63 @@
+﻿2026-07-15T03:32:40.8488765Z ##[group]Run mkdir -p /tmp/horoscope_build
+2026-07-15T03:32:40.8489697Z [36;1mmkdir -p /tmp/horoscope_build[0m
+2026-07-15T03:32:40.8490567Z [36;1mcd /tmp && npm pack circular-natal-horoscope-js --pack-destination /tmp/horoscope_build 2>&1[0m
+2026-07-15T03:32:40.8491819Z [36;1mcd /tmp/horoscope_build && tar xzf circular-natal-horoscope-js-*.tgz && cd package[0m
+2026-07-15T03:32:40.8492670Z [36;1mecho 'export * from "./dist/index";' > horoscope-entry.mjs[0m
+2026-07-15T03:32:40.8494073Z [36;1mnpx esbuild horoscope-entry.mjs --bundle --platform=node --format=iife --global-name=HoroscopeJS --target=es2020 --tree-shaking=true --outfile=horoscope-engine.js 2>&1 | tail -3[0m
+2026-07-15T03:32:40.8495988Z [36;1m# QuickJS compat: destructured default params may fail, ensure language fallback[0m
+2026-07-15T03:32:40.8496958Z [36;1mpython3 ${GITHUB_WORKSPACE}/ci/patch_horoscope_quickjs.py horoscope-engine.js[0m
+2026-07-15T03:32:40.8497768Z [36;1mmkdir -p ${GITHUB_WORKSPACE}/app/src/main/assets/[0m
+2026-07-15T03:32:40.8498519Z [36;1mcp horoscope-engine.js ${GITHUB_WORKSPACE}/app/src/main/assets/[0m
+2026-07-15T03:32:40.8499347Z [36;1mecho "Horoscope JS engine compiled: $(wc -c < horoscope-engine.js) bytes"[0m
+2026-07-15T03:32:40.8547242Z shell: /usr/bin/bash -e {0}
+2026-07-15T03:32:40.8547526Z env:
+2026-07-15T03:32:40.8547865Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:32:40.8548403Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:32:40.8548858Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:32:40.8549289Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+2026-07-15T03:32:40.8549715Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:32:40.8550095Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:32:40.8550464Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:32:40.8550832Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+2026-07-15T03:32:40.8551605Z   PIP_FIND_LINKS: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/offline_pkgs
+2026-07-15T03:32:40.8552076Z ##[endgroup]
+2026-07-15T03:32:41.2157048Z npm notice
+2026-07-15T03:32:41.2157954Z npm notice 📦  circular-natal-horoscope-js@1.1.0
+2026-07-15T03:32:41.2158478Z npm notice Tarball Contents
+2026-07-15T03:32:41.2160025Z npm notice 1.2kB LICENSE
+2026-07-15T03:32:41.2160379Z npm notice 11.5kB README.md
+2026-07-15T03:32:41.2160735Z npm notice 796.1kB dist/index.js
+2026-07-15T03:32:41.2161208Z npm notice 75B dist/types/lib/ephemeris-1.2.1.bundle.d.ts
+2026-07-15T03:32:41.2161946Z npm notice 981B dist/types/src/Aspect.d.ts
+2026-07-15T03:32:41.2162443Z npm notice 671B dist/types/src/ChartPosition.d.ts
+2026-07-15T03:32:41.2162770Z npm notice 2.5kB dist/types/src/constants.d.ts
+2026-07-15T03:32:41.2163087Z npm notice 3.0kB dist/types/src/Horoscope.d.ts
+2026-07-15T03:32:41.2163478Z npm notice 589B dist/types/src/House.d.ts
+2026-07-15T03:32:41.2163937Z npm notice 106B dist/types/src/index.d.ts
+2026-07-15T03:32:41.2164368Z npm notice 820B dist/types/src/Origin.d.ts
+2026-07-15T03:32:41.2164806Z npm notice 527B dist/types/src/Sign.d.ts
+2026-07-15T03:32:41.2165330Z npm notice 325B dist/types/src/utilities/aspects.d.ts
+2026-07-15T03:32:41.2165895Z npm notice 2.3kB dist/types/src/utilities/astrology.d.ts
+2026-07-15T03:32:41.2166459Z npm notice 642B dist/types/src/utilities/astronomy.d.ts
+2026-07-15T03:32:41.2166985Z npm notice 51B dist/types/src/utilities/copy.d.ts
+2026-07-15T03:32:41.2167448Z npm notice 3.3kB dist/types/src/utilities/language.d.ts
+2026-07-15T03:32:41.2167943Z npm notice 853B dist/types/src/utilities/math.d.ts
+2026-07-15T03:32:41.2168499Z npm notice 778B dist/types/src/utilities/validators.d.ts
+2026-07-15T03:32:41.2168972Z npm notice 192B dist/types/src/ZodiacPosition.d.ts
+2026-07-15T03:32:41.2169272Z npm notice 1.3kB package.json
+2026-07-15T03:32:41.2169541Z npm notice Tarball Details
+2026-07-15T03:32:41.2169816Z npm notice name: circular-natal-horoscope-js
+2026-07-15T03:32:41.2170438Z npm notice version: 1.1.0
+2026-07-15T03:32:41.2170740Z npm notice filename: circular-natal-horoscope-js-1.1.0.tgz
+2026-07-15T03:32:41.2171124Z npm notice package size: 230.6 kB
+2026-07-15T03:32:41.2171522Z npm notice unpacked size: 827.8 kB
+2026-07-15T03:32:41.2171843Z npm notice shasum: 8b7846833bfac6eb977c8e1f5b46c913ec4d82e7
+2026-07-15T03:32:41.2172246Z npm notice integrity: sha512-MsOrwRa6pgDpv[...]WMx9D3VxpkqxA==
+2026-07-15T03:32:41.2172589Z npm notice total files: 21
+2026-07-15T03:32:41.2172814Z npm notice
+2026-07-15T03:32:41.2173045Z circular-natal-horoscope-js-1.1.0.tgz
+2026-07-15T03:32:42.1640636Z   horoscope-engine.js  1.0mb ⚠️
+2026-07-15T03:32:42.1641676Z 
+2026-07-15T03:32:42.1641816Z ⚡ Done in 42ms
+2026-07-15T03:32:42.1767790Z Horoscope language fallback appended to horoscope-engine.js
+2026-07-15T03:32:42.1843998Z Horoscope JS engine compiled: 1052298 bytes

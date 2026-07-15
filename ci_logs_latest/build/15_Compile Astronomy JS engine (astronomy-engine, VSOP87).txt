@@ -1,0 +1,47 @@
+﻿2026-07-15T03:32:39.4180887Z ##[group]Run mkdir -p /tmp/astronomy_build
+2026-07-15T03:32:39.4181250Z [36;1mmkdir -p /tmp/astronomy_build[0m
+2026-07-15T03:32:39.4181992Z [36;1mcd /tmp && npm pack astronomy-engine --pack-destination /tmp/astronomy_build 2>&1[0m
+2026-07-15T03:32:39.4182792Z [36;1mcd /tmp/astronomy_build && tar xzf astronomy-engine-*.tgz && cd package[0m
+2026-07-15T03:32:39.4183262Z [36;1mecho 'export * from "./astronomy.js";' > astro-entry.mjs[0m
+2026-07-15T03:32:39.4184057Z [36;1mnpx esbuild astro-entry.mjs --bundle --platform=node --format=iife --global-name=Astronomy --target=es2020 --tree-shaking=false --outfile=astronomy-engine.js 2>&1 | tail -3[0m
+2026-07-15T03:32:39.4184830Z [36;1mmkdir -p ${GITHUB_WORKSPACE}/app/src/main/assets/[0m
+2026-07-15T03:32:39.4185267Z [36;1mcp astronomy-engine.js ${GITHUB_WORKSPACE}/app/src/main/assets/[0m
+2026-07-15T03:32:39.4185767Z [36;1mecho "Astronomy JS engine compiled: $(wc -c < astronomy-engine.js) bytes"[0m
+2026-07-15T03:32:39.4223032Z shell: /usr/bin/bash -e {0}
+2026-07-15T03:32:39.4223324Z env:
+2026-07-15T03:32:39.4223637Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:32:39.4224130Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:32:39.4224589Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:32:39.4225012Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+2026-07-15T03:32:39.4225429Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:32:39.4225800Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:32:39.4226173Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:32:39.4226552Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+2026-07-15T03:32:39.4227083Z   PIP_FIND_LINKS: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/offline_pkgs
+2026-07-15T03:32:39.4227550Z ##[endgroup]
+2026-07-15T03:32:39.9226789Z npm notice
+2026-07-15T03:32:39.9227543Z npm notice 📦  astronomy-engine@2.1.19
+2026-07-15T03:32:39.9227890Z npm notice Tarball Contents
+2026-07-15T03:32:39.9229099Z npm notice 174.2kB README.md
+2026-07-15T03:32:39.9229374Z npm notice 422.2kB astronomy.browser.js
+2026-07-15T03:32:39.9229827Z npm notice 116.4kB astronomy.browser.min.js
+2026-07-15T03:32:39.9230306Z npm notice 156.4kB astronomy.d.ts
+2026-07-15T03:32:39.9230626Z npm notice 421.3kB astronomy.js
+2026-07-15T03:32:39.9230893Z npm notice 135.0kB astronomy.min.js
+2026-07-15T03:32:39.9231158Z npm notice 412.0kB esm/astronomy.js
+2026-07-15T03:32:39.9231633Z npm notice 1.1kB package.json
+2026-07-15T03:32:39.9231890Z npm notice Tarball Details
+2026-07-15T03:32:39.9232138Z npm notice name: astronomy-engine
+2026-07-15T03:32:39.9232401Z npm notice version: 2.1.19
+2026-07-15T03:32:39.9232858Z npm notice filename: astronomy-engine-2.1.19.tgz
+2026-07-15T03:32:39.9233294Z npm notice package size: 493.5 kB
+2026-07-15T03:32:39.9234348Z npm notice unpacked size: 1.8 MB
+2026-07-15T03:32:39.9234892Z npm notice shasum: 41b9fd2afb7eba3485e3803cbd9033011f8557af
+2026-07-15T03:32:39.9235483Z npm notice integrity: sha512-8yWKNf7UeNbH4[...]2XhkhZQMXoX6w==
+2026-07-15T03:32:39.9235828Z npm notice total files: 8
+2026-07-15T03:32:39.9236064Z npm notice
+2026-07-15T03:32:39.9236581Z astronomy-engine-2.1.19.tgz
+2026-07-15T03:32:40.8404172Z   astronomy-engine.js  235.2kb
+2026-07-15T03:32:40.8404581Z 
+2026-07-15T03:32:40.8404955Z ⚡ Done in 13ms
+2026-07-15T03:32:40.8457087Z Astronomy JS engine compiled: 240850 bytes

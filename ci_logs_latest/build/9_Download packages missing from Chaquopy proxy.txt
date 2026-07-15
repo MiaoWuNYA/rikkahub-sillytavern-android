@@ -1,0 +1,297 @@
+﻿2026-07-15T03:28:05.1532820Z ##[group]Run pip download --no-deps --no-binary :all: "lunar-python" -d /tmp/pypi-offline 2>&1 | tail -3
+2026-07-15T03:28:05.1534029Z [36;1mpip download --no-deps --no-binary :all: "lunar-python" -d /tmp/pypi-offline 2>&1 | tail -3[0m
+2026-07-15T03:28:05.1534693Z [36;1mpip download --no-deps --no-binary :all: "pydantic<2.0" -d /tmp/pypi-offline 2>&1 | tail -3[0m
+2026-07-15T03:28:05.1535341Z [36;1mpip download --no-deps --no-binary :all: "PyYAML" -d /tmp/pypi-offline 2>&1 | tail -3[0m
+2026-07-15T03:28:05.1535965Z [36;1mpip download --no-deps --no-binary :all: "MarkupSafe" -d /tmp/pypi-offline 2>&1 | tail -3[0m
+2026-07-15T03:28:05.1536608Z [36;1mpip download --no-deps --no-binary :all: "attrs" -d /tmp/pypi-offline 2>&1 | tail -3[0m
+2026-07-15T03:28:05.1537190Z [36;1mpip download --no-deps --no-binary :all: "cattrs" -d /tmp/pypi-offline 2>&1 | tail -3[0m
+2026-07-15T03:28:05.1537801Z [36;1mpip download --no-deps --no-binary :all: "platformdirs" -d /tmp/pypi-offline 2>&1 | tail -3[0m
+2026-07-15T03:28:05.1538446Z [36;1mpip download --no-deps --no-binary :all: "url-normalize" -d /tmp/pypi-offline 2>&1 | tail -3[0m
+2026-07-15T03:28:05.1539037Z [36;1mpip download --no-deps --no-binary :all: "urllib3" -d /tmp/pypi-offline 2>&1 | tail -3[0m
+2026-07-15T03:28:05.1539615Z [36;1mpip download --no-deps --no-binary :all: "jinja2" -d /tmp/pypi-offline 2>&1 | tail -3[0m
+2026-07-15T03:28:05.1540178Z [36;1mpip download --no-deps --no-binary :all: "cn2an" -d /tmp/pypi-offline 2>&1 | tail -3[0m
+2026-07-15T03:28:05.1540724Z [36;1mpip download --no-deps --no-binary :all: "proces" -d /tmp/pypi-offline 2>&1 | tail -3[0m
+2026-07-15T03:28:05.1541534Z [36;1m# Strip C extensions from PyYAML & MarkupSafe — sdist compiles on x86_64 CI runner,[0m
+2026-07-15T03:28:05.1542065Z [36;1m# producing x86_64 .so files that can't load on ARM64 devices.[0m
+2026-07-15T03:28:05.1542580Z [36;1m# Both have pure-Python fallbacks; force those by removing ext_modules.[0m
+2026-07-15T03:28:05.1543002Z [36;1mfor pkg in PyYAML MarkupSafe; do[0m
+2026-07-15T03:28:05.1543309Z [36;1m  cd /tmp/pypi-offline[0m
+2026-07-15T03:28:05.1543627Z [36;1m  tarball=$(ls ${pkg}-*.tar.gz 2>/dev/null | head -1)[0m
+2026-07-15T03:28:05.1543961Z [36;1m  [ -z "$tarball" ] && continue[0m
+2026-07-15T03:28:05.1544256Z [36;1m  tar xfz "$tarball" && rm "$tarball"[0m
+2026-07-15T03:28:05.1544571Z [36;1m  srcdir=$(ls -d ${pkg}-* | head -1)[0m
+2026-07-15T03:28:05.1544999Z [36;1m  sed -i 's/ext_modules=\[/ext_modules=\[\]  # /' "$srcdir/setup.py" 2>/dev/null || true[0m
+2026-07-15T03:28:05.1545704Z [36;1m  sed -i 's/\[tool.setuptools.ext-modules\]/### [tool.setuptools.ext-modules]/' "$srcdir/pyproject.toml" 2>/dev/null || true[0m
+2026-07-15T03:28:05.1546305Z [36;1m  tar czf "$tarball" "$srcdir" && rm -rf "$srcdir"[0m
+2026-07-15T03:28:05.1546722Z [36;1m  echo "Patched $pkg: C extension disabled (pure Python fallback)"[0m
+2026-07-15T03:28:05.1547111Z [36;1m  cd ${GITHUB_WORKSPACE}[0m
+2026-07-15T03:28:05.1547364Z [36;1mdone[0m
+2026-07-15T03:28:05.1547702Z [36;1m# ichingshifa: PyPI 残缺版, GitHub克隆+补__init__.py+替换ephem.Date[0m
+2026-07-15T03:28:05.1548318Z [36;1mgit clone --depth 1 https://github.com/kentang2017/ichingshifa.git /tmp/ichingshifa_src 2>&1 | tail -3[0m
+2026-07-15T03:28:05.1548827Z [36;1mcd /tmp/ichingshifa_src[0m
+2026-07-15T03:28:05.1549287Z [36;1m# Flatten: mv src/ichingshifa → ./ichingshifa (Chaquopy pip install broken with package_dir)[0m
+2026-07-15T03:28:05.1549820Z [36;1mmv src/ichingshifa ./ichingshifa && rm -rf src[0m
+2026-07-15T03:28:05.1550239Z [36;1m# Fix empty __init__.py (original is 1-byte newline → no exports)[0m
+2026-07-15T03:28:05.1550855Z [36;1mprintf 'from .ichingshifa import *\nfrom .d import *\nfrom .jieqi import *\n' > ichingshifa/__init__.py[0m
+2026-07-15T03:28:05.1551935Z [36;1mprintf 'from setuptools import setup; setup(name="ichingshifa", version="0.1", packages=["ichingshifa"], package_data={"ichingshifa": ["*.pkl"]})' > setup.py[0m
+2026-07-15T03:28:05.1553084Z [36;1mprintf '[build-system]\nrequires = ["setuptools"]\nbuild-backend = "setuptools.build_meta"\n' > pyproject.toml[0m
+2026-07-15T03:28:05.1553880Z [36;1m# 真随机: random → secrets (SystemRandom uses OS entropy)[0m
+2026-07-15T03:28:05.1554391Z [36;1msed -i 's/\brandom\.sample(/secrets.SystemRandom().sample(/g' ichingshifa/ichingshifa.py[0m
+2026-07-15T03:28:05.1555000Z [36;1msed -i 's/import pickle, random,/import pickle, secrets,/' ichingshifa/ichingshifa.py[0m
+2026-07-15T03:28:05.1555513Z [36;1m# ephem.Date → 纯Python: ephem 是已删C扩展, 只用到 Date() 解析日期字符串[0m
+2026-07-15T03:28:05.1556029Z [36;1mpython3 ${GITHUB_WORKSPACE}/ci/patch_ichingshifa_ephem.py ichingshifa/ichingshifa.py[0m
+2026-07-15T03:28:05.1556497Z [36;1m# 纯 Python 替换 numpy (np.array_split)[0m
+2026-07-15T03:28:05.1556958Z [36;1mpython3 ${GITHUB_WORKSPACE}/ci/patch_pyjhora_numpy.py /tmp/ichingshifa_src/ichingshifa/[0m
+2026-07-15T03:28:05.1557615Z [36;1m# jieqi.py: 重写为 lunar_python 实现 (ephem C扩展已删, Sun+Ecliptic+Equatorial全依赖ephem)[0m
+2026-07-15T03:28:05.1558173Z [36;1mpython3 ${GITHUB_WORKSPACE}/ci/patch_ichingshifa_jieqi.py ichingshifa/jieqi.py[0m
+2026-07-15T03:28:05.1558616Z [36;1m# bookgua_string() + count_yy 干支校验[0m
+2026-07-15T03:28:05.1559072Z [36;1mpython3 ${GITHUB_WORKSPACE}/ci/patch_ichingshifa_improve.py ichingshifa/ichingshifa.py[0m
+2026-07-15T03:28:05.1559654Z [36;1mtar czf /tmp/pypi-offline/ichingshifa-src.tar.gz --exclude=".git" . 2>&1[0m
+2026-07-15T03:28:05.1560092Z [36;1mcd /tmp && rm -rf /tmp/ichingshifa_src[0m
+2026-07-15T03:28:05.1560576Z [36;1mecho "ichingshifa full tarball ready (__init__ + ephem.Date patched + jieqi→lunar_python)"[0m
+2026-07-15T03:28:05.1561021Z [36;1m[0m
+2026-07-15T03:28:05.1561270Z [36;1m# kinliuren (大六壬): GitHub克隆,纯Python零依赖(146KB)[0m
+2026-07-15T03:28:05.1562303Z [36;1mgit clone --depth 1 https://github.com/kentang2017/kinliuren.git /tmp/kinliuren_src 2>&1 | tail -1[0m
+2026-07-15T03:28:05.1562824Z [36;1mcd /tmp/kinliuren_src[0m
+2026-07-15T03:28:05.1563122Z [36;1mmv src/kinliuren ./kinliuren && rm -rf src[0m
+2026-07-15T03:28:05.1563517Z [36;1m# Fix empty __init__.py (original is 3-byte → no exports)[0m
+2026-07-15T03:28:05.1563949Z [36;1mprintf 'from .kinliuren import *\n' > kinliuren/__init__.py[0m
+2026-07-15T03:28:05.1564314Z [36;1m# 干支参数校验: __init__ + all_sike 前置检查[0m
+2026-07-15T03:28:05.1564755Z [36;1mpython3 ${GITHUB_WORKSPACE}/ci/patch_kinliuren_improve.py kinliuren/kinliuren.py[0m
+2026-07-15T03:28:05.1565422Z [36;1mprintf 'from setuptools import setup; setup(name="kinliuren", version="0.1", packages=["kinliuren"])' > setup.py[0m
+2026-07-15T03:28:05.1566184Z [36;1mprintf '[build-system]\nrequires = ["setuptools"]\nbuild-backend = "setuptools.build_meta"\n' > pyproject.toml[0m
+2026-07-15T03:28:05.1566818Z [36;1mtar czf /tmp/pypi-offline/kinliuren-0.1.2.9.tar.gz --exclude=".git" .[0m
+2026-07-15T03:28:05.1567231Z [36;1mcd /tmp && rm -rf /tmp/kinliuren_src[0m
+2026-07-15T03:28:05.1567635Z [36;1mecho "kinliuren from GitHub ready (146KB, __init__ fixed)"[0m
+2026-07-15T03:28:05.1568027Z [36;1m[0m
+2026-07-15T03:28:05.1568302Z [36;1m# taixuanshifa (太玄筮法): PyPI空壳, GitHub克隆+注入setup.py[0m
+2026-07-15T03:28:05.1568746Z [36;1m# Fix: 用packages代替py_modules, data/自动随包部署 (py_modules不处理package_data)[0m
+2026-07-15T03:28:05.1569373Z [36;1mgit clone --depth 1 https://github.com/kentang2017/taixuanshifa.git /tmp/taixuanshifa_src 2>&1 | tail -1[0m
+2026-07-15T03:28:05.1569884Z [36;1mcd /tmp/taixuanshifa_src[0m
+2026-07-15T03:28:05.1570409Z [36;1mmkdir -p taixuanshifa && mv taixuanshifa.py taixuanshifa/__init__.py && mv app.py taixuanshifa/ 2>/dev/null || true[0m
+2026-07-15T03:28:05.1570939Z [36;1mmv data taixuanshifa/data[0m
+2026-07-15T03:28:05.1571745Z [36;1mprintf 'from setuptools import setup; setup(name="taixuanshifa", version="0.1", packages=["taixuanshifa"], package_data={"taixuanshifa": ["data/*"]})' > setup.py[0m
+2026-07-15T03:28:05.1572662Z [36;1mprintf '[build-system]\nrequires = ["setuptools"]\nbuild-backend = "setuptools.build_meta"\n' > pyproject.toml[0m
+2026-07-15T03:28:05.1573355Z [36;1m# 真随机: random → secrets[0m
+2026-07-15T03:28:05.1573907Z [36;1msed -i 's/\brandom\.sample(/secrets.SystemRandom().sample(/g' taixuanshifa/__init__.py[0m
+2026-07-15T03:28:05.1574495Z [36;1msed -i 's/import random, pickle,/import secrets, pickle,/' taixuanshifa/__init__.py[0m
+2026-07-15T03:28:05.1574916Z [36;1m# Fix: __file__ 路径适配新包结构[0m
+2026-07-15T03:28:05.1575464Z [36;1msed -i 's|root = os.path.abspath(os.path.dirname(__file__))|root = os.path.dirname(os.path.abspath(__file__))|' taixuanshifa/__init__.py[0m
+2026-07-15T03:28:05.1576221Z [36;1mpython3 ${GITHUB_WORKSPACE}/ci/patch_taixuanshifa_inject.py taixuanshifa/__init__.py[0m
+2026-07-15T03:28:05.1576895Z [36;1mgrep "pan_from_code" taixuanshifa/__init__.py && echo "OK: pan_from_code injected" || echo "FAIL: injection missed"[0m
+2026-07-15T03:28:05.1577533Z [36;1mtar czf /tmp/pypi-offline/taixuanshifa-src.tar.gz --exclude=".git" .[0m
+2026-07-15T03:28:05.1577979Z [36;1mcd /tmp && rm -rf /tmp/taixuanshifa_src[0m
+2026-07-15T03:28:05.1578279Z [36;1m[0m
+2026-07-15T03:28:05.1578600Z [36;1m# jingjue (荆诀/北大简先秦占卜): PyPI空壳, GitHub克隆+注入setup.py (根目录.py, 非src/)[0m
+2026-07-15T03:28:05.1579192Z [36;1mgit clone --depth 1 https://github.com/kentang2017/jingjue.git /tmp/jingjue_src 2>&1 | tail -1[0m
+2026-07-15T03:28:05.1579678Z [36;1mcd /tmp/jingjue_src[0m
+2026-07-15T03:28:05.1580205Z [36;1mprintf 'from setuptools import setup; setup(name="jingjue", version="0.1", py_modules=["jingjue", "gua_dict"])' > setup.py[0m
+2026-07-15T03:28:05.1580999Z [36;1mprintf '[build-system]\nrequires = ["setuptools"]\nbuild-backend = "setuptools.build_meta"\n' > pyproject.toml[0m
+2026-07-15T03:28:05.1581647Z [36;1m# 真随机: random → secrets[0m
+2026-07-15T03:28:05.1582417Z [36;1m_random_to_secrets() { sed -i -e 's/random\.sample(/secrets.SystemRandom().sample(/g' -e 's/random\.choice(/secrets.choice(/g' -e 's/\bimport random\b/import secrets/' -e 's/, random,/, secrets,/g' "$1"; }[0m
+2026-07-15T03:28:05.1583211Z [36;1m_random_to_secrets "jingjue.py"[0m
+2026-07-15T03:28:05.1583588Z [36;1mtar czf /tmp/pypi-offline/jingjue-src.tar.gz --exclude=".git" .[0m
+2026-07-15T03:28:05.1583997Z [36;1mcd /tmp && rm -rf /tmp/jingjue_src[0m
+2026-07-15T03:28:05.1584344Z [36;1mecho "4 kentang2017 packages cloned from GitHub"[0m
+2026-07-15T03:28:05.1584665Z [36;1m[0m
+2026-07-15T03:28:05.1584874Z [36;1m# meihua-yi: 梅花易数, 铜钱起卦用真随机[0m
+2026-07-15T03:28:05.1585268Z [36;1mpip download --no-deps --no-binary :all: "meihua-yi" -d /tmp/meihua_patch[0m
+2026-07-15T03:28:05.1585671Z [36;1mcd /tmp/meihua_patch[0m
+2026-07-15T03:28:05.1585978Z [36;1mtar xfz meihua_yi-*.tar.gz && rm meihua_yi-*.tar.gz[0m
+2026-07-15T03:28:05.1586327Z [36;1mSRC=$(ls -d meihua_yi-* | head -1)[0m
+2026-07-15T03:28:05.1586723Z [36;1msed -i 's/^import random$/import secrets/' "$SRC/meihua_yi/engine.py"[0m
+2026-07-15T03:28:05.1587221Z [36;1msed -i 's/random\.choice(/secrets.choice(/g' "$SRC/meihua_yi/engine.py"[0m
+2026-07-15T03:28:05.1587713Z [36;1mtar czf /tmp/pypi-offline/meihua-yi-patched.tar.gz "$SRC"[0m
+2026-07-15T03:28:05.1588103Z [36;1mcd /tmp && rm -rf /tmp/meihua_patch[0m
+2026-07-15T03:28:05.1588474Z [36;1mecho "Added meihua-yi-patched.tar.gz (random → secrets)"[0m
+2026-07-15T03:28:05.1588828Z [36;1m[0m
+2026-07-15T03:28:05.1589232Z [36;1m# arcanite-unified: 统一塔罗引擎 (arcanite+Waite+TarotKit, seed条件分支, Lenormand, DrawnCard proxy 已内置)[0m
+2026-07-15T03:28:05.1589714Z [36;1mcd /tmp/pypi-offline[0m
+2026-07-15T03:28:05.1590266Z [36;1mcurl -sL https://github.com/heikeyangle-code/arcanite-unified/archive/master.tar.gz -o arcanite-unified.tar.gz 2>&1[0m
+2026-07-15T03:28:05.1590844Z [36;1mmkdir -p /tmp/arcanite_unified_build[0m
+2026-07-15T03:28:05.1591150Z [36;1mcd /tmp/arcanite_unified_build[0m
+2026-07-15T03:28:05.1591616Z [36;1mtar xzf /tmp/pypi-offline/arcanite-unified.tar.gz --strip=1[0m
+2026-07-15T03:28:05.1591989Z [36;1mdir=/tmp/arcanite_unified_build[0m
+2026-07-15T03:28:05.1592544Z [36;1m# Strip unused modules (images, LLM, PDF, typst - not needed for AI runtime)[0m
+2026-07-15T03:28:05.1593040Z [36;1mrm -rf arcanite/images arcanite/interpretation arcanite/render[0m
+2026-07-15T03:28:05.1593625Z [36;1mrm -rf arcanite/templates arcanite/prompts arcanite/__pycache__[0m
+2026-07-15T03:28:05.1594047Z [36;1mrm -f arcanite/cards/update_card_positions.py[0m
+2026-07-15T03:28:05.1594403Z [36;1m# Comment out imports for removed modules[0m
+2026-07-15T03:28:05.1594891Z [36;1msed -i 's/from arcanite\.interpretation/### from arcanite.interpretation/' arcanite/__init__.py[0m
+2026-07-15T03:28:05.1595499Z [36;1msed -i 's/from arcanite\.render/### from arcanite.render/' arcanite/__init__.py[0m
+2026-07-15T03:28:05.1596047Z [36;1msed -i 's/from arcanite\.prompts/### from arcanite.prompts/' arcanite/__init__.py[0m
+2026-07-15T03:28:05.1596615Z [36;1msed -i 's/from arcanite\.templates/### from arcanite.templates/' arcanite/__init__.py[0m
+2026-07-15T03:28:05.1597089Z [36;1m# Now install (patched spreads + stripped)[0m
+2026-07-15T03:28:05.1597406Z [36;1mpip install . --no-deps 2>&1[0m
+2026-07-15T03:28:05.1597855Z [36;1m# Fix pydantic version: v2→v1 (Chaquopy uses pydantic<2.0 pure Python, no C extensions)[0m
+2026-07-15T03:28:05.1598372Z [36;1msed -i 's/"pydantic>=2.0"/"pydantic<2.0"/' pyproject.toml[0m
+2026-07-15T03:28:05.1598860Z [36;1m# Re-pack patched tarball (overwrite original — Chaquopy installs from file path)[0m
+2026-07-15T03:28:05.1599303Z [36;1mcd /tmp/arcanite_unified_build[0m
+2026-07-15T03:28:05.1599705Z [36;1mtar czf /tmp/pypi-offline/arcanite-unified.tar.gz --exclude=".git" .[0m
+2026-07-15T03:28:05.1600092Z [36;1m[0m
+2026-07-15T03:28:05.1600465Z [36;1m# Rename files to match build.gradle.kts expectations (hyphen→underscore, version pin)[0m
+2026-07-15T03:28:05.1600952Z [36;1mmkdir -p ${GITHUB_WORKSPACE}/app/offline_pkgs[0m
+2026-07-15T03:28:05.1601487Z [36;1mfor f in /tmp/pypi-offline/*.tar.gz; do[0m
+2026-07-15T03:28:05.1601957Z [36;1m  fname=$(basename "$f")[0m
+2026-07-15T03:28:05.1602323Z [36;1m  # lunar-python → lunar_python (if any lunar-python files appear)[0m
+2026-07-15T03:28:05.1602739Z [36;1m  fname="${fname//lunar-python/lunar_python}"[0m
+2026-07-15T03:28:05.1603111Z [36;1m  fname="${fname//python-dateutil/python_dateutil}"[0m
+2026-07-15T03:28:05.1603482Z [36;1m  fname="${fname//requests-cache/requests_cache}"[0m
+2026-07-15T03:28:05.1603838Z [36;1m  fname="${fname//url-normalize/url_normalize}"[0m
+2026-07-15T03:28:05.1604209Z [36;1m  cp "$f" "${GITHUB_WORKSPACE}/app/offline_pkgs/$fname"[0m
+2026-07-15T03:28:05.1604529Z [36;1mdone[0m
+2026-07-15T03:28:05.1604787Z [36;1m# No .whl files (all C extensions deleted) — skip[0m
+2026-07-15T03:28:05.1605188Z [36;1m# Rename unpinned packages to stable names for build.gradle.kts[0m
+2026-07-15T03:28:05.1605958Z [36;1mfor f in ${GITHUB_WORKSPACE}/app/offline_pkgs/pydantic-*.tar.gz; do cp "$f" "${GITHUB_WORKSPACE}/app/offline_pkgs/pydantic-latest.tar.gz" 2>/dev/null || true; done[0m
+2026-07-15T03:28:05.1607016Z [36;1mfor f in ${GITHUB_WORKSPACE}/app/offline_pkgs/lunar_python-*.tar.gz; do cp "$f" "${GITHUB_WORKSPACE}/app/offline_pkgs/lunar_python-latest.tar.gz" 2>/dev/null || true; done[0m
+2026-07-15T03:28:05.1608064Z [36;1mfor f in ${GITHUB_WORKSPACE}/app/offline_pkgs/markupsafe-*.tar.gz; do cp "$f" "${GITHUB_WORKSPACE}/app/offline_pkgs/markupsafe-latest.tar.gz" 2>/dev/null || true; done[0m
+2026-07-15T03:28:05.1609199Z [36;1mfor f in ${GITHUB_WORKSPACE}/app/offline_pkgs/pyyaml-*.tar.gz; do cp "$f" "${GITHUB_WORKSPACE}/app/offline_pkgs/pyyaml-latest.tar.gz" 2>/dev/null || true; done[0m
+2026-07-15T03:28:05.1610042Z [36;1m# simple_ascii_tables: .whl 改名会破坏 PEP 427 命名规范,保持原名 (resolve via fileTree glob in build.gradle.kts)[0m
+2026-07-15T03:28:05.1610845Z [36;1mfor f in ${GITHUB_WORKSPACE}/app/offline_pkgs/attrs-*.tar.gz; do cp "$f" "${GITHUB_WORKSPACE}/app/offline_pkgs/attrs-latest.tar.gz" 2>/dev/null || true; done[0m
+2026-07-15T03:28:05.1611914Z [36;1mfor f in ${GITHUB_WORKSPACE}/app/offline_pkgs/cattrs-*.tar.gz; do cp "$f" "${GITHUB_WORKSPACE}/app/offline_pkgs/cattrs-latest.tar.gz" 2>/dev/null || true; done[0m
+2026-07-15T03:28:05.1613530Z [36;1mfor f in ${GITHUB_WORKSPACE}/app/offline_pkgs/platformdirs-*.tar.gz; do cp "$f" "${GITHUB_WORKSPACE}/app/offline_pkgs/platformdirs-latest.tar.gz" 2>/dev/null || true; done[0m
+2026-07-15T03:28:05.1614613Z [36;1mfor f in ${GITHUB_WORKSPACE}/app/offline_pkgs/url_normalize-*.tar.gz; do cp "$f" "${GITHUB_WORKSPACE}/app/offline_pkgs/url_normalize-latest.tar.gz" 2>/dev/null || true; done[0m
+2026-07-15T03:28:05.1615638Z [36;1mfor f in ${GITHUB_WORKSPACE}/app/offline_pkgs/urllib3-*.tar.gz; do cp "$f" "${GITHUB_WORKSPACE}/app/offline_pkgs/urllib3-latest.tar.gz" 2>/dev/null || true; done[0m
+2026-07-15T03:28:05.1616607Z [36;1mfor f in ${GITHUB_WORKSPACE}/app/offline_pkgs/cn2an-*.tar.gz; do cp "$f" "${GITHUB_WORKSPACE}/app/offline_pkgs/cn2an-latest.tar.gz" 2>/dev/null || true; done[0m
+2026-07-15T03:28:05.1617568Z [36;1mfor f in ${GITHUB_WORKSPACE}/app/offline_pkgs/proces-*.tar.gz; do cp "$f" "${GITHUB_WORKSPACE}/app/offline_pkgs/proces-latest.tar.gz" 2>/dev/null || true; done[0m
+2026-07-15T03:28:05.1618552Z [36;1mfor f in ${GITHUB_WORKSPACE}/app/offline_pkgs/jinja2-*.tar.gz; do cp "$f" "${GITHUB_WORKSPACE}/app/offline_pkgs/jinja2-latest.tar.gz" 2>/dev/null || true; done[0m
+2026-07-15T03:28:05.1619277Z [36;1mecho "Offline packages:" && ls ${GITHUB_WORKSPACE}/app/offline_pkgs/[0m
+2026-07-15T03:28:05.1656693Z shell: /usr/bin/bash -e {0}
+2026-07-15T03:28:05.1656960Z env:
+2026-07-15T03:28:05.1657284Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:28:05.1657794Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:28:05.1658247Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:28:05.1658672Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+2026-07-15T03:28:05.1659088Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:28:05.1659481Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:28:05.1659859Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:28:05.1660244Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+2026-07-15T03:28:05.1660780Z   PIP_FIND_LINKS: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/offline_pkgs
+2026-07-15T03:28:05.1661242Z ##[endgroup]
+2026-07-15T03:28:08.8375906Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:28:08.8376684Z Saved /tmp/pypi-offline/lunar_python-1.4.8.tar.gz
+2026-07-15T03:28:08.8377370Z Successfully downloaded lunar-python
+2026-07-15T03:31:05.2390004Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:31:05.2390720Z Saved /tmp/pypi-offline/pydantic-1.10.26.tar.gz
+2026-07-15T03:31:05.2391197Z Successfully downloaded pydantic
+2026-07-15T03:31:09.0466940Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:31:09.0467691Z Saved /tmp/pypi-offline/pyyaml-6.0.3.tar.gz
+2026-07-15T03:31:09.0468143Z Successfully downloaded PyYAML
+2026-07-15T03:31:10.9834101Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:31:10.9834713Z Saved /tmp/pypi-offline/markupsafe-3.0.3.tar.gz
+2026-07-15T03:31:10.9835062Z Successfully downloaded MarkupSafe
+2026-07-15T03:31:29.5547650Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:31:29.5548218Z Saved /tmp/pypi-offline/attrs-26.1.0.tar.gz
+2026-07-15T03:31:29.5548540Z Successfully downloaded attrs
+2026-07-15T03:31:31.4726960Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:31:31.4727763Z Saved /tmp/pypi-offline/cattrs-26.1.0.tar.gz
+2026-07-15T03:31:31.4728414Z Successfully downloaded cattrs
+2026-07-15T03:31:33.3825094Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:31:33.3825676Z Saved /tmp/pypi-offline/platformdirs-4.10.0.tar.gz
+2026-07-15T03:31:33.3826604Z Successfully downloaded platformdirs
+2026-07-15T03:31:36.3566302Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:31:36.3567568Z Saved /tmp/pypi-offline/url_normalize-3.0.0.tar.gz
+2026-07-15T03:31:36.3567929Z Successfully downloaded url-normalize
+2026-07-15T03:31:38.4437623Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:31:38.4438194Z Saved /tmp/pypi-offline/urllib3-2.7.0.tar.gz
+2026-07-15T03:31:38.4438522Z Successfully downloaded urllib3
+2026-07-15T03:31:39.7619382Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:31:39.7619949Z Saved /tmp/pypi-offline/jinja2-3.1.6.tar.gz
+2026-07-15T03:31:39.7620281Z Successfully downloaded jinja2
+2026-07-15T03:31:41.4253509Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:31:41.4254225Z Saved /tmp/pypi-offline/cn2an-0.5.24.tar.gz
+2026-07-15T03:31:41.4254686Z Successfully downloaded cn2an
+2026-07-15T03:31:43.0866461Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:31:43.0867232Z Saved /tmp/pypi-offline/proces-0.1.7.tar.gz
+2026-07-15T03:31:43.0867709Z Successfully downloaded proces
+2026-07-15T03:31:43.3003430Z Cloning into '/tmp/ichingshifa_src'...
+2026-07-15T03:31:43.3207814Z Patched ichingshifa/ichingshifa.py: ephem.Date → pure Python Date with .tuple() OK
+2026-07-15T03:31:43.3661167Z   PATCHED ichingshifa.py
+2026-07-15T03:31:43.3661793Z Done: 1 files
+2026-07-15T03:31:43.3816440Z Patched ichingshifa/jieqi.py: ephem → lunar_python OK
+2026-07-15T03:31:43.3971885Z bookgua_details patched to accept optional yao parameter
+2026-07-15T03:31:43.3972562Z   [OK] bookgua_string inserted
+2026-07-15T03:31:43.3972984Z   [OK] bookgua_string validation
+2026-07-15T03:31:43.3973415Z   [OK] count_yy validation inserted
+2026-07-15T03:31:43.3973857Z   [OK] original bookgua intact
+2026-07-15T03:31:43.3974278Z   [OK] original datetime_bookgua intact
+2026-07-15T03:31:43.3974727Z   [OK] bookgua_details accepts yao
+2026-07-15T03:31:43.3975268Z ichingshifa improvement patch applied successfully
+2026-07-15T03:31:43.4456291Z ichingshifa full tarball ready (__init__ + ephem.Date patched + jieqi→lunar_python)
+2026-07-15T03:31:43.6409532Z Cloning into '/tmp/kinliuren_src'...
+2026-07-15T03:31:43.6583051Z   [OK] __init__ input validation
+2026-07-15T03:31:43.6583583Z   [OK] all_sike guard inserted
+2026-07-15T03:31:43.6583978Z   [OK] jieqi validation
+2026-07-15T03:31:43.6584332Z   [OK] original __init__ intact
+2026-07-15T03:31:43.6584792Z kinliuren validation patch applied successfully
+2026-07-15T03:31:43.6852893Z kinliuren from GitHub ready (146KB, __init__ fixed)
+2026-07-15T03:31:43.8870063Z Cloning into '/tmp/taixuanshifa_src'...
+2026-07-15T03:31:43.9107719Z pan_from_code with validation injected into taixuanshifa/__init__.py
+2026-07-15T03:31:43.9147226Z     def pan_from_code(self, zhou):
+2026-07-15T03:31:43.9148188Z                 f"pan_from_code 需要字符串类型的编码，收到了 {type(zhou).__name__}。"
+2026-07-15T03:31:43.9148814Z                 f"正确用法: pan_from_code('2312')"
+2026-07-15T03:31:43.9149387Z OK: pan_from_code injected
+2026-07-15T03:31:44.4975750Z Cloning into '/tmp/jingjue_src'...
+2026-07-15T03:31:44.5396532Z 4 kentang2017 packages cloned from GitHub
+2026-07-15T03:31:44.8758119Z Looking in links: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/offline_pkgs
+2026-07-15T03:31:44.9502669Z Collecting meihua-yi
+2026-07-15T03:31:45.0099702Z   Downloading meihua_yi-0.1.1.tar.gz (13 kB)
+2026-07-15T03:31:45.0199667Z   Installing build dependencies: started
+2026-07-15T03:31:45.6080908Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:31:45.6087379Z   Getting requirements to build wheel: started
+2026-07-15T03:31:46.1002797Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:31:46.1011828Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:31:46.2962268Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:31:46.2988865Z Saved ./meihua_patch/meihua_yi-0.1.1.tar.gz
+2026-07-15T03:31:46.2990693Z Successfully downloaded meihua-yi
+2026-07-15T03:31:46.3754792Z Added meihua-yi-patched.tar.gz (random → secrets)
+2026-07-15T03:31:47.8309390Z Looking in links: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/offline_pkgs
+2026-07-15T03:31:47.8314095Z Processing ./.
+2026-07-15T03:31:47.8333402Z   Installing build dependencies: started
+2026-07-15T03:31:48.4416368Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:31:48.4422601Z   Getting requirements to build wheel: started
+2026-07-15T03:31:48.9506609Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:31:48.9516399Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:31:49.1548632Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:31:49.1569782Z Building wheels for collected packages: arcanite-unified
+2026-07-15T03:31:49.1578083Z   Building wheel for arcanite-unified (pyproject.toml): started
+2026-07-15T03:31:49.5263539Z   Building wheel for arcanite-unified (pyproject.toml): finished with status 'done'
+2026-07-15T03:31:49.5285633Z   Created wheel for arcanite-unified: filename=arcanite_unified-0.3.0-py3-none-any.whl size=994821 sha256=af3817d12d37ab7e3b8839a18e87d54844f375edb63798923b9c0ff1fd86459b
+2026-07-15T03:31:49.5287433Z   Stored in directory: /tmp/pip-ephem-wheel-cache-d8vqt_dk/wheels/f0/2b/d1/2206cf29d4c66f42f41458b6f3d5e46b9cb9eee7103ff69499
+2026-07-15T03:31:49.5314676Z Successfully built arcanite-unified
+2026-07-15T03:31:49.5340905Z Installing collected packages: arcanite-unified
+2026-07-15T03:31:49.5966592Z Successfully installed arcanite-unified-0.3.0
+2026-07-15T03:31:50.0101672Z Offline packages:
+2026-07-15T03:31:50.0114726Z arcanite-pydantic-v1.tar.gz
+2026-07-15T03:31:50.0115142Z arcanite-unified.tar.gz
+2026-07-15T03:31:50.0115506Z attrs-26.1.0.tar.gz
+2026-07-15T03:31:50.0115830Z attrs-latest.tar.gz
+2026-07-15T03:31:50.0116038Z cattrs-26.1.0.tar.gz
+2026-07-15T03:31:50.0116366Z cattrs-latest.tar.gz
+2026-07-15T03:31:50.0116710Z cn2an-0.5.24.tar.gz
+2026-07-15T03:31:50.0116997Z cn2an-latest.tar.gz
+2026-07-15T03:31:50.0117332Z flatlib-0.2.3-py3-none-any.whl
+2026-07-15T03:31:50.0117729Z ichingshifa-src.tar.gz
+2026-07-15T03:31:50.0118109Z jingjue-src.tar.gz
+2026-07-15T03:31:50.0118414Z jinja2-3.1.6.tar.gz
+2026-07-15T03:31:50.0118709Z jinja2-latest.tar.gz
+2026-07-15T03:31:50.0119084Z kinliuren-0.1.2.9.tar.gz
+2026-07-15T03:31:50.0119449Z lunar_python-1.4.8.tar.gz
+2026-07-15T03:31:50.0119813Z lunar_python-latest.tar.gz
+2026-07-15T03:31:50.0120174Z markupsafe-3.0.3.tar.gz
+2026-07-15T03:31:50.0120525Z markupsafe-latest.tar.gz
+2026-07-15T03:31:50.0120891Z meihua-yi-patched.tar.gz
+2026-07-15T03:31:50.0121266Z platformdirs-4.10.0.tar.gz
+2026-07-15T03:31:50.0121833Z platformdirs-latest.tar.gz
+2026-07-15T03:31:50.0122190Z proces-0.1.7.tar.gz
+2026-07-15T03:31:50.0122515Z proces-latest.tar.gz
+2026-07-15T03:31:50.0122845Z pydantic-1.10.26.tar.gz
+2026-07-15T03:31:50.0123186Z pydantic-latest.tar.gz
+2026-07-15T03:31:50.0123535Z pyjhora-4.8.7.tar.gz
+2026-07-15T03:31:50.0123843Z pyyaml-6.0.3.tar.gz
+2026-07-15T03:31:50.0124152Z pyyaml-latest.tar.gz
+2026-07-15T03:31:50.0124483Z taixuanshifa-src.tar.gz
+2026-07-15T03:31:50.0124844Z url_normalize-3.0.0.tar.gz
+2026-07-15T03:31:50.0125207Z url_normalize-latest.tar.gz
+2026-07-15T03:31:50.0125563Z urllib3-2.7.0.tar.gz
+2026-07-15T03:31:50.0125881Z urllib3-latest.tar.gz
