@@ -117,53 +117,50 @@
                        │                                                      │
                        │                                                      │
                        │ STEP 4: Kaabalah 卡巴拉对应（全量自动补充）              │
-                       │   ⚠️ 所有 Kaabalah 函数通过 eval_javascript 调:         │
-                       │   首次: action='load', library='kaabalah-engine'       │
-                       │   后续: action='eval', code="Kaabalah.函数名(...)"     │
-                       │   也支持一次 eval 调多个: code="a=Kaabalah.f1(...); b=Kaabalah.f2(...); JSON.stringify({a,b})"
+                       │   ⚠️ 全部通过 eval_javascript 调用:                   │
+                       │     action='load', library='kaabalah-engine'  首次     │
+                       │     action='eval', code="Kaabalah.xxx(...)"    后续    │
+                       │   一次 eval 调多个: code="a=F1(...); b=F2(...); JSON.stringify({a,b})"
                        │                                                      │
-                       │   数据流: STEP 3 的 dc.card_number (Python)            │
-                       │   → 拼进 JS code 字符串 → eval_javascript → 取结果     │
-                       │   示例: code=f"Kaabalah.getTarotCorrespondenceProfile({{tarotCardNumber:{n}}})"
+                       │   数据流: Python 拿 dc.card_number → 拼进 JS code →     │
+                       │   eval_javascript → 取结果                             │
+                       │   例: n = dc.card_number; eval(action='eval',          │
+                       │        code=f"Kaabalah.getTarotCorrespondenceProfile({{tarotCardNumber:{n}}})")
                        │                                                      │
-                       │   4a. 卡巴拉对应（每牌必调）:                            │
-                       │     getTarotCorrespondenceProfile({tarotCardNumber:N}) │
-                       │     → {path, hebrewLetter, sephiroth, planetary,       │
-                       │        zodiac, treeOfLifePosition}                     │
-                       │     大牌例: N=1(The Magician)→Path12(Beth)→Chokmah    │
-                       │                                                      │
-                       │   4b. 牌原型 archetype:                                │
-                       │     getTarotArchetype({tarotCardNumber:N})             │
-                       │     → {pathId, hebrewLetter, astrology, element}       │
-                       │     ⚠️ 仅22张大牌, 小牌返回空                          │
-                       │                                                      │
-                       │   4c. 主题对应:                                        │
-                       │     getTarotThemeProfile({tarotCardNumber:N})          │
-                       │     → {planet, zodiac, element, hebrewLetter}          │
-                       │                                                      │
-                       │   4d. 跨牌桌表示（非韦特体系时调）:                      │
-                       │     getTarotRepresentations({tarotCardNumber:N})       │
-                       │     → {rider-waite, papus_pt, papus, mythic, egyptian}│
-                       │     getTarotRepresentation(N, deckId) 单牌桌查询        │
-                       │                                                      │
-                       │   4e. 777对应常数：                                    │
-                       │     COLORS_DATA SPHERES_DATA FOUR_WORLDS              │
-                       │     HEBREW_LETTERS_DATA LURIANIC_PATHS PLANETS        │
-                       │     MUSICAL_NOTES_DATA                                │
-                       │                                                      │
-                       │   4f. 备选牌阵（arcanite 无匹配时自动切）:               │
-                       │     drawTarotSpread({spreadId, deckId, ...})          │
-                       │     drawConsciousTarotSpread({indices, ...})          │
-                       │     查牌阵: listTarotSpreads() / getTarotSpread(id)   │
-                       │     查牌桌: listTarotDecks()                          │
-                       │                                                      │
-                       │   4g. 查牌辅助（补充 arcanite 数据不足时）:              │
-                       │     getTarotCardProfile({tarotCardNumber:N})           │
-                       │     getTarotCardByNumber(n) / getTarotCardNumber({})   │
-                       │     listTarotThemeProfiles() / ARKANNUS / majorArcana  │
-                       │                                                      │
-                       │   执行策略: 一次 eval 包所有卡的 4a+4b+4c,              │
-                       │   避免每张卡开一次 eval。4d-4g 按需取用。               │
+                       │   ├─ 4a. 卡巴拉对应 ───────────────────────────────── │
+                       │   │  getTarotCorrespondenceProfile({tarotCardNumber:N})│
+                       │   │  → {path, hebrewLetter, sephiroth, planetary,      │
+                       │   │     zodiac, treeOfLifePosition}                    │
+                       │   │  大牌例: N=1(The Magician)→Beth(Path12)→Chokmah   │
+                       │   ├─ 4b. 牌原型 ───────────────────────────────────── │
+                       │   │  getTarotArchetype({tarotCardNumber:N})            │
+                       │   │  → {pathId, hebrewLetter, astrology, element}      │
+                       │   │  ⚠️ 仅22张大牌, 小牌=空                           │
+                       │   ├─ 4c. 主题对应 ─────────────────────────────────── │
+                       │   │  getTarotThemeProfile({tarotCardNumber:N})         │
+                       │   │  → {planet, zodiac, element, hebrewLetter}         │
+                       │   ├─ 4d. 跨牌桌 ───────────────────────────────────── │
+                       │   │  getTarotRepresentations({tarotCardNumber:N})      │
+                       │   │  → 5牌桌: rider-waite / papus_pt / papus /        │
+                       │   │    mythic / egyptian (各含cardName+suit+meaning)   │
+                       │   │  getTarotRepresentation(N, deckId) 单牌桌          │
+                       │   ├─ 4e. 777对应常数 ─────────────────────────────── │
+                       │   │  COLORS_DATA / SPHERES_DATA / FOUR_WORLDS        │
+                       │   │  HEBREW_LETTERS_DATA / LURIANIC_PATHS / PLANETS  │
+                       │   │  MUSICAL_NOTES_DATA / listTarotTrees()           │
+                       │   ├─ 4f. 备选牌阵 ─────────────────────────────────── │
+                       │   │  drawTarotSpread({spreadId, deckId, ...})         │
+                       │   │  drawConsciousTarotSpread({indices, ...})         │
+                       │   │  查: listTarotSpreads() / getTarotSpread(id)      │
+                       │   │  牌桌: listTarotDecks()                           │
+                       │   │  ⚠️ 洗牌用 arcanite, Kaabalah 的 shuffleTarotDeck│
+                       │   │  仅当直接用 Kaabalah 抽牌时才需自行 shuffle       │
+                       │   ├─ 4g. 查牌辅助 ─────────────────────────────────── │
+                       │   │  getTarotCardProfile({tarotCardNumber:N})         │
+                       │   │  getTarotCardByNumber(n) / getTarotCardNumber({}) │
+                       │   │  listTarotThemeProfiles() / ARKANNUS / majorArcana│
+                       │   └─ 策略: 一次 eval 包全部卡的 4a+4b+4c,              │
+                       │      避免每卡一次调用。4d-4g 按需取。                 │
                        └──────────────────────────────────────────────────────┘
 
                        【塔罗输出】塔罗=生命故事生成器
