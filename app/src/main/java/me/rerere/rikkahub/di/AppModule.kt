@@ -112,6 +112,7 @@ val appModule = module {
         ChatService(
             context = get(),
             appScope = get(),
+            appEventBus = get(),
             settingsStore = get(),
             conversationRepo = get(),
             memoryRepository = get(),

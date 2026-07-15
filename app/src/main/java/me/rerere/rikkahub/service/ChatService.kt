@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import me.rerere.rikkahub.data.db.AppDatabase
+import me.rerere.rikkahub.data.event.AppEvent
+import me.rerere.rikkahub.data.event.AppEventBus
 import org.koin.java.KoinJavaComponent
 import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
@@ -168,6 +170,7 @@ private val outputTransformers by lazy {
 class ChatService(
     private val context: Application,
     private val appScope: AppScope,
+    private val appEventBus: AppEventBus,
     private val settingsStore: SettingsStore,
     private val conversationRepo: ConversationRepository,
     private val memoryRepository: MemoryRepository,
@@ -857,9 +860,8 @@ Provide all needed context in the context parameter.""".trimIndent().replace("\n
                     }
                 },
             ).onCompletion {
-                // 取消 Live Update 通知 + 前台服务
+                // 取消前台服务；通知由 ChatNotificationManager 通过 AppEventBus 消费
                 fgJob?.cancel()
-                cancelLiveUpdateNotification(conversationId)
                 stopGenerationForeground()
 
                 // 可能被取消了，或者意外结束，兜底更新
@@ -871,10 +873,15 @@ Provide all needed context in the context parameter.""".trimIndent().replace("\n
                 )
                 updateConversation(conversationId, updatedConversation)
 
-                // Show notification if app is not in foreground
-                if (!isForeground.value && settings.displaySetting.enableNotificationOnMessageGeneration) {
-                    sendGenerationDoneNotification(conversationId, senderName)
-                }
+                // 生成结束：取消 Live Update 通知，后台时发送完成通知
+                appEventBus.emit(
+                    AppEvent.ChatGenerationEnded(
+                        conversationId = conversationId,
+                        senderName = senderName,
+                        contentPreview = updatedConversation.currentMessages.lastOrNull()
+                            ?.toText()?.take(50)?.trim() ?: "",
+                    )
+                )
             }.collect { chunk ->
                 when (chunk) {
                     is GenerationChunk.Messages -> {
@@ -887,16 +894,21 @@ Provide all needed context in the context parameter.""".trimIndent().replace("\n
                             stopGenerationForeground()
                         }
 
-                        // 如果应用不在前台，发送 Live Update 通知
-                        if (!isForeground.value && settings.displaySetting.enableNotificationOnMessageGeneration && settings.displaySetting.enableLiveUpdateNotification) {
-                            sendLiveUpdateNotification(conversationId, chunk.messages, senderName)
+                        // 通知等边缘副作用由 ChatNotificationManager 消费；
+                        // tryEmit 不挂起，事件丢失只影响单次通知更新，不能反压生成链
+                        chunk.messages.lastOrNull()?.let { lastMessage ->
+                            appEventBus.tryEmit(
+                                AppEvent.ChatGenerationUpdate(conversationId, lastMessage, senderName)
+                            )
                         }
                     }
                 }
             }
         }.onFailure {
-            // 取消 Live Update 通知 + 前台服务
-            cancelLiveUpdateNotification(conversationId)
+            // 兜底取消 Live Update 通知（生成开始前失败时 onCompletion 不会执行）
+            appEventBus.tryEmit(AppEvent.ChatGenerationEnded(conversationId, senderName, null))
+
+            // 取消前台服务
             stopGenerationForeground()
 
             it.printStackTrace()
@@ -1280,29 +1292,7 @@ Provide all needed context in the context parameter.""".trimIndent().replace("\n
         saveConversation(conversationId, newConversation)
     }
 
-    // ---- 通知 ----
-
-    private fun sendGenerationDoneNotification(conversationId: Uuid, senderName: String) {
-        // 先取消 Live Update 通知
-        cancelLiveUpdateNotification(conversationId)
-
-        val conversation = getConversationFlow(conversationId).value
-        context.sendNotification(
-            channelId = CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID,
-            notificationId = 1
-        ) {
-            title = senderName
-            content = conversation.currentMessages.lastOrNull()?.toText()?.take(50)?.trim() ?: ""
-            autoCancel = true
-            useDefaults = true
-            category = NotificationCompat.CATEGORY_MESSAGE
-            contentIntent = getPendingIntent(context, conversationId)
-        }
-    }
-
-    private fun getLiveUpdateNotificationId(conversationId: Uuid): Int {
-        return ("live_update_" + conversationId.toString()).hashCode().let { if (it == 0) 1 else it }
-    }
+    // 通知已迁移至 ChatNotificationManager（通过 AppEventBus 通信）
 
     private suspend fun createWorkspaceToolsIfReady(workspaceId: String?, cwd: String? = null): List<Tool> {
         if (workspaceId.isNullOrBlank()) return emptyList()
@@ -1317,80 +1307,7 @@ Provide all needed context in the context parameter.""".trimIndent().replace("\n
         return createWorkspaceTools(workspaceId, workspaceRepository, cwd)
     }
 
-    private fun sendLiveUpdateNotification(
-        conversationId: Uuid,
-        messages: List<UIMessage>,
-        senderName: String
-    ) {
-        val lastMessage = messages.lastOrNull() ?: return
-        val parts = lastMessage.parts
-
-        // 确定当前状态
-        val (chipText, statusText, contentText) = determineNotificationContent(parts)
-
-        context.sendNotification(
-            channelId = CHAT_LIVE_UPDATE_NOTIFICATION_CHANNEL_ID,
-            notificationId = getLiveUpdateNotificationId(conversationId)
-        ) {
-            title = senderName
-            content = contentText
-            subText = statusText
-            ongoing = true
-            onlyAlertOnce = true
-            category = NotificationCompat.CATEGORY_PROGRESS
-            useBigTextStyle = true
-            contentIntent = getPendingIntent(context, conversationId)
-            requestPromotedOngoing = true
-            shortCriticalText = chipText
-        }
-    }
-
-    private fun determineNotificationContent(parts: List<UIMessagePart>): Triple<String, String, String> {
-        // 检查最近的 part 来确定状态
-        val lastReasoning = parts.filterIsInstance<UIMessagePart.Reasoning>().lastOrNull()
-        val lastTool = parts.filterIsInstance<UIMessagePart.Tool>().lastOrNull()
-        val lastText = parts.filterIsInstance<UIMessagePart.Text>().lastOrNull()
-
-        return when {
-            // 正在执行工具
-            lastTool != null && !lastTool.isExecuted -> {
-                val toolName = lastTool.toolName.removePrefix("mcp__")
-                Triple(
-                    context.getString(R.string.notification_live_update_chip_tool),
-                    context.getString(R.string.notification_live_update_tool, toolName),
-                    lastTool.input.take(100)
-                )
-            }
-            // 正在思考（Reasoning 未结束）
-            lastReasoning != null && lastReasoning.finishedAt == null -> {
-                Triple(
-                    context.getString(R.string.notification_live_update_chip_thinking),
-                    context.getString(R.string.notification_live_update_thinking),
-                    lastReasoning.reasoning.takeLast(200)
-                )
-            }
-            // 正在写回复
-            lastText != null -> {
-                Triple(
-                    context.getString(R.string.notification_live_update_chip_writing),
-                    context.getString(R.string.notification_live_update_writing),
-                    lastText.text.takeLast(200)
-                )
-            }
-            // 默认状态
-            else -> {
-                Triple(
-                    context.getString(R.string.notification_live_update_chip_writing),
-                    context.getString(R.string.notification_live_update_title),
-                    ""
-                )
-            }
-        }
-    }
-
-    private fun cancelLiveUpdateNotification(conversationId: Uuid) {
-        context.cancelNotification(getLiveUpdateNotificationId(conversationId))
-    }
+    // 通知已迁移至 ChatNotificationManager（通过 AppEventBus 通信）
 
     // region Foreground Service — 后台生成时保持进程存活
 

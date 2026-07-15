@@ -98,7 +98,7 @@ class ChatNotificationManager(
     ) {
         context.sendNotification(
             channelId = CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID,
-            notificationId = 1
+            notificationId = getCompletionNotificationId(conversationId)
         ) {
             title = senderName
             content = contentPreview
@@ -111,6 +111,10 @@ class ChatNotificationManager(
 
     private fun getLiveUpdateNotificationId(conversationId: Uuid): Int {
         return conversationId.hashCode() + 10000
+    }
+
+    private fun getCompletionNotificationId(conversationId: Uuid): Int {
+        return conversationId.hashCode() + 20000
     }
 
     private fun sendLiveUpdateNotification(
