@@ -1,15 +1,5 @@
 package me.rerere.rikkahub.ui.pages.setting
 
-import me.rerere.ai.core.ReasoningLevel
-import me.rerere.hugeicons.stroke.Earth
-import me.rerere.hugeicons.stroke.View
-import me.rerere.hugeicons.stroke.FileZip
-import me.rerere.hugeicons.stroke.Mortarboard01
-import me.rerere.hugeicons.stroke.Message01
-import me.rerere.hugeicons.stroke.MessageMultiple01
-import me.rerere.hugeicons.stroke.Notebook01
-import me.rerere.hugeicons.stroke.Tools
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,27 +7,22 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -53,13 +38,8 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.AiBrain01
 import me.rerere.hugeicons.stroke.AiEditing
 import me.rerere.hugeicons.stroke.ArrowRight01
+import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.ai.prompts.DEFAULT_COMPRESS_PROMPT
-import me.rerere.rikkahub.data.ai.prompts.DEFAULT_OCR_PROMPT
-import me.rerere.rikkahub.data.ai.prompts.DEFAULT_SUGGESTION_PROMPT
-import me.rerere.rikkahub.data.ai.prompts.DEFAULT_TITLE_PROMPT
-import me.rerere.rikkahub.data.ai.prompts.DEFAULT_TRANSLATION_PROMPT
-import me.rerere.rikkahub.ui.components.ai.ReasoningButton
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.ui.components.ai.ModelListSheet
 import me.rerere.rikkahub.ui.components.ai.rememberModelListState
@@ -81,12 +61,8 @@ fun SettingModelPage(vm: SettingVM = koinViewModel()) {
         containerColor = CustomColors.topBarColors.containerColor,
         topBar = {
             LargeFlexibleTopAppBar(
-                title = {
-                    Text(stringResource(R.string.setting_model_page_title))
-                },
-                navigationIcon = {
-                    BackButton()
-                },
+                title = { Text(stringResource(R.string.setting_model_page_title)) },
+                navigationIcon = { BackButton() },
                 scrollBehavior = scrollBehavior,
                 colors = CustomColors.topBarColors,
             )
@@ -111,33 +87,13 @@ fun SettingModelPage(vm: SettingVM = koinViewModel()) {
         },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
     ) { contentPadding ->
-        LazyColumn(
+        HorizontalPager(
+            state = pagerState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = contentPadding + PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            item {
-                DefaultChatModelSetting(settings = settings, vm = vm)
-            }
-
-            item {
-                DefaultTitleModelSetting(settings = settings, vm = vm)
-            }
-
-            item {
-                DefaultSuggestionModelSetting(settings = settings, vm = vm)
-            }
-
-            item {
-                DefaultTranslationModelSetting(settings = settings, vm = vm)
-            }
-
-            item {
-                DefaultOcrModelSetting(settings = settings, vm = vm)
-            }
-
-            item {
-                DefaultCompressModelSetting(settings = settings, vm = vm)
+        ) { page ->
+            when (page) {
+                0 -> ModelSettingsPage(settings = settings, vm = vm, contentPadding = contentPadding)
+                1 -> PromptSettingsPage(settings = settings, vm = vm, contentPadding = contentPadding)
             }
         }
     }
@@ -158,37 +114,15 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
                 providers = settings.providers,
                 onSelect = { vm.updateSettings(settings.copy(chatModelId = it.id)) },
             )
-        },
-        description = {
-            Text(stringResource(R.string.setting_model_page_translate_model_desc))
-        },
-        icon = {
-            Icon(HugeIcons.Earth, null)
-        },
-        actions = {
-            Box(modifier = Modifier.weight(1f)) {
-                ModelSelector(
-                    modelId = settings.translateModeId,
-                    type = ModelType.CHAT,
-                    onSelect = {
-                        vm.updateSettings(
-                            settings.copy(
-                                translateModeId = it.id
-                            )
-                        )
-                    },
-                    providers = settings.providers,
-                    modifier = Modifier.wrapContentWidth()
-                )
-            }
-            IconButton(
-                onClick = {
-                    showModal = true
-                },
-                colors = IconButtonDefaults.filledTonalIconButtonColors()
-            ) {
-                Icon(HugeIcons.Tools, null)
-            }
+        }
+        item {
+            ModelSettingItem(
+                title = stringResource(R.string.setting_model_page_fast_model),
+                description = stringResource(R.string.setting_model_page_fast_model_desc),
+                modelId = settings.fastModelId,
+                providers = settings.providers,
+                onSelect = { vm.updateSettings(settings.copy(fastModelId = it.id)) },
+            )
         }
         item {
             ModelSettingItem(
@@ -197,15 +131,13 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
                 modelId = settings.titleModelId,
                 providers = settings.providers,
                 onSelect = { vm.updateSettings(settings.copy(titleModelId = it.id)) },
+                onClear = { vm.updateSettings(settings.copy(titleModelId = null)) },
             )
         }
         item {
-            ModelSettingItem(
-                title = stringResource(R.string.setting_model_page_suggestion_model),
-                description = stringResource(R.string.setting_model_page_suggestion_model_desc),
-                modelId = settings.suggestionModelId,
-                providers = settings.providers,
-                onSelect = { vm.updateSettings(settings.copy(suggestionModelId = it.id)) },
+            SuggestionModelSettingItem(
+                settings = settings,
+                vm = vm,
             )
         }
         item {
@@ -239,12 +171,85 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
 }
 
 @Composable
+private fun SuggestionModelSettingItem(
+    settings: Settings,
+    vm: SettingVM,
+) {
+    val title = stringResource(R.string.setting_model_page_suggestion_model)
+    val state = rememberModelListState(
+        modelId = settings.suggestionModelId,
+        providers = settings.providers,
+        type = ModelType.CHAT,
+    )
+
+    Column {
+        CardGroup(title = { Text(title) }) {
+            item(
+                headlineContent = { Text(stringResource(R.string.setting_model_page_enable_suggestion)) },
+                trailingContent = {
+                    Switch(
+                        checked = settings.enableSuggestion,
+                        onCheckedChange = {
+                            vm.updateSettings(settings.copy(enableSuggestion = it))
+                        }
+                    )
+                },
+            )
+            if (settings.enableSuggestion) {
+                item(
+                    onClick = { state.open() },
+                    headlineContent = { Text(title) },
+                    trailingContent = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(
+                                text = state.currentModel?.displayName
+                                    ?: stringResource(R.string.model_list_select_model),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            if (state.currentModel != null) {
+                                IconButton(
+                                    onClick = { vm.updateSettings(settings.copy(suggestionModelId = null)) },
+                                    modifier = Modifier.size(20.dp),
+                                ) {
+                                    Icon(HugeIcons.Cancel01, contentDescription = null, modifier = Modifier.size(14.dp))
+                                }
+                            } else {
+                                Icon(
+                                    HugeIcons.ArrowRight01,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
+                        }
+                    },
+                )
+            }
+        }
+        Text(
+            text = stringResource(R.string.setting_model_page_suggestion_model_desc),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+        )
+    }
+
+    ModelListSheet(state = state, onSelect = { vm.updateSettings(settings.copy(suggestionModelId = it.id)) })
+}
+
+@Composable
 private fun ModelSettingItem(
     title: String,
     description: String,
     modelId: Uuid?,
     providers: List<ProviderSetting>,
     onSelect: (Model) -> Unit,
+    onClear: (() -> Unit)? = null,
 ) {
     val state = rememberModelListState(
         modelId = modelId,
@@ -270,11 +275,17 @@ private fun ModelSettingItem(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        Icon(
-                            HugeIcons.ArrowRight01,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                        )
+                        if (onClear != null && state.currentModel != null) {
+                            IconButton(onClick = onClear, modifier = Modifier.size(20.dp)) {
+                                Icon(HugeIcons.Cancel01, contentDescription = null, modifier = Modifier.size(14.dp))
+                            }
+                        } else {
+                            Icon(
+                                HugeIcons.ArrowRight01,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
                     }
                 },
             )

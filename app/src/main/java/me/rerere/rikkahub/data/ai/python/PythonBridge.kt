@@ -228,6 +228,7 @@ class PythonBridge(
             when (key) {
                 "theme" -> s.themeId
                 "dynamic_color", "dynamicColor" -> s.dynamicColor.toString()
+                "web_search", "enableWebSearch" -> s.enableWebSearch.toString()
                 "default_chat_model", "chatModelId" -> s.chatModelId.toString()
                 "embedding_model", "embeddingModelId" -> s.embeddingModelId?.toString() ?: "使用聊天模型"
                 "web_server_enabled", "webServerEnabled" -> s.webServerEnabled.toString()
@@ -246,6 +247,7 @@ class PythonBridge(
             val updated = when (key) {
                 "theme" -> s.copy(themeId = value)
                 "dynamic_color", "dynamicColor" -> s.copy(dynamicColor = bool())
+                "web_search", "enableWebSearch" -> s.copy(enableWebSearch = bool())
                 "default_chat_model", "chatModelId" -> s.copy(chatModelId = Uuid.parse(value))
                 "web_server_enabled", "webServerEnabled" -> s.copy(webServerEnabled = bool())
                 "web_server_port", "webServerPort" -> s.copy(webServerPort = int())

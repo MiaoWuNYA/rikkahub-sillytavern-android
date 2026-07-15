@@ -676,7 +676,7 @@ sealed interface Screen : NavKey {
     data object ImageGen : Screen
 
     @Serializable
-    data class WebView(val url: String = "", val content: String = "") : Screen
+    data class WebView(val url: String = "", val content: String = "", val contentId: String = "") : Screen
 
     @Serializable
     data object SettingTheme : Screen

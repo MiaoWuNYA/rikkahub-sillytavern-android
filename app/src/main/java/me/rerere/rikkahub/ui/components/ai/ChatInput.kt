@@ -100,6 +100,7 @@ import me.rerere.rikkahub.data.datastore.getQuickMessagesOfAssistant
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.files.SkillManager
 import me.rerere.rikkahub.data.model.Assistant
+import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.model.QuickMessage
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionContext
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionItem
@@ -136,6 +137,8 @@ fun ChatInput(
     onMoreClick: () -> Unit,
     onCancelClick: () -> Unit,
     onSendClick: () -> Unit,
+    onUpdateConversation: (Conversation) -> Unit = {},
+    onCompressContext: (String, String, String) -> Unit = { _, _, _ -> },
     onLongSendClick: () -> Unit,
 ) {
     val toaster = LocalToaster.current
