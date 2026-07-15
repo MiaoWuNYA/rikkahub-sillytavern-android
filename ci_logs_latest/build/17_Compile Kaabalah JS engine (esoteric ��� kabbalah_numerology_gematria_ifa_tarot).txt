@@ -1,0 +1,206 @@
+﻿2026-07-15T03:32:42.1873088Z ##[group]Run mkdir -p /tmp/kaabalah_build
+2026-07-15T03:32:42.1873493Z [36;1mmkdir -p /tmp/kaabalah_build[0m
+2026-07-15T03:32:42.1873898Z [36;1mcd /tmp && npm pack kaabalah --pack-destination /tmp/kaabalah_build 2>&1[0m
+2026-07-15T03:32:42.1874398Z [36;1mcd /tmp/kaabalah_build && tar xzf kaabalah-*.tgz && cd package[0m
+2026-07-15T03:32:42.1874790Z [36;1mnpm install --production 2>&1 | tail -3[0m
+2026-07-15T03:32:42.1875285Z [36;1m# Patch: Math.random→crypto (shuffleTarotDeck/shuffleArray 默认RNG用硬件熵)[0m
+2026-07-15T03:32:42.1875852Z [36;1msed -i 's/rng = Math\.random/rng = cryptoRandom/g' dist/chunk-GET23WEG.js[0m
+2026-07-15T03:32:42.1876459Z [36;1msed -i 's/options\.rng ?? Math\.random/options.rng ?? cryptoRandom/g' dist/chunk-GET23WEG.js[0m
+2026-07-15T03:32:42.1877250Z [36;1mgrep -n "Math.random" dist/chunk-GET23WEG.js && echo "WARNING: Math.random still present!" || echo "OK: no Math.random remaining"[0m
+2026-07-15T03:32:42.1877830Z [36;1m# 只导出纯JS可用部分 (排除WASM依赖的占星 + SVG绘图)[0m
+2026-07-15T03:32:42.1878213Z [36;1mcat > kaabalah-entry.mjs << 'ENTRYEOF'[0m
+2026-07-15T03:32:42.1878508Z [36;1mexport {[0m
+2026-07-15T03:32:42.1878796Z [36;1m  SPHERES, SPHERES_DATA, FOUR_WORLDS, FOUR_WORLDS_DATA,[0m
+2026-07-15T03:32:42.1879249Z [36;1m  HEBREW_LETTERS, HEBREW_LETTERS_DATA, LATIN_LETTERS, LATIN_LETTERS_DATA,[0m
+2026-07-15T03:32:42.1879667Z [36;1m  LURIANIC_PATHS, MELKITZEDEKI_PATHS,[0m
+2026-07-15T03:32:42.1880040Z [36;1m  TreeOfLife, TreeTopology, TREE_SPHERE_IDS, TREE_PATH_IDS,[0m
+2026-07-15T03:32:42.1880538Z [36;1m  buildKaabalisticMapData, getCanonicalTree, getTreeLayout, getTreeTopology,[0m
+2026-07-15T03:32:42.1881102Z [36;1m  getAstrologyTreeMarkers, getGematriaTreeMarkers, getNumerologyTreeMarkers,[0m
+2026-07-15T03:32:42.1882170Z [36;1m  calculateKaabalisticLifePath, calculateStraightAcrossReductionLifePath,[0m
+2026-07-15T03:32:42.1882644Z [36;1m  getKaabalisticCorrespondenceTargets,[0m
+2026-07-15T03:32:42.1883011Z [36;1m  calculateGematria, reverseGematria, GematriaData,[0m
+2026-07-15T03:32:42.1883495Z [36;1m  calculatePersonalYear, calculatePersonalMonths, calculatePersonalCycles,[0m
+2026-07-15T03:32:42.1884019Z [36;1m  calculateChallenges, calculateCycles, calculateFibonacciCycle,[0m
+2026-07-15T03:32:42.1884538Z [36;1m  reduceToSingle, reduceToSingleWithSteps, isMasterNumber, getDateEnergies,[0m
+2026-07-15T03:32:42.1884964Z [36;1m  MASTER_NUMBERS, NumerologyData,[0m
+2026-07-15T03:32:42.1885241Z [36;1m  calculateOdu[0m
+2026-07-15T03:32:42.1885474Z [36;1m} from "./dist/index";[0m
+2026-07-15T03:32:42.1885715Z [36;1mENTRYEOF[0m
+2026-07-15T03:32:42.1886791Z [36;1mnpx esbuild kaabalah-entry.mjs --bundle --platform=node --format=iife --global-name=Kaabalah --target=es2020 --external:*.wasm --tree-shaking=false --banner:js="function cryptoRandom(){var r=new Uint32Array(1);crypto.getRandomValues(r);return r[0]/4294967296;}" --outfile=kaabalah-engine.js 2>&1 | tail -3[0m
+2026-07-15T03:32:42.1887973Z [36;1mmkdir -p ${GITHUB_WORKSPACE}/app/src/main/assets/[0m
+2026-07-15T03:32:42.1888444Z [36;1mcp kaabalah-engine.js ${GITHUB_WORKSPACE}/app/src/main/assets/[0m
+2026-07-15T03:32:42.1889088Z [36;1mecho "Kaabalah JS engine compiled: $(wc -c < kaabalah-engine.js) bytes"[0m
+2026-07-15T03:32:42.1927497Z shell: /usr/bin/bash -e {0}
+2026-07-15T03:32:42.1927759Z env:
+2026-07-15T03:32:42.1928076Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:32:42.1928584Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:32:42.1929027Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:32:42.1929442Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+2026-07-15T03:32:42.1929851Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:32:42.1930414Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:32:42.1930789Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:32:42.1931156Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+2026-07-15T03:32:42.1932194Z   PIP_FIND_LINKS: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/offline_pkgs
+2026-07-15T03:32:42.1932657Z ##[endgroup]
+2026-07-15T03:32:42.8319809Z npm notice
+2026-07-15T03:32:42.8320573Z npm notice 📦  kaabalah@6.12.1
+2026-07-15T03:32:42.8321010Z npm notice Tarball Contents
+2026-07-15T03:32:42.8324210Z npm notice 1.1kB LICENSE
+2026-07-15T03:32:42.8325075Z npm notice 3.3kB README.md
+2026-07-15T03:32:42.8325481Z npm notice 21.5kB dist/astrology/index.d.mts
+2026-07-15T03:32:42.8325965Z npm notice 21.5kB dist/astrology/index.d.ts
+2026-07-15T03:32:42.8326423Z npm notice 7.6kB dist/astrology/index.js
+2026-07-15T03:32:42.8326872Z npm notice 51B dist/astrology/index.js.map
+2026-07-15T03:32:42.8327369Z npm notice 1.1kB dist/astrology/index.mjs
+2026-07-15T03:32:42.8327814Z npm notice 51B dist/astrology/index.mjs.map
+2026-07-15T03:32:42.8328299Z npm notice 2.4kB dist/chunk-2WCC2KCJ.js
+2026-07-15T03:32:42.8328741Z npm notice 4.8kB dist/chunk-2WCC2KCJ.js.map
+2026-07-15T03:32:42.8329195Z npm notice 62.5kB dist/chunk-4XS3UZEI.js
+2026-07-15T03:32:42.8329642Z npm notice 118.3kB dist/chunk-4XS3UZEI.js.map
+2026-07-15T03:32:42.8330098Z npm notice 190.1kB dist/chunk-6GDEXIDI.js
+2026-07-15T03:32:42.8330542Z npm notice 352.4kB dist/chunk-6GDEXIDI.js.map
+2026-07-15T03:32:42.8330991Z npm notice 25.6kB dist/chunk-47BAJUYW.js
+2026-07-15T03:32:42.8331591Z npm notice 53.3kB dist/chunk-47BAJUYW.js.map
+2026-07-15T03:32:42.8332035Z npm notice 1.3kB dist/chunk-4337NVKS.js
+2026-07-15T03:32:42.8332457Z npm notice 71B dist/chunk-4337NVKS.js.map
+2026-07-15T03:32:42.8332886Z npm notice 74.6kB dist/chunk-CW6QDSMF.js
+2026-07-15T03:32:42.8333326Z npm notice 107.9kB dist/chunk-CW6QDSMF.js.map
+2026-07-15T03:32:42.8333781Z npm notice 77.6kB dist/chunk-GET23WEG.js
+2026-07-15T03:32:42.8334217Z npm notice 146.9kB dist/chunk-GET23WEG.js.map
+2026-07-15T03:32:42.8334666Z npm notice 59.4kB dist/chunk-KYYS4GHH.mjs
+2026-07-15T03:32:42.8335118Z npm notice 118.3kB dist/chunk-KYYS4GHH.mjs.map
+2026-07-15T03:32:42.8335600Z npm notice 188.5kB dist/chunk-LXJ3THNW.mjs
+2026-07-15T03:32:42.8336065Z npm notice 352.4kB dist/chunk-LXJ3THNW.mjs.map
+2026-07-15T03:32:42.8336528Z npm notice 202.2kB dist/chunk-NOZKIUGP.mjs
+2026-07-15T03:32:42.8336982Z npm notice 350.7kB dist/chunk-NOZKIUGP.mjs.map
+2026-07-15T03:32:42.8337445Z npm notice 1.2kB dist/chunk-NPQZ2DOY.mjs
+2026-07-15T03:32:42.8337894Z npm notice 71B dist/chunk-NPQZ2DOY.mjs.map
+2026-07-15T03:32:42.8338173Z npm notice 74.2kB dist/chunk-OSMB2MJR.mjs
+2026-07-15T03:32:42.8338496Z npm notice 107.9kB dist/chunk-OSMB2MJR.mjs.map
+2026-07-15T03:32:42.8338778Z npm notice 73.4kB dist/chunk-PEHDLSUH.mjs
+2026-07-15T03:32:42.8339055Z npm notice 162.7kB dist/chunk-PEHDLSUH.mjs.map
+2026-07-15T03:32:42.8339343Z npm notice 203.3kB dist/chunk-Q7YAKPBH.js
+2026-07-15T03:32:42.8339622Z npm notice 350.7kB dist/chunk-Q7YAKPBH.js.map
+2026-07-15T03:32:42.8339908Z npm notice 59.6kB dist/chunk-RAQDVWNK.mjs
+2026-07-15T03:32:42.8340183Z npm notice 84.5kB dist/chunk-RAQDVWNK.mjs.map
+2026-07-15T03:32:42.8340466Z npm notice 74.9kB dist/chunk-SWWLTDR6.js
+2026-07-15T03:32:42.8340742Z npm notice 162.7kB dist/chunk-SWWLTDR6.js.map
+2026-07-15T03:32:42.8341019Z npm notice 60.1kB dist/chunk-UNXDDLZS.js
+2026-07-15T03:32:42.8341469Z npm notice 84.5kB dist/chunk-UNXDDLZS.js.map
+2026-07-15T03:32:42.8341787Z npm notice 2.3kB dist/chunk-URDMOQRN.mjs
+2026-07-15T03:32:42.8342063Z npm notice 4.8kB dist/chunk-URDMOQRN.mjs.map
+2026-07-15T03:32:42.8342339Z npm notice 76.6kB dist/chunk-WER5UY5M.mjs
+2026-07-15T03:32:42.8342616Z npm notice 146.9kB dist/chunk-WER5UY5M.mjs.map
+2026-07-15T03:32:42.8342896Z npm notice 24.5kB dist/chunk-X5HGLMEF.mjs
+2026-07-15T03:32:42.8343172Z npm notice 53.3kB dist/chunk-X5HGLMEF.mjs.map
+2026-07-15T03:32:42.8343738Z npm notice 1.2MB dist/cli.js
+2026-07-15T03:32:42.8343995Z npm notice 2.1MB dist/cli.js.map
+2026-07-15T03:32:42.8344253Z npm notice 5.6kB dist/core/index.d.mts
+2026-07-15T03:32:42.8344525Z npm notice 5.6kB dist/core/index.d.ts
+2026-07-15T03:32:42.8344785Z npm notice 7.3kB dist/core/index.js
+2026-07-15T03:32:42.8345259Z npm notice 51B dist/core/index.js.map
+2026-07-15T03:32:42.8345512Z npm notice 993B dist/core/index.mjs
+2026-07-15T03:32:42.8345764Z npm notice 51B dist/core/index.mjs.map
+2026-07-15T03:32:42.8346281Z npm notice 26.0kB dist/correspondence-model-JSyDWwmn.d.mts
+2026-07-15T03:32:42.8346897Z npm notice 26.0kB dist/correspondence-model-JSyDWwmn.d.ts
+2026-07-15T03:32:42.8347797Z npm notice 1.5kB dist/data-_b06lgY6.d.ts
+2026-07-15T03:32:42.8348174Z npm notice 1.5kB dist/data-CdjlIcAo.d.mts
+2026-07-15T03:32:42.8348530Z npm notice 6.7kB dist/gematria/index.d.mts
+2026-07-15T03:32:42.8348840Z npm notice 6.7kB dist/gematria/index.d.ts
+2026-07-15T03:32:42.8349194Z npm notice 623B dist/gematria/index.js
+2026-07-15T03:32:42.8349522Z npm notice 51B dist/gematria/index.js.map
+2026-07-15T03:32:42.8349891Z npm notice 236B dist/gematria/index.mjs
+2026-07-15T03:32:42.8350248Z npm notice 51B dist/gematria/index.mjs.map
+2026-07-15T03:32:42.8350531Z npm notice 376B dist/ifa/index.d.mts
+2026-07-15T03:32:42.8350801Z npm notice 376B dist/ifa/index.d.ts
+2026-07-15T03:32:42.8351068Z npm notice 306B dist/ifa/index.js
+2026-07-15T03:32:42.8351537Z npm notice 51B dist/ifa/index.js.map
+2026-07-15T03:32:42.8351894Z npm notice 152B dist/ifa/index.mjs
+2026-07-15T03:32:42.8352149Z npm notice 51B dist/ifa/index.mjs.map
+2026-07-15T03:32:42.8352404Z npm notice 11.4kB dist/index.d.mts
+2026-07-15T03:32:42.8352648Z npm notice 11.4kB dist/index.d.ts
+2026-07-15T03:32:42.8352888Z npm notice 30.8kB dist/index.js
+2026-07-15T03:32:42.8353134Z npm notice 51B dist/index.js.map
+2026-07-15T03:32:42.8353376Z npm notice 4.6kB dist/index.mjs
+2026-07-15T03:32:42.8353609Z npm notice 51B dist/index.mjs.map
+2026-07-15T03:32:42.8353872Z npm notice 10.7kB dist/numerology/index.d.mts
+2026-07-15T03:32:42.8354180Z npm notice 10.7kB dist/numerology/index.d.ts
+2026-07-15T03:32:42.8354474Z npm notice 2.5kB dist/numerology/index.js
+2026-07-15T03:32:42.8354762Z npm notice 51B dist/numerology/index.js.map
+2026-07-15T03:32:42.8355054Z npm notice 558B dist/numerology/index.mjs
+2026-07-15T03:32:42.8355337Z npm notice 51B dist/numerology/index.mjs.map
+2026-07-15T03:32:42.8355626Z npm notice 11.9kB dist/semantic/index.d.mts
+2026-07-15T03:32:42.8355903Z npm notice 11.9kB dist/semantic/index.d.ts
+2026-07-15T03:32:42.8356178Z npm notice 3.4kB dist/semantic/index.js
+2026-07-15T03:32:42.8356452Z npm notice 51B dist/semantic/index.js.map
+2026-07-15T03:32:42.8356722Z npm notice 814B dist/semantic/index.mjs
+2026-07-15T03:32:42.8357021Z npm notice 51B dist/semantic/index.mjs.map
+2026-07-15T03:32:42.8357330Z npm notice 148.1kB dist/swisseph.node-53QCJWTI.mjs
+2026-07-15T03:32:42.8357683Z npm notice 190.9kB dist/swisseph.node-53QCJWTI.mjs.map
+2026-07-15T03:32:42.8358033Z npm notice 148.3kB dist/swisseph.node-CGBZTQ5N.js
+2026-07-15T03:32:42.8358461Z npm notice 190.9kB dist/swisseph.node-CGBZTQ5N.js.map
+2026-07-15T03:32:42.8358959Z npm notice 438.0kB dist/swisseph.node-GPVFDOB6.wasm
+2026-07-15T03:32:42.8359414Z npm notice 98.6kB dist/swisseph.node.js
+2026-07-15T03:32:42.8359817Z npm notice 438.0kB dist/swisseph.node.wasm
+2026-07-15T03:32:42.8360265Z npm notice 438.0kB dist/swisseph.web-GPVFDOB6.wasm
+2026-07-15T03:32:42.8360754Z npm notice 135.3kB dist/swisseph.web-SRINFOJC.mjs
+2026-07-15T03:32:42.8361250Z npm notice 173.2kB dist/swisseph.web-SRINFOJC.mjs.map
+2026-07-15T03:32:42.8361898Z npm notice 135.5kB dist/swisseph.web-XCF4GL2M.js
+2026-07-15T03:32:42.8362399Z npm notice 173.2kB dist/swisseph.web-XCF4GL2M.js.map
+2026-07-15T03:32:42.8362859Z npm notice 90.0kB dist/swisseph.web.js
+2026-07-15T03:32:42.8363257Z npm notice 438.0kB dist/swisseph.web.wasm
+2026-07-15T03:32:42.8363657Z npm notice 12.8kB dist/tarot/index.d.mts
+2026-07-15T03:32:42.8364058Z npm notice 12.8kB dist/tarot/index.d.ts
+2026-07-15T03:32:42.8364643Z npm notice 3.5kB dist/tarot/index.js
+2026-07-15T03:32:42.8365029Z npm notice 51B dist/tarot/index.js.map
+2026-07-15T03:32:42.8365412Z npm notice 659B dist/tarot/index.mjs
+2026-07-15T03:32:42.8365791Z npm notice 51B dist/tarot/index.mjs.map
+2026-07-15T03:32:42.8366358Z npm notice 5.0kB dist/topology-CH3hsIqO.d.mts
+2026-07-15T03:32:42.8366983Z npm notice 5.0kB dist/topology-DXYTpDvj.d.ts
+2026-07-15T03:32:42.8367558Z npm notice 30.4kB dist/visual/index.d.mts
+2026-07-15T03:32:42.8368253Z npm notice 30.4kB dist/visual/index.d.ts
+2026-07-15T03:32:42.8368785Z npm notice 6.9kB dist/visual/index.js
+2026-07-15T03:32:42.8369405Z npm notice 51B dist/visual/index.js.map
+2026-07-15T03:32:42.8369959Z npm notice 1.3kB dist/visual/index.mjs
+2026-07-15T03:32:42.8370465Z npm notice 51B dist/visual/index.mjs.map
+2026-07-15T03:32:42.8390508Z npm notice 148.1kB dist/wasm/build/swisseph.node-53QCJWTI.mjs
+2026-07-15T03:32:42.8391152Z npm notice 190.9kB dist/wasm/build/swisseph.node-53QCJWTI.mjs.map
+2026-07-15T03:32:42.8391933Z npm notice 148.3kB dist/wasm/build/swisseph.node-CGBZTQ5N.js
+2026-07-15T03:32:42.8392528Z npm notice 190.9kB dist/wasm/build/swisseph.node-CGBZTQ5N.js.map
+2026-07-15T03:32:42.8393128Z npm notice 438.0kB dist/wasm/build/swisseph.node-GPVFDOB6.wasm
+2026-07-15T03:32:42.8393670Z npm notice 98.6kB dist/wasm/build/swisseph.node.js
+2026-07-15T03:32:42.8394163Z npm notice 438.0kB dist/wasm/build/swisseph.node.wasm
+2026-07-15T03:32:42.8394701Z npm notice 438.0kB dist/wasm/build/swisseph.web-GPVFDOB6.wasm
+2026-07-15T03:32:42.8395364Z npm notice 135.3kB dist/wasm/build/swisseph.web-SRINFOJC.mjs
+2026-07-15T03:32:42.8395945Z npm notice 173.2kB dist/wasm/build/swisseph.web-SRINFOJC.mjs.map
+2026-07-15T03:32:42.8396526Z npm notice 135.5kB dist/wasm/build/swisseph.web-XCF4GL2M.js
+2026-07-15T03:32:42.8397108Z npm notice 173.2kB dist/wasm/build/swisseph.web-XCF4GL2M.js.map
+2026-07-15T03:32:42.8397653Z npm notice 90.0kB dist/wasm/build/swisseph.web.js
+2026-07-15T03:32:42.8398135Z npm notice 438.0kB dist/wasm/build/swisseph.web.wasm
+2026-07-15T03:32:42.8398589Z npm notice 223.0kB ephe/seas_18.se1
+2026-07-15T03:32:42.8398962Z npm notice 1.3MB ephe/semo_18.se1
+2026-07-15T03:32:42.8399317Z npm notice 484.1kB ephe/sepl_18.se1
+2026-07-15T03:32:42.8399682Z npm notice 3.7kB package.json
+2026-07-15T03:32:42.8400066Z npm notice 98.6kB wasm/build/swisseph.node.js
+2026-07-15T03:32:42.8400528Z npm notice 438.0kB wasm/build/swisseph.node.wasm
+2026-07-15T03:32:42.8400990Z npm notice 90.0kB wasm/build/swisseph.web.js
+2026-07-15T03:32:42.8401575Z npm notice 438.0kB wasm/build/swisseph.web.wasm
+2026-07-15T03:32:42.8402018Z npm notice Tarball Details
+2026-07-15T03:32:42.8402365Z npm notice name: kaabalah
+2026-07-15T03:32:42.8402703Z npm notice version: 6.12.1
+2026-07-15T03:32:42.8403067Z npm notice filename: kaabalah-6.12.1.tgz
+2026-07-15T03:32:42.8403486Z npm notice package size: 6.2 MB
+2026-07-15T03:32:42.8403863Z npm notice unpacked size: 17.5 MB
+2026-07-15T03:32:42.8404330Z npm notice shasum: 866408e4ccd0fbeef80ad3576eceafb07513ed47
+2026-07-15T03:32:42.8404940Z npm notice integrity: sha512-79tBnLDltpD2y[...]rJMqGx3KRzLHg==
+2026-07-15T03:32:42.8405442Z npm notice total files: 140
+2026-07-15T03:32:42.8405767Z npm notice
+2026-07-15T03:32:42.8406045Z kaabalah-6.12.1.tgz
+2026-07-15T03:32:46.2974551Z   run `npm fund` for details
+2026-07-15T03:32:46.2974931Z 
+2026-07-15T03:32:46.2975049Z found 0 vulnerabilities
+2026-07-15T03:32:46.3045151Z OK: no Math.random remaining
+2026-07-15T03:32:47.2097210Z   kaabalah-engine.js  1.3mb ⚠️
+2026-07-15T03:32:47.2097518Z 
+2026-07-15T03:32:47.2097656Z ⚡ Done in 27ms
+2026-07-15T03:32:47.2154449Z Kaabalah JS engine compiled: 1335739 bytes

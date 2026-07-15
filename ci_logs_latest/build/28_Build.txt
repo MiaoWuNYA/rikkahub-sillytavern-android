@@ -1,0 +1,1161 @@
+﻿2026-07-15T03:36:33.9425673Z ##[group]Run chmod +x gradlew
+2026-07-15T03:36:33.9425977Z [36;1mchmod +x gradlew[0m
+2026-07-15T03:36:33.9426258Z [36;1mrm -rf app/build/python/  # 清理之前失败构建的脏缓存[0m
+2026-07-15T03:36:33.9426790Z [36;1m./gradlew assembleRelease -x :web:buildWebUi --no-build-cache --stacktrace 2>&1 | tee build.log[0m
+2026-07-15T03:36:33.9427278Z [36;1mexit ${PIPESTATUS[0]}[0m
+2026-07-15T03:36:33.9463999Z shell: /usr/bin/bash -e {0}
+2026-07-15T03:36:33.9464260Z env:
+2026-07-15T03:36:33.9464575Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:36:33.9465073Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:36:33.9465542Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:36:33.9465963Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+2026-07-15T03:36:33.9466373Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:36:33.9466744Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:36:33.9467145Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:36:33.9467729Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+2026-07-15T03:36:33.9468299Z   PIP_FIND_LINKS: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/offline_pkgs
+2026-07-15T03:36:33.9468775Z ##[endgroup]
+2026-07-15T03:36:34.6142775Z Starting a Gradle Daemon (subsequent builds will be faster)
+2026-07-15T03:36:42.3161123Z 
+2026-07-15T03:36:42.3169347Z > Configure project :ai
+2026-07-15T03:36:42.3170368Z WARNING: The option setting 'android.disallowKotlinSourceSets=false' is experimental.
+2026-07-15T03:36:42.3171530Z The current default is 'true'.
+2026-07-15T03:36:47.7116199Z 
+2026-07-15T03:36:47.7129709Z > Task :ai:preBuild UP-TO-DATE
+2026-07-15T03:36:47.7130555Z > Task :ai:preReleaseBuild UP-TO-DATE
+2026-07-15T03:36:47.7131228Z > Task :common:preBuild UP-TO-DATE
+2026-07-15T03:36:47.7132125Z > Task :common:preReleaseBuild UP-TO-DATE
+2026-07-15T03:36:47.9162574Z > Task :common:writeReleaseAarMetadata
+2026-07-15T03:36:48.0147146Z > Task :ai:mergeReleaseJniLibFolders
+2026-07-15T03:37:06.1143112Z > Task :ai:mergeReleaseNativeLibs NO-SOURCE
+2026-07-15T03:37:06.1174231Z > Task :ai:checkReleaseAarMetadata
+2026-07-15T03:37:06.1203083Z > Task :ai:stripReleaseDebugSymbols NO-SOURCE
+2026-07-15T03:37:06.1232952Z > Task :ai:copyReleaseJniLibsProjectAndLocalJars
+2026-07-15T03:37:06.1263173Z > Task :ai:extractDeepLinksForAarRelease
+2026-07-15T03:37:06.1276602Z > Task :ai:generateReleaseResources
+2026-07-15T03:37:06.2117363Z > Task :ai:packageReleaseResources
+2026-07-15T03:37:06.2118266Z > Task :ai:processReleaseNavigationResources
+2026-07-15T03:37:08.8192816Z > Task :common:generateReleaseResources
+2026-07-15T03:37:08.8252402Z > Task :common:packageReleaseResources
+2026-07-15T03:37:08.8253080Z > Task :common:processReleaseNavigationResources
+2026-07-15T03:37:08.9152577Z > Task :ai:generateReleaseAssets UP-TO-DATE
+2026-07-15T03:37:08.9202246Z > Task :common:javaPreCompileRelease
+2026-07-15T03:37:08.9231987Z > Task :ai:mergeReleaseAssets
+2026-07-15T03:37:08.9261889Z > Task :ai:javaPreCompileRelease
+2026-07-15T03:37:08.9290858Z > Task :ai:prepareLintJarForPublish
+2026-07-15T03:37:08.9310876Z > Task :ai:prepareReleaseArtProfile
+2026-07-15T03:37:08.9347368Z > Task :ai:writeReleaseAarMetadata
+2026-07-15T03:37:08.9361869Z > Task :ai:mapReleaseSourceSetPaths
+2026-07-15T03:37:09.1122666Z > Task :common:parseReleaseLocalResources
+2026-07-15T03:37:09.1152288Z > Task :ai:parseReleaseLocalResources
+2026-07-15T03:37:09.1152850Z > Task :ai:processReleaseManifest
+2026-07-15T03:37:11.2133971Z > Task :ai:mergeReleaseResources
+2026-07-15T03:37:11.2172328Z > Task :common:mapReleaseSourceSetPaths
+2026-07-15T03:37:11.3116779Z > Task :ai:generateReleaseRFile
+2026-07-15T03:37:11.3118720Z > Task :common:generateReleaseRFile
+2026-07-15T03:37:11.6122455Z > Task :common:compileReleaseLibraryResources
+2026-07-15T03:37:19.3117692Z > Task :ai:copyReleaseJniLibsProjectOnly
+2026-07-15T03:37:20.8120361Z > Task :app:generateReleasePythonJniLibs
+2026-07-15T03:37:20.8151855Z 
+2026-07-15T03:37:20.8182246Z > Task :app:checkJsEngines
+2026-07-15T03:37:20.8212477Z ✅ All 12 JS engines present in assets/
+2026-07-15T03:37:20.8221668Z 
+2026-07-15T03:37:20.8242140Z > Task :app:preBuild
+2026-07-15T03:37:20.8272279Z > Task :app:preReleaseBuild
+2026-07-15T03:37:21.1160217Z > Task :app:mergeReleaseJniLibFolders
+2026-07-15T03:37:21.1172177Z > Task :common:mergeReleaseJniLibFolders
+2026-07-15T03:37:21.1205176Z > Task :common:mergeReleaseNativeLibs NO-SOURCE
+2026-07-15T03:37:21.1238286Z > Task :document:preBuild UP-TO-DATE
+2026-07-15T03:37:21.1261978Z > Task :document:preReleaseBuild UP-TO-DATE
+2026-07-15T03:37:21.1292157Z > Task :common:copyReleaseJniLibsProjectOnly
+2026-07-15T03:37:21.3147415Z > Task :document:mergeReleaseJniLibFolders
+2026-07-15T03:37:21.3200556Z > Task :highlight:preBuild UP-TO-DATE
+2026-07-15T03:37:21.3232328Z > Task :highlight:preReleaseBuild UP-TO-DATE
+2026-07-15T03:37:21.3292457Z > Task :highlight:mergeReleaseJniLibFolders
+2026-07-15T03:37:21.3341274Z > Task :highlight:mergeReleaseNativeLibs NO-SOURCE
+2026-07-15T03:37:21.3351159Z > Task :highlight:copyReleaseJniLibsProjectOnly
+2026-07-15T03:37:21.3402072Z > Task :material3:preBuild UP-TO-DATE
+2026-07-15T03:37:21.3459815Z > Task :material3:preReleaseBuild UP-TO-DATE
+2026-07-15T03:37:21.4172780Z > Task :material3:mergeReleaseJniLibFolders
+2026-07-15T03:37:21.4173913Z > Task :material3:mergeReleaseNativeLibs NO-SOURCE
+2026-07-15T03:37:21.4200359Z > Task :material3:copyReleaseJniLibsProjectOnly
+2026-07-15T03:37:21.4222040Z > Task :search:preBuild UP-TO-DATE
+2026-07-15T03:37:21.4252211Z > Task :search:preReleaseBuild UP-TO-DATE
+2026-07-15T03:37:21.4281977Z > Task :search:mergeReleaseJniLibFolders
+2026-07-15T03:37:21.4302064Z > Task :search:mergeReleaseNativeLibs NO-SOURCE
+2026-07-15T03:37:21.4312045Z > Task :document:mergeReleaseNativeLibs
+2026-07-15T03:37:21.4342040Z > Task :search:copyReleaseJniLibsProjectOnly
+2026-07-15T03:37:21.5137904Z > Task :speech:preBuild UP-TO-DATE
+2026-07-15T03:37:21.5142103Z > Task :speech:preReleaseBuild UP-TO-DATE
+2026-07-15T03:37:21.5182020Z > Task :speech:mergeReleaseJniLibFolders
+2026-07-15T03:37:21.5202064Z > Task :speech:mergeReleaseNativeLibs NO-SOURCE
+2026-07-15T03:37:21.5221976Z > Task :speech:copyReleaseJniLibsProjectOnly
+2026-07-15T03:37:21.5244212Z > Task :web:preBuild
+2026-07-15T03:37:21.5252042Z > Task :web:preReleaseBuild
+2026-07-15T03:37:21.5282566Z > Task :document:copyReleaseJniLibsProjectOnly
+2026-07-15T03:37:21.5311996Z > Task :web:mergeReleaseJniLibFolders
+2026-07-15T03:37:21.6152616Z > Task :web:mergeReleaseNativeLibs NO-SOURCE
+2026-07-15T03:37:21.6212377Z > Task :workspace:preBuild UP-TO-DATE
+2026-07-15T03:37:21.6252566Z > Task :workspace:preReleaseBuild UP-TO-DATE
+2026-07-15T03:37:21.6272411Z > Task :web:copyReleaseJniLibsProjectOnly
+2026-07-15T03:37:22.5172462Z > Task :ai:verifyReleaseResources
+2026-07-15T03:37:23.7122598Z 
+2026-07-15T03:37:23.7123257Z > Task :workspace:configureCMakeRelWithDebInfo[arm64-v8a]
+2026-07-15T03:37:23.7124153Z Checking the license for package CMake 3.22.1 in /usr/local/lib/android/sdk/licenses
+2026-07-15T03:37:23.7124750Z License for package CMake 3.22.1 accepted.
+2026-07-15T03:37:23.7125268Z Preparing "Install CMake 3.22.1 v.3.22.1".
+2026-07-15T03:37:25.2151286Z "Install CMake 3.22.1 v.3.22.1" ready.
+2026-07-15T03:37:25.2162570Z Installing CMake 3.22.1 in /usr/local/lib/android/sdk/cmake/3.22.1
+2026-07-15T03:37:25.2163555Z "Install CMake 3.22.1 v.3.22.1" complete.
+2026-07-15T03:37:25.5152339Z "Install CMake 3.22.1 v.3.22.1" finished.
+2026-07-15T03:37:32.3116188Z 
+2026-07-15T03:37:32.3142917Z > Task :common:compileReleaseKotlin
+2026-07-15T03:37:32.3173668Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/common/src/main/java/me/rerere/common/http/AcceptLang.kt:61:28 'field locale: Locale!' is deprecated. Deprecated in Java.
+2026-07-15T03:37:32.3183294Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/common/src/main/java/me/rerere/common/http/JsonExpression.kt:359:13 'when' is exhaustive so 'else' is redundant here.
+2026-07-15T03:37:32.4121979Z 
+2026-07-15T03:37:32.4152993Z > Task :common:compileReleaseJavaWithJavac NO-SOURCE
+2026-07-15T03:37:32.5115810Z > Task :common:bundleLibCompileToJarRelease
+2026-07-15T03:37:36.0113620Z > Task :workspace:buildCMakeRelWithDebInfo[arm64-v8a]
+2026-07-15T03:37:43.9117136Z > Task :ai:extractReleaseAnnotations
+2026-07-15T03:37:46.7119857Z > Task :workspace:configureCMakeRelWithDebInfo[armeabi-v7a]
+2026-07-15T03:37:47.9126334Z > Task :workspace:buildCMakeRelWithDebInfo[armeabi-v7a]
+2026-07-15T03:37:49.4142450Z > Task :workspace:configureCMakeRelWithDebInfo[x86]
+2026-07-15T03:37:50.7147467Z > Task :workspace:buildCMakeRelWithDebInfo[x86]
+2026-07-15T03:37:51.7132612Z > Task :workspace:configureCMakeRelWithDebInfo[x86_64]
+2026-07-15T03:37:52.8134498Z > Task :workspace:buildCMakeRelWithDebInfo[x86_64]
+2026-07-15T03:37:52.9115041Z > Task :workspace:mergeReleaseJniLibFolders
+2026-07-15T03:37:52.9204994Z > Task :search:generateReleaseResources
+2026-07-15T03:37:53.0204877Z > Task :workspace:mergeReleaseNativeLibs
+2026-07-15T03:37:53.0231541Z > Task :search:packageReleaseResources
+2026-07-15T03:37:53.0301983Z > Task :search:processReleaseNavigationResources
+2026-07-15T03:37:53.0382013Z > Task :search:javaPreCompileRelease
+2026-07-15T03:37:53.0411864Z > Task :web:generateReleaseResources
+2026-07-15T03:37:53.0427465Z > Task :workspace:copyReleaseJniLibsProjectOnly
+2026-07-15T03:37:53.0502171Z > Task :search:parseReleaseLocalResources
+2026-07-15T03:37:53.1234121Z > Task :web:packageReleaseResources
+2026-07-15T03:37:57.7114544Z 
+2026-07-15T03:37:57.7132744Z > Task :ai:compileReleaseKotlin
+2026-07-15T03:37:57.7157159Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/ClaudeProvider.kt:83:78 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7182851Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/ClaudeProvider.kt:86:40 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7206864Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/ClaudeProvider.kt:128:86 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7242919Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/ClaudeProvider.kt:131:36 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7252960Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/GoogleProvider.kt:128:41 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7272895Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/GoogleProvider.kt:128:53 Elvis operator (?:) always returns the left operand of non-nullable type 'String'.
+2026-07-15T03:37:57.7303004Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/GoogleProvider.kt:185:86 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7333249Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/GoogleProvider.kt:188:36 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7342903Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/GoogleProvider.kt:188:48 Elvis operator (?:) always returns the left operand of non-nullable type 'String'.
+2026-07-15T03:37:57.7372926Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/GoogleProvider.kt:311:52 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7402938Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/OpenAIProvider.kt:70:78 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7412876Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/OpenAIProvider.kt:73:40 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7433327Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/OpenAIProvider.kt:73:52 Elvis operator (?:) always returns the left operand of non-nullable type 'String'.
+2026-07-15T03:37:57.7436182Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/OpenAIProvider.kt:102:75 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7439067Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/OpenAIProvider.kt:105:36 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7453423Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/OpenAIProvider.kt:183:82 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7456293Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/OpenAIProvider.kt:186:36 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7459121Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/OpenAIProvider.kt:186:48 Elvis operator (?:) always returns the left operand of non-nullable type 'String'.
+2026-07-15T03:37:57.7461944Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/OpenAIProvider.kt:239:82 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7464570Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/OpenAIProvider.kt:303:78 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7467203Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/openai/ChatCompletionsAPI.kt:98:86 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7469944Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/openai/ChatCompletionsAPI.kt:101:36 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7503116Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/openai/ResponseAPI.kt:95:86 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7506208Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/openai/ResponseAPI.kt:98:36 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7508988Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/openai/ResponseAPI.kt:98:48 Elvis operator (?:) always returns the left operand of non-nullable type 'String'.
+2026-07-15T03:37:57.7512468Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/vertex/ServiceAccountTokenProvider.kt:105:37 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7515686Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/provider/providers/vertex/ServiceAccountTokenProvider.kt:108:33 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:37:57.7518344Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/ui/Message.kt:418:26 'data class ToolCall : UIMessagePart' is deprecated. Use UIMessagePart.Tool instead.
+2026-07-15T03:37:57.7520785Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/ui/Message.kt:418:37 'data class ToolCall : UIMessagePart' is deprecated. Use UIMessagePart.Tool instead.
+2026-07-15T03:37:57.7524236Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/ui/Message.kt:419:20 'constructor(toolCallId: String, toolName: String, arguments: String, approvalState: ToolApprovalState = ..., metadata: JsonObject? = ...): UIMessagePart.ToolCall' is deprecated. Use UIMessagePart.Tool instead.
+2026-07-15T03:37:57.7527460Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/ui/Message.kt:503:30 'data class ToolCall : UIMessagePart' is deprecated. Use UIMessagePart.Tool instead.
+2026-07-15T03:37:57.7529941Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/ui/Message.kt:504:30 'data class ToolResult : UIMessagePart' is deprecated. Use UIMessagePart.Tool instead.
+2026-07-15T03:37:57.7532597Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/ui/Message.kt:505:30 'data object Search : UIMessagePart' is deprecated. Deprecated.
+2026-07-15T03:37:57.7536014Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/ai/src/main/java/me/rerere/ai/util/ErrorParser.kt:46:9 'when' is exhaustive so 'else' is redundant here.
+2026-07-15T03:38:23.1113747Z 
+2026-07-15T03:38:23.1114434Z > Task :app:mergeReleaseNativeLibs
+2026-07-15T03:38:29.7132672Z > Task :ai:compileReleaseJavaWithJavac NO-SOURCE
+2026-07-15T03:38:29.7145220Z > Task :ai:mergeReleaseGeneratedProguardFiles
+2026-07-15T03:38:29.7172310Z > Task :ai:mergeReleaseConsumerProguardFiles
+2026-07-15T03:38:29.8192211Z > Task :ai:processReleaseJavaRes
+2026-07-15T03:38:29.8221939Z > Task :search:generateReleaseRFile
+2026-07-15T03:38:29.8252107Z > Task :ai:bundleLibCompileToJarRelease
+2026-07-15T03:38:29.8282191Z > Task :ai:exportReleaseConsumerProguardFiles
+2026-07-15T03:38:29.9116628Z > Task :ai:mergeReleaseJavaResource
+2026-07-15T03:38:30.7147198Z > Task :ai:syncReleaseLibJars
+2026-07-15T03:38:30.8142819Z > Task :ai:bundleReleaseAar
+2026-07-15T03:38:30.8172244Z > Task :ai:assembleRelease
+2026-07-15T03:38:30.8175019Z > Task :web:processReleaseNavigationResources
+2026-07-15T03:38:31.7130885Z > Task :web:parseReleaseLocalResources
+2026-07-15T03:38:31.7157868Z > Task :web:javaPreCompileRelease
+2026-07-15T03:38:31.7192025Z > Task :web:generateReleaseRFile
+2026-07-15T03:38:31.9115620Z > Task :app:stripReleaseDebugSymbols
+2026-07-15T03:38:31.9133194Z > Task :document:generateReleaseResources
+2026-07-15T03:38:32.1114847Z > Task :app:extractReleaseNativeSymbolTables
+2026-07-15T03:38:34.1177088Z > Task :document:packageReleaseResources
+2026-07-15T03:38:34.1222070Z > Task :document:processReleaseNavigationResources
+2026-07-15T03:38:34.2142666Z > Task :document:parseReleaseLocalResources
+2026-07-15T03:38:34.2192227Z > Task :document:generateReleaseRFile
+2026-07-15T03:38:35.1115313Z > Task :app:mergeReleaseNativeDebugMetadata
+2026-07-15T03:38:35.1172410Z > Task :document:javaPreCompileRelease
+2026-07-15T03:38:35.1262673Z > Task :highlight:generateReleaseResources
+2026-07-15T03:38:35.2127711Z > Task :web:compileReleaseKotlin
+2026-07-15T03:38:35.2143134Z > Task :highlight:packageReleaseResources
+2026-07-15T03:38:35.2173405Z > Task :web:compileReleaseJavaWithJavac NO-SOURCE
+2026-07-15T03:38:35.2203140Z > Task :web:mergeReleaseGeneratedProguardFiles
+2026-07-15T03:38:35.2232209Z > Task :web:exportReleaseConsumerProguardFiles
+2026-07-15T03:38:35.2233490Z > Task :highlight:processReleaseNavigationResources
+2026-07-15T03:38:35.3148403Z > Task :highlight:javaPreCompileRelease
+2026-07-15T03:38:35.3203951Z > Task :highlight:parseReleaseLocalResources
+2026-07-15T03:38:35.3207721Z > Task :speech:generateReleaseResources
+2026-07-15T03:38:35.3297894Z > Task :highlight:generateReleaseRFile
+2026-07-15T03:38:35.3302288Z > Task :speech:packageReleaseResources
+2026-07-15T03:38:35.7172420Z > Task :speech:processReleaseNavigationResources
+2026-07-15T03:38:35.8143005Z > Task :speech:parseReleaseLocalResources
+2026-07-15T03:38:35.8173445Z > Task :speech:generateReleaseRFile
+2026-07-15T03:38:38.2162613Z > Task :document:compileReleaseKotlin
+2026-07-15T03:38:39.1127821Z > Task :highlight:compileReleaseKotlin
+2026-07-15T03:38:41.8118142Z 
+2026-07-15T03:38:41.8172518Z > Task :search:compileReleaseKotlin
+2026-07-15T03:38:41.8201795Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/BochaSearchService.kt:76:44 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.8256572Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/BochaSearchService.kt:101:38 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.8317275Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/BraveSearchService.kt:70:49 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.8364888Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/ExaSearchService.kt:90:44 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.8384073Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/ExaSearchService.kt:112:38 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.8391141Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/FirecrawlSearchService.kt:130:43 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.8394270Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/FirecrawlSearchService.kt:193:43 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9116320Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/GrokSearchService.kt:104:49 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9143781Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/GrokSearchService.kt:136:74 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9173492Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/JinaSearchService.kt:86:49 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9203322Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/JinaSearchService.kt:134:45 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9230279Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/LinkUpService.kt:90:49 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9233519Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/LinkUpService.kt:107:74 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9263920Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/LinkUpService.kt:136:49 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9294060Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/LinkUpService.kt:151:74 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9296424Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/MetasoSearchService.kt:76:44 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9298729Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/MetasoSearchService.kt:97:46 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9301053Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/OllamaSearchService.kt:79:49 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9303673Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/PerplexitySearchService.kt:95:49 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9306155Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/PerplexitySearchService.kt:117:74 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9308596Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/RikkaHubSearchService.kt:68:49 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9311079Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/RikkaHubSearchService.kt:85:74 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9328369Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/SearXNGService.kt:92:44 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9331505Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/SearXNGService.kt:114:46 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9333980Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/TavilySearchService.kt:107:45 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9336433Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/TavilySearchService.kt:149:45 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9338968Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/TinyfishSearchService.kt:78:49 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9341699Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/TinyfishSearchService.kt:123:49 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9343977Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/ZhipuSearchService.kt:75:44 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:41.9346480Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/search/src/main/java/me/rerere/search/ZhipuSearchService.kt:95:38 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:45.8132351Z 
+2026-07-15T03:38:45.8157909Z > Task :speech:compileReleaseKotlin
+2026-07-15T03:38:45.8213108Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/speech/src/main/java/me/rerere/asr/providers/MiMoASRController.kt:256:41 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:45.8262889Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/speech/src/main/java/me/rerere/tts/provider/providers/ElevenLabsTTSProvider.kt:52:42 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:45.8323121Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/speech/src/main/java/me/rerere/tts/provider/providers/FishAudioTTSProvider.kt:60:42 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:45.8352960Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/speech/src/main/java/me/rerere/tts/provider/providers/GeminiTTSProvider.kt:102:41 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:45.8413055Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/speech/src/main/java/me/rerere/tts/provider/providers/GroqTTSProvider.kt:51:56 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:45.8462399Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/speech/src/main/java/me/rerere/tts/provider/providers/GroqTTSProvider.kt:55:38 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:45.8502994Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/speech/src/main/java/me/rerere/tts/provider/providers/OpenAITTSProvider.kt:54:38 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:45.8552962Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/speech/src/main/java/me/rerere/tts/provider/providers/QwenTTSProvider.kt:54:42 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:45.8582772Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/speech/src/main/java/me/rerere/tts/provider/providers/QwenTTSProvider.kt:59:35 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:45.8642933Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/speech/src/main/java/me/rerere/tts/provider/providers/StepTTSProvider.kt:78:56 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:45.8665271Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/speech/src/main/java/me/rerere/tts/provider/providers/StepTTSProvider.kt:84:39 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:45.8723411Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/speech/src/main/java/me/rerere/tts/provider/providers/SystemTTSProvider.kt:79:34 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+2026-07-15T03:38:45.8752470Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/speech/src/main/java/me/rerere/tts/provider/providers/SystemTTSProvider.kt:112:16 Unnecessary safe call on a non-null receiver of type 'TextToSpeech'.
+2026-07-15T03:38:45.8755184Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/speech/src/main/java/me/rerere/tts/provider/providers/XAITTSProvider.kt:49:42 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:45.8757815Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/speech/src/main/java/me/rerere/tts/provider/providers/XAITTSProvider.kt:55:38 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ResponseBody'.
+2026-07-15T03:38:48.0133040Z 
+2026-07-15T03:38:48.0142478Z > Task :document:compileReleaseJavaWithJavac
+2026-07-15T03:38:48.0143176Z > Task :search:compileReleaseJavaWithJavac NO-SOURCE
+2026-07-15T03:38:48.0144012Z > Task :search:mergeReleaseGeneratedProguardFiles
+2026-07-15T03:38:48.1115251Z > Task :search:exportReleaseConsumerProguardFiles
+2026-07-15T03:38:48.1117818Z > Task :document:mergeReleaseGeneratedProguardFiles
+2026-07-15T03:38:48.1142475Z > Task :document:exportReleaseConsumerProguardFiles
+2026-07-15T03:38:48.1143157Z > Task :highlight:compileReleaseJavaWithJavac NO-SOURCE
+2026-07-15T03:38:48.1144662Z > Task :highlight:mergeReleaseGeneratedProguardFiles
+2026-07-15T03:38:48.1145578Z > Task :highlight:exportReleaseConsumerProguardFiles
+2026-07-15T03:38:48.1147021Z > Task :common:mergeReleaseGeneratedProguardFiles
+2026-07-15T03:38:48.1148440Z > Task :speech:javaPreCompileRelease
+2026-07-15T03:38:48.1149149Z > Task :common:exportReleaseConsumerProguardFiles
+2026-07-15T03:38:48.1149886Z > Task :speech:compileReleaseJavaWithJavac NO-SOURCE
+2026-07-15T03:38:48.1150650Z > Task :speech:mergeReleaseGeneratedProguardFiles
+2026-07-15T03:38:48.1151617Z > Task :speech:exportReleaseConsumerProguardFiles
+2026-07-15T03:38:48.1152373Z > Task :material3:generateReleaseResources
+2026-07-15T03:38:48.1153092Z > Task :material3:packageReleaseResources
+2026-07-15T03:38:48.1153828Z > Task :material3:processReleaseNavigationResources
+2026-07-15T03:38:48.1154572Z > Task :material3:javaPreCompileRelease
+2026-07-15T03:38:48.1155225Z > Task :material3:parseReleaseLocalResources
+2026-07-15T03:38:48.1155892Z > Task :workspace:generateReleaseResources
+2026-07-15T03:38:48.1156558Z > Task :material3:generateReleaseRFile
+2026-07-15T03:38:48.1157191Z > Task :workspace:packageReleaseResources
+2026-07-15T03:38:48.5137328Z > Task :workspace:processReleaseNavigationResources
+2026-07-15T03:38:48.5162159Z > Task :workspace:javaPreCompileRelease
+2026-07-15T03:38:48.5162757Z > Task :workspace:parseReleaseLocalResources
+2026-07-15T03:38:48.6174141Z > Task :ai:bundleLibRuntimeToJarRelease
+2026-07-15T03:38:51.9123827Z > Task :workspace:generateReleaseRFile
+2026-07-15T03:38:51.9162305Z > Task :app:generateReleaseBuildConfig
+2026-07-15T03:38:52.0114064Z > Task :app:checkReleaseDuplicateClasses
+2026-07-15T03:38:54.5123712Z > Task :workspace:compileReleaseKotlin
+2026-07-15T03:38:54.5152104Z > Task :app:extractReleasePythonBuildPackages
+2026-07-15T03:38:54.5182138Z > Task :workspace:compileReleaseJavaWithJavac NO-SOURCE
+2026-07-15T03:38:54.5189006Z > Task :workspace:mergeReleaseGeneratedProguardFiles
+2026-07-15T03:38:54.5211976Z > Task :workspace:exportReleaseConsumerProguardFiles
+2026-07-15T03:38:55.0113069Z 
+2026-07-15T03:38:55.0119236Z > Task :material3:compileReleaseKotlin
+2026-07-15T03:38:55.0121670Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/material3/material-color-utilities/kotlin/dynamiccolor/ColorSpec2025.kt:904:37 Unnecessary non-null assertion (!!) on a non-null receiver of type 'DynamicColor'.
+2026-07-15T03:38:55.0124929Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/material3/material-color-utilities/kotlin/dynamiccolor/ColorSpec2025.kt:1107:36 Unnecessary non-null assertion (!!) on a non-null receiver of type 'DynamicColor'.
+2026-07-15T03:38:55.0127908Z w: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/material3/material-color-utilities/kotlin/dynamiccolor/ColorSpec2025.kt:1253:33 Unnecessary non-null assertion (!!) on a non-null receiver of type 'DynamicColor'.
+2026-07-15T03:38:56.5117185Z 
+2026-07-15T03:38:56.5117917Z > Task :app:installReleasePythonRequirements
+2026-07-15T03:38:56.5118527Z Chaquopy: Installing for arm64-v8a
+2026-07-15T03:38:56.5118978Z Looking in indexes: https://pypi.org/simple, https://chaquo.com/pypi-13.1
+2026-07-15T03:38:56.5119432Z Processing ./offline_pkgs/pyjhora-4.8.7.tar.gz
+2026-07-15T03:38:56.5120144Z   Installing build dependencies: started
+2026-07-15T03:38:57.1112738Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:38:57.1113467Z   Getting requirements to build wheel: started
+2026-07-15T03:38:57.4112728Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:38:57.4113938Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:38:57.6112652Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:38:57.6113984Z Processing ./offline_pkgs/pyswisseph-2.10.3.2-cp312-cp312-android_21_arm64_v8a.whl
+2026-07-15T03:38:57.6115005Z Processing ./offline_pkgs/flatlib-0.2.3-py3-none-any.whl
+2026-07-15T03:38:57.6115653Z Processing ./offline_pkgs/lunar_python-latest.tar.gz
+2026-07-15T03:38:57.7112940Z   Installing build dependencies: started
+2026-07-15T03:38:58.7112737Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:38:58.7113582Z   Getting requirements to build wheel: started
+2026-07-15T03:38:59.1113603Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:38:59.1114367Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:38:59.3112989Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:38:59.3114559Z Processing ./offline_pkgs/ichingshifa-src.tar.gz
+2026-07-15T03:38:59.3115341Z   Installing build dependencies: started
+2026-07-15T03:39:00.4113393Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:39:00.4114418Z   Getting requirements to build wheel: started
+2026-07-15T03:39:00.8115276Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:39:00.8116040Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:39:00.9113056Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:01.0117146Z Processing ./offline_pkgs/kinliuren-0.1.2.9.tar.gz
+2026-07-15T03:39:01.0118216Z   Installing build dependencies: started
+2026-07-15T03:39:02.1114035Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:39:02.1115159Z   Getting requirements to build wheel: started
+2026-07-15T03:39:02.5113121Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:39:02.5113928Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:39:02.6112299Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:02.6113374Z Processing ./offline_pkgs/taixuanshifa-src.tar.gz
+2026-07-15T03:39:02.7112300Z   Installing build dependencies: started
+2026-07-15T03:39:03.8112764Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:39:03.8113414Z   Getting requirements to build wheel: started
+2026-07-15T03:39:04.1112210Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:39:04.2112402Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:39:04.3112470Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:04.3113190Z Processing ./offline_pkgs/jingjue-src.tar.gz
+2026-07-15T03:39:04.3113544Z   Installing build dependencies: started
+2026-07-15T03:39:05.4112875Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:39:05.4113576Z   Getting requirements to build wheel: started
+2026-07-15T03:39:05.8112549Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:39:05.8113316Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:39:06.0113590Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:06.0114330Z Processing ./offline_pkgs/meihua-yi-patched.tar.gz
+2026-07-15T03:39:06.0114699Z   Installing build dependencies: started
+2026-07-15T03:39:07.0112665Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:39:07.0113350Z   Getting requirements to build wheel: started
+2026-07-15T03:39:07.5112605Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:39:07.5113316Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:39:07.7112735Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:07.7113858Z Processing ./offline_pkgs/arcanite-unified.tar.gz
+2026-07-15T03:39:07.8112834Z   Installing build dependencies: started
+2026-07-15T03:39:08.9112887Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:39:08.9113738Z   Getting requirements to build wheel: started
+2026-07-15T03:39:09.4112682Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:39:09.4113446Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:39:09.6112368Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:09.6113236Z Processing ./offline_pkgs/pydantic-latest.tar.gz
+2026-07-15T03:39:09.6115537Z   Installing build dependencies: started
+2026-07-15T03:39:11.2113583Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:39:11.2114315Z   Getting requirements to build wheel: started
+2026-07-15T03:39:11.9112553Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:39:11.9113370Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:39:12.1112397Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:12.1113209Z Processing ./offline_pkgs/pyyaml-latest.tar.gz
+2026-07-15T03:39:12.3112791Z   Installing build dependencies: started
+2026-07-15T03:39:13.7112740Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:39:13.7113409Z   Getting requirements to build wheel: started
+2026-07-15T03:39:15.4112747Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:39:15.4113802Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:39:15.7112531Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:15.7113365Z Processing ./offline_pkgs/markupsafe-latest.tar.gz
+2026-07-15T03:39:15.7113955Z   Installing build dependencies: started
+2026-07-15T03:39:16.8112625Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:39:16.8113395Z   Getting requirements to build wheel: started
+2026-07-15T03:39:17.3112628Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:39:17.3113447Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:39:17.5113176Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:17.5117687Z Processing ./offline_pkgs/jinja2-latest.tar.gz
+2026-07-15T03:39:17.5118223Z   Installing build dependencies: started
+2026-07-15T03:39:18.5112830Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:39:18.5113830Z   Getting requirements to build wheel: started
+2026-07-15T03:39:18.7112315Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:39:18.7113026Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:39:18.7113611Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:18.7114077Z Processing ./offline_pkgs/attrs-latest.tar.gz
+2026-07-15T03:39:18.8112372Z   Installing build dependencies: started
+2026-07-15T03:39:21.0112859Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:39:21.0113529Z   Getting requirements to build wheel: started
+2026-07-15T03:39:21.2112774Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:39:21.2113878Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:39:21.4113409Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:21.4117139Z Processing ./offline_pkgs/cattrs-latest.tar.gz
+2026-07-15T03:39:21.5113113Z   Installing build dependencies: started
+2026-07-15T03:39:23.5112609Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:39:23.5113374Z   Getting requirements to build wheel: started
+2026-07-15T03:39:23.7112805Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:39:23.7113771Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:39:23.8112148Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:23.8112911Z Processing ./offline_pkgs/platformdirs-latest.tar.gz
+2026-07-15T03:39:23.9112145Z   Installing build dependencies: started
+2026-07-15T03:39:25.9112477Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:39:25.9113587Z   Getting requirements to build wheel: started
+2026-07-15T03:39:26.1112730Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:39:26.1113567Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:39:26.3112456Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:26.3113163Z Processing ./offline_pkgs/url_normalize-latest.tar.gz
+2026-07-15T03:39:26.4112665Z   Installing build dependencies: started
+2026-07-15T03:39:27.7112568Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:39:27.7113318Z   Getting requirements to build wheel: started
+2026-07-15T03:39:28.2113097Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:39:28.2113774Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:39:28.4112360Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:28.4113151Z Processing ./offline_pkgs/urllib3-latest.tar.gz
+2026-07-15T03:39:28.4113729Z   Installing build dependencies: started
+2026-07-15T03:39:30.6112529Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:39:30.6113279Z   Getting requirements to build wheel: started
+2026-07-15T03:39:30.8112651Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:39:30.8113447Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:39:31.0112659Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:31.0113694Z Processing ./offline_pkgs/cn2an-latest.tar.gz
+2026-07-15T03:39:31.0114303Z   Installing build dependencies: started
+2026-07-15T03:39:32.0112795Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:39:32.0113605Z   Getting requirements to build wheel: started
+2026-07-15T03:39:32.3112745Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:39:32.3113575Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:39:32.5112433Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:32.5113200Z Processing ./offline_pkgs/proces-latest.tar.gz
+2026-07-15T03:39:32.5113563Z   Installing build dependencies: started
+2026-07-15T03:39:33.6112699Z   Installing build dependencies: finished with status 'done'
+2026-07-15T03:39:33.6113672Z   Getting requirements to build wheel: started
+2026-07-15T03:39:33.9112322Z   Getting requirements to build wheel: finished with status 'done'
+2026-07-15T03:39:33.9113095Z   Preparing metadata (pyproject.toml): started
+2026-07-15T03:39:34.1112506Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:34.6112374Z Collecting requests
+2026-07-15T03:39:34.6113103Z   Downloading requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+2026-07-15T03:39:34.8113576Z Collecting beautifulsoup4
+2026-07-15T03:39:34.8114310Z   Downloading beautifulsoup4-4.15.0-py3-none-any.whl.metadata (3.8 kB)
+2026-07-15T03:39:34.9111729Z Collecting markdown
+2026-07-15T03:39:34.9112322Z   Downloading markdown-3.10.2-py3-none-any.whl.metadata (5.1 kB)
+2026-07-15T03:39:35.0113125Z Collecting pypdf
+2026-07-15T03:39:35.0113754Z   Downloading pypdf-6.14.2-py3-none-any.whl.metadata (7.2 kB)
+2026-07-15T03:39:35.2112932Z Collecting openpyxl
+2026-07-15T03:39:35.2113620Z   Downloading openpyxl-3.1.5-py2.py3-none-any.whl.metadata (2.5 kB)
+2026-07-15T03:39:35.3113115Z Collecting markdownify
+2026-07-15T03:39:35.3113762Z   Downloading markdownify-1.2.3-py3-none-any.whl.metadata (9.9 kB)
+2026-07-15T03:39:35.4112560Z Collecting tabulate
+2026-07-15T03:39:35.4113192Z   Downloading tabulate-0.10.0-py3-none-any.whl.metadata (40 kB)
+2026-07-15T03:39:35.5112198Z Collecting python-dateutil
+2026-07-15T03:39:35.5113349Z   Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+2026-07-15T03:39:35.9112033Z Collecting numpy
+2026-07-15T03:39:36.1113381Z   Downloading https://chaquo.com/pypi-13.1/numpy/numpy-1.26.2-0-cp312-cp312-android_21_arm64_v8a.whl (5.0 MB)
+2026-07-15T03:39:37.1114944Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.0/5.0 MB 6.5 MB/s  0:00:00
+2026-07-15T03:39:37.2112842Z Collecting geocoder
+2026-07-15T03:39:37.2113533Z   Downloading geocoder-1.38.1-py2.py3-none-any.whl.metadata (14 kB)
+2026-07-15T03:39:37.3112433Z Collecting geopy
+2026-07-15T03:39:37.3112996Z   Downloading geopy-2.5.0-py3-none-any.whl.metadata (7.1 kB)
+2026-07-15T03:39:37.4111606Z Collecting pytz
+2026-07-15T03:39:37.4112452Z   Downloading pytz-2026.2-py2.py3-none-any.whl.metadata (22 kB)
+2026-07-15T03:39:37.6113883Z Collecting timezonefinder
+2026-07-15T03:39:37.6114805Z   Downloading timezonefinder-6.0.1-py37.py38.py39.py310-none-any.whl.metadata (3.9 kB)
+2026-07-15T03:39:37.7113209Z Collecting cnlunar
+2026-07-15T03:39:37.7113832Z   Downloading cnlunar-0.2.4-py3-none-any.whl.metadata (33 kB)
+2026-07-15T03:39:37.8111967Z Collecting bidict
+2026-07-15T03:39:37.9111721Z   Downloading bidict-0.23.1-py3-none-any.whl.metadata (8.7 kB)
+2026-07-15T03:39:37.9112304Z Collecting colorama
+2026-07-15T03:39:37.9112804Z   Downloading colorama-0.4.6-py2.py3-none-any.whl.metadata (17 kB)
+2026-07-15T03:39:38.1112261Z Collecting setuptools
+2026-07-15T03:39:38.1112914Z   Using cached setuptools-83.0.0-py3-none-any.whl.metadata (6.6 kB)
+2026-07-15T03:39:38.3117645Z Collecting typing-extensions>=4.2.0 (from pydantic==1.10.26)
+2026-07-15T03:39:38.3118811Z   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+2026-07-15T03:39:38.4111935Z Collecting idna>=3.3 (from url-normalize==3.0.0)
+2026-07-15T03:39:38.4112453Z   Downloading idna-3.18-py3-none-any.whl.metadata (6.1 kB)
+2026-07-15T03:39:38.6112273Z Collecting charset_normalizer<4,>=2 (from requests)
+2026-07-15T03:39:38.6112861Z   Downloading charset_normalizer-3.4.9-py3-none-any.whl.metadata (41 kB)
+2026-07-15T03:39:38.7112747Z Collecting certifi>=2023.5.7 (from requests)
+2026-07-15T03:39:38.7113867Z   Downloading certifi-2026.6.17-py3-none-any.whl.metadata (2.5 kB)
+2026-07-15T03:39:38.8112309Z Collecting soupsieve>=1.6.1 (from beautifulsoup4)
+2026-07-15T03:39:38.8112863Z   Downloading soupsieve-2.8.4-py3-none-any.whl.metadata (4.6 kB)
+2026-07-15T03:39:38.9111773Z Collecting et-xmlfile (from openpyxl)
+2026-07-15T03:39:39.0112868Z   Downloading et_xmlfile-2.0.0-py3-none-any.whl.metadata (2.7 kB)
+2026-07-15T03:39:39.1112166Z Collecting six<2,>=1.15 (from markdownify)
+2026-07-15T03:39:39.1112933Z   Downloading six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+2026-07-15T03:39:39.2112782Z Collecting chaquopy-libcxx>=11000 (from numpy)
+2026-07-15T03:39:39.3113311Z   Downloading https://chaquo.com/pypi-13.1/chaquopy-libcxx/chaquopy_libcxx-180000-0-py3-none-android_24_arm64_v8a.whl (413 kB)
+2026-07-15T03:39:39.5112939Z Collecting chaquopy-openblas>=0.2.20 (from numpy)
+2026-07-15T03:39:39.6113151Z   Downloading https://chaquo.com/pypi-13.1/chaquopy-openblas/chaquopy_openblas-0.2.20-5-py3-none-android_21_arm64_v8a.whl (4.3 MB)
+2026-07-15T03:39:39.7113511Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.3/4.3 MB 40.7 MB/s  0:00:00
+2026-07-15T03:39:39.8112277Z Collecting click (from geocoder)
+2026-07-15T03:39:39.8112938Z   Downloading click-8.4.2-py3-none-any.whl.metadata (2.6 kB)
+2026-07-15T03:39:39.9111922Z Collecting future (from geocoder)
+2026-07-15T03:39:39.9112545Z   Downloading future-1.0.0-py3-none-any.whl.metadata (4.0 kB)
+2026-07-15T03:39:40.0112364Z Collecting ratelim (from geocoder)
+2026-07-15T03:39:40.0113073Z   Downloading ratelim-0.1.6-py2.py3-none-any.whl.metadata (1.4 kB)
+2026-07-15T03:39:40.1112275Z Collecting geographiclib<3,>=1.52 (from geopy)
+2026-07-15T03:39:40.1113029Z   Downloading geographiclib-2.1-py3-none-any.whl.metadata (1.6 kB)
+2026-07-15T03:39:40.3113000Z INFO: pip is looking at multiple versions of timezonefinder to determine which version is compatible with other requirements. This could take a while.
+2026-07-15T03:39:40.3114058Z Collecting timezonefinder
+2026-07-15T03:39:40.3114506Z   Downloading timezonefinder-6.0.0-py37.py38.py39.py310-none-any.whl.metadata (3.9 kB)
+2026-07-15T03:39:40.3115120Z   Downloading timezonefinder-5.2.0-py36.py37.py38-none-any.whl.metadata (3.9 kB)
+2026-07-15T03:39:40.5113139Z Collecting chaquopy-libgfortran>=4.9 (from chaquopy-openblas>=0.2.20->numpy)
+2026-07-15T03:39:40.6113252Z   Downloading https://chaquo.com/pypi-13.1/chaquopy-libgfortran/chaquopy_libgfortran-4.9-0-py3-none-android_21_arm64_v8a.whl (495 kB)
+2026-07-15T03:39:40.7112017Z Collecting decorator (from ratelim->geocoder)
+2026-07-15T03:39:40.7112698Z   Downloading decorator-5.3.1-py3-none-any.whl.metadata (3.9 kB)
+2026-07-15T03:39:40.7113157Z Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+2026-07-15T03:39:40.8112296Z Downloading charset_normalizer-3.4.9-py3-none-any.whl (64 kB)
+2026-07-15T03:39:40.8113291Z Downloading idna-3.18-py3-none-any.whl (65 kB)
+2026-07-15T03:39:40.8113983Z Downloading beautifulsoup4-4.15.0-py3-none-any.whl (109 kB)
+2026-07-15T03:39:40.8114473Z Downloading markdown-3.10.2-py3-none-any.whl (108 kB)
+2026-07-15T03:39:40.8114857Z Downloading pypdf-6.14.2-py3-none-any.whl (349 kB)
+2026-07-15T03:39:40.8115245Z Downloading openpyxl-3.1.5-py2.py3-none-any.whl (250 kB)
+2026-07-15T03:39:40.8115668Z Downloading markdownify-1.2.3-py3-none-any.whl (15 kB)
+2026-07-15T03:39:40.8116029Z Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+2026-07-15T03:39:40.8116393Z Downloading tabulate-0.10.0-py3-none-any.whl (39 kB)
+2026-07-15T03:39:40.8116818Z Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+2026-07-15T03:39:40.9111967Z Downloading geocoder-1.38.1-py2.py3-none-any.whl (98 kB)
+2026-07-15T03:39:40.9112814Z Downloading geopy-2.5.0-py3-none-any.whl (114 kB)
+2026-07-15T03:39:40.9113535Z Downloading geographiclib-2.1-py3-none-any.whl (40 kB)
+2026-07-15T03:39:40.9114151Z Downloading pytz-2026.2-py2.py3-none-any.whl (510 kB)
+2026-07-15T03:39:40.9114734Z Downloading timezonefinder-5.2.0-py36.py37.py38-none-any.whl (43.0 MB)
+2026-07-15T03:39:41.2112822Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 43.0/43.0 MB 136.4 MB/s  0:00:00
+2026-07-15T03:39:41.2113398Z Downloading cnlunar-0.2.4-py3-none-any.whl (49 kB)
+2026-07-15T03:39:41.2113786Z Downloading bidict-0.23.1-py3-none-any.whl (32 kB)
+2026-07-15T03:39:41.3112269Z Downloading colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+2026-07-15T03:39:41.3113185Z Using cached setuptools-83.0.0-py3-none-any.whl (1.0 MB)
+2026-07-15T03:39:41.3114076Z Downloading certifi-2026.6.17-py3-none-any.whl (133 kB)
+2026-07-15T03:39:41.3114690Z Downloading soupsieve-2.8.4-py3-none-any.whl (37 kB)
+2026-07-15T03:39:41.3115224Z Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+2026-07-15T03:39:41.3115618Z Downloading click-8.4.2-py3-none-any.whl (119 kB)
+2026-07-15T03:39:41.3115966Z Downloading et_xmlfile-2.0.0-py3-none-any.whl (18 kB)
+2026-07-15T03:39:41.3116308Z Downloading future-1.0.0-py3-none-any.whl (491 kB)
+2026-07-15T03:39:41.3116695Z Downloading ratelim-0.1.6-py2.py3-none-any.whl (4.0 kB)
+2026-07-15T03:39:41.3117042Z Downloading decorator-5.3.1-py3-none-any.whl (10 kB)
+2026-07-15T03:39:41.4113026Z Building wheels for collected packages: pyjhora, lunar_python, ichingshifa, kinliuren, taixuanshifa, jingjue, meihua-yi, arcanite-unified, pydantic, PyYAML, MarkupSafe, Jinja2, attrs, cattrs, platformdirs, url-normalize, urllib3, cn2an, proces
+2026-07-15T03:39:41.4114193Z   Building wheel for pyjhora (pyproject.toml): started
+2026-07-15T03:39:41.8112541Z   Building wheel for pyjhora (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:41.8113687Z   Created wheel for pyjhora: filename=pyjhora-4.8.7-py3-none-any.whl size=891427 sha256=aedd516b465bcd77e4f0264281821c407a2c7db480d05023cb039e6b5e92c767
+2026-07-15T03:39:41.8114601Z   Stored in directory: /home/runner/.cache/pip/wheels/7b/d1/98/a7196f61b2dd5bc3b0781364efa468c324b819012e9ae87cd4
+2026-07-15T03:39:41.8115216Z   Building wheel for lunar_python (pyproject.toml): started
+2026-07-15T03:39:42.0112655Z   Building wheel for lunar_python (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:42.0114111Z   Created wheel for lunar_python: filename=lunar_python-1.4.8-py3-none-any.whl size=115807 sha256=a6e4bf87f1264872bbe2a0c1b0a8cfbd7a510fe023024bff5730931d874dcd0b
+2026-07-15T03:39:42.0115386Z   Stored in directory: /home/runner/.cache/pip/wheels/d6/7d/85/57392162dab21531277354fcddf44d77bd2ca34e5fa6ab6f8b
+2026-07-15T03:39:42.1112801Z   Building wheel for ichingshifa (pyproject.toml): started
+2026-07-15T03:39:42.3112608Z   Building wheel for ichingshifa (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:42.3113587Z   Created wheel for ichingshifa: filename=ichingshifa-0.1-py3-none-any.whl size=53571 sha256=4915522ff3e0ca9cd5ecac999da1224a41b7a09623fa68c975b0ba23156bdee0
+2026-07-15T03:39:42.3114547Z   Stored in directory: /home/runner/.cache/pip/wheels/2a/c0/44/2d739b90d95aec9655247b8bf8755f5e47f8a5f65fd72eea45
+2026-07-15T03:39:42.3115188Z   Building wheel for kinliuren (pyproject.toml): started
+2026-07-15T03:39:42.5112632Z   Building wheel for kinliuren (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:42.5114041Z   Created wheel for kinliuren: filename=kinliuren-0.1-py3-none-any.whl size=19680 sha256=6446e80ae55732d46466572f96ad87819790cc84f9dbe15a78375be7df24e830
+2026-07-15T03:39:42.5115278Z   Stored in directory: /home/runner/.cache/pip/wheels/16/72/fa/0ce392abc59da1c1f991c452d4cb03702b4bea6472940c3c5a
+2026-07-15T03:39:42.5115928Z   Building wheel for taixuanshifa (pyproject.toml): started
+2026-07-15T03:39:42.8112679Z   Building wheel for taixuanshifa (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:42.8113673Z   Created wheel for taixuanshifa: filename=taixuanshifa-0.1-py3-none-any.whl size=67125 sha256=c4ffcc7ae080bcaae09fa2e13f872ce02caa8d26efd0f2a30a3017092d0ccb24
+2026-07-15T03:39:42.8114651Z   Stored in directory: /home/runner/.cache/pip/wheels/ac/47/4c/7c51af91dfa44c6ecea0a53bdad2e547749eaef07b65bdafc9
+2026-07-15T03:39:42.8115272Z   Building wheel for jingjue (pyproject.toml): started
+2026-07-15T03:39:43.0112421Z   Building wheel for jingjue (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:43.0113316Z   Created wheel for jingjue: filename=jingjue-0.1-py3-none-any.whl size=3055 sha256=0001bbe62c1fef4854aa538272437267f92912677433483864278d687dc59d7a
+2026-07-15T03:39:43.0114219Z   Stored in directory: /home/runner/.cache/pip/wheels/9e/c2/0d/7604fd56ad366211711e1ef993df48f3cdf6dd8a9b86e5c3d6
+2026-07-15T03:39:43.0114826Z   Building wheel for meihua-yi (pyproject.toml): started
+2026-07-15T03:39:43.2113331Z   Building wheel for meihua-yi (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:43.2114911Z   Created wheel for meihua-yi: filename=meihua_yi-0.1.1-py3-none-any.whl size=11441 sha256=065f14ae0ec69785b376af21d1a4b6490ca3187e2e907d168e58cdc2b2671bec
+2026-07-15T03:39:43.2116562Z   Stored in directory: /home/runner/.cache/pip/wheels/ed/3b/9c/97a691b5adce2f16e3b9568e0e48e8e67f0471c6784f7981e1
+2026-07-15T03:39:43.2117727Z   Building wheel for arcanite-unified (pyproject.toml): started
+2026-07-15T03:39:43.6113115Z   Building wheel for arcanite-unified (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:43.6114448Z   Created wheel for arcanite-unified: filename=arcanite_unified-0.3.0-py3-none-any.whl size=994819 sha256=72e6d98f086f9e17afaafbd259495424954460b714dbb76874fc44c48127549d
+2026-07-15T03:39:43.6115443Z   Stored in directory: /home/runner/.cache/pip/wheels/26/c6/20/096a9a8fd6da5c898781c8dc4bc88e553716589b6155a6ff14
+2026-07-15T03:39:43.6116030Z   Building wheel for pydantic (pyproject.toml): started
+2026-07-15T03:39:43.9112121Z   Building wheel for pydantic (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:43.9113788Z   Created wheel for pydantic: filename=pydantic-1.10.26-py3-none-any.whl size=166975 sha256=92f21251ab9fa4b481651bda99a1f3be99b5a335f2577e9c9c67a4af360c8601
+2026-07-15T03:39:43.9115861Z   Stored in directory: /home/runner/.cache/pip/wheels/92/61/14/345582f61db9bc3d002895453fca46e50f5882db8f73311c64
+2026-07-15T03:39:43.9122742Z   Building wheel for PyYAML (pyproject.toml): started
+2026-07-15T03:39:50.2112903Z   Building wheel for PyYAML (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:50.2114784Z   Created wheel for PyYAML: filename=pyyaml-6.0.3-cp312-cp312-linux_x86_64.whl size=613778 sha256=3a5479a3442a1bad5d8e41546e84ed32ab34fe5224ef77b9e94be71f813baff1
+2026-07-15T03:39:50.2117061Z   Stored in directory: /home/runner/.cache/pip/wheels/b7/82/14/c13f97bcd753ae1fe6f683f18d4be6f0a1b530ab189c9f7d7c
+2026-07-15T03:39:50.2118263Z   Building wheel for MarkupSafe (pyproject.toml): started
+2026-07-15T03:39:50.6112466Z   Building wheel for MarkupSafe (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:50.6113452Z   Created wheel for MarkupSafe: filename=markupsafe-3.0.3-cp312-cp312-linux_x86_64.whl size=23610 sha256=cb57256109626d28a7284595828167cae0ef6c2d981eb7040c868f76aea30739
+2026-07-15T03:39:50.6114395Z   Stored in directory: /home/runner/.cache/pip/wheels/03/75/74/edf1d947a8a754553ded8c9cc42320fc2bf9e97c0d50c534b3
+2026-07-15T03:39:50.6115002Z   Building wheel for Jinja2 (pyproject.toml): started
+2026-07-15T03:39:50.7112308Z   Building wheel for Jinja2 (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:50.7114096Z   Created wheel for Jinja2: filename=jinja2-3.1.6-py3-none-any.whl size=134897 sha256=005a2fc379b662ac007c271a8122f7a7db49bb67fbedfc85db50fccde34d839f
+2026-07-15T03:39:50.7116136Z   Stored in directory: /home/runner/.cache/pip/wheels/eb/39/b5/9e44891a0fef2816daef21796d6a13c52a9e4743b95559abdf
+2026-07-15T03:39:50.7117281Z   Building wheel for attrs (pyproject.toml): started
+2026-07-15T03:39:50.7118231Z   Building wheel for attrs (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:50.7119706Z   Created wheel for attrs: filename=attrs-26.1.0-py3-none-any.whl size=67549 sha256=4f7f973177ac0a03a1f50ada0698592758d2b7fdef4bb612d858bea2322281dd
+2026-07-15T03:39:50.7121165Z   Stored in directory: /home/runner/.cache/pip/wheels/e9/63/c5/362245b3c29e93bdaa88d1cd2fbefcdfc7e1f03cc73f4e6a39
+2026-07-15T03:39:50.7122116Z   Building wheel for cattrs (pyproject.toml): started
+2026-07-15T03:39:50.8113007Z   Building wheel for cattrs (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:50.8114797Z   Created wheel for cattrs: filename=cattrs-26.1.0-py3-none-any.whl size=73053 sha256=bcc02c3dd2c3d7fef1f500dea04d844f09d918d389f586e49fc1d849717c3028
+2026-07-15T03:39:50.8116732Z   Stored in directory: /home/runner/.cache/pip/wheels/a0/54/32/ce3babfad375b6a7fdd475abb22e87c3539b24a47050da0320
+2026-07-15T03:39:50.8117927Z   Building wheel for platformdirs (pyproject.toml): started
+2026-07-15T03:39:50.8118867Z   Building wheel for platformdirs (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:50.8120455Z   Created wheel for platformdirs: filename=platformdirs-4.10.0-py3-none-any.whl size=22742 sha256=51270f63f705d3d5855361fb2a74a5e99907ac063fc428197548b44ee0853c6b
+2026-07-15T03:39:50.8122365Z   Stored in directory: /home/runner/.cache/pip/wheels/94/2f/98/d66d5c4d8364dcad9baca7b1d6afb903221671cd2cf39061a8
+2026-07-15T03:39:50.8123553Z   Building wheel for url-normalize (pyproject.toml): started
+2026-07-15T03:39:51.0112876Z   Building wheel for url-normalize (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:51.0114331Z   Created wheel for url-normalize: filename=url_normalize-3.0.0-py3-none-any.whl size=16854 sha256=fa4b38813e37832ee79799034077ee775420cbf580054817bf3f42847ad75ee1
+2026-07-15T03:39:51.0115485Z   Stored in directory: /home/runner/.cache/pip/wheels/d5/37/d8/b03303561decb5395db5f9fa2e53ed21151e9429c2a7fdb727
+2026-07-15T03:39:51.0116392Z   Building wheel for urllib3 (pyproject.toml): started
+2026-07-15T03:39:51.1113388Z   Building wheel for urllib3 (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:51.1114615Z   Created wheel for urllib3: filename=urllib3-2.7.0-py3-none-any.whl size=131085 sha256=0e6e47cadab2d71791895f97a7853e490963c369d94cdc55d1120bf6e490257f
+2026-07-15T03:39:51.1116273Z   Stored in directory: /home/runner/.cache/pip/wheels/21/9d/62/a29927b7c331dd8911c528b184c6f8908143b4bc66bfcfefb4
+2026-07-15T03:39:51.1117120Z   Building wheel for cn2an (pyproject.toml): started
+2026-07-15T03:39:51.3112510Z   Building wheel for cn2an (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:51.3113796Z   Created wheel for cn2an: filename=cn2an-0.5.24-py3-none-any.whl size=20293 sha256=e71bbce4c3e215afd8feb4f4a14d0480ce2aac9bdfb163f0a88c8e068b02542f
+2026-07-15T03:39:51.3115464Z   Stored in directory: /home/runner/.cache/pip/wheels/d9/a0/fe/bcc9fa6586310d80c4ea1fc06934de2538f7da514ca0bdebf8
+2026-07-15T03:39:51.3116307Z   Building wheel for proces (pyproject.toml): started
+2026-07-15T03:39:51.5112672Z   Building wheel for proces (pyproject.toml): finished with status 'done'
+2026-07-15T03:39:51.5114344Z   Created wheel for proces: filename=proces-0.1.7-py3-none-any.whl size=30177 sha256=300505f53fa8c1b4ac4b286757817b9d96add7ef9ff435dd6eb5a240adc48959
+2026-07-15T03:39:51.5115861Z   Stored in directory: /home/runner/.cache/pip/wheels/01/2d/8e/a96e7630b1c13d905b7b90377c26e7fb8830266c9339f9fc53
+2026-07-15T03:39:51.5117773Z Successfully built pyjhora lunar_python ichingshifa kinliuren taixuanshifa jingjue meihua-yi arcanite-unified pydantic PyYAML MarkupSafe Jinja2 attrs cattrs platformdirs url-normalize urllib3 cn2an proces
+2026-07-15T03:39:51.7115977Z Installing collected packages: taixuanshifa, pytz, pyswisseph, pyjhora, lunar_python, kinliuren, jingjue, ichingshifa, cnlunar, chaquopy-libgfortran, chaquopy-libcxx, urllib3, typing-extensions, tabulate, soupsieve, six, setuptools, PyYAML, pypdf, proces, platformdirs, meihua-yi, MarkupSafe, markdown, idna, geographiclib, future, flatlib, et-xmlfile, decorator, colorama, click, charset_normalizer, chaquopy-openblas, certifi, bidict, attrs, url-normalize, requests, ratelim, python-dateutil, pydantic, openpyxl, numpy, Jinja2, geopy, cn2an, cattrs, beautifulsoup4, timezonefinder, markdownify, geocoder, arcanite-unified
+2026-07-15T03:39:52.8122193Z 
+2026-07-15T03:39:52.8126384Z Successfully installed Jinja2-3.1.6 MarkupSafe-3.0.3 PyYAML-6.0.3 arcanite-unified-0.3.0 attrs-26.1.0 beautifulsoup4-4.15.0 bidict-0.23.1 cattrs-26.1.0 certifi-2026.6.17 chaquopy-libcxx-180000 chaquopy-libgfortran-4.9 chaquopy-openblas-0.2.20 charset_normalizer-3.4.9 click-8.4.2 cn2an-0.5.24 cnlunar-0.2.4 colorama-0.4.6 decorator-5.3.1 et-xmlfile-2.0.0 flatlib-0.2.3 future-1.0.0 geocoder-1.38.1 geographiclib-2.1 geopy-2.5.0 ichingshifa-0.1 idna-3.18 jingjue-0.1 kinliuren-0.1 lunar_python-1.4.8 markdown-3.10.2 markdownify-1.2.3 meihua-yi-0.1.1 numpy-1.26.2 openpyxl-3.1.5 platformdirs-4.10.0 proces-0.1.7 pydantic-1.10.26 pyjhora-4.8.7 pypdf-6.14.2 pyswisseph-2.10.3.2 python-dateutil-2.9.0.post0 pytz-2026.2 ratelim-0.1.6 requests-2.34.2 setuptools-83.0.0 six-1.17.0 soupsieve-2.8.4 tabulate-0.10.0 taixuanshifa-0.1 timezonefinder-5.2.0 typing-extensions-4.16.0 url-normalize-3.0.0 urllib3-2.7.0
+2026-07-15T03:39:59.7121979Z 
+2026-07-15T03:39:59.7132665Z > Task :material3:compileReleaseJavaWithJavac NO-SOURCE
+2026-07-15T03:39:59.7150999Z > Task :material3:mergeReleaseGeneratedProguardFiles
+2026-07-15T03:39:59.7152265Z > Task :material3:exportReleaseConsumerProguardFiles
+2026-07-15T03:40:00.0121061Z > Task :app:mergeReleasePythonSources
+2026-07-15T03:40:00.0121798Z > Task :app:generateReleasePythonProxies
+2026-07-15T03:40:00.0122144Z > Task :app:generateReleaseResources
+2026-07-15T03:40:00.0122516Z > Task :app:injectCrashlyticsMappingFileIdRelease
+2026-07-15T03:40:00.1117353Z > Task :app:extractReleaseVersionControlInfo
+2026-07-15T03:40:00.1118387Z > Task :app:injectCrashlyticsVersionControlInfoRelease
+2026-07-15T03:40:00.1119292Z > Task :app:processReleaseGoogleServices
+2026-07-15T03:40:00.3122402Z > Task :app:packageReleaseResources
+2026-07-15T03:40:00.5142177Z > Task :app:processReleaseNavigationResources
+2026-07-15T03:40:00.6113497Z > Task :highlight:bundleLibCompileToJarRelease
+2026-07-15T03:40:00.6115217Z > Task :document:bundleLibCompileToJarRelease
+2026-07-15T03:40:00.6115968Z > Task :material3:bundleLibCompileToJarRelease
+2026-07-15T03:40:00.6117191Z > Task :web:bundleLibCompileToJarRelease
+2026-07-15T03:40:00.6117826Z > Task :speech:bundleLibCompileToJarRelease
+2026-07-15T03:40:00.6118440Z > Task :search:bundleLibCompileToJarRelease
+2026-07-15T03:40:00.6119052Z > Task :workspace:bundleLibCompileToJarRelease
+2026-07-15T03:40:00.6119992Z > Task :app:parseReleaseLocalResources
+2026-07-15T03:40:02.4122676Z > Task :app:javaPreCompileRelease
+2026-07-15T03:40:02.4152247Z > Task :common:prepareReleaseArtProfile
+2026-07-15T03:40:02.4162217Z > Task :document:prepareReleaseArtProfile
+2026-07-15T03:40:02.4188884Z > Task :highlight:prepareReleaseArtProfile
+2026-07-15T03:40:02.4237888Z > Task :material3:prepareReleaseArtProfile
+2026-07-15T03:40:02.4262372Z > Task :search:prepareReleaseArtProfile
+2026-07-15T03:40:02.4286025Z > Task :speech:prepareReleaseArtProfile
+2026-07-15T03:40:02.4287640Z > Task :web:prepareReleaseArtProfile
+2026-07-15T03:40:02.4288345Z > Task :workspace:prepareReleaseArtProfile
+2026-07-15T03:40:02.4289080Z > Task :app:generateReleaseRFile
+2026-07-15T03:40:02.8123389Z > Task :app:mergeReleaseArtProfile
+2026-07-15T03:40:09.9113303Z > Task :ai:compileReleaseLibraryResources
+2026-07-15T03:40:09.9142265Z > Task :document:writeReleaseAarMetadata
+2026-07-15T03:40:09.9172255Z > Task :highlight:writeReleaseAarMetadata
+2026-07-15T03:40:09.9204001Z > Task :material3:writeReleaseAarMetadata
+2026-07-15T03:40:09.9204955Z > Task :search:writeReleaseAarMetadata
+2026-07-15T03:40:09.9232162Z > Task :speech:writeReleaseAarMetadata
+2026-07-15T03:40:09.9253992Z > Task :web:writeReleaseAarMetadata
+2026-07-15T03:40:09.9254676Z > Task :workspace:writeReleaseAarMetadata
+2026-07-15T03:40:09.9255311Z > Task :app:mapReleaseSourceSetPaths
+2026-07-15T03:40:10.2113314Z > Task :app:checkReleaseAarMetadata
+2026-07-15T03:40:10.2142191Z > Task :app:compileReleaseNavigationResources
+2026-07-15T03:40:12.1153156Z > Task :app:createReleaseCompatibleScreenManifests
+2026-07-15T03:40:12.1182588Z > Task :ai:extractDeepLinksRelease
+2026-07-15T03:40:12.1207225Z > Task :app:extractDeepLinksRelease
+2026-07-15T03:40:12.1208463Z > Task :common:extractDeepLinksRelease
+2026-07-15T03:40:12.2146738Z > Task :document:extractDeepLinksRelease
+2026-07-15T03:40:13.3125287Z > Task :common:processReleaseManifest
+2026-07-15T03:40:13.3157911Z > Task :highlight:extractDeepLinksRelease
+2026-07-15T03:40:13.4113750Z > Task :document:processReleaseManifest
+2026-07-15T03:40:13.4172705Z > Task :material3:extractDeepLinksRelease
+2026-07-15T03:40:13.4242158Z > Task :highlight:processReleaseManifest
+2026-07-15T03:40:13.4272105Z > Task :search:extractDeepLinksRelease
+2026-07-15T03:40:13.4301904Z > Task :material3:processReleaseManifest
+2026-07-15T03:40:13.4302574Z > Task :speech:extractDeepLinksRelease
+2026-07-15T03:40:13.4331907Z > Task :speech:processReleaseManifest
+2026-07-15T03:40:13.5172454Z > Task :web:extractDeepLinksRelease
+2026-07-15T03:40:13.5202195Z > Task :search:processReleaseManifest
+2026-07-15T03:40:13.5285282Z > Task :workspace:extractDeepLinksRelease
+2026-07-15T03:40:13.6185052Z > Task :web:processReleaseManifest
+2026-07-15T03:40:13.6212208Z > Task :document:mapReleaseSourceSetPaths
+2026-07-15T03:40:13.6252129Z > Task :document:compileReleaseLibraryResources
+2026-07-15T03:40:13.6261937Z > Task :highlight:mapReleaseSourceSetPaths
+2026-07-15T03:40:13.7142430Z > Task :workspace:processReleaseManifest
+2026-07-15T03:40:14.3122754Z > Task :highlight:compileReleaseLibraryResources
+2026-07-15T03:40:15.2123518Z > Task :app:processReleaseMainManifest
+2026-07-15T03:40:15.2144327Z > Task :app:processReleaseManifest
+2026-07-15T03:40:15.3122997Z > Task :material3:mapReleaseSourceSetPaths
+2026-07-15T03:40:15.3152302Z > Task :material3:compileReleaseLibraryResources
+2026-07-15T03:40:15.3182111Z > Task :search:mapReleaseSourceSetPaths
+2026-07-15T03:40:15.3206263Z > Task :app:processReleaseManifestForPackage
+2026-07-15T03:40:15.3232693Z > Task :speech:mapReleaseSourceSetPaths
+2026-07-15T03:40:15.3272009Z > Task :speech:compileReleaseLibraryResources
+2026-07-15T03:40:15.3288210Z > Task :web:mapReleaseSourceSetPaths
+2026-07-15T03:40:15.4155230Z > Task :web:compileReleaseLibraryResources
+2026-07-15T03:40:15.4162131Z > Task :workspace:mapReleaseSourceSetPaths
+2026-07-15T03:40:15.4192121Z > Task :search:compileReleaseLibraryResources
+2026-07-15T03:40:15.4222043Z > Task :workspace:compileReleaseLibraryResources
+2026-07-15T03:40:15.4223217Z > Task :common:bundleLibRuntimeToJarRelease
+2026-07-15T03:40:15.4275013Z > Task :document:bundleLibRuntimeToJarRelease
+2026-07-15T03:40:15.5114179Z > Task :highlight:bundleLibRuntimeToJarRelease
+2026-07-15T03:40:15.5132155Z > Task :material3:bundleLibRuntimeToJarRelease
+2026-07-15T03:40:15.6114863Z > Task :search:bundleLibRuntimeToJarRelease
+2026-07-15T03:40:15.6142053Z > Task :speech:bundleLibRuntimeToJarRelease
+2026-07-15T03:40:15.6171964Z > Task :web:bundleLibRuntimeToJarRelease
+2026-07-15T03:40:15.6197712Z > Task :app:extractProguardFiles
+2026-07-15T03:40:15.6221889Z > Task :common:processReleaseJavaRes
+2026-07-15T03:40:15.6251921Z > Task :document:processReleaseJavaRes
+2026-07-15T03:40:15.7168352Z > Task :highlight:processReleaseJavaRes
+2026-07-15T03:40:15.7215953Z > Task :material3:processReleaseJavaRes
+2026-07-15T03:40:15.7282036Z > Task :search:processReleaseJavaRes
+2026-07-15T03:40:15.7292769Z > Task :speech:processReleaseJavaRes
+2026-07-15T03:40:15.7371960Z > Task :web:processReleaseJavaRes
+2026-07-15T03:40:15.8142583Z > Task :workspace:processReleaseJavaRes
+2026-07-15T03:40:15.8171922Z > Task :app:mergeReleaseStartupProfile
+2026-07-15T03:40:15.8182019Z > Task :app:generateReleaseAssets UP-TO-DATE
+2026-07-15T03:40:16.0148267Z > Task :workspace:bundleLibRuntimeToJarRelease
+2026-07-15T03:40:17.1113238Z > Task :app:generateReleasePythonMiscAssets
+2026-07-15T03:40:18.3132293Z > Task :app:mergeReleaseResources
+2026-07-15T03:40:24.7135083Z > Task :app:generateReleasePythonRequirementsAssets
+2026-07-15T03:40:26.4122727Z > Task :app:generateReleasePythonSourceAssets
+2026-07-15T03:40:26.5142469Z > Task :app:generateReleasePythonBuildAssets
+2026-07-15T03:40:26.5202303Z > Task :common:generateReleaseAssets UP-TO-DATE
+2026-07-15T03:40:26.5232287Z > Task :common:mergeReleaseAssets
+2026-07-15T03:40:26.5262154Z > Task :document:generateReleaseAssets UP-TO-DATE
+2026-07-15T03:40:26.5262732Z > Task :document:mergeReleaseAssets
+2026-07-15T03:40:26.5263229Z > Task :highlight:generateReleaseAssets UP-TO-DATE
+2026-07-15T03:40:26.5263772Z > Task :highlight:mergeReleaseAssets
+2026-07-15T03:40:26.5264259Z > Task :material3:generateReleaseAssets UP-TO-DATE
+2026-07-15T03:40:26.5264747Z > Task :material3:mergeReleaseAssets
+2026-07-15T03:40:26.5265218Z > Task :search:generateReleaseAssets UP-TO-DATE
+2026-07-15T03:40:26.5265702Z > Task :search:mergeReleaseAssets
+2026-07-15T03:40:26.5266133Z > Task :speech:generateReleaseAssets UP-TO-DATE
+2026-07-15T03:40:26.6117560Z > Task :speech:mergeReleaseAssets
+2026-07-15T03:40:26.6172372Z > Task :web:generateReleaseAssets UP-TO-DATE
+2026-07-15T03:40:26.6192481Z > Task :web:mergeReleaseAssets
+2026-07-15T03:40:26.6215343Z > Task :workspace:generateReleaseAssets UP-TO-DATE
+2026-07-15T03:40:26.6282278Z > Task :workspace:mergeReleaseAssets
+2026-07-15T03:40:27.9135806Z > Task :app:mergeReleaseAssets
+2026-07-15T03:40:27.9232324Z > Task :ai:extractProguardFiles
+2026-07-15T03:40:28.0172347Z > Task :common:createFullJarRelease
+2026-07-15T03:40:28.0188522Z > Task :common:extractProguardFiles
+2026-07-15T03:40:32.4114554Z > Task :app:compressReleaseAssets
+2026-07-15T03:40:32.7122366Z > Task :app:kspReleaseKotlin
+2026-07-15T03:40:33.1142465Z > Task :common:generateReleaseLintModel
+2026-07-15T03:40:33.2162500Z > Task :common:prepareLintJarForPublish
+2026-07-15T03:40:33.2184990Z > Task :common:checkReleaseAarMetadata
+2026-07-15T03:40:33.6122596Z > Task :app:processReleaseResources
+2026-07-15T03:40:34.9145939Z > Task :ai:generateReleaseLintVitalModel
+2026-07-15T03:40:34.9172146Z > Task :common:stripReleaseDebugSymbols NO-SOURCE
+2026-07-15T03:40:34.9201997Z > Task :common:copyReleaseJniLibsProjectAndLocalJars
+2026-07-15T03:40:34.9202635Z > Task :common:extractDeepLinksForAarRelease
+2026-07-15T03:40:35.0162607Z > Task :common:extractReleaseAnnotations
+2026-07-15T03:40:35.0191096Z > Task :common:mergeReleaseConsumerProguardFiles
+2026-07-15T03:40:35.0206399Z > Task :common:mergeReleaseJavaResource
+2026-07-15T03:40:35.0250527Z > Task :common:writeReleaseLintModelMetadata
+2026-07-15T03:40:35.1142471Z > Task :common:syncReleaseLibJars
+2026-07-15T03:40:35.1172179Z > Task :common:bundleReleaseLocalLintAar
+2026-07-15T03:40:35.2122563Z > Task :ai:createFullJarRelease
+2026-07-15T03:40:35.4136853Z > Task :ai:generateReleaseLintModel
+2026-07-15T03:40:35.5130405Z > Task :document:createFullJarRelease
+2026-07-15T03:40:35.5202370Z > Task :document:extractProguardFiles
+2026-07-15T03:40:35.9122531Z > Task :document:generateReleaseLintModel
+2026-07-15T03:40:35.9162303Z > Task :document:prepareLintJarForPublish
+2026-07-15T03:40:35.9162914Z > Task :highlight:createFullJarRelease
+2026-07-15T03:40:35.9163409Z > Task :highlight:extractProguardFiles
+2026-07-15T03:40:37.3122659Z > Task :highlight:generateReleaseLintModel
+2026-07-15T03:40:37.3173083Z > Task :highlight:prepareLintJarForPublish
+2026-07-15T03:40:37.4113266Z > Task :material3:createFullJarRelease
+2026-07-15T03:40:37.4114738Z > Task :material3:extractProguardFiles
+2026-07-15T03:40:37.8132746Z > Task :material3:generateReleaseLintModel
+2026-07-15T03:40:42.1115715Z > Task :material3:prepareLintJarForPublish
+2026-07-15T03:40:42.1142225Z > Task :search:createFullJarRelease
+2026-07-15T03:40:42.1185182Z > Task :search:extractProguardFiles
+2026-07-15T03:40:42.4132607Z > Task :search:generateReleaseLintModel
+2026-07-15T03:40:42.4158451Z > Task :search:prepareLintJarForPublish
+2026-07-15T03:40:42.4207484Z > Task :speech:createFullJarRelease
+2026-07-15T03:40:42.5142180Z > Task :speech:extractProguardFiles
+2026-07-15T03:40:43.7172231Z > Task :speech:generateReleaseLintModel
+2026-07-15T03:40:43.7192104Z > Task :speech:prepareLintJarForPublish
+2026-07-15T03:40:43.7232775Z > Task :web:createFullJarRelease
+2026-07-15T03:40:43.7250219Z > Task :web:extractProguardFiles
+2026-07-15T03:40:45.1132641Z > Task :web:generateReleaseLintModel
+2026-07-15T03:40:45.1171917Z > Task :web:prepareLintJarForPublish
+2026-07-15T03:40:45.2154758Z > Task :workspace:createFullJarRelease
+2026-07-15T03:40:45.2182055Z > Task :workspace:extractProguardFiles
+2026-07-15T03:40:45.3132790Z > Task :workspace:generateReleaseLintModel
+2026-07-15T03:40:45.3152910Z > Task :workspace:prepareLintJarForPublish
+2026-07-15T03:40:45.3192257Z > Task :search:stripReleaseDebugSymbols NO-SOURCE
+2026-07-15T03:40:45.3222075Z > Task :search:checkReleaseAarMetadata
+2026-07-15T03:40:45.3252000Z > Task :search:copyReleaseJniLibsProjectAndLocalJars
+2026-07-15T03:40:45.4172342Z > Task :search:extractDeepLinksForAarRelease
+2026-07-15T03:40:45.6123369Z > Task :search:extractReleaseAnnotations
+2026-07-15T03:40:45.6162431Z > Task :search:mergeReleaseConsumerProguardFiles
+2026-07-15T03:40:45.7162465Z > Task :search:mergeReleaseJavaResource
+2026-07-15T03:40:45.7211986Z > Task :ai:bundleReleaseLocalLintAar
+2026-07-15T03:40:46.0122123Z > Task :search:syncReleaseLibJars
+2026-07-15T03:40:46.0182757Z > Task :search:bundleReleaseLocalLintAar
+2026-07-15T03:40:46.1120991Z > Task :web:checkReleaseAarMetadata
+2026-07-15T03:40:46.1121903Z > Task :web:stripReleaseDebugSymbols NO-SOURCE
+2026-07-15T03:40:46.1152196Z > Task :web:copyReleaseJniLibsProjectAndLocalJars
+2026-07-15T03:40:46.1212176Z > Task :web:extractDeepLinksForAarRelease
+2026-07-15T03:40:47.4135953Z > Task :web:extractReleaseAnnotations
+2026-07-15T03:40:47.4203622Z > Task :web:mergeReleaseConsumerProguardFiles
+2026-07-15T03:40:47.4282410Z > Task :web:mergeReleaseJavaResource
+2026-07-15T03:40:47.4312427Z > Task :document:checkReleaseAarMetadata
+2026-07-15T03:40:47.4342129Z > Task :web:syncReleaseLibJars
+2026-07-15T03:40:47.4371905Z > Task :web:bundleReleaseLocalLintAar
+2026-07-15T03:40:47.5142066Z > Task :document:extractDeepLinksForAarRelease
+2026-07-15T03:40:47.7162710Z > Task :document:extractReleaseAnnotations
+2026-07-15T03:40:47.8132763Z > Task :document:mergeReleaseConsumerProguardFiles
+2026-07-15T03:40:47.8158540Z > Task :document:stripReleaseDebugSymbols
+2026-07-15T03:40:47.8202087Z > Task :document:mergeReleaseJavaResource
+2026-07-15T03:40:47.9160812Z > Task :document:syncReleaseLibJars
+2026-07-15T03:40:47.9212061Z > Task :document:copyReleaseJniLibsProjectAndLocalJars
+2026-07-15T03:40:47.9267248Z > Task :highlight:checkReleaseAarMetadata
+2026-07-15T03:40:48.1123836Z > Task :document:bundleReleaseLocalLintAar
+2026-07-15T03:40:48.1172549Z > Task :highlight:stripReleaseDebugSymbols NO-SOURCE
+2026-07-15T03:40:48.1267404Z > Task :highlight:copyReleaseJniLibsProjectAndLocalJars
+2026-07-15T03:40:48.1342544Z > Task :highlight:extractDeepLinksForAarRelease
+2026-07-15T03:40:48.2192971Z > Task :highlight:extractReleaseAnnotations
+2026-07-15T03:40:48.2272437Z > Task :highlight:mergeReleaseConsumerProguardFiles
+2026-07-15T03:40:48.2362310Z > Task :highlight:mergeReleaseJavaResource
+2026-07-15T03:40:48.2392014Z > Task :highlight:syncReleaseLibJars
+2026-07-15T03:40:48.3122464Z > Task :highlight:bundleReleaseLocalLintAar
+2026-07-15T03:40:48.4122809Z > Task :speech:checkReleaseAarMetadata
+2026-07-15T03:40:48.4192329Z > Task :speech:stripReleaseDebugSymbols NO-SOURCE
+2026-07-15T03:40:48.4273924Z > Task :speech:copyReleaseJniLibsProjectAndLocalJars
+2026-07-15T03:40:48.4362250Z > Task :speech:extractDeepLinksForAarRelease
+2026-07-15T03:40:49.3122398Z > Task :speech:extractReleaseAnnotations
+2026-07-15T03:40:49.3175061Z > Task :speech:mergeReleaseConsumerProguardFiles
+2026-07-15T03:40:49.3232318Z > Task :speech:mergeReleaseJavaResource
+2026-07-15T03:40:49.3262328Z > Task :material3:checkReleaseAarMetadata
+2026-07-15T03:40:49.4142575Z > Task :speech:syncReleaseLibJars
+2026-07-15T03:40:49.5123254Z > Task :speech:bundleReleaseLocalLintAar
+2026-07-15T03:40:49.5182144Z > Task :material3:stripReleaseDebugSymbols NO-SOURCE
+2026-07-15T03:40:49.5182915Z > Task :material3:copyReleaseJniLibsProjectAndLocalJars
+2026-07-15T03:40:49.5212149Z > Task :material3:extractDeepLinksForAarRelease
+2026-07-15T03:40:49.6125262Z > Task :material3:extractReleaseAnnotations
+2026-07-15T03:40:49.6178452Z > Task :material3:mergeReleaseConsumerProguardFiles
+2026-07-15T03:40:49.6206687Z > Task :material3:mergeReleaseJavaResource
+2026-07-15T03:40:49.6262818Z > Task :workspace:checkReleaseAarMetadata
+2026-07-15T03:40:49.7146117Z > Task :material3:syncReleaseLibJars
+2026-07-15T03:40:49.7164293Z > Task :material3:bundleReleaseLocalLintAar
+2026-07-15T03:40:49.8152440Z > Task :workspace:extractDeepLinksForAarRelease
+2026-07-15T03:40:49.8182363Z > Task :workspace:extractReleaseAnnotations
+2026-07-15T03:40:49.9188575Z > Task :workspace:mergeReleaseConsumerProguardFiles
+2026-07-15T03:40:49.9245460Z > Task :workspace:mergeReleaseJavaResource
+2026-07-15T03:40:50.0195951Z > Task :workspace:stripReleaseDebugSymbols
+2026-07-15T03:40:50.0196530Z > Task :workspace:syncReleaseLibJars
+2026-07-15T03:40:50.0242329Z > Task :ai:writeReleaseLintModelMetadata
+2026-07-15T03:40:50.0272378Z > Task :workspace:copyReleaseJniLibsProjectAndLocalJars
+2026-07-15T03:40:50.0312075Z > Task :workspace:bundleReleaseLocalLintAar
+2026-07-15T03:41:02.4142360Z > Task :document:lintVitalAnalyzeRelease
+2026-07-15T03:41:02.5143809Z > Task :document:writeReleaseLintModelMetadata
+2026-07-15T03:41:03.1112986Z > Task :common:lintVitalAnalyzeRelease
+2026-07-15T03:41:03.1182669Z > Task :highlight:writeReleaseLintModelMetadata
+2026-07-15T03:41:05.1253258Z > Task :ai:lintVitalAnalyzeRelease
+2026-07-15T03:41:07.0132648Z > Task :highlight:lintVitalAnalyzeRelease
+2026-07-15T03:41:07.0192695Z > Task :material3:writeReleaseLintModelMetadata
+2026-07-15T03:41:07.8202759Z > Task :app:compileReleaseKotlin
+2026-07-15T03:41:18.1150933Z > Task :search:writeReleaseLintModelMetadata
+2026-07-15T03:41:18.5122694Z > Task :search:lintVitalAnalyzeRelease
+2026-07-15T03:41:18.5196410Z > Task :speech:writeReleaseLintModelMetadata
+2026-07-15T03:41:19.7142434Z > Task :web:lintVitalAnalyzeRelease
+2026-07-15T03:41:19.7202471Z > Task :web:writeReleaseLintModelMetadata
+2026-07-15T03:41:26.0142437Z > Task :material3:lintVitalAnalyzeRelease
+2026-07-15T03:41:26.0172372Z > Task :workspace:writeReleaseLintModelMetadata
+2026-07-15T03:41:26.0232223Z > Task :workspace:lintVitalAnalyzeRelease
+2026-07-15T03:41:26.1114853Z > Task :common:generateReleaseLintVitalModel
+2026-07-15T03:41:26.1122003Z > Task :document:generateReleaseLintVitalModel
+2026-07-15T03:41:26.2125617Z > Task :highlight:generateReleaseLintVitalModel
+2026-07-15T03:41:26.2152336Z > Task :material3:generateReleaseLintVitalModel
+2026-07-15T03:41:26.3132559Z > Task :search:generateReleaseLintVitalModel
+2026-07-15T03:41:26.3162340Z > Task :speech:generateReleaseLintVitalModel
+2026-07-15T03:41:26.4162921Z > Task :web:generateReleaseLintVitalModel
+2026-07-15T03:41:26.4202383Z > Task :workspace:generateReleaseLintVitalModel
+2026-07-15T03:41:26.8122365Z > Task :app:collectReleaseDependencies
+2026-07-15T03:41:27.1113036Z > Task :app:sdkReleaseDependencyData
+2026-07-15T03:41:27.1121920Z > Task :app:validateSigningRelease
+2026-07-15T03:41:27.1122474Z > Task :app:writeReleaseAppMetadata
+2026-07-15T03:41:27.1152124Z > Task :app:writeReleaseSigningConfigVersions
+2026-07-15T03:41:27.2112850Z > Task :common:bundleReleaseAar
+2026-07-15T03:41:29.3112785Z > Task :speech:lintVitalAnalyzeRelease
+2026-07-15T03:41:29.9114265Z > Task :common:mergeReleaseResources
+2026-07-15T03:41:31.9112861Z > Task :document:bundleReleaseAar
+2026-07-15T03:41:33.4122590Z > Task :document:mergeReleaseResources
+2026-07-15T03:41:33.4171834Z > Task :common:verifyReleaseResources
+2026-07-15T03:41:33.4225894Z > Task :common:assembleRelease
+2026-07-15T03:41:33.5123400Z > Task :highlight:bundleReleaseAar
+2026-07-15T03:41:34.4156178Z > Task :highlight:mergeReleaseResources
+2026-07-15T03:41:34.6142619Z > Task :material3:bundleReleaseAar
+2026-07-15T03:41:35.4142355Z > Task :highlight:verifyReleaseResources
+2026-07-15T03:41:35.5142656Z > Task :material3:mergeReleaseResources
+2026-07-15T03:41:35.5216993Z > Task :highlight:assembleRelease
+2026-07-15T03:41:35.6162207Z > Task :search:bundleReleaseAar
+2026-07-15T03:41:36.4127485Z > Task :material3:verifyReleaseResources
+2026-07-15T03:41:36.6114981Z > Task :document:verifyReleaseResources
+2026-07-15T03:41:37.0122618Z > Task :search:mergeReleaseResources
+2026-07-15T03:41:37.0142380Z > Task :document:assembleRelease
+2026-07-15T03:41:37.0172125Z > Task :material3:assembleRelease
+2026-07-15T03:41:37.1114027Z > Task :speech:bundleReleaseAar
+2026-07-15T03:41:39.2142378Z > Task :speech:mergeReleaseResources
+2026-07-15T03:41:39.3162366Z > Task :web:bundleReleaseAar
+2026-07-15T03:41:41.0130972Z > Task :search:verifyReleaseResources
+2026-07-15T03:41:41.3172713Z > Task :web:mergeReleaseResources
+2026-07-15T03:41:41.3232242Z > Task :search:assembleRelease
+2026-07-15T03:41:41.5122686Z > Task :workspace:bundleReleaseAar
+2026-07-15T03:41:43.2112598Z > Task :speech:verifyReleaseResources
+2026-07-15T03:41:43.4122443Z > Task :workspace:mergeReleaseResources
+2026-07-15T03:41:43.4143955Z > Task :speech:assembleRelease
+2026-07-15T03:41:44.2143442Z > Task :web:verifyReleaseResources
+2026-07-15T03:41:44.2146733Z > Task :web:assembleRelease
+2026-07-15T03:41:44.8115157Z > Task :workspace:verifyReleaseResources
+2026-07-15T03:41:44.8118098Z > Task :workspace:assembleRelease
+2026-07-15T03:41:46.2114346Z 
+2026-07-15T03:41:46.2122292Z > Task :app:compileReleaseKotlin FAILED
+2026-07-15T03:41:46.2124839Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/data/ai/tools/LocalTools.kt:634:24 Property delegate must have a 'getValue(LocalTools, KProperty1<LocalTools, ??? (Unknown type for type parameter T)>)' method. None of the following functions is applicable:
+2026-07-15T03:41:46.2127219Z fun <T> Lazy<T>.getValue(thisRef: Any?, property: KProperty<*>): T
+2026-07-15T03:41:46.2128803Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/data/ai/tools/LocalTools.kt:634:27 Cannot infer type for type parameter 'T'. Specify it explicitly.
+2026-07-15T03:41:46.2131250Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/data/ai/tools/LocalTools.kt:634:27 Cannot infer type for type parameter 'T'. Specify it explicitly.
+2026-07-15T03:41:46.2134445Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/data/ai/tools/LocalTools.kt:634:34 Unresolved reference 'buildScreenTimeTool'.
+2026-07-15T03:41:46.2137826Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/data/ai/tools/LocalTools.kt:636:27 Property delegate must have a 'getValue(LocalTools, KProperty1<LocalTools, ??? (Unknown type for type parameter T)>)' method. None of the following functions is applicable:
+2026-07-15T03:41:46.2140138Z fun <T> Lazy<T>.getValue(thisRef: Any?, property: KProperty<*>): T
+2026-07-15T03:41:46.2142005Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/data/ai/tools/LocalTools.kt:636:30 Cannot infer type for type parameter 'T'. Specify it explicitly.
+2026-07-15T03:41:46.2144560Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/data/ai/tools/LocalTools.kt:636:30 Cannot infer type for type parameter 'T'. Specify it explicitly.
+2026-07-15T03:41:46.2146895Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/data/ai/tools/LocalTools.kt:636:37 Unresolved reference 'buildCalendarQueryTool'.
+2026-07-15T03:41:46.2149821Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/data/ai/tools/LocalTools.kt:638:28 Property delegate must have a 'getValue(LocalTools, KProperty1<LocalTools, ??? (Unknown type for type parameter T)>)' method. None of the following functions is applicable:
+2026-07-15T03:41:46.2152162Z fun <T> Lazy<T>.getValue(thisRef: Any?, property: KProperty<*>): T
+2026-07-15T03:41:46.2153812Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/data/ai/tools/LocalTools.kt:638:31 Cannot infer type for type parameter 'T'. Specify it explicitly.
+2026-07-15T03:41:46.2156184Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/data/ai/tools/LocalTools.kt:638:31 Cannot infer type for type parameter 'T'. Specify it explicitly.
+2026-07-15T03:41:46.2158581Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/data/ai/tools/LocalTools.kt:638:38 Unresolved reference 'buildCalendarCreateTool'.
+2026-07-15T03:41:46.2160892Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt:454:21 Argument already passed for this parameter.
+2026-07-15T03:41:46.2163127Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt:455:92 Unresolved reference 'it'.
+2026-07-15T03:41:46.2165164Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt:457:21 Argument already passed for this parameter.
+2026-07-15T03:41:46.2167180Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt:461:57 Unresolved reference 'it'.
+2026-07-15T03:41:46.2169266Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt:462:41 Unresolved reference 'it'.
+2026-07-15T03:41:46.2171628Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt:470:21 Argument already passed for this parameter.
+2026-07-15T03:41:46.2191515Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt:470:47 Cannot infer type for value parameter 'index'. Specify it explicitly.
+2026-07-15T03:41:46.2196458Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt:522:17 Argument already passed for this parameter.
+2026-07-15T03:41:46.2198956Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt:522:37 Cannot infer type for value parameter 'newNode'. Specify it explicitly.
+2026-07-15T03:41:46.2201719Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt:526:56 Unresolved reference 'id'.
+2026-07-15T03:41:46.2203888Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt:564:17 Argument already passed for this parameter.
+2026-07-15T03:41:46.2206208Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt:564:34 Cannot infer type for value parameter 'callId'. Specify it explicitly.
+2026-07-15T03:41:46.2208626Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt:564:42 Cannot infer type for value parameter 'answer'. Specify it explicitly.
+2026-07-15T03:41:46.2210927Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt:565:17 Argument already passed for this parameter.
+2026-07-15T03:41:46.2213271Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt:565:63 Unresolved reference 'it'.
+2026-07-15T03:41:46.2215235Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt:930:30 Unresolved reference 'clickable'.
+2026-07-15T03:41:46.2217257Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt:947:33 Unresolved reference 'Box'.
+2026-07-15T03:41:46.2219726Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt:952:42 Unresolved reference 'background'.
+2026-07-15T03:41:46.2222125Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatVM.kt:105:36 Cannot infer type for type parameter 'R'. Specify it explicitly.
+2026-07-15T03:41:46.2224424Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatVM.kt:106:12 Unresolved reference 'getCurrentAssistant'.
+2026-07-15T03:41:46.2226756Z e: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/GroupChatPage.kt:437:29 No value passed for parameter 'onMoreClick'.
+2026-07-15T03:41:46.3133387Z 
+2026-07-15T03:41:46.3173383Z [Incubating] Problems report is available at: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/build/reports/problems/problems-report.html
+2026-07-15T03:41:46.3174776Z 
+2026-07-15T03:41:46.3175157Z FAILURE: Build failed with an exception.
+2026-07-15T03:41:46.3175666Z 
+2026-07-15T03:41:46.3175948Z * What went wrong:
+2026-07-15T03:41:46.3176571Z Execution failed for task ':app:compileReleaseKotlin'.
+2026-07-15T03:41:46.3177816Z > A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+2026-07-15T03:41:46.3179006Z    > Compilation error. See log for more details
+2026-07-15T03:41:46.3179522Z 
+2026-07-15T03:41:46.3179808Z * Try:
+2026-07-15T03:41:46.3180405Z > Run with --info or --debug option to get more log output.
+2026-07-15T03:41:46.3181508Z > Run with --scan to get full insights from a Build Scan (powered by Develocity).
+2026-07-15T03:41:46.3182391Z > Get more help at https://help.gradle.org.
+2026-07-15T03:41:46.3189922Z 
+2026-07-15T03:41:46.3190312Z * Exception is:
+2026-07-15T03:41:46.3191956Z org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:compileReleaseKotlin'.
+2026-07-15T03:41:46.3193734Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:135)
+2026-07-15T03:41:46.3195264Z 	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:288)
+2026-07-15T03:41:46.3197068Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:133)
+2026-07-15T03:41:46.3198983Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:121)
+2026-07-15T03:41:46.3201017Z 	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:41)
+2026-07-15T03:41:46.3203314Z 	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+2026-07-15T03:41:46.3205286Z 	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+2026-07-15T03:41:46.3207254Z 	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+2026-07-15T03:41:46.3209030Z 	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+2026-07-15T03:41:46.3210775Z 	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+2026-07-15T03:41:46.3212728Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+2026-07-15T03:41:46.3214400Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+2026-07-15T03:41:46.3216009Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+2026-07-15T03:41:46.3217868Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+2026-07-15T03:41:46.3219959Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+2026-07-15T03:41:46.3222299Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+2026-07-15T03:41:46.3224053Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+2026-07-15T03:41:46.3225729Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+2026-07-15T03:41:46.3227417Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+2026-07-15T03:41:46.3229187Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+2026-07-15T03:41:46.3230957Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+2026-07-15T03:41:46.3232664Z 	at org.gradle.execution.plan.DefaultNodeExecutor.executeLocalTaskNode(DefaultNodeExecutor.java:55)
+2026-07-15T03:41:46.3234106Z 	at org.gradle.execution.plan.DefaultNodeExecutor.execute(DefaultNodeExecutor.java:34)
+2026-07-15T03:41:46.3235731Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:355)
+2026-07-15T03:41:46.3237713Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:343)
+2026-07-15T03:41:46.3239825Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:339)
+2026-07-15T03:41:46.3241873Z 	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:84)
+2026-07-15T03:41:46.3243674Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:339)
+2026-07-15T03:41:46.3249193Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:328)
+2026-07-15T03:41:46.3257588Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+2026-07-15T03:41:46.3259425Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+2026-07-15T03:41:46.3260962Z 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+2026-07-15T03:41:46.3268678Z 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:47)
+2026-07-15T03:41:46.3270922Z Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+2026-07-15T03:41:46.3273481Z 	at org.gradle.workers.internal.DefaultWorkerExecutor$WorkItemExecution.waitForCompletion(DefaultWorkerExecutor.java:289)
+2026-07-15T03:41:46.3275337Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.lambda$waitForItemsAndGatherFailures$2(DefaultAsyncWorkTracker.java:130)
+2026-07-15T03:41:46.3276713Z 	at org.gradle.internal.Factories$1.create(Factories.java:30)
+2026-07-15T03:41:46.3277983Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withoutLocks$2(DefaultWorkerLeaseService.java:350)
+2026-07-15T03:41:46.3279463Z 	at org.gradle.internal.work.ResourceLockStatistics$1.measure(ResourceLockStatistics.java:43)
+2026-07-15T03:41:46.3280929Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:348)
+2026-07-15T03:41:46.3282682Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:332)
+2026-07-15T03:41:46.3284250Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLock(DefaultWorkerLeaseService.java:337)
+2026-07-15T03:41:46.3286084Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:126)
+2026-07-15T03:41:46.3287906Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:92)
+2026-07-15T03:41:46.3289561Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForAll(DefaultAsyncWorkTracker.java:78)
+2026-07-15T03:41:46.3291063Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForCompletion(DefaultAsyncWorkTracker.java:66)
+2026-07-15T03:41:46.3292782Z 	at org.gradle.api.internal.tasks.execution.TaskExecution$3.run(TaskExecution.java:267)
+2026-07-15T03:41:46.3294286Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:30)
+2026-07-15T03:41:46.3295934Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:27)
+2026-07-15T03:41:46.3297547Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+2026-07-15T03:41:46.3298975Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+2026-07-15T03:41:46.3300477Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+2026-07-15T03:41:46.3302226Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+2026-07-15T03:41:46.3303826Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:48)
+2026-07-15T03:41:46.3305373Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeAction(TaskExecution.java:244)
+2026-07-15T03:41:46.3306822Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeActions(TaskExecution.java:227)
+2026-07-15T03:41:46.3308444Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeWithPreviousOutputFiles(TaskExecution.java:210)
+2026-07-15T03:41:46.3310336Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.execute(TaskExecution.java:176)
+2026-07-15T03:41:46.3311919Z 	at org.gradle.internal.execution.steps.ExecuteStep.executeInternal(ExecuteStep.java:167)
+2026-07-15T03:41:46.3313212Z 	at org.gradle.internal.execution.steps.ExecuteStep.access$000(ExecuteStep.java:47)
+2026-07-15T03:41:46.3314621Z 	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:137)
+2026-07-15T03:41:46.3315773Z 	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:134)
+2026-07-15T03:41:46.3317396Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+2026-07-15T03:41:46.3319492Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+2026-07-15T03:41:46.3321484Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+2026-07-15T03:41:46.3323209Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+2026-07-15T03:41:46.3324870Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+2026-07-15T03:41:46.3326640Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+2026-07-15T03:41:46.3328300Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+2026-07-15T03:41:46.3329734Z 	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:134)
+2026-07-15T03:41:46.3331122Z 	at org.gradle.internal.execution.steps.ExecuteStep$Mutable.execute(ExecuteStep.java:80)
+2026-07-15T03:41:46.3332884Z 	at org.gradle.internal.execution.steps.CancelExecutionStep.execute(CancelExecutionStep.java:42)
+2026-07-15T03:41:46.3334337Z 	at org.gradle.internal.execution.steps.TimeoutStep.executeWithoutTimeout(TimeoutStep.java:75)
+2026-07-15T03:41:46.3335693Z 	at org.gradle.internal.execution.steps.TimeoutStep.execute(TimeoutStep.java:55)
+2026-07-15T03:41:46.3337149Z 	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:51)
+2026-07-15T03:41:46.3338898Z 	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:29)
+2026-07-15T03:41:46.3340756Z 	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.executeMutable(RemovePreviousOutputsStep.java:67)
+2026-07-15T03:41:46.3342896Z 	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.executeMutable(RemovePreviousOutputsStep.java:39)
+2026-07-15T03:41:46.3344461Z 	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+2026-07-15T03:41:46.3345950Z 	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:42)
+2026-07-15T03:41:46.3347768Z 	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:24)
+2026-07-15T03:41:46.3349675Z 	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:69)
+2026-07-15T03:41:46.3351818Z 	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:46)
+2026-07-15T03:41:46.3354062Z 	at org.gradle.internal.execution.steps.ResolveInputChangesStep.executeMutable(ResolveInputChangesStep.java:39)
+2026-07-15T03:41:46.3355818Z 	at org.gradle.internal.execution.steps.ResolveInputChangesStep.executeMutable(ResolveInputChangesStep.java:28)
+2026-07-15T03:41:46.3357287Z 	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+2026-07-15T03:41:46.3358656Z 	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithoutCache(BuildCacheStep.java:189)
+2026-07-15T03:41:46.3360101Z 	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$execute$1(BuildCacheStep.java:76)
+2026-07-15T03:41:46.3361687Z 	at org.gradle.internal.Either$Right.fold(Either.java:176)
+2026-07-15T03:41:46.3362729Z 	at org.gradle.internal.execution.caching.CachingState.fold(CachingState.java:62)
+2026-07-15T03:41:46.3363998Z 	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:74)
+2026-07-15T03:41:46.3365277Z 	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:49)
+2026-07-15T03:41:46.3366991Z 	at org.gradle.internal.execution.steps.StoreExecutionStateStep.executeMutable(StoreExecutionStateStep.java:46)
+2026-07-15T03:41:46.3368760Z 	at org.gradle.internal.execution.steps.StoreExecutionStateStep.executeMutable(StoreExecutionStateStep.java:35)
+2026-07-15T03:41:46.3370237Z 	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+2026-07-15T03:41:46.3371758Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.executeBecause(SkipUpToDateStep.java:75)
+2026-07-15T03:41:46.3373249Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.lambda$execute$2(SkipUpToDateStep.java:53)
+2026-07-15T03:41:46.3374673Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:53)
+2026-07-15T03:41:46.3376019Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:35)
+2026-07-15T03:41:46.3377788Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:37)
+2026-07-15T03:41:46.3379947Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:27)
+2026-07-15T03:41:46.3382149Z 	at org.gradle.internal.execution.steps.ResolveMutableCachingStateStep.executeDelegate(ResolveMutableCachingStateStep.java:70)
+2026-07-15T03:41:46.3384119Z 	at org.gradle.internal.execution.steps.ResolveMutableCachingStateStep.executeDelegate(ResolveMutableCachingStateStep.java:32)
+2026-07-15T03:41:46.3386146Z 	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:69)
+2026-07-15T03:41:46.3388066Z 	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:37)
+2026-07-15T03:41:46.3389782Z 	at org.gradle.internal.execution.steps.ResolveChangesStep.executeMutable(ResolveChangesStep.java:63)
+2026-07-15T03:41:46.3394560Z 	at org.gradle.internal.execution.steps.ResolveChangesStep.executeMutable(ResolveChangesStep.java:34)
+2026-07-15T03:41:46.3396095Z 	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+2026-07-15T03:41:46.3397487Z 	at org.gradle.internal.execution.steps.ValidateStep$Mutable.executeDelegate(ValidateStep.java:79)
+2026-07-15T03:41:46.3398956Z 	at org.gradle.internal.execution.steps.ValidateStep$Mutable.executeDelegate(ValidateStep.java:65)
+2026-07-15T03:41:46.3400319Z 	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:99)
+2026-07-15T03:41:46.3401819Z 	at org.gradle.internal.execution.steps.ValidateStep$Mutable.execute(ValidateStep.java:65)
+2026-07-15T03:41:46.3403718Z 	at org.gradle.internal.execution.steps.CaptureMutableStateBeforeExecutionStep.executeMutable(CaptureMutableStateBeforeExecutionStep.java:86)
+2026-07-15T03:41:46.3406032Z 	at org.gradle.internal.execution.steps.CaptureMutableStateBeforeExecutionStep.execute(CaptureMutableStateBeforeExecutionStep.java:65)
+2026-07-15T03:41:46.3408257Z 	at org.gradle.internal.execution.steps.CaptureMutableStateBeforeExecutionStep.execute(CaptureMutableStateBeforeExecutionStep.java:45)
+2026-07-15T03:41:46.3410422Z 	at org.gradle.internal.execution.steps.SkipEmptyMutableWorkStep.executeWithNonEmptySources(SkipEmptyMutableWorkStep.java:210)
+2026-07-15T03:41:46.3412556Z 	at org.gradle.internal.execution.steps.SkipEmptyMutableWorkStep.executeMutable(SkipEmptyMutableWorkStep.java:90)
+2026-07-15T03:41:46.3414365Z 	at org.gradle.internal.execution.steps.SkipEmptyMutableWorkStep.executeMutable(SkipEmptyMutableWorkStep.java:53)
+2026-07-15T03:41:46.3415896Z 	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+2026-07-15T03:41:46.3417852Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsStartedStep.execute(MarkSnapshottingInputsStartedStep.java:38)
+2026-07-15T03:41:46.3419944Z 	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.executeMutable(LoadPreviousExecutionStateStep.java:36)
+2026-07-15T03:41:46.3422394Z 	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.executeMutable(LoadPreviousExecutionStateStep.java:23)
+2026-07-15T03:41:46.3424099Z 	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+2026-07-15T03:41:46.3425594Z 	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.executeMutable(HandleStaleOutputsStep.java:77)
+2026-07-15T03:41:46.3427340Z 	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.executeMutable(HandleStaleOutputsStep.java:43)
+2026-07-15T03:41:46.3428839Z 	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+2026-07-15T03:41:46.3430480Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.lambda$executeMutable$0(AssignMutableWorkspaceStep.java:34)
+2026-07-15T03:41:46.3432353Z 	at org.gradle.api.internal.tasks.execution.TaskExecution$4.withWorkspace(TaskExecution.java:305)
+2026-07-15T03:41:46.3434316Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.executeMutable(AssignMutableWorkspaceStep.java:30)
+2026-07-15T03:41:46.3436221Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.executeMutable(AssignMutableWorkspaceStep.java:21)
+2026-07-15T03:41:46.3437755Z 	at org.gradle.internal.execution.steps.MutableStep.execute(MutableStep.java:26)
+2026-07-15T03:41:46.3439100Z 	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:40)
+2026-07-15T03:41:46.3440554Z 	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:23)
+2026-07-15T03:41:46.3442699Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.lambda$execute$2(ExecuteWorkBuildOperationFiringStep.java:67)
+2026-07-15T03:41:46.3444855Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:67)
+2026-07-15T03:41:46.3446965Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:39)
+2026-07-15T03:41:46.3448736Z 	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:46)
+2026-07-15T03:41:46.3450154Z 	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:34)
+2026-07-15T03:41:46.3451684Z 	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:56)
+2026-07-15T03:41:46.3452955Z 	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:38)
+2026-07-15T03:41:46.3454362Z 	at org.gradle.internal.execution.impl.DefaultExecutionEngine$1.execute(DefaultExecutionEngine.java:68)
+2026-07-15T03:41:46.3456162Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:132)
+2026-07-15T03:41:46.3457459Z 	... 30 more
+2026-07-15T03:41:46.3458513Z Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilation error. See log for more details
+2026-07-15T03:41:46.3460178Z 	at org.jetbrains.kotlin.gradle.tasks.TasksUtilsKt.throwExceptionIfCompilationFailed(tasksUtils.kt:21)
+2026-07-15T03:41:46.3462258Z 	at org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork.execute(BuildToolsApiCompilationWork.kt:320)
+2026-07-15T03:41:46.3463952Z 	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:68)
+2026-07-15T03:41:46.3465508Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:64)
+2026-07-15T03:41:46.3467089Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:61)
+2026-07-15T03:41:46.3468706Z 	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:102)
+2026-07-15T03:41:46.3470685Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:61)
+2026-07-15T03:41:46.3472358Z 	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+2026-07-15T03:41:46.3473811Z 	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+2026-07-15T03:41:46.3475428Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+2026-07-15T03:41:46.3477546Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+2026-07-15T03:41:46.3479471Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+2026-07-15T03:41:46.3481164Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+2026-07-15T03:41:46.3483077Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+2026-07-15T03:41:46.3484787Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+2026-07-15T03:41:46.3486440Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+2026-07-15T03:41:46.3488123Z 	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+2026-07-15T03:41:46.3489708Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:58)
+2026-07-15T03:41:46.3491678Z 	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:176)
+2026-07-15T03:41:46.3493474Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+2026-07-15T03:41:46.3495510Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+2026-07-15T03:41:46.3497383Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+2026-07-15T03:41:46.3498811Z 	at org.gradle.internal.Factories$1.create(Factories.java:30)
+2026-07-15T03:41:46.3500124Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withLocksAcquired$0(DefaultWorkerLeaseService.java:275)
+2026-07-15T03:41:46.3501896Z 	at org.gradle.internal.work.ResourceLockStatistics$1.measure(ResourceLockStatistics.java:43)
+2026-07-15T03:41:46.3503448Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocksAcquired(DefaultWorkerLeaseService.java:273)
+2026-07-15T03:41:46.3505097Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:265)
+2026-07-15T03:41:46.3506738Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:128)
+2026-07-15T03:41:46.3508439Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:133)
+2026-07-15T03:41:46.3510250Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+2026-07-15T03:41:46.3512403Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+2026-07-15T03:41:46.3513696Z 	... 2 more
+2026-07-15T03:41:46.3514052Z 
+2026-07-15T03:41:46.3514221Z 
+2026-07-15T03:41:46.3514815Z Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+2026-07-15T03:41:46.3515589Z 
+2026-07-15T03:41:46.3516467Z You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+2026-07-15T03:41:46.3517535Z 
+2026-07-15T03:41:46.3518520Z For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+2026-07-15T03:41:46.3520043Z 
+2026-07-15T03:41:46.3520362Z BUILD FAILED in 5m 12s
+2026-07-15T03:41:46.3520918Z 413 actionable tasks: 413 executed
+2026-07-15T03:41:46.7948650Z ##[error]Process completed with exit code 1.
