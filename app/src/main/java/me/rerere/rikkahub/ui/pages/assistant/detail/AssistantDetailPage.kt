@@ -305,9 +305,9 @@ private fun GreetingSelectorCard(
     Card(
         modifier = modifier.fillMaxWidth().clickable { showSheet = true },
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            containerColor = CustomColors.listItemColors.containerColor,
         ),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(20.dp),
     ) {
         Row(
             modifier = Modifier
@@ -378,7 +378,7 @@ private fun GreetingPickerSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        containerColor = CustomColors.listItemColors.containerColor,
         dragHandle = {
             Row(
                 modifier = Modifier
@@ -421,27 +421,14 @@ private fun GreetingPickerSheet(
                         else
                             MaterialTheme.colorScheme.surfaceContainer,
                     ),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(20.dp),
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(14.dp),
+                            .padding(16.dp),
                         verticalAlignment = Alignment.Top,
                     ) {
-                        // 选中态左侧色条
-                        if (isSelected) {
-                            Box(
-                                modifier = Modifier
-                                    .width(4.dp)
-                                    .height(32.dp)
-                                    .offset(x = (-6).dp)
-                                    .background(
-                                        MaterialTheme.colorScheme.primary,
-                                        RoundedCornerShape(2.dp)
-                                    )
-                            )
-                        }
                         // 编号标识
                         Text(
                             text = "G${index + 1}",
