@@ -766,12 +766,6 @@
   <string name="setting_files_page_clean_title">Clean files?</string>
   <string name="setting_files_page_cleaned_toast">Files cleaned</string>
   <string name="setting_files_page_cancel_action">Cancel</string>
-  <string name="setting_files_page_clean_action">Clean</string>
-  <string name="setting_files_page_clean_confirmation">All files in this category will be permanently deleted. This action cannot be undone.</string>
-  <string name="setting_files_page_clean_content_description">Clean files</string>
-  <string name="setting_files_page_clean_failed_toast">Some files could not be cleaned</string>
-  <string name="setting_files_page_clean_title">Clean files?</string>
-  <string name="setting_files_page_cleaned_toast">Files cleaned</string>
   <string name="setting_files_page_delete_action">Delete</string>
   <string name="setting_files_page_delete_content_description">Delete</string>
   <string name="setting_files_page_delete_failed_toast">Delete Failed</string>
