@@ -257,6 +257,10 @@ class ConversationRepository(
         return conversationDAO.existsById(uuid.toString())
     }
 
+    suspend fun getMessageNodeCount(conversationId: Uuid): Int {
+        return messageNodeDAO.countNodesOfConversation(conversationId.toString())
+    }
+
     suspend fun countConversations(): Int {
         return conversationDAO.countAll()
     }
