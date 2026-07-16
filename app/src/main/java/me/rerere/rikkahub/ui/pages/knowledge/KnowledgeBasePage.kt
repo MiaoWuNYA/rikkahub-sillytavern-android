@@ -1088,7 +1088,7 @@ private fun ChatHistoryImportContent(
     onDone: () -> Unit,
 ) {
     val conversationRepo: me.rerere.rikkahub.data.repository.ConversationRepository = koinInject()
-    val conversations by conversationRepo.searchConversations("")
+    val conversations by conversationRepo.searchConversationsLight("")
         .collectAsStateWithLifecycle(initialValue = emptyList())
 
     var importing by remember { mutableStateOf(false) }
