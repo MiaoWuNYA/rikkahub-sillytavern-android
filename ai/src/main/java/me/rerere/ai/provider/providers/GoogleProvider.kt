@@ -45,6 +45,8 @@ import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessageAnnotation
 import me.rerere.ai.ui.UIMessageChoice
 import me.rerere.ai.ui.UIMessagePart
+import me.rerere.ai.ui.metadataAs
+import me.rerere.ai.ui.toMetadata
 import me.rerere.ai.util.KeyRoulette
 import me.rerere.ai.util.configureReferHeaders
 import me.rerere.ai.util.encodeBase64
@@ -125,7 +127,7 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
             )
             val response = client.newCall(request).await()
             if (response.isSuccessful) {
-                val body = response.body!!.string() ?: error("empty body")
+                val body = response.body?.string() ?: error("empty body")
                 Log.d(TAG, "listModels: $body")
                 val bodyObject = json.parseToJsonElement(body).jsonObject
                 val models = bodyObject["models"]?.jsonArray ?: return@withContext emptyList()
@@ -182,10 +184,10 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
 
         val response = client.newCall(request).await()
         if (!response.isSuccessful) {
-            throw Exception("Failed to get response: ${response.code} ${response.body!!.string()}")
+            throw Exception("Failed to get response: ${response.code} ${response.body?.string()}")
         }
 
-        val bodyStr = response.body!!.string() ?: ""
+        val bodyStr = response.body?.string() ?: ""
         val bodyJson = json.parseToJsonElement(bodyStr).jsonObject
 
         val candidates = bodyJson["candidates"]!!.jsonArray
@@ -308,7 +310,7 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
 
                 try {
                     if (t == null && response != null) {
-                        val bodyStr = response.body!!.stringSafe()
+                        val bodyStr = response.body.stringSafe()
                         if (!bodyStr.isNullOrEmpty()) {
                             val bodyElement = json.parseToJsonElement(bodyStr)
                             println(bodyElement)
@@ -567,9 +569,9 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                     toolName = jsonObject["functionCall"]!!.jsonObject["name"]!!.jsonPrimitive.content,
                     input = json.encodeToString(jsonObject["functionCall"]!!.jsonObject["args"]),
                     output = emptyList(),
-                    metadata = buildJsonObject {
-                        put("thoughtSignature", jsonObject["thoughtSignature"]?.jsonPrimitive?.contentOrNull)
-                    }
+                    metadata = GoogleThoughtMetadata(
+                        thoughtSignature = jsonObject["thoughtSignature"]?.jsonPrimitive?.contentOrNull
+                    ).toMetadata()
                 )
             }
 
@@ -592,9 +594,7 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                 }
                 UIMessagePart.Image(
                     url = data,
-                    metadata = buildJsonObject {
-                        put("thoughtSignature", thoughtSignature)
-                    }
+                    metadata = GoogleThoughtMetadata(thoughtSignature = thoughtSignature).toMetadata()
                 )
             }
 
@@ -678,7 +678,7 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                         put("mimeType", encoded.mimeType)
                         put("data", encoded.base64)
                     })
-                    metadata?.get("thoughtSignature")?.jsonPrimitive?.contentOrNull?.let {
+                    metadataAs<GoogleThoughtMetadata>()?.thoughtSignature?.let {
                         put("thoughtSignature", it)
                     }
                 }
@@ -715,7 +715,7 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
             put("name", toolName)
             put("args", inputAsJson())
         })
-        metadata?.get("thoughtSignature")?.let {
+        metadataAs<GoogleThoughtMetadata>()?.thoughtSignature?.let {
             put("thoughtSignature", it)
         }
     }

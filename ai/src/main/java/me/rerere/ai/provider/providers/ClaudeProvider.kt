@@ -496,7 +496,7 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
         is UIMessagePart.Reasoning -> buildJsonObject {
             put("type", "thinking")
             put("thinking", reasoning)
-            metadata?.forEach { (key, value) -> put(key, value) }
+            metadataAs<ClaudeReasoningMetadata>()?.signature?.let { put("signature", it) }
         }
 
         else -> null
@@ -542,9 +542,7 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
                             finishedAt = null
                         )
                         if (signature != null) {
-                            reasoning.metadata = buildJsonObject {
-                                put("signature", signature)
-                            }
+                            reasoning.metadata = ClaudeReasoningMetadata(signature = signature).toMetadata()
                         }
                         parts.add(reasoning)
                     }

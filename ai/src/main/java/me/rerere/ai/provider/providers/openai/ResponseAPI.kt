@@ -34,9 +34,12 @@ import me.rerere.ai.provider.providers.PartGroup
 import me.rerere.ai.provider.providers.groupPartsByToolBoundary
 import me.rerere.ai.registry.ModelRegistry
 import me.rerere.ai.ui.MessageChunk
+import me.rerere.ai.ui.OpenAIReasoningMetadata
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessageChoice
 import me.rerere.ai.ui.UIMessagePart
+import me.rerere.ai.ui.metadataAs
+import me.rerere.ai.ui.toMetadata
 import me.rerere.ai.util.KeyRoulette
 import me.rerere.ai.util.configureReferHeaders
 import me.rerere.ai.util.encodeBase64
@@ -92,10 +95,10 @@ class ResponseAPI(
 
         val response = client.newCall(request).await()
         if (!response.isSuccessful) {
-            throw Exception("Failed to get response: ${response.code} ${response.body!!.string()}")
+            throw Exception("Failed to get response: ${response.code} ${response.body.string()}")
         }
 
-        val bodyStr = response.body!!.string() ?: ""
+        val bodyStr = response.body?.string() ?: ""
         Log.i(TAG, "generateText: $bodyStr")
         val bodyJson = json.parseToJsonElement(bodyStr).jsonObject
         val output = parseResponseOutput(bodyJson)
@@ -310,7 +313,8 @@ class ResponseAPI(
                                 // 输出 reasoning item
                                 add(buildJsonObject {
                                     put("type", "reasoning")
-                                    part.metadata?.get("reasoning_id")?.jsonPrimitiveOrNull?.contentOrNull?.let {
+                                    val reasoningMetadata = part.metadataAs<OpenAIReasoningMetadata>()
+                                    reasoningMetadata?.reasoningId?.let {
                                         put("id", it)
                                     }
                                     put("summary", buildJsonArray {
@@ -319,11 +323,8 @@ class ResponseAPI(
                                             put("text", part.reasoning)
                                         })
                                     })
-                                    part.metadata?.get("encrypted_content")?.jsonPrimitiveOrNull?.contentOrNull?.let {
-                                        put(
-                                            "encrypted_content",
-                                            part.metadata?.get("encrypted_content")?.jsonPrimitive?.contentOrNull ?: ""
-                                        )
+                                    reasoningMetadata?.encryptedContent?.let {
+                                        put("encrypted_content", it)
                                     }
                                 })
                             }
@@ -559,10 +560,10 @@ class ResponseAPI(
                                             reasoning = "",
                                             createdAt = Clock.System.now(),
                                             finishedAt = null,
-                                            metadata = buildJsonObject {
-                                                put("encrypted_content", encryptedContent)
-                                                put("reasoning_id", id)
-                                            }
+                                            metadata = OpenAIReasoningMetadata(
+                                                reasoningId = id,
+                                                encryptedContent = encryptedContent,
+                                            ).toMetadata()
                                         )
                                     )
                                 ),
@@ -593,10 +594,10 @@ class ResponseAPI(
                                             reasoning = "",
                                             createdAt = Clock.System.now(),
                                             finishedAt = null,
-                                            metadata = buildJsonObject {
-                                                put("encrypted_content", encryptedContent)
-                                                put("reasoning_id", id)
-                                            }
+                                            metadata = OpenAIReasoningMetadata(
+                                                reasoningId = id,
+                                                encryptedContent = encryptedContent,
+                                            ).toMetadata()
                                         )
                                     )
                                 ),
