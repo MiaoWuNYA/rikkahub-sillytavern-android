@@ -1094,6 +1094,18 @@ private fun ChatHistoryImportContent(
     var importing by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("") }
 
+    // 批量加载消息数量
+    var msgCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    LaunchedEffect(conversations) {
+        val ids = conversations.take(20).map { it.id.toString() }
+        if (ids.isNotEmpty()) {
+            val counts = ids.associateWith { id ->
+                runCatching { conversationRepo.getMessageNodeCount(kotlin.uuid.Uuid.parse(id)) }.getOrDefault(0)
+            }
+            msgCounts = counts
+        }
+    }
+
     if (conversations.isEmpty()) {
         Text("没有聊天记录可导入", style = MaterialTheme.typography.bodyMedium)
         return
@@ -1142,7 +1154,7 @@ private fun ChatHistoryImportContent(
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         Text(
-                            text = "${conv.messageNodes.size} 条消息",
+                            text = "${msgCounts[conv.id.toString()] ?: conv.messageNodes.size} 条消息",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
