@@ -551,14 +551,15 @@ private fun MarkdownNode(
             ) {
                 // 这里可以使用Coil等图片加载库加载图片
                 key(imageUrl) {
-                ZoomableAsyncImage(
-                    model = imageUrl,
-                    contentDescription = altText,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .widthIn(min = 120.dp)
-                        .heightIn(min = 120.dp),
-                )
+                    ZoomableAsyncImage(
+                        model = imageUrl,
+                        contentDescription = altText,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .widthIn(min = 120.dp)
+                            .heightIn(min = 120.dp),
+                    )
+                }
             }
         }
 
