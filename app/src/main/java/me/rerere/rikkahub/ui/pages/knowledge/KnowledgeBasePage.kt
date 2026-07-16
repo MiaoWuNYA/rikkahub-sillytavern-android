@@ -1094,15 +1094,12 @@ private fun ChatHistoryImportContent(
     var importing by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("") }
 
-    // 批量加载消息数量
     var msgCounts by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     LaunchedEffect(conversations) {
-        val ids = conversations.take(20).map { it.id.toString() }
-        if (ids.isNotEmpty()) {
-            val counts = ids.associateWith { id ->
-                runCatching { conversationRepo.getMessageNodeCount(kotlin.uuid.Uuid.parse(id)) }.getOrDefault(0)
-            }
-            msgCounts = counts
+        msgCounts = conversations.take(20).associate { conv ->
+            conv.id.toString() to runCatching {
+                conversationRepo.getMessageNodeCount(conv.id)
+            }.getOrDefault(0)
         }
     }
 
