@@ -1,0 +1,283 @@
+﻿2026-07-15T03:32:47.2184012Z ##[group]Run mkdir -p /tmp/caelus_build
+2026-07-15T03:32:47.2184440Z [36;1mmkdir -p /tmp/caelus_build[0m
+2026-07-15T03:32:47.2184832Z [36;1mcd /tmp && npm pack caelus --pack-destination /tmp/caelus_build 2>&1[0m
+2026-07-15T03:32:47.2185316Z [36;1mcd /tmp/caelus_build && tar xzf caelus-*.tgz && cd package[0m
+2026-07-15T03:32:47.2185907Z [36;1mmkdir -p ${GITHUB_WORKSPACE}/app/src/main/assets/[0m
+2026-07-15T03:32:47.2186220Z [36;1m[0m
+2026-07-15T03:32:47.2186508Z [36;1m# Fetch extra data files from GitHub repo (not in npm package)[0m
+2026-07-15T03:32:47.2186990Z [36;1mecho "Fetching full VSOP87D / asteroid / moon tiers from caelus repo..."[0m
+2026-07-15T03:32:47.2187605Z [36;1mCAELUS_DATA="https://raw.githubusercontent.com/heavyblotto/caelus/main/packages/caelus/data"[0m
+2026-07-15T03:32:47.2188082Z [36;1mMISSING=0[0m
+2026-07-15T03:32:47.2188297Z [36;1mfor f in \[0m
+2026-07-15T03:32:47.2188652Z [36;1m  vsop87d_mercury.full.json vsop87d_venus.full.json vsop87d_earth.full.json \[0m
+2026-07-15T03:32:47.2189234Z [36;1m  vsop87d_mars.full.json vsop87d_jupiter.full.json vsop87d_saturn.full.json \[0m
+2026-07-15T03:32:47.2189704Z [36;1m  vsop87d_uranus.full.json vsop87d_neptune.full.json \[0m
+2026-07-15T03:32:47.2190161Z [36;1m  moon_cheb.full.json turbo.json uranian_kepler.json pluto_cheb.json \[0m
+2026-07-15T03:32:47.2190709Z [36;1m  ceres_cheb.json pallas_cheb.json juno_cheb.json vesta_cheb.json pholus_cheb.json; do[0m
+2026-07-15T03:32:47.2191540Z [36;1m  curl -sL "${CAELUS_DATA}/${f}" -o "data/${f}" && echo "  ✓ ${f}" || { echo "  ✗ ${f} FAILED"; MISSING=1; }[0m
+2026-07-15T03:32:47.2192202Z [36;1mdone[0m
+2026-07-15T03:32:47.2192406Z [36;1m[0m
+2026-07-15T03:32:47.2192728Z [36;1m# Fallback: if any file is missing, use embedded-only build (no GitHub data)[0m
+2026-07-15T03:32:47.2193121Z [36;1mif [ "$MISSING" = "1" ]; then[0m
+2026-07-15T03:32:47.2193511Z [36;1m  echo "⚠️  Some full-data files unavailable — falling back to embedded-only"[0m
+2026-07-15T03:32:47.2193940Z [36;1m  cat > caelus-entry.mjs << 'ENTRYEOF'[0m
+2026-07-15T03:32:47.2194267Z [36;1mexport * from "./dist/src/index.js";[0m
+2026-07-15T03:32:47.2194636Z [36;1mexport { embeddedData } from "./dist/src/data-embedded.js";[0m
+2026-07-15T03:32:47.2194984Z [36;1mENTRYEOF[0m
+2026-07-15T03:32:47.2195190Z [36;1melse[0m
+2026-07-15T03:32:47.2195517Z [36;1m  echo "✅  All full-data files downloaded — building with maximum precision"[0m
+2026-07-15T03:32:47.2195919Z [36;1m  cat > caelus-entry.mjs << 'ENTRYEOF'[0m
+2026-07-15T03:32:47.2196214Z [36;1mexport * from "./dist/src/index.js";[0m
+2026-07-15T03:32:47.2196560Z [36;1mimport { embeddedData } from "./dist/src/data-embedded.js";[0m
+2026-07-15T03:32:47.2196895Z [36;1m[0m
+2026-07-15T03:32:47.2197244Z [36;1mimport moonChebFull    from "./data/moon_cheb.full.json"     with { type: "json" };[0m
+2026-07-15T03:32:47.2197807Z [36;1mimport fixedStarsDeep  from "./data/fixed_stars_deep.json"   with { type: "json" };[0m
+2026-07-15T03:32:47.2198341Z [36;1mimport ceresCheb       from "./data/ceres_cheb.json"         with { type: "json" };[0m
+2026-07-15T03:32:47.2198875Z [36;1mimport pallasCheb      from "./data/pallas_cheb.json"        with { type: "json" };[0m
+2026-07-15T03:32:47.2199399Z [36;1mimport junoCheb        from "./data/juno_cheb.json"          with { type: "json" };[0m
+2026-07-15T03:32:47.2199921Z [36;1mimport vestaCheb       from "./data/vesta_cheb.json"         with { type: "json" };[0m
+2026-07-15T03:32:47.2200431Z [36;1mimport pholusCheb      from "./data/pholus_cheb.json"        with { type: "json" };[0m
+2026-07-15T03:32:47.2200976Z [36;1mimport plutoCheb       from "./data/pluto_cheb.json"         with { type: "json" };[0m
+2026-07-15T03:32:47.2201721Z [36;1mimport uranianKepler   from "./data/uranian_kepler.json"     with { type: "json" };[0m
+2026-07-15T03:32:47.2202270Z [36;1mimport turboPack       from "./data/turbo.json"              with { type: "json" };[0m
+2026-07-15T03:32:47.2202813Z [36;1mimport mercuryFull     from "./data/vsop87d_mercury.full.json" with { type: "json" };[0m
+2026-07-15T03:32:47.2203583Z [36;1mimport venusFull       from "./data/vsop87d_venus.full.json"   with { type: "json" };[0m
+2026-07-15T03:32:47.2204117Z [36;1mimport earthFull       from "./data/vsop87d_earth.full.json"   with { type: "json" };[0m
+2026-07-15T03:32:47.2204646Z [36;1mimport marsFull        from "./data/vsop87d_mars.full.json"    with { type: "json" };[0m
+2026-07-15T03:32:47.2205339Z [36;1mimport jupiterFull     from "./data/vsop87d_jupiter.full.json" with { type: "json" };[0m
+2026-07-15T03:32:47.2205883Z [36;1mimport saturnFull      from "./data/vsop87d_saturn.full.json"  with { type: "json" };[0m
+2026-07-15T03:32:47.2206419Z [36;1mimport uranusFull      from "./data/vsop87d_uranus.full.json"  with { type: "json" };[0m
+2026-07-15T03:32:47.2206963Z [36;1mimport neptuneFull     from "./data/vsop87d_neptune.full.json" with { type: "json" };[0m
+2026-07-15T03:32:47.2207360Z [36;1m[0m
+2026-07-15T03:32:47.2207567Z [36;1mconst fullData = {[0m
+2026-07-15T03:32:47.2207827Z [36;1m  ...embeddedData,[0m
+2026-07-15T03:32:47.2208070Z [36;1m  moonCheb: moonChebFull,[0m
+2026-07-15T03:32:47.2208345Z [36;1m  deepStars: fixedStarsDeep,[0m
+2026-07-15T03:32:47.2208617Z [36;1m  chebPacks: {[0m
+2026-07-15T03:32:47.2208918Z [36;1m    ceres: ceresCheb, pallas: pallasCheb, juno: junoCheb,[0m
+2026-07-15T03:32:47.2209337Z [36;1m    vesta: vestaCheb, pholus: pholusCheb, pluto: plutoCheb,[0m
+2026-07-15T03:32:47.2209680Z [36;1m  },[0m
+2026-07-15T03:32:47.2209895Z [36;1m  keplerPack: uranianKepler,[0m
+2026-07-15T03:32:47.2210149Z [36;1m  vsop: {[0m
+2026-07-15T03:32:47.2210441Z [36;1m    mercury: mercuryFull, venus: venusFull, earth: earthFull,[0m
+2026-07-15T03:32:47.2210858Z [36;1m    mars: marsFull, jupiter: jupiterFull, saturn: saturnFull,[0m
+2026-07-15T03:32:47.2211233Z [36;1m    uranus: uranusFull, neptune: neptuneFull,[0m
+2026-07-15T03:32:47.2211752Z [36;1m  },[0m
+2026-07-15T03:32:47.2211942Z [36;1m};[0m
+2026-07-15T03:32:47.2212127Z [36;1m[0m
+2026-07-15T03:32:47.2212347Z [36;1mexport { fullData as embeddedData };[0m
+2026-07-15T03:32:47.2212626Z [36;1mENTRYEOF[0m
+2026-07-15T03:32:47.2212822Z [36;1mfi[0m
+2026-07-15T03:32:47.2213001Z [36;1m[0m
+2026-07-15T03:32:47.2213636Z [36;1mnpx esbuild caelus-entry.mjs --bundle --platform=node --format=iife --global-name=Caelus --target=es2020 --tree-shaking=false --outfile=caelus-engine.js 2>&1 | tail -5[0m
+2026-07-15T03:32:47.2214423Z [36;1mcp caelus-engine.js ${GITHUB_WORKSPACE}/app/src/main/assets/[0m
+2026-07-15T03:32:47.2214922Z [36;1mecho "Caelus JS engine compiled (full-data): $(wc -c < caelus-engine.js) bytes"[0m
+2026-07-15T03:32:47.2215320Z [36;1m[0m
+2026-07-15T03:32:47.2215582Z [36;1m# caelus-birth: timezone → UT converter for Caelus charts[0m
+2026-07-15T03:32:47.2216044Z [36;1mcd /tmp && npm pack caelus-birth --pack-destination /tmp/caelus_build 2>&1[0m
+2026-07-15T03:32:47.2216528Z [36;1mcd /tmp/caelus_build && tar xzf caelus-birth-*.tgz && cd package[0m
+2026-07-15T03:32:47.2216925Z [36;1mnpm install --production 2>&1 | tail -3[0m
+2026-07-15T03:32:47.2217299Z [36;1mecho 'export * from "./dist/src/index.js";' > birth-entry.mjs[0m
+2026-07-15T03:32:47.2218074Z [36;1mnpx esbuild birth-entry.mjs --bundle --platform=node --format=iife --global-name=CaelusBirth --target=es2020 --tree-shaking=false --outfile=caelus-birth.js 2>&1 | tail -3[0m
+2026-07-15T03:32:47.2218847Z [36;1mcp caelus-birth.js ${GITHUB_WORKSPACE}/app/src/main/assets/[0m
+2026-07-15T03:32:47.2219357Z [36;1mecho "Caelus Birth (timezone→UT) compiled: $(wc -c < caelus-birth.js) bytes"[0m
+2026-07-15T03:32:47.2256821Z shell: /usr/bin/bash -e {0}
+2026-07-15T03:32:47.2257076Z env:
+2026-07-15T03:32:47.2257389Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:32:47.2257878Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:32:47.2258331Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:32:47.2258752Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+2026-07-15T03:32:47.2259343Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:32:47.2259714Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:32:47.2260085Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:32:47.2260606Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+2026-07-15T03:32:47.2261130Z   PIP_FIND_LINKS: file:///home/runner/work/rikkahub-plus-fresh/rikkahub-plus-fresh/app/offline_pkgs
+2026-07-15T03:32:47.2261814Z ##[endgroup]
+2026-07-15T03:32:47.7501920Z npm notice
+2026-07-15T03:32:47.7502900Z npm notice 📦  caelus@0.23.0
+2026-07-15T03:32:47.7503330Z npm notice Tarball Contents
+2026-07-15T03:32:47.7507259Z npm notice 4.7kB README.md
+2026-07-15T03:32:47.7507651Z npm notice 7.9kB accuracy.json
+2026-07-15T03:32:47.7508081Z npm notice 23.4kB data/chiron_cheb.json
+2026-07-15T03:32:47.7508516Z npm notice 28.7kB data/constellations.json
+2026-07-15T03:32:47.7508991Z npm notice 1.0MB data/fixed_stars_deep.json
+2026-07-15T03:32:47.7509438Z npm notice 39.7kB data/fixed_stars.json
+2026-07-15T03:32:47.7509891Z npm notice 1.7MB data/moon_cheb.embedded.json
+2026-07-15T03:32:47.7510360Z npm notice 3.6kB data/moon_meeus47.json
+2026-07-15T03:32:47.7510763Z npm notice 2.6kB data/nutation_iau1980.json
+2026-07-15T03:32:47.7511222Z npm notice 2.7kB data/pluto_meeus37.json
+2026-07-15T03:32:47.7511854Z npm notice 7.9kB data/vsop87d_earth.embedded.json
+2026-07-15T03:32:47.7512397Z npm notice 24.5kB data/vsop87d_jupiter.embedded.json
+2026-07-15T03:32:47.7512924Z npm notice 20.4kB data/vsop87d_mars.embedded.json
+2026-07-15T03:32:47.7513443Z npm notice 10.9kB data/vsop87d_mercury.embedded.json
+2026-07-15T03:32:47.7513979Z npm notice 17.6kB data/vsop87d_neptune.embedded.json
+2026-07-15T03:32:47.7514501Z npm notice 40.8kB data/vsop87d_saturn.embedded.json
+2026-07-15T03:32:47.7515007Z npm notice 43.2kB data/vsop87d_uranus.embedded.json
+2026-07-15T03:32:47.7515524Z npm notice 6.7kB data/vsop87d_venus.embedded.json
+2026-07-15T03:32:47.7516024Z npm notice 24.9kB dist/data/chiron_cheb.json
+2026-07-15T03:32:47.7516503Z npm notice 31.8kB dist/data/constellations.json
+2026-07-15T03:32:47.7516985Z npm notice 45.8kB dist/data/fixed_stars.json
+2026-07-15T03:32:47.7517439Z npm notice 4.3kB dist/data/moon_meeus47.json
+2026-07-15T03:32:47.7517918Z npm notice 3.2kB dist/data/nutation_iau1980.json
+2026-07-15T03:32:47.7518404Z npm notice 3.1kB dist/data/pluto_meeus37.json
+2026-07-15T03:32:47.7518924Z npm notice 8.5kB dist/data/vsop87d_earth.embedded.json
+2026-07-15T03:32:47.7519400Z npm notice 26.2kB dist/data/vsop87d_jupiter.embedded.json
+2026-07-15T03:32:47.7519774Z npm notice 21.9kB dist/data/vsop87d_mars.embedded.json
+2026-07-15T03:32:47.7520127Z npm notice 11.7kB dist/data/vsop87d_mercury.embedded.json
+2026-07-15T03:32:47.7520474Z npm notice 18.8kB dist/data/vsop87d_neptune.embedded.json
+2026-07-15T03:32:47.7520819Z npm notice 43.7kB dist/data/vsop87d_saturn.embedded.json
+2026-07-15T03:32:47.7521159Z npm notice 46.3kB dist/data/vsop87d_uranus.embedded.json
+2026-07-15T03:32:47.7521735Z npm notice 7.2kB dist/data/vsop87d_venus.embedded.json
+2026-07-15T03:32:47.7522072Z npm notice 2.4kB dist/src/anchored.d.ts
+2026-07-15T03:32:47.7522349Z npm notice 2.1kB dist/src/anchored.js
+2026-07-15T03:32:47.7522623Z npm notice 2.4kB dist/src/ashtottari.d.ts
+2026-07-15T03:32:47.7522910Z npm notice 3.5kB dist/src/ashtottari.js
+2026-07-15T03:32:47.7523198Z npm notice 884B dist/src/astrocartography.d.ts
+2026-07-15T03:32:47.7523505Z npm notice 2.4kB dist/src/astrocartography.js
+2026-07-15T03:32:47.7523799Z npm notice 3.8kB dist/src/brief.d.ts
+2026-07-15T03:32:47.7524078Z npm notice 4.0kB dist/src/brief.js
+2026-07-15T03:32:47.7524342Z npm notice 21.2kB dist/src/chart.d.ts
+2026-07-15T03:32:47.7524604Z npm notice 34.9kB dist/src/chart.js
+2026-07-15T03:32:47.7524866Z npm notice 2.9kB dist/src/compiler.d.ts
+2026-07-15T03:32:47.7525127Z npm notice 5.8kB dist/src/compiler.js
+2026-07-15T03:32:47.7525376Z npm notice 8.2kB dist/src/core.d.ts
+2026-07-15T03:32:47.7525941Z npm notice 29.9kB dist/src/core.js
+2026-07-15T03:32:47.7526227Z npm notice 3.5kB dist/src/counterfactual.d.ts
+2026-07-15T03:32:47.7526547Z npm notice 4.7kB dist/src/counterfactual.js
+2026-07-15T03:32:47.7526850Z npm notice 92B dist/src/data-embedded.d.ts
+2026-07-15T03:32:47.7527136Z npm notice 1.6kB dist/src/data-embedded.js
+2026-07-15T03:32:47.7527579Z npm notice 7.3kB dist/src/derived.d.ts
+2026-07-15T03:32:47.7527850Z npm notice 10.9kB dist/src/derived.js
+2026-07-15T03:32:47.7528127Z npm notice 2.1kB dist/src/dignity-score.d.ts
+2026-07-15T03:32:47.7528418Z npm notice 5.7kB dist/src/dignity-score.js
+2026-07-15T03:32:47.7528695Z npm notice 2.2kB dist/src/directions.d.ts
+2026-07-15T03:32:47.7528974Z npm notice 5.5kB dist/src/directions.js
+2026-07-15T03:32:47.7529249Z npm notice 6.9kB dist/src/eclipses.d.ts
+2026-07-15T03:32:47.7529513Z npm notice 19.2kB dist/src/eclipses.js
+2026-07-15T03:32:47.7529780Z npm notice 3.0kB dist/src/electional.d.ts
+2026-07-15T03:32:47.7530047Z npm notice 8.8kB dist/src/electional.js
+2026-07-15T03:32:47.7530321Z npm notice 1.2kB dist/src/ephemeris.d.ts
+2026-07-15T03:32:47.7530647Z npm notice 1.1kB dist/src/ephemeris.js
+2026-07-15T03:32:47.7531053Z npm notice 3.9kB dist/src/events.d.ts
+2026-07-15T03:32:47.7531584Z npm notice 9.5kB dist/src/events.js
+2026-07-15T03:32:47.7532029Z npm notice 4.1kB dist/src/features.d.ts
+2026-07-15T03:32:47.7532454Z npm notice 5.2kB dist/src/features.js
+2026-07-15T03:32:47.7532850Z npm notice 2.3kB dist/src/firdaria.d.ts
+2026-07-15T03:32:47.7533237Z npm notice 2.6kB dist/src/firdaria.js
+2026-07-15T03:32:47.7533495Z npm notice 3.8kB dist/src/houses.d.ts
+2026-07-15T03:32:47.7533747Z npm notice 13.3kB dist/src/houses.js
+2026-07-15T03:32:47.7534001Z npm notice 1.3kB dist/src/index.d.ts
+2026-07-15T03:32:47.7534253Z npm notice 1.3kB dist/src/index.js
+2026-07-15T03:32:47.7534515Z npm notice 8.9kB dist/src/interpret.d.ts
+2026-07-15T03:32:47.7534789Z npm notice 12.5kB dist/src/interpret.js
+2026-07-15T03:32:47.7535095Z npm notice 1.4kB dist/src/interpretation-enrich.d.ts
+2026-07-15T03:32:47.7535461Z npm notice 2.7kB dist/src/interpretation-enrich.js
+2026-07-15T03:32:47.7535791Z npm notice 10.5kB dist/src/interpretation.d.ts
+2026-07-15T03:32:47.7536101Z npm notice 23.0kB dist/src/interpretation.js
+2026-07-15T03:32:47.7536407Z npm notice 1.4kB dist/src/lots.d.ts
+2026-07-15T03:32:47.7536674Z npm notice 2.4kB dist/src/lots.js
+2026-07-15T03:32:47.7536937Z npm notice 265B dist/src/node-loader.d.ts
+2026-07-15T03:32:47.7537215Z npm notice 3.1kB dist/src/node-loader.js
+2026-07-15T03:32:47.7537491Z npm notice 2.6kB dist/src/parans.d.ts
+2026-07-15T03:32:47.7537761Z npm notice 6.2kB dist/src/parans.js
+2026-07-15T03:32:47.7538035Z npm notice 2.4kB dist/src/patterns.d.ts
+2026-07-15T03:32:47.7538313Z npm notice 9.9kB dist/src/patterns.js
+2026-07-15T03:32:47.7538580Z npm notice 2.4kB dist/src/pheno.d.ts
+2026-07-15T03:32:47.7538843Z npm notice 7.3kB dist/src/pheno.js
+2026-07-15T03:32:47.7539113Z npm notice 1.5kB dist/src/profections.d.ts
+2026-07-15T03:32:47.7539402Z npm notice 2.4kB dist/src/profections.js
+2026-07-15T03:32:47.7539684Z npm notice 5.4kB dist/src/provenance.d.ts
+2026-07-15T03:32:47.7539960Z npm notice 7.6kB dist/src/provenance.js
+2026-07-15T03:32:47.7540223Z npm notice 3.6kB dist/src/query.d.ts
+2026-07-15T03:32:47.7540479Z npm notice 7.7kB dist/src/query.js
+2026-07-15T03:32:47.7540736Z npm notice 3.1kB dist/src/rajayoga.d.ts
+2026-07-15T03:32:47.7540997Z npm notice 4.6kB dist/src/rajayoga.js
+2026-07-15T03:32:47.7541260Z npm notice 2.0kB dist/src/relational.d.ts
+2026-07-15T03:32:47.7542070Z npm notice 4.2kB dist/src/relational.js
+2026-07-15T03:32:47.7542615Z npm notice 1.4kB dist/src/releasing.d.ts
+2026-07-15T03:32:47.7543138Z npm notice 4.8kB dist/src/releasing.js
+2026-07-15T03:32:47.7543680Z npm notice 2.2kB dist/src/scan.d.ts
+2026-07-15T03:32:47.7544097Z npm notice 3.1kB dist/src/scan.js
+2026-07-15T03:32:47.7544519Z npm notice 2.6kB dist/src/signature.d.ts
+2026-07-15T03:32:47.7544949Z npm notice 4.4kB dist/src/signature.js
+2026-07-15T03:32:47.7545570Z npm notice 13.7kB dist/src/skyview.d.ts
+2026-07-15T03:32:47.7545944Z npm notice 46.9kB dist/src/skyview.js
+2026-07-15T03:32:47.7546325Z npm notice 614B dist/src/spherical.d.ts
+2026-07-15T03:32:47.7546712Z npm notice 1.4kB dist/src/spherical.js
+2026-07-15T03:32:47.7547083Z npm notice 1.4kB dist/src/stars.d.ts
+2026-07-15T03:32:47.7547664Z npm notice 2.5kB dist/src/stars.js
+2026-07-15T03:32:47.7548087Z npm notice 11.6kB dist/src/synthetic.d.ts
+2026-07-15T03:32:47.7548483Z npm notice 11.2kB dist/src/synthetic.js
+2026-07-15T03:32:47.7548850Z npm notice 1.9kB dist/src/turbo.d.ts
+2026-07-15T03:32:47.7549236Z npm notice 3.1kB dist/src/turbo.js
+2026-07-15T03:32:47.7549646Z npm notice 1.7kB dist/src/vargas.d.ts
+2026-07-15T03:32:47.7550105Z npm notice 3.7kB dist/src/vargas.js
+2026-07-15T03:32:47.7550501Z npm notice 3.4kB dist/src/vedic.d.ts
+2026-07-15T03:32:47.7550915Z npm notice 4.6kB dist/src/vedic.js
+2026-07-15T03:32:47.7551490Z npm notice 2.2kB dist/src/yogas.d.ts
+2026-07-15T03:32:47.7551833Z npm notice 4.2kB dist/src/yogas.js
+2026-07-15T03:32:47.7552195Z npm notice 2.5kB dist/src/yogini.d.ts
+2026-07-15T03:32:47.7552582Z npm notice 3.1kB dist/src/yogini.js
+2026-07-15T03:32:47.7552973Z npm notice 1.8kB package.json
+2026-07-15T03:32:47.7553309Z npm notice Tarball Details
+2026-07-15T03:32:47.7553625Z npm notice name: caelus
+2026-07-15T03:32:47.7553968Z npm notice version: 0.23.0
+2026-07-15T03:32:47.7554317Z npm notice filename: caelus-0.23.0.tgz
+2026-07-15T03:32:47.7554718Z npm notice package size: 1.3 MB
+2026-07-15T03:32:47.7555067Z npm notice unpacked size: 3.8 MB
+2026-07-15T03:32:47.7555513Z npm notice shasum: 48897c515549697e3df86adb18abc18678965b4a
+2026-07-15T03:32:47.7556079Z npm notice integrity: sha512-nHezRfVqV7tLw[...]lk/rxXhHAiT4w==
+2026-07-15T03:32:47.7556566Z npm notice total files: 123
+2026-07-15T03:32:47.7556881Z npm notice
+2026-07-15T03:32:47.7557139Z caelus-0.23.0.tgz
+2026-07-15T03:32:47.7965101Z Fetching full VSOP87D / asteroid / moon tiers from caelus repo...
+2026-07-15T03:32:47.9443510Z   ✓ vsop87d_mercury.full.json
+2026-07-15T03:32:48.2522026Z   ✓ vsop87d_venus.full.json
+2026-07-15T03:32:48.5287139Z   ✓ vsop87d_earth.full.json
+2026-07-15T03:32:48.8280903Z   ✓ vsop87d_mars.full.json
+2026-07-15T03:32:49.0942038Z   ✓ vsop87d_jupiter.full.json
+2026-07-15T03:32:49.2195856Z   ✓ vsop87d_saturn.full.json
+2026-07-15T03:32:49.5225603Z   ✓ vsop87d_uranus.full.json
+2026-07-15T03:32:49.6161905Z   ✓ vsop87d_neptune.full.json
+2026-07-15T03:32:50.1693096Z   ✓ moon_cheb.full.json
+2026-07-15T03:32:50.5191627Z   ✓ turbo.json
+2026-07-15T03:32:50.6038123Z   ✓ uranian_kepler.json
+2026-07-15T03:32:50.7032362Z   ✓ pluto_cheb.json
+2026-07-15T03:32:50.8088191Z   ✓ ceres_cheb.json
+2026-07-15T03:32:50.9135783Z   ✓ pallas_cheb.json
+2026-07-15T03:32:51.0508776Z   ✓ juno_cheb.json
+2026-07-15T03:32:51.2983477Z   ✓ vesta_cheb.json
+2026-07-15T03:32:51.3933739Z   ✓ pholus_cheb.json
+2026-07-15T03:32:51.3934473Z ✅  All full-data files downloaded — building with maximum precision
+2026-07-15T03:32:52.4133392Z 
+2026-07-15T03:32:52.4134243Z   caelus-engine.js  6.4mb ⚠️
+2026-07-15T03:32:52.4134635Z 
+2026-07-15T03:32:52.4134811Z ⚡ Done in 138ms
+2026-07-15T03:32:52.4198889Z Caelus JS engine compiled (full-data): 6744469 bytes
+2026-07-15T03:32:52.8855562Z npm notice
+2026-07-15T03:32:52.8856266Z npm notice 📦  caelus-birth@0.23.0
+2026-07-15T03:32:52.8856582Z npm notice Tarball Contents
+2026-07-15T03:32:52.8858270Z npm notice 3.7kB README.md
+2026-07-15T03:32:52.8858755Z npm notice 918B dist/src/geocode.d.ts
+2026-07-15T03:32:52.8859236Z npm notice 1.1kB dist/src/geocode.js
+2026-07-15T03:32:52.8859690Z npm notice 1.8kB dist/src/index.d.ts
+2026-07-15T03:32:52.8860125Z npm notice 4.6kB dist/src/index.js
+2026-07-15T03:32:52.8860546Z npm notice 1.3kB package.json
+2026-07-15T03:32:52.8861180Z npm notice Tarball Details
+2026-07-15T03:32:52.8861962Z npm notice name: caelus-birth
+2026-07-15T03:32:52.8862435Z npm notice version: 0.23.0
+2026-07-15T03:32:52.8862944Z npm notice filename: caelus-birth-0.23.0.tgz
+2026-07-15T03:32:52.8863528Z npm notice package size: 5.2 kB
+2026-07-15T03:32:52.8864461Z npm notice unpacked size: 13.4 kB
+2026-07-15T03:32:52.8865088Z npm notice shasum: 094de04fcf4586ab852ffbc293679bfd6e8466c5
+2026-07-15T03:32:52.8865855Z npm notice integrity: sha512-exWAd2MWAj8Ds[...]mPX7aBIp5Gdrg==
+2026-07-15T03:32:52.8866528Z npm notice total files: 6
+2026-07-15T03:32:52.8866965Z npm notice
+2026-07-15T03:32:52.8867692Z caelus-birth-0.23.0.tgz
+2026-07-15T03:32:53.8908988Z added 3 packages, and audited 4 packages in 921ms
+2026-07-15T03:32:53.8909391Z 
+2026-07-15T03:32:53.8909531Z found 0 vulnerabilities
+2026-07-15T03:32:54.7894555Z   caelus-birth.js  342.2kb
+2026-07-15T03:32:54.7894944Z 
+2026-07-15T03:32:54.7895385Z ⚡ Done in 17ms
+2026-07-15T03:32:54.7933833Z Caelus Birth (timezone→UT) compiled: 350403 bytes

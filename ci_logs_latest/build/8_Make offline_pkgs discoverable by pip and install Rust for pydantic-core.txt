@@ -1,0 +1,57 @@
+﻿2026-07-15T03:27:53.0151245Z ##[group]Run echo "PIP_FIND_LINKS=file://${GITHUB_WORKSPACE}/app/offline_pkgs" >> $GITHUB_ENV
+2026-07-15T03:27:53.0152620Z [36;1mecho "PIP_FIND_LINKS=file://${GITHUB_WORKSPACE}/app/offline_pkgs" >> $GITHUB_ENV[0m
+2026-07-15T03:27:53.0153857Z [36;1mcurl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y[0m
+2026-07-15T03:27:53.0154543Z [36;1m. "$HOME/.cargo/env"[0m
+2026-07-15T03:27:53.0155008Z [36;1mrustup target add aarch64-linux-android[0m
+2026-07-15T03:27:53.0155564Z [36;1mecho "Rust installed: $(rustc --version)"[0m
+2026-07-15T03:27:53.0156107Z [36;1mecho "$HOME/.cargo/bin" >> $GITHUB_PATH[0m
+2026-07-15T03:27:53.0201628Z shell: /usr/bin/bash -e {0}
+2026-07-15T03:27:53.0201979Z env:
+2026-07-15T03:27:53.0202406Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:27:53.0203127Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.11-10/x64
+2026-07-15T03:27:53.0203763Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:27:53.0204410Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+2026-07-15T03:27:53.0204999Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:27:53.0205537Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:27:53.0206066Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+2026-07-15T03:27:53.0206597Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+2026-07-15T03:27:53.0207047Z ##[endgroup]
+2026-07-15T03:27:53.1558583Z info: downloading installer
+2026-07-15T03:27:53.4090985Z warn: It looks like you have an existing rustup settings file at:
+2026-07-15T03:27:53.4091807Z warn: /home/runner/.rustup/settings.toml
+2026-07-15T03:27:53.4092309Z warn: Rustup will install the default toolchain as specified in the settings file,
+2026-07-15T03:27:53.4092808Z warn: instead of the one inferred from the default host triple.
+2026-07-15T03:27:53.4300536Z info: profile set to default
+2026-07-15T03:27:53.4301013Z info: default host triple is x86_64-unknown-linux-gnu
+2026-07-15T03:27:53.4301741Z warn: Updating existing toolchain, profile choice will be ignored
+2026-07-15T03:27:53.4808468Z info: syncing channel updates for stable-x86_64-unknown-linux-gnu
+2026-07-15T03:27:53.6955820Z info: latest update on 2026-07-09 for version 1.97.0 (2d8144b78 2026-07-07)
+2026-07-15T03:27:53.7083162Z info: removing previous version of component clippy
+2026-07-15T03:27:53.7096629Z info: removing previous version of component rustfmt
+2026-07-15T03:27:53.7105848Z info: removing previous version of component cargo
+2026-07-15T03:27:53.7141971Z info: removing previous version of component rust-std
+2026-07-15T03:27:53.7185630Z info: removing previous version of component rustc
+2026-07-15T03:27:53.7227683Z info: downloading 5 components
+2026-07-15T03:28:02.6699199Z info: default toolchain set to stable-x86_64-unknown-linux-gnu
+2026-07-15T03:28:02.6699756Z 
+2026-07-15T03:28:02.6777802Z   stable-x86_64-unknown-linux-gnu updated - rustc 1.97.0 (2d8144b78 2026-07-07) (from rustc 1.96.1 (31fca3adb 2026-06-26))
+2026-07-15T03:28:02.6778674Z 
+2026-07-15T03:28:02.6778685Z 
+2026-07-15T03:28:02.6778852Z Rust is installed now. Great!
+2026-07-15T03:28:02.6779136Z 
+2026-07-15T03:28:02.6779385Z To get started you may need to restart your current shell.
+2026-07-15T03:28:02.6780020Z This would reload your PATH environment variable to include
+2026-07-15T03:28:02.6781192Z Cargo's bin directory ($HOME/.cargo/bin).
+2026-07-15T03:28:02.6781575Z 
+2026-07-15T03:28:02.6781708Z To configure your current shell, you need to source
+2026-07-15T03:28:02.6782051Z the corresponding env file under $HOME/.cargo.
+2026-07-15T03:28:02.6782260Z 
+2026-07-15T03:28:02.6782453Z This is usually done by running one of the following (note the leading DOT):
+2026-07-15T03:28:02.6782907Z . "$HOME/.cargo/env"            # For sh/bash/zsh/ash/dash/pdksh
+2026-07-15T03:28:02.6783281Z source "$HOME/.cargo/env.fish"  # For fish
+2026-07-15T03:28:02.6783570Z source "~/.cargo/env.nu"  # For nushell
+2026-07-15T03:28:02.6784234Z source "$HOME/.cargo/env.tcsh"  # For tcsh
+2026-07-15T03:28:02.6784544Z . "$HOME/.cargo/env.ps1"        # For pwsh
+2026-07-15T03:28:02.6784838Z source "$HOME/.cargo/env.xsh"   # For xonsh
+2026-07-15T03:28:02.7367878Z info: downloading component rust-std
+2026-07-15T03:28:05.1500404Z Rust installed: rustc 1.97.0 (2d8144b78 2026-07-07)
