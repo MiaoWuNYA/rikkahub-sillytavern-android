@@ -30,6 +30,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -47,8 +48,13 @@ import me.rerere.rikkahub.data.model.TavernEmbeddedBook
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.Book01
+import me.rerere.hugeicons.stroke.File01
 import me.rerere.hugeicons.stroke.Folder01
+import me.rerere.hugeicons.stroke.MapPin
+import me.rerere.hugeicons.stroke.Message01
+import me.rerere.hugeicons.stroke.Message02
 import me.rerere.hugeicons.stroke.Tools
+import me.rerere.hugeicons.stroke.UserCircle
 import me.rerere.rikkahub.ui.theme.CustomColors
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -83,7 +89,7 @@ fun TavernCharacterCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { expanded = !expanded }
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -107,7 +113,7 @@ fun TavernCharacterCard(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "角色卡(Character Card)",
+                            text = "角色卡",
                             style = MaterialTheme.typography.titleSmall,
                         )
                         Surface(
@@ -122,21 +128,29 @@ fun TavernCharacterCard(
                             )
                         }
                     }
-                    // 统计行
+                    // 统计行 — 用图标+颜色表示有无内容
                     FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
-                        modifier = Modifier.padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.padding(top = 6.dp),
                     ) {
-                        StatBadge("描述(Desc)", tav.description.isNotBlank())
-                        StatBadge("性格(Pers)", tav.personality.isNotBlank())
-                        StatBadge("场景(Scen)", tav.scenario.isNotBlank())
-                        StatBadge("示例(Eg)", tav.mesExample.isNotBlank())
+                        IconStatBadge(HugeIcons.File01, tav.description.isNotBlank())
+                        IconStatBadge(HugeIcons.UserCircle, tav.personality.isNotBlank())
+                        IconStatBadge(HugeIcons.MapPin, tav.scenario.isNotBlank())
+                        IconStatBadge(HugeIcons.Message01, tav.mesExample.isNotBlank())
                         if (tav.embeddedBook != null) {
-                            StatBadge("世界书·(Book)${tav.embeddedBook!!.entries.size}", true)
+                            IconStatBadge(
+                                icon = HugeIcons.Book01,
+                                active = true,
+                                count = tav.embeddedBook!!.entries.size,
+                            )
                         }
                         if (tav.alternateGreetings.isNotEmpty()) {
-                            StatBadge("开场·(Greet)${1 + tav.alternateGreetings.size}", true)
+                            IconStatBadge(
+                                icon = HugeIcons.Message02,
+                                active = true,
+                                count = 1 + tav.alternateGreetings.size,
+                            )
                         }
                     }
                 }
@@ -165,6 +179,9 @@ fun TavernCharacterCard(
                             }
                         }
                     }
+
+                    // 角色信息分组标题
+                    SectionTitle("角色信息")
 
                     // 可编辑字段
                     if (tav.systemPrompt.isNotBlank()) {
@@ -204,60 +221,39 @@ fun TavernCharacterCard(
 
                     // 备选开场白
                     if (tav.alternateGreetings.isNotEmpty()) {
-                        Text(
-                            text = "备选开场白(Alt Greetings) (${tav.alternateGreetings.size})",
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
+                        SectionTitle("开场白")
                         tav.alternateGreetings.forEachIndexed { i, greeting ->
-                            ElevatedCard(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 3.dp),
-                                shape = RoundedCornerShape(4.dp),
-                                colors = CardDefaults.elevatedCardColors(
-                                    containerColor = CustomColors.listItemColors.containerColor
-                                ),
-                            ) {
-                                EditableField("G${i + 1}", greeting) { v ->
-                                    val newGreetings = tav.alternateGreetings.toMutableList().apply { set(i, v) }
-                                    val newTav = tav.copy(alternateGreetings = newGreetings)
-                                    onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
-                                }
+                            EditableField(
+                                label = "G${i + 1}",
+                                value = greeting,
+                            ) { v ->
+                                val newGreetings = tav.alternateGreetings.toMutableList().apply { set(i, v) }
+                                val newTav = tav.copy(alternateGreetings = newGreetings)
+                                onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
                             }
                         }
                     }
 
                     // 群聊专用开场白
                     if (tav.groupOnlyGreetings.isNotEmpty()) {
-                        Text(
-                            text = "群聊专用开场白 (${tav.groupOnlyGreetings.size})",
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
+                        if (tav.alternateGreetings.isEmpty()) {
+                            SectionTitle("开场白")
+                        }
                         tav.groupOnlyGreetings.forEachIndexed { i, greeting ->
-                            ElevatedCard(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 3.dp),
-                                shape = RoundedCornerShape(4.dp),
-                                colors = CardDefaults.elevatedCardColors(
-                                    containerColor = CustomColors.listItemColors.containerColor
-                                ),
-                            ) {
-                                EditableField("G${i + 1}", greeting) { v ->
-                                    val newGreetings = tav.groupOnlyGreetings.toMutableList().apply { set(i, v) }
-                                    val newTav = tav.copy(groupOnlyGreetings = newGreetings)
-                                    onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
-                                }
+                            EditableField(
+                                label = "G${i + 1}",
+                                value = greeting,
+                            ) { v ->
+                                val newGreetings = tav.groupOnlyGreetings.toMutableList().apply { set(i, v) }
+                                val newTav = tav.copy(groupOnlyGreetings = newGreetings)
+                                onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
                             }
                         }
                     }
 
                     // 内嵌世界书
                     tav.embeddedBook?.let { book ->
+                        SectionTitle("世界书")
                         EmbeddedBookSummary(
                             book = book,
                             onEntryUpdate = { updated ->
@@ -273,6 +269,11 @@ fun TavernCharacterCard(
                         )
                     }
 
+                    // 元数据分组
+                    if (tav.creatorNotes.isNotBlank() || tav.creator.isNotBlank() || tav.characterVersion.isNotBlank()) {
+                        SectionTitle("元数据")
+                    }
+
                     // creator notes
                     if (tav.creatorNotes.isNotBlank()) {
                         EditableField("${tav.creator.ifBlank { "作者" }} 的备注", tav.creatorNotes) { v ->
@@ -281,26 +282,21 @@ fun TavernCharacterCard(
                         }
                     }
 
-                    // 作者信息
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        if (tav.creator.isNotBlank()) {
-                            Text(
-                                text = "作者: ${tav.creator}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        if (tav.characterVersion.isNotBlank()) {
-                            Text(
-                                text = "版本: v${tav.characterVersion}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                    // 作者信息 — FlowRow + 小标签样式
+                    if (tav.creator.isNotBlank() || tav.characterVersion.isNotBlank()) {
+                        FlowRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            if (tav.creator.isNotBlank()) {
+                                MetaTag("作者: ${tav.creator}")
+                            }
+                            if (tav.characterVersion.isNotBlank()) {
+                                MetaTag("版本: v${tav.characterVersion}")
+                            }
                         }
                     }
                 }
@@ -310,25 +306,77 @@ fun TavernCharacterCard(
 }
 
 @Composable
-private fun StatBadge(label: String, active: Boolean) {
+private fun IconStatBadge(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    active: Boolean,
+    count: Int? = null,
+) {
+    val tint = if (active)
+        MaterialTheme.colorScheme.primary
+    else
+        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
     val bgColor = if (active)
         MaterialTheme.colorScheme.primaryContainer
     else
-        CustomColors.listItemColors.containerColor
-    val textColor = if (active)
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    val contentColor = if (active)
         MaterialTheme.colorScheme.onPrimaryContainer
     else
-        MaterialTheme.colorScheme.onSurfaceVariant
+        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
 
     Surface(
         shape = RoundedCornerShape(4.dp),
         color = bgColor,
     ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(12.dp),
+                tint = tint,
+            )
+            if (count != null) {
+                Text(
+                    text = count.toString(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = contentColor,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 分组小标题 — 统一样式：labelMedium + primary + SemiBold
+ */
+@Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+    )
+}
+
+/**
+ * 元数据小标签 — secondaryContainer 背景的小标签
+ */
+@Composable
+private fun MetaTag(text: String) {
+    Surface(
+        shape = RoundedCornerShape(4.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+    ) {
         Text(
-            text = label,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
+            text = text,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
             style = MaterialTheme.typography.labelSmall,
-            color = textColor,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
         )
     }
 }
@@ -356,6 +404,11 @@ private fun EditableField(
             onSave(editText)
         }
     }
+    // 显示用标签：去掉双语括号部分（如 "系统提示词(System Prompt)" → "系统提示词"）
+    val displayLabel = remember(label) {
+        val parenIdx = label.indexOf('(')
+        if (parenIdx > 0) label.substring(0, parenIdx).trimEnd() else label
+    }
 
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
         Row(
@@ -374,25 +427,33 @@ private fun EditableField(
             )
             Spacer(Modifier.width(6.dp))
             Text(
-                text = label,
+                text = displayLabel,
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.weight(1f),
             )
         }
         if (expanded) {
-            OutlinedTextField(
-                value = editText,
-                onValueChange = { editText = it },
-                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp),
-                textStyle = MaterialTheme.typography.bodySmall,
-                minLines = 3,
-            )
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                shape = RoundedCornerShape(4.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, top = 4.dp),
+            ) {
+                OutlinedTextField(
+                    value = editText,
+                    onValueChange = { editText = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = MaterialTheme.typography.bodySmall,
+                    minLines = 3,
+                )
+            }
         } else {
             Text(
                 text = value.lines().take(previewLines).joinToString("\n")
                     .let { if (it.length < value.length) "$it…" else it },
                 modifier = Modifier.padding(start = 16.dp),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodySmall.copy(fontStyle = FontStyle.Italic),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = previewLines,
                 overflow = TextOverflow.Ellipsis,
