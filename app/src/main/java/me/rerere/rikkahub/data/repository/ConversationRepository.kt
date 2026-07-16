@@ -203,16 +203,6 @@ class ConversationRepository(
             }
     }
 
-    fun searchConversationsLight(titleKeyword: String): Flow<List<Conversation>> {
-        return conversationDAO
-            .searchConversationsLight(titleKeyword)
-            .map { flow ->
-                flow.map { entity ->
-                    conversationSummaryToConversation(entity)
-                }
-            }
-    }
-
     fun searchConversationsPaging(titleKeyword: String): Flow<PagingData<Conversation>> = Pager(
         config = PagingConfig(
             pageSize = PAGE_SIZE,
