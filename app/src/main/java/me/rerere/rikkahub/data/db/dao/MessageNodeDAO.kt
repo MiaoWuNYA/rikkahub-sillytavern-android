@@ -46,15 +46,7 @@ interface MessageNodeDAO {
 
     @RawQuery
     suspend fun getMessageCountPerDayRaw(query: SupportSQLiteQuery): List<MessageDayCount>
-
-    @Query("SELECT COUNT(*) FROM message_node WHERE conversation_id = :conversationId")
-    suspend fun countNodesOfConversation(conversationId: String): Int
 }
-
-data class ConvMessageCount(
-    val conversation_id: String,
-    val count: Int
-)
 
 data class MessageTokenStats(
     val totalMessages: Int = 0,

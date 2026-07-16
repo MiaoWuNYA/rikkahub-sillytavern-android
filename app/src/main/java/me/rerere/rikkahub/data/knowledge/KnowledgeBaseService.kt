@@ -275,12 +275,12 @@ class KnowledgeBaseService(
     suspend fun importChatHistory(
         conversation: Conversation,
         assistantId: String? = null,
-        maxNodes: Int = 200,
+        chunkSize: Int = 10,
+        overlap: Int = 2,
     ): String? = withContext(Dispatchers.IO) {
         try {
             val text = buildString {
-                val nodes = conversation.messageNodes.takeLast(maxNodes)
-                nodes.forEach { node ->
+                conversation.messageNodes.forEach { node ->
                     val speaker = if (node.role == MessageRole.ASSISTANT) "AI" else "User"
                     node.messages.forEach { msg ->
                         val msgText = msg.toText()
