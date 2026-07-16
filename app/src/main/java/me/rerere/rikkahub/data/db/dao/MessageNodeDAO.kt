@@ -51,11 +51,6 @@ interface MessageNodeDAO {
     suspend fun countNodesOfConversation(conversationId: String): Int
 }
 
-data class ConvMessageCount(
-    val conversation_id: String,
-    val count: Int
-)
-
 data class MessageTokenStats(
     val totalMessages: Int = 0,
     val promptTokens: Long = 0,
