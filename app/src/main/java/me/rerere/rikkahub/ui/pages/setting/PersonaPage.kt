@@ -58,11 +58,11 @@ fun PersonaPage() {
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                     ),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Row(
-                        modifier = Modifier.padding(14.dp),
+                        modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text("👤", style = MaterialTheme.typography.titleMedium)
@@ -90,17 +90,17 @@ fun PersonaPage() {
                         containerColor = if (isActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
                         else MaterialTheme.colorScheme.surface
                     ),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             // 头像
                             Surface(
                                 modifier = Modifier.size(40.dp),
-                                shape = RoundedCornerShape(8.dp),
+                                shape = RoundedCornerShape(4.dp),
                                 color = if (isActive) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                else CustomColors.listItemColors.containerColor,
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Text(

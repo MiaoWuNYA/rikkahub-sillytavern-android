@@ -54,7 +54,6 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingToolbarDefaults.ScreenOffset
 import androidx.compose.material3.FloatingToolbarDefaults.floatingToolbarVerticalNestedScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -988,31 +987,28 @@ private fun LorebookEditSheet(
 
                 // 无分组的条目
                 if (ungroupedEntries.isNotEmpty()) {
-                    HorizontalDivider(
-                        thickness = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        modifier = Modifier.padding(vertical = 8.dp),
-                    )
-                    Text(
-                        text = stringResource(R.string.prompt_page_no_group),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                    )
-                    ungroupedEntries.forEach { entry ->
-                        RegexInjectionEntryCard(
-                            entry = entry,
-                            onEdit = { entryEditState.open(entry) },
-                            onDelete = {
-                                onEdit(book.copy(entries = book.entries - entry))
-                            },
-                            onUpdate = { edited ->
-                                val idx = book.entries.indexOfFirst { it.id == edited.id }
-                                if (idx >= 0) {
-                                    onEdit(book.copy(entries = book.entries.toMutableList().apply { set(idx, edited) }))
-                                }
-                            },
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = stringResource(R.string.prompt_page_no_group),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         )
+                        ungroupedEntries.forEach { entry ->
+                            RegexInjectionEntryCard(
+                                entry = entry,
+                                onEdit = { entryEditState.open(entry) },
+                                onDelete = {
+                                    onEdit(book.copy(entries = book.entries - entry))
+                                },
+                                onUpdate = { edited ->
+                                    val idx = book.entries.indexOfFirst { it.id == edited.id }
+                                    if (idx >= 0) {
+                                        onEdit(book.copy(entries = book.entries.toMutableList().apply { set(idx, edited) }))
+                                    }
+                                },
+                            )
+                        }
                     }
                 }
 
@@ -1098,7 +1094,7 @@ private fun RegexInjectionEntryCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = CustomColors.listItemColors.containerColor
         ),
@@ -1251,7 +1247,7 @@ private fun RegexInjectionEntryCard(
                 } else if (entry.content.isNotBlank()) {
                     Surface(
                         onClick = { contentExpanded = true; editContent = entry.content },
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(4.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
@@ -1268,7 +1264,7 @@ private fun RegexInjectionEntryCard(
                 } else {
                     Surface(
                         onClick = { contentExpanded = true },
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(4.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
@@ -1320,7 +1316,7 @@ private fun LorebookGroupSection(
         // 组头
         Card(
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                containerColor = CustomColors.listItemColors.containerColor,
             ),
             modifier = Modifier
                 .fillMaxWidth()

@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -35,7 +34,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -407,34 +405,33 @@ private fun AssistantPromptContent(
         Card(
             colors = CustomColors.cardColorsOnSurfaceContainer
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Text("💬 开场白", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(4.dp))
-                Text("发给 AI 的第一条消息，定义对话起点", 
+                Text("发给 AI 的第一条消息，定义对话起点",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.height(12.dp))
 
                 // 酒馆卡导入的开场白选择
                 val tavernGreetings = listOfNotNull(
                     assistant.tavernData?.firstMessage,
                     *assistant.tavernData?.alternateGreetings?.toTypedArray() ?: emptyArray()
                 ).filter { it.isNotBlank() }
-                
+
                 if (tavernGreetings.isNotEmpty()) {
                     var selectedGreeting by remember { mutableStateOf(-1) }
                     Text("从角色卡选择:", style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary)
-                    Spacer(Modifier.height(6.dp))
                     tavernGreetings.forEachIndexed { i, greeting ->
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 3.dp)
                                 .clickable { selectedGreeting = i },
                             shape = RoundedCornerShape(
-                                topStart = 12.dp, topEnd = 12.dp,
-                                bottomStart = 12.dp, bottomEnd = 4.dp,
+                                topStart = 4.dp, topEnd = 4.dp,
+                                bottomStart = 4.dp, bottomEnd = 4.dp,
                             ),
                             color = if (selectedGreeting == i)
                                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
@@ -458,7 +455,6 @@ private fun AssistantPromptContent(
                             }
                         }
                     }
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 }
 
                 // 现有开场白列表（气泡式）
@@ -466,15 +462,13 @@ private fun AssistantPromptContent(
                     val isAssistant = msg.role == MessageRole.ASSISTANT
                     Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
+                            .fillMaxWidth(),
                         horizontalArrangement = if (isAssistant) Arrangement.Start else Arrangement.End,
                     ) {
                         Surface(
                             shape = RoundedCornerShape(
-                                topStart = 12.dp, topEnd = 12.dp,
-                                bottomStart = if (isAssistant) 4.dp else 12.dp,
-                                bottomEnd = if (isAssistant) 12.dp else 4.dp,
+                                topStart = 4.dp, topEnd = 4.dp,
+                                bottomStart = 4.dp, bottomEnd = 4.dp,
                             ),
                             color = if (isAssistant)
                                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
@@ -525,7 +519,6 @@ private fun AssistantPromptContent(
                     }
                 }
 
-                Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(onClick = {
                         onUpdate(assistant.copy(
@@ -599,7 +592,7 @@ private fun AssistantRegexCard(
     ) {
         Column(
             modifier = Modifier
-                .padding(12.dp)
+                .padding(16.dp)
                 .animateContentSize(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {

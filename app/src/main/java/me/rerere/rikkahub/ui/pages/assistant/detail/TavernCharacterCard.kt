@@ -13,11 +13,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.SuggestionChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Button
@@ -75,7 +75,7 @@ fun TavernCharacterCard(
         colors = CardDefaults.cardColors(
             containerColor = CustomColors.listItemColors.containerColor
         ),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(20.dp),
     ) {
         Column {
             // 紧凑头部
@@ -83,7 +83,7 @@ fun TavernCharacterCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { expanded = !expanded }
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -148,15 +148,11 @@ fun TavernCharacterCard(
                 enter = expandVertically() + fadeIn(),
                 exit = shrinkVertically() + fadeOut(),
             ) {
-                Column {
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    )
-
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     // 标签
                     if (tav.tags.isNotEmpty()) {
                         FlowRow(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
@@ -164,14 +160,10 @@ fun TavernCharacterCard(
                                 SuggestionChip(
                                     onClick = {},
                                     label = { Text(tag, style = MaterialTheme.typography.labelSmall) },
-                                    shape = RoundedCornerShape(6.dp),
+                                    shape = RoundedCornerShape(4.dp),
                                 )
                             }
                         }
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                            modifier = Modifier.padding(horizontal = 14.dp),
-                        )
                     }
 
                     // 可编辑字段
@@ -198,20 +190,12 @@ fun TavernCharacterCard(
                         onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
                     }
                     if (tav.postHistoryInstructions.isNotBlank()) {
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                            modifier = Modifier.padding(horizontal = 14.dp),
-                        )
                         EditableField("历史后续指令(Post-Hist)", tav.postHistoryInstructions) { v ->
                             val newTav = tav.copy(postHistoryInstructions = v)
                             onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
                         }
                     }
                     if (tav.firstMessage.isNotBlank()) {
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                            modifier = Modifier.padding(horizontal = 14.dp),
-                        )
                         EditableField("开场白(First Message)", tav.firstMessage, previewLines = 1) { v ->
                             val newTav = tav.copy(firstMessage = v)
                             onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
@@ -220,12 +204,9 @@ fun TavernCharacterCard(
 
                     // 备选开场白
                     if (tav.alternateGreetings.isNotEmpty()) {
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                        )
                         Text(
                             text = "备选开场白(Alt Greetings) (${tav.alternateGreetings.size})",
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary,
                         )
@@ -233,8 +214,8 @@ fun TavernCharacterCard(
                             ElevatedCard(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 3.dp),
-                                shape = RoundedCornerShape(8.dp),
+                                    .padding(horizontal = 16.dp, vertical = 3.dp),
+                                shape = RoundedCornerShape(4.dp),
                                 colors = CardDefaults.elevatedCardColors(
                                     containerColor = CustomColors.listItemColors.containerColor
                                 ),
@@ -250,12 +231,9 @@ fun TavernCharacterCard(
 
                     // 群聊专用开场白
                     if (tav.groupOnlyGreetings.isNotEmpty()) {
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                        )
                         Text(
                             text = "群聊专用开场白 (${tav.groupOnlyGreetings.size})",
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary,
                         )
@@ -263,8 +241,8 @@ fun TavernCharacterCard(
                             ElevatedCard(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 3.dp),
-                                shape = RoundedCornerShape(8.dp),
+                                    .padding(horizontal = 16.dp, vertical = 3.dp),
+                                shape = RoundedCornerShape(4.dp),
                                 colors = CardDefaults.elevatedCardColors(
                                     containerColor = CustomColors.listItemColors.containerColor
                                 ),
@@ -280,9 +258,6 @@ fun TavernCharacterCard(
 
                     // 内嵌世界书
                     tav.embeddedBook?.let { book ->
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                        )
                         EmbeddedBookSummary(
                             book = book,
                             onEntryUpdate = { updated ->
@@ -300,9 +275,6 @@ fun TavernCharacterCard(
 
                     // creator notes
                     if (tav.creatorNotes.isNotBlank()) {
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                        )
                         EditableField("${tav.creator.ifBlank { "作者" }} 的备注", tav.creatorNotes) { v ->
                             val newTav = tav.copy(creatorNotes = v)
                             onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
@@ -310,13 +282,10 @@ fun TavernCharacterCard(
                     }
 
                     // 作者信息
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    )
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         if (tav.creator.isNotBlank()) {
@@ -345,7 +314,7 @@ private fun StatBadge(label: String, active: Boolean) {
     val bgColor = if (active)
         MaterialTheme.colorScheme.primaryContainer
     else
-        MaterialTheme.colorScheme.surfaceContainerHigh
+        CustomColors.listItemColors.containerColor
     val textColor = if (active)
         MaterialTheme.colorScheme.onPrimaryContainer
     else
@@ -388,7 +357,7 @@ private fun EditableField(
         }
     }
 
-    Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -414,7 +383,7 @@ private fun EditableField(
             OutlinedTextField(
                 value = editText,
                 onValueChange = { editText = it },
-                modifier = Modifier.fillMaxWidth().padding(start = 20.dp, top = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp),
                 textStyle = MaterialTheme.typography.bodySmall,
                 minLines = 3,
             )
@@ -422,7 +391,7 @@ private fun EditableField(
             Text(
                 text = value.lines().take(previewLines).joinToString("\n")
                     .let { if (it.length < value.length) "$it…" else it },
-                modifier = Modifier.padding(start = 20.dp),
+                modifier = Modifier.padding(start = 16.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = previewLines,
@@ -445,7 +414,7 @@ private fun EmbeddedBookSummary(
     // 组设置状态
     var groupSettingsTarget by remember { mutableStateOf<Pair<String, List<TavernBookEntry>>?>(null) }
 
-    Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -507,8 +476,8 @@ private fun EmbeddedBookSummary(
                     )
                     Surface(
                         onClick = { groupExpanded = !groupExpanded },
-                        color = MaterialTheme.colorScheme.surfaceContainerLow,
-                        shape = RoundedCornerShape(6.dp),
+                        color = CustomColors.listItemColors.containerColor,
+                        shape = RoundedCornerShape(4.dp),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Row(
@@ -549,10 +518,6 @@ private fun EmbeddedBookSummary(
                 }
 
                 if (ungrouped.isNotEmpty()) {
-                    if (namedGroups.isNotEmpty()) {
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                            modifier = Modifier.padding(vertical = 4.dp))
-                    }
                     Text("未分组(Ungrouped)", style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 2.dp))
@@ -629,142 +594,149 @@ private fun EmbeddedGroupSettingsDialog(
     var caseSensitive by remember { mutableStateOf(template.caseSensitive) }
     var useRegex by remember { mutableStateOf(template.useRegex) }
 
-    AlertDialog(
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        title = { Text("组设置(Group): $groupName") },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+        sheetState = rememberModalBottomSheetState(),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text("组设置(Group): $groupName", style = MaterialTheme.typography.titleMedium)
+
+            // 组名称
+            OutlinedTextField(
+                value = editGroupName, onValueChange = { editGroupName = it },
+                label = { Text("分组名称(Group Name)") }, modifier = Modifier.fillMaxWidth(), singleLine = true,
+            )
+
+            // 状态切换
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FilterChip(selected = enabled, onClick = { enabled = !enabled },
+                    label = { Text(if (enabled) "启用(On)" else "禁用(Off)", style = MaterialTheme.typography.labelSmall) })
+                FilterChip(selected = constant, onClick = { constant = !constant },
+                    label = { Text(if (constant) "常驻(Constant)" else "非常驻(Normal)", style = MaterialTheme.typography.labelSmall) })
+                FilterChip(selected = selective, onClick = { selective = !selective },
+                    label = { Text(if (selective) "关键词(Keyword)" else "向量(Vector)", style = MaterialTheme.typography.labelSmall) })
+            }
+
+            // 概率
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("触发概率(Probability)", style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
+                Switch(checked = useProbability, onCheckedChange = { useProbability = !useProbability })
+            }
+            AnimatedVisibility(visible = useProbability) {
+                Column {
+                    Text("触发概率(Probability): ${probability.toInt()}%", style = MaterialTheme.typography.labelMedium)
+                    Slider(value = probability, onValueChange = { probability = it }, valueRange = 0f..100f, steps = 99)
+                }
+            }
+
+            // 插入位置
+            Text("插入位置(Position)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                listOf("角色前(Before Char)", "角色后(After Char)", "用户前(Before User)", "用户后(After User)", "@D深度(At Depth)").forEachIndexed { i, label ->
+                    FilterChip(selected = position == i, onClick = { position = i },
+                        label = { Text(label, style = MaterialTheme.typography.labelSmall) })
+                }
+            }
+
+            // 数值字段 — 分两行，每行两列
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("优先级(Priority)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedTextField(value = priority, onValueChange = { priority = it },
+                        textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("深度(Depth)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedTextField(value = depth, onValueChange = { depth = it },
+                        textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("粘性(Sticky)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedTextField(value = sticky, onValueChange = { sticky = it },
+                        textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("冷却(轮)(Cooldown)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedTextField(value = cooldown, onValueChange = { cooldown = it },
+                        textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("扫描深度(Scan Depth)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedTextField(value = scanDepth, onValueChange = { scanDepth = it },
+                        textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("组权重(Group Weight)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedTextField(value = groupWeight, onValueChange = { groupWeight = it },
+                        textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                }
+            }
+
+            // 开关行
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FilterChip(selected = caseSensitive, onClick = { caseSensitive = !caseSensitive },
+                    label = { Text("大小写(Case Sensitive)", style = MaterialTheme.typography.labelSmall) })
+                FilterChip(selected = useRegex, onClick = { useRegex = !useRegex },
+                    label = { Text("正则(Use Regex)", style = MaterialTheme.typography.labelSmall) })
+                FilterChip(selected = groupOverride, onClick = { groupOverride = !groupOverride },
+                    label = { Text("覆盖同组(Group Override)", style = MaterialTheme.typography.labelSmall) })
+            }
+
+            // 选择性逻辑
+            Text("次要关键词逻辑(Selective Logic)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                listOf("AND(全匹配)", "OR(任一)", "NOT_ANY(无)", "NOT_ALL(非全)").forEachIndexed { i, label ->
+                    FilterChip(selected = selectiveLogic == i, onClick = { selectiveLogic = i },
+                        label = { Text(label, style = MaterialTheme.typography.labelSmall) })
+                }
+            }
+
+            // 按钮行
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                // 组名称
-                OutlinedTextField(
-                    value = editGroupName, onValueChange = { editGroupName = it },
-                    label = { Text("分组名称(Group Name)") }, modifier = Modifier.fillMaxWidth(), singleLine = true,
-                )
-
-                // 状态切换
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    FilterChip(selected = enabled, onClick = { enabled = !enabled },
-                        label = { Text(if (enabled) "启用(On)" else "禁用(Off)", style = MaterialTheme.typography.labelSmall) })
-                    FilterChip(selected = constant, onClick = { constant = !constant },
-                        label = { Text(if (constant) "常驻(Constant)" else "非常驻(Normal)", style = MaterialTheme.typography.labelSmall) })
-                    FilterChip(selected = selective, onClick = { selective = !selective },
-                        label = { Text(if (selective) "关键词(Keyword)" else "向量(Vector)", style = MaterialTheme.typography.labelSmall) })
-                }
-
-                // 概率
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("触发概率(Probability)", style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
-                    Switch(checked = useProbability, onCheckedChange = { useProbability = !useProbability })
-                }
-                AnimatedVisibility(visible = useProbability) {
-                    Column {
-                        Text("触发概率(Probability): ${probability.toInt()}%", style = MaterialTheme.typography.labelMedium)
-                        Slider(value = probability, onValueChange = { probability = it }, valueRange = 0f..100f, steps = 99)
-                    }
-                }
-
-                // 插入位置
-                Text("插入位置(Position)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    listOf("角色前(Before Char)", "角色后(After Char)", "用户前(Before User)", "用户后(After User)", "@D深度(At Depth)").forEachIndexed { i, label ->
-                        FilterChip(selected = position == i, onClick = { position = i },
-                            label = { Text(label, style = MaterialTheme.typography.labelSmall) })
-                    }
-                }
-
-                // 数值字段 — 分两行，每行两列
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("优先级(Priority)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        OutlinedTextField(value = priority, onValueChange = { priority = it },
-                            textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("深度(Depth)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        OutlinedTextField(value = depth, onValueChange = { depth = it },
-                            textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("粘性(Sticky)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        OutlinedTextField(value = sticky, onValueChange = { sticky = it },
-                            textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("冷却(轮)(Cooldown)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        OutlinedTextField(value = cooldown, onValueChange = { cooldown = it },
-                            textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("扫描深度(Scan Depth)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        OutlinedTextField(value = scanDepth, onValueChange = { scanDepth = it },
-                            textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("组权重(Group Weight)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        OutlinedTextField(value = groupWeight, onValueChange = { groupWeight = it },
-                            textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
-                    }
-                }
-
-                // 开关行
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    FilterChip(selected = caseSensitive, onClick = { caseSensitive = !caseSensitive },
-                        label = { Text("大小写(Case Sensitive)", style = MaterialTheme.typography.labelSmall) })
-                    FilterChip(selected = useRegex, onClick = { useRegex = !useRegex },
-                        label = { Text("正则(Use Regex)", style = MaterialTheme.typography.labelSmall) })
-                    FilterChip(selected = groupOverride, onClick = { groupOverride = !groupOverride },
-                        label = { Text("覆盖同组(Group Override)", style = MaterialTheme.typography.labelSmall) })
-                }
-
-                // 选择性逻辑
-                Text("次要关键词逻辑(Selective Logic)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    listOf("AND(全匹配)", "OR(任一)", "NOT_ANY(无)", "NOT_ALL(非全)").forEachIndexed { i, label ->
-                        FilterChip(selected = selectiveLogic == i, onClick = { selectiveLogic = i },
-                            label = { Text(label, style = MaterialTheme.typography.labelSmall) })
-                    }
+                TextButton(onClick = onDismiss) { Text("取消(Cancel)") }
+                TextButton(onClick = {
+                    onConfirm(editGroupName, template.copy(
+                        disable = !enabled,
+                        probability = probability.toInt(),
+                        position = position,
+                        priority = priority.toIntOrNull() ?: 100,
+                        sticky = sticky.toIntOrNull() ?: 0,
+                        cooldown = cooldown.toIntOrNull() ?: 0,
+                        delay = delay.toIntOrNull() ?: 0,
+                        depth = depth.toIntOrNull() ?: 4,
+                        scanDepth = scanDepth.toIntOrNull() ?: 1000,
+                        groupWeight = groupWeight.toIntOrNull() ?: 100,
+                        groupOverride = groupOverride,
+                        constant = constant,
+                        selective = selective,
+                        useProbability = useProbability,
+                        selectiveLogic = selectiveLogic,
+                        caseSensitive = caseSensitive,
+                        useRegex = useRegex,
+                    ))
+                }) {
+                    Text("应用到(Apply to) ${entries.size} 条(entries)")
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                onConfirm(editGroupName, template.copy(
-                    disable = !enabled,
-                    probability = probability.toInt(),
-                    position = position,
-                    priority = priority.toIntOrNull() ?: 100,
-                    sticky = sticky.toIntOrNull() ?: 0,
-                    cooldown = cooldown.toIntOrNull() ?: 0,
-                    delay = delay.toIntOrNull() ?: 0,
-                    depth = depth.toIntOrNull() ?: 4,
-                    scanDepth = scanDepth.toIntOrNull() ?: 1000,
-                    groupWeight = groupWeight.toIntOrNull() ?: 100,
-                    groupOverride = groupOverride,
-                    constant = constant,
-                    selective = selective,
-                    useProbability = useProbability,
-                    selectiveLogic = selectiveLogic,
-                    caseSensitive = caseSensitive,
-                    useRegex = useRegex,
-                ))
-            }) {
-                Text("应用到(Apply to) ${entries.size} 条(entries)")
-            }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消(Cancel)") } },
-    )
+        }
+    }
 }
 
 /**
@@ -782,24 +754,16 @@ private fun CollapsibleEntryCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { expanded = !expanded },
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = CustomColors.listItemColors.containerColor
         ),
     ) {
-        Row(modifier = Modifier.fillMaxWidth()) {
-            // 左侧彩色装饰线
-            Box(
-                modifier = Modifier
-                    .width(4.dp)
-                    .fillMaxHeight()
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            )
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(10.dp)
-            ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp)
+        ) {
                 // ======== 收起预览 ========
                 if (!expanded) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -878,7 +842,6 @@ private fun CollapsibleEntryCard(
             }
         }
     }
-}
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
