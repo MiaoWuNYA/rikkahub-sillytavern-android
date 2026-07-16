@@ -404,12 +404,6 @@ private fun EditableField(
             onSave(editText)
         }
     }
-    // 显示用标签：去掉双语括号部分（如 "系统提示词(System Prompt)" → "系统提示词"）
-    val displayLabel = remember(label) {
-        val parenIdx = label.indexOf('(')
-        if (parenIdx > 0) label.substring(0, parenIdx).trimEnd() else label
-    }
-
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
         Row(
             modifier = Modifier
@@ -427,7 +421,7 @@ private fun EditableField(
             )
             Spacer(Modifier.width(6.dp))
             Text(
-                text = displayLabel,
+                text = label,
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.weight(1f),
             )
