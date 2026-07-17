@@ -20,7 +20,6 @@ Available built-in functions (call these from your code):
 
 """
 
-
 # ── Chaquopy fix: executor replaces random.Random.__init__ with restored_init
 # but doesn't inject random._traced_calls. secrets.SystemRandom() (used by
 # arcanite, jingjue, taixuanshifa, ichingshifa, meihua_yi) hits:
