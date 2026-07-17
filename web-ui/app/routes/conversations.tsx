@@ -66,6 +66,11 @@ interface SelectedNodeMessage {
 }
 type ConversationSummaryUpdater = (update: ReturnType<typeof toConversationSummaryUpdate>) => void;
 
+type OptimisticGeneratingState = {
+  conversationId: string | null;
+  value: boolean;
+};
+
 const EDIT_DRAFT_ATTACHMENT_MARK = "__from_message_attachment";
 const EDIT_DRAFT_SOURCE_INDEX = "__from_message_source_index";
 const EMPTY_INPUT_ATTACHMENTS: UIMessagePart[] = [];
@@ -314,12 +319,37 @@ function useConversationDetail(activeId: string | null, updateSummary: Conversat
   const [detail, setDetail] = React.useState<ConversationDto | null>(null);
   const [detailLoading, setDetailLoading] = React.useState(false);
   const [detailError, setDetailError] = React.useState<string | null>(null);
+  const [optimisticGenerating, setOptimisticGenerating] =
+    React.useState<OptimisticGeneratingState>({ conversationId: null, value: false });
 
   const resetDetail = React.useCallback(() => {
     setDetail(null);
     setDetailError(null);
     setDetailLoading(false);
   }, []);
+
+  // 切换会话时，若目标会话与乐观 generating 不匹配则重置，避免残留状态
+  const lastActiveIdRef = React.useRef(activeId);
+  React.useEffect(() => {
+    if (activeId === lastActiveIdRef.current) return;
+    lastActiveIdRef.current = activeId;
+    setOptimisticGenerating((prev) => {
+      if (prev.conversationId === activeId) return prev;
+      return { conversationId: activeId, value: false };
+    });
+  }, [activeId]);
+
+  // 服务端已确认 isGenerating=true 后，不再需要乐观状态
+  React.useEffect(() => {
+    if (detail?.isGenerating) {
+      setOptimisticGenerating((prev) => {
+        if (prev.conversationId === detail?.id && prev.value) {
+          return { ...prev, value: false };
+        }
+        return prev;
+      });
+    }
+  }, [detail?.isGenerating, detail?.id]);
 
   React.useEffect(() => {
     if (!activeId) {
@@ -388,6 +418,9 @@ function useConversationDetail(activeId: string | null, updateSummary: Conversat
         onError: (streamError) => {
           if (!mounted) return;
           console.error("Conversation detail SSE error:", streamError);
+          setOptimisticGenerating((prev) =>
+            prev.conversationId === activeId ? { ...prev, value: false } : prev,
+          );
         },
       },
       { signal: abortController.signal },
@@ -399,20 +432,29 @@ function useConversationDetail(activeId: string | null, updateSummary: Conversat
     };
   }, [activeId, resetDetail, t, updateSummary]);
 
+  const isOptimisticGenerating =
+    optimisticGenerating.value && optimisticGenerating.conversationId === detail?.id;
+  const mergedDetail = React.useMemo<ConversationDto | null>(() => {
+    if (!detail) return detail;
+    if (detail.isGenerating || !isOptimisticGenerating) return detail;
+    return { ...detail, isGenerating: true };
+  }, [detail, isOptimisticGenerating]);
+
   const selectedNodeMessages = React.useMemo<SelectedNodeMessage[]>(() => {
-    if (!detail) return [];
-    return detail.messages.map((node) => ({
+    if (!mergedDetail) return [];
+    return mergedDetail.messages.map((node) => ({
       node,
       message: node.messages[node.selectIndex] ?? node.messages[0],
     }));
-  }, [detail]);
+  }, [mergedDetail]);
 
   return {
-    detail,
+    detail: mergedDetail,
     detailLoading,
     detailError,
     selectedNodeMessages,
     resetDetail,
+    setOptimisticGenerating,
   };
 }
 
@@ -424,6 +466,7 @@ function useDraftInputController({
   useConversationPromptInjection,
   navigate,
   refreshList,
+  setOptimisticGenerating,
 }: {
   activeId: string | null;
   isHomeRoute: boolean;
@@ -432,6 +475,7 @@ function useDraftInputController({
   useConversationPromptInjection: boolean;
   navigate: ReturnType<typeof useNavigate>;
   refreshList: () => void;
+  setOptimisticGenerating: React.Dispatch<React.SetStateAction<OptimisticGeneratingState>>;
 }) {
   const draftKey = activeId ?? (isHomeRoute ? homeDraftId : null);
   const draft = useChatInputStore(
@@ -478,29 +522,36 @@ function useDraftInputController({
     const parts = getSubmitParts(draftKey);
     if (parts.length === 0) return;
 
-    if (activeId) {
-      await api.post<{ status: string }>(`conversations/${activeId}/messages`, { parts });
+    const targetConversationId = activeId ?? uuidv4();
+    setOptimisticGenerating({ conversationId: targetConversationId, value: true });
+
+    try {
+      if (activeId) {
+        await api.post<{ status: string }>(`conversations/${activeId}/messages`, { parts });
+        clearDraft(draftKey);
+        return;
+      }
+
+      setHomeDraftId(createHomeDraftId());
+      const promptInjectionIds = getPromptInjectionIds(draftKey);
+
+      await api.post<{ status: string }>(`conversations/${targetConversationId}/messages`, {
+        parts,
+        ...(useConversationPromptInjection
+          ? {
+              modeInjectionIds: promptInjectionIds.modeInjectionIds,
+              lorebookIds: promptInjectionIds.lorebookIds,
+            }
+          : {}),
+      });
       clearDraft(draftKey);
-      return;
+
+      navigate(`/c/${targetConversationId}`);
+      refreshList();
+    } catch (error) {
+      setOptimisticGenerating({ conversationId: targetConversationId, value: false });
+      throw error;
     }
-
-    const conversationId = uuidv4();
-    setHomeDraftId(createHomeDraftId());
-    const promptInjectionIds = getPromptInjectionIds(draftKey);
-
-    await api.post<{ status: string }>(`conversations/${conversationId}/messages`, {
-      parts,
-      ...(useConversationPromptInjection
-        ? {
-            modeInjectionIds: promptInjectionIds.modeInjectionIds,
-            lorebookIds: promptInjectionIds.lorebookIds,
-          }
-        : {}),
-    });
-    clearDraft(draftKey);
-
-    navigate(`/c/${conversationId}`);
-    refreshList();
   }, [
     activeId,
     clearDraft,
@@ -510,6 +561,7 @@ function useDraftInputController({
     navigate,
     refreshList,
     setHomeDraftId,
+    setOptimisticGenerating,
     useConversationPromptInjection,
   ]);
 
@@ -750,7 +802,7 @@ function ConversationsPageInner() {
   const [homeDraftId, setHomeDraftId] = React.useState(() => createHomeDraftId());
   const [editingSession, setEditingSession] = React.useState<EditingSession | null>(null);
 
-  const { detail, detailLoading, detailError, selectedNodeMessages, resetDetail } =
+  const { detail, detailLoading, detailError, selectedNodeMessages, resetDetail, setOptimisticGenerating } =
     useConversationDetail(activeId, updateConversationSummary);
 
   const {
@@ -772,6 +824,7 @@ function ConversationsPageInner() {
     useConversationPromptInjection: currentAssistant?.allowConversationPromptInjection === true,
     navigate,
     refreshList,
+    setOptimisticGenerating,
   });
 
   const activeConversation = conversations.find((item) => item.id === activeId);
@@ -819,24 +872,36 @@ function ConversationsPageInner() {
   const handleToolApproval = React.useCallback(
     async (toolCallId: string, approved: boolean, reason: string, answer?: string) => {
       if (!activeId) return;
-      await api.post<{ status: string }>(`conversations/${activeId}/tool-approval`, {
-        toolCallId,
-        approved,
-        reason,
-        ...(answer != null ? { answer } : {}),
-      });
+      setOptimisticGenerating({ conversationId: activeId, value: true });
+      try {
+        await api.post<{ status: string }>(`conversations/${activeId}/tool-approval`, {
+          toolCallId,
+          approved,
+          reason,
+          ...(answer != null ? { answer } : {}),
+        });
+      } catch (error) {
+        setOptimisticGenerating({ conversationId: activeId, value: false });
+        throw error;
+      }
     },
-    [activeId],
+    [activeId, setOptimisticGenerating],
   );
 
   const handleRegenerate = React.useCallback(
     async (messageId: string) => {
       if (!activeId) return;
-      await api.post<{ status: string }>(`conversations/${activeId}/regenerate`, {
-        messageId,
-      });
+      setOptimisticGenerating({ conversationId: activeId, value: true });
+      try {
+        await api.post<{ status: string }>(`conversations/${activeId}/regenerate`, {
+          messageId,
+        });
+      } catch (error) {
+        setOptimisticGenerating({ conversationId: activeId, value: false });
+        throw error;
+      }
     },
-    [activeId],
+    [activeId, setOptimisticGenerating],
   );
 
   const handleSelectBranch = React.useCallback(
@@ -1035,8 +1100,9 @@ function ConversationsPageInner() {
 
   const handleStop = React.useCallback(async () => {
     if (!activeId) return;
+    setOptimisticGenerating({ conversationId: activeId, value: false });
     await api.post<{ status: string }>(`conversations/${activeId}/stop`);
-  }, [activeId]);
+  }, [activeId, setOptimisticGenerating]);
 
   const hasWorkbenchPanel = Boolean(panel);
   const workbenchPanelRef = React.useRef<PanelImperativeHandle | null>(null);
