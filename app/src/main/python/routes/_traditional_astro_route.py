@@ -7,6 +7,30 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
     tz_offset=float(tz_offset) if tz_offset is not None else 0.0
     if isinstance(lat, str): lat = float(lat)
     if isinstance(lon, str): lon = float(lon)
+    # 设置Swiss Ephemeris星历文件路径 (Android找不到硬编码:/users/ephe/)
+    import swisseph as swe
+    _ephe_found = False
+    for _ep in [os.path.join(os.path.dirname(__file__),'..','swisseph','ephe'),
+                os.path.join(os.path.dirname(__file__),'..','..','flatlib','resources','swefiles'),
+                '/data/data/me.rerere.rikkahub/files/python/lib/python3.12/site-packages/swisseph/ephe']:
+        _p = os.path.abspath(_ep)
+        if os.path.isdir(_p) and any(f.endswith('.se1') for f in os.listdir(_p)):
+            swe.set_ephe_path(_p)
+            os.environ['SE_EPHE_PATH'] = _p
+            _ephe_found = True
+            break
+    if not _ephe_found:
+        # fallback: 搜site-packages
+        import site
+        for _sp in site.getsitepackages():
+            for _sub in ['swisseph/ephe','flatlib/resources/swefiles']:
+                _p = os.path.join(_sp, _sub)
+                if os.path.isdir(_p) and any(f.endswith('.se1') for f in os.listdir(_p)):
+                    swe.set_ephe_path(_p)
+                    os.environ['SE_EPHE_PATH'] = _p
+                    _ephe_found = True
+                    break
+            if _ephe_found: break
     from flatlib.chart import Chart
     from flatlib.datetime import Datetime
     from flatlib.geopos import GeoPos
