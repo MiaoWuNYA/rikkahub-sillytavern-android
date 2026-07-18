@@ -212,7 +212,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
     try:
         from jhora import const, utils
         from jhora.panchanga import drik
-        from jhora.horoscope.chart import house, strength, raja_yoga, yoga, dosha, ashtakavarga, arudhas, sphuta
+        from jhora.horoscope.chart import house, strength, raja_yoga, yoga, dosha, ashtakavarga, arudhas
         from jhora.horoscope.dhasa.graha import vimsottari
         place=drik.Place("loc",lat or 0,lon or 0,float(tz))
         jd_local=utils.julian_day_number(drik.Date(year,month,day),(hour,0,0))
@@ -270,7 +270,8 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
                 "var houses=nj.getHouses(jd,%f,%f,'W',true);"
                 "var moonLon=planets.find(function(p){return p.id===1}).longitude;"
                 "var sunLon=planets.find(function(p){return p.id===0}).longitude;"
-                "var chart={planets:planets.map(function(p){return{name:['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn','Rahu','Ketu','Pluto'][p.id],longitude:p.longitude}}),houses:{ascendant:houses.ascendant}};"
+                "var idToName={0:'Sun',1:'Moon',2:'Mercury',3:'Venus',4:'Mars',5:'Jupiter',6:'Saturn',10:'Rahu',99:'Ketu'};"
+                "var chart={planets:planets.map(function(p){return{name:idToName[p.id]||'Unknown',longitude:p.longitude}}),houses:{ascendant:houses.ascendant}};"
                 "var charaKarakas=NodeJhora.JaiminiCore.calculateCharaKarakas(planets);"
                 "var atmakaraka=charaKarakas[0];"
                 "var ashtakavarga=NodeJhora.Ashtakavarga.calculateSAV(planets);"
@@ -298,7 +299,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
         # PyJHora深度: D9/D10分盘 + Ashtottari/Yogini/Narayana/Chara Dasha
         try:
             from jhora.horoscope.dhasa.graha import ashtottari as ashtottari_py, yogini as yogini_py
-            from jhora.horoscope.dhasa.raasi import narayana, chara, kalachakra
+            from jhora.horoscope.dhasa.raasi import narayana, chara
             result["varga_d9"]=str(drik.dhasavarga(jd_local,place,9))
             result["varga_d10"]=str(drik.dhasavarga(jd_local,place,10))
             result["varga_d60"]=str(drik.dhasavarga(jd_local,place,60))
