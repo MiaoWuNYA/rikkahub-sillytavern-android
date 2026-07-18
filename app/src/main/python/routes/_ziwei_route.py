@@ -4,6 +4,9 @@ from ._shared import _js, _js_load
 
 # ===== 紫微 =====
 def _ziwei(year,month,day,hour,gender="male",engine="iztro"):
+    # 兼容Kotlin传来的1/0整数
+    if isinstance(gender, int):
+        gender = "male" if gender == 1 else "female"
     date_str=f"{year}-{month:02d}-{day}"
     result={"system":"ziwei","engine":engine}
     if engine in ("iztro","all"):
