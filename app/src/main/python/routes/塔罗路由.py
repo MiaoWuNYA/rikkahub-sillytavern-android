@@ -50,7 +50,7 @@
                        │   #   不加 seed: secrets.SystemRandom 真随机           │
                        │   #   加 seed(int): random.Random(seed) 可复现         │
                        │   #     同 seed→同牌序+同正逆位, 出错重试不换牌       │
-                       │   #     推荐: 第一次抽牌时记录 seed, 崩了重试用同seed  │
+                       │   #   强制: 第一次抽牌时记录 seed, 崩了重试用同seed  │
                        │   #   强制: 抽牌→分析→输出 必须在一次 execute_python  │
                        │   #   调用内完成, 不可拆到多步.                      │
                        │   # rag_mapping 直接用 pos.rag_mapping 读取（对象是权威来源）│
