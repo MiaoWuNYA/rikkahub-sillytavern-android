@@ -82,6 +82,8 @@ import me.rerere.rikkahub.data.ai.tools.createCalculatorTool
 import me.rerere.rikkahub.data.ai.tools.createWebFetchTool
 import me.rerere.rikkahub.data.ai.tools.createSleepTool
 import me.rerere.rikkahub.data.ai.tools.createTaskTools
+import me.rerere.rikkahub.data.ai.tools.local.createMingliTool
+import me.rerere.rikkahub.data.ai.tools.local.createMingliGuideTool
 import me.rerere.rikkahub.data.files.SkillManager
 import me.rerere.rikkahub.data.ai.transformers.Base64ImageToLocalFileTransformer
 import me.rerere.rikkahub.data.ai.transformers.DocumentAsPromptTransformer
@@ -633,6 +635,9 @@ class ChatService(
                     if (assistant.localTools.contains(LocalToolOption.PythonEngine)) {
                         add(createPythonTool(context, assistant.toolExecTimeout))
                     }
+                    // 命理工具: 始终可用
+                    add(createMingliTool(context))
+                    add(createMingliGuideTool(context))
                     if (assistant.localTools.contains(LocalToolOption.GitHubTools)) {
                         add(createGitHubTool(settingsStore, assistant.enableCiTimeout, assistant.enableAutoFixCi))
                     }
