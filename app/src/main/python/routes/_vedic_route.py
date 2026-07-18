@@ -9,6 +9,13 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
     if isinstance(lon, str): lon = float(lon)
     if isinstance(tz, str): tz = float(tz)
     date_str=f"{year}-{month:02d}-{day}"
+    # 构建时区偏移字符串
+    tz_vd = float(tz) if tz is not None else 8.0
+    tz_vd_sign = "+" if tz_vd >= 0 else "-"
+    tz_vd_abs = abs(tz_vd)
+    tz_vd_str = f"{tz_vd_sign}{int(tz_vd_abs):02d}:{int((tz_vd_abs - int(tz_vd_abs)) * 60 + 0.5):02d}"
+    iso_vd_date = f"{date_str}T{hour:02d}:00:00{tz_vd_str}"
+
     result={"system":"vedic"}
     # ===== 默认主力: PyJHora (Python/Chaquopy) =====
     try:
@@ -77,7 +84,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
         _js_load("node-jhora-engine")
         nj=_js("node-jhora-engine",
                 "try{"
-                "var dt=NodeJhora.DateTime.fromISO('%sT%02d:00:00+08:00');"
+                "var dt=NodeJhora.DateTime.fromISO('%s');"
                 "var nj=NodeJhora.EphemerisEngine.getInstance();"
                 "var planets=nj.getPlanets(dt,{latitude:%f,longitude:%f},{ayanamsaOrder:1});"
                 "var jd=nj.julday(dt);"
@@ -93,7 +100,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
                 "var yogas=NodeJhora.YogaEngine.findYogas(chart,NodeJhora.YOGA_LIBRARY);"
                 "JSON.stringify({planets:planets,houses:houses,moonLon:moonLon,sunLon:sunLon,charaKarakas:charaKarakas,atmakaraka:atmakaraka,ashtakavarga:ashtakavarga,yogini:yogini,yogas:yogas})"
                 "}catch(e){JSON.stringify({error:e.message})}" % (
-                    date_str, hour, lat, lon, lat, lon))
+                    iso_vd_date, lat, lon, lat, lon))
         result["nodejhora"]=nj
         result["engine"]+="+NodeJhora"
     result["_hint"]=("PyJHora已全量:Panchanga/Shadbala/Ashtakavarga/RajaYoga774/Dosha/Arudha/Vimshottari。\nJS引擎(NodeJhora/Caelus/NatalEngine)走eval_javascript直接调。\n自探索:dir(jhora)更多Dasha。Object.keys(NodeJhora)/Object.keys(Caelus)")
@@ -108,7 +115,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
         try:
             _js_load("caelus-engine")
             if lat and lon:
-                c=_js("caelus-engine","var e=new Caelus.Engine(Caelus.embeddedData);var jd=Caelus.isoToJd('%sT%02d:00:00+08:00');var chart=e.chartAt(jd,%f,%f,{zodiac:'sidereal'});var moonLon=e.longitude('moon',jd,{zodiac:'sidereal:lahiri'});JSON.stringify({varga9:Caelus.vargaAt(e,jd,9),vimshottari:Caelus.vimshottariDashas(moonLon,jd),ashtottari:Caelus.ashtottariAt(e,jd,jd,%f,%f),yogini:Caelus.yoginiAt(e,jd,jd,%f,%f)})"%(date_str,hour,lat,lon,lat,lon,lat,lon))
+                c=_js("caelus-engine","var e=new Caelus.Engine(Caelus.embeddedData);var jd=Caelus.isoToJd('%s');var chart=e.chartAt(jd,%f,%f,{zodiac:'sidereal'});var moonLon=e.longitude('moon',jd,{zodiac:'sidereal:lahiri'});JSON.stringify({varga9:Caelus.vargaAt(e,jd,9),vimshottari:Caelus.vimshottariDashas(moonLon,jd),ashtottari:Caelus.ashtottariAt(e,jd,jd,%f,%f),yogini:Caelus.yoginiAt(e,jd,jd,%f,%f)})"%(iso_vd_date,lat,lon,lat,lon,lat,lon))
                 if c and 'bridge not available' not in c: result["caelus_deep"]=c; result["engine"]+="+Caelus"
         except: pass
         # PyJHora深度

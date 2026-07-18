@@ -4,6 +4,7 @@ from ._shared import _js, _js_load
 
 # ===== 人类图 =====
 def _human_design(year,month,day,hour,tz,gene_keys=False):
+    tz=float(tz) if tz is not None else 8.0
     date_str=f"{year}-{month:02d}-{day}"
     _js_load("natalengine-engine")
     hd=_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateHumanDesign('{date_str}',{hour},{tz}))")
