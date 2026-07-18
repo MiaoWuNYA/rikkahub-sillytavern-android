@@ -1482,13 +1482,12 @@ Provide all needed context in the context parameter.""".trimIndent().replace("\n
         val processedParts = preprocessUserInputParts(parts, assistant)
         var edited = false
 
-        val updatedNodes = currentConversation.messageNodes.mapIndexed { index, node ->
+        val updatedNodes = currentConversation.messageNodes.map { node ->
             if (!node.messages.any { it.id == messageId }) {
-                return@mapIndexed node
+                return@map node
             }
             edited = true
 
-            // 追加新版本（保留编辑历史）
             node.copy(
                 messages = node.messages + UIMessage(
                     role = node.role,
@@ -1500,15 +1499,7 @@ Provide all needed context in the context parameter.""".trimIndent().replace("\n
 
         if (!edited) return
 
-        // 截断：保留到编辑位置，去掉之后的所有回复
-        val editIndex = updatedNodes.indexOfFirst { node ->
-            node.messages.any { it.id == messageId }
-        }
-        val truncated = updatedNodes.take(editIndex + 1)
-        saveConversation(conversationId, currentConversation.copy(messageNodes = truncated))
-
-        // 编辑后自动生成回复（替换旧的）
-        handleMessageComplete(conversationId)
+        saveConversation(conversationId, currentConversation.copy(messageNodes = updatedNodes))
     }
 
     suspend fun forkConversationAtMessage(
