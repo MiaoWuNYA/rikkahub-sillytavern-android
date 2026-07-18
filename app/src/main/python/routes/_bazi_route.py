@@ -33,6 +33,15 @@ def _bazi(year, month, day, hour, gender=1):
         yg,yz=ec.getYearGan(),ec.getYearZhi(); dg,dz=ec.getDayGan(),ec.getDayZhi()
         tg,tz=ec.getTimeGan(),ec.getTimeZhi(); mg,mz=ec.getMonthGan(),ec.getMonthZhi()
         ygz=ec.getYear(); mgz=ec.getMonth(); dgz=ec.getDay(); tgz=ec.getTime()
+        # Helper: 查tuple key字典(天干五合/地支六冲六害等)
+        def _tup(d, v):
+            for k,val in d.items():
+                if isinstance(k,tuple) and v in k: return val
+            return ""
+        def _strk(d, v):
+            for k,val in d.items():
+                if isinstance(k,str) and v in k: return val
+            return ""
         result["extra"] = {
             "nayin":{"year":datas.nayins.get((yg,yz),""),"month":datas.nayins.get((mg,mz),""),"day":datas.nayins.get((dg,dz),""),"time":datas.nayins.get((tg,tz),"")},
             "rizhu":datas.rizhus.get(dg+dz,""),
@@ -44,24 +53,24 @@ def _bazi(year, month, day, hour, gender=1):
             "month_shen":{k:v.get(mz,"") for k,v in datas.month_shens.items()},
             "sizi":{k: v for k,v in list(sizi.summarys.items())[:5]},
             "ganzhi_gan":ganzhi.Gan[:10], "ganzhi_zhi":ganzhi.Zhi[:12],
-            # 新增: 金不换/调候用神
+            # 金不换/调候用神/建禄/自坐
             "jinbuhuan":datas.jinbuhuan.get(dgz,""),
             "tiaohou":datas.tiaohous.get(dgz,""),
             "jianlu":datas.jianlus.get(ygz,""),
             "self_zuo":datas.self_zuo.get(dz,""),
-            # 干支关系
-            "gan_he":{g:ganzhi.gan_hes.get(g,"") for g in [yg,dg,tg] if g},
-            "zhi_he":{z:ganzhi.zhi_6hes.get(z,"") for z in [yz,mz,dz,tz] if z},
-            "zhi_chong":{z:ganzhi.zhi_chongs.get(z,"") for z in [yz,mz,dz,tz] if z},
-            "zhi_hai":{z:ganzhi.zhi_haies.get(z,"") for z in [yz,mz,dz,tz] if z},
+            # 干支关系 (tuple/string key兼容)
+            "gan_he":{g:_tup(ganzhi.gan_hes,g) for g in [yg,dg,tg] if g},
+            "zhi_he":{z:_strk(ganzhi.zhi_6hes,z) for z in [yz,mz,dz,tz] if z},
+            "zhi_chong":{z:_tup(ganzhi.zhi_chongs,z) for z in [yz,mz,dz,tz] if z},
+            "zhi_hai":{z:_tup(ganzhi.zhi_haies,z) for z in [yz,mz,dz,tz] if z},
             # 藏干/十神
             "zhi_zang":{z:ganzhi.zhi_zangs.get(z,"") for z in [yz,mz,dz,tz] if z},
             "ten_deities":{g:ganzhi.ten_deities.get(dg,{}).get(g,"") for g in [yg,mg,tg] if g},
-            # 流月 (月柱)
+            # 流月
             "yue_month":yue.months.get(mgz,"") if mgz else "",
             # 生肖
             "shengxiao":{z:datas.shengxiaos.get(z,"") for z in [yz,dz,tz] if z},
-            # 空亡
+            # 空亡 (tuple key)
             "kongwang":datas.empties.get((dg,dz),""),
         }
         result["engine"] += " + bazi_china"

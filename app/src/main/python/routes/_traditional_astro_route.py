@@ -65,7 +65,7 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
             ad=AccidentalDignity(o,chart)
             accidental[name.lower()]={"score":ad.score(),"combust":ad.isCombust(),"cazimi":ad.isCazimi(),
                 "orientality":ad.orientality(),"augmenting_light":ad.isAugmentingLight(),
-                "under_sun":ad.isUnderSun(),"voc":ad.isVOC(),"joy_house":ad.inHouseJoy()}
+                "under_sun":ad.isUnderSun(),"voc":ad.isVoc(),"joy_house":ad.inHouseJoy()}
         except: pass
     # In Sect / Out of Sect
     diurnal_planets={"sun","jupiter","saturn"}

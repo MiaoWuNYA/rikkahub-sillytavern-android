@@ -7,7 +7,7 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
     result={"system":"yijing","engine":"","_hint":"ichingshifa(Iching类)已返回起卦+解卦。meihua_yi梅花/taixuanshifa太玄/jingjue荆诀可用。JS双引擎对照(IchingShifa)。自探索: dir(ichingshifa)/dir(meihua_yi)/dir(Taixuan)/dir(jingjue)"}
     hex_values=None
     try:
-        sys.path.insert(0,os.path.dirname(__file__))
+        sys.path.insert(0,os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
         from ichingshifa import Iching
         i=Iching()
         if method=="dayan" or method=="manual":
@@ -47,4 +47,3 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
         result["engine"]+="+iching-shifa-engine"
     return result
 
-# ===== 路由表 =====
