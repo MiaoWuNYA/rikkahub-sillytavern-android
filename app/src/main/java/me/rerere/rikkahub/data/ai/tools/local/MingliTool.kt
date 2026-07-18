@@ -14,12 +14,7 @@ import kotlinx.serialization.json.put
 import me.rerere.ai.core.InputSchema
 import me.rerere.ai.core.Tool
 import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.ai.python.PythonBridge
-import me.rerere.rikkahub.data.db.AppDatabase
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.knowledge.KnowledgeBaseService
-import me.rerere.rikkahub.data.repository.ConversationRepository
-import org.koin.java.KoinJavaComponent
+import me.rerere.rikkahub.data.ai.python.JsBridge
 
 /**
  * mingli 工具 — 命理排盘/抽牌/占卜统一入口。
@@ -77,14 +72,9 @@ fun createMingliTool(context: Context): Tool = Tool(
         val py = Python.getInstance()
         val router = py.getModule("mingli_router")
 
-        // 构建 bridge（与 PythonTools.kt 相同模式）
-        val bridge = PythonBridge(
-            context = context,
-            db = KoinJavaComponent.get<AppDatabase>(AppDatabase::class.java),
-            settingsStore = KoinJavaComponent.get<SettingsStore>(SettingsStore::class.java),
-            conversationRepo = KoinJavaComponent.get<ConversationRepository>(ConversationRepository::class.java),
-            kbService = KoinJavaComponent.get<KnowledgeBaseService>(KnowledgeBaseService::class.java),
-        )
+        // 构建 bridge — 使用轻量 JsBridge 避免 Chaquopy 17 的 Path 类加载问题
+        // PythonBridge(Context, AppDatabase, ...) 传过去 Chaquopy 代理不完整
+        val bridge = JsBridge()
 
         val rawResult = withContext(Dispatchers.IO) {
             kotlinx.coroutines.withTimeout(60_000L) {

@@ -27,6 +27,11 @@
 -keep class org.scilab.forge.jlatexmath.** {*;}
 
 -dontwarn com.google.re2j.**
+
+# Chaquopy bridge — 所有方法通过Python反射调用，R8不能删
+-keep class me.rerere.rikkahub.data.ai.python.PythonBridge { *; }
+-keep class me.rerere.rikkahub.data.ai.python.JsBridge { *; }
+
 -dontobfuscate
 
 # Ktor 在 Android 上引用了仅 JVM 可用的 java.lang.management 类（IntellijIdeaDebugDetector）

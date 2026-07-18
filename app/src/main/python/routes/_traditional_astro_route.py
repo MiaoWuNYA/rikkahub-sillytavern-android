@@ -10,10 +10,12 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
     # 设置Swiss Ephemeris星历文件路径 (Android找不到硬编码:/users/ephe/)
     import swisseph as swe
     _ephe_found = False
-    for _ep in [os.path.join(os.path.dirname(__file__),'..','swisseph','ephe'),
-                os.path.join(os.path.dirname(__file__),'..','..','flatlib','resources','swefiles'),
-                '/data/data/me.rerere.rikkahub/files/python/lib/python3.12/site-packages/swisseph/ephe']:
-        _p = os.path.abspath(_ep)
+    # Chaquopy下flatlib和swisseph都在site-packages，用模块实际位置定位
+    import flatlib as _flatlib
+    for _p in [
+        os.path.join(os.path.dirname(swe.__file__),'ephe'),                      # swisseph包自带的ephe/
+        os.path.join(os.path.dirname(_flatlib.__file__),'resources','swefiles'),  # flatlib自带的swefiles/
+    ]:
         if os.path.isdir(_p) and any(f.endswith('.se1') for f in os.listdir(_p)):
             swe.set_ephe_path(_p)
             os.environ['SE_EPHE_PATH'] = _p
