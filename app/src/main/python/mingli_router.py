@@ -30,35 +30,38 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, kaabalah=False)
     RANK_URL={1:"01",2:"02",3:"03",4:"04",5:"05",6:"06",7:"07",8:"08",9:"09",10:"10",
                11:"J1",12:"J2",13:"QU",14:"KI"}
     for i, dc in enumerate(drawn):
-        is_rev = dc.orientation.value == "reversed"
-        if dc.suit=="major_arcana" or dc.suit=="major":
-            img=f"https://steve-p.org/cards/pix/RWSa-T-{dc.card_number:02d}.png"
-        else:
-            s=SUIT_URL.get(dc.suit,"T")
-            n=RANK_URL.get(dc.card_number,f"{dc.card_number:02d}")
-            img=f"https://steve-p.org/cards/pix/RWSa-{s}-{n}.png"
-        cards.append({
-            "position": sp.positions[i].rag_mapping,
-            "card_number": dc.card_number, "card_name": dc.card_name,
-            "suit": dc.suit, "orientation": dc.orientation.value,
-            "core_meaning": dc.get_core_meaning(reversed=is_rev),
-            "interpretation": dc.get_interpretation(sp.positions[i].rag_mapping, reversed=is_rev),
-            "question_context": dc.get_question_context(question_type, reversed=is_rev) if question_type else None,
-            "elemental": dc.get_elemental_correspondences(),
-            "symbols": dict(dc.get_symbols()),
-            "affirmations": dc.get_affirmations(),
-            "journaling_prompts": dc.get_journaling_prompts(),
-            "relationships": dc.get_relationships(),
-            "archetype": getattr(dc, 'archetype', None),
-            "reading_aspects": getattr(dc, 'reading_aspects', []),
-            "contextual_meanings": getattr(dc, 'contextual_meanings', {}),
-            "description": getattr(dc, 'description', {}),
-            "waite_meaning": {"upright":dc.get_waite_meaning("upright"), "reversed":dc.get_waite_meaning("reversed")},
-            "tk_meaning": {"upright_en":dc.get_tk_meaning("upright","en"), "upright_zh":dc.get_tk_meaning("upright","zh"),
-                           "reversed_en":dc.get_tk_meaning("reversed","en"), "reversed_zh":dc.get_tk_meaning("reversed","zh")},
-            "meditation_focus": (dc.raw_data or {}).get("meditation_focus") if hasattr(dc,'raw_data') else None,
-            "image_url": img,
-        })
+        try:
+            is_rev = dc.orientation.value == "reversed"
+            if dc.suit=="major_arcana" or dc.suit=="major":
+                img=f"https://steve-p.org/cards/pix/RWSa-T-{dc.card_number:02d}.png"
+            else:
+                s=SUIT_URL.get(dc.suit,"T")
+                n=RANK_URL.get(dc.card_number,f"{dc.card_number:02d}")
+                img=f"https://steve-p.org/cards/pix/RWSa-{s}-{n}.png"
+            cards.append({
+                "position": sp.positions[i].rag_mapping,
+                "card_number": dc.card_number, "card_name": dc.card_name,
+                "suit": dc.suit, "orientation": dc.orientation.value,
+                "core_meaning": dc.get_core_meaning(reversed=is_rev),
+                "interpretation": dc.get_interpretation(sp.positions[i].rag_mapping, reversed=is_rev),
+                "question_context": dc.get_question_context(question_type, reversed=is_rev) if question_type else None,
+                "elemental": dc.get_elemental_correspondences(),
+                "symbols": dict(dc.get_symbols()),
+                "affirmations": dc.get_affirmations(),
+                "journaling_prompts": dc.get_journaling_prompts(),
+                "relationships": dc.get_relationships(),
+                "archetype": getattr(dc, 'archetype', None),
+                "reading_aspects": getattr(dc, 'reading_aspects', []),
+                "contextual_meanings": getattr(dc, 'contextual_meanings', {}),
+                "description": getattr(dc, 'description', {}),
+                "waite_meaning": {"upright":dc.get_waite_meaning("upright"), "reversed":dc.get_waite_meaning("reversed")},
+                "tk_meaning": {"upright_en":dc.get_tk_meaning("upright","en"), "upright_zh":dc.get_tk_meaning("upright","zh"),
+                               "reversed_en":dc.get_tk_meaning("reversed","en"), "reversed_zh":dc.get_tk_meaning("reversed","zh")},
+                "meditation_focus": (dc.raw_data or {}).get("meditation_focus") if hasattr(dc,'raw_data') else None,
+                "image_url": img,
+            })
+        except Exception:
+            cards.append({"position": sp.positions[i].rag_mapping, "card_number": dc.card_number if hasattr(dc,'card_number') else None, "error": "card data partial"})
     result = {
         "system": "tarot", "engine": "arcanite-unified", "seed": seed,
         "spread": {"id": spread, "positions": [p.rag_mapping for p in sp.positions]},
@@ -82,18 +85,21 @@ def _lenormand(spread="line-5", seed=None):
     items = d.draw_with_data(len(sp.positions), seed=seed)
     cards = []
     for i, item in enumerate(items):
-        cards.append({
-            "position": sp.positions[i].name, "card_id": item.card_id,
-            "card_name": item.card_name, "core": item.get_core(),
-            "timing": item.get_timing(), "modifier": item.get_modifier_behavior(),
-            "as_person": item.get_as_person(),
-            "playing_card": item.get_playing_card(),
-            "topic_contexts": item.get_topic_contexts(),
-            "line_reading": item.get_line_reading(),
-            "combination_grammar": item.get_combination_grammar(),
-            "combinations": item.get_combinations(),
-            "grand_tableau": item.get_grand_tableau(),
-        })
+        try:
+            cards.append({
+                "position": sp.positions[i].name, "card_id": item.card_id,
+                "card_name": item.card_name, "core": item.get_core(),
+                "timing": item.get_timing(), "modifier": item.get_modifier_behavior(),
+                "as_person": item.get_as_person(),
+                "playing_card": item.get_playing_card(),
+                "topic_contexts": item.get_topic_contexts(),
+                "line_reading": item.get_line_reading(),
+                "combination_grammar": item.get_combination_grammar(),
+                "combinations": item.get_combinations(),
+                "grand_tableau": item.get_grand_tableau(),
+            })
+        except Exception:
+            cards.append({"position": sp.positions[i].name, "card_id": item.card_id if hasattr(item,'card_id') else None, "error": "card data partial"})
     from lenormand_engine import LenormandFateEngine as FE
     return {
         "system": "lenormand", "engine": "arcanite-unified", "seed": seed,
@@ -332,7 +338,7 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
 def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
     date_str=f"{year}-{month:02d}-{day}"
     result={"system":"vedic"}
-    # ===== 默认主力: PyJHora (Python/Chaquopy, 按路由文档1:1补全) =====
+    # ===== 默认主力: PyJHora (Python/Chaquopy) =====
     try:
         from jhora import const, utils
         from jhora.panchanga import drik
@@ -348,37 +354,49 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
         p_to_h={p:h for p,(h,_) in pp}
         h_to_p=utils.get_house_planet_list_from_planet_positions(pp)
         result["pyjhora"]={"planets":str(pp[:9]),"lagna":{"rasi":asc_raw[0],"deg":asc_raw[1],"nak":asc_raw[2],"pada":asc_raw[3]}}
-        # 2. Panchanga 五支
-        result["panchanga"]={
-            "tithi": drik.tithi(jd_local,place),
-            "nakshatra": drik.nakshatra(jd_local,place),
-            "yogam": drik.yogam(jd_local,place),
-            "karana": drik.karana(jd_local,place),
-            "vaara": drik.vaara(jd_local,place),
-            "sunrise": drik.sunrise(jd_local,place),
-            "sunset": drik.sunset(jd_local,place),
-        }
-        # 3. 宫位分析
-        result["houses"]={
-            "planets_in_quadrants": house.get_planets_in_quadrants(p_to_h),
-            "planets_in_trines": house.get_planets_in_trines(p_to_h),
-            "planets_in_dushthanas": house.get_planets_in_dushthanas(p_to_h),
-        }
-        # 4. Shadbala + Bhava Bala
-        result["shadbala"]=str(strength.shad_bala(jd_local,place))
-        result["bhava_bala"]=str(strength.bhava_bala(jd_local,place))
-        # 5. Ashtakavarga
-        result["ashtakavarga"]=str(ashtakavarga.get_ashtaka_varga(p_to_h))
-        # 6. Raja Yoga + 全Yoga
-        result["raja_yoga"]=str(raja_yoga.get_raja_yoga_details(jd_local,place))
-        result["yoga_details"]=str(yoga.get_yoga_details(jd_local,place))
-        # 7. Dosha
-        result["dosha"]={"manglik":str(dosha.manglik(pp))}
-        # 8. Arudha
-        result["arudha"]=str(arudhas.bhava_arudhas_from_planet_positions(pp))
-        # 9. Vimshottari Dasha
-        result["vimshottari"]=str(vimsottari.get_vimsottari_dhasa_bhukthi(jd_local,place))
         result["engine"]="PyJHora"
+        # 2. Panchanga (独立try)
+        try:
+            result["panchanga"]={
+                "tithi": drik.tithi(jd_local,place),
+                "nakshatra": drik.nakshatra(jd_local,place),
+                "yogam": drik.yogam(jd_local,place),
+                "karana": drik.karana(jd_local,place),
+                "vaara": drik.vaara(jd_local,place),
+                "sunrise": drik.sunrise(jd_local,place),
+                "sunset": drik.sunset(jd_local,place),
+            }
+        except: pass
+        # 3. 宫位分析 (独立try)
+        try:
+            result["houses"]={
+                "planets_in_quadrants": house.get_planets_in_quadrants(p_to_h),
+                "planets_in_trines": house.get_planets_in_trines(p_to_h),
+                "planets_in_dushthanas": house.get_planets_in_dushthanas(p_to_h),
+            }
+        except: pass
+        # 4. Shadbala (独立try)
+        try: result["shadbala"]=str(strength.shad_bala(jd_local,place))
+        except: pass
+        try: result["bhava_bala"]=str(strength.bhava_bala(jd_local,place))
+        except: pass
+        # 5. Ashtakavarga (独立try)
+        try: result["ashtakavarga"]=str(ashtakavarga.get_ashtaka_varga(p_to_h))
+        except: pass
+        # 6. Raja Yoga (独立try)
+        try: result["raja_yoga"]=str(raja_yoga.get_raja_yoga_details(jd_local,place))
+        except: pass
+        try: result["yoga_details"]=str(yoga.get_yoga_details(jd_local,place))
+        except: pass
+        # 7. Dosha (独立try)
+        try: result["dosha"]={"manglik":str(dosha.manglik(pp))}
+        except: pass
+        # 8. Arudha (独立try)
+        try: result["arudha"]=str(arudhas.bhava_arudhas_from_planet_positions(pp))
+        except: pass
+        # 9. Vimshottari Dasha (独立try)
+        try: result["vimshottari"]=str(vimsottari.get_vimsottari_dhasa_bhukthi(jd_local,place))
+        except: pass
     except Exception as e:
         result["pyjhora_error"]=str(e)
         result["engine"]=""
