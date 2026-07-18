@@ -26,23 +26,47 @@ def _bazi(year, month, day, hour, gender=1):
         "solar":s.toFullString(),"lunar":l.toFullString(),
         "jieqi":{k:str(v) for k,v in (l.getJieQiTable() or {}).items()},
     }
+    # bazi_china: 神煞/纳音/调候/干支关系/流月/生肖等(仅APK)
     try:
-        sys.path.insert(0, os.path.dirname(__file__))
-        from bazi_china import datas, shengxiao, sizi, luohou, ganzhi
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
+        from bazi_china import datas, shengxiao, sizi, luohou, ganzhi, yue
         yg,yz=ec.getYearGan(),ec.getYearZhi(); dg,dz=ec.getDayGan(),ec.getDayZhi()
-        tg,tz=ec.getTimeGan(),ec.getTimeZhi(); mg=ec.getMonthGan(); mz=ec.getMonthZhi()
+        tg,tz=ec.getTimeGan(),ec.getTimeZhi(); mg,mz=ec.getMonthGan(),ec.getMonthZhi()
+        ygz=ec.getYear(); mgz=ec.getMonth(); dgz=ec.getDay(); tgz=ec.getTime()
         result["extra"] = {
-            "nayin":{"year":datas.nayins.get((yg,yz),""),"day":datas.nayins.get((dg,dz),""),"time":datas.nayins.get((tg,tz),"")},
+            "nayin":{"year":datas.nayins.get((yg,yz),""),"month":datas.nayins.get((mg,mz),""),"day":datas.nayins.get((dg,dz),""),"time":datas.nayins.get((tg,tz),"")},
             "rizhu":datas.rizhus.get(dg+dz,""),
             "minggong":datas.minggongs.get(ec.getMingGong()[-1:],""),
             "shengong":datas.minggongs.get(ec.getShenGong()[-1:],""),
             "day_shen":{k:v.get(dz,"") for k,v in datas.day_shens.items()},
             "g_shen":{k:v.get(dg,"") for k,v in datas.g_shens.items()},
+            "year_shen":{k:v.get(yz,"") for k,v in datas.year_shens.items()},
+            "month_shen":{k:v.get(mz,"") for k,v in datas.month_shens.items()},
             "sizi":{k: v for k,v in list(sizi.summarys.items())[:5]},
             "ganzhi_gan":ganzhi.Gan[:10], "ganzhi_zhi":ganzhi.Zhi[:12],
+            # 新增: 金不换/调候用神
+            "jinbuhuan":datas.jinbuhuan.get(dgz,""),
+            "tiaohou":datas.tiaohous.get(dgz,""),
+            "jianlu":datas.jianlus.get(ygz,""),
+            "self_zuo":datas.self_zuo.get(dz,""),
+            # 干支关系
+            "gan_he":{g:ganzhi.gan_hes.get(g,"") for g in [yg,dg,tg] if g},
+            "zhi_he":{z:ganzhi.zhi_6hes.get(z,"") for z in [yz,mz,dz,tz] if z},
+            "zhi_chong":{z:ganzhi.zhi_chongs.get(z,"") for z in [yz,mz,dz,tz] if z},
+            "zhi_hai":{z:ganzhi.zhi_haies.get(z,"") for z in [yz,mz,dz,tz] if z},
+            # 藏干/十神
+            "zhi_zang":{z:ganzhi.zhi_zangs.get(z,"") for z in [yz,mz,dz,tz] if z},
+            "ten_deities":{g:ganzhi.ten_deities.get(dg,{}).get(g,"") for g in [yg,mg,tg] if g},
+            # 流月 (月柱)
+            "yue_month":yue.months.get(mgz,"") if mgz else "",
+            # 生肖
+            "shengxiao":{z:datas.shengxiaos.get(z,"") for z in [yz,dz,tz] if z},
+            # 空亡
+            "kongwang":datas.empties.get((dg,dz),""),
         }
         result["engine"] += " + bazi_china"
-        result["_hint"] = "lunar_python全字段已返回。bazi_china另有: ganzi干支/luohou飞星/shengxiao生肖/sizi古诀/yue月令/cnlunar黄历。自探索: dir(datas)"
+        result["_hint"] = "bazi_china全字段已返回:金不换/调候/建禄/自坐/天干五合/地支六合三合冲刑害/藏干/十神/流月/生肖/空亡。" \
+            "另有:luohou九宫飞星/shengxiao生肖配对。自探索:dir(datas)/dir(ganzhi)/dir(yue)"
     except Exception:
         result["_hint"] = "lunar_python已返回排盘+大运。bazi_china不可用(仅APK内)"
     return result
