@@ -3,6 +3,7 @@ package me.rerere.rikkahub.data.ai.tools.local
 import android.content.Context
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -21,8 +22,10 @@ fun createMingliGuideTool(context: Context): Tool = Tool(
     description = "读取指定命理系统的解读模板/叙事框架/输出规范。" +
         "AI在调完mingli拿到数据后，首次遇到该系统时调一次本工具。" +
         "之后可缓存模板内容，无需再次读取。" +
-        "系统名与mingli工具一致: 塔罗/雷诺曼/八字/紫微/西洋占星/" +
-        "传统西洋占星/吠陀/人类图/灵数卡巴拉/奇门三式/六爻梅花",
+        "系统名与mingli工具一致: 塔罗/雷诺曼/八字/紫微/现代西洋占星/" +
+        "传统西洋占星/吠陀/人类图/灵数卡巴拉/奇门三式/六爻梅花。其中西洋占星分两种风格:" +
+        "现代西洋占星(心理/成长取向,十大行星+相位+格局+合盘) vs 传统西洋占星(事件判断取向," +
+        "本质尊贵+主限向运+阿拉伯点+互容接纳)",
     parameters = {
         InputSchema.Obj(
             properties = buildJsonObject {
@@ -48,8 +51,10 @@ fun createMingliGuideTool(context: Context): Tool = Tool(
             "bazi" to "八字",
             "紫微" to "紫微",
             "ziwei" to "紫微",
-            "西洋占星" to "西洋占星",
-            "western_astro" to "西洋占星",
+            "现代西洋占星" to "现代西洋占星",
+            "现代占星" to "现代西洋占星",
+            "western_astro" to "现代西洋占星",
+            "modern_astro" to "现代西洋占星",
             "传统西洋占星" to "传统西洋占星",
             "traditional_astro" to "传统西洋占星",
             "吠陀" to "吠陀",

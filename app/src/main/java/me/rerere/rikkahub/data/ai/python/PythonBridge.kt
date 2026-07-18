@@ -13,6 +13,9 @@ import me.rerere.rikkahub.data.model.TavernEmbeddedBook
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.ai.ui.UIMessagePart
 import org.koin.java.KoinJavaComponent
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlin.uuid.Uuid
 
 class PythonBridge(

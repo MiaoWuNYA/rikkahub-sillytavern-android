@@ -169,7 +169,7 @@ def _ziwei(year,month,day,hour,gender="male",engine="iztro"):
     result["_hint"]="Iztro全量已返回。另:surroundedPalaces三方四正/horoscope大限/soul+body。ZiweiNihai含倪海夏天纪+古籍。自探索:Object.keys(Iztro.astro)/dir(ziwei_paipan)"
     return result
 
-# ===== 西洋占星 =====
+# ===== 现代西洋占星 =====
 def _western_astro(year,month,day,hour,tz,lat,lon,depth="standard"):
     date_str=f"{year}-{month:02d}-{day}"
     _js_load("natalengine-engine")
@@ -326,7 +326,7 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
     return result
 
 # ===== 路由表 =====
-_ROUTER={"塔罗":_tarot,"tarot":_tarot,"雷诺曼":_lenormand,"lenormand":_lenormand,"八字":_bazi,"bazi":_bazi,"紫微":_ziwei,"ziwei":_ziwei,"西洋占星":_western_astro,"western_astro":_western_astro,"传统西洋占星":_traditional_astro,"traditional_astro":_traditional_astro,"吠陀":_vedic,"vedic":_vedic,"人类图":_human_design,"human_design":_human_design,"灵数卡巴拉":_kabbalah,"kabbalah":_kabbalah,"奇门":_qimen,"qimen":_qimen,"六爻梅花":_yijing,"yijing":_yijing}
+_ROUTER={"塔罗":_tarot,"tarot":_tarot,"雷诺曼":_lenormand,"lenormand":_lenormand,"八字":_bazi,"bazi":_bazi,"紫微":_ziwei,"ziwei":_ziwei,"现代西洋占星":_western_astro,"现代占星":_western_astro,"西洋占星":_western_astro,"western_astro":_western_astro,"传统西洋占星":_traditional_astro,"traditional_astro":_traditional_astro,"吠陀":_vedic,"vedic":_vedic,"人类图":_human_design,"human_design":_human_design,"灵数卡巴拉":_kabbalah,"kabbalah":_kabbalah,"奇门":_qimen,"qimen":_qimen,"六爻梅花":_yijing,"yijing":_yijing}
 
 def mingli_run(system,params=None,bridge=None):
     global _bridge

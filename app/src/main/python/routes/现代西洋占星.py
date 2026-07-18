@@ -1,5 +1,5 @@
 """
-【西洋占星】 (仅JS)   四个库: Caelus v0.23.0 + NatalEngine + CaelusBirth + Astronomy
+【现代西洋占星】 (仅JS)   四个库: Caelus v0.23.0 + NatalEngine + CaelusBirth + Astronomy
 
 ﻿══════════════════════════ 速览 ═══════════════════════════╗ ║ NatalEngine → 日月升+文本+元素平衡+合盘评分+ACG+HD行运 ║ ║ Caelus → 本命(尊贵/格局/互容/7点)+12宫位+7种推运 ║ ║ Caelus → 3种合盘(比较/组合中点/戴维森)+行运+恒星 ║ ║ Caelus → 赤纬相位+日食月食+越界+空亡+映点+调和盘 ║ ║ CaelusBirth→ 时区名→UT(备选, 同功能走NatalEngine.timezone) ║ ║ Astronomy → 星座仲裁(双引擎不一致时)+食相秒级精度 ║ ╚═══════════════════════════════════════════════════════════╝
  
@@ -197,7 +197,7 @@ NatalEngine(西洋+吠陀+人类图) → eval_javascript(library='natalengine-en
 (纯JS,VSOP87精度与Astronomy同级Moon误差0.00″)
 
 【引擎区别速查】
-  • 西洋占星: NatalEngine(解读+文本,唯一输出) → Caelus(格局+尊贵+推运+12宫位+赤纬+7点)
+  • 现代西洋占星: NatalEngine(解读+文本,唯一输出) → Caelus(格局+尊贵+推运+12宫位+赤纬+7点)
 
 NatalEngine 星历精度与 Astronomy 同级 (Moon:0.00″ vs VSOP87)
 Astronomy 仅需要 NASA 级精度时选配
