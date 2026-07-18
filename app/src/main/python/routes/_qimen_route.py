@@ -40,6 +40,6 @@ def _qimen(year,month,day,hour=None,feature="all"):
             "meaning":meanings.get(name,""),
         }
         result["engine"]+="+小六壬"
-    result["_hint"]=("QimenEngine日家/时家+LiuRen大六壬+小六壬掌诀已返回。"
-        "QimenEngine另有阴遁/阳遁/置闰/拆补4流派。自探索:Object.keys(QimenEngine)")
+    result["_hint"]=("QimenEngine日家/时家已返回。LiuRen一键排盘含课体+三传+神将+22原子函数。小六壬完整掌诀。"
+        "QimenEngine另有阴遁/阳遁/置闰/拆补4流派。自探索:Object.keys(QimenEngine)/Object.keys(LiuRen)")
     return result

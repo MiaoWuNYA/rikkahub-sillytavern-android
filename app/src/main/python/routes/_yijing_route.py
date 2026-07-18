@@ -5,7 +5,7 @@ from ._shared import _js, _js_load
 # ===== 六爻梅花 =====
 def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all"):
     result={"system":"yijing","engine":"","_hint":
-        "ichingshifa/meihua_yi/taixuanshifa/jingjue已返回。JS引擎对照(IchingShifa)。自探索:dir(ichingshifa)/dir(meihua_yi)"}
+        "ichingshifa(Iching类)已返回起卦+解卦。meihua_yi梅花全API+taixuanshifa太玄+jingjue荆诀。JS引擎对照(IchingShifa)。自探索:dir(ichingshifa)/dir(meihua_yi)/dir(Taixuan)/dir(jingjue)"}
     hex_values=None
     # 主力: ichingshifa (APK环境)
     try:

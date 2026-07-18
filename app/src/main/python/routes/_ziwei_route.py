@@ -14,7 +14,7 @@ def _ziwei(year,month,day,hour,gender="male",engine="iztro"):
         result["nihai"]=_js("ziwei-nihai",f"JSON.stringify(ZiweiNihai.generateChart({{year:{year},month:{month},day:{day},hour:{hour},gender:'{gender}'}}))")
     if engine in ("python","all"):
         try:
-            sys.path.insert(0,os.path.dirname(__file__))
+            sys.path.insert(0,os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
             from ziwei_paipan import by_solar
             result["ziwei_paipan"]=str(by_solar(date_str,hour,gender))
         except Exception as e: result["ziwei_paipan_error"]=str(e)
