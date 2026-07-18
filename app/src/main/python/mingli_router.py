@@ -300,7 +300,7 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
                         configs.append({"type":"collection_of_light","collector":c,"planets":[a1,a2]})
         # Besiegement
         for c in bkeys:
-            besieging=[m for m in ["mars","saturn"] if m!=c and hasAspect(brows[m],brows[c],[0])]
+            besieging=[m for m in ["mars","saturn"] if m!=c and hasAspect(brows[m],brows[c],const.MAJOR_ASPECTS)]
             if len(besieging)>=2:
                 configs.append({"type":"besiegement","planet":c,"besiegers":besieging})
     except: pass
