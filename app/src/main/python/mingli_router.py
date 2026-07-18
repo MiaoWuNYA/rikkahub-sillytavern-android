@@ -208,44 +208,107 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
 def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
     date_str=f"{year}-{month:02d}-{day}"
     result={"system":"vedic"}
-    # 默认主力: PyJHora (Python/Chaquopy)
+    # ===== 默认主力: PyJHora (Python/Chaquopy, 按路由文档1:1补全) =====
     try:
-        from jhora import utils; from jhora.panchanga import drik
+        from jhora import const, utils
+        from jhora.panchanga import drik
+        from jhora.horoscope.chart import house, strength, raja_yoga, yoga, dosha, ashtakavarga, arudhas, sphuta
+        from jhora.horoscope.dhasa.graha import vimsottari
         place=drik.Place("loc",lat or 0,lon or 0,float(tz))
         jd_local=utils.julian_day_number(drik.Date(year,month,day),(hour,0,0))
+        # 1. 排盘
         pp=drik.dhasavarga(jd_local,place,1)
-        result["pyjhora"]={"planets":str(pp[:9]),"lagna":str(drik.ascendant(jd_local,place))}
+        asc_raw=drik.ascendant(jd_local,place)
+        asc_house,asc_long=drik.dasavarga_from_long(asc_raw[0]*30+asc_raw[1],1)
+        pp+=[[const._ascendant_symbol,(asc_house,asc_long)]]
+        p_to_h={p:h for p,(h,_) in pp}
+        h_to_p=utils.get_house_planet_list_from_planet_positions(pp)
+        result["pyjhora"]={"planets":str(pp[:9]),"lagna":{"rasi":asc_raw[0],"deg":asc_raw[1],"nak":asc_raw[2],"pada":asc_raw[3]}}
+        # 2. Panchanga 五支
+        result["panchanga"]={
+            "tithi": drik.tithi(jd_local,place),
+            "nakshatra": drik.nakshatra(jd_local,place),
+            "yogam": drik.yogam(jd_local,place),
+            "karana": drik.karana(jd_local,place),
+            "vaara": drik.vaara(jd_local,place),
+            "sunrise": drik.sunrise(jd_local,place),
+            "sunset": drik.sunset(jd_local,place),
+        }
+        # 3. 宫位分析
+        result["houses"]={
+            "planets_in_quadrants": house.get_planets_in_quadrants(p_to_h),
+            "planets_in_trines": house.get_planets_in_trines(p_to_h),
+            "planets_in_dushthanas": house.get_planets_in_dushthanas(p_to_h),
+        }
+        # 4. Shadbala + Bhava Bala
+        result["shadbala"]=str(strength.shad_bala(jd_local,place))
+        result["bhava_bala"]=str(strength.bhava_bala(jd_local,place))
+        # 5. Ashtakavarga
+        result["ashtakavarga"]=str(ashtakavarga.get_ashtaka_varga(p_to_h))
+        # 6. Raja Yoga + 全Yoga
+        result["raja_yoga"]=str(raja_yoga.get_raja_yoga_details(jd_local,place))
+        result["yoga_details"]=str(yoga.get_yoga_details(jd_local,place))
+        # 7. Dosha
+        result["dosha"]={"manglik":str(dosha.manglik(pp))}
+        # 8. Arudha
+        result["arudha"]=str(arudhas.bhava_arudhas_from_planet_positions(pp))
+        # 9. Vimshottari Dasha
+        result["vimshottari"]=str(vimsottari.get_vimsottari_dhasa_bhukthi(jd_local,place))
         result["engine"]="PyJHora"
-        result["_hint"]=("PyJHora主力:54Dasha/Panchanga/Varga/RajaYoga774/Tajaka/匹配已就绪。"
-            "NatalEngine(JS):Rasi+27宿+Dasha文本。Caelus深度:varga(D1-D60)/ashtottari/yogini。"
-            "NodeJhora(JS):DE440/Shadbala/Ashtakavarga/Jaimini。自探索:dir(jhora)")
     except Exception as e:
         result["pyjhora_error"]=str(e)
         result["engine"]=""
-        result["_hint"]="PyJHora不可用，回退JS引擎。"
-    # JS辅助引擎(始终运行,补充PyJHora无法覆盖的数据)
-    _js_load("natalengine-engine")
-    v=_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateVedic('{date_str}',{hour},{tz},{lat or 0},{lon or 0}))")
-    result["natal"]=v
-    result["engine"]+="+NatalEngine"
+    # ===== 辅助: NodeJhora (DE440精密+Jaimini+Ashtakavarga+Yoga+Shadbala) =====
+    if lat and lon:
+        _js_load("node-jhora-engine")
+        nj=_js("node-jhora-engine",
+                "try{"
+                "var dt=NodeJhora.DateTime.fromISO('%sT%02d:00:00+08:00');"
+                "var nj=NodeJhora.EphemerisEngine.getInstance();"
+                "var planets=nj.getPlanets(dt,{latitude:%f,longitude:%f},{ayanamsaOrder:1});"
+                "var jd=nj.julday(dt);"
+                "var houses=nj.getHouses(jd,%f,%f,'W',true);"
+                "var moonLon=planets.find(function(p){return p.id===1}).longitude;"
+                "var sunLon=planets.find(function(p){return p.id===0}).longitude;"
+                "var chart={planets:planets.map(function(p){return{name:['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn','Rahu','Ketu','Pluto'][p.id],longitude:p.longitude}}),houses:{ascendant:houses.ascendant}};"
+                "var charaKarakas=NodeJhora.JaiminiCore.calculateCharaKarakas(planets);"
+                "var atmakaraka=charaKarakas[0];"
+                "var ashtakavarga=NodeJhora.Ashtakavarga.calculateSAV(planets);"
+                "var yogini=NodeJhora.YoginiDasha.calculate(moonLon,dt,50);"
+                "var yogas=NodeJhora.YogaEngine.findYogas(chart,NodeJhora.YOGA_LIBRARY);"
+                "JSON.stringify({planets:planets,houses:houses,moonLon:moonLon,sunLon:sunLon,charaKarakas:charaKarakas,atmakaraka:atmakaraka,ashtakavarga:ashtakavarga,yogini:yogini,yogas:yogas})"
+                "}catch(e){JSON.stringify({error:e.message})}" % (
+                    date_str, hour, lat, lon, lat, lon))
+        result["nodejhora"]=nj
+        result["engine"]+="+NodeJhora"
+    result["_hint"]=("PyJHora已全量:Panchanga/Shadbala/Ashtakavarga/RajaYoga774/Dosha/Arudha/Vimshottari。"
+        "NodeJhora:DE440/Jaimini(Atmakaraka)/Ashtakavarga/Yoga检测/YoginiDasha。"
+        "自探索:dir(jhora)更多Dasha/Varga/Sphuta。Object.keys(NodeJhora)更多KP/Transit/特殊Lagna")
+    # ===== 深度模式: NatalEngine(文本) + Caelus(分盘/Ashtottari) + PyJHora深度补充 =====
     if depth=="deep":
+        _js_load("natalengine-engine")
+        v=_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateVedic('{date_str}',{hour},{tz},{lat or 0},{lon or 0}))")
+        result["natal"]=v
+        result["engine"]+="+NatalEngine"
         _js_load("caelus-engine")
         if lat and lon:
             c=_js("caelus-engine","var e=new Caelus.Engine(Caelus.embeddedData);var jd=Caelus.isoToJd('%sT%02d:00:00+08:00');var chart=e.chartAt(jd,%f,%f,{zodiac:'sidereal'});var moonLon=e.longitude('moon',jd,{zodiac:'sidereal:lahiri'});JSON.stringify({varga9:Caelus.vargaAt(e,jd,9),vimshottari:Caelus.vimshottariDashas(moonLon,jd),ashtottari:Caelus.ashtottariAt(e,jd,jd,%f,%f),yogini:Caelus.yoginiAt(e,jd,jd,%f,%f)})"%(date_str,hour,lat,lon,lat,lon,lat,lon))
             result["caelus_deep"]=c
-            _js_load("node-jhora-engine")
-            nj=_js("node-jhora-engine",
-                    "try{"
-                    "var dt=NodeJhora.DateTime.fromISO('%sT%02d:00:00+08:00');"
-                    "var nj=NodeJhora.EphemerisEngine.getInstance();"
-                    "var planets=nj.getPlanets(dt,{latitude:%f,longitude:%f},{ayanamsaOrder:1});"
-                    "var jd=nj.julday(dt);"
-                    "var houses=nj.getHouses(jd,%f,%f,'W',true);"
-                    "JSON.stringify({planets:planets,houses:houses})"
-                    "}catch(e){JSON.stringify({error:e.message})}" % (
-                        date_str, hour, lat, lon, lat, lon))
-            result["nodejhora"]=nj
-            result["engine"]+="+Caelus+NodeJhora"
+            result["engine"]+="+Caelus"
+        # PyJHora深度: D9/D10分盘 + Ashtottari/Yogini/Narayana/Chara Dasha
+        try:
+            from jhora.horoscope.dhasa.graha import ashtottari as ashtottari_py, yogini as yogini_py
+            from jhora.horoscope.dhasa.raasi import narayana, chara, kalachakra
+            result["varga_d9"]=str(drik.dhasavarga(jd_local,place,9))
+            result["varga_d10"]=str(drik.dhasavarga(jd_local,place,10))
+            result["varga_d60"]=str(drik.dhasavarga(jd_local,place,60))
+            result["ashtottari_dasha"]=str(ashtottari_py.get_ashtottari_dhasa_bhukthi(jd_local,place))
+            result["yogini_dasha"]=str(yogini_py.get_dhasa_bhukthi(drik.Date(year,month,day),(hour,0,0),place))
+            result["narayana_dasha"]=str(narayana.narayana_dhasa_for_rasi_chart(drik.Date(year,month,day),(hour,0,0),place))
+            result["chara_dasha"]=str(chara.get_dhasa_antardhasa(drik.Date(year,month,day),(hour,0,0),place))
+            result["engine"]+="+PyJHora_deep"
+        except Exception as deep_e:
+            result["pyjhora_deep_error"]=str(deep_e)
     return result
 
 # ===== 人类图 =====
