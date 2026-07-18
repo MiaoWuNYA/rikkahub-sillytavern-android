@@ -58,7 +58,7 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, kaabalah=False)
     if kaabalah:
         _js_load("kaabalah-engine")
         result["kaabalah"] = [
-            _js("kaabalah-engine", f"JSON.stringify(Kaabalah.getTarotCorrespondenceProfile({{tarotCardNumber:{c.card_number}}}))")
+            _js("kaabalah-engine", f"JSON.stringify(Kaabalah.getTarotCorrespondenceProfile({{tarotCardNumber:Kaabalah.getTarotCardNumber({{tarotCardName:'{c.card_name}'}}).cardNumber}}))")
             for c in drawn
         ]
     return result
@@ -76,11 +76,22 @@ def _lenormand(spread="line-5", seed=None):
             "position": sp.positions[i].name, "card_id": item.card_id,
             "card_name": item.card_name, "core": item.get_core(),
             "timing": item.get_timing(), "modifier": item.get_modifier_behavior(),
+            "as_person": item.get_as_person(),
+            "playing_card": item.get_playing_card(),
+            "topic_contexts": item.get_topic_contexts(),
+            "line_reading": item.get_line_reading(),
+            "combination_grammar": item.get_combination_grammar(),
+            "combinations": item.get_combinations(),
+            "grand_tableau": item.get_grand_tableau(),
         })
+    from lenormand_engine import LenormandFateEngine as FE
     return {
         "system": "lenormand", "engine": "arcanite-unified", "seed": seed,
         "spread_positions": [p.name for p in sp.positions],
         "cards": cards,
+        "statistics": d.analyze_draw(items),
+        "karmic_mirrors": {i: FE.parse_karmic_mirrors(sp.positions, items) for i in [0]},
+        "fe_portrait": FE.parse_portrait_3x3_cage(items, spread),
         "_hint": "arcanite 36张语义getter已全量。FE引擎另有: GT_portrait/骑士步/镜像/反射。自探索: dir(LenormandFateEngine)"
     }
 
