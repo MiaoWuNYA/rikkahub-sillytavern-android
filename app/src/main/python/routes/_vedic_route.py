@@ -12,7 +12,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
         from jhora.panchanga import drik
         from jhora.horoscope.chart import house, strength, raja_yoga, yoga, dosha, ashtakavarga, arudhas
         from jhora.horoscope.dhasa.graha import vimsottari
-        place=drik.Place("loc",lat or 0,lon or 0,float(tz))
+        place=drik.Place("loc",lat or 0,lon or 0,float(tz) if tz and str(tz).lstrip('-+').replace('.','',1).isdigit() else 0)
         jd_local=utils.julian_day_number(drik.Date(year,month,day),(hour,0,0))
         # 1. 排盘
         pp=drik.dhasavarga(jd_local,place,1)
@@ -92,32 +92,36 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
                     date_str, hour, lat, lon, lat, lon))
         result["nodejhora"]=nj
         result["engine"]+="+NodeJhora"
-    result["_hint"]=("PyJHora已全量:Panchanga/Shadbala/Ashtakavarga/RajaYoga774/Dosha/Arudha/Vimshottari。"
-        "NodeJhora:DE440/Jaimini(Atmakaraka)/Ashtakavarga/Yoga检测/YoginiDasha。"
-        "自探索:dir(jhora)更多Dasha/Varga/Sphuta。Object.keys(NodeJhora)更多KP/Transit/特殊Lagna")
+    result["_hint"]=("PyJHora已全量:Panchanga/Shadbala/Ashtakavarga/RajaYoga774/Dosha/Arudha/Vimshottari。\nJS引擎(NodeJhora/Caelus/NatalEngine)走eval_javascript直接调。\n自探索:dir(jhora)更多Dasha。Object.keys(NodeJhora)/Object.keys(Caelus)")
     # ===== 深度模式: NatalEngine(文本) + Caelus(分盘/Ashtottari) + PyJHora深度补充 =====
     if depth=="deep":
-        _js_load("natalengine-engine")
-        v=_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateVedic('{date_str}',{hour},{tz},{lat or 0},{lon or 0}))")
-        result["natal"]=v
-        result["engine"]+="+NatalEngine"
-        _js_load("caelus-engine")
-        if lat and lon:
-            c=_js("caelus-engine","var e=new Caelus.Engine(Caelus.embeddedData);var jd=Caelus.isoToJd('%sT%02d:00:00+08:00');var chart=e.chartAt(jd,%f,%f,{zodiac:'sidereal'});var moonLon=e.longitude('moon',jd,{zodiac:'sidereal:lahiri'});JSON.stringify({varga9:Caelus.vargaAt(e,jd,9),vimshottari:Caelus.vimshottariDashas(moonLon,jd),ashtottari:Caelus.ashtottariAt(e,jd,jd,%f,%f),yogini:Caelus.yoginiAt(e,jd,jd,%f,%f)})"%(date_str,hour,lat,lon,lat,lon,lat,lon))
-            result["caelus_deep"]=c
-            result["engine"]+="+Caelus"
-        # PyJHora深度: D9/D10分盘 + Ashtottari/Yogini/Narayana/Chara Dasha
+        # JS引擎(APK上Python桥可能不通,独立try)
         try:
-            from jhora.horoscope.dhasa.graha import ashtottari as ashtottari_py, yogini as yogini_py
-            from jhora.horoscope.dhasa.raasi import narayana, chara
+            _js_load("natalengine-engine")
+            v=_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateVedic('{date_str}',{hour},{tz},{lat or 0},{lon or 0}))")
+            if v and 'bridge not available' not in v: result["natal"]=v; result["engine"]+="+NatalEngine"
+        except: pass
+        try:
+            _js_load("caelus-engine")
+            if lat and lon:
+                c=_js("caelus-engine","var e=new Caelus.Engine(Caelus.embeddedData);var jd=Caelus.isoToJd('%sT%02d:00:00+08:00');var chart=e.chartAt(jd,%f,%f,{zodiac:'sidereal'});var moonLon=e.longitude('moon',jd,{zodiac:'sidereal:lahiri'});JSON.stringify({varga9:Caelus.vargaAt(e,jd,9),vimshottari:Caelus.vimshottariDashas(moonLon,jd),ashtottari:Caelus.ashtottariAt(e,jd,jd,%f,%f),yogini:Caelus.yoginiAt(e,jd,jd,%f,%f)})"%(date_str,hour,lat,lon,lat,lon,lat,lon))
+                if c and 'bridge not available' not in c: result["caelus_deep"]=c; result["engine"]+="+Caelus"
+        except: pass
+        # PyJHora深度
+        try:
+            from jhora.horoscope.dhasa.graha import ashtottari as a_py, yogini as y_py
             result["varga_d9"]=str(drik.dhasavarga(jd_local,place,9))
             result["varga_d10"]=str(drik.dhasavarga(jd_local,place,10))
             result["varga_d60"]=str(drik.dhasavarga(jd_local,place,60))
-            result["ashtottari_dasha"]=str(ashtottari_py.get_ashtottari_dhasa_bhukthi(jd_local,place))
-            result["yogini_dasha"]=str(yogini_py.get_dhasa_bhukthi(drik.Date(year,month,day),(hour,0,0),place))
+            result["ashtottari_dasha"]=str(a_py.get_ashtottari_dhasa_bhukthi(jd_local,place))
+            result["yogini_dasha"]=str(y_py.get_dhasa_bhukthi(drik.Date(year,month,day),(hour,0,0),place))
+            result["engine"]+="+PyJHora_deep"
+        except: pass
+        # raasi模块(Narayana/Chara)可能缺失,单独try
+        try:
+            from jhora.horoscope.dhasa.raasi import narayana, chara
             result["narayana_dasha"]=str(narayana.narayana_dhasa_for_rasi_chart(drik.Date(year,month,day),(hour,0,0),place))
             result["chara_dasha"]=str(chara.get_dhasa_antardhasa(drik.Date(year,month,day),(hour,0,0),place))
-            result["engine"]+="+PyJHora_deep"
-        except Exception as deep_e:
-            result["pyjhora_deep_error"]=str(deep_e)
+            result["engine"]+="+raasi"
+        except: pass
     return result

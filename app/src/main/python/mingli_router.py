@@ -1,10 +1,6 @@
 """mingli_router — 命理统一入口"""
 import json, sys, os
-from routes._shared import _bridge, _js, _js_load
-
-def _set_bridge(bridge):
-    global _bridge
-    _bridge = bridge
+from routes._shared import _js, _js_load
 
 # Import all route functions
 from routes._tarot_route import _tarot
@@ -23,8 +19,8 @@ from routes._yijing_route import _yijing
 _ROUTER={"塔罗":_tarot,"tarot":_tarot,"雷诺曼":_lenormand,"lenormand":_lenormand,"八字":_bazi,"bazi":_bazi,"紫微":_ziwei,"ziwei":_ziwei,"现代西洋占星":_western_astro,"现代占星":_western_astro,"西洋占星":_western_astro,"western_astro":_western_astro,"传统西洋占星":_traditional_astro,"traditional_astro":_traditional_astro,"吠陀":_vedic,"vedic":_vedic,"人类图":_human_design,"human_design":_human_design,"灵数卡巴拉":_kabbalah,"kabbalah":_kabbalah,"奇门":_qimen,"qimen":_qimen,"六爻梅花":_yijing,"yijing":_yijing}
 
 def mingli_run(system,params=None,bridge=None):
-    global _bridge
-    if bridge is not None: _bridge=bridge
+    import routes._shared as _shared_mod
+    if bridge is not None: _shared_mod._bridge = bridge
     if isinstance(params,str):
         try: params=json.loads(params)
         except: params={}
