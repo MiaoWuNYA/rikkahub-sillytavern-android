@@ -4,6 +4,9 @@ from ._shared import _js, _js_load
 
 # ===== 传统西洋占星 =====
 def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
+    tz_offset=float(tz_offset) if tz_offset is not None else 0.0
+    if isinstance(lat, str): lat = float(lat)
+    if isinstance(lon, str): lon = float(lon)
     from flatlib.chart import Chart
     from flatlib.datetime import Datetime
     from flatlib.geopos import GeoPos

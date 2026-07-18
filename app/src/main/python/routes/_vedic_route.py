@@ -4,6 +4,10 @@ from ._shared import _js, _js_load
 
 # ===== 吠陀 =====
 def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
+    # 兼容字符串参数
+    if isinstance(lat, str): lat = float(lat)
+    if isinstance(lon, str): lon = float(lon)
+    if isinstance(tz, str): tz = float(tz)
     date_str=f"{year}-{month:02d}-{day}"
     result={"system":"vedic"}
     # ===== 默认主力: PyJHora (Python/Chaquopy) =====

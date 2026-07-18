@@ -11,7 +11,9 @@ def _kabbalah(year,month,day,word=None,feature="numerology"):
         result["life_path"]=_js("kaabalah-engine",f"JSON.stringify(Kaabalah.calculateKaabalisticLifePath({base_date}))")
         result["personal"]=_js("kaabalah-engine",f"JSON.stringify({{personalYear:Kaabalah.calculatePersonalYear({base_date},new Date()),challenges:Kaabalah.calculateChallenges({base_date}),fibonacci:Kaabalah.calculateFibonacciCycle({base_date},new Date()),dateEnergies:Kaabalah.getDateEnergies({base_date})}})")
     if feature in ("gematria","all") and word:
-        result["gematria"]=_js("kaabalah-engine",f"JSON.stringify({{forward:Kaabalah.calculateGematria('{word}'),reverse:Kaabalah.reverseGematria(Kaabalah.calculateGematria('{word}')?.value||0)}})")
+        import json as _json
+        word_safe=_json.dumps(word)
+        result["gematria"]=_js("kaabalah-engine",f"JSON.stringify({{forward:Kaabalah.calculateGematria({word_safe}),reverse:Kaabalah.reverseGematria(Kaabalah.calculateGematria({word_safe})?.value||0)}})")
     if feature in ("odu","all"):
         result["odu"]=_js("kaabalah-engine",f"JSON.stringify(Kaabalah.calculateOdu({base_date}))")
     if feature in ("tarot","all"):
