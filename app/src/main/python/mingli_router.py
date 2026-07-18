@@ -207,9 +207,27 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
 # ===== 吠陀 =====
 def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
     date_str=f"{year}-{month:02d}-{day}"
+    result={"system":"vedic"}
+    # 默认主力: PyJHora (Python/Chaquopy)
+    try:
+        from jhora import utils; from jhora.panchanga import drik
+        place=drik.Place("loc",lat or 0,lon or 0,float(tz))
+        jd_local=utils.julian_day_number(drik.Date(year,month,day),(hour,0,0))
+        pp=drik.dhasavarga(jd_local,place,1)
+        result["pyjhora"]={"planets":str(pp[:9]),"lagna":str(drik.ascendant(jd_local,place))}
+        result["engine"]="PyJHora"
+        result["_hint"]=("PyJHora主力:54Dasha/Panchanga/Varga/RajaYoga774/Tajaka/匹配已就绪。"
+            "NatalEngine(JS):Rasi+27宿+Dasha文本。Caelus深度:varga(D1-D60)/ashtottari/yogini。"
+            "NodeJhora(JS):DE440/Shadbala/Ashtakavarga/Jaimini。自探索:dir(jhora)")
+    except Exception as e:
+        result["pyjhora_error"]=str(e)
+        result["engine"]=""
+        result["_hint"]="PyJHora不可用，回退JS引擎。"
+    # JS辅助引擎(始终运行,补充PyJHora无法覆盖的数据)
     _js_load("natalengine-engine")
     v=_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateVedic('{date_str}',{hour},{tz},{lat or 0},{lon or 0}))")
-    result={"system":"vedic","engine":"natalengine-js","vedic":v,"_hint":"NatalEngine吠陀+Rasi+27宿+Dasha已返回。Caelus吠陀:varga(D1-D60)/ashtottari/yogini。NodeJhora(JS):DE440/Shadbala/Ashtakavarga/Jaimini。PyJHora(APK):54Dasha/Panchanga/Varga/RajaYoga774/Tajaka/匹配。自探索:Object.keys(NodeJhora)"}
+    result["natal"]=v
+    result["engine"]+="+NatalEngine"
     if depth=="deep":
         _js_load("caelus-engine")
         if lat and lon:
@@ -227,14 +245,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
                     "}catch(e){JSON.stringify({error:e.message})}" % (
                         date_str, hour, lat, lon, lat, lon))
             result["nodejhora"]=nj
-        try:
-            from jhora import utils; from jhora.panchanga import drik
-            place=drik.Place("loc",lat or 0,lon or 0,float(tz))
-            jd_local=utils.julian_day_number(drik.Date(year,month,day),(hour,0,0))
-            pp=drik.dhasavarga(jd_local,place,1)
-            result["pyjhora"]={"planets":str(pp[:9]),"lagna":str(drik.ascendant(jd_local,place))}
-            result["engine"]+="+PyJHora"
-        except: pass
+            result["engine"]+="+Caelus+NodeJhora"
     return result
 
 # ===== 人类图 =====
