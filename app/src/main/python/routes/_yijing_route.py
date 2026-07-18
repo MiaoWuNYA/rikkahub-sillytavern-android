@@ -21,6 +21,22 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
         elif method=="time" and all([year,month,day]):
             hex_data=i.qigua_time(year,month,day,12,0)
             result["ichingshifa"]=str(hex_data)
+            try: result["daykong"]=str(hex_data.daykong_shikong())
+            except: pass
+            try: result["innate_cegui"]=str(hex_data.innate_cegui())
+            except: pass
+            try: result["acquired_cegui"]=str(hex_data.acquired_cegui())
+            except: pass
+            try:
+                gz=getattr(hex_data,"time_dizhi",None) or getattr(hex_data,"ri_gan",None) or "癸"
+                result["six_months_stars"]=str(hex_data.find_six_mons(gz))
+            except: pass
+            try:
+                rg=getattr(hex_data,"ri_gan",None) or "癸"
+                result["shier_luck"]=str(hex_data.find_shier_luck(rg))
+            except: pass
+            try: result["hutiangua"]=str(hex_data.hutiangua())
+            except: pass
         elif method=="number":
             n=seed if seed is not None else 42
             hex_data=i.qigua_manual(2026,1,1,12,0,f"{n}")
@@ -54,6 +70,12 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
         if gua.get("lines"):
             result["meihua_formatted"]=meihua_yi.format_hexagram_text(gua["lines"],gua.get("moving",[]))
             result["meihua_gua_name"]=meihua_yi.get_gua_name(meihua_yi.XIAN_TIAN.get(str(gua["lines"]),""))
+            try:
+                lines_list=gua["lines"]
+                moving_positions=gua.get("moving",[])
+                hg=meihua_yi.compute_hexagrams(lines_list,moving_positions)
+                result["meihua_tiyong"]={"original":hg[0],"mutual":hg[1],"changed":hg[2],"ti_yong":hg[3]} if len(hg)>=4 else str(hg)
+            except: pass
     except: pass
     # taixuanshifa / jingjue (如有)
     try:
