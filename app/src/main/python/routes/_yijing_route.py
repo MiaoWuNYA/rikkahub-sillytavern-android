@@ -4,18 +4,18 @@ from ._shared import _js, _js_load
 
 # ===== 六爻梅花 =====
 def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all"):
-    result={"system":"yijing","engine":"","_hint":"ichingshifa(Iching类)已返回起卦+解卦。meihua_yi梅花/taixuanshifa太玄/jingjue荆诀可用。JS双引擎对照(IchingShifa)。自探索: dir(ichingshifa)/dir(meihua_yi)/dir(Taixuan)/dir(jingjue)"}
+    result={"system":"yijing","engine":"","_hint":
+        "ichingshifa/meihua_yi/taixuanshifa/jingjue已返回。JS引擎对照(IchingShifa)。自探索:dir(ichingshifa)/dir(meihua_yi)"}
     hex_values=None
+    # 主力: ichingshifa (APK环境)
     try:
         sys.path.insert(0,os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
         from ichingshifa import Iching
         i=Iching()
         if method=="dayan" or method=="manual":
-            # 先调JS取爻值（双引擎用同一组）
             _js_load("iching-shifa-engine")
             js_yao=_js("iching-shifa-engine","JSON.stringify(IchingShifa.dayan())")
             result["iching_shifa_js_yao"]=js_yao
-            # 传同爻值给Python
             gua_str=json.loads(js_yao).get("yao","697887") if isinstance(js_yao,str) else "697887"
             result["ichingshifa"]=str(i.qigua_manual(year or 2026,month or 1,day or 1,12,0,gua_str))
         elif method=="time" and all([year,month,day]):
@@ -29,21 +29,49 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
             hex_data=i.qigua_now()
             result["ichingshifa"]=str(hex_data)
         result["engine"]+="ichingshifa"
-        # 尝试取爻值
         if hasattr(hex_data,'lines') or hasattr(hex_data,'values'):
             hex_values=getattr(hex_data,'lines',None) or getattr(hex_data,'values',None)
     except Exception as e: result["py_error"]=str(e)
-    # meihua_yi
+    # 梅花易数 (全API)
     try:
         import meihua_yi
-        if method=="time" and all([year,month,day]):
-            result["meihua"]=str(meihua_yi.qigua_time())
         result["engine"]+="+meihua_yi"
+        if method=="coin":
+            coin_result=meihua_yi.qigua_coin()
+            result["meihua_coin"]={
+                "lines":[y for y in coin_result[0]],
+                "moving":[y for y in coin_result[1]],
+                "details":coin_result[2],
+            }
+        else:
+            time_result=meihua_yi.qigua_time()
+            result["meihua_time"]={
+                "lines":[y for y in time_result[0]],
+                "moving":[y for y in time_result[1]],
+            }
+        # 通用梅花数据
+        gua=result.get("meihua_coin") or result.get("meihua_time") or {}
+        if gua.get("lines"):
+            result["meihua_formatted"]=meihua_yi.format_hexagram_text(gua["lines"],gua.get("moving",[]))
+            result["meihua_gua_name"]=meihua_yi.get_gua_name(meihua_yi.XIAN_TIAN.get(str(gua["lines"]),""))
     except: pass
+    # taixuanshifa / jingjue (如有)
+    try:
+        import taixuanshifa
+        result["engine"]+="+taixuanshifa"
+        if hasattr(taixuanshifa,'pan_from_code'):
+            result["taixuan"]=str(taixuanshifa.pan_from_code(seed or "777777"))
+    except: pass
+    try:
+        import jingjue
+        result["engine"]+="+jingjue"
+        if hasattr(jingjue,'jie'):
+            result["jingjue"]=str(jingjue.jie(seed or "777777"))
+    except: pass
+    # JS双引擎 (feature="all"时补充)
     if feature=="all":
         if not hex_values:
             _js_load("iching-shifa-engine")
             result["iching_shifa_js"]=_js("iching-shifa-engine","JSON.stringify(IchingShifa.dayan())")
         result["engine"]+="+iching-shifa-engine"
     return result
-
