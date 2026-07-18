@@ -514,30 +514,6 @@ jobs:
           python3 ci/cross_compile_wheels.py 2>&1
           echo "=== offline_pkgs for pyjhora ==="
           ls -la app/offline_pkgs/pyswisseph-*.whl 2>/dev/null
-      - name: Download missing Swiss Ephemeris files into pyswisseph wheel
-        run: |
-          cd /tmp
-          WHEEL=$(ls ${GITHUB_WORKSPACE}/app/offline_pkgs/pyswisseph-*.whl 2>/dev/null | head -1)
-          if [ -z "$WHEEL" ]; then echo "No pyswisseph wheel found"; exit 0; fi
-          mkdir -p ephe_patch
-          cd ephe_patch
-          unzip -q "$WHEEL" -d swisseph_pkg
-          EPHE_DIR="swisseph_pkg/swisseph/ephe"
-          mkdir -p "$EPHE_DIR"
-          GH_BASE="https://raw.githubusercontent.com/aloistr/swisseph/master/ephe"
-          for f in sepl_18.se1 semo_18.se1 seas_18.se1 seplm48.se1 semom48.se1 sepl_36.se1; do
-            if [ ! -f "$EPHE_DIR/$f" ]; then
-              echo "Downloading $f..."
-              curl -sL "$GH_BASE/$f" -o "$EPHE_DIR/$f" && echo "  ✅ $f ($(wc -c < "$EPHE_DIR/$f") bytes)" || echo "  ❌ $f failed"
-            else
-              echo "  ✅ $f already present"
-            fi
-          done
-          # Re-pack wheel with all ephe files
-          cd swisseph_pkg
-          zip -rq "$WHEEL" .
-          echo "✅ pyswisseph wheel updated with ephe files"
-          ls -la "$EPHE_DIR/"
       - name: Patch pyjhora lang resources (embed English strings for Chaquopy)
         run: |
           cd /tmp
