@@ -5,9 +5,9 @@ from ._shared import _js, _js_load
 # ===== 雷诺曼 =====
 def _lenormand(spread="line-5", seed=None):
     from arcanite.core import LenormandDeck
-    from arcanite.core.spread import load_spread
+    from arcanite.core.spread import get_spread_registry
     d = LenormandDeck.load()
-    sp = load_spread(spread, system="lenormand")
+    sp = get_spread_registry(system="lenormand").load_spread(spread)
     items = d.draw_with_data(len(sp.positions), seed=seed)
     cards = []
     for i, item in enumerate(items):
