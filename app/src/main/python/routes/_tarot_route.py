@@ -10,7 +10,9 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, kaabalah=False,
     deck = TarotDeck.load(system="tarot")
     sp = load_spread(spread)
     from arcanite.core.models import DrawnCard, Orientation
-    if cards and isinstance(cards, list):
+    if not cards or not isinstance(cards, list):
+        drawn = deck.draw(len(sp.positions), seed=seed)
+    else:
         drawn = []
         for i, entry in enumerate(cards):
             if isinstance(entry, str):
@@ -23,8 +25,6 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, kaabalah=False,
                            image_path=deck.get_image_path(card))
             dc._attach_deck(deck)
             drawn.append(dc)
-    else:
-        drawn = deck.draw(len(sp.positions), seed=seed)
     cards = []
     SUIT_URL={"wands":"W","cups":"C","swords":"S","pentacles":"P"}
     RANK_URL={1:"0A",2:"02",3:"03",4:"04",5:"05",6:"06",7:"07",8:"08",9:"09",10:"10",

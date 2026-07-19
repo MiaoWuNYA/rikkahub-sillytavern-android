@@ -10,7 +10,9 @@ def _lenormand(spread="line-5", seed=None, cards=None):
     sp = get_spread_registry(system="lenormand").load_spread(spread)
     from arcanite.core.models import DrawnCard, Orientation
     from arcanite.core.deck import LenormandDrawnCard
-    if cards and isinstance(cards, list):
+    if not cards or not isinstance(cards, list):
+        items = d.draw_with_data(len(sp.positions), seed=seed, allow_reversals=False)
+    else:
         items = []
         for i, entry in enumerate(cards):
             if isinstance(entry, str):
@@ -22,8 +24,6 @@ def _lenormand(spread="line-5", seed=None, cards=None):
                            image_path=None)
             dc._attach_deck(d)
             items.append(LenormandDrawnCard(dc, card))
-    else:
-        items = d.draw_with_data(len(sp.positions), seed=seed, allow_reversals=False)
     _card_number = {c.card_id: i+1 for i, c in enumerate(d.cards)}
     cards = []
     for i, item in enumerate(items):
