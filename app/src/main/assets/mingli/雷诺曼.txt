@@ -232,6 +232,7 @@ timing["speed"](节奏尺):
 
 【问题】— 问卜原句
 【牌阵】— 牌阵名称+张数
+铺牌: 按牌阵形状展开所有 image_tag，位置名标注上方
 【一句话答案】— 核心结论, 开门见山
 
 【主题定性】— 先定基调
@@ -262,7 +263,7 @@ timing["speed"](节奏尺):
     整条牌链=一个故事,
     从左到右/从第一位置到最后一位置依次展开
 
-【逐牌解读】— 每张牌2~4句, 按Greer体系:
+【逐牌解读】— image_tag + 每张牌2~4句, 按Greer体系:
   "card keywords integrated into fresh concepts
    according to a syntax or structure", 包含:
   ①位置名+位置short_description(语境定调该牌的"叙事角色")
