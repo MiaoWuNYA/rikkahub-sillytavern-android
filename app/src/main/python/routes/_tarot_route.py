@@ -12,7 +12,7 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, kaabalah=False)
     drawn = deck.draw(len(sp.positions), seed=seed)
     cards = []
     SUIT_URL={"wands":"W","cups":"C","swords":"S","pentacles":"P"}
-    RANK_URL={1:"01",2:"02",3:"03",4:"04",5:"05",6:"06",7:"07",8:"08",9:"09",10:"10",
+    RANK_URL={1:"0A",2:"02",3:"03",4:"04",5:"05",6:"06",7:"07",8:"08",9:"09",10:"10",
                11:"J1",12:"J2",13:"QU",14:"KI"}
     for i, dc in enumerate(drawn):
         try:
