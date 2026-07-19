@@ -81,64 +81,29 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
         result["engine"]=""
     # ===== 辅助: NodeJhora (DE440精密+Jaimini+Ashtakavarga+Yoga+Shadbala) =====
     if lat and lon:
-        try:
-            _js_load("node-jhora-engine")
-            nj_data = {}
-            # 核心层: 行星+宫位
-            try:
-                nj_core = _js("node-jhora-engine",
-                    "try{"
-                    "var dt=NodeJhora.DateTime.fromISO('%s');"
-                    "var nj=NodeJhora.EphemerisEngine.getInstance();"
-                    "var planets=nj.getPlanets(dt,{latitude:%f,longitude:%f},{ayanamsaOrder:1});"
-                    "if(!planets||!planets.length){throw new Error('getPlanets empty')}"
-                    "var jd=nj.julday(dt);"
-                    "var houses=nj.getHouses(jd,%f,%f,'W',true);"
-                    "var moon=planets.find(function(p){return p.id===1})||{};"
-                    "var sun=planets.find(function(p){return p.id===0})||{};"
-                    "JSON.stringify({planets:planets,houses:houses,moonLon:moon.longitude||0,sunLon:sun.longitude||0})"
-                    "}catch(e){JSON.stringify({error:e.message})}" % (
-                        iso_vd_date, lat, lon, lat, lon))
-                if nj_core and 'error' not in nj_core: nj_data["core"] = nj_core
-            except: pass
-            # Jaimini
-            try:
-                nj_jaimini = _js("node-jhora-engine",
-                    "try{"
-                    "var dt=NodeJhora.DateTime.fromISO('%s');"
-                    "var nj=NodeJhora.EphemerisEngine.getInstance();"
-                    "var planets=nj.getPlanets(dt,{latitude:%f,longitude:%f},{ayanamsaOrder:1});"
-                    "if(!planets||!planets.length||!NodeJhora.JaiminiCore){throw new Error('Jaimini unavailable')}"
-                    "var ck=NodeJhora.JaiminiCore.calculateCharaKarakas(planets);"
-                    "JSON.stringify({charaKarakas:ck,atmakaraka:ck[0]})"
-                    "}catch(e){JSON.stringify({error:e.message})}" % (
-                        iso_vd_date, lat, lon))
-                if nj_jaimini and 'error' not in nj_jaimini: nj_data["jaimini"] = nj_jaimini
-            except: pass
-            # Ashtakavarga + Yogini + Yogas
-            try:
-                nj_extra = _js("node-jhora-engine",
-                    "try{"
-                    "var dt=NodeJhora.DateTime.fromISO('%s');"
-                    "var nj=NodeJhora.EphemerisEngine.getInstance();"
-                    "var planets=nj.getPlanets(dt,{latitude:%f,longitude:%f},{ayanamsaOrder:1});"
-                    "if(!planets||!planets.length){throw new Error('getPlanets empty')}"
-                    "var moon=planets.find(function(p){return p.id===1})||{};"
-                    "var ashtakavarga=NodeJhora.Ashtakavarga?NodeJhora.Ashtakavarga.calculateSAV(planets):null;"
-                    "var yogini=NodeJhora.YoginiDasha&&moon.longitude?NodeJhora.YoginiDasha.calculate(moon.longitude,dt,50):null;"
-                    "var idToName={0:'Sun',1:'Moon',2:'Mercury',3:'Venus',4:'Mars',5:'Jupiter',6:'Saturn',10:'Rahu',99:'Ketu'};"
-                    "var chart={planets:planets.map(function(p){return{name:idToName[p.id]||'Unknown',longitude:p.longitude}}),houses:{}};"
-                    "var yogas=NodeJhora.YogaEngine?NodeJhora.YogaEngine.findYogas(chart,NodeJhora.YOGA_LIBRARY||[]):null;"
-                    "JSON.stringify({ashtakavarga:ashtakavarga,yogini:yogini,yogas:yogas})"
-                    "}catch(e){JSON.stringify({error:e.message})}" % (
-                        iso_vd_date, lat, lon))
-                if nj_extra and 'error' not in nj_extra: nj_data["extra"] = nj_extra
-            except: pass
-            if nj_data:
-                result["nodejhora"] = json.dumps(nj_data, ensure_ascii=False)
-                result["engine"] = result.get("engine","") + "+NodeJhora"
-        except Exception as e:
-            result["nodejhora_error"] = str(e)
+        _js_load("node-jhora-engine")
+        nj=_js("node-jhora-engine",
+                "try{"
+                "var dt=NodeJhora.DateTime.fromISO('%s');"
+                "var nj=NodeJhora.EphemerisEngine.getInstance();"
+                "var planets=nj.getPlanets(dt,{latitude:%f,longitude:%f},{ayanamsaOrder:1});"
+                "if(!planets||!planets.length){JSON.stringify({error:'getPlanets returned empty'})}else{"
+                "var jd=nj.julday(dt);"
+                "var houses=nj.getHouses(jd,%f,%f,'W',true);"
+                "var moon=planets.find(function(p){return p.id===1})||{};"
+                "var sun=planets.find(function(p){return p.id===0})||{};"
+                "var idToName={0:'Sun',1:'Moon',2:'Mercury',3:'Venus',4:'Mars',5:'Jupiter',6:'Saturn',10:'Rahu',99:'Ketu'};"
+                "var chart={planets:planets.map(function(p){return{name:idToName[p.id]||'Unknown',longitude:p.longitude}}),houses:{ascendant:houses.ascendant}};"
+                "var charaKarakas=NodeJhora.JaiminiCore?NodeJhora.JaiminiCore.calculateCharaKarakas(planets):null;"
+                "var atmakaraka=charaKarakas?charaKarakas[0]:null;"
+                "var ashtakavarga=NodeJhora.Ashtakavarga?NodeJhora.Ashtakavarga.calculateSAV(planets):null;"
+                "var yogini=NodeJhora.YoginiDasha&&moon.longitude?NodeJhora.YoginiDasha.calculate(moon.longitude,dt,50):null;"
+                "var yogas=NodeJhora.YogaEngine?NodeJhora.YogaEngine.findYogas(chart,NodeJhora.YOGA_LIBRARY||[]):null;"
+                "JSON.stringify({planets:planets,houses:houses,moonLon:moon.longitude||0,sunLon:sun.longitude||0,charaKarakas:charaKarakas,atmakaraka:atmakaraka,ashtakavarga:ashtakavarga,yogini:yogini,yogas:yogas})}"
+                "}catch(e){JSON.stringify({error:e.message})}" % (
+                    iso_vd_date, lat, lon, lat, lon))
+        result["nodejhora"]=nj
+        result["engine"]+="+NodeJhora"
     result["_hint"]=("PyJHora已全量:Panchanga/Shadbala/Ashtakavarga/RajaYoga774/Dosha/Arudha/Vimshottari。\\nNodeJhora(DE440)已预取:行星/宫位/Jaimini/Ashtakavarga/Yogini/Yoga。\\nCaelus/NatalEngine已预取(depth=deep)。自探索:dir(jhora)/Object.keys(NodeJhora)/Object.keys(Caelus)")
     # ===== 深度模式: NatalEngine(文本) + Caelus(分盘/Ashtottari) + PyJHora深度补充 =====
     if depth=="deep":
