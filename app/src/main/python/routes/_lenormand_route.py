@@ -9,8 +9,6 @@ def _lenormand(spread="line-5", seed=None):
     d = LenormandDeck.load()
     sp = get_spread_registry(system="lenormand").load_spread(spread)
     items = d.draw_with_data(len(sp.positions), seed=seed)
-    # card_id → 序号 (1-36) 映射, 用于图片URL
-    _card_number = {c.card_id: i+1 for i, c in enumerate(d.cards)}
     cards = []
     for i, item in enumerate(items):
         try:
@@ -25,8 +23,6 @@ def _lenormand(spread="line-5", seed=None):
                 "combination_grammar": item.get_combination_grammar(),
                 "combinations": item.get_combinations(),
                 "grand_tableau": item.get_grand_tableau(),
-                "image_url": f"https://steve-p.org/cards/pix/PLen-A-{_card_number.get(item.card_id, 0):02d}.png",
-                "image_tag": f"<img src='https://steve-p.org/cards/pix/PLen-A-{_card_number.get(item.card_id, 0):02d}.png'/>",
             })
         except Exception:
             cards.append({"position": sp.positions[i].name, "card_id": item.card_id if hasattr(item,'card_id') else None, "error": "card data partial"})

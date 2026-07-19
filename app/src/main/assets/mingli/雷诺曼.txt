@@ -37,7 +37,6 @@ Greer两步法（来自Ex Machina实际解读）:
 ── A. 总体印象 ──
 【问题】用户原问
 【牌阵】名称
-【牌面一览】按牌阵形状排列 image_tag，位置名标注上方，先看全貌再开始解读
 【一眼直觉】 指示牌在哪里？什么牌在它旁边？（首牌=主题）
 正负电荷比例→ 整体能量偏向
 速度牌分布→ 事件节奏快/慢
@@ -263,7 +262,7 @@ timing["speed"](节奏尺):
     整条牌链=一个故事,
     从左到右/从第一位置到最后一位置依次展开
 
-【逐牌解读】— 每张牌先出 image_tag，再 2~4句, 按Greer体系:
+【逐牌解读】— 每张牌2~4句, 按Greer体系:
   "card keywords integrated into fresh concepts
    according to a syntax or structure", 包含:
   ①位置名+位置short_description(语境定调该牌的"叙事角色")
