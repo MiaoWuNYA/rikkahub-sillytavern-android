@@ -93,11 +93,18 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
         except: pass
         # 12. 更多分盘 (D3/D7/D12/D16/D30)
         try:
+            result["varga_d2"]=str(charts.hora_chart(pp))
             result["varga_d3"]=str(charts.drekkana_chart(pp))
+            result["varga_d4"]=str(charts.chaturthamsa_chart(pp))
             result["varga_d7"]=str(charts.saptamsa_chart(pp))
             result["varga_d12"]=str(charts.dwadasamsa_chart(pp))
             result["varga_d16"]=str(charts.shodasamsa_chart(pp))
+            result["varga_d20"]=str(charts.vimsamsa_chart(pp))
+            result["varga_d24"]=str(charts.siddhamsa_chart(pp))
+            result["varga_d27"]=str(charts.bhamsa_chart(pp))
             result["varga_d30"]=str(charts.trimsamsa_chart(pp))
+            result["varga_d40"]=str(charts.khavedamsa_chart(pp))
+            result["varga_d45"]=str(charts.akshavedamsa_chart(pp))
         except: pass
     except Exception as e:
         result["pyjhora_error"]=str(e)
