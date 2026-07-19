@@ -21,6 +21,12 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
         from jhora.panchanga import drik
         from jhora.horoscope.chart import house, strength, raja_yoga, yoga, dosha, ashtakavarga, arudhas, charts
         from jhora.horoscope.dhasa.graha import vimsottari
+        from jhora.horoscope.prediction.general import get_prediction_details
+        from jhora.horoscope.prediction.longevity import life_span_range
+        from jhora.horoscope.transit.tajaka import trinal_aspects_of_the_raasi, sextile_aspects_of_the_raasi, square_aspects_of_the_raasi
+        from jhora.horoscope.transit.tajaka_yoga import ishkavala_yoga, induvara_yoga
+        from jhora.horoscope.transit.saham import punya_saham, vidya_saham, yasas_saham, mitra_saham
+        from jhora.panchanga.eclipse import next_solar_eclipse, next_lunar_eclipse
         from jhora.horoscope.prediction.general import get_prediction_details as _gp
         from jhora.horoscope.transit.tajaka import trinal_aspects_of_the_raasi
         from jhora.horoscope.transit.saham import punya_saham, vidya_saham, yasas_saham, mitra_saham
@@ -43,6 +49,18 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
         try: result["saham"]=str({"punya":punya_saham(pp),"vidya":vidya_saham(pp),"yasas":yasas_saham(pp),"mitra":mitra_saham(pp)})
         except: pass
         # 2. Panchanga
+        try: result["predictions"]=str(get_prediction_details(jd_local,place))
+        except: pass
+        try: result["longevity"]=str(life_span_range(jd_local,place))
+        except: pass
+        try: result["tajaka"]=str({"trinal":trinal_aspects_of_the_raasi(h_to_p,asc_house),"sextile":sextile_aspects_of_the_raasi(h_to_p,asc_house),"square":square_aspects_of_the_raasi(h_to_p,asc_house)})
+        except: pass
+        try: result["tajaka_yoga"]=str({"ishkavala":ishkavala_yoga(p_to_h),"induvara":induvara_yoga(p_to_h)})
+        except: pass
+        try: result["saham"]=str({"punya":punya_saham(pp),"vidya":vidya_saham(pp),"yasas":yasas_saham(pp),"mitra":mitra_saham(pp)})
+        except: pass
+        try: result["eclipses"]={"next_solar":str(next_solar_eclipse(jd_local)),"next_lunar":str(next_lunar_eclipse(jd_local))}
+        except: pass
         try: result["panchanga"]={"tithi":drik.tithi(jd_local,place),"nakshatra":drik.nakshatra(jd_local,place),"yogam":drik.yogam(jd_local,place),"karana":drik.karana(jd_local,place),"vaara":drik.vaara(jd_local,place),"sunrise":drik.sunrise(jd_local,place),"sunset":drik.sunset(jd_local,place)}
         except: pass
         # 3. 宫位分析
