@@ -51,7 +51,7 @@ fun createMingliTool(context: Context): Tool = Tool(
                             " 人类图: {year, month, day, hour, tz, gene_keys, transits}" +
                             " 灵数卡巴拉: {year, month, day, word, feature=numerology|gematria|odu|tarot|tree|all}" +
                             " 奇门: {year, month, day, hour, feature=qimen|liuren|xiaoliuren|all}" +
-                            " 六爻梅花: {method=time|dayan|manual|coin|number, seed, year, month, day, feature}")
+                            " 六爻梅花: {method=time|dayan|manual|coin|number|now, seed, year, month, day, feature}")
                 })
             },
             required = listOf("system")
