@@ -92,13 +92,8 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
     except: pass
     # JS双引擎 (feature="all"时补充)
     if feature=="all":
-        _js_load("iching-shifa-engine")
-        if hex_values and isinstance(hex_values, (list, tuple)):
-            js_vals = json.dumps(list(hex_values))
-            result["iching_shifa_js"] = _js("iching-shifa-engine",
-                f"JSON.stringify(IchingShifa.interpret({js_vals}))")
-        else:
-            result["iching_shifa_js"] = _js("iching-shifa-engine",
-                "JSON.stringify(IchingShifa.dayan())")
-        result["engine"] += "+iching-shifa-engine"
+        if not hex_values:
+            _js_load("iching-shifa-engine")
+            result["iching_shifa_js"]=_js("iching-shifa-engine","JSON.stringify(IchingShifa.dayan())")
+        result["engine"]+="+iching-shifa-engine"
     return result
