@@ -172,6 +172,30 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
                 %(iso_vd_date,lat,lon,lat,lon))
             if c and 'bridge not available' not in c: result["caelus"]=c; result["engine"]+="+Caelus"
     except: pass
+    # Transit + Sade Sati (当前行运)
+    try:
+        import datetime
+        today=datetime.datetime.now()
+        today_iso=f"{today.year}-{today.month:02d}-{today.day}T12:00:00+00:00"
+        transit=_js("caelus-engine",
+            "var e=new Caelus.Engine(Caelus.embeddedData);"
+            "var natalJd=Caelus.isoToJd('%s');"
+            "var transitJd=Caelus.isoToJd('%s');"
+            "var natalMoon=e.longitude('moon',natalJd,{zodiac:'sidereal:lahiri'});"
+            "var transitSaturn=e.longitude('saturn',transitJd,{zodiac:'sidereal:lahiri'});"
+            "var transitJupiter=e.longitude('jupiter',transitJd,{zodiac:'sidereal:lahiri'});"
+            "var transitRahu=e.longitude('rahu',transitJd,{zodiac:'sidereal:lahiri'});"
+            "function signIdx(lon){return Math.floor(lon/30);}"
+            "var moonSign=signIdx(natalMoon);"
+            "var satSign=signIdx(transitSaturn);"
+            "var sadeSati=null;"
+            "if(satSign===moonSign)sadeSati='peak';"
+            "else if(satSign===(moonSign+11)%%12)sadeSati='rising';"
+            "else if(satSign===(moonSign+1)%%12)sadeSati='setting';"
+            "JSON.stringify({sadeSati:sadeSati,moonSign:moonSign,saturnSign:satSign,saturnLon:transitSaturn,jupiterSign:signIdx(transitJupiter),rahuSign:signIdx(transitRahu)})"
+            %(iso_vd_date,today_iso))
+        if transit and 'error' not in transit: result["transit"]=transit
+    except: pass
     # PyJHora深度
     try:
         from jhora.horoscope.dhasa.graha import ashtottari as a_py, yogini as y_py
