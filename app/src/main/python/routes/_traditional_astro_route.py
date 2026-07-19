@@ -174,22 +174,44 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
         "temperament":temperament,"almutem":str(alm),
         "arabic_parts":lots,"profection_asc":prof_asc,
         "configurations":configs}
-    # Caelus JS: Firdaria + 主限推运 (独立try, 失败不影响flatlib数据)
+    # Caelus JS: 13项传统推运/分析 (独立try, 失败不影响flatlib)
     try:
         tz_sign = "+" if tz_offset >= 0 else "-"
         tz_abs = abs(tz_offset)
         tz_str = f"{tz_sign}{int(tz_abs):02d}:{int((tz_abs - int(tz_abs)) * 60 + 0.5):02d}"
         iso_date = f"{year}-{month:02d}-{day}T{hour:02d}:00:00{tz_str}"
+        asc_idx = int(asc_lon / 30) if 'asc_lon' in dir() else 0
+        fortune_lon = lots.get("fortune", 0) if 'lots' in dir() and isinstance(lots, dict) else 0
+        sun_lon = planets.get("sun", {}).get("lon", 0) if 'planets' in dir() else 0
+        moon_lon = planets.get("moon", {}).get("lon", 0) if 'planets' in dir() else 0
         _js_load("caelus-engine")
         c = _js("caelus-engine",
             "var e=new Caelus.Engine(Caelus.embeddedData);"
             "var jd=Caelus.isoToJd('%s');"
+            "var isDay=%s;"
+            "var cusps=Caelus.housesPlacidus(e,jd,%f,%f);"
+            "var ws=Caelus.housesWholeSign(e,jd,%f);"
+            "var bodies={};[0,1,2,3,4,5,6].forEach(function(i){bodies[i]={lon:0}});"
+            "var natal={bodies:bodies,cusps:cusps,zodiac:'tropical'};"
+            "var transitJd=jd+365;"
             "JSON.stringify({"
-            "firdaria:Caelus.firdaria(%s,jd),"
+            "profections:Caelus.profection(%d,jd,jd+365),"
+            "firdaria:Caelus.firdaria(isDay,jd),"
             "primaryDirections:Caelus.primaryDirections(e,jd,%f,%f),"
             "solarReturn:Caelus.solarReturn(e,jd,jd+3650,jd+4015),"
-            "profections:Caelus.profection(0,jd,jd+365)"
-            "})" % (iso_date, "true" if is_day else "false", lat, lon))
+            "zrRelease:Caelus.zrRelease(%f,jd,2,100),"
+            "vargaChart:Caelus.vargaChart(e,jd,9),"
+            "transits:Caelus.transitAspects(natal,e,transitJd),"
+            "antiscionSun:Caelus.antiscion(%f),antiscionMoon:Caelus.antiscion(%f),"
+            "contraAntiscionSun:Caelus.contraAntiscion(%f),contraAntiscionMoon:Caelus.contraAntiscion(%f),"
+            "voidOfCourse:Caelus.voidOfCourse(e,jd),"
+            "planetaryHour:Caelus.planetaryHour(e,jd,%f,%f),"
+            "outOfBoundsMoon:Caelus.outOfBounds(e,'moon',jd,1),"
+            "housesWholeSign:ws"
+            "})" % (iso_date, "true" if is_day else "false", lat, lon, lat,
+                    asc_idx, lat, lon, fortune_lon,
+                    sun_lon, moon_lon, sun_lon, moon_lon,
+                    lat, lon))
         if c and 'bridge not available' not in c and 'error' not in c.lower():
             result["caelus"] = c
             result["engine"] = "flatlib+Caelus"
