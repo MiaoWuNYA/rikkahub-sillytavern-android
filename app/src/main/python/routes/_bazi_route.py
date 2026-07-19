@@ -17,6 +17,27 @@ def _bazi(year, month, day, hour, gender=1, feature="bazi"):
         gz = dy.getGanZhi()
         if gz: dayun_list.append({"ganzhi":gz, "start_age":dy.getStartAge(), "end_age":dy.getEndAge(),
                                    "liunian":[ln.getGanZhi() for ln in dy.getLiuNian()]})
+    # 独立模块模式 — 跳过排盘, 直接返回
+    if feature in ("shengxiao","luohou"):
+        result = {"system":"bazi"}
+        try:
+            import sys as _sys; _sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
+            if feature == "shengxiao":
+                from bazi_china import shengxiao as _sx
+                result["shengxiao_pairing"] = {z: _sx.output("", l.getYearZhi(), k) for z in [l.getYearZhi()] for k in ["合","冲","害","三合"] if hasattr(_sx,"output")}
+            elif feature == "luohou":
+                from bazi_china import luohou as _lh
+                result["luohou"] = {
+                    "yearly_nine_stars": str(_lh.yearly_nine_stars(year)),
+                    "monthly_nine_stars": str(_lh.monthly_nine_stars(l.getYearZhi())),
+                    "daily_nine_stars": str(_lh.daily_nine_stars(l)),
+                }
+                try: result["luohou"]["jizhu"] = str(_lh.get_jizhu(l.getYearGan(), l.getYearZhi()))
+                except: pass
+            result["_hint"] = f"独立{feature}模式已返回。需要完整八字请去掉feature参数。"
+            return result
+        except Exception as e:
+            return {"system":"bazi","error":str(e),"_hint":"bazi_china不可用(仅APK内)。lunar_python基础数据已返回。"}
     result = {
         "system":"bazi","engine":"lunar_python",
         "four_pillars":{
@@ -26,7 +47,7 @@ def _bazi(year, month, day, hour, gender=1, feature="bazi"):
             "time":{"gan":ec.getTimeGan(),"zhi":ec.getTimeZhi(),"ganzhi":ec.getTime(),"wuxing":ec.getTimeWuXing(),"nayin":ec.getTimeNaYin(),"xunkong":ec.getTimeXunKong(),"hide_gan":ec.getTimeHideGan(),"shishen":ec.getTimeShiShenGan(),"shishen_zhi":ec.getTimeShiShenZhi(),"xun":ec.getTimeXun(),"dishi":ec.getTimeDiShi()},
         },
         "dayun":dayun_list,"start_age":yun.getStartYear(),"start_year":yun.getStartYear(),"start_month":yun.getStartMonth(),"start_day":yun.getStartDay(),"start_hour":yun.getStartHour(),"start_solar":str(yun.getStartSolar()),"gender":gender,
-        "solar":s.toFullString(),"lunar":l.toFullString(),"shengxiao":l.getYearShengXiao(),"season":l.getSeason(),
+        "solar":s.toFullString(),"lunar":l.toFullString(),"shengxiao":l.getYearZhi(),"season":l.getSeason(),
         "jieqi":{k:str(v) for k,v in (l.getJieQiTable() or {}).items()},
         "taiyuan":{"ganzhi":ec.getTaiYuan(),"nayin":ec.getTaiYuanNaYin()},
         "taixi":{"ganzhi":ec.getTaiXi(),"nayin":ec.getTaiXiNaYin()},
@@ -52,25 +73,12 @@ def _bazi(year, month, day, hour, gender=1, feature="bazi"):
             "yuexiang": l.getYueXiang(),
         }
     except: pass
-    # 独立功能: 生肖配对 (无需八字排盘)
-    if feature in ("shengxiao","all"):
+
+    # feature="all"时追加独立模块
+    if feature=="all":
         try:
-            import sys; sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
-            from bazi_china import shengxiao
-            result["shengxiao_pairing"] = {z: shengxiao.output("", z, k)
-                for z in [l.getYearShengXiao()] for k in ["合","冲","害","三合"]
-                if hasattr(shengxiao, "output")}
-        except: pass
-    # 独立功能: 择日九宫飞星 (无需八字排盘)
-    if feature in ("luohou","all"):
-        try:
-            import sys; sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
-            from bazi_china import luohou
-            result["luohou"] = {
-                "yearly_nine_stars": str(luohou.yearly_nine_stars(year)),
-                "monthly_nine_stars": str(luohou.monthly_nine_stars(l.getYearZhi())),
-                "daily_nine_stars": str(luohou.daily_nine_stars(l)),
-            }
+            result["shengxiao_pairing"] = {z: shengxiao.output("", l.getYearZhi(), k) for z in [l.getYearZhi()] for k in ["合","冲","害","三合"] if hasattr(shengxiao,"output")}
+            result["luohou"] = {"yearly_nine_stars": str(luohou.yearly_nine_stars(year)), "monthly_nine_stars": str(luohou.monthly_nine_stars(l.getYearZhi())), "daily_nine_stars": str(luohou.daily_nine_stars(l))}
             try: result["luohou"]["jizhu"] = str(luohou.get_jizhu(l.getYearGan(), l.getYearZhi()))
             except: pass
         except: pass
