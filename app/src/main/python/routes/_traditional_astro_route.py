@@ -125,6 +125,13 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
         lots["marriage_m"]=_lot(v_lon,sa_lon); lots["marriage_f"]=_lot(sa_lon,v_lon)
         lots["children_m"]=_lot(v_lon,j_lon); lots["children_f"]=_lot(j_lon,v_lon)
         lots["father"]=_lot(sa_lon,s_lon)
+        # 扩展6个传统阿拉伯点 (Paulus/Bonatti 公式, 昼夜分离)
+        lots["death"]=_lot(sa_lon,m_lon) if is_day else _lot(m_lon,sa_lon)
+        lots["sickness"]=_lot(ma_lon,sa_lon) if is_day else _lot(sa_lon,ma_lon)
+        lots["captivity"]=_lot(sa_lon,s_lon) if is_day else _lot(s_lon,sa_lon)
+        lots["faith"]=_lot(me_lon,m_lon) if is_day else _lot(m_lon,me_lon)
+        lots["commerce"]=_lot(me_lon,s_lon) if is_day else _lot(s_lon,me_lon)
+        lots["success"]=_lot(j_lon,s_lon) if is_day else _lot(s_lon,j_lon)
         lots["mother"]=_lot(m_lon,v_lon) if is_day else _lot(v_lon,m_lon)
         lots["friends"]=_lot(m_lon,me_lon)
     except: lots={}
