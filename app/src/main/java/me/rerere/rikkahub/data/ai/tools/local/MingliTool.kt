@@ -41,9 +41,9 @@ fun createMingliTool(context: Context): Tool = Tool(
                 put("params", buildJsonObject {
                     put("type", "object")
                     put("description", "系统特定参数JSON。举例:" +
-                            " 塔罗: {spread, seed, question_type, kaabalah}" +
+                            " 塔罗: {spread, seed, question_type, kaabalah, cards(手动指定牌面)}" +
                             " 八字: {year, month, day, hour, gender}" +
-                            " 雷诺曼: {spread, seed}" +
+                            " 雷诺曼: {spread, seed, cards(手动指定牌面)}" +
                             " 紫微: {year, month, day, hour, gender, engine}" +
                             " 现代西洋占星: {year, month, day, hour, tz, lat, lon}" +
                             " 吠陀: {year, month, day, hour, tz, lat, lon, depth}" +
