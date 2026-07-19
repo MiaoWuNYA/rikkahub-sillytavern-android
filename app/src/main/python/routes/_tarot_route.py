@@ -13,8 +13,8 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, kaabalah=False,
         from arcanite.core.models import DrawnCard, Orientation
         drawn = []
         for i, entry in enumerate(cards):
-            cid = entry if isinstance(entry, str) else entry.get("id") if isinstance(entry, dict) else entry
-            is_rev_manual = entry.get("reversed", False) if isinstance(entry, dict) else False
+            cid = entry["id"]
+            is_rev_manual = entry.get("reversed", False)
             card = deck.get_card(cid)
             dc = DrawnCard(card_id=card.card_id, card_name=card.card_name,
                            position_index=i, position_name="", orientation=Orientation.REVERSED if is_rev_manual else Orientation.UPRIGHT,
