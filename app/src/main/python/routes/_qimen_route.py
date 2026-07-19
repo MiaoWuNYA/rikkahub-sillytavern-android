@@ -13,6 +13,16 @@ def _qimen(year,month,day,hour=None,feature="all"):
         if hour is not None:
             result["qimen_hourly"]=_js("qimen-engine",f"JSON.stringify(QimenEngine.generate({{type:'shike',year:{year},month:{month},day:{day},hour:{hour}}}))")
             result["engine"]+="+shike"
+        # 解读层: 格局+星门神详解+运筹
+        result["qimen_analysis"]=_js("qimen-engine",
+            "JSON.stringify({"
+            "jiGe:QimenEngine.getAllJiGe(),xiongGe:QimenEngine.getAllXiongGe(),"
+            "starDetail:['天蓬','天芮','天冲','天辅','天禽','天心','天柱','天任','天英'].map(function(s){return QimenEngine.getStarDetail(s)}),"
+            "doorDetail:['休','生','伤','杜','景','死','惊','开'].map(function(d){return QimenEngine.getDoorDetail(d)}),"
+            "godDetail:['值符','螣蛇','太阴','六合','白虎','玄武','九地','九天'].map(function(g){return QimenEngine.getGodDetail(g)}),"
+            "palaceDetail:[1,2,3,4,5,6,7,8,9].map(function(p){return QimenEngine.getPalaceDetail(p)}),"
+            "specialPatterns:QimenEngine.detectSpecialPatterns?QimenEngine.detectSpecialPatterns():null"
+            "})")
     # 大六壬
     if feature in ("liuren","all"):
         _js_load("liuren-engine")

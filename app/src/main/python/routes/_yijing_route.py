@@ -115,4 +115,13 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
                     "movingYao:IchingShifa.getMovingYaoPositions(r)})")
             except: pass
         result["engine"]+="+iching-shifa-engine"
+        try:
+            result["yijing_js_extra"]=_js("iching-shifa-engine",
+                "var r=IchingShifa.dayan();"
+                "JSON.stringify({"
+                "decodePan:IchingShifa.decodePan(r,{year:"+str(year or 2026)+",month:"+str(month or 1)+",day:"+str(day or 1)+",hour:12}),"
+                "qingyiXingxiu:IchingShifa.calculateQingyiXingXiu?IchingShifa.calculateQingyiXingXiu(r):null,"
+                "gaodaoYiduan:IchingShifa.getGaoDaoYiDuan?IchingShifa.getGaoDaoYiDuan(r.originalGua,r.movingYao):null"
+                "})")
+        except: pass
     return result
