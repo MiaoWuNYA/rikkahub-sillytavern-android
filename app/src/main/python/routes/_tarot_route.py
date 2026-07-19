@@ -10,14 +10,16 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, kaabalah=False,
     deck = TarotDeck.load(system="tarot")
     sp = load_spread(spread)
     from arcanite.core.models import DrawnCard, Orientation
-    if cards and isinstance(cards, list) and len(cards) > 0:
+    if cards and isinstance(cards, list):
         drawn = []
         for i, entry in enumerate(cards):
-            cid = entry["id"] if isinstance(entry, dict) else entry
-            is_rev_manual = entry.get("reversed", False) if isinstance(entry, dict) else False
+            if isinstance(entry, str):
+                entry = {"id": entry, "reversed": False}
+            cid, is_rev = entry["id"], entry.get("reversed", False)
             card = deck.get_card(cid)
             dc = DrawnCard(card_id=card.card_id, card_name=card.card_name,
-                           position_index=i, position_name="", orientation=Orientation.REVERSED if is_rev_manual else Orientation.UPRIGHT,
+                           position_index=i, position_name="",
+                           orientation=Orientation.REVERSED if is_rev else Orientation.UPRIGHT,
                            image_path=deck.get_image_path(card))
             dc._attach_deck(deck)
             drawn.append(dc)
