@@ -20,15 +20,30 @@ def _bazi(year, month, day, hour, gender=1):
     result = {
         "system":"bazi","engine":"lunar_python",
         "four_pillars":{
-            "year":{"gan":ec.getYearGan(),"zhi":ec.getYearZhi(),"ganzhi":ec.getYear(),"wuxing":ec.getYearWuXing(),"nayin":ec.getYearNaYin(),"xunkong":ec.getYearXunKong(),"hide_gan":ec.getYearHideGan(),"shishen":ec.getYearShiShenGan(),"dishi":ec.getYearDiShi()},
-            "month":{"gan":ec.getMonthGan(),"zhi":ec.getMonthZhi(),"ganzhi":ec.getMonth(),"wuxing":ec.getMonthWuXing(),"nayin":ec.getMonthNaYin(),"xunkong":ec.getMonthXunKong(),"hide_gan":ec.getMonthHideGan(),"shishen":ec.getMonthShiShenGan()},
-            "day":{"gan":ec.getDayGan(),"zhi":ec.getDayZhi(),"ganzhi":ec.getDay(),"wuxing":ec.getDayWuXing(),"nayin":ec.getDayNaYin(),"xunkong":ec.getDayXunKong(),"hide_gan":ec.getDayHideGan(),"shishen":ec.getDayShiShenGan(),"dishi":ec.getDayDiShi()},
-            "time":{"gan":ec.getTimeGan(),"zhi":ec.getTimeZhi(),"ganzhi":ec.getTime(),"wuxing":ec.getTimeWuXing(),"nayin":ec.getTimeNaYin(),"xunkong":ec.getTimeXunKong(),"hide_gan":ec.getTimeHideGan(),"shishen":ec.getTimeShiShenGan(),"dishi":ec.getTimeDiShi()},
+            "year":{"gan":ec.getYearGan(),"zhi":ec.getYearZhi(),"ganzhi":ec.getYear(),"wuxing":ec.getYearWuXing(),"nayin":ec.getYearNaYin(),"xunkong":ec.getYearXunKong(),"hide_gan":ec.getYearHideGan(),"shishen":ec.getYearShiShenGan(),"shishen_zhi":ec.getYearShiShenZhi(),"xun":ec.getYearXun(),"dishi":ec.getYearDiShi()},
+            "month":{"gan":ec.getMonthGan(),"zhi":ec.getMonthZhi(),"ganzhi":ec.getMonth(),"wuxing":ec.getMonthWuXing(),"nayin":ec.getMonthNaYin(),"xunkong":ec.getMonthXunKong(),"hide_gan":ec.getMonthHideGan(),"shishen":ec.getMonthShiShenGan(),"shishen_zhi":ec.getMonthShiShenZhi(),"xun":ec.getMonthXun()},
+            "day":{"gan":ec.getDayGan(),"zhi":ec.getDayZhi(),"ganzhi":ec.getDay(),"wuxing":ec.getDayWuXing(),"nayin":ec.getDayNaYin(),"xunkong":ec.getDayXunKong(),"hide_gan":ec.getDayHideGan(),"shishen":ec.getDayShiShenGan(),"shishen_zhi":ec.getDayShiShenZhi(),"xun":ec.getDayXun(),"zhi_index":ec.getDayZhiIndex(),"dishi":ec.getDayDiShi()},
+            "time":{"gan":ec.getTimeGan(),"zhi":ec.getTimeZhi(),"ganzhi":ec.getTime(),"wuxing":ec.getTimeWuXing(),"nayin":ec.getTimeNaYin(),"xunkong":ec.getTimeXunKong(),"hide_gan":ec.getTimeHideGan(),"shishen":ec.getTimeShiShenGan(),"shishen_zhi":ec.getTimeShiShenZhi(),"xun":ec.getTimeXun(),"dishi":ec.getTimeDiShi()},
         },
-        "dayun":dayun_list,"start_age":yun.getStartYear(),"gender":gender,
-        "solar":s.toFullString(),"lunar":l.toFullString(),
+        "dayun":dayun_list,"start_age":yun.getStartYear(),"start_year":yun.getStartYear(),"start_month":yun.getStartMonth(),"start_day":yun.getStartDay(),"start_hour":yun.getStartHour(),"start_solar":str(yun.getStartSolar()),"gender":gender,
+        "solar":s.toFullString(),"lunar":l.toFullString(),"shengxiao":l.getYearShengXiao(),"season":l.getSeason(),
         "jieqi":{k:str(v) for k,v in (l.getJieQiTable() or {}).items()},
+        "taiyuan":{"ganzhi":ec.getTaiYuan(),"nayin":ec.getTaiYuanNaYin()},
+        "taixi":{"ganzhi":ec.getTaiXi(),"nayin":ec.getTaiXiNaYin()},
+        "minggong_nayin":ec.getMingGongNaYin(),"shengong_nayin":ec.getShenGongNaYin(),
     }
+    # Lunar 日柱实用数据: 彭祖百忌+吉神凶煞+方位+日禄
+    try:
+        result["day_extra"] = {
+            "pengzu_gan": l.getPengZuGan(), "pengzu_zhi": l.getPengZuZhi(),
+            "ji_shen": l.getDayJiShen(), "xiong_sha": l.getDayXiongSha(),
+            "cai_shen": l.getDayPositionCaiDesc(), "fu_shen": l.getDayPositionFuDesc(),
+            "xi_shen": l.getDayPositionXiDesc(), "yang_gui": l.getDayPositionYangGuiDesc(),
+            "yin_gui": l.getDayPositionYinGuiDesc(), "day_lu": l.getDayLu(),
+            "day_chong": l.getDayChongDesc(), "day_sha": l.getDaySha(),
+            "xiu": l.getXiu(), "xiu_luck": l.getXiuLuck(),
+        }
+    except: pass
     # bazi_china: 神煞/纳音/调候/干支关系/流月/生肖等(仅APK)
     try:
         sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
@@ -77,7 +92,7 @@ def _bazi(year, month, day, hour, gender=1):
             "kongwang":datas.empties.get((dg,dz),""),
         }
         result["engine"] += " + bazi_china"
-        result["_hint"] = "bazi_china全字段已返回:金不换/调候/建禄/自坐/天干五合/地支六合三合冲刑害/藏干/十神/流月/生肖/空亡。" \
+        result["_hint"] = "lunar_python+bazi_china全量:四柱(含十神干支+旬+地煞)+大运(含起运详情)+胎元/胎息/命宫/身宫纳音+日柱吉凶神+彭祖百忌+财福喜阳阴贵神方位+日禄+二十八宿+日冲。bazi_china:金不换/调候/建禄/自坐/干支关系/藏干/十神/流月/生肖/空亡。" \
             "另有:luohou九宫飞星/shengxiao生肖配对。自探索:dir(datas)/dir(ganzhi)/dir(yue)"
     except Exception:
         result["_hint"] = "lunar_python已返回排盘+大运。bazi_china不可用(仅APK内)"
