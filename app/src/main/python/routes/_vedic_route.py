@@ -184,7 +184,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
             "var natalMoon=e.longitude('moon',natalJd,{zodiac:'sidereal:lahiri'});"
             "var transitSaturn=e.longitude('saturn',transitJd,{zodiac:'sidereal:lahiri'});"
             "var transitJupiter=e.longitude('jupiter',transitJd,{zodiac:'sidereal:lahiri'});"
-            "var transitRahu=e.longitude('rahu',transitJd,{zodiac:'sidereal:lahiri'});"
+            "var transitRahu=e.longitude('north_node',transitJd,{zodiac:'sidereal:lahiri'});"
             "function signIdx(lon){return Math.floor(lon/30);}"
             "var moonSign=signIdx(natalMoon);"
             "var satSign=signIdx(transitSaturn);"
