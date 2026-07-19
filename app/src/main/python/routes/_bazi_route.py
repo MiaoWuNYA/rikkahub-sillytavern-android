@@ -3,7 +3,7 @@ import json, sys, os
 from ._shared import _js, _js_load
 
 # ===== 八字 =====
-def _bazi(year, month, day, hour, gender=1):
+def _bazi(year, month, day, hour, gender=1, feature="bazi"):
     # 兼容Kotlin传来的"male"/"female"字符串
     if isinstance(gender, str):
         gender = 1 if gender.lower() in ("male", "男", "m") else 0
@@ -42,8 +42,38 @@ def _bazi(year, month, day, hour, gender=1):
             "yin_gui": l.getDayPositionYinGuiDesc(), "day_lu": l.getDayLu(),
             "day_chong": l.getDayChongDesc(), "day_sha": l.getDaySha(),
             "xiu": l.getXiu(), "xiu_luck": l.getXiuLuck(),
+            "nine_star": {"year": l.getYearNineStar(), "month": l.getMonthNineStar(),
+                           "day": l.getDayNineStar(), "time": l.getTimeNineStar()},
+            "liuyao": l.getLiuYao(), "zhixing": l.getZhiXing(),
+            "festivals": l.getFestivals(), "other_festivals": l.getOtherFestivals(),
+            "shujiu": l.getShuJiu(), "fu": l.getFu(), "hou": l.getHou(),
+            "prev_jieqi": str(l.getPrevJieQi()), "next_jieqi": str(l.getNextJieQi()),
+            "current_jieqi": str(l.getCurrentJieQi()), "wuhou": l.getWuHou(),
+            "yuexiang": l.getYueXiang(),
         }
     except: pass
+    # 独立功能: 生肖配对 (无需八字排盘)
+    if feature in ("shengxiao","all"):
+        try:
+            import sys; sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
+            from bazi_china import shengxiao
+            result["shengxiao_pairing"] = {z: shengxiao.output("", z, k)
+                for z in [l.getYearShengXiao()] for k in ["合","冲","害","三合"]
+                if hasattr(shengxiao, "output")}
+        except: pass
+    # 独立功能: 择日九宫飞星 (无需八字排盘)
+    if feature in ("luohou","all"):
+        try:
+            import sys; sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
+            from bazi_china import luohou
+            result["luohou"] = {
+                "yearly_nine_stars": str(luohou.yearly_nine_stars(year)),
+                "monthly_nine_stars": str(luohou.monthly_nine_stars(l.getYearZhi())),
+                "daily_nine_stars": str(luohou.daily_nine_stars(l)),
+            }
+            try: result["luohou"]["jizhu"] = str(luohou.get_jizhu(l.getYearGan(), l.getYearZhi()))
+            except: pass
+        except: pass
     # bazi_china: 神煞/纳音/调候/干支关系/流月/生肖等(仅APK)
     try:
         sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
