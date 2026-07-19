@@ -105,35 +105,33 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
         elif is_day and pname in diurnal_planets: sect[pname]="in_sect"
         elif not is_day and pname in nocturnal_planets: sect[pname]="in_sect"
         else: sect[pname]="out_of_sect"
-    # 全部Lots (flatlib内置公式, 自动昼夜分离)
+    # 全部Lots (传统公式: ASC + A - B)
+    def _lot(a_lon,b_lon): return (asc_lon + a_lon - b_lon) % 360
     try:
-        from flatlib.tools.arabicparts import PARS_FORTUNA, PARS_SPIRIT, PARS_VENUS, PARS_MARS
-        from flatlib.tools.arabicparts import PARS_SUBSTANCE, PARS_ENEMIES, PARS_SATURN, PARS_JUPITER
-        from flatlib.tools.arabicparts import PARS_WEDDING_MALE, PARS_WEDDING_FEMALE, PARS_SONS
-        from flatlib.tools.arabicparts import PARS_FATHER, PARS_MOTHER, PARS_FRIENDS
-        from flatlib.tools.arabicparts import PARS_DEATH, PARS_DISEASES, PARS_FAITH, PARS_MERCURY
-        from flatlib.tools.arabicparts import PARS_BROTHERS, PARS_TRAVEL, PARS_HORSEMANSHIP
+        s_lon=planets["sun"]["lon"]; m_lon=planets["moon"]["lon"]
+        me_lon=planets["mercury"]["lon"]; v_lon=planets["venus"]["lon"]
+        ma_lon=planets["mars"]["lon"]; j_lon=planets["jupiter"]["lon"]
+        sa_lon=planets["saturn"]["lon"]
         lots={}
-        # 原有15个 → flatlib 对应
-        for key, p in [("fortune",PARS_FORTUNA),("spirit",PARS_SPIRIT),
-                        ("eros",PARS_VENUS),("courage",PARS_MARS),
-                        ("basis",PARS_SUBSTANCE),("nemesis",PARS_ENEMIES),
-                        ("necessity",PARS_SATURN),("victory",PARS_JUPITER),
-                        ("marriage_m",PARS_WEDDING_MALE),("marriage_f",PARS_WEDDING_FEMALE),
-                        ("children_m",PARS_SONS),("children_f",PARS_SONS),  # flatlib无男女之分
-                        ("father",PARS_FATHER),("mother",PARS_MOTHER),
-                        ("friends",PARS_FRIENDS),
-                        # 新增6个
-                        ("death",PARS_DEATH),("sickness",PARS_DISEASES),
-                        ("faith",PARS_FAITH),("commerce",PARS_MERCURY),
-                        # 额外补3个flatlib有但之前没有的
-                        ("brothers",PARS_BROTHERS),("travel",PARS_TRAVEL),
-                        ("horsemanship",PARS_HORSEMANSHIP)]:
-            try: lots[key]=str(getPart(p, chart))
+        if is_day:
+            lots["fortune"]=_lot(m_lon,s_lon); lots["spirit"]=_lot(s_lon,m_lon)
+            lots["eros"]=_lot(ma_lon,v_lon); lots["courage"]=_lot(ma_lon,v_lon)
+            lots["basis"]=_lot(ma_lon,sa_lon); lots["nemesis"]=_lot(v_lon,sa_lon)
+        else:
+            lots["fortune"]=_lot(s_lon,m_lon); lots["spirit"]=_lot(m_lon,s_lon)
+            lots["eros"]=_lot(v_lon,ma_lon); lots["courage"]=_lot(v_lon,ma_lon)
+            lots["basis"]=_lot(sa_lon,ma_lon); lots["nemesis"]=_lot(sa_lon,v_lon)
+        lots["necessity"]=_lot(sa_lon,me_lon); lots["victory"]=_lot(j_lon,ma_lon)
+        lots["marriage_m"]=_lot(v_lon,sa_lon); lots["marriage_f"]=_lot(sa_lon,v_lon)
+        lots["children_m"]=_lot(v_lon,j_lon); lots["children_f"]=_lot(j_lon,v_lon)
+        lots["father"]=_lot(sa_lon,s_lon)
+        lots["mother"]=_lot(m_lon,v_lon) if is_day else _lot(v_lon,m_lon)
+        lots["friends"]=_lot(m_lon,me_lon)
+        # flatlib补缺: 9个手动公式不好写的阿拉伯点
+        for name in ["Pars Brothers","Pars Death","Pars Diseases","Pars Enemies",
+                      "Pars Faith","Pars Horsemanship","Pars Jupiter","Pars Sons","Pars Travel"]:
+            try: lots[name]=str(getPart(name, chart))
             except: pass
-        # success用Jupiter (Pars Jupiter = 胜利/成功)
-        try: lots["success"]=str(getPart(PARS_JUPITER, chart))
-        except: pass
     except: lots={}
     # 传统特殊结构检测
     configs=[]
