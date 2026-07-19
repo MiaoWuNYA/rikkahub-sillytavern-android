@@ -145,7 +145,7 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
         # flatlib补缺: 9个手动公式不好写的阿拉伯点
         for name in ["Pars Brothers","Pars Death","Pars Diseases","Pars Enemies",
                       "Pars Faith","Pars Horsemanship","Pars Jupiter","Pars Sons","Pars Travel"]:
-            try: lots[name]=str(getPart(name, chart))
+            try: lots[name]=getPart(name, chart)
             except: pass
     except: lots={}
     # flatlib getPart统一循环
@@ -215,15 +215,15 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
     # 小限 (⚠️ flatlib profections 有除零bug，用 Caelus.profection 代替)
     try:
         prof=prof_compute(chart,dt)
-        prof_asc=str(prof.getAngle(const.ASC))
+        prof_asc=prof.getAngle(const.ASC)
     except:
         prof_asc="flatlib profections failed (known divide-by-zero bug), use Caelus.profection from caelus field"
     result = {"system":"traditional_astrology","engine":"flatlib",
         "objects":objs,"houses":houses,"houses_whole_sign":result_whole_sign,
-        "asc":str(chart.getAngle(const.ASC)),"mc":str(chart.getAngle(const.MC)),
+        "asc":chart.getAngle(const.ASC),"mc":chart.getAngle(const.MC),
         "dignities":dignities,"accidental":accidental,
         "sect":{"is_day":is_day,"planets":sect},
-        "temperament":temperament,"almutem":str(alm),
+        "temperament":temperament,"almutem":alm,
         "arabic_parts_all":lots,"profection_asc":prof_asc,
         "configurations":configs,"reception":reception}
     # Caelus JS: 13项传统推运/分析 (独立try, 失败不影响flatlib)
