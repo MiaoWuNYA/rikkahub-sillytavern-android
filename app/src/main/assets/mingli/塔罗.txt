@@ -179,7 +179,7 @@ AI 先感受牌阵整体，再用7层结构组织语言
                               ── 4. 人物志（逐牌深度解读 — 每张一个角色速写）──
                               【逐牌】
                               【位置名｜牌名】
-                              镜头拉开: 画面描绘（STEP 4 description）
+                              镜头拉开: ![](image_url) 画面描绘（STEP 4 description）
                               角色速写: coreKeyword + archetype（一词原型）
                               大牌补充: Fool's Journey 阶段
                               内心独白: readingAspects.innerState（正/逆位）
@@ -341,7 +341,6 @@ AI 先感受牌阵整体，再用7层结构组织语言
     + composition.repeated_numbers + composition.repeated_suits
     + reversal.blocked_energy_signal
   秘传附录(Kaabalah JS引擎按需调用, 详见互补模式 STEP 4: 卡巴拉对应/原型/777/跨牌桌)
-  图片输出: 每牌 image_url → ![](URL) 直接嵌入, 逐牌[图]→[解读]→[图]→[解读]
 ╚══════════════════ 塔罗数据 ═════════════════╝
 
 【Kaabalah JS引擎塔罗（卡巴拉对应体系）】
