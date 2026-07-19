@@ -38,7 +38,7 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
     from flatlib.geopos import GeoPos
     from flatlib import const
     from flatlib.dignities.essential import ruler, exalt, score as ess_score, isPeregrine, almutem, getInfo
-    from flatlib.dignities.accidental import AccidentalDignity
+    from flatlib.dignities.accidental import AccidentalDignity, viaCombusta, haiz, light as _light
     from flatlib.tools.arabicparts import getPart, partLon
     from flatlib.protocols.temperament import Temperament
     from flatlib.protocols.almutem import compute as almutem_compute
@@ -107,7 +107,9 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
             ad=AccidentalDignity(o,chart)
             accidental[name.lower()]={"score":ad.score(),"combust":ad.isCombust(),"cazimi":ad.isCazimi(),
                 "orientality":ad.orientality(),"augmenting_light":ad.isAugmentingLight(),
-                "under_sun":ad.isUnderSun(),"voc":ad.isVoc(),"joy_house":ad.inHouseJoy()}
+                "under_sun":ad.isUnderSun(),"voc":ad.isVoc(),"joy_house":ad.inHouseJoy(),
+                "haiz":haiz(o,chart),"via_combusta":viaCombusta(o),
+                "light":_light(o,chart.getObject(const.SUN))}
         except: pass
     # In Sect / Out of Sect
     diurnal_planets={"sun","jupiter","saturn"}
