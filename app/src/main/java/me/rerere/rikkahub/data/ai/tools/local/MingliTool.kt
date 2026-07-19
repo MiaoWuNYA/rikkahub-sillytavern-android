@@ -43,15 +43,15 @@ fun createMingliTool(context: Context): Tool = Tool(
                     put("description", "系统特定参数JSON。 cards=手动指定牌面(可选, 传则跳过随机抽牌), 正逆位: {id, reversed}。" +
                             " 塔罗: {spread, seed, question_type, kaabalah, cards}" +
                             " 雷诺曼: {spread, seed, cards}" +
-                            " 八字: {year, month, day, hour, gender, feature?}" +
+                            " 八字: {year, month, day, hour, gender, feature?=shengxiao|luohou|all}" +
                             " 紫微: {year, month, day, hour, gender, engine}" +
                             " 现代西洋占星: {year, month, day, hour, tz, lat, lon}" +
                             " 传统西洋占星: {year, month, day, hour, tz_offset, lat, lon}" +
                             " 吠陀: {year, month, day, hour, tz, lat, lon}" +
                             " 人类图: {year, month, day, hour, tz, gene_keys, transits}" +
-                            " 灵数卡巴拉: {year, month, day, word, feature}" +
-                            " 奇门: {year, month, day, hour, feature}" +
-                            " 六爻梅花: {method, seed, year, month, day, feature}")
+                            " 灵数卡巴拉: {year, month, day, word, feature=numerology|gematria|odu|tarot|tree|all}" +
+                            " 奇门: {year, month, day, hour, feature=qimen|liuren|xiaoliuren|all}" +
+                            " 六爻梅花: {method=time|dayan|manual|coin|number, seed, year, month, day, feature}")
                 })
             },
             required = listOf("system")
