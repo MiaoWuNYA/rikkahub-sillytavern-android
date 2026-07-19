@@ -105,23 +105,10 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
         if not hex_values:
             _js_load("iching-shifa-engine")
             result["iching_shifa_js"]=_js("iching-shifa-engine","JSON.stringify(IchingShifa.dayan())")
-            # 文档实测: 补充卦名/互卦/之卦/动爻位置
             try:
-                result["iching_shifa_gua"]=_js("iching-shifa-engine",
+                result["iching_shifa_pan"]=_js("iching-shifa-engine",
                     "var r=IchingShifa.dayan();"
-                    "JSON.stringify({guaName:IchingShifa.getGuaName(r.originalGua),"
-                    "huGua:IchingShifa.getHuGua(r.originalGua),"
-                    "zhiGua:IchingShifa.getZhiGua(r.originalGua,r.movingYao),"
-                    "movingYao:IchingShifa.getMovingYaoPositions(r)})")
+                    "JSON.stringify(IchingShifa.decodePan(r,{year:"+str(year or 2026)+",month:"+str(month or 1)+",day:"+str(day or 1)+",hour:12}))")
             except: pass
         result["engine"]+="+iching-shifa-engine"
-        try:
-            result["yijing_js_extra"]=_js("iching-shifa-engine",
-                "var r=IchingShifa.dayan();"
-                "JSON.stringify({"
-                "decodePan:IchingShifa.decodePan(r,{year:"+str(year or 2026)+",month:"+str(month or 1)+",day:"+str(day or 1)+",hour:12}),"
-                "qingyiXingxiu:IchingShifa.calculateQingyiXingXiu?IchingShifa.calculateQingyiXingXiu(r):null,"
-                "gaodaoYiduan:IchingShifa.getGaoDaoYiDuan?IchingShifa.getGaoDaoYiDuan(r.originalGua,r.movingYao):null"
-                "})")
-        except: pass
     return result
