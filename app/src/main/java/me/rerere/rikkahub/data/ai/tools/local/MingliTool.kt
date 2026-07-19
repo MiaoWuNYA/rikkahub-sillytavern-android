@@ -5,6 +5,7 @@ import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -61,7 +62,14 @@ fun createMingliTool(context: Context): Tool = Tool(
         val json = args.jsonObject
         val system = json["system"]?.jsonPrimitive?.contentOrNull
             ?: error("system is required")
-        val params = json["params"]?.jsonObject ?: buildJsonObject { }
+        val params = json["params"]?.let { p ->
+            if (p is JsonPrimitive) {
+                // AI sometimes passes params as a string (JsonLiteral) — parse first
+                Json.parseToJsonElement(p.content).jsonObject
+            } else {
+                p.jsonObject
+            }
+        } ?: buildJsonObject { }
 
         // 启动 Python (Chaquopy 需要主线程初始化)
         if (!Python.isStarted()) {
