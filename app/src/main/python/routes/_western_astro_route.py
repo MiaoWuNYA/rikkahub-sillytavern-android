@@ -3,7 +3,9 @@ import json, sys, os
 from ._shared import _js, _js_load
 
 # ===== 现代西洋占星 =====
-def _western_astro(year,month,day,hour,tz,lat,lon,depth="standard",gene_keys=False,acg=False):
+def _western_astro(year,month,day,hour,tz,lat,lon,depth="standard",gene_keys=False,acg=False,
+                   transit_date=None,
+                   p2_year=None,p2_month=None,p2_day=None,p2_hour=None,p2_tz=None,p2_lat=None,p2_lon=None):
     date_str=f"{year}-{month:02d}-{day}"
     # 构建时区偏移字符串，兼容数字和字符串
     tz_num = float(tz) if tz is not None else 8.0
@@ -23,7 +25,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,depth="standard",gene_keys=Fal
     result["engine"]+="+Caelus"
     result["_hint"]="NatalEngine已返回日月升+7星+元素+相位+合盘+ACG。Caelus已返回12宫位+逆行+尊贵+格局+7点+空亡。自探索:Object.keys(Caelus)含推运7种/合盘3种/行运12/恒星2/ACG/赤纬/越界/映点/调和盘"
     if depth=="deep":
-        # 文档实测API: Caelus推运全量 — firdaria/profection/primaryDirections/solarReturn/lunarReturn/zrRelease/harmonicChart/vargaChart/declinationAspects/astrocartography
+        # 文档实测API: Caelus推运全量
         c2=_js("caelus-engine",
             "var e=new Caelus.Engine(Caelus.embeddedData);"
             "var jd=Caelus.isoToJd('%s');"
@@ -53,5 +55,32 @@ def _western_astro(year,month,day,hour,tz,lat,lon,depth="standard",gene_keys=Fal
             result["astrocartography"]=_js("natalengine-engine",
                 f"JSON.stringify(NatalEngine.calculateAstroCartography('{date_str}',{hour},{tz_num},{{planets:['sun','moon']}}))")
             result["engine"]+="+ACG"
+        except: pass
+    # 行运 (transit_date='2026-07-19')
+    if transit_date:
+        try:
+            result["transits"]=_js("caelus-engine",
+                "var e=new Caelus.Engine(Caelus.embeddedData);"
+                "var natalJd=Caelus.isoToJd('%s');"
+                "var natalChart=e.chartAt(natalJd,%f,%f,{});"
+                "var transitJd=Caelus.isoToJd('%sT12:00:00Z');"
+                "JSON.stringify(Caelus.transitAspects(natalChart,e,transitJd))"
+                %(iso_date,lat,lon,transit_date))
+            result["engine"]+="+transits"
+        except: pass
+    # 合盘 (p2_* 全填才触发)
+    if all(v is not None for v in [p2_year,p2_month,p2_day,p2_hour,p2_tz,p2_lat,p2_lon]):
+        try:
+            p2_tz_num=float(p2_tz); p2_lat_num=float(p2_lat); p2_lon_num=float(p2_lon)
+            p2_sign="+" if p2_tz_num>=0 else "-"; p2_abs=abs(p2_tz_num)
+            p2_tz_str=f"{p2_sign}{int(p2_abs):02d}:{int((p2_abs-int(p2_abs))*60+0.5):02d}"
+            p2_iso=f"{p2_year}-{p2_month:02d}-{p2_day}T{p2_hour:02d}:00:00{p2_tz_str}"
+            result["synastry"]=_js("caelus-engine",
+                "var e=new Caelus.Engine(Caelus.embeddedData);"
+                "var jd1=Caelus.isoToJd('%s');var chart1=e.chartAt(jd1,%f,%f,{});"
+                "var jd2=Caelus.isoToJd('%s');var chart2=e.chartAt(jd2,%f,%f,{});"
+                "JSON.stringify(Caelus.synastryAspects(chart1,chart2,4))"
+                %(iso_date,lat,lon,p2_iso,p2_lat_num,p2_lon_num))
+            result["engine"]+="+synastry"
         except: pass
     return result

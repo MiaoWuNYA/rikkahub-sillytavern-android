@@ -155,11 +155,12 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
     # Almutem
     try: alm=almutem_compute(chart)
     except: alm={}
-    # 小限
+    # 小限 (⚠️ flatlib profections 有除零bug，用 Caelus.profection 代替)
     try:
         prof=prof_compute(chart,dt)
         prof_asc=str(prof.getAngle(const.ASC))
-    except: prof_asc=None
+    except:
+        prof_asc="flatlib profections failed (known divide-by-zero bug), use Caelus.profection from caelus field"
     result = {"system":"traditional_astrology","engine":"flatlib",
         "objects":objs,"houses":houses,
         "asc":str(chart.getAngle(const.ASC)),"mc":str(chart.getAngle(const.MC)),
