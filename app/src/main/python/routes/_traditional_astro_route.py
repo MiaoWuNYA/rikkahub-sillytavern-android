@@ -129,10 +129,10 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
                         # 额外补3个flatlib有但之前没有的
                         ("brothers",PARS_BROTHERS),("travel",PARS_TRAVEL),
                         ("horsemanship",PARS_HORSEMANSHIP)]:
-            try: lots[key]=str(getPart(chart, p))
+            try: lots[key]=str(getPart(p, chart))
             except: pass
         # success用Jupiter (Pars Jupiter = 胜利/成功)
-        try: lots["success"]=str(getPart(chart, PARS_JUPITER))
+        try: lots["success"]=str(getPart(PARS_JUPITER, chart))
         except: pass
     except: lots={}
     # 传统特殊结构检测
