@@ -9,8 +9,8 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, kaabalah=False,
     from tarot_elemental_engine import ElementalDignityEngine as EE
     deck = TarotDeck.load(system="tarot")
     sp = load_spread(spread)
+    from arcanite.core.models import DrawnCard, Orientation
     if cards and isinstance(cards, list) and len(cards) > 0:
-        from arcanite.core.models import DrawnCard, Orientation
         drawn = []
         for i, entry in enumerate(cards):
             cid = entry["id"] if isinstance(entry, dict) else entry

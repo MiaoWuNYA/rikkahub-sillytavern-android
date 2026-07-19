@@ -8,12 +8,12 @@ def _lenormand(spread="line-5", seed=None, cards=None):
     from arcanite.core.spread import get_spread_registry
     d = LenormandDeck.load()
     sp = get_spread_registry(system="lenormand").load_spread(spread)
+    from arcanite.core.models import DrawnCard, Orientation
+    from arcanite.core.deck import LenormandDrawnCard
     if cards and isinstance(cards, list) and len(cards) > 0:
-        from arcanite.core.models import DrawnCard, Orientation
-        from arcanite.core.deck import LenormandDrawnCard
         items = []
         for i, entry in enumerate(cards):
-            cid = entry if isinstance(entry, str) else entry.get("id") if isinstance(entry, dict) else entry
+            cid = entry["id"] if isinstance(entry, dict) else entry
             card = d.get_card(cid)
             dc = DrawnCard(card_id=card.card_id, card_name=card.card_name,
                            position_index=i, position_name="", orientation=Orientation.UPRIGHT,
