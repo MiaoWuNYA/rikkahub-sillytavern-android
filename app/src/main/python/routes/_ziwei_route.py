@@ -27,7 +27,7 @@ def _ziwei(year,month,day,hour,gender="male",engine="iztro"):
         try:
             sys.path.insert(0,os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
             from ziwei_paipan import by_solar
-            result["ziwei_paipan"]=str(by_solar(date_str,hour,gender))
+            result["ziwei_paipan"]=by_solar(date_str,hour,gender)
         except Exception as e: result["ziwei_paipan_error"]=str(e)
     result["_hint"]="Iztro全量已返回。另:surroundedPalaces三方四正/horoscope大限/soul+body。ZiweiNihai含倪海夏天纪+古籍。自探索:Object.keys(Iztro.astro)/dir(ziwei_paipan)"
     return result

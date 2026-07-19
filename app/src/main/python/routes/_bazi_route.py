@@ -35,11 +35,11 @@ def _bazi(year, month, day, hour, gender=1, feature="bazi"):
             elif feature == "luohou":
                 from bazi_china import luohou as _lh
                 result["luohou"] = {
-                    "yearly_nine_stars": str(_lh.yearly_nine_stars(year)),
-                    "monthly_nine_stars": str(_lh.monthly_nine_stars(l.getYearZhi())),
-                    "daily_nine_stars": str(_lh.daily_nine_stars(l)),
+                    "yearly_nine_stars": _lh.yearly_nine_stars(year),
+                    "monthly_nine_stars": _lh.monthly_nine_stars(l.getYearZhi()),
+                    "daily_nine_stars": _lh.daily_nine_stars(l),
                 }
-                try: result["luohou"]["jizhu"] = str(_lh.get_jizhu(l.getYearGan(), l.getYearZhi()))
+                try: result["luohou"]["jizhu"] = _lh.get_jizhu(l.getYearGan(), l.getYearZhi())
                 except: pass
             result["_hint"] = f"独立{feature}模式已返回。需要完整八字请去掉feature参数。"
             return result
@@ -53,9 +53,9 @@ def _bazi(year, month, day, hour, gender=1, feature="bazi"):
             "day":{"gan":ec.getDayGan(),"zhi":ec.getDayZhi(),"ganzhi":ec.getDay(),"wuxing":ec.getDayWuXing(),"nayin":ec.getDayNaYin(),"xunkong":ec.getDayXunKong(),"hide_gan":ec.getDayHideGan(),"shishen":ec.getDayShiShenGan(),"shishen_zhi":ec.getDayShiShenZhi(),"xun":ec.getDayXun(),"zhi_index":ec.getDayZhiIndex(),"dishi":ec.getDayDiShi()},
             "time":{"gan":ec.getTimeGan(),"zhi":ec.getTimeZhi(),"ganzhi":ec.getTime(),"wuxing":ec.getTimeWuXing(),"nayin":ec.getTimeNaYin(),"xunkong":ec.getTimeXunKong(),"hide_gan":ec.getTimeHideGan(),"shishen":ec.getTimeShiShenGan(),"shishen_zhi":ec.getTimeShiShenZhi(),"xun":ec.getTimeXun(),"dishi":ec.getTimeDiShi()},
         },
-        "dayun":dayun_list,"start_age":yun.getStartYear(),"start_year":yun.getStartYear(),"start_month":yun.getStartMonth(),"start_day":yun.getStartDay(),"start_hour":yun.getStartHour(),"start_solar":str(yun.getStartSolar()),"gender":gender,
+        "dayun":dayun_list,"start_age":yun.getStartYear(),"start_year":yun.getStartYear(),"start_month":yun.getStartMonth(),"start_day":yun.getStartDay(),"start_hour":yun.getStartHour(),"start_solar":yun.getStartSolar(),"gender":gender,
         "solar":s.toFullString(),"lunar":l.toFullString(),"shengxiao":l.getYearZhi(),"season":l.getSeason(),
-        "jieqi":{k:str(v) for k,v in (l.getJieQiTable() or {}).items()},
+        "jieqi":{k:v for k,v in (l.getJieQiTable() or {}).items()},
         "taiyuan":{"ganzhi":ec.getTaiYuan(),"nayin":ec.getTaiYuanNaYin()},
         "taixi":{"ganzhi":ec.getTaiXi(),"nayin":ec.getTaiXiNaYin()},
         "minggong_nayin":ec.getMingGongNaYin(),"shengong_nayin":ec.getShenGongNaYin(),
@@ -75,8 +75,8 @@ def _bazi(year, month, day, hour, gender=1, feature="bazi"):
             "liuyao": l.getLiuYao(), "zhixing": l.getZhiXing(),
             "festivals": l.getFestivals(), "other_festivals": l.getOtherFestivals(),
             "shujiu": l.getShuJiu(), "fu": l.getFu(), "hou": l.getHou(),
-            "prev_jieqi": str(l.getPrevJieQi()), "next_jieqi": str(l.getNextJieQi()),
-            "current_jieqi": str(l.getCurrentJieQi()), "wuhou": l.getWuHou(),
+            "prev_jieqi": l.getPrevJieQi(), "next_jieqi": l.getNextJieQi(),
+            "current_jieqi": l.getCurrentJieQi(), "wuhou": l.getWuHou(),
             "yuexiang": l.getYueXiang(),
         }
     except: pass
@@ -93,8 +93,8 @@ def _bazi(year, month, day, hour, gender=1, feature="bazi"):
                 return animals.get(v,v)
             result["shengxiao_pairing"] = {"zhi": zhi, "animal": animals.get(zhi,zhi),
                 "relations": {k: _to_animal(v) for k,v in attrs.items()}}
-            result["luohou"] = {"yearly_nine_stars": str(luohou.yearly_nine_stars(year)), "monthly_nine_stars": str(luohou.monthly_nine_stars(l.getYearZhi())), "daily_nine_stars": str(luohou.daily_nine_stars(l))}
-            try: result["luohou"]["jizhu"] = str(luohou.get_jizhu(l.getYearGan(), l.getYearZhi()))
+            result["luohou"] = {"yearly_nine_stars": luohou.yearly_nine_stars(year), "monthly_nine_stars": luohou.monthly_nine_stars(l.getYearZhi()), "daily_nine_stars": luohou.daily_nine_stars(l)}
+            try: result["luohou"]["jizhu"] = luohou.get_jizhu(l.getYearGan(), l.getYearZhi())
             except: pass
         except: pass
     # bazi_china: 神煞/纳音/调候/干支关系/流月/生肖等(仅APK)

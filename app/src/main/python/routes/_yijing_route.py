@@ -17,42 +17,42 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
             js_yao=_js("iching-shifa-engine","JSON.stringify(IchingShifa.dayan())")
             result["iching_shifa_js_yao"]=js_yao
             gua_str=json.loads(js_yao).get("yao","697887") if isinstance(js_yao,str) else "697887"
-            result["ichingshifa"]=str(i.qigua_manual(year or 2026,month or 1,day or 1,12,0,gua_str))
+            result["ichingshifa"]=i.qigua_manual(year or 2026,month or 1,day or 1,12,0,gua_str)
         elif method=="time" and all([year,month,day]):
             hex_data=i.qigua_time(year,month,day,12,0)
-            result["ichingshifa"]=str(hex_data)
-            try: result["daykong"]=str(hex_data.daykong_shikong())
+            result["ichingshifa"]=hex_data
+            try: result["daykong"]=hex_data.daykong_shikong()
             except: pass
-            try: result["innate_cegui"]=str(hex_data.innate_cegui())
+            try: result["innate_cegui"]=hex_data.innate_cegui()
             except: pass
-            try: result["acquired_cegui"]=str(hex_data.acquired_cegui())
+            try: result["acquired_cegui"]=hex_data.acquired_cegui()
             except: pass
             try:
                 gz=getattr(hex_data,"time_dizhi",None) or getattr(hex_data,"ri_gan",None) or "癸"
-                result["six_months_stars"]=str(hex_data.find_six_mons(gz))
+                result["six_months_stars"]=hex_data.find_six_mons(gz)
             except: pass
             try:
                 rg=getattr(hex_data,"ri_gan",None) or "癸"
-                result["shier_luck"]=str(hex_data.find_shier_luck(rg))
+                result["shier_luck"]=hex_data.find_shier_luck(rg)
             except: pass
-            try: result["hutiangua"]=str(hex_data.hutiangua())
+            try: result["hutiangua"]=hex_data.hutiangua()
             except: pass
-            try: result["bookgua_details"]=str(i.bookgua_details())
+            try: result["bookgua_details"]=i.bookgua_details()
             except: pass
             try:
                 hlines=getattr(hex_data,"lines",None) or getattr(hex_data,"values",None)
                 if hlines:
-                    result["decode_gua"]=str(i.decode_gua(str(hlines)))
-                    try: result["decode_two_gua"]=str(i.decode_two_gua(str(hlines),str(getattr(hex_data,"ggua_lines","") or "")))
+                    result["decode_gua"]=i.decode_gua(str(hlines))
+                    try: result["decode_two_gua"]=i.decode_two_gua(str(hlines),str(getattr(hex_data,"ggua_lines","") or ""))
                     except: pass
             except: pass
         elif method=="number":
             n=seed if seed is not None else 42
             hex_data=i.qigua_manual(2026,1,1,12,0,f"{n}")
-            result["ichingshifa"]=str(hex_data)
+            result["ichingshifa"]=hex_data
         else:
             hex_data=i.qigua_now()
-            result["ichingshifa"]=str(hex_data)
+            result["ichingshifa"]=hex_data
         result["engine"]+="ichingshifa"
         if hasattr(hex_data,'lines') or hasattr(hex_data,'values'):
             hex_values=getattr(hex_data,'lines',None) or getattr(hex_data,'values',None)
@@ -83,7 +83,7 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
                 lines_list=gua["lines"]
                 moving_positions=gua.get("moving",[])
                 hg=meihua_yi.compute_hexagrams(lines_list,moving_positions)
-                result["meihua_tiyong"]={"original":hg[0],"mutual":hg[1],"changed":hg[2],"ti_yong":hg[3]} if len(hg)>=4 else str(hg)
+                result["meihua_tiyong"]={"original":hg[0],"mutual":hg[1],"changed":hg[2],"ti_yong":hg[3]} if len(hg)>=4 else hg
             except: pass
     except: pass
     # taixuanshifa / jingjue (如有)
@@ -92,22 +92,22 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
         result["engine"]+="+taixuanshifa"
         if year and month and day:
             tx = taixuanshifa.Taixuan(year, month, day, 12)
-            try: result["taixuan_pan"] = str(tx.pan())
+            try: result["taixuan_pan"] = tx.pan()
             except: pass
-            try: result["taixuan_qigua"] = str(tx.qigua_number())
+            try: result["taixuan_qigua"] = tx.qigua_number()
             except: pass
-            try: result["taixuan_dz"] = str(tx.getdz())
+            try: result["taixuan_dz"] = tx.getdz()
             except: pass
-            try: result["taixuan_dz_date"] = str(tx.getdz_date())
+            try: result["taixuan_dz_date"] = tx.getdz_date()
             except: pass
         elif hasattr(taixuanshifa,'pan_from_code'):
-            result["taixuan"]=str(taixuanshifa.pan_from_code(seed or "777777"))
+            result["taixuan"]=taixuanshifa.pan_from_code(seed or "777777")
     except: pass
     try:
         import jingjue
         result["engine"]+="+jingjue"
         if hasattr(jingjue,'jie'):
-            result["jingjue"]=str(jingjue.jie(seed or "777777"))
+            result["jingjue"]=jingjue.jie(seed or "777777")
     except: pass
     # JS双引擎 (feature="all"时补充)
     if feature=="all":

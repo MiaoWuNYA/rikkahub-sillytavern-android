@@ -36,22 +36,22 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
         pp+=[[const._ascendant_symbol,(asc_house,asc_long)]]
         p_to_h={p:h for p,(h,_) in pp}
         h_to_p=utils.get_house_planet_list_from_planet_positions(pp)
-        result["pyjhora"]={"planets":str(pp[:9]),"lagna":{"rasi":asc_raw[0],"deg":asc_raw[1],"nak":asc_raw[2],"pada":asc_raw[3]}}
+        result["pyjhora"]={"planets":pp[:9],"lagna":{"rasi":asc_raw[0],"deg":asc_raw[1],"nak":asc_raw[2],"pada":asc_raw[3]}}
         result["engine"]="PyJHora"
         # 2. Panchanga
-        try: result["predictions"]=str(get_prediction_details(jd_local,place))
+        try: result["predictions"]=get_prediction_details(jd_local,place)
         except: pass
-        try: result["prediction_resources"]=str(get_prediction_resources())
+        try: result["prediction_resources"]=get_prediction_resources()
         except: pass
-        try: result["longevity"]=str(life_span_range(jd_local,place))
+        try: result["longevity"]=life_span_range(jd_local,place)
         except: pass
-        try: result["tajaka"]=str({"varsha_pravesh":str(_tj.varsha_pravesh(jd_local,place)),"annual_chart":str(_tj.annual_chart(jd_local,place)),"lord_of_year":str(_tj.lord_of_the_year(jd_local,place,0))})
+        try: result["tajaka"]={"varsha_pravesh":_tj.varsha_pravesh(jd_local,place),"annual_chart":_tj.annual_chart(jd_local,place),"lord_of_year":_tj.lord_of_the_year(jd_local,place,0)}
         except: pass
-        try: result["tajaka_yoga"]=str({"ishkavala":_tjy.ishkavala_yoga(p_to_h),"induvara":_tjy.induvara_yoga(p_to_h),"nakta":_tjy.get_nakta_yoga_planet_triples(pp),"ithasala":_tjy.get_ithasala_yoga_planet_pairs(pp),"eesarpha":_tjy.get_eesarpha_yoga_planet_pairs(pp),"yamaya":_tjy.get_yamaya_yoga_planet_triples(pp),"manahoo":_tjy.get_manahoo_yoga_planet_pairs(pp),"kamboola":_tjy.get_kamboola_yoga_planet_pairs(pp)})
+        try: result["tajaka_yoga"]={"ishkavala":_tjy.ishkavala_yoga(p_to_h),"induvara":_tjy.induvara_yoga(p_to_h),"nakta":_tjy.get_nakta_yoga_planet_triples(pp),"ithasala":_tjy.get_ithasala_yoga_planet_pairs(pp),"eesarpha":_tjy.get_eesarpha_yoga_planet_pairs(pp),"yamaya":_tjy.get_yamaya_yoga_planet_triples(pp),"manahoo":_tjy.get_manahoo_yoga_planet_pairs(pp),"kamboola":_tjy.get_kamboola_yoga_planet_pairs(pp)}
         except: pass
-        try: result["saham"]=str({"punya":_sh.punya_saham(pp),"vidya":_sh.vidya_saham(pp),"yasas":_sh.yasas_saham(pp),"mitra":_sh.mitra_saham(pp),"mahatmaya":_sh.mahatmaya_saham(pp),"asha":_sh.asha_saham(pp),"samartha":_sh.samartha_saham(pp),"bhratri":_sh.bhratri_saham(pp),"gaurava":_sh.gaurava_saham(pp),"pithri":_sh.pithri_saham(pp),"rajya":_sh.rajya_saham(pp),"maathri":_sh.maathri_saham(pp),"puthra":_sh.puthra_saham(pp),"jeeva":_sh.jeeva_saham(pp),"karma":_sh.karma_saham(pp),"roga":_sh.roga_saham(pp),"kali":_sh.kali_saham(pp),"sastra":_sh.sastra_saham(pp),"bandhu":_sh.bandhu_saham(pp)})
+        try: result["saham"]={"punya":_sh.punya_saham(pp),"vidya":_sh.vidya_saham(pp),"yasas":_sh.yasas_saham(pp),"mitra":_sh.mitra_saham(pp),"mahatmaya":_sh.mahatmaya_saham(pp),"asha":_sh.asha_saham(pp),"samartha":_sh.samartha_saham(pp),"bhratri":_sh.bhratri_saham(pp),"gaurava":_sh.gaurava_saham(pp),"pithri":_sh.pithri_saham(pp),"rajya":_sh.rajya_saham(pp),"maathri":_sh.maathri_saham(pp),"puthra":_sh.puthra_saham(pp),"jeeva":_sh.jeeva_saham(pp),"karma":_sh.karma_saham(pp),"roga":_sh.roga_saham(pp),"kali":_sh.kali_saham(pp),"sastra":_sh.sastra_saham(pp),"bandhu":_sh.bandhu_saham(pp)}
         except: pass
-        try: result["eclipses"]={"next_solar":str(next_solar_eclipse(jd_local)),"next_lunar":str(next_lunar_eclipse(jd_local))}
+        try: result["eclipses"]={"next_solar":next_solar_eclipse(jd_local),"next_lunar":next_lunar_eclipse(jd_local)}
         except: pass
         try: result["panchanga"]={"tithi":drik.tithi(jd_local,place),"nakshatra":drik.nakshatra(jd_local,place),"yogam":drik.yogam(jd_local,place),"karana":drik.karana(jd_local,place),"vaara":drik.vaara(jd_local,place),"sunrise":drik.sunrise(jd_local,place),"sunset":drik.sunset(jd_local,place)}
         except: pass
@@ -59,57 +59,57 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
         try: result["houses"]={"planets_in_quadrants":house.get_planets_in_quadrants(p_to_h),"planets_in_trines":house.get_planets_in_trines(p_to_h),"planets_in_dushthanas":house.get_planets_in_dushthanas(p_to_h)}
         except: pass
         # 4. Shadbala
-        try: result["shadbala"]=str(strength.shad_bala(jd_local,place))
+        try: result["shadbala"]=strength.shad_bala(jd_local,place)
         except: pass
-        try: result["bhava_bala"]=str(strength.bhava_bala(jd_local,place))
+        try: result["bhava_bala"]=strength.bhava_bala(jd_local,place)
         except: pass
         # 5. Ashtakavarga
-        try: result["ashtakavarga"]=str(ashtakavarga.get_ashtaka_varga(p_to_h))
+        try: result["ashtakavarga"]=ashtakavarga.get_ashtaka_varga(p_to_h)
         except: pass
         # 6. Raja Yoga
-        try: result["raja_yoga"]=str(raja_yoga.get_raja_yoga_details(jd_local,place))
+        try: result["raja_yoga"]=raja_yoga.get_raja_yoga_details(jd_local,place)
         except: pass
-        try: result["yoga_details"]=str(yoga.get_yoga_details(jd_local,place))
+        try: result["yoga_details"]=yoga.get_yoga_details(jd_local,place)
         except: pass
         # 7. Dosha 全7项
         try:
             moon_nak=asc_raw[2] if asc_raw else 0
             result["dosha"]={
-                "manglik":str(dosha.manglik(pp)),
-                "kala_sarpa":str(dosha.kala_sarpa(pp)),
-                "guru_chandala":str(dosha.guru_chandala_dosha(pp)),
-                "pitru_dosha":str(dosha.pitru_dosha(pp)),
-                "kalathra":str(dosha.kalathra(pp)),
-                "ganda_moola":str(dosha.ganda_moola(moon_nak)),
-                "shrapit":str(dosha.shrapit(pp)),
+                "manglik":dosha.manglik(pp),
+                "kala_sarpa":dosha.kala_sarpa(pp),
+                "guru_chandala":dosha.guru_chandala_dosha(pp),
+                "pitru_dosha":dosha.pitru_dosha(pp),
+                "kalathra":dosha.kalathra(pp),
+                "ganda_moola":dosha.ganda_moola(moon_nak),
+                "shrapit":dosha.shrapit(pp),
             }
         except: pass
         # 8. Arudha
-        try: result["arudha"]=str(arudhas.bhava_arudhas_from_planet_positions(pp))
+        try: result["arudha"]=arudhas.bhava_arudhas_from_planet_positions(pp)
         except: pass
         # 9. Vimshottari Dasha
-        try: result["vimshottari"]=str(vimsottari.get_vimsottari_dhasa_bhukthi(jd_local,place))
+        try: result["vimshottari"]=vimsottari.get_vimsottari_dhasa_bhukthi(jd_local,place)
         except: pass
         # 10. House 关键分析
         try:
             result["house_analysis"]={
-                "chara_karakas":str(house.chara_karakas(pp)),
-                "marakas":str(house.marakas(h_to_p)),
-                "functional_benefic":str(house.functional_benefic_lord_houses(asc_house)),
-                "functional_malefic":str(house.functional_malefic_lord_houses(asc_house)),
-                "argala":str(house.get_argala(p_to_h)),
-                "brahma":str(house.brahma(pp)),
-                "rudra":str(house.rudra(pp)),
-                "yoga_kaaraka":str({str(p):str(house.is_yoga_kaaraka(asc_house,p,h)) for p,(h,_) in pp if p!=const._ascendant_symbol}),
+                "chara_karakas":house.chara_karakas(pp),
+                "marakas":house.marakas(h_to_p),
+                "functional_benefic":house.functional_benefic_lord_houses(asc_house),
+                "functional_malefic":house.functional_malefic_lord_houses(asc_house),
+                "argala":house.get_argala(p_to_h),
+                "brahma":house.brahma(pp),
+                "rudra":house.rudra(pp),
+                "yoga_kaaraka":{str(p):house.is_yoga_kaaraka(asc_house,p,h) for p,(h,_) in pp if p!=const._ascendant_symbol},
             }
         except: pass
         # 11. 行星状态
         try:
             result["planet_status"]={
-                "combustion":str(charts.planets_in_combustion(pp)),
-                "retrograde":str(charts.planets_in_retrograde(pp)),
-                "marana_karaka_sthana":str(charts.get_planets_in_marana_karaka_sthana(pp)),
-                "kp_lords":str(charts.get_KP_lords_from_planet_positions(pp)),
+                "combustion":charts.planets_in_combustion(pp),
+                "retrograde":charts.planets_in_retrograde(pp),
+                "marana_karaka_sthana":charts.get_planets_in_marana_karaka_sthana(pp),
+                "kp_lords":charts.get_KP_lords_from_planet_positions(pp),
             }
         except: pass
         # 12. 全部分盘 (drik.dhasavarga 通用函数, 已验证)
@@ -117,7 +117,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
             for dnum, dkey in [(2,"d2"),(3,"d3"),(4,"d4"),(7,"d7"),(9,"d9"),(10,"d10"),
                                 (12,"d12"),(16,"d16"),(20,"d20"),(24,"d24"),(27,"d27"),
                                 (30,"d30"),(40,"d40"),(45,"d45"),(60,"d60")]:
-                try: result[f"varga_{dkey}"]=str(drik.dhasavarga(jd_local,place,dnum))
+                try: result[f"varga_{dkey}"]=drik.dhasavarga(jd_local,place,dnum)
                 except: pass
         except: pass
     except Exception as e:
@@ -220,14 +220,14 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
     # PyJHora深度
     try:
         from jhora.horoscope.dhasa.graha import ashtottari as a_py, yogini as y_py
-        result["ashtottari_dasha"]=str(a_py.get_ashtottari_dhasa_bhukthi(jd_local,place))
-        result["yogini_dasha"]=str(y_py.get_dhasa_bhukthi(drik.Date(year,month,day),(hour,0,0),place))
+        result["ashtottari_dasha"]=a_py.get_ashtottari_dhasa_bhukthi(jd_local,place)
+        result["yogini_dasha"]=y_py.get_dhasa_bhukthi(drik.Date(year,month,day),(hour,0,0),place)
         result["engine"]+="+PyJHora_deep"
     except: pass
     try:
         from jhora.horoscope.dhasa.raasi import narayana, chara
-        result["narayana_dasha"]=str(narayana.narayana_dhasa_for_rasi_chart(drik.Date(year,month,day),(hour,0,0),place))
-        result["chara_dasha"]=str(chara.get_dhasa_antardhasa(drik.Date(year,month,day),(hour,0,0),place))
+        result["narayana_dasha"]=narayana.narayana_dhasa_for_rasi_chart(drik.Date(year,month,day),(hour,0,0),place)
+        result["chara_dasha"]=chara.get_dhasa_antardhasa(drik.Date(year,month,day),(hour,0,0),place)
         result["engine"]+="+raasi"
     except: pass
     return result
