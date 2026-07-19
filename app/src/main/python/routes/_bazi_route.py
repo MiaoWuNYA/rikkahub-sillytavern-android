@@ -24,7 +24,14 @@ def _bazi(year, month, day, hour, gender=1, feature="bazi"):
             import sys as _sys; _sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
             if feature == "shengxiao":
                 from bazi_china import shengxiao as _sx
-                result["shengxiao_pairing"] = {z: _sx.output("", l.getYearZhi(), k) for z in [l.getYearZhi()] for k in ["合","冲","害","三合"] if hasattr(_sx,"output")}
+                zhi = l.getYearZhi()
+                attrs = _sx.zhi_atts.get(zhi, {})
+                animals = dict(_sx.shengxiaos)
+                def _to_animal(v):
+                    if isinstance(v, tuple): return [animals.get(x,x) for x in v]
+                    return animals.get(v,v)
+                result["shengxiao_pairing"] = {"zhi": zhi, "animal": animals.get(zhi,zhi),
+                    "relations": {k: _to_animal(v) for k,v in attrs.items()}}
             elif feature == "luohou":
                 from bazi_china import luohou as _lh
                 result["luohou"] = {
@@ -77,7 +84,14 @@ def _bazi(year, month, day, hour, gender=1, feature="bazi"):
     # feature="all"时追加独立模块
     if feature=="all":
         try:
-            result["shengxiao_pairing"] = {z: shengxiao.output("", l.getYearZhi(), k) for z in [l.getYearZhi()] for k in ["合","冲","害","三合"] if hasattr(shengxiao,"output")}
+            zhi = l.getYearZhi()
+            attrs = shengxiao.zhi_atts.get(zhi, {})
+            animals = dict(shengxiao.shengxiaos)
+            def _to_animal(v):
+                if isinstance(v, tuple): return [animals.get(x,x) for x in v]
+                return animals.get(v,v)
+            result["shengxiao_pairing"] = {"zhi": zhi, "animal": animals.get(zhi,zhi),
+                "relations": {k: _to_animal(v) for k,v in attrs.items()}}
             result["luohou"] = {"yearly_nine_stars": str(luohou.yearly_nine_stars(year)), "monthly_nine_stars": str(luohou.monthly_nine_stars(l.getYearZhi())), "daily_nine_stars": str(luohou.daily_nine_stars(l))}
             try: result["luohou"]["jizhu"] = str(luohou.get_jizhu(l.getYearGan(), l.getYearZhi()))
             except: pass
