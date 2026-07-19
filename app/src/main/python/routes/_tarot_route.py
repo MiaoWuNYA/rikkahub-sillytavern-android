@@ -50,7 +50,13 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, kaabalah=False)
             cards.append({"position": sp.positions[i].rag_mapping, "card_number": dc.card_number if hasattr(dc,'card_number') else None, "error": "card data partial"})
     result = {
         "system": "tarot", "engine": "arcanite-unified", "seed": seed,
-        "spread": {"id": spread, "positions": [p.rag_mapping for p in sp.positions]},
+        "spread": {
+        "id": spread,
+        "name": getattr(sp, "name", ""),
+        "description": getattr(sp, "description", ""),
+        "layout": [{"x": lp.x, "y": lp.y} for lp in sp.layout.positions] if getattr(sp, "layout", None) and getattr(sp.layout, "positions", None) else None,
+        "positions": [{"name": p.name, "rag": p.rag_mapping, "desc": p.short_description} for p in sp.positions]
+    },
         "cards": cards, "ee_analysis": EE.full_analysis(drawn),
         "_hint": "arcanite内置18字段已全量。Kaabalah(JS): 22塔罗导出+5牌桌+7牌阵+卡巴拉对应+777表。自探索: Object.keys(Kaabalah)"
     }

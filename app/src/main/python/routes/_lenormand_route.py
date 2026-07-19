@@ -32,7 +32,15 @@ def _lenormand(spread="line-5", seed=None):
     from lenormand_engine import LenormandFateEngine as FE
     return {
         "system": "lenormand", "engine": "arcanite-unified", "seed": seed,
-        "spread_positions": [p.name for p in sp.positions],
+        "spread": {
+        "id": spread,
+        "name": getattr(sp, "name", ""),
+        "description": getattr(sp, "description", ""),
+        "layout": [{"x": lp.x, "y": lp.y} for lp in sp.layout.positions] if getattr(sp, "layout", None) and getattr(sp.layout, "positions", None) else None,
+        "positions": [{"name": p.name, "rag": getattr(p, "rag_mapping", ""), "desc": getattr(p, "short_description", ""),
+                        "mirror": getattr(p, "mirror_target", None), "sig": getattr(p, "is_significator", False)}
+                       for p in sp.positions]
+    },
         "cards": cards,
         "statistics": d.analyze_draw(items),
         "karmic_mirrors": {i: FE.parse_karmic_mirrors(sp.positions, items) for i in [0]},
