@@ -341,6 +341,7 @@ AI 先感受牌阵整体，再用7层结构组织语言
     + composition.repeated_numbers + composition.repeated_suits
     + reversal.blocked_energy_signal
   秘传附录(Kaabalah JS引擎按需调用, 详见互补模式 STEP 4: 卡巴拉对应/原型/777/跨牌桌)
+  图片输出: 每牌 image_url → ![](URL) 直接嵌入, 逐牌[图]→[解读]→[图]→[解读]
 ╚══════════════════ 塔罗数据 ═════════════════╝
 
 【Kaabalah JS引擎塔罗（卡巴拉对应体系）】
