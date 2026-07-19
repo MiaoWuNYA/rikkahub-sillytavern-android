@@ -21,6 +21,9 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
         from jhora.panchanga import drik
         from jhora.horoscope.chart import house, strength, raja_yoga, yoga, dosha, ashtakavarga, arudhas, charts
         from jhora.horoscope.dhasa.graha import vimsottari
+        from jhora.horoscope.prediction.general import get_prediction_details as _gp
+        from jhora.horoscope.transit.tajaka import trinal_aspects_of_the_raasi
+        from jhora.horoscope.transit.saham import punya_saham, vidya_saham, yasas_saham, mitra_saham
         place=drik.Place("loc",lat or 0,lon or 0,float(tz) if tz and str(tz).lstrip('-+').replace('.','',1).isdigit() else 0)
         jd_local=utils.julian_day_number(drik.Date(year,month,day),(hour,0,0))
         # 1. 排盘
@@ -32,6 +35,13 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
         h_to_p=utils.get_house_planet_list_from_planet_positions(pp)
         result["pyjhora"]={"planets":str(pp[:9]),"lagna":{"rasi":asc_raw[0],"deg":asc_raw[1],"nak":asc_raw[2],"pada":asc_raw[3]}}
         result["engine"]="PyJHora"
+        # 预测 + 行运
+        try: result["predictions"]=str(_gp(jd_local,place))
+        except: pass
+        try: result["tajaka"]=str(trinal_aspects_of_the_raasi(h_to_p,asc_house))
+        except: pass
+        try: result["saham"]=str({"punya":punya_saham(pp),"vidya":vidya_saham(pp),"yasas":yasas_saham(pp),"mitra":mitra_saham(pp)})
+        except: pass
         # 2. Panchanga
         try: result["panchanga"]={"tithi":drik.tithi(jd_local,place),"nakshatra":drik.nakshatra(jd_local,place),"yogam":drik.yogam(jd_local,place),"karana":drik.karana(jd_local,place),"vaara":drik.vaara(jd_local,place),"sunrise":drik.sunrise(jd_local,place),"sunset":drik.sunset(jd_local,place)}
         except: pass
