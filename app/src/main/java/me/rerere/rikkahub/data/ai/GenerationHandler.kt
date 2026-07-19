@@ -182,6 +182,7 @@ class GenerationHandler(
                 appendLine("    塔罗: {spread, seed, question_type?, kaabalah?, cards?}")
                 appendLine("    雷诺曼: {spread, seed, cards?}")
                 appendLine("    八字: {year, month, day, hour, gender}")
+                appendLine("       feature可选: shengxiao(生肖配对,跳过排盘) | luohou(择日九宫飞星,跳过排盘) | all(全量)")
                 appendLine("       (lunar_python+bazi_china双引擎:四柱含十神干支旬地煞+大运起运+胎元胎息命身宫纳音")
                 appendLine("        +日柱神煞方位+彭祖百忌+二十八宿+金不换/调候用神/建禄/干支合冲刑害/藏干/流月/生肖/空亡)")
                 appendLine("    紫微: {year, month, day, hour, gender, engine?}")
