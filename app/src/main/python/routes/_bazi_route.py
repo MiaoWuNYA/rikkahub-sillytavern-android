@@ -84,6 +84,7 @@ def _bazi(year, month, day, hour, gender=1, feature="bazi"):
     # feature="all"时追加独立模块
     if feature=="all":
         try:
+            from bazi_china import shengxiao, luohou
             zhi = l.getYearZhi()
             attrs = shengxiao.zhi_atts.get(zhi, {})
             animals = dict(shengxiao.shengxiaos)

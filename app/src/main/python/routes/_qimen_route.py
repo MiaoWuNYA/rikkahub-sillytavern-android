@@ -11,8 +11,8 @@ def _qimen(year,month,day,hour=None,feature="all"):
         result["qimen"]=_js("qimen-engine",f"JSON.stringify(QimenEngine.generate({{type:'rijia',year:{year},month:{month},day:{day}}}))")
         result["engine"]="QimenEngine"
         if hour is not None:
-            result["qimen_hourly"]=_js("qimen-engine",f"JSON.stringify(QimenEngine.generate({{type:'shike',year:{year},month:{month},day:{day},hour:{hour}}}))")
-            result["engine"]+="+shike"
+            result["qimen_hourly"]=_js("qimen-engine",f"JSON.stringify(QimenEngine.generate({{type:'shijia',year:{year},month:{month},day:{day},hour:{hour}}}))")
+            result["engine"]+="+shijia"
         # 解读层: 格局+星门神详解+运筹
         result["qimen_analysis"]=_js("qimen-engine",
             "JSON.stringify({"
