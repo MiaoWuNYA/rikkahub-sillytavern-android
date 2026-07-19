@@ -25,7 +25,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,depth="standard"):
     except: pass
     # Caelus: 本命盘(宫位+逆行+尊贵) standard即提供
     _js_load("caelus-engine")
-    c=_js("caelus-engine","var e=new Caelus.Engine(Caelus.embeddedData);var jd=Caelus.isoToJd('%s');var chart=e.chartAt(jd,%f,%f,{});JSON.stringify({signature:Caelus.chartSignature(chart),patterns:Caelus.detectPatterns(chart),bodies:chart.bodies,cusps:chart.cusps,angles:chart.angles,lots:Caelus.lots(e,jd,%f,%f),isDay:Caelus.isDayChart(e,jd,%f,%f),voidOfCourse:Caelus.voidOfCourse(e,jd)})"%(iso_date,lat,lon,lat,lon,lat,lon))
+    c=_js("caelus-engine","var e=new Caelus.Engine(Caelus.embeddedData);var jd=Caelus.isoToJd('%s');var chart=e.chartAt(jd,%f,%f,{});JSON.stringify({signature:Caelus.chartSignature(chart),patterns:Caelus.detectPatterns(chart),bodies:chart.bodies,cusps:chart.cusps,angles:chart.angles,lots:Caelus.lots(e,jd,%f,%f),isDay:Caelus.isDayChart(e,jd,%f,%f),voidOfCourse:Caelus.voidOfCourse(e,jd),chartBrief:Caelus.chartBrief(chart)})"%(iso_date,lat,lon,lat,lon,lat,lon))
     result["caelus"]=c
     result["engine"]+="+Caelus"
     result["_hint"]="NatalEngine已返回日月升+7星+元素+相位+合盘+ACG。Caelus已返回12宫位+逆行+尊贵+格局+7点+空亡。" "自探索:Object.keys(Caelus)含推运7种/合盘3种/行运12/恒星2/ACG/赤纬/越界/映点/调和盘"
