@@ -16,6 +16,13 @@ def _western_astro(year,month,day,hour,tz,lat,lon,depth="standard"):
     _js_load("natalengine-engine")
     natal=_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateAstrology('{date_str}',{hour},{tz_num},{lat},{lon}))")
     result={"system":"western_astrology","engine":"natalengine-js","natal":natal}
+    # NatalEngine额外功能: ACG占星地图+合盘比较
+    try:
+        result["acg"]=_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateAstroCartography('{date_str}',{hour},{tz_num},{lat},{lon}))")
+    except: pass
+    try:
+        result["synastry"]=_js("natalengine-engine",f"JSON.stringify(NatalEngine.compareAstrology(JSON.parse({natal}),JSON.parse({natal})))")
+    except: pass
     # Caelus: 本命盘(宫位+逆行+尊贵) standard即提供
     _js_load("caelus-engine")
     c=_js("caelus-engine","var e=new Caelus.Engine(Caelus.embeddedData);var jd=Caelus.isoToJd('%s');var chart=e.chartAt(jd,%f,%f,{});JSON.stringify({signature:Caelus.chartSignature(chart),patterns:Caelus.detectPatterns(chart),bodies:chart.bodies,cusps:chart.cusps,angles:chart.angles,lots:Caelus.lots(e,jd,%f,%f),isDay:Caelus.isDayChart(e,jd,%f,%f),voidOfCourse:Caelus.voidOfCourse(e,jd)})"%(iso_date,lat,lon,lat,lon,lat,lon))
