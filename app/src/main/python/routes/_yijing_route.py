@@ -39,7 +39,12 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
             except: pass
             try: result["bookgua_details"]=str(i.bookgua_details())
             except: pass
-            try: result["decode_gua"]=str(i.decode_gua(str(getattr(hex_data,'lines','') or getattr(hex_data,'values','') or '')))
+            try:
+                hlines=getattr(hex_data,"lines",None) or getattr(hex_data,"values",None)
+                if hlines:
+                    result["decode_gua"]=str(i.decode_gua(str(hlines)))
+                    try: result["decode_two_gua"]=str(i.decode_two_gua(str(hlines),str(getattr(hex_data,"ggua_lines","") or "")))
+                    except: pass
             except: pass
         elif method=="number":
             n=seed if seed is not None else 42
