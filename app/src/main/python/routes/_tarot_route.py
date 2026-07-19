@@ -55,8 +55,13 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, kaabalah=False)
     }
     if kaabalah:
         _js_load("kaabalah-engine")
-        result["kaabalah"] = [
-            _js("kaabalah-engine", f"JSON.stringify(Kaabalah.getTarotCorrespondenceProfile({{tarotCardNumber:Kaabalah.getTarotCardNumber({{tarotCardName:'{c.card_name}'}}).cardNumber}}))")
-            for c in drawn
-        ]
+        kaabalah_results = []
+        for c in drawn:
+            try:
+                n = c.card_number  # 直接用整数，不走脆弱的 card_name→JS 字符串→getTarotCardNumber 嵌套
+                k = _js("kaabalah-engine", f"JSON.stringify(Kaabalah.getTarotCorrespondenceProfile({{tarotCardNumber:{n}}}))")
+                kaabalah_results.append(k)
+            except Exception:
+                kaabalah_results.append(json.dumps({"error": "kaabalah bridge failed", "card": c.card_name}, ensure_ascii=False))
+        result["kaabalah"] = kaabalah_results
     return result

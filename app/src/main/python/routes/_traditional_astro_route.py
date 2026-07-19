@@ -160,13 +160,34 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
         prof=prof_compute(chart,dt)
         prof_asc=str(prof.getAngle(const.ASC))
     except: prof_asc=None
-    return {"system":"traditional_astrology","engine":"flatlib",
+    result = {"system":"traditional_astrology","engine":"flatlib",
         "objects":objs,"houses":houses,
         "asc":str(chart.getAngle(const.ASC)),"mc":str(chart.getAngle(const.MC)),
         "dignities":dignities,"accidental":accidental,
         "sect":{"is_day":is_day,"planets":sect},
         "temperament":temperament,"almutem":str(alm),
         "arabic_parts":lots,"profection_asc":prof_asc,
-        "configurations":configs,
-        "_hint":"flatlib已全量:本质尊贵/偶然尊贵/Sect/In-Out/Lots全/小限/Almutem/气质/传统结构检测。"
-        "Zodiacal Releasing当前不支持。Firdaria/Caelus(deep)。自探索:dir(flatlib)"}
+        "configurations":configs}
+    # Caelus JS: Firdaria + 主限推运 (独立try, 失败不影响flatlib数据)
+    try:
+        tz_sign = "+" if tz_offset >= 0 else "-"
+        tz_abs = abs(tz_offset)
+        tz_str = f"{tz_sign}{int(tz_abs):02d}:{int((tz_abs - int(tz_abs)) * 60 + 0.5):02d}"
+        iso_date = f"{year}-{month:02d}-{day}T{hour:02d}:00:00{tz_str}"
+        _js_load("caelus-engine")
+        c = _js("caelus-engine",
+            "var e=new Caelus.Engine(Caelus.embeddedData);"
+            "var jd=Caelus.isoToJd('%s');"
+            "JSON.stringify({"
+            "firdaria:Caelus.firdariaAt(e,jd,jd,%f,%f),"
+            "primaryDirections:Caelus.primaryDirections(e,jd,%f,%f),"
+            "solarArc:Caelus.solarArc(e,jd,jd),"
+            "profections:Caelus.profectionAt(e,jd,jd,%f,%f)"
+            "})" % (iso_date, lat, lon, lat, lon, lat, lon))
+        if c and 'bridge not available' not in c and 'error' not in c.lower():
+            result["caelus"] = c
+            result["engine"] = "flatlib+Caelus"
+    except: pass
+    result["_hint"] = ("flatlib已全量:本质尊贵/偶然尊贵/Sect/Lots/小限/Almutem/气质/结构。"
+        "Zodiacal Releasing当前不支持。Caelus预取:Firdaria/主限推运/日弧。自探索:dir(flatlib)/Object.keys(Caelus)")
+    return result
