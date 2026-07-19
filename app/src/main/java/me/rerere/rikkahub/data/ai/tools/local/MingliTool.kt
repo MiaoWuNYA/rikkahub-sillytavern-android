@@ -35,7 +35,7 @@ fun createMingliTool(context: Context): Tool = Tool(
             properties = buildJsonObject {
                 put("system", buildJsonObject {
                     put("type", "string")
-                    put("description", "命理系统名: 塔罗/雷诺曼/八字/紫微/" +
+                    put("description", "命理系统名(支持别名→主名): 塔罗/韦特→塔罗 | 雷诺曼→雷诺曼 | 八字/四柱/生辰→八字 | 紫微/紫薇/紫微斗数→紫微 | 星座/西洋占星→现代西洋占星 | 古典占星/卜卦/horary→传统西洋占星 | 印度占星/jyotish→吠陀 | 人类图→人类图 | 生命灵数/卡巴拉→灵数卡巴拉 | 奇门遁甲→奇门 | 六爻/梅花/易经/周易→六爻梅花" +
                             "现代西洋占星/传统西洋占星/吠陀/人类图/灵数卡巴拉/奇门/六爻梅花。西洋占星分两种:现代西洋占星(心理/成长)vs传统西洋占星(事件/尊贵)")
                 })
                 put("params", buildJsonObject {
