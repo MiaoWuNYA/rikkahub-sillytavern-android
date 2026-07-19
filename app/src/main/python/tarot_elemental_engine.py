@@ -44,8 +44,8 @@ DIGNITY_RANK = {
 
 # CORE 8：宫廷牌位阶元素 (韦特体系)
 COURT_ELEMENT = {
-    "King": "Fire", "Queen": "Water",
-    "Knight": "Air", "Page": "Earth"
+    "King": "Air", "Queen": "Water",
+    "Knight": "Fire", "Page": "Earth"
 }
 
 # CORE 10：大阿卡纳占星对应
@@ -124,7 +124,7 @@ class ElementalDignityEngine:
 
     @staticmethod
     def get_secondary_element(card: Any) -> Optional[str]:
-        """宫廷牌副元素 = 宫廷位阶元素 (King=Fire, Queen=Water, Knight=Air, Page=Earth)"""
+        """宫廷牌副元素 = 宫廷位阶元素 (King=Air, Queen=Water, Knight=Fire, Page=Earth)"""
         card_id = card.card_id if hasattr(card, 'card_id') else ""
         # 从 card_id 解析 rank: "king_of_wands" → "King"
         if "_of_" in card_id:
