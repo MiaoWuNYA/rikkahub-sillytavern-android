@@ -64,4 +64,8 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, kaabalah=False)
             except Exception:
                 kaabalah_results.append(json.dumps({"error": "kaabalah bridge failed", "card": c.card_name}, ensure_ascii=False))
         result["kaabalah"] = kaabalah_results
+        # 生命之树全图 (22路径+11球体+777对应)
+        try:
+            result["kaabalah_tree"] = _js("kaabalah-engine", "JSON.stringify(Kaabalah.buildKaabalisticMapData({}))")
+        except: pass
     return result

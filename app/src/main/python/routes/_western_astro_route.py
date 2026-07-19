@@ -3,7 +3,7 @@ import json, sys, os
 from ._shared import _js, _js_load
 
 # ===== 现代西洋占星 =====
-def _western_astro(year,month,day,hour,tz,lat,lon,depth="standard"):
+def _western_astro(year,month,day,hour,tz,lat,lon,depth="standard",gene_keys=False,acg=False):
     date_str=f"{year}-{month:02d}-{day}"
     # 构建时区偏移字符串，兼容数字和字符串
     tz_num = float(tz) if tz is not None else 8.0
@@ -21,9 +21,37 @@ def _western_astro(year,month,day,hour,tz,lat,lon,depth="standard"):
     c=_js("caelus-engine","var e=new Caelus.Engine(Caelus.embeddedData);var jd=Caelus.isoToJd('%s');var chart=e.chartAt(jd,%f,%f,{});JSON.stringify({signature:Caelus.chartSignature(chart),patterns:Caelus.detectPatterns(chart),bodies:chart.bodies,cusps:chart.cusps,angles:chart.angles,lots:Caelus.lots(e,jd,%f,%f),isDay:Caelus.isDayChart(e,jd,%f,%f),voidOfCourse:Caelus.voidOfCourse(e,jd)})"%(iso_date,lat,lon,lat,lon,lat,lon))
     result["caelus"]=c
     result["engine"]+="+Caelus"
-    result["_hint"]="NatalEngine已返回日月升+7星+元素+相位+合盘+ACG。Caelus已返回12宫位+逆行+尊贵+格局+7点+空亡。" "自探索:Object.keys(Caelus)含推运7种/合盘3种/行运12/恒星2/ACG/赤纬/越界/映点/调和盘"
+    result["_hint"]="NatalEngine已返回日月升+7星+元素+相位+合盘+ACG。Caelus已返回12宫位+逆行+尊贵+格局+7点+空亡。自探索:Object.keys(Caelus)含推运7种/合盘3种/行运12/恒星2/ACG/赤纬/越界/映点/调和盘"
     if depth=="deep":
-        c2=_js("caelus-engine","var e=new Caelus.Engine(Caelus.embeddedData);var jd=Caelus.isoToJd('%s');var chart=e.chartAt(jd,%f,%f,{});JSON.stringify({firdaria:Caelus.firdariaAt(e,jd,jd,%f,%f),profections:Caelus.profectionAt(e,jd,jd,%f,%f),primaryDirections:Caelus.primaryDirections(e,jd,%f,%f),solarArc:Caelus.solarArc(e,jd,jd),declinationAspects:Caelus.declinationAspects(e,Caelus.DEFAULT_BODIES,jd,1),outOfBounds:Caelus.outOfBounds(e,'moon',jd)})"%(iso_date,lat,lon,lat,lon,lat,lon,lat,lon))
+        # 文档实测API: Caelus推运全量 — firdaria/profection/primaryDirections/solarReturn/lunarReturn/zrRelease/harmonicChart/vargaChart/declinationAspects/astrocartography
+        c2=_js("caelus-engine",
+            "var e=new Caelus.Engine(Caelus.embeddedData);"
+            "var jd=Caelus.isoToJd('%s');"
+            "var isDay=Caelus.isDayChart(e,jd,%f,%f);"
+            "JSON.stringify({"
+            "firdaria:Caelus.firdaria(isDay,jd),"
+            "profections:Caelus.profection(0,jd,jd+365),"
+            "primaryDirections:Caelus.primaryDirections(e,jd,%f,%f),"
+            "solarReturn:Caelus.solarReturn(e,jd,jd+3650,jd+4015),"
+            "lunarReturn:Caelus.lunarReturn(e,jd,jd+27,jd+54),"
+            "zrRelease:Caelus.zrRelease(0,jd,2,100),"
+            "harmonicChart:Caelus.harmonicChart(e,jd,['sun','moon'],5),"
+            "vargaChart:Caelus.vargaChart(e,jd,9),"
+            "declinationAspects:Caelus.declinationAspects(e,['sun','moon','mercury','venus','mars','jupiter','saturn'],jd,1),"
+            "astrocartography:Caelus.astrocartography(e,jd,['sun','moon'])"
+            "})"%(iso_date,lat,lon,lat,lon))
         result["caelus_deep"]=c2
         result["engine"]+="+deep"
+    if gene_keys:
+        try:
+            hd=_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateHumanDesign('{date_str}',{hour},{tz_num}))")
+            result["gene_keys"]=_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateGeneKeys(JSON.parse({hd})))")
+            result["engine"]+="+geneKeys"
+        except: pass
+    if acg:
+        try:
+            result["astrocartography"]=_js("natalengine-engine",
+                f"JSON.stringify(NatalEngine.calculateAstroCartography('{date_str}',{hour},{tz_num},{{planets:['sun','moon']}}))")
+            result["engine"]+="+ACG"
+        except: pass
     return result

@@ -68,7 +68,11 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
         try: result["yoga_details"]=str(yoga.get_yoga_details(jd_local,place))
         except: pass
         # 7. Dosha (独立try)
-        try: result["dosha"]={"manglik":str(dosha.manglik(pp))}
+        try:
+            result["dosha"]={"manglik":str(dosha.manglik(pp))}
+            # 文档实测: 补充完整 dosha 检测
+            try: result["dosha"]["details"]=str(dosha.get_dosha_details(jd_local,(lat or 0,lon or 0)))
+            except: pass
         except: pass
         # 8. Arudha (独立try)
         try: result["arudha"]=str(arudhas.bhava_arudhas_from_planet_positions(pp))
@@ -104,6 +108,27 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
                     iso_vd_date, lat, lon, lat, lon))
         result["nodejhora"]=nj
         result["engine"]+="+NodeJhora"
+        # 文档实测: 补充 Panchanga + Vimshottari (顶层函数)
+        try:
+            nj_pv = _js("node-jhora-engine",
+                "try{"
+                "var dt=NodeJhora.DateTime.fromISO('%s');"
+                "var nj=NodeJhora.EphemerisEngine.getInstance();"
+                "var planets=nj.getPlanets(dt,{latitude:%f,longitude:%f},{ayanamsaOrder:1});"
+                "if(planets&&planets.length){"
+                "var moon=planets.find(function(p){return p.id===1});"
+                "var sun=planets.find(function(p){return p.id===0});"
+                "if(moon&&sun){"
+                "JSON.stringify({"
+                "panchanga:NodeJhora.calculatePanchanga(sun.longitude,moon.longitude,dt,6),"
+                "vimshottari:NodeJhora.generateVimshottari(dt,moon.longitude,2)"
+                "})}else{JSON.stringify({error:'moon/sun not found'})}"
+                "}else{JSON.stringify({error:'no planets'})}"
+                "}catch(e){JSON.stringify({error:e.message})}" % (
+                    iso_vd_date, lat, lon))
+            if nj_pv and 'error' not in nj_pv:
+                result["nodejhora_pv"] = nj_pv
+        except: pass
     result["_hint"]=("PyJHora已全量:Panchanga/Shadbala/Ashtakavarga/RajaYoga774/Dosha/Arudha/Vimshottari。\\nNodeJhora(DE440)已预取:行星/宫位/Jaimini/Ashtakavarga/Yogini/Yoga。\\nCaelus/NatalEngine已预取(depth=deep)。自探索:dir(jhora)/Object.keys(NodeJhora)/Object.keys(Caelus)")
     # ===== 深度模式: NatalEngine(文本) + Caelus(分盘/Ashtottari) + PyJHora深度补充 =====
     if depth=="deep":

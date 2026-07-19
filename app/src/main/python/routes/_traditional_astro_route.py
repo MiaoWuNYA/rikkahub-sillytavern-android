@@ -179,11 +179,11 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
             "var e=new Caelus.Engine(Caelus.embeddedData);"
             "var jd=Caelus.isoToJd('%s');"
             "JSON.stringify({"
-            "firdaria:Caelus.firdariaAt(e,jd,jd,%f,%f),"
+            "firdaria:Caelus.firdaria(%s,jd),"
             "primaryDirections:Caelus.primaryDirections(e,jd,%f,%f),"
-            "solarArc:Caelus.solarArc(e,jd,jd),"
-            "profections:Caelus.profectionAt(e,jd,jd,%f,%f)"
-            "})" % (iso_date, lat, lon, lat, lon, lat, lon))
+            "solarReturn:Caelus.solarReturn(e,jd,jd+3650,jd+4015),"
+            "profections:Caelus.profection(0,jd,jd+365)"
+            "})" % (iso_date, "true" if is_day else "false", lat, lon))
         if c and 'bridge not available' not in c and 'error' not in c.lower():
             result["caelus"] = c
             result["engine"] = "flatlib+Caelus"

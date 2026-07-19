@@ -81,7 +81,17 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
     try:
         import taixuanshifa
         result["engine"]+="+taixuanshifa"
-        if hasattr(taixuanshifa,'pan_from_code'):
+        if year and month and day:
+            tx = taixuanshifa.Taixuan(year, month, day, 12)
+            try: result["taixuan_pan"] = str(tx.pan())
+            except: pass
+            try: result["taixuan_qigua"] = str(tx.qigua_number())
+            except: pass
+            try: result["taixuan_dz"] = str(tx.getdz())
+            except: pass
+            try: result["taixuan_dz_date"] = str(tx.getdz_date())
+            except: pass
+        elif hasattr(taixuanshifa,'pan_from_code'):
             result["taixuan"]=str(taixuanshifa.pan_from_code(seed or "777777"))
     except: pass
     try:
@@ -95,5 +105,14 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
         if not hex_values:
             _js_load("iching-shifa-engine")
             result["iching_shifa_js"]=_js("iching-shifa-engine","JSON.stringify(IchingShifa.dayan())")
+            # 文档实测: 补充卦名/互卦/之卦/动爻位置
+            try:
+                result["iching_shifa_gua"]=_js("iching-shifa-engine",
+                    "var r=IchingShifa.dayan();"
+                    "JSON.stringify({guaName:IchingShifa.getGuaName(r.originalGua),"
+                    "huGua:IchingShifa.getHuGua(r.originalGua),"
+                    "zhiGua:IchingShifa.getZhiGua(r.originalGua,r.movingYao),"
+                    "movingYao:IchingShifa.getMovingYaoPositions(r)})")
+            except: pass
         result["engine"]+="+iching-shifa-engine"
     return result
