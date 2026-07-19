@@ -11,7 +11,15 @@ def _ziwei(year,month,day,hour,gender="male",engine="iztro"):
     result={"system":"ziwei","engine":engine}
     if engine in ("iztro","all"):
         _js_load("iztro-engine")
-        result["iztro"]=_js("iztro-engine",f"JSON.stringify(Iztro.astro.bySolar('{date_str}',{hour},'{gender}'))")
+        r=_js("iztro-engine",f"JSON.stringify(Iztro.astro.bySolar('{date_str}',{hour},'{gender}'))")
+        result["iztro"]=r
+        result["iztro_extra"]=_js("iztro-engine",
+            "var a=Iztro.astro.bySolar('%s',%d,'%s');"
+            "JSON.stringify({"
+            "soul:Iztro.astro.soul,body:Iztro.astro.body,"
+            "horoscope:Iztro.astro.horoscope(),"
+            "surroundedPalaces:[0,1,2,3,4,5,6,7,8,9,10,11].map(function(i){return Iztro.astro.surroundedPalaces(i)})"
+            "})" % (date_str, hour, gender))
     if engine in ("nihai","all"):
         _js_load("ziwei-nihai")
         result["nihai"]=_js("ziwei-nihai",f"JSON.stringify(ZiweiNihai.generateChart({{year:{year},month:{month},day:{day},hour:{hour},gender:'{gender}'}}))")
