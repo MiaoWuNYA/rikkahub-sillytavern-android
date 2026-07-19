@@ -37,6 +37,10 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
             except: pass
             try: result["hutiangua"]=str(hex_data.hutiangua())
             except: pass
+            try: result["bookgua_details"]=str(i.bookgua_details())
+            except: pass
+            try: result["decode_gua"]=str(i.decode_gua(str(getattr(hex_data,'lines','') or getattr(hex_data,'values','') or '')))
+            except: pass
         elif method=="number":
             n=seed if seed is not None else 42
             hex_data=i.qigua_manual(2026,1,1,12,0,f"{n}")
