@@ -45,7 +45,6 @@ Greer两步法（来自Ex Machina实际解读）:
 话术: "【女人】旁紧贴【心】——感情是核心议题"
 
 ── B. 逐牌解读（Greer两步法）──
-每张牌: image_tag →
 第一步·关键词翻译: 每张牌先给出它的核心关键词
   Greer实际示例: "Coffin means illness, financial loss, endings"
   按topic_context取具体含义（同牌不同义）
