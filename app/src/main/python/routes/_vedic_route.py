@@ -80,6 +80,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
                 "argala":str(house.get_argala(p_to_h)),
                 "brahma":str(house.brahma(pp)),
                 "rudra":str(house.rudra(pp)),
+                "yoga_kaaraka":str({str(p):str(house.is_yoga_kaaraka(asc_house,p,h)) for p,(h,_) in pp if p!=const._ascendant_symbol}),
             }
         except: pass
         # 11. 行星状态
@@ -143,7 +144,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
                 "panchanga:NodeJhora.calculatePanchanga(sun.longitude,moon.longitude,dt,6),"
                 "vimshottari:NodeJhora.generateVimshottari(dt,moon.longitude,2),"
                 "dashaBalance:NodeJhora.calculateDashaBalance(moon.longitude),"
-                "narayanaDasha:NodeJhora.NarayanaDasha?NodeJhora.NarayanaDasha.calculate(chart2,dt,80):null"
+                "narayanaDasha:NodeJhora.NarayanaDasha?NodeJhora.NarayanaDasha.calculate(chart2,dt,80):null," "varga:NodeJhora.calculateVarga?NodeJhora.calculateVarga(moon.longitude,9):null"
                 "})}else{JSON.stringify({error:'moon/sun not found'})}"
                 "}else{JSON.stringify({error:'no planets'})}"
                 "}catch(e){JSON.stringify({error:e.message})}" % (

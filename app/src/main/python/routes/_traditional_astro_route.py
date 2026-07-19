@@ -44,6 +44,7 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
     from flatlib.protocols.almutem import compute as almutem_compute
     from flatlib.predictives.profections import compute as prof_compute
     from flatlib.aspects import hasAspect
+    from flatlib.tools import chartdynamics
     dt=Datetime(f"{year}/{month:02d}/{day}",f"{hour}:00",tz_offset)
     pos=GeoPos(lat,lon)
     chart=Chart(dt,pos,IDs=const.LIST_OBJECTS)
@@ -68,8 +69,10 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
     for name in const.LIST_OBJECTS[:7]:
         try:
             o=chart.getObject(name)
-            objs[name.lower()]={"sign":o.sign,"signlon":o.signlon,"lon":o.lon,
+            pname_lower=name.lower()
+            objs[pname_lower]={"sign":o.sign,"signlon":o.signlon,"lon":o.lon,
                 "house":next(i for i in range(1,13) if chart.getHouse(getattr(const,f"HOUSE{i}")).inHouse(o.lon)),
+                "speed":planets.get(pname_lower,{}).get("speed",0),
                 "retrograde":o.isRetrograde(),"ruler":ruler(o.sign),"exalt":exalt(o.sign),
                 "score":ess_score(name,o.sign,o.signlon),"peregrine":isPeregrine(name,o.sign,o.signlon)}
         except: pass
@@ -79,6 +82,16 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
             h=chart.getHouse(getattr(const,f"HOUSE{i}"))
             houses[f"house{i}"]={"sign":h.sign,"lon":h.lon}
         except: pass
+    # Whole Sign Houses（模板要求: 从 Asc 度数推算）
+    try:
+        sign_names=["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"]
+        asc_sign_index=int(asc_lon//30)
+        whole_sign_houses=[]
+        for i in range(12):
+            hs_lon=((asc_sign_index+i)%12)*30
+            whole_sign_houses.append({"house":i+1,"sign":sign_names[int(hs_lon//30)],"lon":hs_lon})
+        result_whole_sign=whole_sign_houses
+    except: result_whole_sign=[]
     # 本质尊贵
     dignities={}
     for name in const.LIST_OBJECTS[:7]:
@@ -133,6 +146,25 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
             try: lots[name]=str(getPart(name, chart))
             except: pass
     except: lots={}
+    # flatlib getPart统一循环
+    try:
+        _ALL_PARS=["Pars Fortuna","Pars Spirit","Pars Eros","Pars Courage",
+            "Pars Basis","Pars Nemesis","Pars Necessity","Pars Victory",
+            "Pars Wedding [Male]","Pars Wedding [Female]",
+            "Pars Children [Male]","Pars Children [Female]",
+            "Pars Father","Pars Mother","Pars Friends",
+            "Pars Brothers","Pars Death","Pars Diseases",
+            "Pars Enemies","Pars Jupiter","Pars Faith",
+            "Pars Horsemanship","Pars Mars","Pars Mercury",
+            "Pars Saturn","Pars Sons","Pars Substance",
+            "Pars Travel","Pars Venus"]
+        from flatlib.tools import arabicparts as _ap
+        for name in _ALL_PARS:
+            try:
+                p=_ap.getPart(name,chart)
+                lots[name]=float(str(p).split()[-1].replace(")",""))
+            except: pass
+    except: pass
     # 传统特殊结构检测
     configs=[]
     try:
@@ -152,6 +184,24 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
             if len(besieging)>=2:
                 configs.append({"type":"besiegement","planet":c,"besiegers":besieging})
     except: pass
+    # Reception (chartdynamics) — 互容/接纳/定位星
+    try:
+        dyn=chartdynamics.ChartDynamics(chart)
+        c_planets=[const.SUN,const.MOON,const.MERCURY,const.VENUS,const.MARS,const.JUPITER,const.SATURN]
+        reception={}
+        for a in c_planets:
+            for b in c_planets:
+                if a!=b:
+                    mr=dyn.mutualReceptions(a,b)
+                    if mr:
+                        reception[f"{a}_vs_{b}"]={"mutual_reception":mr}
+                    disp=dyn.disposits(a,b)
+                    if disp:
+                        reception[f"{a}_disposits_{b}"]=disp
+                    recv=dyn.receives(a,b)
+                    if recv:
+                        reception[f"{a}_receives_{b}"]=recv
+    except: reception={}
     # 气质
     try:
         t=Temperament(chart)
@@ -167,13 +217,13 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
     except:
         prof_asc="flatlib profections failed (known divide-by-zero bug), use Caelus.profection from caelus field"
     result = {"system":"traditional_astrology","engine":"flatlib",
-        "objects":objs,"houses":houses,
+        "objects":objs,"houses":houses,"houses_whole_sign":result_whole_sign,
         "asc":str(chart.getAngle(const.ASC)),"mc":str(chart.getAngle(const.MC)),
         "dignities":dignities,"accidental":accidental,
         "sect":{"is_day":is_day,"planets":sect},
         "temperament":temperament,"almutem":str(alm),
-        "arabic_parts":lots,"profection_asc":prof_asc,
-        "configurations":configs}
+        "arabic_parts_all":lots,"profection_asc":prof_asc,
+        "configurations":configs,"reception":reception}
     # Caelus JS: 13项传统推运/分析 (独立try, 失败不影响flatlib)
     try:
         tz_sign = "+" if tz_offset >= 0 else "-"
@@ -191,8 +241,8 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
             "var isDay=%s;"
             "var cusps=Caelus.housesPlacidus(e,jd,%f,%f);"
             "var ws=Caelus.housesWholeSign(e,jd,%f);"
-            "var bodies={};[0,1,2,3,4,5,6].forEach(function(i){bodies[i]={lon:0}});"
-            "var natal={bodies:bodies,cusps:cusps,zodiac:'tropical'};"
+            "var natalBodies={};['sun','moon','mercury','venus','mars','jupiter','saturn'].forEach(function(b){natalBodies[b]={lon:e.longitude(b,jd,{zodiac:'tropical'})}});"
+            "var natal={bodies:natalBodies,cusps:cusps,zodiac:'tropical'};"
             "var transitJd=jd+365;"
             "JSON.stringify({"
             "profections:Caelus.profection(%d,jd,jd+365),"
@@ -207,7 +257,7 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
             "voidOfCourse:Caelus.voidOfCourse(e,jd),"
             "planetaryHour:Caelus.planetaryHour(e,jd,%f,%f),"
             "outOfBoundsMoon:Caelus.outOfBounds(e,'moon',jd,1),"
-            "housesWholeSign:ws"
+            "housesWholeSign:ws," "speed:{sun:e.position('sun',jd).speed,moon:e.position('moon',jd).speed,mercury:e.position('mercury',jd).speed,venus:e.position('venus',jd).speed,mars:e.position('mars',jd).speed,jupiter:e.position('jupiter',jd).speed,saturn:e.position('saturn',jd).speed}," "declinationAspects:Caelus.declinationAspects(e,['sun','moon','venus','mars','jupiter','saturn'],jd,1)"
             "})" % (iso_date, "true" if is_day else "false", lat, lon, lat,
                     asc_idx, lat, lon, fortune_lon,
                     sun_lon, moon_lon, sun_lon, moon_lon,
