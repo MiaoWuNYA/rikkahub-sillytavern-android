@@ -14,7 +14,7 @@ def _lenormand(spread="line-5", seed=None):
     for i, item in enumerate(items):
         try:
             cards.append({
-                "position": sp.positions[i].name, "card_id": item.card_id,
+                "position": sp.positions[i].name, "card_id": item.card_id, "orientation": item.orientation.value,
                 "card_name": item.card_name, "core": item.get_core(),
                 "timing": item.get_timing(), "modifier": item.get_modifier_behavior(),
                 "as_person": item.get_as_person(),
