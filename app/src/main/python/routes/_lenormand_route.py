@@ -3,7 +3,7 @@ import json, sys, os
 from ._shared import _js, _js_load
 
 # ===== 雷诺曼 =====
-def _lenormand(spread="line-5", seed=None):
+def _lenormand(spread="line-5", seed=None, cards=None):
     from arcanite.core import LenormandDeck
     from arcanite.core.spread import get_spread_registry
     d = LenormandDeck.load()

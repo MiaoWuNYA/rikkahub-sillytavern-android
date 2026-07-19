@@ -3,13 +3,24 @@ import json, sys, os
 from ._shared import _js, _js_load
 
 # ===== 塔罗 =====
-def _tarot(spread="celtic-cross", seed=None, question_type=None, kaabalah=False):
+def _tarot(spread="celtic-cross", seed=None, question_type=None, kaabalah=False, cards=None):
     from arcanite.core import TarotDeck
     from arcanite.core.spread import load_spread
     from tarot_elemental_engine import ElementalDignityEngine as EE
     deck = TarotDeck.load(system="tarot")
     sp = load_spread(spread)
-    drawn = deck.draw(len(sp.positions), seed=seed)
+    if cards and isinstance(cards, list) and len(cards) > 0:
+        from arcanite.core.models import DrawnCard, Orientation
+        drawn = []
+        for i, cid in enumerate(cards):
+            card = deck.get_card(cid)
+            dc = DrawnCard(card_id=card.card_id, card_name=card.card_name,
+                           position_index=i, position_name="", orientation=Orientation.UPRIGHT,
+                           image_path=deck.get_image_path(card))
+            dc._attach_deck(deck)
+            drawn.append(dc)
+    else:
+        drawn = deck.draw(len(sp.positions), seed=seed)
     cards = []
     SUIT_URL={"wands":"W","cups":"C","swords":"S","pentacles":"P"}
     RANK_URL={1:"0A",2:"02",3:"03",4:"04",5:"05",6:"06",7:"07",8:"08",9:"09",10:"10",
