@@ -16,7 +16,6 @@ def _qimen(year,month,day,hour=None,minute=0,feature="all"):
         # 解读层: 格局+星门神详解+运筹
         result["qimen_analysis"]=_js("qimen-engine",
             "JSON.stringify({"
-            "jiGe:QimenEngine.getAllJiGe(),xiongGe:QimenEngine.getAllXiongGe(),"
             "starDetail:['天蓬','天芮','天冲','天辅','天禽','天心','天柱','天任','天英'].map(function(s){return QimenEngine.getStarDetail(s)}),"
             "doorDetail:['休','生','伤','杜','景','死','惊','开'].map(function(d){return QimenEngine.getDoorDetail(d)}),"
             "godDetail:['值符','螣蛇','太阴','六合','白虎','玄武','九地','九天'].map(function(g){return QimenEngine.getGodDetail(g)}),"
