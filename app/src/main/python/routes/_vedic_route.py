@@ -43,8 +43,6 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0,depth="standard"):
         # 2. Panchanga
         try: result["predictions"]=get_prediction_details(jd_local,place)
         except: pass
-        try: result["prediction_resources"]=get_prediction_resources()
-        except: pass
         try: result["longevity"]=life_span_range(jd_local,place)
         except: pass
         try: result["tajaka"]={"varsha_pravesh":_tj.varsha_pravesh(jd_local,place),"annual_chart":_tj.annual_chart(jd_local,place),"lord_of_year":_tj.lord_of_the_year(jd_local,place,0)}
@@ -69,9 +67,13 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0,depth="standard"):
         try: result["ashtakavarga"]=ashtakavarga.get_ashtaka_varga(p_to_h)
         except: pass
         # 6. Raja Yoga
-        try: result["raja_yoga"]=raja_yoga.get_raja_yoga_details(jd_local,place)
+        try:
+            ry_data,ry_found,ry_total=raja_yoga.get_raja_yoga_details(jd_local,place)
+            result["raja_yoga"]={"yogas":ry_data,"found":ry_found,"total_checked":ry_total}
         except: pass
-        try: result["yoga_details"]=yoga.get_yoga_details(jd_local,place)
+        try:
+            yd_data,yd_found,yd_total=yoga.get_yoga_details(jd_local,place)
+            result["yoga_details"]={"yogas":yd_data,"found":yd_found,"total_checked":yd_total}
         except: pass
         # 7. Dosha 全7项
         try:
