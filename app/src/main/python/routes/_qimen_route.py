@@ -26,7 +26,7 @@ def _qimen(year,month,day,hour=None,minute=0,feature="all"):
     # 大六壬
     if feature in ("liuren","all"):
         _js_load("liuren-engine")
-        result["liuren"]=_js("liuren-engine",f"JSON.stringify(LiuRen.getLiuRenByDate(new Date({year},{month-1},{day},12,0)))")
+        result["liuren"]=_js("liuren-engine",f"JSON.stringify(LiuRen.getLiuRenByDate(new Date({year},{month-1},{day},{hour or 12},{minute})))")
         result["engine"]+="+LiuRen"
     # 小六壬(完整掌诀推算)
     if feature in ("xiaoliuren","all"):
