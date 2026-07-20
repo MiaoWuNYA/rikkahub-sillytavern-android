@@ -5,9 +5,10 @@ from ._shared import _js, _js_load
 # ===== 雷诺曼 =====
 def _lenormand(spread="line-5", seed=None, cards=None):
     from arcanite.core import LenormandDeck
-    from arcanite.core.spread import get_spread_registry
+    from arcanite.core.spread import SpreadRegistry
     d = LenormandDeck.load()
-    sp = get_spread_registry(system="lenormand").load_spread(spread)
+    _json_path = os.path.join(os.path.dirname(__file__), '..', 'lenormand-spreads.json')
+    sp = SpreadRegistry.from_config(_json_path).load_spread(spread)
     from arcanite.core.models import DrawnCard, Orientation
     from arcanite.core.deck import LenormandDrawnCard
     if not cards or not isinstance(cards, list):
