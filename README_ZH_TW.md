@@ -94,4 +94,4 @@
 
 ## 📄 許可證
 
-[License](LICENSE) 
+本項目基於 [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0) 開源。
