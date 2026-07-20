@@ -1,6 +1,6 @@
 """Route:  vedic"""
 import json, sys, os
-from ._shared import _js, _js_load
+from ._shared import _js, _js_load, compute_jd
 
 # ===== 吠陀 =====
 def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0,depth="standard"):
@@ -13,6 +13,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0,depth="standard"):
     tz_vd_abs = abs(tz_vd)
     tz_vd_str = f"{tz_vd_sign}{int(tz_vd_abs):02d}:{int((tz_vd_abs - int(tz_vd_abs)) * 60 + 0.5):02d}"
     iso_vd_date = f"{date_str}T{hour:02d}:{minute:02d}:00{tz_vd_str}"
+    jd_vd = compute_jd(year, month, day, hour, minute, tz_vd)
     hour_dec = hour + minute/60
 
     result={"system":"vedic"}
@@ -184,25 +185,25 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0,depth="standard"):
         _js_load("caelus-engine")
         if lat and lon:
             c=_js("caelus-engine",
-                "var e=new Caelus.Engine(Caelus.embeddedData);var jd=Caelus.isoToJd('%s');"
+                "var e=new Caelus.Engine(Caelus.embeddedData);var jd=%s;"
                 "var bodies=['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune','pluto','chiron'];"
                 "var moonLon=e.longitude('moon',jd,{zodiac:'sidereal:lahiri'});"
                 "JSON.stringify({vargaD9:Caelus.vargaChart(e,jd,9,bodies,'sidereal:lahiri'),"
                 "vimshottari:Caelus.vimshottariDashas(moonLon,jd),"
                 "ashtottari:Caelus.ashtottariAt(e,jd,jd,%f,%f),"
                 "yogini:Caelus.yoginiAt(e,jd,jd,%f,%f)})"
-                %(iso_vd_date,lat,lon,lat,lon))
+                %(jd_vd,lat,lon,lat,lon))
             if c and 'bridge not available' not in c: result["caelus"]=c; result["engine"]+="+Caelus"
     except: pass
     # Transit + Sade Sati (当前行运)
     try:
         import datetime
         today=datetime.datetime.now()
-        today_iso=f"{today.year}-{today.month:02d}-{today.day}T12:00:00+00:00"
+        today_jd = compute_jd(today.year, today.month, today.day, 12, 0, 0)
         transit=_js("caelus-engine",
             "var e=new Caelus.Engine(Caelus.embeddedData);"
-            "var natalJd=Caelus.isoToJd('%s');"
-            "var transitJd=Caelus.isoToJd('%s');"
+            "var natalJd=%s;"
+            "var transitJd=%s;"
             "var natalMoon=e.longitude('moon',natalJd,{zodiac:'sidereal:lahiri'});"
             "var transitSaturn=e.longitude('saturn',transitJd,{zodiac:'sidereal:lahiri'});"
             "var transitJupiter=e.longitude('jupiter',transitJd,{zodiac:'sidereal:lahiri'});"
@@ -215,7 +216,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0,depth="standard"):
             "else if(satSign===(moonSign+11)%%12)sadeSati='rising';"
             "else if(satSign===(moonSign+1)%%12)sadeSati='setting';"
             "JSON.stringify({sadeSati:sadeSati,moonSign:moonSign,saturnSign:satSign,saturnLon:transitSaturn,jupiterSign:signIdx(transitJupiter),rahuSign:signIdx(transitRahu)})"
-            %(iso_vd_date,today_iso))
+            %(jd_vd,today_jd))
         if transit and 'error' not in transit: result["transit"]=transit
     except: pass
     # PyJHora深度

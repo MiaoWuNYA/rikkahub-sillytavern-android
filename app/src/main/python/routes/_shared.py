@@ -27,3 +27,13 @@ def _js_load(lib):
         except Exception as e:
             return json.dumps({"error": f"load: {e}"}, ensure_ascii=False)
     return json.dumps({"error": "bridge not available"})
+
+def compute_jd(year, month, day, hour, minute, tz_offset):
+    """Compute Julian Day matching Caelus.isoToJd() result exactly.
+    JD = 2440587.5 + (Unix timestamp ms) / 86400000"""
+    import datetime
+    dt_local = datetime.datetime(year, month, day, hour, minute, 0)
+    dt_utc = dt_local - datetime.timedelta(hours=tz_offset)
+    epoch = datetime.datetime(1970, 1, 1)
+    delta = dt_utc - epoch
+    return 2440587.5 + delta.total_seconds() / 86400.0

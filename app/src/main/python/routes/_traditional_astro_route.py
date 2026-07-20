@@ -1,6 +1,6 @@
 """Route:  traditional astro"""
 import json, sys, os
-from ._shared import _js, _js_load
+from ._shared import _js, _js_load, compute_jd
 
 # ===== 传统西洋占星 =====
 def _traditional_astro(year,month,day,hour,tz_offset,lat,lon,minute=0):
@@ -228,10 +228,7 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon,minute=0):
         "configurations":configs,"reception":reception}
     # Caelus JS: 13项传统推运/分析 (独立try, 失败不影响flatlib)
     try:
-        tz_sign = "+" if tz_offset >= 0 else "-"
-        tz_abs = abs(tz_offset)
-        tz_str = f"{tz_sign}{int(tz_abs):02d}:{int((tz_abs - int(tz_abs)) * 60 + 0.5):02d}"
-        iso_date = f"{year}-{month:02d}-{day}T{hour:02d}:{minute:02d}:00{tz_str}"
+        jd = compute_jd(year, month, day, hour, minute, tz_offset)
         asc_idx = int(asc_lon / 30) if 'asc_lon' in dir() else 0
         fortune_lon = lots.get("fortune", 0) if 'lots' in dir() and isinstance(lots, dict) else 0
         sun_lon = planets.get("sun", {}).get("lon", 0) if 'planets' in dir() else 0
@@ -239,7 +236,7 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon,minute=0):
         _js_load("caelus-engine")
         c = _js("caelus-engine",
             "var e=new Caelus.Engine(Caelus.embeddedData);"
-            "var jd=Caelus.isoToJd('%s');"
+            "var jd=%s;"
             "var isDay=%s;"
             "var cusps=Caelus.housesPlacidus(e,jd,%f,%f);"
             "var ws=Caelus.housesWholeSign(e,jd,%f);"
@@ -260,7 +257,7 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon,minute=0):
             "planetaryHour:Caelus.planetaryHour(e,jd,%f,%f),"
             "outOfBoundsMoon:Caelus.outOfBounds(e,'moon',jd,1),"
             "housesWholeSign:ws," "speed:{sun:e.position('sun',jd).speed,moon:e.position('moon',jd).speed,mercury:e.position('mercury',jd).speed,venus:e.position('venus',jd).speed,mars:e.position('mars',jd).speed,jupiter:e.position('jupiter',jd).speed,saturn:e.position('saturn',jd).speed}," "declinationAspects:Caelus.declinationAspects(e,['sun','moon','venus','mars','jupiter','saturn'],jd,1)"
-            "})" % (iso_date, "true" if is_day else "false", lat, lon, lat,
+            "})" % (jd, "true" if is_day else "false", lat, lon, lat,
                     asc_idx, lat, lon, fortune_lon,
                     sun_lon, moon_lon, sun_lon, moon_lon,
                     lat, lon))
