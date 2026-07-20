@@ -44,7 +44,7 @@ fun createMingliTool(context: Context): Tool = Tool(
                     put("description", "系统特定参数JSON。 cards=手动指定牌面(可选, 传则跳过随机抽牌), 正逆位: {id, reversed}。" +
                             " 塔罗: {spread, seed, question_type, kaabalah, cards}" +
                             " 雷诺曼: {spread, seed, cards}" +
-                            " 八字: {year, month, day, hour, gender, feature?=shengxiao|luohou|all}" +
+                            " 八字: {year, month, day, hour, minute?, gender, feature?=shengxiao|luohou|all}" +
                             " 紫微: {year, month, day, hour, minute?, gender, engine}" +
                             " 现代西洋占星: {year, month, day, hour, minute?, tz, lat, lon}" +
                             " 传统西洋占星: {year, month, day, hour, minute?, tz_offset, lat, lon}" +

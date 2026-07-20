@@ -181,7 +181,7 @@ class GenerationHandler(
                 appendLine("  各系统 params 格式(含别名):")
                 appendLine("    塔罗(韦特/塔罗牌/tarot): {spread, seed, question_type?, kaabalah?, cards?}")
                 appendLine("    雷诺曼(lenormand): {spread, seed, cards?}")
-                appendLine("    八字(四柱/生辰八字/bazi/排盘): {year, month, day, hour, gender, feature?}")
+                appendLine("    八字(四柱/生辰八字/bazi/排盘): {year, month, day, hour, minute?, gender, feature?}")
                 appendLine("    紫微(紫微斗数/紫薇/ziwei): {year, month, day, hour, minute?, gender, engine?}")
                 appendLine("    现代西洋占星(现代占星/星座/western_astro): {year, month, day, hour, minute?, tz, lat, lon}")
                 appendLine("    传统西洋占星(古典占星/中世纪/卜卦/horary/traditional_astro): {year, month, day, hour, minute?, tz_offset, lat, lon}")

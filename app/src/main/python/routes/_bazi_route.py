@@ -3,12 +3,12 @@ import json, sys, os
 from ._shared import _js, _js_load
 
 # ===== 八字 =====
-def _bazi(year, month, day, hour, gender=1, feature="bazi"):
+def _bazi(year, month, day, hour, minute=0, gender=1, feature="bazi"):
     # 兼容Kotlin传来的"male"/"female"字符串
     if isinstance(gender, str):
         gender = 1 if gender.lower() in ("male", "男", "m") else 0
     from lunar_python import Solar
-    s = Solar.fromYmdHms(year, month, day, hour, 0, 0)
+    s = Solar.fromYmdHms(year, month, day, hour, minute, 0)
     l = s.getLunar()
     ec = l.getEightChar()
     yun = ec.getYun(gender)
