@@ -45,6 +45,12 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
                     result["decode_gua"]=i.decode_gua(str(hlines))
                     try: result["decode_two_gua"]=i.decode_two_gua(str(hlines),str(getattr(hex_data,"ggua_lines","") or ""))
                     except: pass
+                    try:
+                        gua_str_full=str(hlines)
+                        result["guaike"]=i.guaike(year,month,day,12,0,int(gua_str_full[:3]),int(gua_str_full[3:6]))
+                    except: pass
+                    try: result["gua_description"]=i.show_sixtyfourguadescription(hlines)
+                    except: pass
             except: pass
         elif method=="number":
             n=seed if seed is not None else 42
@@ -109,13 +115,17 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
         if hasattr(jingjue,'jie'):
             result["jingjue"]=jingjue.jie(seed or "777777")
     except: pass
-    # JS双引擎 (feature="all"时全量)
+    # JS双引擎 (feature="all"时全量 — 与Python同盘)
     if feature=="all":
         _js_load("iching-shifa-engine")
-        result["iching_shifa_js"]=_js("iching-shifa-engine","JSON.stringify(IchingShifa.dayan())")
+        if hex_values is not None:
+            yao_js = json.dumps(str(hex_values))
+        else:
+            yao_js = "IchingShifa.dayan()"
+        result["iching_shifa_js"]=_js("iching-shifa-engine","JSON.stringify("+yao_js+")")
         try:
             result["iching_shifa_pan"]=_js("iching-shifa-engine",
-                "var r=IchingShifa.dayan();"
+                "var r="+yao_js+";"
                 "var pan=IchingShifa.decodePan(r,{year:"+str(year or 2026)+",month:"+str(month or 1)+",day:"+str(day or 1)+",hour:12});"
                 "var gdyd=null;try{gdyd=IchingShifa.getGaoDaoYiDuan(pan.benGua.guaCode);}catch(e){}"
                 "var qyxx=null;try{qyxx=IchingShifa.calculateQingyiXingXiu(r,"+str(year or 2026)+","+str(month or 1)+","+str(day or 1)+");}catch(e){}"
