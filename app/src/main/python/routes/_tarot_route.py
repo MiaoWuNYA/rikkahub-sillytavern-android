@@ -59,7 +59,7 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, kaabalah=False,
                                "reversed_en":dc.get_tk_meaning("reversed","en"), "reversed_zh":dc.get_tk_meaning("reversed","zh")},
                 "meditation_focus": (dc.raw_data or {}).get("meditation_focus") if hasattr(dc,'raw_data') else None,
                 "image_url": img,
-                "image_tag": f"<img src='{img}' style='transform:rotate({180 if is_rev else 0}deg)'/>",
+                "image_tag": f"<img src='{img}'/>",
             })
         except Exception:
             cards.append({"position": sp.positions[i].rag_mapping, "card_number": dc.card_number if hasattr(dc,'card_number') else None, "error": "card data partial"})
