@@ -145,13 +145,10 @@ class GenerationHandler(
             },
             leadInInstructions = buildString {
                 appendLine("<tool_selection>")
-                appendLine("Read files → file action=\"read\"")
-                appendLine("Search files → file action=\"search\"")
-                appendLine("List dirs → file action=\"list\"")
-                appendLine("Write files → file action=\"write\"")
-                appendLine("Edit files → file action=\"patch\" (surgical find-and-replace)")
-                appendLine("Copy/move/delete → file action=\"copy\"/\"move\"/\"delete\"")
-                appendLine("Shell → execute_command (git, builds only)")
+                appendLine("Workspace files → workspace_read/write/edit (/workspace/...)")
+                appendLine("Workspace shell → workspace_shell (git, builds, Unix tools in sandbox)")
+                appendLine("Device files → file action=\"read/write/patch/list/search/copy/move/delete\" (Download/skills dirs)")
+                appendLine("Device shell → execute_command (logcat, device info only)")
                 appendLine("Python → execute_python (data processing, API)")
                 appendLine("Math → calculator (NOT execute_python)")
                 appendLine("Web → web_search / web_fetch")

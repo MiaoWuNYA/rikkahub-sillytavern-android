@@ -87,14 +87,11 @@ fun createSearchTools(settings: Settings): Set<Tool> {
             add(
                 Tool(
                     name = "scrape_web",
-                    description = "Scrape a URL for detailed page content.\n\n" +
-                        "When to use:\n" +
-                        "- Read full content of a specific URL (not search results)\n" +
-                        "- Extract text from web pages for analysis\n\n" +
-                        "When NOT to use:\n" +
-                        "- Web search (use search_web)\n\n" +
-                        "Args:\n" +
-                        "- url: URL to scrape",
+                    description = """
+                        Scrape a URL for detailed page content.
+                        Use this when the user requests content from a specific page or when search snippets are insufficient.
+                        Avoid using it for common questions unless the user asks.
+                        """.trimIndent(),
                     parameters = {
                         val options = settings.searchServices.getOrElse(
                             index = settings.searchServiceSelected,

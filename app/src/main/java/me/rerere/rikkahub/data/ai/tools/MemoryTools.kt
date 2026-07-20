@@ -25,20 +25,24 @@ fun buildMemoryTools(
 ): List<Tool> = listOf(
     Tool(
         name = "memory_tool",
-        description = "Store and retrieve long-term memories that persist across conversations.\n\n" +
-            "Use this tool to remember user preferences, project conventions, and important facts between sessions.\n\n" +
-            "When to use:\n" +
-            "- Save: User preferences, decisions, project conventions, important facts\n" +
-            "- Read: Recall context before starting a new task\n" +
-            "- List: See all stored keys\n" +
-            "- Delete: Remove specific outdated memories\n\n" +
-            "When NOT to use:\n" +
-            "- Transient task state (use todo_write instead)\n\n" +
-            "Args:\n" +
-            "- action: create | read | delete | list\n" +
-            "- key: Memory identifier (create, read, delete)\n" +
-            "- content: Information to store (create)\n" +
-            "Memories persist per agent across sessions.",
+        description = """
+            The memory tool stores long-term information across conversations.
+            Use `action` to control the operation: `create` (add), `edit` (update), `delete` (remove).
+            - No relevant record: `create` + `content`
+            - Existing relevant record: `edit` + `id` + `content`
+            - Outdated/irrelevant record: `delete` + `id`
+            Memories will automatically appear in the <memories> tag in later conversations.
+            Do not store sensitive information (e.g., ethnicity, religion, sexual orientation, political views, sex life, criminal records).
+            You may store: preferred name, preferences, plans, work-related notes, chat style preferences, first chat time, etc.
+            Do not show memory content directly in the conversation unless the user explicitly asks.
+            Today is ${LocalDate.now().toLocalString(true)}.
+            Similar memories should be merged; prefer updating existing records.
+
+            Examples:
+            {"action":"create","content":"User prefers brief replies and is more active on weekends."}
+            {"action":"edit","id":12,"content":"User’s preferred name updated to “A-Xing”, prefers Chinese replies."}
+            {"action":"delete","id":7}
+        """.trimIndent(),
         parameters = {
             InputSchema.Obj(
                 properties = buildJsonObject {
