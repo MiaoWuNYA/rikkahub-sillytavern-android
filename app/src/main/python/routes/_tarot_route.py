@@ -84,7 +84,7 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, kaabalah=False,
         result["relation_pairs"] = [EE.classify_relation(els[i], els[i+1]) for i in range(n-1)]
         result["_hint"] = "arcanite内置18字段已全量。EE 18方法全覆盖。Kaabalah(JS): 22塔罗导出+5牌桌+7牌阵+卡巴拉对应+777表。自探索: Object.keys(Kaabalah)"
     except Exception:
-        result["_hint"] = "arcanite内置18字段已全量。Kaabalah(JS): 22塔罗导出+5牌桌+7牌阵+卡巴拉对应+777表"
+        result["_hint"] = "arcanite内置18字段已全量。Kaabalah(JS): 22塔罗导出+5牌桌+7牌阵+卡巴拉对应+777表。自探索: Object.keys(Kaabalah)"
     if kaabalah:
         _js_load("kaabalah-engine")
         kaabalah_results = []
