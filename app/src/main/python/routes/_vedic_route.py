@@ -23,7 +23,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0,depth="standard"):
         from jhora.panchanga import drik
         from jhora.horoscope.chart import house, strength, raja_yoga, yoga, dosha, ashtakavarga, arudhas, charts
         from jhora.horoscope.dhasa.graha import vimsottari
-        from jhora.horoscope.prediction.general import get_prediction_details, get_prediction_resources
+        from jhora.horoscope.prediction.general import get_prediction_details
         from jhora.horoscope.prediction.longevity import life_span_range
         from jhora.horoscope.transit import tajaka as _tj
         from jhora.horoscope.transit import tajaka_yoga as _tjy
