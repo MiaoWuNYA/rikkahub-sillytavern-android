@@ -3,7 +3,7 @@ import json, sys, os
 from ._shared import _js, _js_load
 
 # ===== 奇门三式 =====
-def _qimen(year,month,day,hour=None,feature="all"):
+def _qimen(year,month,day,hour=None,minute=0,feature="all"):
     result={"system":"qimen","engine":""}
     # Qimen Dunjia (日家+时家)
     if feature in ("qimen","all"):
@@ -11,7 +11,7 @@ def _qimen(year,month,day,hour=None,feature="all"):
         result["qimen"]=_js("qimen-engine",f"JSON.stringify(QimenEngine.generate({{type:'rijia',year:{year},month:{month},day:{day}}}))")
         result["engine"]="QimenEngine"
         if hour is not None:
-            result["qimen_hourly"]=_js("qimen-engine",f"JSON.stringify(QimenEngine.generate({{type:'shijia',year:{year},month:{month},day:{day},hour:{hour}}}))")
+            result["qimen_hourly"]=_js("qimen-engine",f"JSON.stringify(QimenEngine.generate({{type:'shijia',year:{year},month:{month},day:{day},hour:{hour},minute:{minute}}}))")
             result["engine"]+="+shijia"
         # 解读层: 格局+星门神详解+运筹
         result["qimen_analysis"]=_js("qimen-engine",

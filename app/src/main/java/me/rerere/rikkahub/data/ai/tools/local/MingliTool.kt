@@ -45,13 +45,13 @@ fun createMingliTool(context: Context): Tool = Tool(
                             " 塔罗: {spread, seed, question_type, kaabalah, cards}" +
                             " 雷诺曼: {spread, seed, cards}" +
                             " 八字: {year, month, day, hour, gender, feature?=shengxiao|luohou|all}" +
-                            " 紫微: {year, month, day, hour, gender, engine}" +
+                            " 紫微: {year, month, day, hour, minute?, gender, engine}" +
                             " 现代西洋占星: {year, month, day, hour, minute?, tz, lat, lon}" +
                             " 传统西洋占星: {year, month, day, hour, minute?, tz_offset, lat, lon}" +
                             " 吠陀: {year, month, day, hour, minute?, tz, lat, lon}" +
                             " 人类图: {year, month, day, hour, minute?, tz, gene_keys, transits}" +
                             " 灵数卡巴拉: {year, month, day, word, feature=numerology|gematria|odu|tarot|tree|all}" +
-                            " 奇门: {year, month, day, hour, feature=qimen|liuren|xiaoliuren|all}" +
+                            " 奇门: {year, month, day, hour, minute?, feature=qimen|liuren|xiaoliuren|all}" +
                             " 六爻梅花: {method=time|dayan|manual|coin|number|now, seed, year, month, day, feature}")
                 })
             },
