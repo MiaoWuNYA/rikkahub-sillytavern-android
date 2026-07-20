@@ -45,7 +45,7 @@ def _lenormand(spread="line-5", seed=None, cards=None):
         except Exception:
             cards.append({"position": sp.positions[i].name, "card_id": item.card_id if hasattr(item,'card_id') else None, "error": "card data partial"})
     from lenormand_engine import LenormandFateEngine as FE
-    return {
+    result = {
         "system": "lenormand", "engine": "arcanite-unified", "seed": seed,
         "spread": {
         "id": spread,
@@ -58,7 +58,13 @@ def _lenormand(spread="line-5", seed=None, cards=None):
     },
         "cards": cards,
         "statistics": d.analyze_draw(items),
-        "karmic_mirrors": {i: FE.parse_karmic_mirrors(sp.positions, items) for i in [0]},
+        "karmic_mirrors": FE.parse_karmic_mirrors(sp.positions, items),
         "fe_portrait": FE.parse_portrait_3x3_cage(items, spread),
-        "_hint": "arcanite 36张语义getter已全量。FE引擎另有: GT_portrait/骑士步/镜像/反射。自探索: dir(LenormandFateEngine)"
     }
+    if spread == "grand-tableau":
+        result["gt_master"] = FE.parse_grand_tableau_master_mode(items, sp.positions)
+        result["counting_pulse"] = FE.calculate_counting_pulse(items, 0)
+        result["_hint"] = "arcanite 36张语义getter已全量。FE引擎已全覆盖: karmic_mirrors/portrait/GT_master(step1-4)/counting_pulse"
+    else:
+        result["_hint"] = "arcanite 36张语义getter已全量。牌阵<10张: karmic_mirrors+portrait。GT牌阵另含 GT_master(step1-4)+counting_pulse"
+    return result
