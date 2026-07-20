@@ -122,8 +122,6 @@ def _bazi(year, month, day, hour, minute=0, gender=1, feature="bazi"):
             "g_shen":{k:v.get(dg,"") for k,v in datas.g_shens.items()},
             "year_shen":{k:v.get(yz,"") for k,v in datas.year_shens.items()},
             "month_shen":{k:v.get(mz,"") for k,v in datas.month_shens.items()},
-            "sizi":{k: v for k,v in list(sizi.summarys.items())[:5]},
-            "ganzhi_gan":ganzhi.Gan[:10], "ganzhi_zhi":ganzhi.Zhi[:12],
             # 金不换/调候用神/建禄/自坐
             "jinbuhuan":datas.jinbuhuan.get(dgz,""),
             "tiaohou":datas.tiaohous.get(dgz,""),
