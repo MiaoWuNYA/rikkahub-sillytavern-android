@@ -73,8 +73,18 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, kaabalah=False,
         "positions": [{"name": p.name, "rag": p.rag_mapping, "desc": p.short_description} for p in sp.positions]
     },
         "cards": cards, "ee_analysis": EE.full_analysis(drawn),
-        "_hint": "arcanite内置18字段已全量。Kaabalah(JS): 22塔罗导出+5牌桌+7牌阵+卡巴拉对应+777表。自探索: Object.keys(Kaabalah)"
     }
+    # 补全 EE 4个未包方法: 三牌尊贵/架桥/关系分类/流向
+    try:
+        els = [r["primary_element"] for r in result["ee_analysis"]["spread_dignity"]]
+        n = len(els)
+        result["dignity_triples"] = [EE.calc_dignity(els[i-1] if i>0 else None, els[i], els[i+1] if i+1<n else None) for i in range(n)]
+        result["bridge_triples"] = [EE.check_bridge(els[i-1] if i>0 else None, els[i], els[i+1] if i+1<n else None) for i in range(n)]
+        result["flow_pairs"] = [EE.get_directional_flow(els[i], els[i+1]) for i in range(n-1)]
+        result["relation_pairs"] = [EE.classify_relation(els[i], els[i+1]) for i in range(n-1)]
+        result["_hint"] = "arcanite内置18字段已全量。EE 18方法全覆盖。Kaabalah(JS): 22塔罗导出+5牌桌+7牌阵+卡巴拉对应+777表"
+    except Exception:
+        result["_hint"] = "arcanite内置18字段已全量。Kaabalah(JS): 22塔罗导出+5牌桌+7牌阵+卡巴拉对应+777表"
     if kaabalah:
         _js_load("kaabalah-engine")
         kaabalah_results = []
