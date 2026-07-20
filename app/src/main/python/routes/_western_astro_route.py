@@ -3,7 +3,7 @@ import json, sys, os
 from ._shared import _js, _js_load, compute_jd
 
 # ===== 现代西洋占星 =====
-def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,depth="standard"):
+def _western_astro(year,month,day,hour,tz,lat,lon,minute=0):
     date_str=f"{year}-{month:02d}-{day}"
     # 构建时区偏移字符串，兼容数字和字符串
     tz_num = float(tz) if tz is not None else 8.0
