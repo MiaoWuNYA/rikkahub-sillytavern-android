@@ -63,8 +63,10 @@ def _lenormand(spread="line-5", seed=None, cards=None):
     }
     if spread == "grand-tableau":
         result["gt_master"] = FE.parse_grand_tableau_master_mode(items, sp.positions)
+        sig_idx = result["gt_master"]["significator_absolute_index"]
+        result["gt_intersection"] = FE.get_intersection(sig_idx)
         result["counting_pulse"] = FE.calculate_counting_pulse(items, 0)
-        result["_hint"] = "arcanite 36张语义getter已全量。FE引擎已全覆盖: karmic_mirrors/portrait/GT_master(step1-4)/counting_pulse"
+        result["_hint"] = "arcanite 36张语义getter已全量。FE引擎已全覆盖: karmic_mirrors/portrait/GT_master(step1-4)/intersection/counting_pulse"
     else:
-        result["_hint"] = "arcanite 36张语义getter已全量。牌阵<10张: karmic_mirrors+portrait。GT牌阵另含 GT_master(step1-4)+counting_pulse"
+        result["_hint"] = "arcanite 36张语义getter已全量。牌阵<10张: karmic_mirrors+portrait。GT牌阵另含 GT_master(step1-4)+intersection+counting_pulse"
     return result
