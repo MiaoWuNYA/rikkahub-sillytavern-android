@@ -151,6 +151,7 @@ jobs:
           # Strip unused modules (images, LLM, PDF, typst - not needed for AI runtime)
           rm -rf arcanite/images arcanite/interpretation arcanite/render
           rm -rf arcanite/templates arcanite/prompts arcanite/__pycache__
+          rm -rf build/ dist/ *.egg-info/
           rm -f arcanite/cards/update_card_positions.py
           # Comment out imports for removed modules
           sed -i 's/from arcanite\.interpretation/### from arcanite.interpretation/' arcanite/__init__.py
