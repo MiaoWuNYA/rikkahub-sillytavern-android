@@ -107,7 +107,9 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
             try: result["taixuan_dz_date"] = tx.getdz_date()
             except: pass
         elif hasattr(taixuanshifa,'pan_from_code'):
-            result["taixuan"]=taixuanshifa.pan_from_code(seed or "777777")
+            import secrets as _sec
+            _code = ''.join(str(_sec.SystemRandom().randint(1,3)) for _ in range(4))
+            result["taixuan"]=taixuanshifa.pan_from_code(_code)
     except: pass
     try:
         import jingjue
