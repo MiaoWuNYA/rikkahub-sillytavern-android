@@ -6,7 +6,6 @@ from ._shared import _js, _js_load
 def _ziwei(year,month,day,hour,minute=0,gender="male",engine="iztro"):
     date_str=f"{year}-{month:02d}-{day}"
     hour_dec = hour + minute/60
-    hour_idx = int(hour_dec)
     if isinstance(gender, int):
         gender = "male" if gender == 1 else "female"
     result={"system":"ziwei","engine":engine}
@@ -28,7 +27,7 @@ def _ziwei(year,month,day,hour,minute=0,gender="male",engine="iztro"):
             "jiangqian12:p.jiangqian12,suiqian12:p.suiqian12,"
             "decadal:p.decadal,ages:p.ages"
             "}})"
-            "})" % (date_str, hour_idx, gender))
+            "})" % (date_str, int(hour_dec), gender))
     if engine in ("nihai","all"):
         _js_load("ziwei-nihai")
         result["nihai"]=_js("ziwei-nihai",f"JSON.stringify(ZiweiNihai.generateChart({{year:{year},month:{month},day:{day},hour:{hour_dec},gender:'{gender}'}}))")
