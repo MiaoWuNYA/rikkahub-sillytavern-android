@@ -188,7 +188,7 @@ class GenerationHandler(
                 appendLine("    吠陀(印度占星/吠陀占星/jyotish/vedic): {year, month, day, hour, minute?, tz, lat, lon}")
                 appendLine("    人类图(human_design/humandesign): {year, month, day, hour, minute?, tz, gene_keys?, transits?}")
                 appendLine("    灵数卡巴拉(生命灵数/生命数字/卡巴拉/kabbalah): {year, month, day, word?, feature}")
-                appendLine("    奇门(奇门遁甲/奇门三式/qimen): {year, month, day, hour, minute?, feature}")
+                appendLine("    奇门(奇门遁甲/奇门三式/qimen): {year, month, day, hour?, minute?, feature}")
                 appendLine("    六爻梅花(六爻/梅花/易经/周易/yijing): {method, seed?, year?, month?, day?, feature?}")
                 appendLine("  feature可选值见 mingli 工具声明")
                 appendLine("")

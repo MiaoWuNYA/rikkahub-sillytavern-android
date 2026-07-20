@@ -22,7 +22,7 @@ def _ziwei(year,month,day,hour,minute=0,gender="male",engine="iztro"):
             "})" % (date_str, hour_dec, gender))
     if engine in ("nihai","all"):
         _js_load("ziwei-nihai")
-        result["nihai"]=_js("ziwei-nihai",f"JSON.stringify(ZiweiNihai.generateChart({{year:{year},month:{month},day:{day},hour:{hour},gender:'{gender}'}}))")
+        result["nihai"]=_js("ziwei-nihai",f"JSON.stringify(ZiweiNihai.generateChart({{year:{year},month:{month},day:{day},hour:{hour_dec},gender:'{gender}'}}))")
     if engine in ("python","all"):
         try:
             sys.path.insert(0,os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
