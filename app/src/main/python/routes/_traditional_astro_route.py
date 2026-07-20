@@ -3,7 +3,7 @@ import json, sys, os
 from ._shared import _js, _js_load
 
 # ===== 传统西洋占星 =====
-def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
+def _traditional_astro(year,month,day,hour,tz_offset,lat,lon,minute=0):
     tz_offset=float(tz_offset) if tz_offset is not None else 0.0
     if isinstance(lat, str): lat = float(lat)
     if isinstance(lon, str): lon = float(lon)
@@ -45,7 +45,7 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
     from flatlib.predictives.profections import compute as prof_compute
     from flatlib.aspects import hasAspect
     from flatlib.tools import chartdynamics
-    dt=Datetime(f"{year}/{month:02d}/{day}",f"{hour}:00",tz_offset)
+    dt=Datetime(f"{year}/{month:02d}/{day}",f"{hour}:{minute:02d}",tz_offset)
     pos=GeoPos(lat,lon)
     chart=Chart(dt,pos,IDs=const.LIST_OBJECTS)
     is_day=chart.isDiurnal()
@@ -231,7 +231,7 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon):
         tz_sign = "+" if tz_offset >= 0 else "-"
         tz_abs = abs(tz_offset)
         tz_str = f"{tz_sign}{int(tz_abs):02d}:{int((tz_abs - int(tz_abs)) * 60 + 0.5):02d}"
-        iso_date = f"{year}-{month:02d}-{day}T{hour:02d}:00:00{tz_str}"
+        iso_date = f"{year}-{month:02d}-{day}T{hour:02d}:{minute:02d}:00{tz_str}"
         asc_idx = int(asc_lon / 30) if 'asc_lon' in dir() else 0
         fortune_lon = lots.get("fortune", 0) if 'lots' in dir() and isinstance(lots, dict) else 0
         sun_lon = planets.get("sun", {}).get("lon", 0) if 'planets' in dir() else 0

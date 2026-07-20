@@ -3,7 +3,7 @@ import json, sys, os
 from ._shared import _js, _js_load
 
 # ===== 现代西洋占星 =====
-def _western_astro(year,month,day,hour,tz,lat,lon,depth="standard"):
+def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,depth="standard"):
     date_str=f"{year}-{month:02d}-{day}"
     # 构建时区偏移字符串，兼容数字和字符串
     tz_num = float(tz) if tz is not None else 8.0
@@ -12,13 +12,14 @@ def _western_astro(year,month,day,hour,tz,lat,lon,depth="standard"):
     tz_sign = "+" if tz_num >= 0 else "-"
     tz_abs = abs(tz_num)
     tz_str = f"{tz_sign}{int(tz_abs):02d}:{int((tz_abs - int(tz_abs)) * 60 + 0.5):02d}"
-    iso_date = f"{date_str}T{hour:02d}:00:00{tz_str}"
+    iso_date = f"{date_str}T{hour:02d}:{minute:02d}:00{tz_str}"
+    hour_dec = hour + minute/60
     _js_load("natalengine-engine")
-    natal=_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateAstrology('{date_str}',{hour},{tz_num},{lat},{lon}))")
+    natal=_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateAstrology('{date_str}',{hour_dec},{tz_num},{lat},{lon}))")
     result={"system":"western_astrology","engine":"natalengine-js","natal":natal}
     # NatalEngine额外功能: ACG占星地图+合盘比较
     try:
-        result["acg"]=_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateAstroCartography('{date_str}',{hour},{tz_num},{lat},{lon}))")
+        result["acg"]=_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateAstroCartography('{date_str}',{hour_dec},{tz_num},{lat},{lon}))")
     except: pass
     try:
         result["synastry"]=_js("natalengine-engine",f"JSON.stringify(NatalEngine.compareAstrology(JSON.parse({natal}),JSON.parse({natal})))")

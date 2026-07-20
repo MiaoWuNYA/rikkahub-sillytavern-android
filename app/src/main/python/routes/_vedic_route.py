@@ -3,7 +3,7 @@ import json, sys, os
 from ._shared import _js, _js_load
 
 # ===== 吠陀 =====
-def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
+def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0,depth="standard"):
     if isinstance(lat, str): lat = float(lat)
     if isinstance(lon, str): lon = float(lon)
     if isinstance(tz, str): tz = float(tz)
@@ -12,7 +12,8 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
     tz_vd_sign = "+" if tz_vd >= 0 else "-"
     tz_vd_abs = abs(tz_vd)
     tz_vd_str = f"{tz_vd_sign}{int(tz_vd_abs):02d}:{int((tz_vd_abs - int(tz_vd_abs)) * 60 + 0.5):02d}"
-    iso_vd_date = f"{date_str}T{hour:02d}:00:00{tz_vd_str}"
+    iso_vd_date = f"{date_str}T{hour:02d}:{minute:02d}:00{tz_vd_str}"
+    hour_dec = hour + minute/60
 
     result={"system":"vedic"}
     # ===== 默认主力: PyJHora (Python/Chaquopy) =====
@@ -28,7 +29,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
         from jhora.horoscope.transit import saham as _sh
         from jhora.panchanga.eclipse import next_solar_eclipse, next_lunar_eclipse
         place=drik.Place("loc",lat or 0,lon or 0,float(tz) if tz and str(tz).lstrip('-+').replace('.','',1).isdigit() else 0)
-        jd_local=utils.julian_day_number(drik.Date(year,month,day),(hour,0,0))
+        jd_local=utils.julian_day_number(drik.Date(year,month,day),(hour,minute,0))
         # 1. 排盘
         pp=drik.dhasavarga(jd_local,place,1)
         asc_raw=drik.ascendant(jd_local,place)
@@ -176,7 +177,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
     # ===== NatalEngine(文本) + Caelus(分盘) + PyJHora深度 =====
     try:
         _js_load("natalengine-engine")
-        v=_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateVedic('{date_str}',{hour},{tz},{lat or 0},{lon or 0}))")
+        v=_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateVedic('{date_str}',{hour_dec},{tz},{lat or 0},{lon or 0}))")
         if v and 'bridge not available' not in v: result["natal"]=v; result["engine"]+="+NatalEngine"
     except: pass
     try:
@@ -221,13 +222,13 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,depth="standard"):
     try:
         from jhora.horoscope.dhasa.graha import ashtottari as a_py, yogini as y_py
         result["ashtottari_dasha"]=a_py.get_ashtottari_dhasa_bhukthi(jd_local,place)
-        result["yogini_dasha"]=y_py.get_dhasa_bhukthi(drik.Date(year,month,day),(hour,0,0),place)
+        result["yogini_dasha"]=y_py.get_dhasa_bhukthi(drik.Date(year,month,day),(hour,minute,0),place)
         result["engine"]+="+PyJHora_deep"
     except: pass
     try:
         from jhora.horoscope.dhasa.raasi import narayana, chara
-        result["narayana_dasha"]=narayana.narayana_dhasa_for_rasi_chart(drik.Date(year,month,day),(hour,0,0),place)
-        result["chara_dasha"]=chara.get_dhasa_antardhasa(drik.Date(year,month,day),(hour,0,0),place)
+        result["narayana_dasha"]=narayana.narayana_dhasa_for_rasi_chart(drik.Date(year,month,day),(hour,minute,0),place)
+        result["chara_dasha"]=chara.get_dhasa_antardhasa(drik.Date(year,month,day),(hour,minute,0),place)
         result["engine"]+="+raasi"
     except: pass
     return result
