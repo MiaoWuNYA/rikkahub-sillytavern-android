@@ -3,7 +3,7 @@ import json, sys, os
 from ._shared import _js, _js_load, compute_jd
 
 # ===== 吠陀 =====
-def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0,depth="standard"):
+def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
     if isinstance(lat, str): lat = float(lat)
     if isinstance(lon, str): lon = float(lon)
     if isinstance(tz, str): tz = float(tz)
