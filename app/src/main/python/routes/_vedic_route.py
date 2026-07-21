@@ -142,8 +142,8 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                 "var sun=planets.find(function(p){return p.id===0})||{};"
                 "var idToName={0:'Sun',1:'Moon',2:'Mercury',3:'Venus',4:'Mars',5:'Jupiter',6:'Saturn',10:'Rahu',99:'Ketu'};"
                 "var chart={planets:planets.map(function(p){return{name:idToName[p.id]||'Unknown',longitude:p.longitude}}),houses:{ascendant:houses.ascendant}};"
-                "var charaKarakas=NodeJhora.JaiminiCore?NodeJhora.JaiminiCore.calculateCharaKarakas(planets):null;"
-                "var atmakaraka=charaKarakas?charaKarakas[0]:null;"
+                "var tradPlanets=planets.filter(function(p){return p.id>=0&&p.id<=6});var charaKarakas=NodeJhora.JaiminiCore?NodeJhora.JaiminiCore.calculateCharaKarakas(tradPlanets):null;"
+                "var atmakaraka=charaKarakas&&charaKarakas.length?charaKarakas[0]:null;"
                 "var planetsSAV=planets.map(function(p){return p.id===99?{id:99,name:'Lagna',longitude:houses.ascendant}:p});"
                 "var ashtakavarga=NodeJhora.Ashtakavarga?NodeJhora.Ashtakavarga.calculateSAV(planetsSAV):null;"
                 "var yogini=NodeJhora.YoginiDasha&&moon.longitude?NodeJhora.YoginiDasha.calculate(moon.longitude,dt,50):null;"
@@ -191,11 +191,12 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                 "var e=new Caelus.Engine(Caelus.embeddedData);var jd=%s;"
                 "var bodies=['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune','pluto','chiron'];"
                 "var moonLon=e.longitude('moon',jd,{zodiac:'sidereal:lahiri'});"
-                "JSON.stringify({vargaD9:Caelus.vargaChart(e,jd,9,bodies,'sidereal:lahiri'),"
-                "vimshottari:Caelus.vimshottariDashas(moonLon,jd),"
-                "ashtottari:Caelus.ashtottariAt(e,jd,jd,%f,%f),"
-                "yogini:Caelus.yoginiAt(e,jd,jd,%f,%f)})"
-                %(jd_vd,lat,lon,lat,lon))
+                "var r={vimshottari:Caelus.vimshottariDashas(moonLon,jd)};"
+                "try{r.vargaD9=Caelus.vargaChart(e,jd,9,bodies,{zodiac:'sidereal:lahiri'});}catch(ex){}"
+                "try{r.ashtottariDashas=Caelus.ashtottariDashas(moonLon,jd);}catch(ex){}"
+                "try{r.yoginiDashas=Caelus.yoginiDashas(moonLon,jd);}catch(ex){}"
+                "JSON.stringify(r)"
+                %(jd_vd,))
             if c and 'bridge not available' not in c: result["caelus"]=c; result["engine"]+="+Caelus"
     except: pass
     # Transit + Sade Sati (当前行运)
@@ -216,8 +217,8 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
             "var satSign=signIdx(transitSaturn);"
             "var sadeSati=null;"
             "if(satSign===moonSign)sadeSati='peak';"
-            "else if(satSign===(moonSign+11)%%12)sadeSati='rising';"
-            "else if(satSign===(moonSign+1)%%12)sadeSati='setting';"
+            "else if(satSign===(moonSign+11)%12)sadeSati='rising';"
+            "else if(satSign===(moonSign+1)%12)sadeSati='setting';"
             "JSON.stringify({sadeSati:sadeSati,moonSign:moonSign,saturnSign:satSign,saturnLon:transitSaturn,jupiterSign:signIdx(transitJupiter),rahuSign:signIdx(transitRahu)})"
             %(jd_vd,today_jd))
         if transit and 'error' not in transit: result["transit"]=transit
