@@ -40,7 +40,7 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
             try: result["bookgua_details"]=i.bookgua_details()
             except: pass
             try:
-                hlines=getattr(hex_data,"lines",None) or getattr(hex_data,"values",None)
+                hlines=getattr(hex_data,"lines",None) or (getattr(hex_data,"values",None) if not callable(getattr(hex_data,"values",None)) else None)
                 if hlines:
                     result["decode_gua"]=i.decode_gua(str(hlines))
                     try: result["decode_two_gua"]=i.decode_two_gua(str(hlines),str(getattr(hex_data,"ggua_lines","") or ""))
@@ -61,7 +61,7 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
             result["ichingshifa"]=hex_data
         result["engine"]+="ichingshifa"
         if hasattr(hex_data,'lines') or hasattr(hex_data,'values'):
-            hex_values=getattr(hex_data,'lines',None) or getattr(hex_data,'values',None)
+            hex_values=getattr(hex_data,'lines',None) or (getattr(hex_data,'values',None) if not callable(getattr(hex_data,'values',None)) else None)
     except Exception as e: result["py_error"]=str(e)
     # 梅花易数 (全API)
     try:
