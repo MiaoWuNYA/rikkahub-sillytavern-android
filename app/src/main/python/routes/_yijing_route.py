@@ -7,6 +7,14 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
     result={"system":"yijing","engine":"","_hint":
         "ichingshifa(Iching类)已返回起卦+解卦。meihua_yi梅花全API+taixuanshifa太玄+jingjue荆诀。JS引擎对照(IchingShifa)。自探索:dir(ichingshifa)/dir(meihua_yi)/dir(Taixuan)/dir(jingjue)"}
     hex_values=None
+    # 当method="now"且传了seed(毫秒时间戳)时, 用seed反算固定时间, 确保相同seed得到相同卦
+    _seed_dt=None
+    if seed is not None and not (year and month and day):
+        import datetime as _dt
+        try:
+            _s=seed/1000 if seed>1e12 else seed
+            _seed_dt=_dt.datetime.fromtimestamp(_s,_dt.timezone.utc).astimezone(_dt.timezone(_dt.timedelta(hours=8)))
+        except: pass
     # 主力: ichingshifa (APK环境)
     try:
         sys.path.insert(0,os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
@@ -57,7 +65,10 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
             hex_data=i.qigua_manual(2026,1,1,12,0,f"{n}")
             result["ichingshifa"]=hex_data
         else:
-            hex_data=i.qigua_now()
+            if _seed_dt is not None:
+                hex_data=i.qigua_time(_seed_dt.year,_seed_dt.month,_seed_dt.day,_seed_dt.hour,_seed_dt.minute)
+            else:
+                hex_data=i.qigua_now()
             result["ichingshifa"]=hex_data
         result["engine"]+="ichingshifa"
         if hasattr(hex_data,'lines') or hasattr(hex_data,'values'):
@@ -107,9 +118,12 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
             try: result["taixuan_dz_date"] = tx.getdz_date()
             except: pass
         else:
-            import datetime as _dt
-            _now = _dt.datetime.now()
-            tx = taixuanshifa.Taixuan(_now.year, _now.month, _now.day, _now.hour)
+            if _seed_dt is not None:
+                tx = taixuanshifa.Taixuan(_seed_dt.year, _seed_dt.month, _seed_dt.day, _seed_dt.hour)
+            else:
+                import datetime as _dt
+                _now = _dt.datetime.now()
+                tx = taixuanshifa.Taixuan(_now.year, _now.month, _now.day, _now.hour)
             try: result["taixuan"] = tx.pan()
             except: pass
     except: pass
@@ -128,11 +142,14 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
             yao_js = "IchingShifa.dayan()"
         result["iching_shifa_js"]=_js("iching-shifa-engine","JSON.stringify("+yao_js+")")
         try:
+            _yr=_seed_dt.year if _seed_dt is not None else (year or 2026)
+            _mo=_seed_dt.month if _seed_dt is not None else (month or 1)
+            _dy=_seed_dt.day if _seed_dt is not None else (day or 1)
             result["iching_shifa_pan"]=_js("iching-shifa-engine",
                 "var r="+yao_js+";"
-                "var pan=IchingShifa.decodePan(r,{year:"+str(year or 2026)+",month:"+str(month or 1)+",day:"+str(day or 1)+",hour:12});"
+                "var pan=IchingShifa.decodePan(r,{year:"+str(_yr)+",month:"+str(_mo)+",day:"+str(_dy)+",hour:12});"
                 "var gdyd=null;try{gdyd=IchingShifa.getGaoDaoYiDuan(pan.benGua.guaCode);}catch(e){}"
-                "var qyxx=null;try{qyxx=IchingShifa.calculateQingyiXingXiu(r,"+str(year or 2026)+","+str(month or 1)+","+str(day or 1)+");}catch(e){}"
+                "var qyxx=null;try{qyxx=IchingShifa.calculateQingyiXingXiu(r,"+str(_yr)+","+str(_mo)+","+str(_dy)+");}catch(e){}"
                 "JSON.stringify({pan:pan,gaoDaoYiDuan:gdyd,qingyiXingXiu:qyxx})")
         except: pass
         result["engine"]+="+iching-shifa-engine"
