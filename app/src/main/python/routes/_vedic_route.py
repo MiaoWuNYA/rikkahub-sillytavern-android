@@ -1,5 +1,5 @@
 """Route:  vedic"""
-import json, sys, os
+import json, sys, os, datetime
 from ._shared import _js, _js_load, compute_jd
 
 # ===== 吠陀 =====
@@ -23,8 +23,6 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
         from jhora.panchanga import drik
         from jhora.horoscope.chart import house, strength, raja_yoga, yoga, dosha, ashtakavarga, arudhas, charts
         from jhora.horoscope.dhasa.graha import vimsottari
-        from jhora.horoscope.prediction.general import get_prediction_details
-        from jhora.horoscope.prediction.longevity import life_span_range
         from jhora.horoscope.transit import tajaka as _tj
         from jhora.horoscope.transit import tajaka_yoga as _tjy
         from jhora.horoscope.transit import saham as _sh
@@ -41,10 +39,6 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
         result["pyjhora"]={"planets":pp[:9],"lagna":{"rasi":asc_raw[0],"deg":asc_raw[1],"nak":asc_raw[2],"pada":asc_raw[3]}}
         result["engine"]="PyJHora"
         # 2. Panchanga
-        try: result["predictions"]=get_prediction_details(jd_local,place)
-        except: pass
-        try: result["longevity"]=life_span_range(jd_local,place)
-        except: pass
         try: result["tajaka"]={"varsha_pravesh":_tj.varsha_pravesh(jd_local,place),"annual_chart":_tj.annual_chart(jd_local,place),"lord_of_year":_tj.lord_of_the_year(jd_local,place,0)}
         except: pass
         try: result["tajaka_yoga"]={"ishkavala":_tjy.ishkavala_yoga(p_to_h),"induvara":_tjy.induvara_yoga(p_to_h),"nakta":_tjy.get_nakta_yoga_planet_triples(pp),"ithasala":_tjy.get_ithasala_yoga_planet_pairs(pp),"eesarpha":_tjy.get_eesarpha_yoga_planet_pairs(pp),"yamaya":_tjy.get_yamaya_yoga_planet_triples(pp),"manahoo":_tjy.get_manahoo_yoga_planet_pairs(pp),"kamboola":_tjy.get_kamboola_yoga_planet_pairs(pp)}
@@ -116,7 +110,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                 "kp_lords":charts.get_KP_lords_from_planet_positions(pp),
             }
         except: pass
-        # 12. 全部分盘 (drik.dhasavarga 通用函数, 已验证)
+        # 12. 全部分盘
         try:
             for dnum, dkey in [(2,"d2"),(3,"d3"),(4,"d4"),(7,"d7"),(9,"d9"),(10,"d10"),
                                 (12,"d12"),(16,"d16"),(20,"d20"),(24,"d24"),(27,"d27"),
@@ -127,75 +121,65 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
     except Exception as e:
         result["pyjhora_error"]=str(e)
         result["engine"]=""
-    # ===== 辅助: NodeJhora =====
+    _eng = lambda: (result.get("engine","") or "")
+    # ===== 辅助: NodeJhora (合并一次eval, 新增InduLagna+DhumadiUpagrahas) =====
     if lat and lon:
         try:
             _js_load("node-jhora-engine")
             nj=json.loads(_js("node-jhora-engine",
-                    "try{"
-                    "var dt=NodeJhora.DateTime.fromISO('%s');"
-                    "var nj=NodeJhora.EphemerisEngine.getInstance();"
-                    "var planets=nj.getPlanets(dt,{latitude:%f,longitude:%f},{ayanamsaOrder:1});"
-                    "if(!planets||!planets.length){JSON.stringify({error:'getPlanets returned empty'})}else{"
-                    "var jd=nj.julday(dt);"
-                    "var houses=nj.getHouses(jd,%f,%f,'W',true);"
-                    "var moon=planets.find(function(p){return p.id===1})||{};"
-                    "var sun=planets.find(function(p){return p.id===0})||{};"
-                    "var idToName={0:'Sun',1:'Moon',2:'Mercury',3:'Venus',4:'Mars',5:'Jupiter',6:'Saturn',10:'Rahu',99:'Ketu'};"
-                    "var chart={planets:planets.map(function(p){return{name:idToName[p.id]||'Unknown',longitude:p.longitude}}),houses:{ascendant:houses.ascendant}};"
-                    "var tradPlanets=planets.filter(function(p){return p.id>=0&&p.id<=6});var charaKarakas=NodeJhora.JaiminiCore?NodeJhora.JaiminiCore.calculateCharaKarakas(tradPlanets):null;"
-                    "var atmakaraka=charaKarakas&&charaKarakas.length?charaKarakas[0]:null;"
-                    "var planetsSAV=planets.map(function(p){return p.id===99?{id:99,name:'Lagna',longitude:houses.ascendant}:p});"
-                    "var ashtakavarga=NodeJhora.Ashtakavarga?NodeJhora.Ashtakavarga.calculateSAV(planetsSAV):null;"
-                    "var yogini=NodeJhora.YoginiDasha&&moon.longitude?NodeJhora.YoginiDasha.calculate(moon.longitude,dt,50):null;"
-                    "var yogas=NodeJhora.YogaEngine?NodeJhora.YogaEngine.findYogas(chart,NodeJhora.YOGA_LIBRARY||[]):null;"
-                    "JSON.stringify({planets:planets,houses:houses,moonLon:moon.longitude||0,sunLon:sun.longitude||0,charaKarakas:charaKarakas,atmakaraka:atmakaraka,ashtakavarga:ashtakavarga,yogini:yogini,yogas:yogas})}"
-                    "}catch(e){JSON.stringify({error:e.message})}" % (
-                        iso_vd_date, lat, lon, lat, lon)))
-            if isinstance(nj, dict) and 'error' not in nj:
-                result["nodejhora"]=nj
-                result["engine"] = (result.get("engine","") or "") + "+NodeJhora"
-        except: pass
-        # NodeJhora 顶层函数: Panchanga/Vimshottari/DashaBalance/Varga/NarayanaDasha
-        try:
-            njt=json.loads(_js("node-jhora-engine",
                 "try{"
                 "var dt=NodeJhora.DateTime.fromISO('%s');"
                 "var nj=NodeJhora.EphemerisEngine.getInstance();"
                 "var planets=nj.getPlanets(dt,{latitude:%f,longitude:%f},{ayanamsaOrder:1});"
-                "if(planets&&planets.length){"
-                "var moon=planets.find(function(p){return p.id===1});"
-                "var sun=planets.find(function(p){return p.id===0});"
-                "if(moon&&sun){"
-                "var chart2={planets:planets.map(function(p){return{name:p.id,longitude:p.longitude}}),houses:{}};"
+                "if(!planets||!planets.length){JSON.stringify({error:'getPlanets returned empty'})}else{"
+                "var jd=nj.julday(dt);"
+                "var houses=nj.getHouses(jd,%f,%f,'W',true);"
+                "var moon=planets.find(function(p){return p.id===1})||{};"
+                "var sun=planets.find(function(p){return p.id===0})||{};"
+                "var idToName={0:'Sun',1:'Moon',2:'Mercury',3:'Venus',4:'Mars',5:'Jupiter',6:'Saturn',10:'Rahu',99:'Ketu'};"
+                "var chart={planets:planets.map(function(p){return{name:idToName[p.id]||'Unknown',longitude:p.longitude}}),houses:{ascendant:houses.ascendant}};"
+                "var tradPlanets=planets.filter(function(p){return p.id>=0&&p.id<=6});"
+                "var charaKarakas=NodeJhora.JaiminiCore?NodeJhora.JaiminiCore.calculateCharaKarakas(tradPlanets):null;"
+                "var atmakaraka=charaKarakas&&charaKarakas.length?charaKarakas[0]:null;"
+                "var planetsSAV=planets.map(function(p){return p.id===99?{id:99,name:'Lagna',longitude:houses.ascendant}:p});"
+                "var ashtakavarga=NodeJhora.Ashtakavarga?NodeJhora.Ashtakavarga.calculateSAV(planetsSAV):null;"
+                "var yogini=NodeJhora.YoginiDasha&&moon.longitude?NodeJhora.YoginiDasha.calculate(moon.longitude,dt,50):null;"
+                "var yogas=NodeJhora.YogaEngine?NodeJhora.YogaEngine.findYogas(chart,NodeJhora.YOGA_LIBRARY||[]):null;"
                 "var safe=function(f){try{return f()}catch(e){return null}};"
-                "JSON.stringify({"
-                "panchanga:safe(function(){return NodeJhora.calculatePanchanga(sun.longitude,moon.longitude,dt,6)}),"
-                "vimshottari:safe(function(){return typeof NodeJhora.generateVimshottari==='function'?NodeJhora.generateVimshottari(dt,moon.longitude,2):null}),"
-                "dashaBalance:safe(function(){return typeof NodeJhora.calculateDashaBalance==='function'?NodeJhora.calculateDashaBalance(moon.longitude):null}),"
-                "narayanaDasha:safe(function(){return NodeJhora.NarayanaDasha?NodeJhora.NarayanaDasha.calculate(chart2,dt,80):null}),"
-                "varga:safe(function(){return typeof NodeJhora.calculateVarga==='function'?NodeJhora.calculateVarga(moon.longitude,9):null})"
-                "})}else{JSON.stringify({error:'moon/sun not found'})}"
-                "}else{JSON.stringify({error:'no planets'})}"
+                "var panchanga=safe(function(){return NodeJhora.calculatePanchanga(sun.longitude,moon.longitude,dt,6)});"
+                "var vimshottari=safe(function(){return typeof NodeJhora.generateVimshottari==='function'?NodeJhora.generateVimshottari(dt,moon.longitude,2):null});"
+                "var dashaBalance=safe(function(){return typeof NodeJhora.calculateDashaBalance==='function'?NodeJhora.calculateDashaBalance(moon.longitude):null});"
+                "var chart2={planets:planets.map(function(p){return{name:p.id,longitude:p.longitude}}),houses:{}};"
+                "var narayanaDasha=safe(function(){return NodeJhora.NarayanaDasha?NodeJhora.NarayanaDasha.calculate(chart2,dt,80):null});"
+                "var vargaD9=safe(function(){return typeof NodeJhora.calculateVarga==='function'?NodeJhora.calculateVarga(moon.longitude,9):null});"
+                "var _as=Math.floor(houses.ascendant/30)+1;var _ms=Math.floor((moon.longitude||0)/30)+1;"
+                "var induLagna=NodeJhora.calculateInduLagna?safe(function(){return NodeJhora.calculateInduLagna(_as,_ms,planets)}):null;"
+                "var dhumadiUpagrahas=NodeJhora.calculateDhumadiUpagrahas?NodeJhora.calculateDhumadiUpagrahas(sun.longitude||0):null;"
+                "JSON.stringify({planets:planets,houses:houses,moonLon:moon.longitude||0,sunLon:sun.longitude||0,"
+                "charaKarakas:charaKarakas,atmakaraka:atmakaraka,ashtakavarga:ashtakavarga,"
+                "yogini:yogini,yogas:yogas,panchanga:panchanga,vimshottari:vimshottari,"
+                "dashaBalance:dashaBalance,narayanaDasha:narayanaDasha,vargaD9:vargaD9,"
+                "induLagna:induLagna,dhumadiUpagrahas:dhumadiUpagrahas})}"
                 "}catch(e){JSON.stringify({error:e.message})}" % (
-                    iso_vd_date, lat, lon)))
-            if isinstance(njt, dict) and 'error' not in njt:
-                result["nodejhora_top"]=njt
+                    iso_vd_date, lat, lon, lat, lon)))
+            if isinstance(nj, dict) and 'error' not in nj:
+                result["nodejhora"]=nj
+                result["engine"] = (result.get("engine","") or "") + "+NodeJhora"
         except: pass
-    _eng = lambda: (result.get("engine","") or "")
-    result["_hint"]=("PyJHora已全量:Panchanga/Shadbala/Ashtakavarga/RajaYoga774/Dosha7/Arudha/Vimshottari/House分析/行星状态/VargaD3-30。\\nNodeJhora(DE440):行星/宫位/Jaimini/Ashtakavarga+Yogini+Yoga+Panchanga+Vimshottari+DashaBalance+NarayanaDasha。\\nCaelus(吠陀增量):nakshatra各星宿/yogasAt(PM瑜伽)/kemadruma/vimshottariAt/rajaYogas/dhanaYogas。自探索:dir(jhora)/Object.keys(NodeJhora)/Object.keys(Caelus)")
-    # ===== NatalEngine(文本) + Caelus(分盘) + PyJHora深度 =====
+    # ===== NatalEngine(文本) =====
     try:
         _js_load("natalengine-engine")
         v=json.loads(_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateVedic('{date_str}',{hour_dec},{tz},{lat or 0},{lon or 0}))"))
         if isinstance(v, dict) and 'error' not in v: result["natal"]=v; result["engine"]=_eng()+"+NatalEngine"
     except: pass
+    # ===== Caelus (合并吠陀+行运, 复用Engine) =====
     try:
         _js_load("caelus-engine")
         if lat and lon:
+            today=datetime.datetime.now()
+            today_jd=compute_jd(today.year,today.month,today.day,12,0,0)
             c=json.loads(_js("caelus-engine",
-                "var e=new Caelus.Engine(Caelus.embeddedData);var jd=%s;"
-                "var _lat=%f;var _lon=%f;"
+                "var e=new Caelus.Engine(Caelus.embeddedData);var jd=%s;var today=%s;var _lat=%f;var _lon=%f;"
                 "var bodies=['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune','pluto','chiron'];"
                 "var moonLon=e.longitude('moon',jd,{zodiac:'sidereal:lahiri'});"
                 "var r={vimshottari:Caelus.vimshottariDashas(moonLon,jd)};"
@@ -205,36 +189,21 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                 "try{r.nakshatraBodies={};bodies.forEach(function(b){r.nakshatraBodies[b]=Caelus.nakshatraAt(e,jd,b,'sidereal:lahiri')})}catch(ex){}"
                 "try{r.yogas=Caelus.yogasAt(e,jd,_lat,_lon,'sidereal:lahiri');}catch(ex){}"
                 "try{r.kemadruma=Caelus.kemadrumaAt(e,jd,_lat,_lon,false,false,'sidereal:lahiri');}catch(ex){}"
-                "try{var today=jd+365;r.vimshottariNow=Caelus.vimshottariAt(e,jd,today,'sidereal:lahiri');}catch(ex){}"
+                "try{r.vimshottariNow=Caelus.vimshottariAt(e,jd,today,'sidereal:lahiri');}catch(ex){}"
                 "try{r.rajaYogas=Caelus.rajaYogasAt(e,jd,_lat,_lon,'sidereal:lahiri');}catch(ex){}"
                 "try{r.dhanaYogas=Caelus.dhanaYogasAt(e,jd,_lat,_lon,'sidereal:lahiri');}catch(ex){}"
+                "var _sgn=function(l){return Math.floor(l/30);};"
+                "var transitSaturn=e.longitude('saturn',today,{zodiac:'sidereal:lahiri'});"
+                "var transitJupiter=e.longitude('jupiter',today,{zodiac:'sidereal:lahiri'});"
+                "var transitRahu=e.longitude('north_node',today,{zodiac:'sidereal:lahiri'});"
+                "var _ms=_sgn(moonLon);var _ss=_sgn(transitSaturn);var sadeSati=null;"
+                "if(_ss===_ms)sadeSati='peak';else if(_ss===(_ms+11)%%12)sadeSati='rising';else if(_ss===(_ms+1)%%12)sadeSati='setting';"
+                "r.transit={sadeSati:sadeSati,moonSign:_ms,saturnSign:_ss,saturnLon:transitSaturn,jupiterSign:_sgn(transitJupiter),rahuSign:_sgn(transitRahu)};"
                 "JSON.stringify(r)"
-                %(jd_vd,lat,lon)))
-            if isinstance(c, dict) and 'error' not in c: result["caelus"]=c; result["engine"]=_eng()+"+Caelus"
-    except: pass
-    # Transit + Sade Sati (当前行运)
-    try:
-        import datetime
-        today=datetime.datetime.now()
-        today_jd = compute_jd(today.year, today.month, today.day, 12, 0, 0)
-        transit=json.loads(_js("caelus-engine",
-            "var e=new Caelus.Engine(Caelus.embeddedData);"
-            "var natalJd=%s;"
-            "var transitJd=%s;"
-            "var natalMoon=e.longitude('moon',natalJd,{zodiac:'sidereal:lahiri'});"
-            "var transitSaturn=e.longitude('saturn',transitJd,{zodiac:'sidereal:lahiri'});"
-            "var transitJupiter=e.longitude('jupiter',transitJd,{zodiac:'sidereal:lahiri'});"
-            "var transitRahu=e.longitude('north_node',transitJd,{zodiac:'sidereal:lahiri'});"
-            "function signIdx(lon){return Math.floor(lon/30);}"
-            "var moonSign=signIdx(natalMoon);"
-            "var satSign=signIdx(transitSaturn);"
-            "var sadeSati=null;"
-            "if(satSign===moonSign)sadeSati='peak';"
-            "else if(satSign===(moonSign+11)%12)sadeSati='rising';"
-            "else if(satSign===(moonSign+1)%12)sadeSati='setting';"
-            "JSON.stringify({sadeSati:sadeSati,moonSign:moonSign,saturnSign:satSign,saturnLon:transitSaturn,jupiterSign:signIdx(transitJupiter),rahuSign:signIdx(transitRahu)})"
-            %(jd_vd,today_jd)))
-        if isinstance(transit, dict) and 'error' not in transit: result["transit"]=transit
+                %(jd_vd,today_jd,lat,lon)))
+            if isinstance(c, dict) and 'error' not in c:
+                result["caelus"]=c
+                result["engine"]=_eng()+"+Caelus"
     except: pass
     # PyJHora深度
     try:
@@ -249,4 +218,8 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
         result["chara_dasha"]=chara.get_dhasa_antardhasa(drik.Date(year,month,day),(hour,minute,0),place)
         result["engine"]+="+raasi"
     except: pass
+    result["_hint"]=("PyJHora全量:Panchanga/Shadbala/Ashtakavarga/RajaYoga/Dosha7/Arudha/Vimshottari/House/行星状态/全部分盘(D2-D60)。"
+        "NodeJhora(DE440):行星/宫位/Jaimini/Ashtakavarga/Yogini/Yoga/Panchanga/Vimshottari+NarayanaDasha/VargaD9/InduLagna/DhumadiUpagrahas。"
+        "Caelus:Vimshottari+VargaD9/NakshatraBodies/Yogas/Kemadruma/RajaYogas/DhanaYogas/行运+SadeSati。"
+        "自探索:dir(jhora)/Object.keys(NodeJhora)/Object.keys(Caelus)")
     return result
