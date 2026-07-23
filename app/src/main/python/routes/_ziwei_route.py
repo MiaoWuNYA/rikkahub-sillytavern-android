@@ -16,6 +16,7 @@ def _ziwei(year,month,day,hour,minute=0,gender="male",engine="iztro"):
         try:
             result["iztro"]=json.loads(_js("iztro-engine",
                 "var a=Iztro.astro.bySolar('%s',%d,'%s');"
+                "var h=a.horoscope(new Date());"
                 "JSON.stringify({"
                 "solarDate:a.solarDate,lunarDate:a.lunarDate,"
                 "chineseDate:a.chineseDate,rawDates:a.rawDates,"
@@ -31,8 +32,33 @@ def _ziwei(year,month,day,hour,minute=0,gender="male",engine="iztro"):
                 "majorStars:p.majorStars,minorStars:p.minorStars,adjectiveStars:p.adjectiveStars,"
                 "changsheng12:p.changsheng12,boshi12:p.boshi12,"
                 "jiangqian12:p.jiangqian12,suiqian12:p.suiqian12,"
-                "decadal:p.decadal,ages:p.ages"
-                "}})"
+                "decadal:p.decadal,ages:p.ages,"
+                "surrounded:(function(){try{var s=a.surroundedPalaces(p.index);"
+                "return{target:s.target.name,opposite:s.opposite.name,"
+                "wealth:s.wealth.name,career:s.career.name}"
+                "}catch(e){return null}})()"
+                "}}),"
+                "horoscope:{lunarDate:h.lunarDate,solarDate:h.solarDate,"
+                "decadal:{index:h.decadal.index,name:h.decadal.name,"
+                "heavenlyStem:h.decadal.heavenlyStem,earthlyBranch:h.decadal.earthlyBranch,"
+                "palaceNames:h.decadal.palaceNames,mutagen:h.decadal.mutagen,stars:h.decadal.stars},"
+                "age:{index:h.age.index,name:h.age.name,nominalAge:h.age.nominalAge,"
+                "heavenlyStem:h.age.heavenlyStem,earthlyBranch:h.age.earthlyBranch,"
+                "palaceNames:h.age.palaceNames,mutagen:h.age.mutagen},"
+                "yearly:{index:h.yearly.index,name:h.yearly.name,"
+                "heavenlyStem:h.yearly.heavenlyStem,earthlyBranch:h.yearly.earthlyBranch,"
+                "palaceNames:h.yearly.palaceNames,mutagen:h.yearly.mutagen,"
+                "stars:h.yearly.stars,yearlyDecStar:h.yearly.yearlyDecStar},"
+                "monthly:{index:h.monthly.index,name:h.monthly.name,"
+                "heavenlyStem:h.monthly.heavenlyStem,earthlyBranch:h.monthly.earthlyBranch,"
+                "palaceNames:h.monthly.palaceNames,mutagen:h.monthly.mutagen,stars:h.monthly.stars},"
+                "daily:{index:h.daily.index,name:h.daily.name,"
+                "heavenlyStem:h.daily.heavenlyStem,earthlyBranch:h.daily.earthlyBranch,"
+                "palaceNames:h.daily.palaceNames,mutagen:h.daily.mutagen,stars:h.daily.stars},"
+                "hourly:{index:h.hourly.index,name:h.hourly.name,"
+                "heavenlyStem:h.hourly.heavenlyStem,earthlyBranch:h.hourly.earthlyBranch,"
+                "palaceNames:h.hourly.palaceNames,mutagen:h.hourly.mutagen,stars:h.hourly.stars}"
+                "}"
                 "})" % (date_str, int(hour_dec), gender)))
             if isinstance(result.get("iztro"), dict) and 'error' not in result["iztro"]:
                 _engs.append("iztro")
@@ -52,5 +78,5 @@ def _ziwei(year,month,day,hour,minute=0,gender="male",engine="iztro"):
             _engs.append("ziwei_paipan")
         except Exception as e: result["ziwei_paipan_error"]=str(e)
     result["engine"]="+".join(_engs) if _engs else "none"
-    result["_hint"]="Iztro全量已返回(手动提取避免爆栈)。ZiweiNihai含倪海夏天纪+古籍。自探索:Object.keys(Iztro.astro)/dir(ziwei_paipan)"
+    result["_hint"]="Iztro全量已返回(手动提取避免爆栈)+三方四正+当前大限/流年/流月/流日/流时/小限运限。ZiweiNihai含倪海夏天纪+古籍。自探索:Object.keys(Iztro.astro)/dir(ziwei_paipan)"
     return result

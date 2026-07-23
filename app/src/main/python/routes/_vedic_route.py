@@ -183,7 +183,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                 result["nodejhora_top"]=njt
         except: pass
     _eng = lambda: (result.get("engine","") or "")
-    result["_hint"]=("PyJHora已全量:Panchanga/Shadbala/Ashtakavarga/RajaYoga774/Dosha7/Arudha/Vimshottari/House分析/行星状态/VargaD3-30。\\nNodeJhora(DE440):行星/宫位/Jaimini/Ashtakavarga+Yogini+Yoga+Panchanga+Vimshottari+DashaBalance+NarayanaDasha。\\nCaelus/NatalEngine已预取。自探索:dir(jhora)/Object.keys(NodeJhora)/Object.keys(Caelus)")
+    result["_hint"]=("PyJHora已全量:Panchanga/Shadbala/Ashtakavarga/RajaYoga774/Dosha7/Arudha/Vimshottari/House分析/行星状态/VargaD3-30。\\nNodeJhora(DE440):行星/宫位/Jaimini/Ashtakavarga+Yogini+Yoga+Panchanga+Vimshottari+DashaBalance+NarayanaDasha。\\nCaelus(吠陀增量):nakshatra各星宿/yogasAt(PM瑜伽)/kemadruma/vimshottariAt/rajaYogas/dhanaYogas。自探索:dir(jhora)/Object.keys(NodeJhora)/Object.keys(Caelus)")
     # ===== NatalEngine(文本) + Caelus(分盘) + PyJHora深度 =====
     try:
         _js_load("natalengine-engine")
@@ -195,14 +195,21 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
         if lat and lon:
             c=json.loads(_js("caelus-engine",
                 "var e=new Caelus.Engine(Caelus.embeddedData);var jd=%s;"
+                "var _lat=%f;var _lon=%f;"
                 "var bodies=['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune','pluto','chiron'];"
                 "var moonLon=e.longitude('moon',jd,{zodiac:'sidereal:lahiri'});"
                 "var r={vimshottari:Caelus.vimshottariDashas(moonLon,jd)};"
                 "try{r.vargaD9=Caelus.vargaChart(e,jd,9,bodies,'sidereal:lahiri');}catch(ex){}"
                 "try{r.ashtottariDashas=Caelus.ashtottariDashas(moonLon,jd);}catch(ex){}"
                 "try{r.yoginiDashas=Caelus.yoginiDashas(moonLon,jd);}catch(ex){}"
+                "try{r.nakshatraBodies={};bodies.forEach(function(b){r.nakshatraBodies[b]=Caelus.nakshatraAt(e,jd,b,'sidereal:lahiri')})}catch(ex){}"
+                "try{r.yogas=Caelus.yogasAt(e,jd,_lat,_lon,'sidereal:lahiri');}catch(ex){}"
+                "try{r.kemadruma=Caelus.kemadrumaAt(e,jd,_lat,_lon,false,false,'sidereal:lahiri');}catch(ex){}"
+                "try{var today=jd+365;r.vimshottariNow=Caelus.vimshottariAt(e,jd,today,'sidereal:lahiri');}catch(ex){}"
+                "try{r.rajaYogas=Caelus.rajaYogasAt(e,jd,_lat,_lon,'sidereal:lahiri');}catch(ex){}"
+                "try{r.dhanaYogas=Caelus.dhanaYogasAt(e,jd,_lat,_lon,'sidereal:lahiri');}catch(ex){}"
                 "JSON.stringify(r)"
-                %(jd_vd,)))
+                %(jd_vd,lat,lon)))
             if isinstance(c, dict) and 'error' not in c: result["caelus"]=c; result["engine"]=_eng()+"+Caelus"
     except: pass
     # Transit + Sade Sati (当前行运)
