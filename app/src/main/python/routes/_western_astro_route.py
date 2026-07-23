@@ -13,6 +13,9 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0):
     _js_load("natalengine-engine")
     natal=json.loads(_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateAstrology('{date_str}',{hour_dec},{tz_num},{lat},{lon}))"))
     result={"system":"western_astrology","engine":"natalengine-js","natal":natal}
+    _engs=["natalengine-js"]
+    if isinstance(natal, dict) and 'error' in natal:
+        _engs[-1]="natalengine-js(ERROR)"
     # NatalEngine额外功能: ACG占星地图
     try:
         result["acg"]=json.loads(_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateAstroCartography('{date_str}',{hour_dec},{tz_num},{lat},{lon}))"))
@@ -56,7 +59,8 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0):
             "})"
             %(jd,lat,lon,lat,lon,lat,lon,lat,lon,lat,lon,lat,lon,lat,lon,lat,lon,lat,lon,lat)))
         if isinstance(c, dict) and 'error' not in c:
-            result["caelus"]=c; result["engine"]+="+Caelus+deep"
+            result["caelus"]=c; _engs.append("Caelus")
     except: pass
+    result["engine"]="+".join(_engs)
     result["_hint"]="NatalEngine已返回日月升+7星+元素+相位+合盘+ACG。Caelus已返回12宫位+逆行+尊贵+格局+7点+空亡+推运。" "自探索:Object.keys(Caelus)含推运7种/合盘3种/行运12/恒星2/ACG/赤纬/越界/映点/调和盘"
     return result

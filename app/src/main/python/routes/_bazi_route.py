@@ -113,28 +113,64 @@ def _bazi(year, month, day, hour, minute=0, gender=1, feature="bazi"):
             for k,val in d.items():
                 if isinstance(k,str) and v in k: return val
             return ""
+        # 天干→五行 映射(用于学堂/文昌等查表)
+        _WX={"甲":"木","乙":"木","丙":"火","丁":"火","戊":"土","己":"土","庚":"金","辛":"金","壬":"水","癸":"水"}
+        # 三合: 取包含该地支的组合, 如"寅"在"寅午戌"中
+        def _find_3he(d, z):
+            for k, v in d.items():
+                if isinstance(k, str) and z in k: return f"{k}={v}"
+            return ""
+        # 刑: 所有包含该地支的tuple
+        def _find_xing(d, z):
+            out = []
+            for k, v in d.items():
+                if isinstance(k, tuple) and z in k: out.append(v.strip() if isinstance(v, str) else str(v))
+            return "; ".join(out) if out else ""
         result["extra"] = {
             "nayin":{"year":datas.nayins.get((yg,yz),""),"month":datas.nayins.get((mg,mz),""),"day":datas.nayins.get((dg,dz),""),"time":datas.nayins.get((tg,tz),"")},
             "rizhu":datas.rizhus.get(dg+dz,""),
             "minggong":datas.minggongs.get(ec.getMingGong()[-1:],""),
             "shengong":datas.minggongs.get(ec.getShenGong()[-1:],""),
+            # 日/干/年/月 神煞
             "day_shen":{k:v.get(dz,"") for k,v in datas.day_shens.items()},
             "g_shen":{k:v.get(dg,"") for k,v in datas.g_shens.items()},
             "year_shen":{k:v.get(yz,"") for k,v in datas.year_shens.items()},
             "month_shen":{k:v.get(mz,"") for k,v in datas.month_shens.items()},
-            # 金不换/调候用神/建禄/自坐
+            # 追加神煞: 天乙/文昌/学堂/天印/金神/旺/劫煞/禄库
+            "tianyi":{"gan":datas.tianyis.get(dg,""),"zhi":datas.tianyis.get(dz,"")},
+            "wenchang":datas.wenxing.get(dg,""),
+            "xuetang":datas.xuetangs.get(_WX.get(dg,""),("",""))[0] if hasattr(datas,'xuetangs') else "",
+            "jinshen":datas.jins.get(dg,""),
+            "wang":datas.wangs.get(dz,""),
+            "jiesha":datas.jieshas.get(yz,""),
+            "lu_ku_cai":{k:datas.lu_ku_cai.get(k,"") for k in ["官","杀"]},
+            # 神煞详细解释 (孤辰寡宿/大耗/天德/月德等)
+            "shensha_detail":{k:v for k,v in datas.shens_infos.items()
+                if any(s in k for s in [str(dz),str(mz),str(yz)])} if hasattr(datas,'shens_infos') else {},
+            # 金不换/调候用神/建禄/自坐/格/司令/休囚
             "jinbuhuan":datas.jinbuhuan.get(dgz,""),
             "tiaohou":datas.tiaohous.get(dgz,""),
             "jianlu":datas.jianlus.get(ygz,""),
             "self_zuo":datas.self_zuo.get(dz,""),
-            # 干支关系 (tuple/string key兼容)
+            "ge":datas.ges.get(mz,"") if hasattr(datas,'ges') else "",
+            "siling":datas.siling.get(mz,"") if hasattr(datas,'siling') else "",
+            "xiuqiu":{z:datas.xiuqius.get(z,"") for z in [yz,mz,dz,tz] if z} if hasattr(datas,'xiuqius') else {},
+            "chen_shi":datas.chens.get(tz,"") if hasattr(datas,'chens') else "",
+            # 干支关系 (全量)
             "gan_he":{g:_tup(ganzhi.gan_hes,g) for g in [yg,dg,tg] if g},
+            "gan_chong":{g:ganzhi.gan_chongs.get(g,"") for g in [yg,dg,tg] if g} if hasattr(ganzhi,'gan_chongs') else {},
             "zhi_he":{z:_strk(ganzhi.zhi_6hes,z) for z in [yz,mz,dz,tz] if z},
+            "zhi_3he":{z:_find_3he(ganzhi.zhi_3hes,z) for z in [yz,mz,dz,tz] if z} if hasattr(ganzhi,'zhi_3hes') else {},
+            "zhi_half_3he":{z:_tup(ganzhi.zhi_half_3hes,z) for z in [yz,mz,dz,tz] if z} if hasattr(ganzhi,'zhi_half_3hes') else {},
+            "zhi_3hui":{z:_strk(ganzhi.zhi_huis,z) for z in [yz,mz,dz,tz] if z} if hasattr(ganzhi,'zhi_huis') else {},
             "zhi_chong":{z:_tup(ganzhi.zhi_chongs,z) for z in [yz,mz,dz,tz] if z},
+            "zhi_xing":{z:_find_xing(ganzhi.zhi_xings,z) for z in [yz,mz,dz,tz] if z} if hasattr(ganzhi,'zhi_xings') else {},
+            "zhi_po":{z:_tup(ganzhi.zhi_poes,z) for z in [yz,mz,dz,tz] if z} if hasattr(ganzhi,'zhi_poes') else {},
             "zhi_hai":{z:_tup(ganzhi.zhi_haies,z) for z in [yz,mz,dz,tz] if z},
-            # 藏干/十神
+            # 藏干/十神/干支健康
             "zhi_zang":{z:ganzhi.zhi_zangs.get(z,"") for z in [yz,mz,dz,tz] if z},
             "ten_deities":{g:ganzhi.ten_deities.get(dg,{}).get(g,"") for g in [yg,mg,tg] if g},
+            "gan_health":ganzhi.gan_health.get(dg,"") if hasattr(ganzhi,'gan_health') else "",
             # 流月
             "yue_month":yue.months.get(mgz,"") if mgz else "",
             # 生肖
@@ -143,8 +179,8 @@ def _bazi(year, month, day, hour, minute=0, gender=1, feature="bazi"):
             "kongwang":datas.empties.get((dg,dz),""),
         }
         result["engine"] += " + bazi_china"
-        result["_hint"] = "lunar_python+bazi_china全量:四柱(含十神干支+旬+地煞)+大运(含起运详情)+胎元/胎息/命宫/身宫纳音+日柱吉凶神+彭祖百忌+财福喜阳阴贵神方位+日禄+二十八宿+日冲。bazi_china:金不换/调候/建禄/自坐/干支关系/藏干/十神/流月/生肖/空亡。" \
-            "另有:luohou九宫飞星/shengxiao生肖配对。自探索:dir(datas)/dir(ganzhi)/dir(yue)"
+        result["_hint"] = "lunar_python+bazi_china全量:四柱(含十神干支+旬+地煞)+大运(含起运详情)+胎元/胎息/命宫/身宫纳音+日柱吉凶神+彭祖百忌+财福喜阳阴贵神方位+日禄+二十八宿+日冲。bazi_china:金不换/调候/建禄/自坐/干支关系(五合/三合三会/六合/冲/刑/破/害)+十神/藏干/空亡/流月/生肖/格/司令/休囚/时辰诗。" \
+            "神煞:天乙/文昌/学堂/天印/金神/旺/劫煞/禄库/孤辰寡宿大耗天德月德。自探索:dir(datas)/dir(ganzhi)/dir(yue)"
     except Exception:
         result["_hint"] = "lunar_python已返回排盘+大运。bazi_china不可用(仅APK内)"
     return result

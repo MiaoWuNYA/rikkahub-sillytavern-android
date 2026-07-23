@@ -9,10 +9,12 @@ def _kabbalah(year,month,day,word=None,feature="numerology"):
     base_date=f"new Date({year},{month-1},{day},12)"
     if feature in ("numerology","all"):
         result["life_path"]=json.loads(_js("kaabalah-engine",f"JSON.stringify(Kaabalah.calculateKaabalisticLifePath({base_date}))"))
-        result["personal"]=json.loads(_js("kaabalah-engine",f"JSON.stringify({{personalYear:Kaabalah.calculatePersonalYear({base_date},new Date()),challenges:Kaabalah.calculateChallenges({base_date}),fibonacci:Kaabalah.calculateFibonacciCycle({base_date},new Date()),dateEnergies:Kaabalah.getDateEnergies({base_date})}})"))    if feature in ("gematria","all") and word:
+        result["personal"]=json.loads(_js("kaabalah-engine",f"JSON.stringify({{personalYear:Kaabalah.calculatePersonalYear({base_date},new Date()),challenges:Kaabalah.calculateChallenges({base_date}),fibonacci:Kaabalah.calculateFibonacciCycle({base_date},new Date()),dateEnergies:Kaabalah.getDateEnergies({base_date})}})"))
+    if feature in ("gematria","all") and word:
         import json as _json
         word_safe=_json.dumps(word)
-        result["gematria"]=json.loads(_js("kaabalah-engine",f"JSON.stringify({{forward:Kaabalah.calculateGematria({word_safe}),reverse:Kaabalah.reverseGematria(Kaabalah.calculateGematria({word_safe})?.value||0)}})"))    if feature in ("odu","all"):
+        result["gematria"]=json.loads(_js("kaabalah-engine",f"JSON.stringify({{forward:Kaabalah.calculateGematria({word_safe}),reverse:Kaabalah.reverseGematria(Kaabalah.calculateGematria({word_safe})?.value||0)}})"))
+    if feature in ("odu","all"):
         result["odu"]=json.loads(_js("kaabalah-engine",f"JSON.stringify(Kaabalah.calculateOdu({base_date}))"))
     if feature in ("tarot","all"):
         result["tarot_spreads"]=json.loads(_js("kaabalah-engine","JSON.stringify(Kaabalah.listTarotSpreads())"))

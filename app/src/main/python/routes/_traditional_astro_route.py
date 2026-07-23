@@ -229,10 +229,10 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon,minute=0):
     # Caelus JS: 13项传统推运/分析 (独立try, 失败不影响flatlib)
     try:
         jd = compute_jd(year, month, day, hour, minute, tz_offset)
-        asc_idx = int(asc_lon / 30) if 'asc_lon' in dir() else 0
-        fortune_lon = lots.get("fortune", 0) if 'lots' in dir() and isinstance(lots, dict) else 0
-        sun_lon = planets.get("sun", {}).get("lon", 0) if 'planets' in dir() else 0
-        moon_lon = planets.get("moon", {}).get("lon", 0) if 'planets' in dir() else 0
+        asc_idx = int(locals().get('asc_lon', 0) / 30)
+        fortune_lon = locals().get('lots', {}).get("fortune", 0)
+        sun_lon = locals().get('planets', {}).get("sun", {}).get("lon", 0)
+        moon_lon = locals().get('planets', {}).get("moon", {}).get("lon", 0)
         _js_load("caelus-engine")
         c = json.loads(_js("caelus-engine",
             "var e=new Caelus.Engine(Caelus.embeddedData);"
@@ -263,7 +263,7 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon,minute=0):
                     lat, lon)))
         if isinstance(c, dict) and 'error' not in c:
             result["caelus"] = c
-            result["engine"] = "flatlib+Caelus"
+            result["engine"] = (result.get("engine","") or "") + "+Caelus"
     except: pass
     result["_hint"] = ("flatlib已全量:本质尊贵/偶然尊贵/Sect/Lots/小限/Almutem/气质/结构。"
         "Zodiacal Releasing当前不支持。Caelus预取:Firdaria/主限推运/日弧。自探索:dir(flatlib)/Object.keys(Caelus)")
