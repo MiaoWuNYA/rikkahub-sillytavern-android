@@ -133,13 +133,15 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
         gua=result.get("meihua_coin") or result.get("meihua_time") or {}
         if gua.get("lines"):
             result["meihua_formatted"]=meihua_yi.format_hexagram_text(gua["lines"],gua.get("moving",[]))
-            _gua_key="".join(str(y) for y in gua["lines"])
-            result["meihua_gua_name"]=meihua_yi.get_gua_name(meihua_yi.XIAN_TIAN.get(_gua_key,""))
+            result["meihua_gua_name"]=meihua_yi.get_gua_name(gua["lines"])
             try:
                 lines_list=gua["lines"]
                 moving_positions=gua.get("moving",[])
                 hg=meihua_yi.compute_hexagrams(lines_list,moving_positions)
-                result["meihua_tiyong"]={"original":hg[0],"mutual":hg[1],"changed":hg[2],"ti_yong":hg[3]} if len(hg)>=4 else hg
+                if isinstance(hg, dict):
+                    result["meihua_tiyong"] = hg
+                elif isinstance(hg, (list, tuple)) and len(hg) >= 4:
+                    result["meihua_tiyong"] = {"original":hg[0],"mutual":hg[1],"changed":hg[2],"ti_yong":hg[3]}
             except: pass
     except: pass
 
