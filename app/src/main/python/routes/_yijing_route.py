@@ -25,45 +25,60 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
             js_yao=_js("iching-shifa-engine","JSON.stringify(IchingShifa.dayan())")
             result["iching_shifa_js_yao"]=js_yao
             gua_str=json.loads(js_yao).get("yao","697887") if isinstance(js_yao,str) else "697887"
-            result["ichingshifa"]=i.qigua_manual(year or 2026,month or 1,day or 1,12,0,gua_str)
+            hex_data=i.qigua_manual(year or 2026,month or 1,day or 1,12,0,gua_str)
+            result["ichingshifa"]=hex_data
+            hex_values=gua_str
         elif method=="time" and all([year,month,day]):
             hex_data=i.qigua_time(year,month,day,12,0)
             result["ichingshifa"]=hex_data
-            try: result["daykong"]=hex_data.daykong_shikong()
-            except: pass
-            try: result["innate_cegui"]=hex_data.innate_cegui()
-            except: pass
-            try: result["acquired_cegui"]=hex_data.acquired_cegui()
-            except: pass
+            # Extract yao string from 大衍筮法 dict key
             try:
-                gz=getattr(hex_data,"time_dizhi",None) or getattr(hex_data,"ri_gan",None) or "癸"
-                result["six_months_stars"]=hex_data.find_six_mons(gz)
+                _da=hex_data.get("大衍筮法")
+                if isinstance(_da,(list,tuple)) and len(_da)>0:
+                    hex_values=str(_da[0])
             except: pass
+            # 日空時空 (called on i, not hex_data)
+            try: result["daykong"]=i.daykong_shikong(year,month,day,12,0)
+            except: pass
+            # 先天策軌數
+            try: result["innate_cegui"]=i.innate_cegui(year,month,day,12,0)
+            except: pass
+            # 後天策軌數
+            try: result["acquired_cegui"]=i.acquired_cegui(year,month,day,12,0)
+            except: pass
+            # 六獸 + 十二運
             try:
-                rg=getattr(hex_data,"ri_gan",None) or "癸"
-                result["shier_luck"]=hex_data.find_shier_luck(rg)
+                gz=i.gangzhi(year,month,day,12,0)
+                if gz and len(gz)>2:
+                    rg=gz[2][0] if gz[2] else "癸"
+                    result["six_months_stars"]=i.find_six_mons(rg)
+                    result["shier_luck"]=i.find_shier_luck(rg)
             except: pass
-            try: result["hutiangua"]=hex_data.hutiangua()
-            except: pass
-            try: result["bookgua_details"]=i.bookgua_details()
-            except: pass
+            # 本卦/之卦 from dict directly
             try:
-                hlines=getattr(hex_data,"lines",None) or (getattr(hex_data,"values",None) if not callable(getattr(hex_data,"values",None)) else None)
-                if hlines:
-                    result["decode_gua"]=i.decode_gua(str(hlines))
-                    try: result["decode_two_gua"]=i.decode_two_gua(str(hlines),str(getattr(hex_data,"ggua_lines","") or ""))
-                    except: pass
-                    try:
-                        gua_str_full=str(hlines)
-                        result["guaike"]=i.guaike(year,month,day,12,0,int(gua_str_full[:3]),int(gua_str_full[3:6]))
-                    except: pass
-                    try: result["gua_description"]=i.show_sixtyfourguadescription(hlines)
-                    except: pass
+                ben=hex_data.get("本卦",{})
+                zhi=hex_data.get("之卦",{})
+                result["decode_gua"]=ben
+                if zhi:
+                    result["decode_two_gua"]={"本卦":ben,"之卦":zhi}
             except: pass
+            # 卦辞
+            if hex_values:
+                try: result["gua_description"]=i.show_sixtyfourguadescription(str(hex_values))
+                except: pass
+                try:
+                    if len(str(hex_values))>=6:
+                        hv=str(hex_values)
+                        result["guaike"]=i.guaike(year,month,day,12,0,int(hv[:3]),int(hv[3:6]))
+                except: pass
         elif method=="number":
             n=seed if seed is not None else 42
-            hex_data=i.qigua_manual(2026,1,1,12,0,f"{n}")
+            import random as _rnd
+            _rnd.seed(n)
+            yao_str=i.bookgua()
+            hex_data=i.qigua_manual(year or 2026,month or 1,day or 1,12,0,yao_str)
             result["ichingshifa"]=hex_data
+            hex_values=yao_str
         else:
             if _seed_dt is not None:
                 hex_data=i.qigua_time(_seed_dt.year,_seed_dt.month,_seed_dt.day,_seed_dt.hour,_seed_dt.minute)
@@ -71,8 +86,12 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
                 hex_data=i.qigua_now()
             result["ichingshifa"]=hex_data
         result["engine"]+="ichingshifa"
-        if hasattr(hex_data,'lines') or hasattr(hex_data,'values'):
-            hex_values=getattr(hex_data,'lines',None) or (getattr(hex_data,'values',None) if not callable(getattr(hex_data,'values',None)) else None)
+        if hex_values is None and isinstance(hex_data,dict):
+            try:
+                _da=hex_data.get("大衍筮法")
+                if isinstance(_da,(list,tuple)) and len(_da)>0:
+                    hex_values=str(_da[0])
+            except: pass
     except Exception as e: result["py_error"]=str(e)
     # 梅花易数 (全API)
     try:
@@ -145,12 +164,12 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
             _yr=_seed_dt.year if _seed_dt is not None else (year or 2026)
             _mo=_seed_dt.month if _seed_dt is not None else (month or 1)
             _dy=_seed_dt.day if _seed_dt is not None else (day or 1)
-            result["iching_shifa_pan"]=_js("iching-shifa-engine",
+            result["iching_shifa_pan"]=json.loads(_js("iching-shifa-engine",
                 "var r="+yao_js+";"
                 "var pan=IchingShifa.decodePan(r,{year:"+str(_yr)+",month:"+str(_mo)+",day:"+str(_dy)+",hour:12});"
-                "var gdyd=null;try{gdyd=IchingShifa.getGaoDaoYiDuan(pan.benGua.guaCode);}catch(e){}"
+                "var gdyd=null;try{gdyd=IchingShifa.getGaoDaoYiDuan(r);}catch(e){}"
                 "var qyxx=null;try{qyxx=IchingShifa.calculateQingyiXingXiu(r,"+str(_yr)+","+str(_mo)+","+str(_dy)+");}catch(e){}"
-                "JSON.stringify({pan:pan,gaoDaoYiDuan:gdyd,qingyiXingXiu:qyxx})")
+                "JSON.stringify({pan:pan,gaoDaoYiDuan:gdyd,qingyiXingXiu:qyxx})"))
         except: pass
         result["engine"]+="+iching-shifa-engine"
     return result

@@ -130,7 +130,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
     # ===== 辅助: NodeJhora =====
     if lat and lon:
         _js_load("node-jhora-engine")
-        nj=_js("node-jhora-engine",
+        nj=json.loads(_js("node-jhora-engine",
                 "try{"
                 "var dt=NodeJhora.DateTime.fromISO('%s');"
                 "var nj=NodeJhora.EphemerisEngine.getInstance();"
@@ -150,12 +150,12 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                 "var yogas=NodeJhora.YogaEngine?NodeJhora.YogaEngine.findYogas(chart,NodeJhora.YOGA_LIBRARY||[]):null;"
                 "JSON.stringify({planets:planets,houses:houses,moonLon:moon.longitude||0,sunLon:sun.longitude||0,charaKarakas:charaKarakas,atmakaraka:atmakaraka,ashtakavarga:ashtakavarga,yogini:yogini,yogas:yogas})}"
                 "}catch(e){JSON.stringify({error:e.message})}" % (
-                    iso_vd_date, lat, lon, lat, lon))
+                    iso_vd_date, lat, lon, lat, lon)))
         result["nodejhora"]=nj
         result["engine"]+="+NodeJhora"
         # NodeJhora 顶层函数: Panchanga/Vimshottari/DashaBalance/Varga/NarayanaDasha
         try:
-            njt=_js("node-jhora-engine",
+            njt=json.loads(_js("node-jhora-engine",
                 "try{"
                 "var dt=NodeJhora.DateTime.fromISO('%s');"
                 "var nj=NodeJhora.EphemerisEngine.getInstance();"
@@ -165,46 +165,48 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                 "var sun=planets.find(function(p){return p.id===0});"
                 "if(moon&&sun){"
                 "var chart2={planets:planets.map(function(p){return{name:p.id,longitude:p.longitude}}),houses:{}};"
+                "var safe=function(f){try{return f()}catch(e){return null}};"
                 "JSON.stringify({"
-                "panchanga:NodeJhora.calculatePanchanga(sun.longitude,moon.longitude,dt,6),"
-                "vimshottari:NodeJhora.generateVimshottari(dt,moon.longitude,2),"
-                "dashaBalance:NodeJhora.calculateDashaBalance(moon.longitude),"
-                "narayanaDasha:NodeJhora.NarayanaDasha?NodeJhora.NarayanaDasha.calculate(chart2,dt,80):null," "varga:NodeJhora.calculateVarga?NodeJhora.calculateVarga(moon.longitude,9):null"
+                "panchanga:safe(function(){return NodeJhora.calculatePanchanga(sun.longitude,moon.longitude,dt,6)}),"
+                "vimshottari:safe(function(){return typeof NodeJhora.generateVimshottari==='function'?NodeJhora.generateVimshottari(dt,moon.longitude,2):null}),"
+                "dashaBalance:safe(function(){return typeof NodeJhora.calculateDashaBalance==='function'?NodeJhora.calculateDashaBalance(moon.longitude):null}),"
+                "narayanaDasha:safe(function(){return NodeJhora.NarayanaDasha?NodeJhora.NarayanaDasha.calculate(chart2,dt,80):null}),"
+                "varga:safe(function(){return typeof NodeJhora.calculateVarga==='function'?NodeJhora.calculateVarga(moon.longitude,9):null})"
                 "})}else{JSON.stringify({error:'moon/sun not found'})}"
                 "}else{JSON.stringify({error:'no planets'})}"
                 "}catch(e){JSON.stringify({error:e.message})}" % (
-                    iso_vd_date, lat, lon))
-            if njt and 'error' not in njt:
+                    iso_vd_date, lat, lon)))
+            if isinstance(njt, dict) and 'error' not in njt:
                 result["nodejhora_top"]=njt
         except: pass
     result["_hint"]=("PyJHora已全量:Panchanga/Shadbala/Ashtakavarga/RajaYoga774/Dosha7/Arudha/Vimshottari/House分析/行星状态/VargaD3-30。\\nNodeJhora(DE440):行星/宫位/Jaimini/Ashtakavarga+Yogini+Yoga+Panchanga+Vimshottari+DashaBalance+NarayanaDasha。\\nCaelus/NatalEngine已预取。自探索:dir(jhora)/Object.keys(NodeJhora)/Object.keys(Caelus)")
     # ===== NatalEngine(文本) + Caelus(分盘) + PyJHora深度 =====
     try:
         _js_load("natalengine-engine")
-        v=_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateVedic('{date_str}',{hour_dec},{tz},{lat or 0},{lon or 0}))")
-        if v and 'bridge not available' not in v: result["natal"]=v; result["engine"]+="+NatalEngine"
+        v=json.loads(_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateVedic('{date_str}',{hour_dec},{tz},{lat or 0},{lon or 0}))"))
+        if isinstance(v, dict) and 'error' not in v: result["natal"]=v; result["engine"]+="+NatalEngine"
     except: pass
     try:
         _js_load("caelus-engine")
         if lat and lon:
-            c=_js("caelus-engine",
+            c=json.loads(_js("caelus-engine",
                 "var e=new Caelus.Engine(Caelus.embeddedData);var jd=%s;"
                 "var bodies=['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune','pluto','chiron'];"
                 "var moonLon=e.longitude('moon',jd,{zodiac:'sidereal:lahiri'});"
                 "var r={vimshottari:Caelus.vimshottariDashas(moonLon,jd)};"
-                "try{r.vargaD9=Caelus.vargaChart(e,jd,9,bodies,{zodiac:'sidereal:lahiri'});}catch(ex){}"
+                "try{r.vargaD9=Caelus.vargaChart(e,jd,9,bodies,'sidereal:lahiri');}catch(ex){}"
                 "try{r.ashtottariDashas=Caelus.ashtottariDashas(moonLon,jd);}catch(ex){}"
                 "try{r.yoginiDashas=Caelus.yoginiDashas(moonLon,jd);}catch(ex){}"
                 "JSON.stringify(r)"
-                %(jd_vd,))
-            if c and 'bridge not available' not in c: result["caelus"]=c; result["engine"]+="+Caelus"
+                %(jd_vd,)))
+            if isinstance(c, dict) and 'error' not in c: result["caelus"]=c; result["engine"]+="+Caelus"
     except: pass
     # Transit + Sade Sati (当前行运)
     try:
         import datetime
         today=datetime.datetime.now()
         today_jd = compute_jd(today.year, today.month, today.day, 12, 0, 0)
-        transit=_js("caelus-engine",
+        transit=json.loads(_js("caelus-engine",
             "var e=new Caelus.Engine(Caelus.embeddedData);"
             "var natalJd=%s;"
             "var transitJd=%s;"
@@ -220,8 +222,8 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
             "else if(satSign===(moonSign+11)%12)sadeSati='rising';"
             "else if(satSign===(moonSign+1)%12)sadeSati='setting';"
             "JSON.stringify({sadeSati:sadeSati,moonSign:moonSign,saturnSign:satSign,saturnLon:transitSaturn,jupiterSign:signIdx(transitJupiter),rahuSign:signIdx(transitRahu)})"
-            %(jd_vd,today_jd))
-        if transit and 'error' not in transit: result["transit"]=transit
+            %(jd_vd,today_jd)))
+        if isinstance(transit, dict) and 'error' not in transit: result["transit"]=transit
     except: pass
     # PyJHora深度
     try:

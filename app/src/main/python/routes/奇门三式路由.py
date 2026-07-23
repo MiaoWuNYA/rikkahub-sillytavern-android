@@ -2,7 +2,7 @@
   【奇门三式】
   奇门遁甲            →  QimenEngine(JS,7局法+断语,拆补+茅山+置闰×时/日/月/年4流派+十干克应)  日家自包含(推荐),时家需先有日家baseChart
   大六壬              →  [首选] LiuRen(JS,eval_javascript)一键排盘字段全  [备选] kinliuren(Python,需手动节气/干支)  生日可选
-  小六壬(马前课)       →  lunar_python取月日时→6掌诀推算(大安/留连/速喜/赤口/小吉/空亡)                           无需出生（需月日时）
+  # 小六壬已移除 — 纯Python手写逻辑，无引擎调用
 
   kinliuren           →  kinliuren.Liuren(节气, 农历月, 日干支如'甲子', 时干支如'甲子')
       构造后调 .result(0) 排盘(返回课体/三传/神将等) .sike_dict()查四课
@@ -65,5 +65,5 @@ LiuRen(大六壬) → eval_javascript(library='liuren-engine', code="LiuRen.getL
 【输入说明】
   奇门遁甲 → 日家只需日期, 时家需先日家baseChart
   大六壬 → 生日可选
-  小六壬 → 无需出生(需月日时)
+  # 小六壬已移除
 """

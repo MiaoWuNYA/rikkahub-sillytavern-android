@@ -234,7 +234,7 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon,minute=0):
         sun_lon = planets.get("sun", {}).get("lon", 0) if 'planets' in dir() else 0
         moon_lon = planets.get("moon", {}).get("lon", 0) if 'planets' in dir() else 0
         _js_load("caelus-engine")
-        c = _js("caelus-engine",
+        c = json.loads(_js("caelus-engine",
             "var e=new Caelus.Engine(Caelus.embeddedData);"
             "var jd=%s;"
             "var isDay=%s;"
@@ -248,7 +248,7 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon,minute=0):
             "firdaria:Caelus.firdaria(isDay,jd),"
             "primaryDirections:Caelus.primaryDirections(e,jd,%f,%f),"
             "solarReturn:Caelus.solarReturn(e,jd,jd+3650,jd+4015),"
-            "zrRelease:Caelus.zrRelease(%f,jd,2,100),"
+            "zrRelease:Caelus.zrRelease(Math.floor(%f/30),jd,2,100),"
             "vargaChart:Caelus.vargaChart(e,jd,9),"
             "transits:Caelus.transitAspects(natal,e,transitJd),"
             "antiscionSun:Caelus.antiscion(%f),antiscionMoon:Caelus.antiscion(%f),"
@@ -260,8 +260,8 @@ def _traditional_astro(year,month,day,hour,tz_offset,lat,lon,minute=0):
             "})" % (jd, "true" if is_day else "false", lat, lon, lat,
                     asc_idx, lat, lon, fortune_lon,
                     sun_lon, moon_lon, sun_lon, moon_lon,
-                    lat, lon))
-        if c and 'bridge not available' not in c and 'error' not in c.lower():
+                    lat, lon)))
+        if isinstance(c, dict) and 'error' not in c:
             result["caelus"] = c
             result["engine"] = "flatlib+Caelus"
     except: pass

@@ -12,12 +12,16 @@ def _ziwei(year,month,day,hour,minute=0,gender="male",engine="iztro"):
     if engine in ("iztro","all"):
         _js_load("iztro-engine")
         # 手动提取字段，避免 JSON.stringify 遍历全对象触发深层 getter → fixIndex 爆栈
-        result["iztro"]=_js("iztro-engine",
+        result["iztro"]=json.loads(_js("iztro-engine",
             "var a=Iztro.astro.bySolar('%s',%d,'%s');"
             "JSON.stringify({"
             "solarDate:a.solarDate,lunarDate:a.lunarDate,"
             "chineseDate:a.chineseDate,rawDates:a.rawDates,"
-            "sign:a.sign,zodiac:a.zodiac,ages:a.ages,mutagen:a.mutagen,"
+            "sign:a.sign,zodiac:a.zodiac,"
+            "fiveElementsClass:a.fiveElementsClass,soul:a.soul,body:a.body,"
+            "gender:a.gender,time:a.time,timeRange:a.timeRange,"
+            "earthlyBranchOfSoulPalace:a.earthlyBranchOfSoulPalace,"
+            "earthlyBranchOfBodyPalace:a.earthlyBranchOfBodyPalace,"
             "palaces:a.palaces.map(function(p){return{"
             "index:p.index,name:p.name,"
             "isBodyPalace:p.isBodyPalace,isOriginalPalace:p.isOriginalPalace,"
@@ -27,10 +31,10 @@ def _ziwei(year,month,day,hour,minute=0,gender="male",engine="iztro"):
             "jiangqian12:p.jiangqian12,suiqian12:p.suiqian12,"
             "decadal:p.decadal,ages:p.ages"
             "}})"
-            "})" % (date_str, int(hour_dec), gender))
+            "})" % (date_str, int(hour_dec), gender)))
     if engine in ("nihai","all"):
         _js_load("ziwei-nihai")
-        result["nihai"]=_js("ziwei-nihai",f"JSON.stringify(ZiweiNihai.generateChart({{year:{year},month:{month},day:{day},hour:{hour_dec},gender:'{gender}'}}))")
+        result["nihai"]=json.loads(_js("ziwei-nihai",f"JSON.stringify(ZiweiNihai.generateChart({{year:{year},month:{month},day:{day},hour:{hour_dec},gender:'{gender}'}}))"))
     if engine in ("python","all"):
         try:
             sys.path.insert(0,os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
