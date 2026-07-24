@@ -165,9 +165,9 @@ House Strength：Angular / Succedent / Cadent
 第二层：Firdaria
 第三层：Zodiacal Releasing
 第四层：Primary Directions
+第五层：Solar Arc / Secondary Progression / Transit
 ```
-仅在上述缺失时，辅助参考 Transit / Secondary Progression / Solar Arc。
-低优先级技术不得推翻高优先级技术。
+低层级不得推翻高层级。
 
 ## 十五、Master of Nativity
 

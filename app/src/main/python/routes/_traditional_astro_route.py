@@ -519,6 +519,9 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             "profections:prof,"
             "firdaria:Caelus.firdaria(isDay,jd),"
             "primaryDirections:sf(function(){return Caelus.primaryDirections(e,jd,_lat,_lon)}),"
+            "solarArc:Caelus.solarArc(e,jd,jd),"
+            "progressedMoon:sf(function(){return Caelus.progressedLongitude(e,'moon',jd,jd+365*30)}),"
+            "progressedSun:sf(function(){return Caelus.progressedLongitude(e,'sun',jd,jd+365*30)}),"
             "transits:sf(function(){"
             "return Caelus.transitAspects(chart,e,nowJd,{bodies:p7})"
             "}),"
@@ -553,8 +556,8 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
         "flatlib:本质尊贵/偶然尊贵/Sect/阿拉伯点(13extra+7Hermetic+家族)/Almutem/气质/"
         "结构/Reception/行为/LordOfGeniture/简化Hyleg/Doryphory/交点/产前朔望/"
         "星座 fertility+figure/三主(Triplicity)/Syzygy。"
-        "Caelus:推运(Firdaria75y/主限/小限)+ZR(Spirit+Fortune,当前活跃+L1-L2时限)+"
-        "行运90d(当前)+FixedStars(maxMag4)+月相/留/日月食/空亡(当前)/时主星/Parans/映点/"
-        "条件矩阵(dignityScore+pheno+solarPhase+angularity)+AlmutenFiguris。"
+        "Caelus:推运(Firdaria75y/主限/小限/太阳弧)+次限推运(月/日30yr)"
+        "+ZR(Spirit+Fortune,当前活跃+L1-L2时限)+行运90d(当前)+FixedStars(maxMag4)+月相/留/日月食/"
+        "空亡(当前)/时主星/Parans/映点/条件矩阵(dignityScore+pheno+solarPhase+angularity)+AlmutenFiguris。"
     )
     return result
