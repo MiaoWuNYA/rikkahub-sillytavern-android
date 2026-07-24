@@ -13,16 +13,22 @@ def _qimen(year,month,day,hour=None,minute=0,feature="all"):
             # 年家
             ny=json.loads(_js("qimen-engine",f"JSON.stringify(QimenEngine.generate({{type:'nianjia',year:{year}}}))"))
             if isinstance(ny, dict) and 'error' not in ny:
+                ny["_chartType"]="年家奇门"
+                ny["_description"]="以年干支定阴阳遁局数，管一年之运。仅作年度宏观参考，断具体事不用此盘。"
                 result["qimen_nianjia"]=ny
                 _engs.append("QimenEngine(年家)")
             # 月家
             ym=json.loads(_js("qimen-engine",f"JSON.stringify(QimenEngine.generate({{type:'yuejia',year:{year},month:{month}}}))"))
             if isinstance(ym, dict) and 'error' not in ym:
+                ym["_chartType"]="月家奇门"
+                ym["_description"]="以月干支定局，管一月之运。用于月内趋势参考，断具体事不用此盘。"
                 result["qimen_yuejia"]=ym
                 _engs.append("QimenEngine(月家)")
             # 日家
             q=json.loads(_js("qimen-engine",f"JSON.stringify(QimenEngine.generate({{type:'rijia',year:{year},month:{month},day:{day}}}))"))
             if isinstance(q, dict) and 'error' not in q:
+                q["_chartType"]="日家奇门"
+                q["_description"]="以日干支定局（拆补法），管一日之运。问一日吉凶可参考此盘。"
                 result["qimen"]=q
                 _engs.append("QimenEngine(日家)")
                 if hour is not None:
@@ -43,6 +49,8 @@ def _qimen(year,month,day,hour=None,minute=0,feature="all"):
                             "result.juMethod='chaibu';"
                             "JSON.stringify(result)" % (year, month, day, hour)))
                         if isinstance(qh, dict) and 'error' not in qh:
+                            qh["_chartType"]="时家奇门"
+                            qh["_description"]="以时辰干支排九星八门八神（拆补法），奇门遁甲断事正用。问具体事情吉凶成败，用时家盘。此盘为四盘中唯一正式用于预测的盘。"
                             result["qimen_hourly"]=qh
                             if qh.get("fourPillars") and q.get("fourPillars"):
                                 q["fourPillars"]["hour"]=qh["fourPillars"].get("hour")
@@ -100,7 +108,13 @@ def _qimen(year,month,day,hour=None,minute=0,feature="all"):
                 _engs.append("LiuRen")
         except: pass
     result["engine"]="+".join(_engs) if _engs else "none"
-    result["_hint"]=("QimenEngine 四柱全: 年家(qimen_nianjia)+月家(qimen_yuejia)+日家(qimen)+时家(qimen_hourly,拆补法)。"
+    result["_hint"]=("QimenEngine 四柱全: 年家(qimen_nianjia)+月家(qimen_yuejia)+日家(qimen)+时家(qimen_hourly,拆补法)。\n"
+        "注意: 此入口一次返回4张盘，各盘用途不同，切勿混淆——\n"
+        "  - qimen_nianjia (年家):  以年干支定局，管一年之运。仅作年度背景参考。\n"
+        "  - qimen_yuejia (月家):   以月干支定局，管一月之运。月内趋势参考。\n"
+        "  - qimen (日家):          以日干支定局，管一日之运。\n"
+        "  - qimen_hourly (时家):   ✅ 以时辰干支排九星八门八神，奇门遁甲断事正用。问具体事情吉凶成败，只看此盘。\n"
+        "四盘定局方式不同，值符值使八门九星八神均可能不一致，不可混用。\n"
         "大六壬与奇门遁甲共用一个数据入口(system='奇门')，通过feature='liuren'读取大六壬排盘。"
         "system='大六壬'或'六壬'等同 system='奇门'，返回数据含qimen+liuren双份。"
         "Qimen分析层(qimen_analysis):"
