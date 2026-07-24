@@ -30,8 +30,10 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0):
     # Caelus: 全量现代技法+对照+行运+推运+增补
     try:
         _js_load("caelus-engine")
+        today=datetime.datetime.now()
+        today_jd=compute_jd(today.year,today.month,today.day,12,0,0)
         c=json.loads(_js("caelus-engine",
-            "var e=new Caelus.Engine(Caelus.embeddedData);var jd=%s;"
+            "var e=new Caelus.Engine(Caelus.embeddedData);var jd=%s;var today=%s;"
             "var _lat=%f;var _lon=%f;var chart=e.chartAt(jd,_lat,_lon,{});"
             "var isDay=Caelus.isDayChart(e,jd,_lat,_lon);"
             "var ascIdx=Math.floor(chart.angles.asc/30);"
@@ -112,19 +114,25 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0):
             "saturn:sf(function(){return Caelus.gauquelinSector(e,'saturn',jd,_lat,_lon)})},"
             "vertex:chart.angles.vertex,eastPoint:chart.angles.eastPoint,"
             "parans:sf(function(){return Caelus.parans(e,jd,_lat,p7,30)}),"
-            "transits:sf(function(){return Caelus.transitAspects(chart,e,jd+45,{bodies:p7})}),"
+            "transits:sf(function(){return Caelus.transitAspects(chart,e,today,{bodies:p7})}),"
+            # 宫位头(Placidus) + 当前行运位置
+            "cusps:chart.cusps,"
+            "transitPositions:(function(){var tp={};p10.concat(['mean_node','chiron']).forEach(function(b){try{tp[b]={lon:e.longitude(b,today,{zodiac:'tropical'}),"
+            "sign:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(e.longitude(b,today,{zodiac:'tropical'})/30)%12]}}}catch(ex){});return tp})(),"
+            "chiron:sf(function(){return{lon:e.longitude('chiron',jd,{zodiac:'tropical'}),"
+            "sign:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(e.longitude('chiron',jd,{zodiac:'tropical'})/30)%12]}}),"
             "astrocartography:sf(function(){return Caelus.astrocartography(e,jd,['sun','moon','venus','mars','jupiter','saturn'],-60,60,5)}),"
             "solarReturn:sf(function(){return Caelus.solarReturn(e,jd,jd,jd+365*3)}),"
             "lunarReturn:sf(function(){return Caelus.lunarReturn(e,jd,jd+27,jd+27*3)})"
             "})"
-            %(jd,lat,lon)))
+            %(jd,today_jd,lat,lon)))
         if isinstance(c, dict) and 'error' not in c:
             result["caelus"]=c; _engs.append("Caelus")
     except: pass
     result["engine"]="+".join(_engs)
     result["_hint"]=("NatalEngine:日月升+7星+元素+相位+合盘。"
-        "Caelus全量:bodies/cusps/angles/patterns/lots/空亡/映点/赤纬/越界(全10星)/恒星合相/尊贵/almuten/月相/行星留(全7星)/日月食/"
-        "firdaria/profections/primaryDirections/parans/调和盘/行运(90d)/ACG(简)/太阳返照/月亮返照/"
+        "Caelus全量:bodies/cusps(Placidus)/angles/patterns/lots/空亡/映点/赤纬/越界(全10星)/恒星合相/尊贵/almuten/月相/行星留(全7星)/日月食/"
+        "firdaria/profections/primaryDirections/parans/调和盘/行运方位相位+Aspects(当前)/行运行星位置(全13星含凯龙)+凯龙本命/ACG(简)/太阳返照/月亮返照/"
         "次级推运(全7星30年)/genericReturns(水金火木土3yr)/midpoints(日月+Asc+MC)/riseSet(日月)/signCrossings(全10星)。"
         "自探索:Object.keys(Caelus)")
     return result
