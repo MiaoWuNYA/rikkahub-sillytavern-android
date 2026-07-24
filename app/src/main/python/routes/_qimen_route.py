@@ -13,7 +13,7 @@ def _qimen(year,month,day,hour=None,minute=0,feature="all"):
         except: pass
         # 日家 — 基础排盘（精度到天）
         try:
-            q=json.loads(_js("qimen-engine",f"JSON.stringify(QimenEngine.generate({{type:'rijia',year:{year},month:{month},day:{day}}}))"))
+            q=json.loads(_js("qimen-engine",f"JSON.stringify(QimenEngine.generateQimenChart({{type:'rijia',year:{year},month:{month},day:{day}}}))"))
             if isinstance(q, dict) and 'error' not in q:
                 q["_chartType"]="日家奇门"
                 q["_description"]="以日干支定局（拆补法），精度到天，作背景参考。"
@@ -24,7 +24,7 @@ def _qimen(year,month,day,hour=None,minute=0,feature="all"):
         if result.get("qimen") and hour is not None:
             try:
                 qh=json.loads(_js("qimen-engine",
-                    "var b=QimenEngine.generate({type:'rijia',year:%d,month:%d,day:%d});"
+                    "var b=QimenEngine.generateQimenChart({type:'rijia',year:%d,month:%d,day:%d});"
                     "var stems=['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];"
                     "var branches=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];"
                     "var fp=JSON.parse(JSON.stringify(b.fourPillars));"
@@ -49,7 +49,7 @@ def _qimen(year,month,day,hour=None,minute=0,feature="all"):
             try:
                 qa=json.loads(_js("qimen-engine",
                     "try{"
-                    "var b=QimenEngine.generate({type:'rijia',year:%d,month:%d,day:%d});"
+                    "var b=QimenEngine.generateQimenChart({type:'rijia',year:%d,month:%d,day:%d});"
                     "var fp=b.fourPillars||{};var yg=fp.year?fp.year.gan:null;var mg=fp.month?fp.month.gan:null;"
                     "var dg=fp.day?fp.day.gan:null;var dz=fp.day?fp.day.zhi:null;"
                     "var zsd=b.zhiShiDoor;var zfs=b.zhiFuStar;"
@@ -78,11 +78,11 @@ def _qimen(year,month,day,hour=None,minute=0,feature="all"):
                     "    specialPatterns:typeof QimenEngine.detectSpecialPatterns==='function'?"
                     "      QimenEngine.detectSpecialPatterns(p.palaceNumber,p.skyStem,p.earthStem,p.door,p.star,p.god,zsd,dg,yg,mg):null,"
                     "    palaceKeYing:typeof QimenEngine.getPalaceKeYing==='function'?"
-                    "      QimenEngine.getPalaceKeYing(p.skyStem,p.earthStem,p.hiddenStems||[],p.jiGanStem):null,"
+                    "      QimenEngine.getPalaceKeYing(p.earthStem,p.skyStem,p.hiddenStems||[],p.jiGanStem):null,"
                     "    yunChouPatterns:typeof QimenEngine.getYunChouPatterns==='function'?"
                     "      QimenEngine.getYunChouPatterns(p.door,p.skyStem,p.earthStem,p.god,p.palaceNumber):null,"
                     "    palaceChangSheng:typeof QimenEngine.getPalaceChangSheng==='function'?"
-                    "      QimenEngine.getPalaceChangSheng(p.palaceNumber,p.skyStem,p.earthStem,p.hiddenStems||[],p.jiGanStem):null,"
+                    "      QimenEngine.getPalaceChangSheng(p.palaceNumber,p.earthStem,p.skyStem,p.hiddenStems||[],p.jiGanStem):null,"
                     "    marks:p.marks,"
                     "    jiGanStem:p.jiGanStem,"
                     "    diGod:p.diGod,"
