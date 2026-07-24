@@ -204,7 +204,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                 # returns for transit timing
                 "try{r.returns={};['mars','jupiter','saturn'].forEach(function(b){"
                 "r.returns[b]=sf(function(){return Caelus.returns(e,b,jd,jd,jd+365*3,'sidereal:lahiri').slice(0,3)})})}catch(ex){}"
-                # 行运 Gochara: 全部行星当前实时西达尔黄道位置
+                # 行运 Gochara: 全部行星当前实时西达尔黄道位置 + nakshatra + 相位
                 "var trBodies=['sun','moon','mars','mercury','jupiter','venus','saturn','north_node','south_node'];"
                 "r.transit={}; trBodies.forEach(function(b){"
                 "var lon=e.longitude(b,today,{zodiac:'sidereal:lahiri'});"
@@ -216,6 +216,21 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                 "if(_ss===_ms)r.transit.sadeSati='peak';"
                 "else if(_ss===((_ms+11)%%12))r.transit.sadeSati='rising';"
                 "else if(_ss===((_ms+1)%%12))r.transit.sadeSati='setting';"
+                # Transit nakshatra: 每颗行运行星的宿信息(用于行运时间判断)
+                "try{r.transitNakshatra={};"
+                "var _trNakBodies=['sun','moon','mars','mercury','jupiter','venus','saturn','north_node','south_node'];"
+                "_trNakBodies.forEach(function(b){r.transitNakshatra[b]=Caelus.nakshatraAt(e,today,b,'sidereal:lahiri');});"
+                "}catch(ex){}"
+                # Transit aspects: 行运行星对本命行星的相位 + 经过的本命宫
+                "try{"
+                "var _allB=Caelus.BODIES.filter(function(b){return b!=='mean_node'&&b!=='true_node';});"
+                "var _natalB={};"
+                "_allB.forEach(function(b){_natalB[b]={lon:e.longitude(b,jd,{zodiac:'sidereal:lahiri'})};});"
+                "var _asc=Caelus.angles(Caelus.embeddedData,jd,_lat,_lon)[0];"
+                "var _wh=Caelus.housesWholeSign(_asc);"
+                "var _natalChart={bodies:_natalB,cusps:_wh.map(function(c){return c/Caelus.DEG;}),zodiac:'sidereal:lahiri'};"
+                "r.transitAspects=Caelus.transitAspects(_natalChart,e,today,{zodiac:'sidereal:lahiri'});"
+                "}catch(ex){}"
                 "JSON.stringify(r)"
                 %(jd_vd,today_jd,lat,lon)))
             if isinstance(c, dict) and 'error' not in c:
@@ -237,6 +252,6 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
     except: pass
     result["_hint"]=("PyJHora全量:Panchanga/Shadbala/Ashtakavarga/RajaYoga/Dosha7/Arudha/Vimshottari/House/行星状态/全部分盘(D2-D60)。"
         "NodeJhora(DE440):行星/宫位/Jaimini/Ashtakavarga/Yogini/Yoga/Panchanga/Vimshottari+NarayanaDasha/VargaD9/InduLagna/DhumadiUpagrahas。"
-        "Caelus:Vimshottari+Varga(D3/D9/D10/D12/D30)/NakshatraBodies/Yogas/Kemadruma/RajaYogas/DhanaYogas/Ashtottari/Yogini/行运(全9星西达尔经度/星座/度数)+SadeSati/留(全7星)/returns(火木土)。"
+        "Caelus:Vimshottari+Varga(D3/D9/D10/D12/D30)/NakshatraBodies/Yogas/Kemadruma/RajaYogas/DhanaYogas/Ashtottari/Yogini/行运(全9星西达尔经度/星座/度数)+SadeSati/留(全7星)/returns(火木土)/行运Nakshatra/行运对本命相位(含本命宫位)。"
         "自探索:dir(jhora)/Object.keys(NodeJhora)/Object.keys(Caelus)")
     return result
