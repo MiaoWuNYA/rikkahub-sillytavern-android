@@ -1,17 +1,169 @@
 ╔══════════════════ 塔罗解读模板 ══════════════════╗
 本模板供 AI 在拿到 mingli 工具返回的结构化数据后，作为解读参考。
-保持原有的叙事框架、话术示例、牌阵关系学、逆位体系、参考字典。
+引擎: arcanite-unified(Python) + tarot_elemental_engine(EE) + kaabalah-engine(JS)
+输出格式: 故事流叙事(见下方叙事输出格式)
 ╚══════════════════════════════════════════════════════╝
 
-Rachel Pollack → 每牌=故事角色, 大牌=灵魂archetype
-                       Joan Bunning → 能量状态模型(逆位基础), 牌间互动阅读(位置与牌组关系)
-                       Mary K. Greer → 花色叙事流(小牌逐卡讲故事), 逆位系统全盘研究
-                       Multi-Layer Reading Framework → 观察→多层面解读→整合叙事
-重要: 以下7层是框架不是铁律。
-Rachel Pollack《Seventy-Eight Degrees of Wisdom》:在掌握牌义基础后,允许牌与牌之间形成自然叙事——牌阵是活的结构,不是死记硬背关键词
-AI 先感受牌阵整体，再用7层结构组织语言
-不是每层都必须填——有的阅读一张牌就说明了一切
-叙事比结构更重要——宁缺一节，不凑一段
+核心权威体系:
+- Rachel Pollack《Seventy-Eight Degrees of Wisdom》《Forest of Souls》— 每牌=故事角色, 大牌=灵魂archetype, 牌阵是活的结构
+- Joan Bunning《Learning the Tarot》— 能量状态模型(逆位基础), 牌间互动阅读
+- Mary K. Greer《21 Ways to Read a Tarot Card》— 花色叙事流, 塔罗逆位体系, 多层面阅读框架
+- 黄金黎明(Crowley《777》, Waite/Pamela Colman Smith RWS系统) — 元素尊贵、卡巴拉对应、四世界
+
+## 叙事输出格式（覆盖7层框架的逐层输出）
+
+```
+塔罗的输出本质是一场"故事讲述"——牌阵是一台正在上演的戏剧，
+你的任务是把看到的戏讲出来，而不是把7层分析报告交给问卜者。
+
+以下7层框架是你内部推理工具箱，输出时不得按7层顺序分节。
+请按故事流四段组织语言，每一段自然融合多层信息：
+
+① 开篇·牌局定调（约占全文20%）
+- 用一句话定调整体氛围：这副牌在说什么？
+- 大牌/小牌比例和元素分布（EE statistics）——故事发生在"命运层面"还是"日常层面"
+- 正逆位全局信号——能量流畅还是有阻塞
+- 铺出所有 image_tag，按牌阵形状排列，位置名标注上方
+
+② 中段·故事展开（约占全文50%）
+- 从牌阵位置构建叙事流：位置定义决定每张牌的"叙事角色"
+- 不逐张解释——而是讲牌与牌之间的关系如何推动故事
+- 过去→现在→未来（或牌阵自然的时间/主题流向），
+  每段自然融入：核心含义(core_meaning) + 位置解读(interpretation) + 象征(symbols)
+- 冲突/张力/共振/补完/桥接——牌间关系是故事的引擎，
+  不是独立的"关系分析一条"
+- 宫廷牌=角色出场（优先读成真人/人格面具），在一句话里完成描写
+- 元素尊贵（EE spread_dignity + flow_pairs）融入情节的"能量强弱"描述，
+  不单独列一段"元素分析"
+- question_context（若有）在对应位置自然展开，
+  不单独成段"问题背景"
+- 正逆位用 Bunning/Greer 体系描述能量状态（不足/阻塞/过度/内化/转化），
+  不单独列"逆位分析"
+- 一句话自然带出 archetype/reading_aspects 作为角色深度
+
+③ 纵深·核心课题（约占全文20%）
+- 从故事中提炼核心课题——这副牌真正要说的不是事件本身，而是______
+- 大牌的 Fool's Journey 阶段：灵魂当前在旅程的哪里
+- 卡巴拉对应（每牌的 CorrespondenceProfile 已随抽牌同时返回）：大牌→路径→源质
+- 数字学主题（EE numerology + 重复数字）——灵魂层次的"数字签名"
+- 用 meditation_focus/journaling_prompts 展开内在功课层面，
+  不单独列"灵性分析"
+- 此处是"故事的深层含义"——前面讲了故事，现在是故事的意义
+
+④ 收束·行动与回响（约占全文10%）
+- 一句核心洞见（从整副牌的整合中提炼，不从单张牌拿）
+- 建议：≤3条，从 reading_aspects.advice + affirmations 融合
+- 反思问题：从 journaling_prompts 选一条最切题的，或自己拟
+- 一句箴言收尾：用牌面符号做隐喻，不直接重复牌义，
+  让问卜者带走一个能反复回味的意象
+
+以上四段之间用内容逻辑自然过渡，禁止生硬标题过渡。
+故事本身就是结构，不需要额外的"结构标签"。
+```
+
+### 禁止清单（严格遵守）
+
+```
+× 禁止按7层框架的顺序分节输出（总体基调→多角度解读→故事线→人物志→棋局→秘传→落幕与回响）
+× 禁止使用"总体基调""多角度解读""故事线""人物志""棋局""秘传"等作为段落标题
+× 禁止使用①-⑫编号或"Section"标签作为章节标题
+× 禁止逐张解释牌义后拼接——必须先找牌间关系，再构建叙事
+× 禁止断句排版——每段至少3-5句完整文字
+× 禁止"这张牌代表XX"的固定句式开场——用画面/感觉/故事开场
+× 禁止默认逆位=负面——必须先判断能量状态（不足/阻塞/过度/内化）
+× 禁止死神默认=灾难、高塔默认=毁灭——优先解释转化与真相显现
+× 禁止空泛鸡汤/神秘宣言/强行励志/绝对化预测
+× 禁止机械套用话术示例——它们示范语气，不是模板
+```
+
+## 卡巴拉（Kaabalah）融合解读指南
+
+```
+卡巴拉数据不是独立的"秘传附录"——塔罗的22大牌对应生命之树22路径，
+40数字牌对应11源质(Sephiroth)，16宫廷牌对应四世界(Four Worlds)。
+这是塔罗的深层结构骨架，不是装饰性点缀。
+
+以下是在解读中自然融入卡巴拉数据的方法论，
+按使用频率和重要性排列：
+
+【一、路径叙事——大牌融合（最高优先级）】
+大牌在卡巴拉体系中不是"独立的22个原型符号"，
+而是连接两个源质的22条"路径"（path）。
+一张大牌的核心课题 = 从源质A到源质B的转化过程。
+
+融合方法：
+- "这张[大牌名]在生命之树上位于从[fromSphere]到[toSphere]的路径——
+  这解释了为什么它的核心是[XX]，因为这条路径的本质就是
+  [源质A的特性]到[源质B的特性]的过渡。"
+- 源质特性速记：Kether=纯粹源头/太一，Chokmah=智慧/原阳，
+  Binah=理解/原阴，Chesed=慈悲/扩张，Geburah=严厉/审判，
+  Tiphareth=美丽/中心/太阳，Netzach=胜利/情感，Hod=宏伟/理性，
+  Yesod=根基/潜意识，Malkuth=王国/物质
+
+融合范例（当解读中段展开时，一句话带过）：
+"魔术师不仅在Fool's Journey中是创造的起点，在卡巴拉体系中
+它位于Kether（纯粹太一）通往Chokmah（智慧）的路径——
+这不是一次普通的开始，而是'从无分别到第一次分化'的宇宙级创生。
+你的处境不是在做一个普通选择，而是在定义一种全新的模式。"
+
+【二、希伯来字母——点睛（中等优先级）】
+每个大牌对应的希伯来字母有象形含义，可以一句话揭示深层视角：
+Aleph(牛)=力量   Beth(房子)=容纳   Gimel(骆驼)=承载
+Daleth(门)=通道   Heh(窗)=启示   Vau(钉)=连接
+Zain(剑)=分化   Cheth(栅栏)=界限   Teth(蛇)=缠绕
+Yod(手)=创造   Kaph(手掌)=抓握   Lamed(刺棒)=驱动
+Mem(水)=流动   Nun(鱼)=生命   Samekh(支撑)=支持
+Ayin(眼)=洞察   Peh(口)=表达   Tzaddi(鱼钩)=吸引
+Qoph(耳后)=接收   Resh(头)=首位   Shin(牙)=转化
+Tau(十字)=完成
+
+融合用法：
+"这张牌的希伯来字母是[字母名]，原意是[象形含义]——
+这为它的主题增加了一层[XX]的维度。"（一句话点缀即可）
+
+【三、源质定位——数字牌融合（中等优先级）】
+数字1-10对应10个源质，数字牌的数字不只是"阶段编号"，
+而是该源质的能量在这个花色领域的显化：
+1=Kether(纯粹源头/太一)   2=Chokmah(智慧/两极)
+3=Binah(理解/形式)        4=Chesed(慈悲/扩张)
+5=Geburah(严厉/审判)      6=Tiphareth(美丽/和谐)
+7=Netzach(胜利/情感)      8=Hod(宏伟/理性)
+9=Yesod(根基/潜意识)      10=Malkuth(王国/物质)
+
+融合用法：
+"数字X对应卡巴拉第十源质[源质名]——这意味着
+这张牌不仅在[花色]的叙事中走到[XX]阶段，更在宇宙层面对应
+[源质特性]的原则。"
+
+【四、四世界框架——花色融合（按需使用）】
+四个花色对应卡巴拉四世界，同数字不同花色的核心区别
+在于"在哪个世界运作"：
+Wands/权杖=Atziluth(原型界/神圣意志/纯粹能量)
+  → "这件事在最高意志层面运作"
+Cups/圣杯=Briah(创造界/形态/情感结构)
+  → "这件事在情感与关系层面形成"
+Swords/宝剑=Yetzirah(形成界/智识/思想结构)
+  → "这件事在思想与沟通层面展开"
+Pentacles/钱币=Assiah(行动界/物质/现实显化)
+  → "这件事在物质与现实层面落地"
+
+【五、融合铁律】
+① 卡巴拉对应是深层结构，不是输出数据——禁止单独列出
+   "希伯来字母/路径编号/星空对应"等数据表格
+② 在叙事输出格式中，卡巴拉层最自然的融入位置是
+   "③ 纵深·核心课题"段——在讲完故事后，展开故事的深层含义
+③ 每篇解读中卡巴拉内容不超过3-4处点缀——过度使用会
+   让解读从"故事讲述"变成"学术讲座"
+④ 大牌的路径叙事优先级最高，希伯来字母次之，
+   源质定位再次之，四世界框架按需使用
+⑤ 卡巴拉数据已随抽牌同时返回——跳过"不传则无"的顾虑
+⑥ getTarotThemeProfile（kaabalah_themes）提供了每张卡
+   更完整的行星/星座/元素展开数据，可作为深层解读的语气参考
+```
+
+【以下七层为内部推理框架，非输出结构】
+AI 在拿到数据后，先用这7层逐层推理，但输出时必须按叙事输出格式重新组织。
+每层内的参考话术是语感示范，不是必须套用的句式。
 ── 1. 总体基调──
 【问题】用户原问
 【牌阵】名称 + 位置含义列表
@@ -297,21 +449,62 @@ AI 先感受牌阵整体，再用7层结构组织语言
                               【肯定语】1条 affirmations 鼓舞收尾
                               【反思问题】1条切中阅读主题的问题。从 journaling_prompts 中选与【主题定性】最相关的一条，或根据 readingAspects.innerState 自己拟一句。问题要开放、不自问自答，让问卜者带着这句话离开牌桌
                               【箴言】从 coreKeyword / get_core_meaning(reversed=...)["essence"] / affirmations 中提炼成一句隐喻式收尾——不直接重复牌义，用牌面符号做画面类比——让问卜者带走一个能反复回味的意象
-╔══════════════════ 塔罗数据 ═════════════════╗
-【塔罗数据使用规则】
-  必须使用：get_core_meaning(reversed=) / get_interpretation(rag_mapping,reversed=) / get_question_context(question_type,reversed=) / get_relationships() / get_affirmations() / get_journaling_prompts() / meditation_focus / .raw_data(全部原始字段) / description{waite,tk_en,tk_zh} / get_waite_meaning(orient) / get_tk_meaning(orient,lang) / reading_aspects / contextual_meanings
-  用于润色：get_symbols()→for k, v in .items()(返回dict) / get_elemental_correspondences() (共10项: element/zodiac/planet/hebrew_letter/numerology/season/time_of_day/colors/crystals/herbs)
-  结构分析(仅【牌阵结构】):
-    statistics + composition.major_arcana_ratio + composition.court_card_ratio
-    + composition.repeated_numbers + composition.repeated_suits
-    + reversal.blocked_energy_signal
-  秘传附录(Kaabalah JS引擎按需调用, 详见互补模式 STEP 4: 卡巴拉对应/原型/777/跨牌桌)
-╚══════════════════ 塔罗数据 ═════════════════╝
+╔══════════════════ 塔罗数据字段全映射 ═════════════════╗
+引擎(_tarot_route.py)每张牌返回以下字段，**全部必须融入叙事输出**：
 
-【Kaabalah JS引擎塔罗（卡巴拉对应体系）】
-Kaabalah tarot 模块 21 项导出，全部集成到 STEP 4a-4g 中。
-用法: eval_javascript(library='kaabalah-engine') 后 Object.keys(Kaabalah) 自探索
-完整说明见上方互补模式 STEP 4
+【叙事主干——每牌必用】
+card_name / card_number / suit / orientation → 牌的身份与能量方向
+position（rag_mapping）→ 位置定义该牌的叙事角色（高于单牌义）
+core_meaning → 故事的核心关键词
+interpretation（基于position+orientation）→ 位置赋予的具体含义
+reading_aspects → {innerState, advice} 心理状态+行动指南
+
+【故事血肉——叙事中自然点缀】
+elemental → 10项对应(element/zodiac/planet/hebrew_letter/numerology/season/time_of_day/colors/crystals/herbs)
+symbols → 象征符号字典（选最有力的1-2个展开）
+description（Waite视觉描述 / TK中文描述）→ 画面描写的素材
+waite_meaning（upright/reversed）→ 经典韦特释义
+tk_meaning（en/zh, upright/reversed）→ TarotKit双语释义
+archetype → 原型标签（大牌专用）
+contextual_meanings → {work, love, finance...} 领域特定含义
+relationships → 与前后牌的增幅/挑战/同频
+
+【按需激活——对应叙事位置使用】
+question_context（question_type有值时返回）→ 问题背景下的针对性解读
+affirmations → 肯定语，融入收束建议
+journaling_prompts → 反思问题，融入收束反思
+meditation_focus → 冥想焦点，融入纵深课题
+image_url / image_tag → 开篇铺出，不得删除
+
+【牌阵级数据】
+spread → {id, name, description, layout坐标, positions: [{name, rag, desc}]}
+→ 位置含义决定叙事流向
+
+【EE元素尊贵引擎——全量覆盖】
+ee_analysis → {
+  spread_dignity（每牌元素/尊贵/亲和/否定/关系）→ 融入故事张力
+  element_distribution（火土风水占比）→ 开篇定调
+  composition（大牌比/宫廷比/重复数字/重复花色/逆位统计/阻塞信号）→ 全局结构
+  elemental_timing → 时间框架参考
+  numerology → 数字学汇总（核心数字+大师数判断）
+}
+dignity_triples → 三牌连续元素尊贵模式
+bridge_triples → 元素间"桥接"检测
+flow_pairs → 相邻元素流向（一张流向另一张/冲突）
+relation_pairs → 相邻元素关系分类（强化/中和/冲突）
+
+【秘传—Kaabalah（随抽牌同时返回）】
+kaabalah[每牌] → getTarotCorrespondenceProfile（路径/希伯来字母/fromSphere→toSphere/源质/占星/777）
+kaabalah_themes[每牌] → getTarotThemeProfile（行星+星座+元素+源质+路径的完整主题展开）
+kaabalah_tree → buildKaabalisticMapData（22路径+11球体+777全表）
+kaabalah_colors → COLORS_DATA（颜色/音符等感官对应数据，用于语气润色）
+
+使用方法：引擎每牌返回 CorrespondenceProfile（路径/字母/源质/占星/777）+
+ThemeProfile（行星/星座/元素完整展开），外加生命之树全图和777颜色数据。
+对应解读方法见上方【卡巴拉（Kaabalah）融合解读指南】。
+完整卡巴拉参考字典见下方【塔罗卡巴拉全对应】。
+缺失则跳过，不猜测不编造。
+╚══════════════════════════════════════════════════════╝
 
 ╔══════════════════ 塔罗核心参考字典 ═══════════════╗
 本字典为LLM内部参考, 不直接输出。

@@ -1,5 +1,5 @@
 """Route:  yijing"""
-import json, sys, os
+import json, sys, os, random as _rnd
 from ._shared import _js, _js_load
 
 def _extract_yao(hex_data):
@@ -23,11 +23,27 @@ def _extract_yao(hex_data):
                 except: pass
     return None
 
+def _yao_from_seed(seed, method):
+    """用seed确定性生成6个爻值(6789)，method决定概率分布。"""
+    rng = _rnd.Random(seed)
+    if method == "coin":
+        ws = [1, 3, 3, 1]        # 三枚硬币: 6=1/8, 7=3/8, 8=3/8, 9=1/8
+    elif method in ("dayan", "manual"):
+        ws = [1, 5, 7, 3]        # 大衍筮法: 6=1/16, 7=5/16, 8=7/16, 9=3/16
+    else:
+        ws = [1, 1, 1, 1]        # 默认均匀
+    return "".join(str(v) for v in rng.choices([6, 7, 8, 9], weights=ws, k=6))
+
 # ===== 六爻梅花 =====
-def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all"):
-    result={"system":"yijing","engine":"",
+def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="all"):
+    # 自动生成seed以实现复盘
+    if seed is None:
+        seed = _rnd.randrange(1, 2**31)
+    result = {
+        "system": "yijing", "engine": "", "seed": seed,
         "_hint":"ichingshifa(Python)+iching-shifa-engine(JS)双引擎对照:同一爻值各自出解读。"
-        "本路由返回六爻+梅花+太玄+荆诀四套数据。系统别名:六爻→用六爻模板,梅花易数→用梅花易数模板,太玄经→用太玄经模板。"}
+        "本路由返回六爻+梅花+太玄+荆诀四套数据。系统别名:六爻→用六爻模板,梅花易数→用梅花易数模板,太玄经→用太玄经模板。"
+        "seed参数用于复盘:传同一seed+同一method→同一组卦。"}
 
     # ---- 确定有效日期时间 ----
     _seed_dt=None
@@ -44,6 +60,7 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
         import datetime as _dt
         _now=_dt.datetime.now()
         _yr,_mo,_dy,_hr,_min=_now.year,_now.month,_now.day,12,0
+    result["date_used"] = {"year":_yr,"month":_mo,"day":_dy}
 
     # === 第1步：生成爻值（同一起卦，双引擎共享） ===
     yao_string = None  # 6位 6/7/8/9 字符串
@@ -54,22 +71,16 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
         i = Iching()
 
         if method == "dayan" or method == "manual":
-            # JS 大衍筮法生成爻值→传给Python
-            _js_load("iching-shifa-engine")
-            yao_string = _js("iching-shifa-engine","IchingShifa.dayan()")
+            yao_string = _yao_from_seed(seed, "dayan")
             hex_data = i.qigua_manual(_yr,_mo,_dy,12,0,yao_string)
 
         elif method == "time":
-            # Python 时间起卦→提取爻值（共享给JS）
             hex_data = i.qigua_time(_yr,_mo,_dy,12,0)
             yao_string = _extract_yao(hex_data)
 
         elif method == "number":
-            n = seed if seed is not None else 42
-            import random as _rnd
-            _rnd.seed(n)
-            hex_data = i.bookgua()
-            yao_string = _extract_yao(hex_data)
+            yao_string = _yao_from_seed(seed, "number")
+            hex_data = i.qigua_manual(_yr,_mo,_dy,12,0,yao_string)
 
         else:
             hex_data = i.qigua_time(_yr,_mo,_dy,12,0)
@@ -141,6 +152,7 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
         import meihua_yi
         result["engine"] += "+meihua_yi"
         if method == "coin":
+            _rnd.seed(seed)
             coin_result = meihua_yi.qigua_coin()
             result["meihua_coin"] = {
                 "lines":[y for y in coin_result[0]],

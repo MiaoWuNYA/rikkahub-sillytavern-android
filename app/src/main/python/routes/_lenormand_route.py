@@ -1,5 +1,5 @@
 """Route:  lenormand"""
-import json, sys, os
+import json, sys, os, random
 from ._shared import _js, _js_load
 
 # ===== 雷诺曼 =====
@@ -10,7 +10,9 @@ def _lenormand(spread="line-5", seed=None, cards=None):
     sp = get_spread_registry(system="lenormand").load_spread(spread)
     from arcanite.core.models import DrawnCard, Orientation
     from arcanite.core.deck import LenormandDrawnCard
+    # 自动生成seed以实现复盘
     if not cards or not isinstance(cards, list):
+        if seed is None: seed = random.randrange(1, 2**31)
         items = d.draw_with_data(len(sp.positions), seed=seed, allow_reversals=False)
     else:
         items = []

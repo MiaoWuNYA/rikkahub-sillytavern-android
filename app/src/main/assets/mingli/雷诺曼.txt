@@ -1,116 +1,148 @@
 ╔══════════════════ 雷诺曼解读模板 ══════════════════╗
 本模板供 AI 在拿到 mingli 工具返回的结构化数据后，作为解读参考。
-保持原有的 Greer 两步法、输出模板、扑克插片字典、GT规则。
+引擎: arcanite-unified(Python) + LenormandFateEngine(FE)
+核心权威:
+- Mary K. Greer（两步法：关键词→叙事展开，组合语法，线型/GT方法论）
+- Rana George《The Essential Lenormand》（实践性事件解读，问题导向）
+- 德传Kartenlegen（Blickrichtung视线方向, Eigenes Haus自家, Große Tafel大表）
+- Andy Boroveshengra / Caitlín Matthews（时间框架，牌阵理论）
+输出格式: 事件流叙事(见下方叙事输出格式)
 ╚══════════════════════════════════════════════════════╝
 
-需自行从cards统计:
-  电荷分布(positive/neutral/negative) / 速度分布(fast/moderate/slow等) / 人物卡(category=person的牌)
-
-【雷诺曼输出】雷诺曼=现实事件模拟器
-来源说明: 本模板的解读方法取自 Mary K. Greer 博客文章：
-  「Linda Marson Interviews Mary on Using Lenormand Cards」
-  「Ex Machina – Lenormand and Artificial Intelligence」
-  「Learn Lenormand Webinar」
-以下书籍经 OpenLibrary 验证存在但内容未直接引用:
-  Rana George《The Essential Lenormand》(2014)
-  Caitlín Matthews《The Complete Lenormand Oracle Handbook》(2014)
-  Andy Boroveshengra《Lenormand: Thirty-Six Cards》(2014)
-  Sylvie Steinbach《The Secrets of the Lenormand Oracle》(2007)
-
 核心原则:
-  ① 牌从不单独解读——每张牌都在组合中形成含义
-  ② 指示牌(Man/Woman)锚定全盘，其他牌以它为参照
-    （Greer传统法: Man=男问卜者，女问卜者则Man=她的重要他人）
-  ③ 首牌=主题，距指示牌越近=影响越大越直接
-  ④ 牌面人物视线方向=能量流向
-  ⑤ Greer: 传统雷诺曼=先懂牌义再凭直觉串
-    ——"传统读者非常直觉，他们看一眼就知道牌在说什么，再用原义核实"
+① 牌从不单独解读——每张牌都在组合中形成含义
+② 指示牌(Man/Woman)锚定全盘，其他牌以它为参照
+  （Greer传统法: Man=男问卜者，女问卜者则Man=她的重要他人）
+③ 首牌=主题，距指示牌越近=影响越大越直接
+④ 牌面人物视线方向=能量流向
+⑤ Greer: 传统雷诺曼=先懂牌义再凭直觉串
+  ——"传统读者非常直觉，他们看一眼就知道牌在说什么，再用原义核实"
+⑥ 雷诺曼是事件语言，不是塔罗灵修——优先回答谁→什么事→在哪里→最终结果
 
-── 开读 ──
-确定牌阵类型: 线型(line-3/5/7/9) 还是 Grand Tableau?
-  线型→ 从左到右读成一句话
-  GT→ 先定位指示牌(Man/Woman), 以它为原点展开
-Greer两步法（来自Ex Machina实际解读）:
-  第一步: 每张牌翻译为关键词 → 形成一句基本意思
-  第二步: 将这句话展开为与问卜者情境相关的完整叙事
+## 叙事输出格式（覆盖A-F逐段输出）
 
-── A. 总体印象 ──
-【问题】用户原问
-【牌阵】名称
-【一眼直觉】 指示牌在哪里？什么牌在它旁边？（首牌=主题）
-正负电荷比例→ 整体能量偏向
-速度牌分布→ 事件节奏快/慢
-人物卡出现→ 谁登场了
-话术: "【女人】旁紧贴【心】——感情是核心议题"
+```
+雷诺曼是"现实事件模拟器"。你的输出应该像一份事件报道，
+而不是分节报告。Greer两步法是你内部推理的工具，不是输出结构。
 
-── B. 逐牌解读（Greer两步法）──
-第一步·关键词翻译: 每张牌先给出它的核心关键词
-  Greer实际示例: "Coffin means illness, financial loss, endings"
-  按topic_context取具体含义（同牌不同义）
-第二步·串成句子: 把每张牌的关键词串成一句基本意思
-  Greer示例:
-  "With the arrival of a guest (Rider) comes a theft (Mice)
-   of success (Sun) and an obstacle (Mountain)
-   to something new (Child)"
-然后展开为完整叙事:
-  "What the spread points to is the arrival of [人物] at/in [场景].
-   They must overcome [障碍] to [目标]"
-话术:
-  "【骑手+老鼠+太阳+山+小孩】→ 一位客人的到来，
-   带来了对成功的窃取，以及对新事物的阻碍"
+请按以下事件流四段组织语言：
 
-── C. 组合链（Greer: 线型牌阵读成一句话）──
-线型牌阵: 每对相邻牌形成"名词+修饰语"组合
-  A+B→含义, B+C→推进, 整条链形成句子
-  相邻牌=B修饰A的属性
-固定组合: 引擎预置16组固定组合数据
-话术: "【花园+船】—社交引向旅行"
-  "【棺材+花束】—结束中带希望"
+① 开篇·事件定位（约占全文20%）
+- 问题+牌阵名称
+- 铺出所有 image_tag，按牌阵形状排列，位置名标注上方
+- 一句话核心结论——"这付牌在说______"
+- 指示牌在哪？什么牌紧贴它？首牌=主题定调
+- 电荷分布（positive/neutral/negative 张数+占比）→ 整体能量上升/下降/混合
+- 数据来源：statistics 字段（引擎已返回，不需自行统计！）
 
-── D. 牌阵互动（Greer: 传统法 vs 现代法）──
-传统法（来自Greer采访原文）:
-  "The first card on the left is the subject"
-  "The nearer Coffin is to the person (Man) the more serious the situation"
-  左=主题, 右=发展:
-  "Cards to the left of Coffin show what is lost,
-   while cards to the right show future"
-现代传统法: 在传统基础上增加灵活度，
-  "core meanings should always show through"
-线型补充: 首牌=主题, 末牌=结果
-三牌一组: 开始→发展→结果
-Grand Tableau (Greer课程内容):
-  先找指示牌 → 读它周围的牌 → 行读(每行一个故事)
-  → 列读(每列一个主题)
-  镜像(Mirror): 对称位置的牌互为提示
-  骑士跳(Knight's Move): 马步跳跃产生隐藏关联
-  内九宫格(Inner Ring): 任意牌周围3×3局部叙事
-  级联链(House Chaining): 落宫叠加含义
+② 中段·事件展开（约占全文50%）
+- Greer两步法在叙事中自然展开，不分"第一步第二步"：
+  * 首牌=事件主语
+  * 每张牌依次推进剧情——左→右 = 因果链/时间线
+  * 相邻牌自动形成"名词+修饰语"组合（combination_grammar）
+  * 引擎预置的 combinations 固定组合数据可直接引用
+- 每张牌的解读融入：core（核心含义）+ modifier_behavior（修饰类型：
+  descriptor描述/intensifier放大/negator反转/pivot转折）
+  + topic_contexts（领域语境）一句带过
+- 人物卡（as_person 有值时）：角色出场——性格+在叙事中的角色+与邻牌关系
+- 非GT牌阵：line_reading（as_first=主题起点/as_middle=发展/as_last=结果）
+  决定每张牌的叙事权重
+- GT牌阵：行=章节(1开场→2发展→3转折→4结局)，列=主题，对角=暗线
+- 人物视线方向(Blickrichtung)：人物牌看向方向=能量流向，
+  面对面=开放，背对背=断裂——GT中这是关系解读第一手线索
 
-── E. 事件故事（Greer: 把组合链展开为叙事）──
-Greer两步法第三步: 将关键词句子展开为现实事件
-从"Rider+Mice+Sun+Mountain+Child"
-→ "一位年轻人来到孤山别墅，必须跨越一切障碍去偷一个全新的存在"
-按时间: 起因→发展→转折→结果
-按人物: 谁→对谁→做什么→结果
-话术:
-  "这5张牌的故事: 收到消息【骑手】→对话【花园】
-  →犹豫【云】→决定【百合】→达成【锚】"
+③ 纵深·时间与领域（约占全文20%）
+- 时间框架（非GT：牌序前半=过去/背景，后半=未来/发展；
+  GT用四象限法或德传日历法）
+- timing.speed 修正节奏（instant=天/fast=周/moderate=月/slow=年/glacial=停滞）
+- 领域标识(Signifikatoren)：Anchor=职业/Ring=关系/Kind=子女/
+  Schiff=旅行/Haus=家庭/Hund=友谊/Brief=消息
+  → 这些牌在牌阵中的位置+周围牌决定该领域状态
+- 扑克牌花色分布（playing_card）：♥多=稳了/♣多=心力交瘁/
+  ♠中性/♦偏吉——定事件背景"气氛"
+  GT特有：36张全局花色分布+同数字同频共振
+- karmic_mirrors 跨位共鸣——镜像揭示同一议题的"另一面"
+- GT追加：按FE数据顺序——①指示牌→②近远距离→③落宫→
+  ④镜像→⑤骑士跳→⑥行列→⑦四角
+  四角组合(Eckkarten)：1+36和9+28对角验证整体叙事边界
 
-── F. 落幕与回响 ──
-【结论】一句话现实结果
-【建议】≤3条
-【反思问题】1条
+④ 收束·行动与落点（约占全文10%）
+- 综合结论：一句话提炼核心信息
+- 建议：≤3条，从 modifier_behavior 判断行动方向
+  （negator→释放/停止，descriptor/amplifier→加强）
+- 时间确认：结合时间框架+speed+离指示牌距离，
+  告诉问卜者事态的大致节奏
+- 末牌收束：用最后一对组合或末张牌收束叙事，让回答回归牌面
+- 反思问题：盯全阵最矛盾的组合或背对方向的人物牌
+- 一句箴言收尾：Hechtel原版《希望游戏》格言传统
 
-╚════════════════════════════════════════════╝
+以上四段之间用内容逻辑自然过渡，禁止生硬标题。
+```
 
-╔══════════════════ 雷诺曼数据 ═══════════════╗
-【雷诺曼数据使用规则】
-必须使用：core / keywords / combination_grammar / modifier_behavior / line_reading
-用于润色：timing
-playing_cards → 每张牌对应扑克牌(如"9 of Hearts")。
-  详见【雷诺曼扑克插片参考字典】——权重/四花色吉凶/宫廷牌用神/数字含义/三步推演法
-as_person → 抽到人物类卡(骑手/男人/女人/小孩/熊/狗等)时激活，在该牌解读中展开角色描写
-╚════════════════════════════════════════════╝
+### 禁止清单（严格遵守）
+
+```
+× 禁止按A-F顺序分节输出（总体印象→逐牌解读→组合链→牌阵互动→事件故事→落幕与回响）
+× 禁止使用"A.""B.""C.""总体印象""逐牌解读""组合链"等作为段落标题
+× 禁止逐张解释牌义后拼接——牌读成对，对读成链，链读成故事
+× 禁止断句排版——每段至少3-5句完整文字
+× 禁止默认雷诺曼=塔罗——不允许潜意识/灵性成长/内在小孩/宇宙讯息/疗愈创伤/能量升级
+× 禁止仅罗列关键词——必须形成完整事件叙事（谁→在哪里→做什么→结果）
+× 禁止断言精确日期——timing只给节奏参考
+× 禁止机械套用话术示例——它们示范语气，不是模板
+× 禁止忽略statistics字段——引擎已返回电荷分布/速度/人物卡数据，不再需要自行统计
+```
+
+【以下Greer两步法+A-F为内部推理框架，非输出结构】
+AI在拿到数据后先用以下方法逐层推理，输出时按叙事输出格式重新组织。
+每层内的参考话术是语感示范，不是必须套用的句式。
+
+╔══════════════════ 雷诺曼数据字段全映射 ═══════════════╗
+引擎(_lenormand_route.py)每张牌返回以下字段，**全部必须融入事件流叙事**：
+
+【叙事主干——每牌必用】
+card_name / card_id → 牌的身份（36张标准牌）
+position → 在牌阵中的位置名（决定叙事角色）
+orientation → 始终 upright（雷诺曼不倒置）
+core → 核心关键词/含义——事件的主语或动词
+modifier（{type: descriptor/intensifier/negator/pivot}）→ 修饰类型：
+  descriptor=赋予属性, intensifier=加强程度,
+  negator=削弱/损耗/破坏, pivot=转折改变方向
+line_reading → {as_first=主题起点/as_middle=发展/as_last=结果}
+  决定该牌在叙事中的权重位置
+topic_contexts → 按领域取含义（同牌不同领域讲不同故事）
+
+【故事血肉——叙事中自然融入】
+combination_grammar（7种语法）→ 相邻牌如何组合成句
+combinations → 预置16组固定组合数据，直接引用
+playing_card → {suit, rank} 扑克牌对应♥♦♠♣，定事件背景气氛
+as_person（人物卡才激活）→ 角色描写（性格+叙事角色+邻牌关系）
+timing → {speed: instant/fast/moderate/slow/glacial/variable}
+  节奏参考，不断言精确日期
+image_url / image_tag → 开篇铺出，不得删除
+
+【牌阵级数据——必用】
+spread → {id, name, description, layout坐标,
+  positions: [{name, rag, desc, mirror_target, is_significator}]}
+  → 位置定义叙事流向，mirror_target用于镜像分析
+statistics → {
+  charge_distribution（正/中/负张数+占比）→ 开篇能量定调
+  speed_distribution（fast/moderate/slow）→ 事件节奏感
+  person_cards → 人物卡清单
+  （引擎已返回此字段！不需自行从cards统计）
+}
+karmic_mirrors → 跨位镜像共鸣，嵌入纵深段
+fe_portrait（3×3 cage portrait）→ 局部3×3叙事，用于中小牌阵
+
+【GT专有——grand-tableau牌阵自动返回】
+gt_master → {内九宫格inner_ring, MOD近远法heart/fish/anchor/cross/tree排行,
+    knight_moves骑士跳, mirrors三维镜像, reflection反射, house_chaining级联链}
+gt_intersection → 指示牌行+列交叉叙事主线
+counting_pulse → 计数脉冲（按德传间隔法看发展节奏）
+GT专用数据按FE返回格式使用，详见下方GT追加模块。
+
+使用原则：所有字段都是引擎真实返回，缺失则跳过，不猜测不编造。
+╚══════════════════════════════════════════════════════════╝
 
 ╔══════════════════ 雷诺曼牌阵 ═══════════════╗
 from arcanite.core.spread import list_spreads, load_spread
@@ -131,13 +163,13 @@ Grand Tableau: 4×9网格, 36宫role=house, sig=false (男人/女人牌游走)
 
 ╔══════════════════ 雷诺曼扑克插片参考字典 ═══════════════╗
 本字典为LLM内部参考, 不直接输出。
-花色/数字/宫廷牌用法: 动态权重(根据问题类型取用, 不可死板):
+花色/数字/JQK用法: 动态权重(根据问题类型取用, 不可死板):
 
 【看整体趋势】主图80%+花色20%
 主图定吉凶→花色定累不累→完全无视JQK和数字
 
-【找人定性】主图50%+宫廷牌50%
-宫廷牌=核心, JQK画像叠加花色气场(如♥K温和/♣K高压)+主图性格
+【找人定性】主图50%+JQK标签50%
+JQK=核心, 画像叠加花色气场(如♥K温和/♣K高压)+主图性格
 
 【数字】仅36张大阵抓同频共振, 小阵权重极低可忽略
 四花色(源自18世纪德国《希望游戏》社会阶层, 非塔罗四元素):
@@ -147,7 +179,7 @@ Grand Tableau: 4×9网格, 36宫role=house, sig=false (男人/女人牌游走)
   ♣梅花=橡果/劳工 → 大凶。绝对阻力/烂摊子/巨大心理负担
 实战切入: 红心多=这局稳了舒服; 梅花多=就算事能成也心力交瘁
 
-宫廷牌(人头标签J/Q/K仅找特定人时启用, 否则只看雷诺曼主图):
+JQK标签(扑克牌人头J/Q/K仅找特定人时启用, 否则只看雷诺曼主图):
   K=掌权者/老板/父亲/有话语权的成熟男性
   Q=成熟女性/母亲/女上司/女竞争者
   J=年轻人/下属/晚辈/小孩/来传话的人

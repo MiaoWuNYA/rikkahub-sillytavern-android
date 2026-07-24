@@ -42,7 +42,8 @@ fun createMingliTool(context: Context): Tool = Tool(
                 put("params", buildJsonObject {
                     put("type", "object")
                     put("description", "系统特定参数JSON。 cards=手动指定牌面(可选, 传则跳过随机抽牌), 正逆位: {id, reversed}。" +
-                            " 塔罗: {spread, seed, question_type, kaabalah, cards}" +
+                            " seed=随机种子(返回时自动生成, 传回可精确复盘该手牌)。" +
+                            " 塔罗: {spread, seed, question_type, cards}" +
                             " 雷诺曼: {spread, seed, cards}" +
                             " 八字: {year, month, day, hour, minute?, gender, feature?=shengxiao|luohou|all}" +
                             " 紫微: {year, month, day, hour, minute?, gender, engine}" +
