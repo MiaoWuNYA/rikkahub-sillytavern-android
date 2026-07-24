@@ -204,13 +204,18 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                 # returns for transit timing
                 "try{r.returns={};['mars','jupiter','saturn'].forEach(function(b){"
                 "r.returns[b]=sf(function(){return Caelus.returns(e,b,jd,jd,jd+365*3,'sidereal:lahiri').slice(0,3)})})}catch(ex){}"
-                "var _sgn=function(l){return Math.floor(l/30);};"
-                "var transitSaturn=e.longitude('saturn',today,{zodiac:'sidereal:lahiri'});"
-                "var transitJupiter=e.longitude('jupiter',today,{zodiac:'sidereal:lahiri'});"
-                "var transitRahu=e.longitude('north_node',today,{zodiac:'sidereal:lahiri'});"
-                "var _ms=_sgn(moonLon);var _ss=_sgn(transitSaturn);var sadeSati=null;"
-                "if(_ss===_ms)sadeSati='peak';else if(_ss===(_ms+11)%%12)sadeSati='rising';else if(_ss===(_ms+1)%%12)sadeSati='setting';"
-                "r.transit={sadeSati:sadeSati,moonSign:_ms,saturnSign:_ss,saturnLon:transitSaturn,jupiterSign:_sgn(transitJupiter),rahuSign:_sgn(transitRahu)};"
+                # 行运 Gochara: 全部行星当前实时西达尔黄道位置
+                "var trBodies=['sun','moon','mars','mercury','jupiter','venus','saturn','north_node','south_node'];"
+                "r.transit={}; trBodies.forEach(function(b){"
+                "var lon=e.longitude(b,today,{zodiac:'sidereal:lahiri'});"
+                "var sg=Math.floor(lon/30);"
+                "r.transit[b]={longitude:lon,sign:sg,degree:lon%30};"
+                "});"
+                # Sade Sati: 详细阶段判断
+                "var _ms=Math.floor(moonLon/30);var _ss=Math.floor(r.transit.saturn.longitude/30);"
+                "if(_ss===_ms)r.transit.sadeSati='peak';"
+                "else if(_ss===((_ms+11)%%12))r.transit.sadeSati='rising';"
+                "else if(_ss===((_ms+1)%%12))r.transit.sadeSati='setting';"
                 "JSON.stringify(r)"
                 %(jd_vd,today_jd,lat,lon)))
             if isinstance(c, dict) and 'error' not in c:
@@ -232,6 +237,6 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
     except: pass
     result["_hint"]=("PyJHora全量:Panchanga/Shadbala/Ashtakavarga/RajaYoga/Dosha7/Arudha/Vimshottari/House/行星状态/全部分盘(D2-D60)。"
         "NodeJhora(DE440):行星/宫位/Jaimini/Ashtakavarga/Yogini/Yoga/Panchanga/Vimshottari+NarayanaDasha/VargaD9/InduLagna/DhumadiUpagrahas。"
-        "Caelus:Vimshottari+Varga(D3/D9/D10/D12/D30)/NakshatraBodies/Yogas/Kemadruma/RajaYogas/DhanaYogas/Ashtottari/Yogini/行运+SadeSati/留(全7星)/returns(火木土)。"
+        "Caelus:Vimshottari+Varga(D3/D9/D10/D12/D30)/NakshatraBodies/Yogas/Kemadruma/RajaYogas/DhanaYogas/Ashtottari/Yogini/行运(全9星西达尔经度/星座/度数)+SadeSati/留(全7星)/returns(火木土)。"
         "自探索:dir(jhora)/Object.keys(NodeJhora)/Object.keys(Caelus)")
     return result
