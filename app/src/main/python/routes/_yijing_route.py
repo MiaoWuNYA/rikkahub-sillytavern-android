@@ -161,11 +161,6 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
                 "JSON.stringify({pan:pan,gaoDaoYiDuan:gdyd,qingyiXingXiu:qyxx,liuyao:liuyao})"))
             if isinstance(js_decode, dict) and 'error' not in js_decode:
                 result["iching_shifa_pan"] = js_decode
-                # 展开liuyao到顶层，方便AI直接访问
-                liuyao = js_decode.get("liuyao", {})
-                if isinstance(liuyao, dict):
-                    for k, v in liuyao.items():
-                        result["liuyao_" + k] = v
                 result["engine"] += "+iching-shifa-engine"
                 # _hint 追加 JS 可用API
                 result["_hint"] += (" iching-shifa-engine(JS)完整排盘:本卦/之卦/互卦/纳甲/六亲/六神/世应/神煞/旬空/月建/动爻推辞+高岛易断+青衣星宿。"
