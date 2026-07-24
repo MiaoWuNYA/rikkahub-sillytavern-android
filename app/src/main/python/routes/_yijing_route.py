@@ -3,31 +3,22 @@ import json, sys, os, random as _rnd
 from ._shared import _js, _js_load
 
 def _extract_yao(hex_data):
-    """From Python ichingshifa result, extract 6-digit yao string (6789)."""
+    """从Python ichingshifa结果中提取6位爻值字符串(6789)。
+    大衍筮法=[爻值串(6位), 本卦名, 变卦名, 卦爻辞dict, 动爻分析...]。
+    原bug:对全元素调int()遇上中文卦名崩溃。"""
     if hex_data is None:
         return None
     if isinstance(hex_data, str) and len(hex_data) >= 6 and all(c in '6789' for c in hex_data[:6]):
         return hex_data[:6]
     if isinstance(hex_data, dict):
-        # 大衍筮法 = [guayao(6digit), 本卦名, 变卦名, 卦爻辞dict, 动爻分析]
         _da = hex_data.get("大衍筮法")
         if isinstance(_da, (list, tuple)) and len(_da) > 0:
-            first = _da[0]
-            if isinstance(first, str) and len(first) == 6 and all(c in '6789' for c in first):
-                return first
-        _ben = hex_data.get("本卦", {})
-        if isinstance(_ben, dict):
-            # 从纳甲推回来的爻值
-            _lj = _ben.get("纳甲")
-            if isinstance(_lj, (list, tuple)) and len(_lj) == 6:
-                return None  # 纳甲不能直接还原爻值
-            _lines = _ben.get("lines")
-            if isinstance(_lines, (list, tuple)) and len(_lines) == 6:
-                try:
-                    ys = "".join(str(int(y)) for y in _lines)
-                    if len(ys) == 6 and all(c in '6789' for c in ys):
-                        return ys
-                except: pass
+            v = _da[0]
+            if isinstance(v, str) and len(v) >= 6:
+                for c in v[:6]:
+                    if c not in '6789': break
+                else:
+                    return v[:6]
     return None
 
 def _yao_from_seed(seed, method):
@@ -71,51 +62,39 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
         _yr,_mo,_dy,_hr,_min=_now.year,_now.month,_now.day,12,0
     result["date_used"] = {"year":_yr,"month":_mo,"day":_dy}
 
-    # === 第1步：生成爻值（同一起卦，双引擎共享） ===
-    yao_string = None  # 6位 6/7/8/9 字符串
+    # === 第1步：生成爻值 + Python引擎排盘 ===
+    yao_string = None
     hex_data = None
-    _py_ok = False
     try:
         sys.path.insert(0,os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
-        try:
-            from ichingshifa.ichingshifa import Iching
-        except ImportError:
-            from ichingshifa import Iching
+        from ichingshifa import Iching
         i = Iching()
-        _py_ok = True
 
-        # —— 起卦（所有方法先确定yao_string） ——
-        if method == "dayan" or method == "manual":
-            yao_string = _yao_from_seed(seed, "dayan")
-        elif method == "number":
-            yao_string = _yao_from_seed(seed, "number")
-        elif method == "time":
+        if method in ("time", "now"):
             hex_data = i.qigua_time(_yr,_mo,_dy,12,0)
             yao_string = _extract_yao(hex_data)
-        elif method == "coin":
-            yao_string = _yao_from_seed(seed, "coin")
         else:
-            hex_data = i.qigua_time(_yr,_mo,_dy,12,0)
-            yao_string = _extract_yao(hex_data)
+            # dayan/manual/number/coin: 先确定爻值
+            if method in ("dayan", "manual"):
+                yao_string = _yao_from_seed(seed, "dayan")
+            elif method == "number":
+                yao_string = _yao_from_seed(seed, "number")
+            elif method == "coin":
+                yao_string = _yao_from_seed(seed, "coin")
+            else:
+                hex_data = i.qigua_time(_yr,_mo,_dy,12,0)
+                yao_string = _extract_yao(hex_data)
 
-        # —— dayan/manual/number/coin：用已有方法手动构建 hex_data ——
-        if yao_string and not hex_data and _py_ok:
-            try:
+            # 非time方法: 从爻值手动构建hex_data(qigua_manual不存在于原库)
+            if yao_string and not hex_data:
                 gz = i.gangzhi(_yr,_mo,_dy,12,0)
-                day_gz = gz[2] if gz and len(gz) > 2 else None
+                dg = gz[2] if gz and len(gz) > 2 else None
                 details = i.mget_bookgua_details(yao_string)
-                if details and len(details) >= 3:
-                    bian_yao = yao_string.replace("6","7").replace("9","8")
-                    ben_gua = i.decode_gua(yao_string, day_gz) if day_gz else {}
-                    bian_gua = i.decode_gua(bian_yao, day_gz) if day_gz else {}
-                    hex_data = {
-                        "日期": "%d年%d月%d日" % (_yr,_mo,_dy),
-                        "大衍筮法": details,
-                        "本卦": ben_gua,
-                        "之卦": bian_gua,
-                        "飛神": "",
-                    }
-            except: pass
+                if details:
+                    by = yao_string.replace("6","7").replace("9","8")
+                    bg = i.decode_gua(yao_string, dg) if dg else {}
+                    zg = i.decode_gua(by, dg) if dg else {}
+                    hex_data = {"日期":"%d年%d月%d日"%(_yr,_mo,_dy), "大衍筮法":details, "本卦":bg, "之卦":zg, "飛神":""}
 
         if hex_data:
             result["ichingshifa"] = hex_data
