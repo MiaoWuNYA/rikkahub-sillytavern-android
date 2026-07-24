@@ -53,11 +53,19 @@ qimen_analysis（必读）：
   ├ doorDetail[]：休~开 8 门详解（含吉凶/所属/方位）
   ├ godDetail[]：值符~九天 8 神详解（含作用/吉凶）
   ├ palaceDetail[]：1-9 宫基础属性（五行/方位/季节）
+  ├ shenJiangDetail[]：子~亥 12 神将详解（贵人/腾蛇/朱雀等）
+  ├ allJiGe / allXiongGe：格局全列表（吉格/凶格参考）
+  ├ yongShen：用神万物类象（日干/年干/月干的象意详解）
+  ├ zhiFuKeYing：值符克应（值符星+时支对应断语）
   └ palaceAnalysis[]（逐宫分析）：
-    ├ specialPatterns：特殊格局（青龙返首/飞鸟跌穴/青龙逃走等）
-    ├ shiGanKeYing：十干克应（天盘干+地盘干的组合含义——每宫最核心的判断）
-    ├ yunChouPatterns：运筹策略提示
-    └ changSheng：十二长生状态（天盘干在地支中的状态）
+    ├ specialPatterns：特殊格局（三奇升殿/奇游禄位/三奇得使/六仪击刑等）
+    ├ palaceKeYing：十干克应（天盘干+地盘干+暗干+寄宫）
+    ├ yunChouPatterns：运筹策略提示（三诈/五假/九遁）
+    ├ palaceChangSheng：十二长生（各天干在宫位所有地支）
+    ├ marks：宫位标记（空亡/马星/刑/墓/迫）
+    ├ jiGanStem：寄宫干
+    ├ diGod：地八神
+    └ highlightStem：用神天干标记
 ```
 
 ## 三、奇门遁甲核心解读规则
@@ -221,8 +229,8 @@ qimen_analysis（必读）：
 
 硬规则：
 - 每个宫的十干克应 = 该宫的"核心事件"（比星/门更重要）
-- 十干克应来自 shiGanKeYing 字段——不编造不存在的组合
-- 特殊模式来自 palaceAnalysis[].specialPatterns——优先引用
+- 十干克应来自 palaceAnalysis[].palaceKeYing 字段——不编造不存在的组合
+- 特殊格局/模式来自 palaceAnalysis[].specialPatterns——优先引用
 ```
 
 ### 3.5 三奇六仪规则
@@ -467,7 +475,7 @@ qimen_hourly（时家局）精度高于 qimen（日家局）。
 ```
 禁止：
 1. 编造不存在的宫位数据（奇门只有1-9宫）
-2. 编造十干克应组合（必须来自 shiGanKeYing 字段）
+2. 编造十干克应组合（必须来自 palaceAnalysis[].palaceKeYing 字段）
 3. 混入大六壬概念（天将、课体、三传等）
 4. 混入梅花易数或六爻纳甲概念
 5. 在数据未提供时自行推演起局
