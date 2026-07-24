@@ -67,7 +67,7 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
     hex_data = None
     try:
         sys.path.insert(0,os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
-        from ichingshifa.ichingshifa import Iching
+        from ichingshifa import Iching
         i = Iching()
 
         if method in ("time", "now"):
