@@ -67,7 +67,7 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
     hex_data = None
     try:
         sys.path.insert(0,os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
-        from ichingshifa import Iching
+        from ichingshifa.ichingshifa import Iching
         i = Iching()
 
         if method in ("time", "now"):
@@ -103,41 +103,14 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
     except Exception as e:
         result["py_error"] = str(e)
 
-    # === 第2步：Python 通用 enrichment（用巳生成的爻值） ===
-    if hex_data and isinstance(hex_data, dict):
+    # === 第2步：Python 引擎 enrichment（六兽） ===
+    if hex_data and yao_string:
         try:
-            gz = None
-            try:
-                gz = i.gangzhi(_yr,_mo,_dy,12,0)
-                if gz and len(gz) > 2:
-                    rg = gz[2][0] if gz[2] else "癸"
-                    result["six_months_stars"] = i.find_six_mons(rg)
-                    result["shier_luck"] = i.find_shier_luck(rg)
-                if gz and len(gz) >= 4:
-                    try: result["count_yy"] = i.count_yy(gz[0],gz[1],gz[2],gz[3])
-                    except: pass
-            except: pass
-            try: result["daykong"] = i.daykong_shikong(_yr,_mo,_dy,12,0)
-            except: pass
-            try: result["innate_cegui"] = i.innate_cegui(_yr,_mo,_dy,12,0)
-            except: pass
-            try: result["acquired_cegui"] = i.acquired_cegui(_yr,_mo,_dy,12,0)
-            except: pass
-            ben = hex_data.get("本卦",{})
-            zhi = hex_data.get("之卦",{})
-            result["decode_gua"] = ben
-            if zhi:
-                result["decode_two_gua"] = {"本卦":ben,"之卦":zhi}
+            gz = i.gangzhi(_yr,_mo,_dy,12,0)
+            if gz and len(gz) > 2:
+                rg = gz[2][0] if gz[2] else "癸"
+                result["six_months_stars"] = i.find_six_mons(rg)
         except: pass
-        if yao_string:
-            try: result["gua_description"] = i.show_sixtyfourguadescription(yao_string)
-            except: pass
-            try:
-                if len(yao_string) >= 6:
-                    hv2 = yao_string[:6]
-                    if all(c in '6789' for c in hv2):
-                        result["guaike"] = i.guaike(_yr,_mo,_dy,12,0,int(hv2[:3]),int(hv2[3:6]))
-            except: pass
 
     # === 第3步：JS 双引擎对照（同一爻值→decodePan完整排盘+高岛+青衣） ===
     if yao_string:
