@@ -26,7 +26,8 @@ def _extract_yao(hex_data):
 # ===== 六爻梅花 =====
 def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all"):
     result={"system":"yijing","engine":"",
-        "_hint":"ichingshifa(Python)+iching-shifa-engine(JS)双引擎对照:同一爻值各自出解读。"}
+        "_hint":"ichingshifa(Python)+iching-shifa-engine(JS)双引擎对照:同一爻值各自出解读。"
+        "本路由返回六爻+梅花+太玄+荆诀四套数据。系统别名:六爻→用六爻模板,梅花易数→用梅花易数模板,太玄经→用太玄经模板。"}
 
     # ---- 确定有效日期时间 ----
     _seed_dt=None

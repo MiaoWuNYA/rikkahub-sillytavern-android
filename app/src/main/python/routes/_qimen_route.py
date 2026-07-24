@@ -60,5 +60,7 @@ def _qimen(year,month,day,hour=None,minute=0,feature="all"):
         except: pass
     result["engine"]="+".join(_engs) if _engs else "none"
     result["_hint"]=("QimenEngine日家/时家已返回。LiuRen一键排盘含课体+三传+神将+22原子函数。"
-        "QimenEngine另有阴遁/阳遁/置闰/拆补4流派。自探索:Object.keys(QimenEngine)/Object.keys(LiuRen)")
+        "QimenEngine另有阴遁/阳遁/置闰/拆补4流派。"
+        "系统别名:奇门遁甲→奇门遁甲模板,大六壬→大六壬模板。"
+        "自探索:Object.keys(QimenEngine)/Object.keys(LiuRen)")
     return result
