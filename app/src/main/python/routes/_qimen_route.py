@@ -18,6 +18,9 @@ def _qimen(year,month,day,hour=None,minute=0,feature="all"):
                     qh=json.loads(_js("qimen-engine",f"var b=QimenEngine.generate({{type:'rijia',year:{year},month:{month},day:{day}}});JSON.stringify(QimenEngine.generate({{type:'shijia',year:{year},month:{month},day:{day},hour:{hour},minute:{minute},baseChart:b}}))"))
                     if isinstance(qh, dict) and 'error' not in qh:
                         result["qimen_hourly"]=qh
+                        # 合并时柱到日家fourPillars
+                        if qh.get("fourPillars") and q.get("fourPillars"):
+                            q["fourPillars"]["hour"]=qh["fourPillars"].get("hour")
                         _engs[-1]="QimenEngine(日家+时家)"
                 else:
                     _engs[-1]="QimenEngine(日家)"

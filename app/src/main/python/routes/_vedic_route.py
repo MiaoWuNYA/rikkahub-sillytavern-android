@@ -181,9 +181,14 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
             c=json.loads(_js("caelus-engine",
                 "var e=new Caelus.Engine(Caelus.embeddedData);var jd=%s;var today=%s;var _lat=%f;var _lon=%f;"
                 "var bodies=['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune','pluto','chiron'];"
+                "var sf=function(f){try{return f()}catch(e){return null}};"
                 "var moonLon=e.longitude('moon',jd,{zodiac:'sidereal:lahiri'});"
                 "var r={vimshottari:Caelus.vimshottariDashas(moonLon,jd)};"
                 "try{r.vargaD9=Caelus.vargaChart(e,jd,9,bodies,'sidereal:lahiri');}catch(ex){}"
+                "try{r.vargaD3=Caelus.vargaChart(e,jd,3,bodies,'sidereal:lahiri');}catch(ex){}"
+                "try{r.vargaD10=Caelus.vargaChart(e,jd,10,bodies,'sidereal:lahiri');}catch(ex){}"
+                "try{r.vargaD12=Caelus.vargaChart(e,jd,12,bodies,'sidereal:lahiri');}catch(ex){}"
+                "try{r.vargaD30=Caelus.vargaChart(e,jd,30,bodies,'sidereal:lahiri');}catch(ex){}"
                 "try{r.ashtottariDashas=Caelus.ashtottariDashas(moonLon,jd);}catch(ex){}"
                 "try{r.yoginiDashas=Caelus.yoginiDashas(moonLon,jd);}catch(ex){}"
                 "try{r.nakshatraBodies={};bodies.forEach(function(b){r.nakshatraBodies[b]=Caelus.nakshatraAt(e,jd,b,'sidereal:lahiri')})}catch(ex){}"
@@ -192,6 +197,13 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                 "try{r.vimshottariNow=Caelus.vimshottariAt(e,jd,today,'sidereal:lahiri');}catch(ex){}"
                 "try{r.rajaYogas=Caelus.rajaYogasAt(e,jd,_lat,_lon,'sidereal:lahiri');}catch(ex){}"
                 "try{r.dhanaYogas=Caelus.dhanaYogasAt(e,jd,_lat,_lon,'sidereal:lahiri');}catch(ex){}"
+                # stations for graha motion
+                "try{var gr=['sun','moon','mars','mercury','jupiter','venus','saturn'];"
+                "r.stations={};gr.forEach(function(b){"
+                "r.stations[b]=sf(function(){return Caelus.stations(e,b,jd,jd+365,5)})})}catch(ex){}"
+                # returns for transit timing
+                "try{r.returns={};['mars','jupiter','saturn'].forEach(function(b){"
+                "r.returns[b]=sf(function(){return Caelus.returns(e,b,jd,jd,jd+365*3,'sidereal:lahiri').slice(0,3)})})}catch(ex){}"
                 "var _sgn=function(l){return Math.floor(l/30);};"
                 "var transitSaturn=e.longitude('saturn',today,{zodiac:'sidereal:lahiri'});"
                 "var transitJupiter=e.longitude('jupiter',today,{zodiac:'sidereal:lahiri'});"
@@ -220,6 +232,6 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
     except: pass
     result["_hint"]=("PyJHora全量:Panchanga/Shadbala/Ashtakavarga/RajaYoga/Dosha7/Arudha/Vimshottari/House/行星状态/全部分盘(D2-D60)。"
         "NodeJhora(DE440):行星/宫位/Jaimini/Ashtakavarga/Yogini/Yoga/Panchanga/Vimshottari+NarayanaDasha/VargaD9/InduLagna/DhumadiUpagrahas。"
-        "Caelus:Vimshottari+VargaD9/NakshatraBodies/Yogas/Kemadruma/RajaYogas/DhanaYogas/行运+SadeSati。"
+        "Caelus:Vimshottari+Varga(D3/D9/D10/D12/D30)/NakshatraBodies/Yogas/Kemadruma/RajaYogas/DhanaYogas/Ashtottari/Yogini/行运+SadeSati/留(全7星)/returns(火木土)。"
         "自探索:dir(jhora)/Object.keys(NodeJhora)/Object.keys(Caelus)")
     return result

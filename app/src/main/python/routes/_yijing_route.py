@@ -16,7 +16,11 @@ def _extract_yao(hex_data):
         if isinstance(_ben, dict):
             _lines = _ben.get("lines")
             if isinstance(_lines, (list, tuple)) and len(_lines) == 6:
-                return "".join(str(y) for y in _lines)
+                try:
+                    ys = "".join(str(int(y)) for y in _lines)
+                    if len(ys) == 6 and all(c in '6789' for c in ys):
+                        return ys
+                except: pass
     return None
 
 # ===== 六爻梅花 =====
@@ -107,8 +111,9 @@ def _yijing(method="time",seed=None,year=None,month=None,day=None,feature="all")
             except: pass
             try:
                 if len(yao_string) >= 6:
-                    hv = yao_string
-                    result["guaike"] = i.guaike(_yr,_mo,_dy,12,0,int(hv[:3]),int(hv[3:6]))
+                    hv2 = yao_string[:6]
+                    if all(c in '6789' for c in hv2):
+                        result["guaike"] = i.guaike(_yr,_mo,_dy,12,0,int(hv2[:3]),int(hv2[3:6]))
             except: pass
 
     # === 第3步：JS 双引擎对照（同一爻值→decodePan完整排盘+高岛+青衣） ===
