@@ -9,11 +9,18 @@ def _extract_yao(hex_data):
     if isinstance(hex_data, str) and len(hex_data) >= 6 and all(c in '6789' for c in hex_data[:6]):
         return hex_data[:6]
     if isinstance(hex_data, dict):
+        # 大衍筮法 = [guayao(6digit), 本卦名, 变卦名, 卦爻辞dict, 动爻分析]
         _da = hex_data.get("大衍筮法")
         if isinstance(_da, (list, tuple)) and len(_da) > 0:
-            return "".join(str(int(x)) for x in _da[:6])
+            first = _da[0]
+            if isinstance(first, str) and len(first) == 6 and all(c in '6789' for c in first):
+                return first
         _ben = hex_data.get("本卦", {})
         if isinstance(_ben, dict):
+            # 从纳甲推回来的爻值
+            _lj = _ben.get("纳甲")
+            if isinstance(_lj, (list, tuple)) and len(_lj) == 6:
+                return None  # 纳甲不能直接还原爻值
             _lines = _ben.get("lines")
             if isinstance(_lines, (list, tuple)) and len(_lines) == 6:
                 try:
@@ -67,29 +74,52 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
     # === 第1步：生成爻值（同一起卦，双引擎共享） ===
     yao_string = None  # 6位 6/7/8/9 字符串
     hex_data = None
+    _py_ok = False
     try:
         sys.path.insert(0,os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
-        from ichingshifa import Iching
+        try:
+            from ichingshifa.ichingshifa import Iching
+        except ImportError:
+            from ichingshifa import Iching
         i = Iching()
+        _py_ok = True
 
+        # —— 起卦（所有方法先确定yao_string） ——
         if method == "dayan" or method == "manual":
             yao_string = _yao_from_seed(seed, "dayan")
-            hex_data = i.qigua_manual(_yr,_mo,_dy,12,0,yao_string)
-
+        elif method == "number":
+            yao_string = _yao_from_seed(seed, "number")
         elif method == "time":
             hex_data = i.qigua_time(_yr,_mo,_dy,12,0)
             yao_string = _extract_yao(hex_data)
-
-        elif method == "number":
-            yao_string = _yao_from_seed(seed, "number")
-            hex_data = i.qigua_manual(_yr,_mo,_dy,12,0,yao_string)
-
+        elif method == "coin":
+            yao_string = _yao_from_seed(seed, "coin")
         else:
             hex_data = i.qigua_time(_yr,_mo,_dy,12,0)
             yao_string = _extract_yao(hex_data)
 
-        result["ichingshifa"] = hex_data
-        result["engine"] += "ichingshifa"
+        # —— dayan/manual/number/coin：用已有方法手动构建 hex_data ——
+        if yao_string and not hex_data and _py_ok:
+            try:
+                gz = i.gangzhi(_yr,_mo,_dy,12,0)
+                day_gz = gz[2] if gz and len(gz) > 2 else None
+                details = i.mget_bookgua_details(yao_string)
+                if details and len(details) >= 3:
+                    bian_yao = yao_string.replace("6","7").replace("9","8")
+                    ben_gua = i.decode_gua(yao_string, day_gz) if day_gz else {}
+                    bian_gua = i.decode_gua(bian_yao, day_gz) if day_gz else {}
+                    hex_data = {
+                        "日期": "%d年%d月%d日" % (_yr,_mo,_dy),
+                        "大衍筮法": details,
+                        "本卦": ben_gua,
+                        "之卦": bian_gua,
+                        "飛神": "",
+                    }
+            except: pass
+
+        if hex_data:
+            result["ichingshifa"] = hex_data
+            result["engine"] += "ichingshifa"
 
     except Exception as e:
         result["py_error"] = str(e)
@@ -140,14 +170,29 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
                 "var pan=null;try{pan=IchingShifa.decodePan(r,{year:"+str(_yr)+",month:"+str(_mo)+",day:"+str(_dy)+",hour:12});}catch(e){pan={error:e.message}}"
                 "var gdyd=null;try{gdyd=IchingShifa.getGaoDaoYiDuan(r);}catch(e){}"
                 "var qyxx=null;try{qyxx=IchingShifa.calculateQingyiXingXiu(r,"+str(_yr)+","+str(_mo)+","+str(_dy)+");}catch(e){}"
-                "JSON.stringify({pan:pan,gaoDaoYiDuan:gdyd,qingyiXingXiu:qyxx})"))
+                # 日辰计算：1900-01-01=甲戌日(cycle idx 10)
+                "var _rd=function(y,m,d){var t=new Date(y,m-1,d),r=new Date(1900,0,1);"
+                "var idx=((Math.round((t-r)/86400000)+10)%60+60)%60;"
+                "return ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'][idx%10]+['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'][idx%12]};"
+                "var riChen=_rd("+str(_yr)+","+str(_mo)+","+str(_dy)+");"
+                # 展开pan的所有顶层字段
+                "var liuyao={};"
+                "if(pan&&!pan.error){Object.keys(pan).forEach(function(k){liuyao[k]=pan[k]});}"
+                "liuyao.riChen=riChen;"
+                "JSON.stringify({pan:pan,gaoDaoYiDuan:gdyd,qingyiXingXiu:qyxx,liuyao:liuyao})"))
             if isinstance(js_decode, dict) and 'error' not in js_decode:
                 result["iching_shifa_pan"] = js_decode
+                # 展开liuyao到顶层，方便AI直接访问
+                liuyao = js_decode.get("liuyao", {})
+                if isinstance(liuyao, dict):
+                    for k, v in liuyao.items():
+                        result["liuyao_" + k] = v
                 result["engine"] += "+iching-shifa-engine"
                 # _hint 追加 JS 可用API
                 result["_hint"] += (" iching-shifa-engine(JS)完整排盘:本卦/之卦/互卦/纳甲/六亲/六神/世应/神煞/旬空/月建/动爻推辞+高岛易断+青衣星宿。"
                     "自探索:Object.keys(IchingShifa)含timeQiGua/timeQiGua/lueshifa/threeNumberQiGua/solarToLunar/shenSha等。")
-        except: pass
+        except Exception as e:
+            if "py_error" not in result: result["py_error"] = str(e)
 
     # ---- 梅花易数（独立于六爻） ----
     try:
