@@ -417,3 +417,14 @@ Atmakaraka落此宫意味着这类主题会是本世灵魂功课的核心，而�
 都有的普通挑战'，而是这张盘反复强调的重点课题，值得认真对待。
 具体建议见Upaya第1-3项。"
 ```
+
+## 数据字段补充
+
+```
+pyjhora.planet_dignity → 行星深度擢升(Deep Exaltation)/落陷(Deep Debilitation)状态
+  每颗行星(太阳-土星)对比const.py中的planet_deep_exaltation_longitudes，容许度≤1°。
+  exalted: 处于擢升度数±1°内的行星列表
+  debilitated: 处于落陷度数±1°内的行星列表
+  格式: [{"planet":"Sun","id":0,"longitude":...,"deep_exaltation":10.0}, ...]
+自探索: dir(jhora.const)
+```

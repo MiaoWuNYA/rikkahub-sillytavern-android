@@ -1,9 +1,12 @@
 """Route:  western astro"""
-import json, sys, os
+import json, sys, os, datetime
 from ._shared import _js, _js_load, compute_jd
 
 # ===== 现代西洋占星（双引擎对照） =====
-def _western_astro(year,month,day,hour,tz,lat,lon,minute=0):
+def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
+                   partner_year=None,partner_month=None,partner_day=None,
+                   partner_hour=None,partner_tz=None,partner_lat=None,partner_lon=None,
+                   partner_minute=0):
     date_str=f"{year}-{month:02d}-{day}"
     tz_num = float(tz) if tz is not None else 8.0
     if isinstance(lat, str): lat = float(lat)
@@ -129,10 +132,29 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0):
         if isinstance(c, dict) and 'error' not in c:
             result["caelus"]=c; _engs.append("Caelus")
     except: pass
+    # 合盘: 仅当传入 partner_year 时触发
+    if partner_year is not None:
+        try:
+            partner_date=f"{partner_year}-{partner_month or month:02d}-{partner_day or day}"
+            pt=float(partner_tz) if partner_tz is not None else float(tz) if tz else 8.0
+            ph=partner_hour + partner_minute/60
+            pl=float(partner_lat) if partner_lat else lat or 0
+            pn=float(partner_lon) if partner_lon else lon or 0
+            syn=json.loads(_js("natalengine-engine",
+                "var a=NatalEngine.calculateAstrology('%s',%f,%f,%f,%f);"
+                "var b=NatalEngine.calculateAstrology('%s',%f,%f,%f,%f);"
+                "JSON.stringify(NatalEngine.compareAstrology(a,b))"
+                % (date_str, hour_dec, tz_num, lat, lon,
+                   partner_date, ph, pt, pl, pn)))
+            if isinstance(syn, dict) and 'error' not in syn:
+                result["synastry"]=syn
+                _engs.append("合盘")
+        except: pass
     result["engine"]="+".join(_engs)
-    result["_hint"]=("NatalEngine:日月升+7星+元素+相位+合盘。"
+    result["_hint"]=("NatalEngine:日月升+7星+元素+相位+合盘(synastry)。"
         "Caelus全量:bodies/cusps(Placidus)/angles/patterns/lots/空亡/映点/赤纬/越界(全10星)/恒星合相/尊贵/almuten/月相/行星留(全7星)/日月食/"
         "firdaria/profections/primaryDirections/parans/调和盘/行运方位相位+Aspects(当前)/行运行星位置(全13星含凯龙)+凯龙本命/ACG(简)/太阳返照/月亮返照/"
         "次级推运(全7星30年)/genericReturns(水金火木土3yr)/midpoints(日月+Asc+MC)/riseSet(日月)/signCrossings(全10星)。"
+        "合盘:传partner_year/partner_month/partner_day/partner_hour触发。"
         "自探索:Object.keys(Caelus)")
     return result

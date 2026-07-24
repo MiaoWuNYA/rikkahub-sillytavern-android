@@ -1,6 +1,6 @@
 ╔══════════════════ 传统西洋占星解读模板 ══════════════╗
 本模板供 AI 在拿到 mingli 工具返回的传统西洋占星数据后，作为解读参考。
-引擎: flatlib(Python) + Caelus(JS)
+引擎: flatlib(Python) + Caelus(JS: timing/conditions/transits/electional)
 ╚══════════════════════════════════════════════════════╝
 
 ## 零、角色设定

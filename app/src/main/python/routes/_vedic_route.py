@@ -110,6 +110,29 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                 "kp_lords":charts.get_KP_lords_from_planet_positions(pp),
             }
         except: pass
+        # 11b. 行星擢升/落陷
+        try:
+            from jhora import const as _jc
+            _exalt_lons=_jc.planet_deep_exaltation_longitudes
+            _tolerance=_jc.planet_deep_exaltation_tolerance
+            _planet_names={0:"Sun",1:"Moon",2:"Mars",3:"Mercury",4:"Jupiter",5:"Venus",6:"Saturn"}
+            _exalted=[]; _debilitated=[]
+            for p_id,(_rasi,_deg) in pp:
+                if p_id in _planet_names:
+                    _pn=_planet_names[p_id]
+                    _abs_lon=(_rasi*30+_deg)%360  # 将rasi+度转换为绝对经度
+                    _ex=_exalt_lons[p_id]
+                    _de=(_ex+180)%360
+                    _diff_ex=abs(_abs_lon-_ex)
+                    if _diff_ex>180: _diff_ex=360-_diff_ex
+                    _diff_de=abs(_abs_lon-_de)
+                    if _diff_de>180: _diff_de=360-_diff_de
+                    if _diff_ex<=_tolerance:
+                        _exalted.append({"planet":_pn,"id":p_id,"longitude":_abs_lon,"deep_exaltation":_ex})
+                    if _diff_de<=_tolerance:
+                        _debilitated.append({"planet":_pn,"id":p_id,"longitude":_abs_lon,"deep_debilitation":_de})
+            result["planet_dignity"]={"exalted":_exalted,"debilitated":_debilitated}
+        except: pass
         # 12. 全部分盘
         try:
             for dnum, dkey in [(2,"d2"),(3,"d3"),(4,"d4"),(7,"d7"),(9,"d9"),(10,"d10"),
@@ -250,7 +273,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
         result["chara_dasha"]=chara.get_dhasa_antardhasa(drik.Date(year,month,day),(hour,minute,0),place)
         result["engine"]+="+raasi"
     except: pass
-    result["_hint"]=("PyJHora全量:Panchanga/Shadbala/Ashtakavarga/RajaYoga/Dosha7/Arudha/Vimshottari/House/行星状态/全部分盘(D2-D60)。"
+    result["_hint"]=("PyJHora全量:Panchanga/Shadbala/Ashtakavarga/RajaYoga/Dosha7/Arudha/Vimshottari/House/行星状态/行星擢升落陷(planet_dignity)/全部分盘(D2-D60)。"
         "NodeJhora(DE440):行星/宫位/Jaimini/Ashtakavarga/Yogini/Yoga/Panchanga/Vimshottari+NarayanaDasha/VargaD9/InduLagna/DhumadiUpagrahas。"
         "Caelus:Vimshottari+Varga(D3/D9/D10/D12/D30)/NakshatraBodies/Yogas/Kemadruma/RajaYogas/DhanaYogas/Ashtottari/Yogini/行运(全9星西达尔经度/星座/度数)+SadeSati/留(全7星)/returns(火木土)/行运Nakshatra/行运对本命相位(含本命宫位)。"
         "自探索:dir(jhora)/Object.keys(NodeJhora)/Object.keys(Caelus)")

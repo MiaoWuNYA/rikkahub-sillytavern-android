@@ -563,7 +563,14 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             "parans:sf(function(){return Caelus.parans(e,nowJd,_lat,p7,30)}),"
             "conditions:cond,"
             "zodiacalReleasing:{spirit:zrSpirit,fortune:zrFortune},"
-            "almutenFiguris:almutenFiguris"
+            "almutenFiguris:almutenFiguris,"
+            "electional:sf(function(){"
+            "var natVec=Caelus.chartFeatures(e,jd,{bodies:p7,zodiac:'tropical'});"
+            "return{"
+            "natalFeatures:natVec,"
+            "search:Caelus.searchConfigurations(e,natVec,{start:nowJd,end:nowJd+90,step:1,limit:10,bodies:p7,zodiac:'tropical'})"
+            "}"
+            "}),"
             "})"
         )
         c = json.loads(_js("caelus-engine",
@@ -585,6 +592,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
         "+ZR(Spirit+Fortune,当前活跃+L1-L2时限)+行运Aspects(当前)+行运位置(全7星+北交经度/星座)"
         "+FixedStars(maxMag4)+月相/日月食/留(全7星)/行星回归(水金火木土3yr)"
         "+空亡(当前)/时主星/Parans/映点+反映点/赤纬相位/日出日落"
-        "/条件矩阵(dignityScore+pheno+solarPhase+house+angularity)+AlmutenFiguris。"
+        "/条件矩阵(dignityScore+pheno+solarPhase+house+angularity)+AlmutenFiguris"
+        "+择时(Caelus.chartFeatures+searchConfigurations)(90天内最佳时机查询)。"
     )
     return result

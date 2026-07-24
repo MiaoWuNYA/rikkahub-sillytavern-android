@@ -197,8 +197,9 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/perfhelf/bigfishmarquis-qimen.git /tmp/qimen_ts
           cd /tmp/qimen_ts
-          echo 'export { generateQimenChart as generate } from "./src/engine";' > entry.ts
-          echo 'export { getStarDetail,getDoorDetail,getGodDetail,getPalaceDetail,detectSpecialPatterns } from "./src/interpretation";' >> entry.ts
+          echo 'export * from "./src/engine";' > entry.ts
+          echo 'export * from "./src/interpretation";' >> entry.ts
+          echo 'export { shiJiaGenerate } from "./src/engines/shijia";' >> entry.ts
           npm install esbuild typescript lunar-typescript 2>&1 | tail -3
           npx esbuild entry.ts --bundle --platform=node --format=iife --global-name=QimenEngine --target=es2020 --tree-shaking=false --outfile=qimen-engine.js 2>&1
           mkdir -p ${GITHUB_WORKSPACE}/app/src/main/assets/

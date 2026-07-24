@@ -62,6 +62,12 @@ numerology_data 包含以下计算：
   ├ personal_day：个人日
   └ challenge_numbers[]：挑战数数组（4个: 童年/中年/晚期/终身）
 
+【年/龄/月周期字段】（cycles_info，来自Kaabalah.calculateCycles）
+cycles_info 包含：
+  ┌ yearly：年周期数据数组
+  ├ age：年龄周期数据数组
+  └ monthly：月周期数据数组
+
 【Gematria 字段】
 gematria 包含：
   ┌ positive_lookup：希伯来文字→数值
