@@ -27,6 +27,7 @@ _ROUTER={
     "人类图":_human_design,"human_design":_human_design,"humandesign":_human_design,
     "灵数卡巴拉":_kabbalah,"kabbalah":_kabbalah,"生命灵数":_kabbalah,"卡巴拉":_kabbalah,"生命数字":_kabbalah,
     "奇门":_qimen,"qimen":_qimen,"奇门遁甲":_qimen,"奇门三式":_qimen,
+    "大六壬":_qimen,"六壬":_qimen,
     "六爻梅花":_yijing,"yijing":_yijing,"六爻":_yijing,"梅花易数":_yijing,"易经":_yijing,"周易":_yijing,
 }
 

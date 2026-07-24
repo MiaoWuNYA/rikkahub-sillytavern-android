@@ -27,7 +27,8 @@ fun createMingliGuideTool(context: Context): Tool = Tool(
         "其中西洋占星分两种风格:" +
         "现代西洋占星(心理/成长取向,十大行星+相位+格局+合盘) vs 传统西洋占星(事件判断取向," +
         "本质尊贵+主限向运+阿拉伯点+互容接纳)。" +
-        "奇门遁甲与大六壬已分开为独立模板，六爻纳甲与梅花易数也已分开。",
+        "奇门遁甲与大六壬已分开为独立模板(数据共入口system='奇门',通过feature=liuren切换)；" +
+        "六爻纳甲与梅花易数已分开为独立模板(数据共入口system='六爻'或'六爻梅花',通过system='六爻'/'梅花易数'切换模板)。",
     parameters = {
         InputSchema.Obj(
             properties = buildJsonObject {

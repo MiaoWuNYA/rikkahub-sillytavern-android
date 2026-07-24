@@ -22,22 +22,22 @@ import me.rerere.rikkahub.data.ai.python.JsBridge
  *
  * AI 不写执行代码，只调这个工具拿结构化 JSON 数据。
  * 支持: 塔罗 | 雷诺曼 | 八字 | 紫微 | 现代西洋占星 | 传统西洋占星 |
- *       吠陀(3引擎合一) | 人类图 | 灵数卡巴拉 | 奇门三式 | 六爻梅花
+ *       吠陀(3引擎合一) | 人类图 | 灵数卡巴拉 | 奇门(含大六壬) | 六爻(含梅花易数)
  */
 fun createMingliTool(context: Context): Tool = Tool(
     name = "mingli",
     description = "命理排盘/抽牌/占卜统一入口。返回结构化JSON数据。" +
         "AI在拿到数据后，调用mingli_guide读取解读模板。" +
         "支持系统: 塔罗 | 雷诺曼 | 八字 | 紫微 | 现代西洋占星 | 传统西洋占星 | " +
-        "吠陀 | 人类图 | 灵数卡巴拉 | 奇门三式 | 六爻梅花。" +
+        "吠陀 | 人类图 | 灵数卡巴拉 | 奇门(含大六壬) | 六爻(含梅花易数)。" +
         "西洋占星分两种风格: 现代西洋占星(心理/成长取向) vs 传统西洋占星(事件判断取向)",
     parameters = {
         InputSchema.Obj(
             properties = buildJsonObject {
                 put("system", buildJsonObject {
                     put("type", "string")
-                    put("description", "命理系统名(支持别名→主名): 塔罗/韦特→塔罗 | 雷诺曼→雷诺曼 | 八字/四柱/生辰→八字 | 紫微/紫薇/紫微斗数→紫微 | 星座/西洋占星→现代西洋占星 | 古典占星/卜卦/horary→传统西洋占星 | 印度占星/jyotish→吠陀 | 人类图→人类图 | 生命灵数/卡巴拉→灵数卡巴拉 | 奇门遁甲→奇门 | 六爻/梅花/易经/周易→六爻梅花" +
-                            "现代西洋占星/传统西洋占星/吠陀/人类图/灵数卡巴拉/奇门/六爻梅花。西洋占星分两种:现代西洋占星(心理/成长)vs传统西洋占星(事件/尊贵)")
+                    put("description", "命理系统名(支持别名→主名): 塔罗/韦特→塔罗 | 雷诺曼→雷诺曼 | 八字/四柱/生辰→八字 | 紫微/紫薇/紫微斗数→紫微 | 星座/西洋占星→现代西洋占星 | 古典占星/卜卦/horary→传统西洋占星 | 印度占星/jyotish→吠陀 | 人类图→人类图 | 生命灵数/卡巴拉→灵数卡巴拉 | 奇门遁甲/奇门三式→奇门 | 大六壬/六壬→奇门(需配合feature=liuren) | 六爻→六爻纳甲(六爻梅花系统) | 梅花易数→梅花易数(六爻梅花系统) | 易经/周易→六爻梅花" +
+                            "现代西洋占星/传统西洋占星/吠陀/人类图/灵数卡巴拉/奇门(含大六壬)/六爻梅花。西洋占星分两种:现代西洋占星(心理/成长)vs传统西洋占星(事件/尊贵)")
                 })
                 put("params", buildJsonObject {
                     put("type", "object")
@@ -52,8 +52,8 @@ fun createMingliTool(context: Context): Tool = Tool(
                             " 吠陀: {year, month, day, hour, minute?, tz, lat, lon}" +
                             " 人类图: {year, month, day, hour, minute?, tz, gene_keys, transits}" +
                             " 灵数卡巴拉: {year, month, day, word, feature=numerology|gematria|odu|tarot|tree|all}" +
-                            " 奇门: {year, month, day, hour, minute?, feature=qimen|liuren|all}" +
-                            " 六爻梅花: {method=time|dayan|manual|coin|number|now, seed, year, month, day, feature}")
+                            " 奇门(含大六壬): {year, month, day, hour, minute?, feature=qimen|liuren|all} (大六壬需feature=liuren)" +
+                            " 六爻梅花(六爻与梅花易数模板已分开, system='六爻'→六爻模板, '梅花易数'→梅花易数模板): {method=time|dayan|manual|coin|number|now, seed, year, month, day, feature}")
                 })
             },
             required = listOf("system")

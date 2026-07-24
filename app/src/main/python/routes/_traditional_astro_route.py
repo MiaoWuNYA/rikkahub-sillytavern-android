@@ -537,10 +537,8 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             "var lon=e.longitude(b,nowJd,{zodiac:'tropical'});"
             "var sg=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(lon/30)%12];"
             "tp[b]={lon:lon,sign:sg}}}catch(ex){});return tp})(),"
-            # 赤纬相位 + 越界
+            # 赤纬相位
             "declinationAspects:sf(function(){return Caelus.declinationAspects(e,p7,nowJd,1)}),"
-            "oob:(function(){var o={};p7.forEach(function(b){try{o[b]={outOfBounds:Caelus.outOfBounds(e,b,nowJd),"
-            "margin:Caelus.outOfBoundsMargin(e,b,nowJd)}}catch(ex){}});return o})(),"
             # 行星留（全7星）
             "stations:(function(){var s={};p7.forEach(function(b){"
             "s[b]=sf(function(){return Caelus.stations(e,b,nowJd,nowJd+180,5)})});return s})(),"
@@ -562,8 +560,6 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             "set:sf(function(){return Caelus.riseSet(e,'sun',nowJd,_lat,_lon,'set',{searchDays:1})})},"
             "moon:{rise:sf(function(){return Caelus.riseSet(e,'moon',nowJd,_lat,_lon,'rise',{searchDays:1})}),"
             "set:sf(function(){return Caelus.riseSet(e,'moon',nowJd,_lat,_lon,'set',{searchDays:1})})}},"
-            "midpoints:{sunMoon:sf(function(){return Caelus.midpointLon(chart.bodies.sun.lon,chart.bodies.moon.lon)}),"
-            "ascMc:sf(function(){return Caelus.midpointLon(chart.angles.asc,chart.angles.mc)})},"
             "parans:sf(function(){return Caelus.parans(e,nowJd,_lat,p7,30)}),"
             "conditions:cond,"
             "zodiacalReleasing:{spirit:zrSpirit,fortune:zrFortune},"
@@ -582,13 +578,13 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
     except: pass
 
     result["_hint"] = (
-        "flatlib:本质尊贵/偶然尊贵/Sect/阿拉伯点(13extra+7Hermetic+家族)/Almutem/气质/"
+        "flatlib:本质尊贵/偶然尊贵/Sect/阿拉伯点(7Hermetic+家族+13extra)/Almutem/气质/"
         "结构/Reception/行为/LordOfGeniture/简化Hyleg/Doryphory/交点/产前朔望/"
         "星座 fertility+figure/三主(Triplicity)/Syzygy。"
         "Caelus:推运(Firdaria75y/主限/小限/太阳弧)+次限推运(月/日+水金火木土30yr)"
         "+ZR(Spirit+Fortune,当前活跃+L1-L2时限)+行运Aspects(当前)+行运位置(全7星+北交经度/星座)"
         "+FixedStars(maxMag4)+月相/日月食/留(全7星)/行星回归(水金火木土3yr)"
-        "+空亡(当前)/时主星/Parans/映点+反映点/赤纬相位/越界/日出日落/中间点"
+        "+空亡(当前)/时主星/Parans/映点+反映点/赤纬相位/日出日落"
         "/条件矩阵(dignityScore+pheno+solarPhase+house+angularity)+AlmutenFiguris。"
     )
     return result

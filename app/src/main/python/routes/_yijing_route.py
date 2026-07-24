@@ -42,7 +42,9 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
     result = {
         "system": "yijing", "engine": "", "seed": seed,
         "_hint":"ichingshifa(Python)+iching-shifa-engine(JS)双引擎对照:同一爻值各自出解读。"
-        "本路由返回六爻+梅花+太玄+荆诀四套数据。系统别名:六爻→用六爻模板,梅花易数→用梅花易数模板,太玄经→用太玄经模板。"
+        "本路由返回六爻+梅花+太玄+荆诀四套数据。"
+        "六爻与梅花易数共用数据入口(system='六爻'或'梅花易数'或'六爻梅花')，数据含六爻+梅花双份。"
+        "system='六爻'→六爻纳甲模板, system='梅花易数'→梅花易数模板。"
         "seed参数用于复盘:传同一seed+同一method→同一组卦。"}
 
     # ---- 确定有效日期时间 ----
