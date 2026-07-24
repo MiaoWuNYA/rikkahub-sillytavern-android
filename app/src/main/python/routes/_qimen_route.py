@@ -10,50 +10,60 @@ def _qimen(year,month,day,hour=None,minute=0,feature="all"):
     if feature in ("qimen","all"):
         try:
             _js_load("qimen-engine")
-            # 日家 — 背景参考（精度到天）
+        except: pass
+        # 日家 — 基础排盘（精度到天）
+        try:
             q=json.loads(_js("qimen-engine",f"JSON.stringify(QimenEngine.generate({{type:'rijia',year:{year},month:{month},day:{day}}}))"))
             if isinstance(q, dict) and 'error' not in q:
                 q["_chartType"]="日家奇门"
                 q["_description"]="以日干支定局（拆补法），精度到天，作背景参考。"
                 result["qimen"]=q
                 _engs.append("QimenEngine(日家)")
-                if hour is not None:
-                    # 时家 — 自研时家引擎 shiJiaGenerate (拆补法, 复用日家局数)
-                    try:
-                        qh=json.loads(_js("qimen-engine",
-                            "var b=QimenEngine.generate({type:'rijia',year:%d,month:%d,day:%d});"
-                            "var stems=['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];"
-                            "var branches=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];"
-                            "var fp=JSON.parse(JSON.stringify(b.fourPillars));"
-                            "var dg=fp.day.gan;"
-                            "var bi=Math.floor((%d+1)/2)%%12;"
-                            "var hi=(stems.indexOf(dg)%%5*2+bi)%%10;"
-                            "var hg=stems[hi],hb=branches[bi];"
-                            "fp.hour={gan:hg,zhi:hb};"
-                            "var result=QimenEngine.shiJiaGenerate(hg,hb,b.juNumber,b.dun,fp,b.solarTerm);"
-                            "result.juMethod='chaibu';"
-                            "JSON.stringify(result)" % (year, month, day, hour)))
-                        if isinstance(qh, dict) and 'error' not in qh:
-                            qh["_chartType"]="时家奇门"
-                            qh["_description"]="以时辰干支排九星八门八神（拆补法），奇门遁甲断事正用。"
-                            result["qimen_hourly"]=qh
-                            if qh.get("fourPillars") and q.get("fourPillars"):
-                                q["fourPillars"]["hour"]=qh["fourPillars"].get("hour")
-                    except: pass
+        except: pass
+        # 时家 — 自研时家引擎 shiJiaGenerate（精度到时辰）
+        if result.get("qimen") and hour is not None:
+            try:
+                qh=json.loads(_js("qimen-engine",
+                    "var b=QimenEngine.generate({type:'rijia',year:%d,month:%d,day:%d});"
+                    "var stems=['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];"
+                    "var branches=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];"
+                    "var fp=JSON.parse(JSON.stringify(b.fourPillars));"
+                    "var dg=fp.day.gan;"
+                    "var bi=Math.floor((%d+1)/2)%%12;"
+                    "var hi=(stems.indexOf(dg)%%5*2+bi)%%10;"
+                    "var hg=stems[hi],hb=branches[bi];"
+                    "fp.hour={gan:hg,zhi:hb};"
+                    "var result=QimenEngine.shiJiaGenerate(hg,hb,b.juNumber,b.dun,fp,b.solarTerm);"
+                    "result.juMethod='chaibu';"
+                    "JSON.stringify(result)" % (year, month, day, hour)))
+                if isinstance(qh, dict) and 'error' not in qh:
+                    qh["_chartType"]="时家奇门"
+                    qh["_description"]="以时辰干支排九星八门八神（拆补法），奇门遁甲断事正用。"
+                    result["qimen_hourly"]=qh
+                    if qh.get("fourPillars") and result["qimen"].get("fourPillars"):
+                        result["qimen"]["fourPillars"]["hour"]=qh["fourPillars"].get("hour")
                     _engs[-1]="QimenEngine(日家+时家)"
-                # 解读层: 格局+星门神详解+十干克应+运筹+长生+用神+值符克应+神将
+            except: pass
+        # 解读层（独立 try，失败不影响基础数据）
+        if result.get("qimen"):
+            try:
                 qa=json.loads(_js("qimen-engine",
+                    "try{"
                     "var b=QimenEngine.generate({type:'rijia',year:%d,month:%d,day:%d});"
                     "var fp=b.fourPillars||{};var yg=fp.year?fp.year.gan:null;var mg=fp.month?fp.month.gan:null;"
                     "var dg=fp.day?fp.day.gan:null;var dz=fp.day?fp.day.zhi:null;"
                     "var zsd=b.zhiShiDoor;var zfs=b.zhiFuStar;"
                     "JSON.stringify({"
-                    "starDetail:['天蓬','天芮','天冲','天辅','天禽','天心','天柱','天任','天英'].map(function(s){return QimenEngine.getStarDetail(s)}),"
-                    "doorDetail:['休门','生门','伤门','杜门','景门','死门','惊门','开门'].map(function(d){return QimenEngine.getDoorDetail(d)}),"
-                    "godDetail:['值符','腾蛇','太阴','六合','白虎','玄武','九地','九天'].map(function(g){return QimenEngine.getGodDetail(g)}),"
-                    "palaceDetail:[1,2,3,4,5,6,7,8,9].map(function(p){return QimenEngine.getPalaceDetail(p)}),"
-                    "shenJiangDetail:['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥']"
-                    "  .map(function(b){return QimenEngine.getShenJiangDetail(b)}),"
+                    "starDetail:typeof QimenEngine.getStarDetail==='function'?"
+                    "  ['天蓬','天芮','天冲','天辅','天禽','天心','天柱','天任','天英'].map(function(s){return QimenEngine.getStarDetail(s)}):null,"
+                    "doorDetail:typeof QimenEngine.getDoorDetail==='function'?"
+                    "  ['休门','生门','伤门','杜门','景门','死门','惊门','开门'].map(function(d){return QimenEngine.getDoorDetail(d)}):null,"
+                    "godDetail:typeof QimenEngine.getGodDetail==='function'?"
+                    "  ['值符','腾蛇','太阴','六合','白虎','玄武','九地','九天'].map(function(g){return QimenEngine.getGodDetail(g)}):null,"
+                    "palaceDetail:typeof QimenEngine.getPalaceDetail==='function'?"
+                    "  [1,2,3,4,5,6,7,8,9].map(function(p){return QimenEngine.getPalaceDetail(p)}):null,"
+                    "shenJiangDetail:typeof QimenEngine.getShenJiangDetail==='function'?"
+                    "  ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'].map(function(b){return QimenEngine.getShenJiangDetail(b)}):null,"
                     "allJiGe:typeof QimenEngine.getAllJiGe==='function'?QimenEngine.getAllJiGe():null,"
                     "allXiongGe:typeof QimenEngine.getAllXiongGe==='function'?QimenEngine.getAllXiongGe():null,"
                     "yongShen:{"
@@ -79,10 +89,11 @@ def _qimen(year,month,day,hour=None,minute=0,feature="all"):
                     "    highlightStem:p.highlightStem"
                     "  }"
                     "})"
-                    "})" % (year, month, day)))
+                    "})"
+                    "}catch(e){JSON.stringify({error:e.message})}" % (year, month, day)))
                 if isinstance(qa, dict) and 'error' not in qa:
                     result["qimen_analysis"]=qa
-        except: pass
+            except: pass
     # 大六壬
     if feature in ("liuren","all"):
         try:
