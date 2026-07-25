@@ -507,8 +507,8 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             # zodiacal releasing from Spirit + Fortune
             "var spLon=sf(function(){return Caelus.lotSpirit(ascDeg,chart.bodies.sun.lon,chart.bodies.moon.lon,isDay)});"
             "var ftLon=sf(function(){return Caelus.lotFortune(ascDeg,chart.bodies.sun.lon,chart.bodies.moon.lon,isDay)});"
-            "var spSign=spLon!==null?Math.floor(spLon/30)%12:-1;"
-            "var ftSign=ftLon!==null?Math.floor(ftLon/30)%12:-1;"
+            "var spSign=spLon!==null?Math.floor(spLon/30)%%12:-1;"
+            "var ftSign=ftLon!==null?Math.floor(ftLon/30)%%12:-1;"
             "var zrSpirit=spSign>=0?sf(function(){return{zrRelease:Caelus.zrRelease(spSign,jd,2,75),active:Caelus.zrAt(e,jd,nowJd,_lat,_lon,'spirit')}}):null;"
             "var zrFortune=ftSign>=0?sf(function(){return{zrRelease:Caelus.zrRelease(ftSign,jd,2,75),active:Caelus.zrAt(e,jd,nowJd,_lat,_lon,'fortune')}}):null;"
             # almuten figuris + profections
@@ -535,7 +535,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             "}),"
             "transitPositions:(function(){var tp={};p7.concat(['mean_node']).forEach(function(b){try{"
             "var lon=e.longitude(b,nowJd,{zodiac:'tropical'});"
-            "var sg=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(lon/30)%12];"
+            "var sg=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(lon/30)%%12];"
             "tp[b]={lon:lon,sign:sg}}}catch(ex){});return tp})(),"
             # 赤纬相位
             "declinationAspects:sf(function(){return Caelus.declinationAspects(e,p7,nowJd,1)}),"

@@ -33,7 +33,7 @@ def _yao_from_seed(seed, method):
     return "".join(str(v) for v in rng.choices([6, 7, 8, 9], weights=ws, k=6))
 
 # ===== 六爻梅花 =====
-def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="all", yao=None):
+def _yijing(method="time", seed=None, year=None, month=None, day=None, hour=None, feature="all", yao=None, numbers=None):
     # 自动生成seed以实现复盘
     if seed is None:
         seed = _rnd.randrange(1, 2**31)
@@ -57,12 +57,14 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
         "JS起卦法用JS引擎生成爻值→Python引擎同样解码→双引擎对照。"}
 
     # ---- 确定有效日期时间（未传参时取当前时间） ----
-    _yr,_mo,_dy,_hr,_min=year,month,day,12,0
+    _yr,_mo,_dy=year,month,day
+    _hr=hour if hour is not None else 12
+    _min=0
     if not (_yr and _mo and _dy):
         import datetime as _dt
         _now=_dt.datetime.now()
-        _yr,_mo,_dy,_hr,_min=_now.year,_now.month,_now.day,12,0
-    result["date_used"] = {"year":_yr,"month":_mo,"day":_dy}
+        _yr,_mo,_dy,_hr,_min=_now.year,_now.month,_now.day,_now.hour,_now.minute
+    result["date_used"] = {"year":_yr,"month":_mo,"day":_dy,"hour":_hr}
 
     # === 第1步：统一爻值生成（择优引擎起卦） ===
     #   time(now)         → Python qigua_time（直接produces hex_data）
@@ -81,7 +83,7 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
         i = Iching()
 
         if method == "time":
-            hex_data = i.qigua_time(_yr,_mo,_dy,12,0)
+            hex_data = i.qigua_time(_yr,_mo,_dy,_hr,_min)
             yao_string = _extract_yao(hex_data)
         elif method == "dayan":
             _js_load("iching-shifa-engine")
@@ -91,28 +93,25 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
             yao_string = json.loads(_js("iching-shifa-engine", "JSON.stringify(IchingShifa.lueshifa())"))
         elif method == "three_number":
             _js_load("iching-shifa-engine")
-            import hashlib
-            h=hashlib.md5(str(seed).encode()).hexdigest()
-            n1=int(h[0:4],16)%999+1; n2=int(h[4:8],16)%999+1; n3=int(h[8:12],16)%999+1
+            s=str(seed).zfill(3)  # seed=868 → "868", seed=12 → "012"
             yao_string = json.loads(_js("iching-shifa-engine",
-                "JSON.stringify(IchingShifa.threeNumberQiGua(%d,%d,%d))" % (n1,n2,n3)))
+                "JSON.stringify(IchingShifa.threeNumberQiGua(%s,%s,%s))" % (s[0],s[1],s[2])))
         elif method == "number_array":
+            if numbers is None:
+                raise ValueError("number_array 起卦法需要传入 numbers 参数（数字列表）")
             _js_load("iching-shifa-engine")
-            import hashlib
-            h=hashlib.md5(str(seed).encode()).hexdigest()
-            nums=[int(h[i:i+2],16)%99+1 for i in range(0,12,2)]
             hour_zhi=((_hr+1)//2)%12+1
             yao_string = json.loads(_js("iching-shifa-engine",
-                "JSON.stringify(IchingShifa.numberArrayQiGua([%s],%d))" % (",".join(str(n) for n in nums),hour_zhi)))
+                "JSON.stringify(IchingShifa.numberArrayQiGua(%s,%d))" % (json.dumps(numbers),hour_zhi)))
         elif method == "js_time":
             _js_load("iching-shifa-engine")
             _tmp = json.loads(_js("iching-shifa-engine",
-                "try{var sl=IchingShifa.solarToLunar(%d,%d,%d,12);"
+                "try{var sl=IchingShifa.solarToLunar(%d,%d,%d,%d);"
                 "var yz=sl.yearGanZhi.di;"
                 "var hz=sl.hourGanZhi.di;"
-                "JSON.stringify(IchingShifa.timeQiGua(%d,%d,%d,12,sl.month,sl.day,yz,hz));"
+                "JSON.stringify(IchingShifa.timeQiGua(%d,%d,%d,%d,sl.month,sl.day,yz,hz));"
                 "}catch(e){JSON.stringify({error:e.message})}"
-                % (_yr,_mo,_dy,_yr,_mo,_dy)))
+                % (_yr,_mo,_dy,_hr,_yr,_mo,_dy,_hr)))
             yao_string = _tmp if isinstance(_tmp, str) and len(_tmp)==6 and all(c in '6789' for c in _tmp) else None
         elif method in ("manual_input", "manual"):
             raw = yao if yao else _yao_from_seed(seed, "dayan")
@@ -123,12 +122,12 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
         elif method in ("coin", "number"):
             yao_string = _yao_from_seed(seed, method)
         else:
-            hex_data = i.qigua_time(_yr,_mo,_dy,12,0)
+            hex_data = i.qigua_time(_yr,_mo,_dy,_hr,_min)
             yao_string = _extract_yao(hex_data)
 
         # 非time方法：Python引擎从爻值重建hex_data（双引擎对照）
         if yao_string and not hex_data:
-            gz = i.gangzhi(_yr,_mo,_dy,12,0)
+            gz = i.gangzhi(_yr,_mo,_dy,_hr,_min)
             dg = gz[2] if gz and len(gz) > 2 else None
             details = i.mget_bookgua_details(yao_string)
             if details:
@@ -150,7 +149,7 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
     # === 第2步：Python enrichment（六兽） ===
     if hex_data and yao_string:
         try:
-            gz = i.gangzhi(_yr,_mo,_dy,12,0)
+            gz = i.gangzhi(_yr,_mo,_dy,_hr,_min)
             if gz and len(gz) > 2:
                 rg = gz[2][0] if gz[2] else "癸"
                 result["six_months_stars"] = i.find_six_mons(rg)
@@ -164,13 +163,13 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
             _js_load("iching-shifa-engine")
             js_decode = json.loads(_js("iching-shifa-engine",
                 "var r="+yao_safe+";"
-                "var pan=null;try{pan=IchingShifa.decodePan(r,{year:"+str(_yr)+",month:"+str(_mo)+",day:"+str(_dy)+",hour:12});}catch(e){pan={error:e.message}}"
+                "var pan=null;try{pan=IchingShifa.decodePan(r,{year:"+str(_yr)+",month:"+str(_mo)+",day:"+str(_dy)+",hour:"+str(_hr)+"});}catch(e){pan={error:e.message}}"
                 "var gdyd=null;try{gdyd=IchingShifa.getGaoDaoYiDuan(r);}catch(e){}"
                 "var _rd=function(y,m,d){var t=new Date(y,m-1,d),r=new Date(1900,0,1);"
                 "var idx=((Math.round((t-r)/86400000)+10)%60+60)%60;"
                 "return ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'][idx%10]+['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'][idx%12]};"
                 "var riChen=_rd("+str(_yr)+","+str(_mo)+","+str(_dy)+");"
-                "var siZhu=null;try{var sl=IchingShifa.solarToLunar("+str(_yr)+","+str(_mo)+","+str(_dy)+",12);siZhu={year:sl.yearGanZhi,month:sl.monthGanZhi,day:sl.dayGanZhi,hour:sl.hourGanZhi};}catch(e){}"
+                "var siZhu=null;try{var sl=IchingShifa.solarToLunar("+str(_yr)+","+str(_mo)+","+str(_dy)+","+str(_hr)+");siZhu={year:sl.yearGanZhi,month:sl.monthGanZhi,day:sl.dayGanZhi,hour:sl.hourGanZhi};}catch(e){}"
                 "var dayKong=null;try{if(pan&&pan.ganZhiDay){dayKong=IchingShifa.calcXunKong(pan.ganZhiDay.gz);}}catch(e){}"
                 "var jieQi=null;try{jieQi=IchingShifa.getCurrentSolarTerm("+str(_yr)+","+str(_mo)+","+str(_dy)+");}catch(e){}"
                 "var liuyao={};"

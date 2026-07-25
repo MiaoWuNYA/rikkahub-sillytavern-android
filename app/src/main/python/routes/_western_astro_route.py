@@ -37,8 +37,9 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
     try:
         _js_load("caelus-engine")
         today=datetime.datetime.now()
-        today_jd=compute_jd(today.year,today.month,today.day,12,0,0)
-        c=json.loads(_js("caelus-engine",
+        today_jd=compute_jd(today.year,today.month,today.day,today.hour,today.minute,0)
+        raw=_js("caelus-engine",
+            "try{"
             "var e=new Caelus.Engine(Caelus.embeddedData);var jd=%s;var today=%s;"
             "var _lat=%f;var _lon=%f;var chart=e.chartAt(jd,_lat,_lon,{});"
             "var isDay=Caelus.isDayChart(e,jd,_lat,_lon);"
@@ -131,7 +132,11 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "solarReturn:sf(function(){return Caelus.solarReturn(e,jd,jd,jd+365*3)}),"
             "lunarReturn:sf(function(){return Caelus.lunarReturn(e,jd,jd+27,jd+27*3)})"
             "})"
-            %(jd,today_jd,lat,lon)))
+            "}catch(e){JSON.stringify({error:'js:'+e.message})}"
+            %(jd,today_jd,lat,lon))
+        if not raw:
+            raise ValueError("Caelus JS returned empty string")
+        c=json.loads(raw)
         if isinstance(c, dict) and 'error' not in c:
             result["caelus"]=c; _engs.append("Caelus")
         elif isinstance(c, dict) and 'error' in c:

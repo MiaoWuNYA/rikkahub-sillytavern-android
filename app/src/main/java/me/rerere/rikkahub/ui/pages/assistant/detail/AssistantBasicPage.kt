@@ -334,36 +334,6 @@ internal fun AssistantBasicContent(
             FormItem(
                 modifier = Modifier.padding(8.dp),
                 label = {
-                    Text(stringResource(R.string.assistant_page_context_message_size))
-                },
-                description = {
-                    Text(stringResource(R.string.assistant_page_context_message_desc))
-                }
-            ) {
-                var localCtxSize by remember { mutableFloatStateOf(assistant.contextMessageSize.toFloat()) }
-                Slider(
-                    value = localCtxSize,
-                    onValueChange = { localCtxSize = it },
-                    onValueChangeFinished = {
-                        onUpdate(assistant.copy(contextMessageSize = localCtxSize.roundToInt()))
-                    },
-                    valueRange = 0f..512f,
-                    steps = 0,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Text(
-                    text = if (assistant.contextMessageSize > 0) stringResource(
-                        R.string.assistant_page_context_message_count,
-                        assistant.contextMessageSize
-                    ) else stringResource(R.string.assistant_page_context_message_unlimited),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.75f),
-                )
-            }
-            HorizontalDivider()
-            FormItem(
-                modifier = Modifier.padding(8.dp),
-                label = {
                     Text(stringResource(R.string.assistant_page_stream_output))
                 },
                 description = {

@@ -124,10 +124,6 @@
   <string name="assistant_page_select_from_gallery">从相册选择</string>
   <string name="assistant_page_stream_output">流式输出</string>
   <string name="assistant_page_stream_output_desc">是否启用消息的流式输出</string>
-  <string name="assistant_page_context_message_size">上下文消息限制</string>
-  <string name="assistant_page_context_message_desc">限制发送给AI的最近消息数量（0=不限）</string>
-  <string name="assistant_page_context_message_count">%d 条消息</string>
-  <string name="assistant_page_context_message_unlimited">不限</string>
   <string name="assistant_page_strict">严谨</string>
   <string name="assistant_page_system_prompt">系统提示词</string>
   <string name="assistant_page_tab_basic">基础设定</string>

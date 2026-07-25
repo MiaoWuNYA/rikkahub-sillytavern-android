@@ -200,7 +200,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
         _js_load("caelus-engine")
         if lat and lon:
             today=datetime.datetime.now()
-            today_jd=compute_jd(today.year,today.month,today.day,12,0,0)
+            today_jd=compute_jd(today.year,today.month,today.day,today.hour,today.minute,0)
             c=json.loads(_js("caelus-engine",
                 "var e=new Caelus.Engine(Caelus.embeddedData);var jd=%s;var today=%s;var _lat=%f;var _lon=%f;"
                 "var bodies=['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune','pluto','chiron'];"

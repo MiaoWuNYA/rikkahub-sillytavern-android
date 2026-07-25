@@ -60,8 +60,8 @@ fun createMingliTool(context: Context): Tool = Tool(
                             "js_time(JS梅花易数时间起卦,不可复盘)/" +
                             "dayan(JS大衍筮法,真随机,不可复盘)/" +
                             "lueshifa(JS略筮法,真随机,不可复盘)/" +
-                            "three_number(JS三数起卦,同seed同结果,可复盘)/" +
-                            "number_array(JS数组起卦,同seed同结果,可复盘)/" +
+                            "three_number(JS三数起卦, seed为三位数字拼接,如seed=868→(8,6,8),可复盘)/" +
+                            "number_array(JS数组起卦,需传numbers=[n1,n2,...,nN], hour自动,同seed同结果,可复盘)/" +
                             "manual或manual_input(手动输爻,需传yao参数)/" +
                             "coin(Python硬币法,同seed同结果,可复盘)/" +
                             "number(Python均匀随机,同seed同结果,可复盘), " +
