@@ -108,15 +108,14 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
                 "JSON.stringify(IchingShifa.numberArrayQiGua([%s],%d))" % (",".join(str(n) for n in nums),hour_zhi)))
         elif method == "js_time":
             _js_load("iching-shifa-engine")
-            yao_string = json.loads(_js("iching-shifa-engine",
+            _tmp = json.loads(_js("iching-shifa-engine",
                 "try{var sl=IchingShifa.solarToLunar(%d,%d,%d,12);"
-                "var yz=sl.yearGanZhi?sl.yearGanZhi[1]:'子';"
-                "var hz=sl.hourGanZhi?sl.hourGanZhi[1]:'子';"
-                "JSON.stringify(IchingShifa.timeQiGua(%d,%d,%d,12,sl.lunarMonth,sl.lunarDay,yz,hz));"
+                "var yz=sl.yearGanZhi.di;"
+                "var hz=sl.hourGanZhi.di;"
+                "JSON.stringify(IchingShifa.timeQiGua(%d,%d,%d,12,sl.month,sl.day,yz,hz));"
                 "}catch(e){JSON.stringify({error:e.message})}"
                 % (_yr,_mo,_dy,_yr,_mo,_dy)))
-            if isinstance(yao_string, dict) and 'error' in yao_string:
-                yao_string = None
+            yao_string = _tmp if isinstance(_tmp, str) and len(_tmp)==6 and all(c in '6789' for c in _tmp) else None
         elif method in ("manual_input", "manual"):
             raw = yao if yao else _yao_from_seed(seed, "dayan")
             _js_load("iching-shifa-engine")
