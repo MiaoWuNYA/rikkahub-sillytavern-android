@@ -179,7 +179,7 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
                 import hashlib
                 h=hashlib.md5(str(seed).encode()).hexdigest()
                 nums=[int(h[i:i+2],16)%99+1 for i in range(0,12,2)]
-                hour_zhi=((_hr+1)//2)%12
+                hour_zhi=_hr//2+1  # 子→1, 丑→2, ...→12
                 yao_safe = json.loads(_js("iching-shifa-engine",
                     "JSON.stringify(IchingShifa.numberArrayQiGua([%s],%d))" % (",".join(str(n) for n in nums),hour_zhi)))
             elif method == "manual_input":
@@ -208,7 +208,7 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
                     % (_yr,_mo,_dy,_yr,_mo,_dy,_yr,_mo,_dy)))
                 if isinstance(js_decode, dict) and 'error' not in js_decode:
                     result["iching_shifa_pan"] = js_decode
-                    result["engine"] += "+iching-shifa-engine(lueshifa)"
+                    result["engine"] += "+iching-shifa-engine("+method+")"
                     result["_hint"] += " method="+method+" 起卦法经由JS引擎排盘。"
         except Exception as e:
             if "py_error" not in result: result["py_error"] = str(e)
