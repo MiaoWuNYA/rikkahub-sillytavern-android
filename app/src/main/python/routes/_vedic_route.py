@@ -1,14 +1,13 @@
 """Route:  vedic"""
 import json, sys, os, datetime
-from ._shared import _js, _js_load, compute_jd
+from ._shared import _js, _js_load, compute_jd, resolve_tz
 
 # ===== 吠陀 =====
 def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
     if isinstance(lat, str): lat = float(lat)
     if isinstance(lon, str): lon = float(lon)
-    if isinstance(tz, str): tz = float(tz)
+    tz_vd = resolve_tz(tz)
     date_str=f"{year}-{month:02d}-{day}"
-    tz_vd = float(tz) if tz is not None else 8.0
     tz_vd_sign = "+" if tz_vd >= 0 else "-"
     tz_vd_abs = abs(tz_vd)
     tz_vd_str = f"{tz_vd_sign}{int(tz_vd_abs):02d}:{int((tz_vd_abs - int(tz_vd_abs)) * 60 + 0.5):02d}"
@@ -28,7 +27,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
         from jhora.horoscope.transit import tajaka_yoga as _tjy
         from jhora.horoscope.transit import saham as _sh
         from jhora.panchanga.eclipse import next_solar_eclipse, next_lunar_eclipse
-        place=drik.Place("loc",lat or 0,lon or 0,float(tz) if tz and str(tz).lstrip('-+').replace('.','',1).isdigit() else 0)
+        place=drik.Place("loc",lat or 0,lon or 0,tz_vd)
         jd_local=utils.julian_day_number(drik.Date(year,month,day),(hour,minute,0))
         # 1. 排盘
         pp=drik.dhasavarga(jd_local,place,1)

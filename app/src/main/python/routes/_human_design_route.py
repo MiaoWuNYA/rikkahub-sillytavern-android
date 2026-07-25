@@ -1,11 +1,11 @@
 """Route:  human design"""
 import json, sys, os
-from ._shared import _js, _js_load
+from ._shared import _js, _js_load, resolve_tz
 
 # ===== 人类图 =====
 def _human_design(year,month,day,hour,tz,minute=0,gene_keys=False,transits=False):
     try:
-        tz=float(tz) if tz is not None else 8.0
+        tz=resolve_tz(tz)
         date_str=f"{year}-{month:02d}-{day}"
         _js_load("natalengine-engine")
         hd_raw=_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateHumanDesign('{date_str}',{hour+minute/60},{tz}))")

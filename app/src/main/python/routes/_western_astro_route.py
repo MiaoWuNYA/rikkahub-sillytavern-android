@@ -1,6 +1,6 @@
 """Route:  western astro"""
 import json, sys, os, datetime
-from ._shared import _js, _js_load, compute_jd
+from ._shared import _js, _js_load, compute_jd, resolve_tz
 
 # ===== 现代西洋占星（双引擎对照） =====
 def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
@@ -8,7 +8,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
                    partner_hour=None,partner_tz=None,partner_lat=None,partner_lon=None,
                    partner_minute=0):
     date_str=f"{year}-{month:02d}-{day}"
-    tz_num = float(tz) if tz is not None else 8.0
+    tz_num = resolve_tz(tz)
     if isinstance(lat, str): lat = float(lat)
     if isinstance(lon, str): lon = float(lon)
     jd = compute_jd(year, month, day, hour, minute, tz_num)
@@ -139,7 +139,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
     if partner_year is not None:
         try:
             partner_date=f"{partner_year}-{partner_month or month:02d}-{partner_day or day}"
-            pt=float(partner_tz) if partner_tz is not None else float(tz) if tz else 8.0
+            pt=resolve_tz(partner_tz, resolve_tz(tz))
             ph=partner_hour + partner_minute/60
             pl=float(partner_lat) if partner_lat else lat or 0
             pn=float(partner_lon) if partner_lon else lon or 0

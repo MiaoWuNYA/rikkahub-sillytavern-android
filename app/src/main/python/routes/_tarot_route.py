@@ -4,6 +4,7 @@ from ._shared import _js, _js_load
 
 # ===== 塔罗 =====
 def _tarot(spread="celtic-cross", seed=None, question_type=None, cards=None):
+    spread = spread.replace("_", "-")
     from arcanite.core import TarotDeck
     from arcanite.core.spread import load_spread
     from tarot_elemental_engine import ElementalDignityEngine as EE
