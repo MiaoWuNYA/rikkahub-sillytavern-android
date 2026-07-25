@@ -337,9 +337,7 @@ internal fun AssistantBasicContent(
                     Text(stringResource(R.string.assistant_page_context_message_size))
                 },
                 description = {
-                    Text(
-                        text = stringResource(R.string.assistant_page_context_message_desc),
-                    )
+                    Text(stringResource(R.string.assistant_page_context_message_desc))
                 }
             ) {
                 var localCtxSize by remember { mutableFloatStateOf(assistant.contextMessageSize.toFloat()) }
@@ -353,7 +351,6 @@ internal fun AssistantBasicContent(
                     steps = 0,
                     modifier = Modifier.fillMaxWidth()
                 )
-
                 Text(
                     text = if (assistant.contextMessageSize > 0) stringResource(
                         R.string.assistant_page_context_message_count,
