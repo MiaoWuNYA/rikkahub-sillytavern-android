@@ -660,6 +660,7 @@ class ChatService(
                             createSkillTools(
                                 enabledSkills = assistant.enabledSkills,
                                 allSkills = skillManager.listSkills(),
+                                skillManager = skillManager,
                             )
                         )
                     }

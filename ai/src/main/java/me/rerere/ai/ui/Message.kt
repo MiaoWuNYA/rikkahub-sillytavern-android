@@ -269,6 +269,47 @@ fun List<UIMessagePart>.isEmptyUIMessage(): Boolean {
     }
 }
 
+fun List<UIMessage>.limitContext(size: Int): List<UIMessage> {
+    if (size <= 0 || this.size <= size) return this
+
+    val startIndex = this.size - size
+    var adjustedStartIndex = startIndex
+
+    var needsAdjustment = true
+    val visitedIndices = mutableSetOf<Int>()
+
+    while (needsAdjustment && adjustedStartIndex > 0) {
+        needsAdjustment = false
+
+        if (adjustedStartIndex in visitedIndices) break
+        visitedIndices.add(adjustedStartIndex)
+
+        val currentMessage = this[adjustedStartIndex]
+
+        if (currentMessage.getTools().any { it.isExecuted }) {
+            for (i in adjustedStartIndex - 1 downTo 0) {
+                if (this[i].getTools().any { !it.isExecuted }) {
+                    adjustedStartIndex = i
+                    needsAdjustment = true
+                    break
+                }
+            }
+        }
+
+        if (currentMessage.getTools().any { !it.isExecuted }) {
+            for (i in adjustedStartIndex - 1 downTo 0) {
+                if (this[i].role == MessageRole.USER) {
+                    adjustedStartIndex = i
+                    needsAdjustment = true
+                    break
+                }
+            }
+        }
+    }
+
+    return this.subList(adjustedStartIndex, this.size)
+}
+
 @Serializable
 sealed class ToolApprovalState {
     @Serializable

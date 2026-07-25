@@ -5,6 +5,7 @@ import me.rerere.ai.core.InputSchema
 import me.rerere.ai.core.Tool
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.files.SkillFrontmatterParser
+import me.rerere.rikkahub.data.files.SkillManager
 import me.rerere.rikkahub.data.files.SkillMetadata
 import me.rerere.rikkahub.data.files.SkillPaths
 
@@ -15,6 +16,7 @@ import me.rerere.rikkahub.data.files.SkillPaths
 fun createSkillTools(
     enabledSkills: Set<String>,
     allSkills: List<SkillMetadata>,
+    skillManager: SkillManager? = null,
 ): List<Tool> {
     val available = allSkills.filter { it.name in enabledSkills }
     if (available.isEmpty()) return emptyList()
@@ -75,14 +77,17 @@ fun createSkillTools(
                 val obj = args.jsonObject
                 val name = obj["name"]?.jsonPrimitive?.content ?: error("name required")
                 if (name !in enabledSkills) error("'$name' not available")
+                val skill = available.find { it.name == name }
+                    ?: error("Skill '$name' not found")
 
                 val filePath = obj["file_path"]?.jsonPrimitive?.content
                 val content = if (filePath.isNullOrBlank()) {
-                    val body = skillManager.readSkillBody(name) ?: error("Skill '$name' not found")
-                    val skill = available.find { it.name == name }
+                    val body = skillManager?.readSkillBody(name)
+                        ?: skill.skillFile.takeIf { it.exists() }?.let { SkillFrontmatterParser.extractBody(it.readText()) }
+                        ?: error("Skill '$name' not found")
                     buildString {
                         appendLine(body)
-                        if (skill != null && skill.linkedFiles.isNotEmpty()) {
+                        if (skill.linkedFiles.isNotEmpty()) {
                             appendLine()
                             appendLine("--- linked_files ---")
                             skill.linkedFiles.forEach { (dir, files) ->
@@ -91,7 +96,8 @@ fun createSkillTools(
                         }
                     }
                 } else {
-                    val target = skillManager.resolveSkillFile(name, filePath)
+                    val target = skillManager?.resolveSkillFile(name, filePath)
+                        ?: SkillPaths.resolveSkillFile(skill.skillDir, filePath)
                         ?: error("Path outside skill directory")
                     if (!target.exists()) error("File '$filePath' not found")
                     target.readText()
