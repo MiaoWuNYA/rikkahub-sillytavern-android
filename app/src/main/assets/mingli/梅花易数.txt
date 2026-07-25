@@ -56,20 +56,21 @@
 
 ```
 【梅花易数独有字段】
-meihua_coin / meihua_time：起卦结果 {lines, moving, details}
-  → lines：六个爻值（0/1）
-  → moving：动爻位置
-  → details：起卦细节（时间/铜钱等）
-meihua_formatted：格式化卦文
+meihua_data：梅花易数起卦数据（与六爻同源，同一组爻值转换）
+  → lines：六个爻值（0/1，初爻到上爻）
+  → moving：动爻位置（0-based索引）
+  → details：每爻详细信息（yao/sum/name/line/moving）
+meihua_formatted：格式化卦文（主卦/互卦/变卦/体用字符串）
 meihua_gua_name：卦名
 meihua_tiyong：体用生克（核心！）
-  → original（本卦体用）
+  → main（本卦体用）
   → mutual（互卦体用）
   → changed（变卦体用）
-  → ti_yong（体用关系：生克比和）
+  → ti（体卦）/ yong（用卦）：含name + element + symbol
+  → moving_indices：动爻索引
 
 【同根六爻数据（交叉验证参考，非梅花主体）】
-iching_shifa_js_yao：6位爻值（仅作为梅花起卦的对照参考）
+iching_shifa_js_yao：6位爻值（与梅花meihua_data源自同一组数）
 decode_gua / decode_two_gua：卦名解读
 
 梅花解读时以 meihua_tiyong 为绝对核心，六爻数据仅作为交叉验证参考。

@@ -42,6 +42,8 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
         "_hint":"ichingshifa(Python)+iching-shifa-engine(JS)双引擎对照:同一爻值各自出解读。"
         "本路由返回六爻+梅花+太玄+荆诀四套数据。"
         "六爻与梅花易数共用数据入口(system='六爻'或'梅花易数'或'六爻梅花')，数据含六爻+梅花双份。"
+        "六爻与梅花同源同卦：meihua_data从iching_shifa_js_yao(yan_string)转换而来，"
+        "两种体系用同一组数值起卦，结果一致。"
         "system='六爻'→六爻纳甲模板, system='梅花易数'→梅花易数模板。"
         "seed参数用于复盘:传同一seed+同一method→同一组卦。"
         "起卦法及特性: "
@@ -208,38 +210,29 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
         except Exception as e:
             if "py_error" not in result: result["py_error"] = str(e)
 
-    # ---- 梅花易数（独立于六爻） ----
-    try:
-        import meihua_yi
-        result["engine"] += "+meihua_yi"
-        if method == "coin":
-            _rnd.seed(seed)
-            coin_result = meihua_yi.qigua_coin()
-            result["meihua_coin"] = {
-                "lines":[y for y in coin_result[0]],
-                "moving":[y for y in coin_result[1]],
-                "details":coin_result[2],
-            }
-        else:
-            time_result = meihua_yi.qigua_time()
-            result["meihua_time"] = {
-                "lines":[y for y in time_result[0]],
-                "moving":[y for y in time_result[1]],
-            }
-        gua = result.get("meihua_coin") or result.get("meihua_time") or {}
-        if gua.get("lines"):
-            result["meihua_formatted"] = meihua_yi.format_hexagram_text(gua["lines"],gua.get("moving",[]))
-            result["meihua_gua_name"] = meihua_yi.get_gua_name(gua["lines"])
+    # ---- 梅花易数（从yao_string转换，与六爻同源同卦） ----
+    if yao_string:
+        try:
+            import meihua_yi
+            result["engine"] += "+meihua_yi"
+            mh_lines=[1 if c in '79' else 0 for c in yao_string]
+            mh_moving=[i for i,c in enumerate(yao_string) if c in '69']
+            coin_vals=[int(c) for c in yao_string]
+            coin_names={6:"老阴",7:"少阳",8:"少阴",9:"老阳"}
+            result["meihua_data"]={
+                "lines":mh_lines,"moving":mh_moving,
+                "details":[{"yao":i+1,"sum":coin_vals[i],"name":coin_names[coin_vals[i]],
+                           "line":"阳" if mh_lines[i] else "阴","moving":i in mh_moving} for i in range(6)]}
+            result["meihua_formatted"]=meihua_yi.format_hexagram_text(mh_lines,mh_moving)
+            result["meihua_gua_name"]=meihua_yi.get_gua_name(mh_lines)
             try:
-                lines_list = gua["lines"]
-                moving_positions = gua.get("moving",[])
-                hg = meihua_yi.compute_hexagrams(lines_list,moving_positions)
-                if isinstance(hg, dict):
-                    result["meihua_tiyong"] = hg
-                elif isinstance(hg, (list, tuple)) and len(hg) >= 4:
-                    result["meihua_tiyong"] = {"original":hg[0],"mutual":hg[1],"changed":hg[2],"ti_yong":hg[3]}
+                hg=meihua_yi.compute_hexagrams(mh_lines,mh_moving)
+                if isinstance(hg,dict):
+                    result["meihua_tiyong"]=hg
+                elif isinstance(hg,(list,tuple)) and len(hg)>=4:
+                    result["meihua_tiyong"]={"original":hg[0],"mutual":hg[1],"changed":hg[2],"ti_yong":hg[3]}
             except: pass
-    except: pass
+        except: pass
 
     # ---- taixuanshifa ----
     try:
