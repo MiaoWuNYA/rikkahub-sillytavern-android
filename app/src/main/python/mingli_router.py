@@ -14,6 +14,7 @@ from routes._human_design_route import _human_design
 from routes._kabbalah_route import _kabbalah
 from routes._qimen_route import _qimen
 from routes._yijing_route import _yijing
+from routes._stellium_route import _stellium
 
 # ===== 路由表 =====
 _ROUTER={
@@ -29,6 +30,8 @@ _ROUTER={
     "奇门":_qimen,"qimen":_qimen,"奇门遁甲":_qimen,"奇门三式":_qimen,
     "大六壬":_qimen,"六壬":_qimen,
     "六爻梅花":_yijing,"yijing":_yijing,"六爻":_yijing,"梅花易数":_yijing,"易经":_yijing,"周易":_yijing,
+    "深度古典占星":_stellium,"stellium":_stellium,"hellenistic":_stellium,"希腊占星":_stellium,
+    "古典占星deep":_stellium,
 }
 
 def mingli_run(system,params=None,bridge=None):

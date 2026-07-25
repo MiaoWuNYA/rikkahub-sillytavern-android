@@ -64,6 +64,8 @@ chaquopy {
             install(file("offline_pkgs/urllib3-latest.tar.gz").absolutePath)
             install(file("offline_pkgs/cn2an-latest.tar.gz").absolutePath) // ichingshifa 中文数字
             install(file("offline_pkgs/proces-latest.tar.gz").absolutePath) // cn2an 依赖
+            // === 深度古典占星 (stellium, 组件化引擎, Hellenistic/Medieval全栈) ===
+            install(file("offline_pkgs/stellium-0.22.0-py3-none-any.whl").absolutePath)
         }
     }
 }

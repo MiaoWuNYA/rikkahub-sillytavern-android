@@ -23,10 +23,11 @@ fun createMingliGuideTool(context: Context): Tool = Tool(
         "AI在调完mingli拿到数据后，首次遇到该系统时调一次本工具。" +
         "之后可缓存模板内容，无需再次读取。" +
         "系统名与mingli工具一致。可用系统: 塔罗/雷诺曼/八字/紫微/现代西洋占星/" +
-        "传统西洋占星/吠陀/人类图/灵数卡巴拉/奇门遁甲/大六壬/六爻/梅花易数。" +
-        "其中西洋占星分两种风格:" +
+        "传统西洋占星/深度古典占星(stellium)/吠陀/人类图/灵数卡巴拉/奇门遁甲/大六壬/六爻/梅花易数。" +
+        "其中西洋占星分三种:" +
         "现代西洋占星(心理/成长取向,十大行星+相位+格局+合盘) vs 传统西洋占星(事件判断取向," +
-        "本质尊贵+主限向运+阿拉伯点+互容接纳)。" +
+        "本质尊贵+主限向运+阿拉伯点+互容接纳) vs 深度古典占星(stellium, Hellenistic/Medieval全栈," +
+        "组件化尊贵互容/阿拉伯点/恒星/中点/Firdaria/Return/ZR/主限推运)。" +
         "奇门遁甲与大六壬已分开为独立模板(数据共入口system='奇门',通过feature=liuren切换)；" +
         "六爻纳甲与梅花易数已分开为独立模板(数据共入口system='六爻'或'六爻梅花',通过system='六爻'/'梅花易数'切换模板)。",
     parameters = {
@@ -86,6 +87,11 @@ fun createMingliGuideTool(context: Context): Tool = Tool(
             "六爻梅花" to "六爻",
             "yijing" to "六爻",
             "奇门三式" to "奇门遁甲",
+            "深度古典占星" to "深度古典占星",
+            "stellium" to "深度古典占星",
+            "hellenistic" to "深度古典占星",
+            "希腊占星" to "深度古典占星",
+            "古典占星deep" to "深度古典占星",
         )
 
         val fileName = fileMap[system]

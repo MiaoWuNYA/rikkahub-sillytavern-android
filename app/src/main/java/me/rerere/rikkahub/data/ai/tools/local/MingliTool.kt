@@ -22,15 +22,17 @@ import me.rerere.rikkahub.data.ai.python.JsBridge
  *
  * AI 不写执行代码，只调这个工具拿结构化 JSON 数据。
  * 支持: 塔罗 | 雷诺曼 | 八字 | 紫微 | 现代西洋占星 | 传统西洋占星 |
- *       吠陀(3引擎合一) | 人类图 | 灵数卡巴拉 | 奇门(含大六壬) | 六爻(含梅花易数)
+ *       吠陀(3引擎合一) | 人类图 | 灵数卡巴拉 | 奇门(含大六壬) | 六爻(含梅花易数) |
+ *       深度古典占星(基于stellium组件化引擎)
  */
 fun createMingliTool(context: Context): Tool = Tool(
     name = "mingli",
     description = "命理排盘/抽牌/占卜统一入口。返回结构化JSON数据。" +
         "AI在拿到数据后，调用mingli_guide读取解读模板。" +
         "支持系统: 塔罗 | 雷诺曼 | 八字 | 紫微 | 现代西洋占星 | 传统西洋占星 | " +
-        "吠陀 | 人类图 | 灵数卡巴拉 | 奇门(含大六壬) | 六爻(含梅花易数)。" +
-        "西洋占星分两种风格: 现代西洋占星(心理/成长取向) vs 传统西洋占星(事件判断取向)",
+        "吠陀 | 人类图 | 灵数卡巴拉 | 奇门(含大六壬) | 六爻(含梅花易数) | 深度古典占星(基于stellium组件引擎)。" +
+        "西洋占星分两种风格: 现代西洋占星(心理/成长取向) vs 传统西洋占星(事件判断取向)。" +
+        "深度古典占星(stellium)是组件化的深度引擎，支持Hellenistic/Medieval占星全栈(尊贵/互容/阿拉伯点/Firdaria/ZR/主限推运等)",
     parameters = {
         InputSchema.Obj(
             properties = buildJsonObject {
@@ -64,7 +66,28 @@ fun createMingliTool(context: Context): Tool = Tool(
                             "coin(Python硬币法,同seed同结果,可复盘)/" +
                             "number(Python均匀随机,同seed同结果,可复盘), " +
                             "seed(传回可复盘受种子控制的method), year, month, day, feature, " +
-                            "yao(manual/manual_input时传6位6789字符串)}")
+                            "yao(manual/manual_input时传6位6789字符串)}" +
+                            " 深度古典占星(stellium/hellenistic): " +
+                            "{year, month, day, hour, minute?, tz?=IANA时区, lat?, lon?, " +
+                            "house_system?=placidus|whole_sign|equal|koch|regiomontanus|porphyry|campanus" +
+                            " | ═══ 关系合盘(传partner_year触发) ═══ " +
+                            "partner_year?, partner_month?, partner_day?, partner_hour?, partner_minute?, partner_tz?, partner_lat?, partner_lon?" +
+                            " → 返回 Synastry(双星交叉+宫位覆盖) + Composite(组合中点) + Davison(时空盘)" +
+                            " | ═══ 行运(传transit_date触发) ═══ " +
+                            "transit_date?=YYYY-MM-DD, transit_hour?" +
+                            " → 返回 Transit(指定日期过境盘，外行星与本命交叉相位)" +
+                            " | ═══ 行运预报(传transit_forecast_months触发) ═══ " +
+                            "transit_forecast_months?=数字(如6)" +
+                            " → 返回 TransitForecast(未来N个月外行星换座/停滞日期列表，中长期趋势)" +
+                            " | ═══ 返照盘(传return_year触发) ═══ " +
+                            "return_year?=数字(如2026)" +
+                            " → 返回 SolarReturn+LunarReturn+SaturnReturn+JupiterReturn(年度主题判断)" +
+                            " | ═══ 推运(传progression_age或progression_date触发) ═══ " +
+                            "progression_age?=年龄, progression_date?=YYYY-MM-DD" +
+                            " → 返回 Progression(次限) + ArcDirection(太阳弧) + PrimaryDirections(主限推运/行军)" +
+                            " | ═══ 行星回归(传crossings_start+crossings_end触发) ═══ " +
+                            "crossings_start?=YYYY-MM-DD, crossings_end?=YYYY-MM-DD" +
+                            " → 返回 PlanetaryCrossings(时间段内行运行星走到本命行星位置的具体日期，精确触发点)}")
                 })
             },
             required = listOf("system")
