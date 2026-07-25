@@ -182,7 +182,7 @@ class GenerationHandler(
                 appendLine("    紫微(紫微斗数/紫薇/ziwei): {year, month, day, hour, minute?, gender, engine?}")
                 appendLine("    现代西洋占星(现代占星/星座/western_astro): {year, month, day, hour, minute?, tz, lat, lon}")
                 appendLine("    传统西洋占星(古典占星/中世纪/卜卦/horary/traditional_astro): {year, month, day, hour, minute?, tz_offset, lat, lon}")
-    深度古典占星(深度古典/stellium/hellenistic/希腊占星/古典占星deep): {year, month, day, hour, minute?, tz?=IANA时区, lat?, lon?, house_system?=placidus|whole_sign|regiomontanus, partner_year?, transit_date?, transit_forecast_months?, return_year?, progression_age?, crossings_start?+crossings_end?}")
+				appendLine("    深度古典占星(深度古典/stellium/hellenistic/希腊占星/古典占星deep): {year, month, day, hour, minute?, tz?=IANA时区, lat?, lon?, house_system?=placidus|whole_sign|regiomontanus, partner_year?, transit_date?, transit_forecast_months?, return_year?, progression_age?, crossings_start?+crossings_end?}")
                 appendLine("    吠陀(印度占星/吠陀占星/jyotish/vedic): {year, month, day, hour, minute?, tz, lat, lon}")
                 appendLine("    人类图(human_design/humandesign): {year, month, day, hour, minute?, tz, gene_keys?, transits?}")
                 appendLine("    灵数卡巴拉(生命灵数/生命数字/卡巴拉/kabbalah): {year, month, day, word?, feature}")
