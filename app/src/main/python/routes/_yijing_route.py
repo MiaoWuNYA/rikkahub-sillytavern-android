@@ -223,15 +223,18 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
                 "lines":mh_lines,"moving":mh_moving,
                 "details":[{"yao":i+1,"sum":coin_vals[i],"name":coin_names[coin_vals[i]],
                            "line":"阳" if mh_lines[i] else "阴","moving":i in mh_moving} for i in range(6)]}
-            result["meihua_formatted"]=meihua_yi.format_hexagram_text(mh_lines,mh_moving)
             result["meihua_gua_name"]=meihua_yi.get_gua_name(mh_lines)
-            try:
+            if mh_moving:
                 hg=meihua_yi.compute_hexagrams(mh_lines,mh_moving)
-                if isinstance(hg,dict):
-                    result["meihua_tiyong"]=hg
-                elif isinstance(hg,(list,tuple)) and len(hg)>=4:
-                    result["meihua_tiyong"]={"original":hg[0],"mutual":hg[1],"changed":hg[2],"ti_yong":hg[3]}
-            except: pass
+                result["meihua_formatted"]=meihua_yi.format_hexagram_text(mh_lines,mh_moving)
+            else:
+                # 无动爻：下卦为体、上卦为用（梅花传统规则）
+                mu=mh_lines[1:4]+mh_lines[2:5]; bg=meihua_yi.BAGUA
+                hg={"main":{"lines":mh_lines,"bot":bg[tuple(mh_lines[0:3])],"top":bg[tuple(mh_lines[3:6])]},
+                    "mutual":{"lines":mu,"bot":bg[tuple(mu[0:3])],"top":bg[tuple(mu[3:6])]},
+                    "changed":{"lines":list(mh_lines),"bot":bg[tuple(mh_lines[0:3])],"top":bg[tuple(mh_lines[3:6])]},
+                    "ti":bg[tuple(mh_lines[0:3])],"yong":bg[tuple(mh_lines[3:6])],"moving_indices":[]}
+            result["meihua_tiyong"]=hg
         except: pass
 
     # ---- taixuanshifa ----
