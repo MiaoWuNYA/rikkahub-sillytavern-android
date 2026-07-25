@@ -1,7 +1,82 @@
 """Route: stellium — component-based deep traditional/digital astrology.
-
-Architecture: ChartBuilder → add_component(X).add_analyzer(Y) → chart
-             chart.to_dict() / chart.to_prompt_text()
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 维护指南 / Maintenance Guide — 2025-07                                  │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  1. 架构总览 (Architecture)                                              │
+│     ┌──────────┐   ┌──────────────────┐   ┌──────────────────┐          │
+│     │ Kotlin   │ → │ mingli_router.py │ → │ _stellium_route  │          │
+│     │Tool desc │   │ 别名→_stellium   │   │ (本文件,纯Python)│          │
+│     └──────────┘   └──────────────────┘   └────────┬─────────┘          │
+│                                                     ↓                   │
+│                                            stellium 引擎(pip whl)       │
+│                                                                          │
+│  2. 触发方式 / 参数映射                                                  │
+│     Kotlin MingliTool.kt 的 params → _stellium() 的形参 (同名直通)      │
+│     所以：在 Kotlin 侧加了一个 params 字段，就必须在此函数形参同步添加  │
+│     反之亦然。两者必须保持同步，否则传参出错。                          │
+│                                                                          │
+│  3. 模块执行策略 (Execution Strategy)                                    │
+│     ┌─────────────────────────────────────────────────────────────┐     │
+│     │ 始终执行(always): chart_shape, ruler, dispositors, VOC,     │     │
+│     │ moon_phase, draconic, profections, firdaria, ZR, hyleg/     │     │
+│     │ LoL, planetary_hour, almuten                                │     │
+│     ├─────────────────────────────────────────────────────────────┤     │
+│     │ 条件执行(conditional):                                       │     │
+│     │   partner_year     → synastry + composite + davison          │     │
+│     │   transit_date     → transit chart + cross-aspects          │     │
+│     │   transit_forecast → ingresses + stations                   │     │
+│     │   return_year      → solar/lunar/saturn/jupiter return      │     │
+│     │   progression_*    → progression + arc_direction + primary  │     │
+│     │   crossings_*      → planetary crossings                    │     │
+│     └─────────────────────────────────────────────────────────────┘     │
+│                                                                          │
+│  4. 编码规则 (Coding Rules)                                              │
+│     每个模块必须包在 try/except 中，错误写入 result["xxx_error"]        │
+│     绝不允许让一个模块的异常级联到整个函数崩溃。                        │
+│     本路由 100% Python，不依赖任何 JS bridge。不存在 double-encoding。 │
+│     所有 stellium 的 import 都用本地导入（在函数内部 import），         │
+│     因为 Android Chaquopy 环境中 stellium whl 的导入路径可能延迟加载。  │
+│                                                                          │
+│  5. 如何添加新模块 (Adding a New Module)                                │
+│     ① 在 _stellium() 函数体末尾添加新 block                             │
+│     ② 如果是条件触发，用 if xxx is not None: 包裹                      │
+│     ③ 用 try/except 包裹内部逻辑                                       │
+│     ④ result["your_key"] = ...                                         │
+│     ⑤ 如果新增了参数:                                                   │
+│        a) 在 _stellium() 形参列表中添加                                  │
+│        b) 在 Kotlin MingliTool.kt 的 MingliParameters 中添加同名参数    │
+│        c) 在 深度古典占星.txt guide 中添加说明                           │
+│                                                                          │
+│  6. 关键文件依赖 (File Dependencies)                                     │
+│     Kotlin 工具定义: MingliTool.kt (params 必须与路由形参同步)          │
+│     Kotlin 路由解析: MingliRouter.kt (不需改动,已泛化)                 │
+│     Python 路由分发: mingli_router.py (添加别名映射)                    │
+│     Guide模板: assets/mingli/深度古典占星.txt (描述给AI的调用方式)      │
+│     stellium whl: offline_pkgs/stellium-0.22.0-py3-none-any.whl         │
+│                                                                          │
+│  7. TZ 说明                                                              │
+│     必须使用 IANA 时区字符串(如"Asia/Shanghai","America/New_York")       │
+│     不接收 offset 小时(如 8.0) — 与 stellium 的 pytz 依赖一致           │
+│     fallback: UTC                                                        │
+│                                                                          │
+│  8. stellium API 参考                                                    │
+│     ChartBuilder:   stellium/core/builder.py                             │
+│     CalculatedChart: stellium/core/models.py                             │
+│     MultiChartBuilder: stellium/core/multichart.py                       │
+│     ReturnBuilder:  stellium/returns/builder.py                          │
+│     SynthesisBuilder: stellium/core/synthesis.py                         │
+│     DirectionsEngine: stellium/engines/directions.py                     │
+│     Components:     stellium/components/__init__.py                      │
+│     Utils:          stellium/utils/                                      │
+│                                                                          │
+│  9. 日志 / 调试 (Debugging)                                              │
+│     正常: _ensure_ephe() 自动寻找 ephe 路径                              │
+│     若缺少星历表: 确认 app/offline_pkgs/ 下有 ephe/ 目录                │
+│     或者在 Chaquopy pip block 中安装 swisseph 时包含 ephe 文件          │
+│     测试: 用 router_test.py 中 mock 数据调用 _stellium() 看返回         │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
 
 TZ: IANA strings (e.g. "Asia/Shanghai"), NOT offset hours. Falls back to UTC.
 """
@@ -199,7 +274,7 @@ def _stellium(
             result["profection"]["multi"] = {
                 "age": mp.age,
                 "lords": mp.lords,
-                "profected_signs": mp.profected_signs,
+                "profected_signs": {k: v.profected_sign for k, v in mp.results.items()},
             }
         except Exception:
             pass
@@ -209,7 +284,8 @@ def _stellium(
     # ── 7b. Firdaria ──
     try:
         ft = chart.firdaria()
-        fp = ft.at_age(current_age)
+        # FirdariaTimeline has .at(datetime) not .at_age()
+        fp = ft.at(ft.birth + timedelta(days=current_age * 365.25))
         result["firdaria"] = {
             "preset": ft.preset, "sect": ft.sect,
             "current": asdict(fp) if fp else None,
