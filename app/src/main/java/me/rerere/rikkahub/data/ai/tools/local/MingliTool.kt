@@ -45,14 +45,14 @@ fun createMingliTool(context: Context): Tool = Tool(
                             " seed=随机种子(返回时自动生成, 传回可精确复盘该手牌)。" +
                             " 塔罗: {spread, seed, question_type, cards}" +
                             " 雷诺曼: {spread, seed, cards}" +
-                            " 八字: {year, month, day, hour, minute?, gender, feature?=shengxiao|luohou|all}" +
+                            " 八字: {year, month, day, hour, minute?, gender, feature?=bazi|shengxiao|luohou|all}" +
                             " 紫微: {year, month, day, hour, minute?, gender, engine}" +
-                            " 现代西洋占星: {year, month, day, hour, minute?, tz, lat, lon}" +
+                            " 现代西洋占星: {year, month, day, hour, minute?, tz, lat, lon, partner_year?, partner_month?, partner_day?, partner_hour?, partner_minute?, partner_tz?, partner_lat?, partner_lon?}" +
                             " 传统西洋占星: {year, month, day, hour, minute?, tz_offset, lat, lon}" +
-                            " 吠陀: {year, month, day, hour, minute?, tz, lat, lon}" +
+                            " 吠陀: {year, month, day, hour, minute?, tz, lat?, lon?}" +
                             " 人类图: {year, month, day, hour, minute?, tz, gene_keys, transits}" +
                             " 灵数卡巴拉: {year, month, day, word, feature=numerology|gematria|odu|tarot|tree|all}" +
-                            " 奇门(含大六壬): {year, month, day, hour, minute?, feature=qimen|liuren|all} (大六壬需feature=liuren)" +
+                            " 奇门(含大六壬): {year, month, day, hour?, minute?, feature=qimen|liuren|all} (大六壬需feature=liuren)" +
                             " 六爻梅花(六爻与梅花易数模板已分开, system='六爻'→六爻模板, '梅花易数'→梅花易数模板): " +
                             "{method=time(默认,Python时间起卦,不可复盘)/" +
                             "js_time(JS梅花易数时间起卦,不可复盘)/" +

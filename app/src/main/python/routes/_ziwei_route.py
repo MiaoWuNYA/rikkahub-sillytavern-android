@@ -59,14 +59,14 @@ def _ziwei(year,month,day,hour,minute=0,gender="male",engine="iztro"):
                 "heavenlyStem:h.hourly.heavenlyStem,earthlyBranch:h.hourly.earthlyBranch,"
                 "palaceNames:h.hourly.palaceNames,mutagen:h.hourly.mutagen,stars:h.hourly.stars}"
                 "}"
-                "})" % (date_str, int(hour_dec), gender)))
+                "})" % (date_str, ((hour+1)//2)%12, gender)))
             if isinstance(result.get("iztro"), dict) and 'error' not in result["iztro"]:
                 _engs.append("iztro")
         except: pass
     if engine in ("nihai","all"):
         try:
             _js_load("ziwei-nihai")
-            result["nihai"]=json.loads(_js("ziwei-nihai",f"JSON.stringify(ZiweiNihai.generateChart({{year:{year},month:{month},day:{day},hour:{hour_dec},gender:'{gender}'}}))"))
+            result["nihai"]=json.loads(_js("ziwei-nihai",f"JSON.stringify(ZiweiNihai.generateChart({{year:{year},month:{month},day:{day},hour:{((hour+1)//2)%12},gender:'{gender}'}}))"))
             if isinstance(result.get("nihai"), dict) and 'error' not in result["nihai"]:
                 _engs.append("nihai")
         except: pass
@@ -74,7 +74,7 @@ def _ziwei(year,month,day,hour,minute=0,gender="male",engine="iztro"):
         try:
             sys.path.insert(0,os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
             from ziwei_paipan import by_solar
-            result["ziwei_paipan"]=by_solar(date_str,int(hour_dec),gender)
+            result["ziwei_paipan"]=by_solar(date_str,((hour+1)//2)%12,gender)
             _engs.append("ziwei_paipan")
         except Exception as e: result["ziwei_paipan_error"]=str(e)
     result["engine"]="+".join(_engs) if _engs else "none"

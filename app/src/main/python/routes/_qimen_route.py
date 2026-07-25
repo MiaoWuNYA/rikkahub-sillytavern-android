@@ -98,7 +98,7 @@ def _qimen(year,month,day,hour=None,minute=0,feature="all"):
     if feature in ("liuren","all"):
         try:
             _js_load("liuren-engine")
-            lr=json.loads(_js("liuren-engine",f"JSON.stringify(LiuRen.getLiuRenByDate(new Date({year},{month-1},{day},{hour or 12},{minute})))"))
+            lr=json.loads(_js("liuren-engine",f"JSON.stringify(LiuRen.getLiuRenByDate(new Date({year},{month-1},{day},{hour if hour is not None else 12},{minute})))"))
             if isinstance(lr, dict) and 'error' not in lr:
                 result["liuren"]=lr
                 _engs.append("LiuRen")

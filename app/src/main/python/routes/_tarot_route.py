@@ -21,6 +21,9 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, cards=None):
                 entry = {"id": entry, "reversed": False}
             cid, is_rev = entry["id"], entry.get("reversed", False)
             card = deck.get_card(cid)
+            if card is None:
+                cards.append({"position": sp.positions[i].rag_mapping if i < len(sp.positions) else None, "error": f"card not found: {cid}"})
+                continue
             dc = DrawnCard(card_id=card.card_id, card_name=card.card_name,
                            position_index=i, position_name="",
                            orientation=Orientation.REVERSED if is_rev else Orientation.UPRIGHT,
@@ -65,6 +68,10 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, cards=None):
             })
         except Exception:
             cards.append({"position": sp.positions[i].rag_mapping, "card_number": dc.card_number if hasattr(dc,'card_number') else None, "error": "card data partial"})
+    try:
+        ee_result = EE.full_analysis(drawn)
+    except Exception:
+        ee_result = {}
     result = {
         "system": "tarot", "engine": "arcanite-unified", "seed": seed,
         "spread": {
@@ -74,7 +81,7 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, cards=None):
         "layout": [{"x": lp.x, "y": lp.y} for lp in sp.layout.positions] if getattr(sp, "layout", None) and getattr(sp.layout, "positions", None) else None,
         "positions": [{"name": p.name, "rag": p.rag_mapping, "desc": p.short_description} for p in sp.positions]
     },
-        "cards": cards, "ee_analysis": EE.full_analysis(drawn),
+        "cards": cards, "ee_analysis": ee_result,
     }
     # 补全 EE 4个未包方法: 三牌尊贵/架桥/关系分类/流向
     try:

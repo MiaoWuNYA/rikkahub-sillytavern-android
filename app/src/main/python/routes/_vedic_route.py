@@ -17,6 +17,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
     hour_dec = hour + minute/60
 
     result={"system":"vedic"}
+    jd_local=None; place=None
     # ===== 默认主力: PyJHora (Python/Chaquopy) =====
     try:
         from jhora import const, utils
