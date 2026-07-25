@@ -134,7 +134,11 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             %(jd,today_jd,lat,lon)))
         if isinstance(c, dict) and 'error' not in c:
             result["caelus"]=c; _engs.append("Caelus")
-    except: pass
+        elif isinstance(c, dict) and 'error' in c:
+            result["caelus_error"]=f"caelus_js_error: {c['error']}"
+    except Exception as e:
+        result["caelus_error"]=f"caelus_exception: {e}"
+        import traceback; result["caelus_tb"]=traceback.format_exc()
     # 合盘: 仅当传入 partner_year 时触发
     if partner_year is not None:
         try:

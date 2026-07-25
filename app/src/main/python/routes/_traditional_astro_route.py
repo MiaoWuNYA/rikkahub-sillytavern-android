@@ -582,7 +582,11 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
         if isinstance(c, dict) and 'error' not in c:
             result["caelus"] = c
             result["engine"] += "+Caelus"
-    except: pass
+        elif isinstance(c, dict) and 'error' in c:
+            result["caelus_error"]=f"caelus_js_error: {c['error']}"
+    except Exception as e:
+        result["caelus_error"]=f"caelus_exception: {e}"
+        import traceback; result["caelus_tb"]=traceback.format_exc()
 
     result["_hint"] = (
         "flatlib:本质尊贵/偶然尊贵/Sect/阿拉伯点(7Hermetic+家族+13extra)/Almutem/气质/"
