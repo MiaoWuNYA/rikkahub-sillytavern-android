@@ -66,10 +66,24 @@ gua_description（卦辞）
 guaike（卦象综合分析）
 
 【IchingShifa JS 双引擎】
-iching_shifa_pan：decodePan 全量排盘
+iching_shifa_pan：decodePan 全量排盘（含以下子字段）
   → pan（完整解盘：纳甲/六亲/世应/神煞/旬空/月建）
+    → pan.benGua.yaoList[].xingXiu/suoBo（青衣星宿——已内嵌于排盘，不单独返回）
   → gaoDaoYiDuan（高岛易断——日本明治时期易学家高岛吞象的解卦体系）
-  → qingyiXingXiu（青衣星宿——民间派补充视角）
+  → fourPillars（四柱干支：year/month/day/hour 每柱为天干+地支字符串）
+  → riChen（日辰字符串，如"甲子"）
+  → dayKong（旬空：日柱对应的空亡地支）
+  → jieQi（当前节气信息）
+  → constants（常量参考库，包含：）
+    → GUA64_ORDER（64卦序）
+    → BAGUA_XIANG（八卦象）
+    → LIU_SHOU（六兽列表）
+    → LIU_QIN（六亲列表）
+    → XINGXIU_28（28宿列表）
+    → JIEQI_NAMES（节气名称表）
+    → TIAN_GAN / DI_ZHI（天干地支数组）
+    → JIAZI_60（60甲子列表）
+    → NAYIN_60（60纳音列表）
 ```
 
 ## 三、六爻纳甲核心解读规则

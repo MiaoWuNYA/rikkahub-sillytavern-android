@@ -112,8 +112,8 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
                 result["six_months_stars"] = i.find_six_mons(rg)
         except: pass
 
-    # === 第3步：JS 双引擎对照（同一爻值→decodePan完整排盘+高岛+青衣） ===
-    if yao_string:
+    # === 第3步：JS 双引擎对照（同一爻值→decodePan完整排盘+高岛+青衣+常量库） ===
+    if yao_string and method not in ("lueshifa", "three_number", "number_array", "manual_input"):
         try:
             yao_safe = json.dumps(yao_string)
             _js_load("iching-shifa-engine")
@@ -121,23 +121,95 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
                 "var r="+yao_safe+";"
                 "var pan=null;try{pan=IchingShifa.decodePan(r,{year:"+str(_yr)+",month:"+str(_mo)+",day:"+str(_dy)+",hour:12});}catch(e){pan={error:e.message}}"
                 "var gdyd=null;try{gdyd=IchingShifa.getGaoDaoYiDuan(r);}catch(e){}"
-                "var qyxx=null;try{qyxx=IchingShifa.calculateQingyiXingXiu(r,"+str(_yr)+","+str(_mo)+","+str(_dy)+");}catch(e){}"
-                # 日辰计算：1900-01-01=甲戌日(cycle idx 10)
+                # qingyi数据已在decodePan的benGua.yaoList[].xingXiu/suoBo中，不重复调
+                # 日辰计算
                 "var _rd=function(y,m,d){var t=new Date(y,m-1,d),r=new Date(1900,0,1);"
                 "var idx=((Math.round((t-r)/86400000)+10)%60+60)%60;"
                 "return ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'][idx%10]+['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'][idx%12]};"
                 "var riChen=_rd("+str(_yr)+","+str(_mo)+","+str(_dy)+");"
-                # 展开pan的所有顶层字段
+                # 四柱展开
+                "var siZhu=null;try{var sl=IchingShifa.solarToLunar("+str(_yr)+","+str(_mo)+","+str(_dy)+",12);siZhu={year:sl.yearGanZhi,month:sl.monthGanZhi,day:sl.dayGanZhi,hour:sl.hourGanZhi};}catch(e){}"
+                # 独立旬空
+                "var dayKong=null;try{if(pan&&pan.ganZhiDay){dayKong=IchingShifa.calcXunKong(pan.ganZhiDay.gz);}}catch(e){}"
+                # 当前节气
+                "var jieQi=null;try{jieQi=IchingShifa.getCurrentSolarTerm("+str(_yr)+","+str(_mo)+","+str(_dy)+");}catch(e){}"
+                # 展开pan顶层字段
                 "var liuyao={};"
                 "if(pan&&!pan.error){Object.keys(pan).forEach(function(k){liuyao[k]=pan[k]});}"
                 "liuyao.riChen=riChen;"
-                "JSON.stringify({pan:pan,gaoDaoYiDuan:gdyd,qingyiXingXiu:qyxx,liuyao:liuyao})"))
+                # 常量参考库（精简版）
+                "var consts=null;try{consts={"
+                "  GUA64_ORDER:IchingShifa.GUA64_ORDER,"
+                "  BAGUA_XIANG:IchingShifa.BAGUA_XIANG,"
+                "  LIU_SHOU:IchingShifa.LIU_SHOU,"
+                "  LIU_QIN:IchingShifa.LIU_QIN,"
+                "  XINGXIU_28:IchingShifa.XINGXIU_28,"
+                "  JIEQI_NAMES:IchingShifa.JIEQI_NAMES,"
+                "  TIAN_GAN:IchingShifa.TIAN_GAN,"
+                "  DI_ZHI:IchingShifa.DI_ZHI,"
+                "  JIAZI_60:IchingShifa.JIAZI_60,"
+                "  NAYIN_60:IchingShifa.NAYIN_60"
+                "};}catch(e){}"
+                "JSON.stringify({"
+                "  pan:pan,gaoDaoYiDuan:gdyd,liuyao:liuyao,"
+                "  fourPillars:siZhu,riChen:riChen,dayKong:dayKong,jieQi:jieQi,"
+                "  constants:consts"
+                "})"))
             if isinstance(js_decode, dict) and 'error' not in js_decode:
                 result["iching_shifa_pan"] = js_decode
                 result["engine"] += "+iching-shifa-engine"
-                # _hint 追加 JS 可用API
-                result["_hint"] += (" iching-shifa-engine(JS)完整排盘:本卦/之卦/互卦/纳甲/六亲/六神/世应/神煞/旬空/月建/动爻推辞+高岛易断+青衣星宿。"
-                    "自探索:Object.keys(IchingShifa)含timeQiGua/timeQiGua/lueshifa/threeNumberQiGua/solarToLunar/shenSha等。")
+                result["_hint"] += (" iching-shifa-engine(JS)完整排盘:本卦/之卦/互卦/纳甲/六亲/六神/世应/神煞/旬空/月建/动爻推辞+高岛易断+青衣星宿+四柱+节气+64卦库+纳音表+28宿+甲子。"
+                    "自探索:Object.keys(IchingShifa)含timeQiGua/lueshifa/threeNumberQiGua/numberArrayQiGua/manualQiGua/solarToLunar/shenSha等。")
+        except Exception as e:
+            if "py_error" not in result: result["py_error"] = str(e)
+    # === 第3.5步：JS引擎起卦法（lueshifa/threeNumber/numberArray/manual） ===
+    if method in ("lueshifa", "three_number", "number_array", "manual_input"):
+        try:
+            _js_load("iching-shifa-engine")
+            if method == "lueshifa":
+                yao_safe = json.loads(_js("iching-shifa-engine", "JSON.stringify(IchingShifa.lueshifa())"))
+            elif method == "three_number":
+                # 用seed作3数: 取前3组伪随机位
+                import hashlib
+                h=hashlib.md5(str(seed).encode()).hexdigest()
+                n1=int(h[0:4],16)%999+1; n2=int(h[4:8],16)%999+1; n3=int(h[8:12],16)%999+1
+                yao_safe = json.loads(_js("iching-shifa-engine",
+                    "JSON.stringify(IchingShifa.threeNumberQiGua(%d,%d,%d))" % (n1,n2,n3)))
+            elif method == "number_array":
+                import hashlib
+                h=hashlib.md5(str(seed).encode()).hexdigest()
+                nums=[int(h[i:i+2],16)%99+1 for i in range(0,12,2)]
+                hour_zhi=((_hr+1)//2)%12
+                yao_safe = json.loads(_js("iching-shifa-engine",
+                    "JSON.stringify(IchingShifa.numberArrayQiGua([%s],%d))" % (",".join(str(n) for n in nums),hour_zhi)))
+            elif method == "manual_input":
+                # manual_input需要从输入取爻值，这里先用seed确定性生成
+                yao_safe = _yao_from_seed(seed, "dayan")
+            if yao_safe:
+                if isinstance(yao_safe, str):
+                    yao_string = yao_safe
+                yao_safe = json.dumps(yao_string)
+                # decodePan + 巨量数据
+                js_decode = json.loads(_js("iching-shifa-engine",
+                    "var r="+yao_safe+";"
+                    "var pan=null;try{pan=IchingShifa.decodePan(r,{year:%d,month:%d,day:%d,hour:12});}catch(e){pan={error:e.message}}"
+                    "var gdyd=null;try{gdyd=IchingShifa.getGaoDaoYiDuan(r);}catch(e){}"
+                    "var siZhu=null;try{var sl=IchingShifa.solarToLunar(%d,%d,%d,12);siZhu={year:sl.yearGanZhi,month:sl.monthGanZhi,day:sl.dayGanZhi,hour:sl.hourGanZhi};}catch(e){}"
+                    "var jieQi=null;try{jieQi=IchingShifa.getCurrentSolarTerm(%d,%d,%d);}catch(e){}"
+                    "var liuyao={};if(pan&&!pan.error){Object.keys(pan).forEach(function(k){liuyao[k]=pan[k]});}"
+                    "var consts=null;try{consts={"
+                    "  GUA64_ORDER:IchingShifa.GUA64_ORDER,BAGUA_XIANG:IchingShifa.BAGUA_XIANG,"
+                    "  LIU_SHOU:IchingShifa.LIU_SHOU,LIU_QIN:IchingShifa.LIU_QIN,"
+                    "  XINGXIU_28:IchingShifa.XINGXIU_28,JIEQI_NAMES:IchingShifa.JIEQI_NAMES,"
+                    "  TIAN_GAN:IchingShifa.TIAN_GAN,DI_ZHI:IchingShifa.DI_ZHI,"
+                    "  JIAZI_60:IchingShifa.JIAZI_60,NAYIN_60:IchingShifa.NAYIN_60"
+                    "};}catch(e){}"
+                    "JSON.stringify({pan:pan,gaoDaoYiDuan:gdyd,liuyao:liuyao,fourPillars:siZhu,jieQi:jieQi,constants:consts})"
+                    % (_yr,_mo,_dy,_yr,_mo,_dy,_yr,_mo,_dy)))
+                if isinstance(js_decode, dict) and 'error' not in js_decode:
+                    result["iching_shifa_pan"] = js_decode
+                    result["engine"] += "+iching-shifa-engine(lueshifa)"
+                    result["_hint"] += " method="+method+" 起卦法经由JS引擎排盘。"
         except Exception as e:
             if "py_error" not in result: result["py_error"] = str(e)
 
