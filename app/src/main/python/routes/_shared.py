@@ -8,8 +8,10 @@ def _js(lib, code):
     if _bridge:
         try:
             raw = _bridge.evalJavascript(lib, code)
+            # Handle Kotlin bridge errors (catch in PythonBridge.kt returns "Error: message")
+            if isinstance(raw, str) and raw.startswith("Error:"):
+                return json.dumps({"error": f"bridge:{raw}"}, ensure_ascii=False)
             # Kotlin bridge wraps eval results as {"result":"...","logs":"..."}
-            # Extract the actual JS result value
             try:
                 obj = json.loads(raw)
                 if isinstance(obj, dict) and "result" in obj:
@@ -24,7 +26,10 @@ def _js(lib, code):
 def _js_load(lib):
     if _bridge:
         try:
-            return _bridge.evalJavascript(lib, "")
+            raw = _bridge.evalJavascript(lib, "")
+            if isinstance(raw, str) and raw.startswith("Error:"):
+                return json.dumps({"error": f"bridge:{raw}"}, ensure_ascii=False)
+            return raw
         except Exception as e:
             return json.dumps({"error": f"load: {e}"}, ensure_ascii=False)
     return json.dumps({"error": "bridge not available"})

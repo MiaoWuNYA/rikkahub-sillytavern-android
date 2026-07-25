@@ -35,7 +35,9 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
         _engs[-1]="natalengine-js(ERROR)"
     # Caelus: 全量现代技法+对照+行运+推运+增补
     try:
-        _js_load("caelus-engine")
+        _js_load_ret=_js_load("caelus-engine")
+        if _js_load_ret and isinstance(_js_load_ret, str) and _js_load_ret.startswith("Error:"):
+            raise ValueError(f"Caelus load failed: {_js_load_ret[:500]}")
         today=datetime.datetime.now()
         today_jd=compute_jd(today.year,today.month,today.day,today.hour,today.minute,0)
         raw=_js("caelus-engine",
@@ -134,8 +136,8 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "})"
             "}catch(e){JSON.stringify({error:'js:'+e.message})}"
             %(jd,today_jd,lat,lon))
-        if not raw:
-            raise ValueError("Caelus JS returned empty string")
+        if not raw or (isinstance(raw, str) and raw.startswith("Error:")):
+            raise ValueError(f"Caelus JS returned: {raw[:500]!r}")
         c=json.loads(raw)
         if isinstance(c, dict) and 'error' not in c:
             result["caelus"]=c; _engs.append("Caelus")
