@@ -160,19 +160,19 @@ val dataSourceModule = module {
             baseDir = java.io.File(ctx.filesDir, "workspaces"),
             shellRunner = ProotShellRunner(
                 nativeLibraryDir = java.io.File(ctx.applicationInfo.nativeLibraryDir),
-                extraBindMounts = listOf(
-                    WorkspaceBindMount(
-                        source = java.io.File(ctx.filesDir, FileFolders.SKILLS).apply { mkdirs() },
-                        target = "/skills",
-                    ),
-                    WorkspaceBindMount(
-                        source = java.io.File(ctx.filesDir, FileFolders.TOOL_OUTPUTS).apply { mkdirs() },
-                        target = "/tool_outputs",
-                    ),
-                    WorkspaceBindMount(
-                        source = java.io.File(ctx.filesDir, FileFolders.UPLOAD).apply { mkdirs() },
-                        target = "/upload",
-                    ),
+            ),
+            bindMounts = listOf(
+                WorkspaceBindMount(
+                    source = java.io.File(ctx.filesDir, FileFolders.SKILLS).apply { mkdirs() },
+                    target = "/skills",
+                ),
+                WorkspaceBindMount(
+                    source = java.io.File(ctx.filesDir, FileFolders.TOOL_OUTPUTS).apply { mkdirs() },
+                    target = "/tool_outputs",
+                ),
+                WorkspaceBindMount(
+                    source = java.io.File(ctx.filesDir, FileFolders.UPLOAD).apply { mkdirs() },
+                    target = "/upload",
                 ),
             ),
         )
