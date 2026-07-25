@@ -42,7 +42,7 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
         "_hint":"ichingshifa(Python)+iching-shifa-engine(JS)双引擎对照:同一爻值各自出解读。"
         "本路由返回六爻+梅花+太玄+荆诀四套数据。"
         "六爻与梅花易数共用数据入口(system='六爻'或'梅花易数'或'六爻梅花')，数据含六爻+梅花双份。"
-        "六爻与梅花同源同卦：meihua_data从iching_shifa_js_yao(yan_string)转换而来，"
+        "六爻与梅花同源同卦：meihua_data从iching_shifa_js_yao(yao_string)转换而来，"
         "两种体系用同一组数值起卦，结果一致。"
         "system='六爻'→六爻纳甲模板, system='梅花易数'→梅花易数模板。"
         "seed参数用于复盘:传同一seed+同一method→同一组卦。"
@@ -56,17 +56,8 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
         "number(Py均匀随机,同seed同结果→可复盘)。"
         "JS起卦法用JS引擎生成爻值→Python引擎同样解码→双引擎对照。"}
 
-    # ---- 确定有效日期时间 ----
-    _seed_dt=None
-    if seed is not None and not (year and month and day):
-        import datetime as _dt
-        try:
-            _s=seed/1000 if seed>1e12 else seed
-            _seed_dt=_dt.datetime.fromtimestamp(_s,_dt.timezone.utc).astimezone(_dt.timezone(_dt.timedelta(hours=8)))
-        except: pass
+    # ---- 确定有效日期时间（未传参时取当前时间） ----
     _yr,_mo,_dy,_hr,_min=year,month,day,12,0
-    if _seed_dt is not None:
-        _yr,_mo,_dy,_hr,_min=_seed_dt.year,_seed_dt.month,_seed_dt.day,_seed_dt.hour,_seed_dt.minute
     if not (_yr and _mo and _dy):
         import datetime as _dt
         _now=_dt.datetime.now()
@@ -210,25 +201,23 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
         except Exception as e:
             if "py_error" not in result: result["py_error"] = str(e)
 
-    # ---- 梅花易数（从yao_string转换，与六爻同源同卦） ----
+    # ---- 梅花易数（从yao_string经官方API转换，与六爻同源同卦） ----
     if yao_string:
         try:
             import meihua_yi
             result["engine"] += "+meihua_yi"
-            mh_lines=[1 if c in '79' else 0 for c in yao_string]
-            mh_moving=[i for i,c in enumerate(yao_string) if c in '69']
+            # 用引擎官方 qigua_coin(coin_results=...) 做转换，不走手动构造
             coin_vals=[int(c) for c in yao_string]
-            coin_names={6:"老阴",7:"少阳",8:"少阴",9:"老阳"}
+            mh_lines,mh_moving,mh_details=meihua_yi.qigua_coin(coin_results=coin_vals)
             result["meihua_data"]={
-                "lines":mh_lines,"moving":mh_moving,
-                "details":[{"yao":i+1,"sum":coin_vals[i],"name":coin_names[coin_vals[i]],
-                           "line":"阳" if mh_lines[i] else "阴","moving":i in mh_moving} for i in range(6)]}
+                "lines":mh_lines,"moving":mh_moving,"details":mh_details}
             result["meihua_gua_name"]=meihua_yi.get_gua_name(mh_lines)
             if mh_moving:
+                # 有动爻 → 走引擎 compute_hexagrams 做体用
                 hg=meihua_yi.compute_hexagrams(mh_lines,mh_moving)
                 result["meihua_formatted"]=meihua_yi.format_hexagram_text(mh_lines,mh_moving)
             else:
-                # 无动爻：下卦为体、上卦为用（梅花传统规则）
+                # 无动爻 → 引擎 compute_hexagrams 会崩，手工搭体用
                 mu=mh_lines[1:4]+mh_lines[2:5]; bg=meihua_yi.BAGUA
                 hg={"main":{"lines":mh_lines,"bot":bg[tuple(mh_lines[0:3])],"top":bg[tuple(mh_lines[3:6])]},
                     "mutual":{"lines":mu,"bot":bg[tuple(mu[0:3])],"top":bg[tuple(mu[3:6])]},
