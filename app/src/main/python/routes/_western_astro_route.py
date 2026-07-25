@@ -41,7 +41,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
         today=datetime.datetime.now()
         today_jd=compute_jd(today.year,today.month,today.day,today.hour,today.minute,0)
         raw=_js("caelus-engine",
-            "try{"
+            "var __cr;try{"
             "var e=new Caelus.Engine(Caelus.embeddedData);var jd=%s;var today=%s;"
             "var _lat=%f;var _lon=%f;var chart=e.chartAt(jd,_lat,_lon,{});"
             "var isDay=Caelus.isDayChart(e,jd,_lat,_lon);"
@@ -84,7 +84,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "allB.forEach(function(b){try{var bc=chart.bodies[b];"
             "if(bc){var si=Math.floor(bc.lon/30)%%12;elCount[Math.floor(si/4)]++}}catch(e){}});"
             "var elementBalance={};elems.forEach(function(e,i){elementBalance[e]=elCount[i]});"
-            "JSON.stringify({"
+            "__cr=JSON.stringify({"
             "signature:Caelus.chartSignature(chart),elementBalance:elementBalance,patterns:Caelus.detectPatterns(chart),"
             "lots:Caelus.lots(e,jd,_lat,_lon),isDay:isDay,voidOfCourse:Caelus.voidOfCourse(e,jd),chartBrief:Caelus.chartBrief(ctx),"
             "firdaria:sf(function(){return Caelus.firdaria(isDay,jd)}),"
@@ -134,7 +134,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "solarReturn:sf(function(){return Caelus.solarReturn(e,jd,jd,jd+365*3)}),"
             "lunarReturn:sf(function(){return Caelus.lunarReturn(e,jd,jd+27,jd+27*3)})"
             "})"
-            "}catch(e){JSON.stringify({error:'js:'+e.message})}"
+            "}catch(e){__cr=JSON.stringify({error:'js:'+e.message})};__cr"
             %(jd,today_jd,lat,lon))
         if not raw or (isinstance(raw, str) and raw.startswith("Error:")):
             raise ValueError(f"Caelus JS returned: {raw[:500]!r}")
