@@ -44,9 +44,14 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
         "六爻与梅花易数共用数据入口(system='六爻'或'梅花易数'或'六爻梅花')，数据含六爻+梅花双份。"
         "system='六爻'→六爻纳甲模板, system='梅花易数'→梅花易数模板。"
         "seed参数用于复盘:传同一seed+同一method→同一组卦。"
-        "起卦法:time(Py时间)/js_time(JS时间梅花法)/dayan(JS大衍)/lueshifa(JS略筮)/"
-        "three_number(JS三数)/number_array(JS数组)/"
-        "manual_input/manual(手动输爻,需传yao参数)/coin(Py硬币)/number(Py随机)。"
+        "起卦法及特性: "
+        "time(默认,Python时间→不可复盘)/js_time(JS梅花时间)/"
+        "dayan(JS大衍,真随机→不可复盘)/lueshifa(JS略筮,真随机→不可复盘)/"
+        "three_number(JS三数,同seed同结果→可复盘)/"
+        "number_array(JS数组,同seed同结果→可复盘)/"
+        "manual_input/manual(手动输爻,需传yao参数)/"
+        "coin(Python硬币,同seed同结果→可复盘)/"
+        "number(Py均匀随机,同seed同结果→可复盘)。"
         "JS起卦法用JS引擎生成爻值→Python引擎同样解码→双引擎对照。"}
 
     # ---- 确定有效日期时间 ----

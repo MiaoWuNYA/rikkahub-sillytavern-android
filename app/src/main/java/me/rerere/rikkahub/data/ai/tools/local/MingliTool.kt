@@ -54,9 +54,17 @@ fun createMingliTool(context: Context): Tool = Tool(
                             " 灵数卡巴拉: {year, month, day, word, feature=numerology|gematria|odu|tarot|tree|all}" +
                             " 奇门(含大六壬): {year, month, day, hour, minute?, feature=qimen|liuren|all} (大六壬需feature=liuren)" +
                             " 六爻梅花(六爻与梅花易数模板已分开, system='六爻'→六爻模板, '梅花易数'→梅花易数模板): " +
-                            "{method=time(默认,Python时间)/js_time(JS梅花时间)/dayan(JS大衍筮法)/lueshifa(JS略筮法)/" +
-                            "three_number(JS三数)/number_array(JS数组)/manual或manual_input(手动输爻,需yao参数)/" +
-                            "coin(Python硬币)/number(Python随机), seed, year, month, day, feature, yao(手动输爻时传6位6789字符串)}")
+                            "{method=time(默认,Python时间起卦,不可复盘)/" +
+                            "js_time(JS梅花易数时间起卦,不可复盘)/" +
+                            "dayan(JS大衍筮法,真随机,不可复盘)/" +
+                            "lueshifa(JS略筮法,真随机,不可复盘)/" +
+                            "three_number(JS三数起卦,同seed同结果,可复盘)/" +
+                            "number_array(JS数组起卦,同seed同结果,可复盘)/" +
+                            "manual或manual_input(手动输爻,需传yao参数)/" +
+                            "coin(Python硬币法,同seed同结果,可复盘)/" +
+                            "number(Python均匀随机,同seed同结果,可复盘), " +
+                            "seed(传回可复盘受种子控制的method), year, month, day, feature, " +
+                            "yao(manual/manual_input时传6位6789字符串)}")
                 })
             },
             required = listOf("system")
