@@ -87,6 +87,23 @@ from dataclasses import asdict
 
 import pytz
 
+# ── Mock svgwrite — stellium's visualization modules import it at module level,
+#     but we never call any chart drawing functions. An empty mock avoids the
+#     "No module named 'svgwrite'" crash without installing the actual package. ──
+import sys, types
+_svgwrite = types.ModuleType('svgwrite')
+class _Mock:
+    def __call__(self, *a, **kw): return _Mock()
+    def __getattr__(self, n): return _Mock()
+    def __enter__(self): return self
+    def __exit__(self, *a): pass
+_svgwrite.Drawing = _Mock()
+_svgwrite.container = types.ModuleType('svgwrite.container')
+_svgwrite.container.Group = _Mock()
+sys.modules['svgwrite'] = _svgwrite
+sys.modules['svgwrite.container'] = _svgwrite.container
+del sys, types
+
 _EPHE_SET = False
 
 
@@ -185,7 +202,6 @@ def _stellium(
     # ── 1. Base chart (always) ──
     chart_dt = _build_dt(year, month, day, hour, minute, tz)
     chart = _chart(chart_dt, lat, lon, tz, house_system)
-
     result = chart.to_dict()
     result["system"] = "stellium"
     result["prompt_text"] = chart.to_prompt_text()
