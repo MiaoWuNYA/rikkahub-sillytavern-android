@@ -14,18 +14,21 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
     jd = compute_jd(year, month, day, hour, minute, tz_num)
     hour_dec = hour + minute/60
     _js_load("natalengine-engine")
-    natal=json.loads(_js("natalengine-engine",
-        "function _c(o){if(o&&o.name){delete o.startMonth;delete o.startDay;delete o.endMonth;delete o.endDay;delete o.traits;delete o.shadow}return o}"
-        "var r=NatalEngine.calculateAstrology('%s',%f,%f,%f,%f);"
-        "if(r.sun&&r.sun.sign)_c(r.sun.sign);"
-        "if(r.moon&&r.moon.sign)_c(r.moon.sign);"
-        "if(r.rising&&r.rising.sign)_c(r.rising.sign);"
-        "Object.values(r.planets||{}).forEach(function(p){if(p.sign)_c(p.sign)});"
-        "Object.values(r.nodes||{}).forEach(function(n){if(n.sign)_c(n.sign)});"
-        "if(r.midheaven&&r.midheaven.sign)_c(r.midheaven.sign);"
-        "delete r.bigThree;delete r.summary;delete r.useEphemeris;delete r.hasLocation;delete r.allAspects;"
-        "JSON.stringify(r)"
-        % (date_str, hour_dec, tz_num, lat, lon)))
+    try:
+        natal=json.loads(_js("natalengine-engine",
+            "function _c(o){if(o&&o.name){delete o.startMonth;delete o.startDay;delete o.endMonth;delete o.endDay;delete o.traits;delete o.shadow}return o}"
+            "var r=NatalEngine.calculateAstrology('%s',%f,%f,%f,%f);"
+            "if(r.sun&&r.sun.sign)_c(r.sun.sign);"
+            "if(r.moon&&r.moon.sign)_c(r.moon.sign);"
+            "if(r.rising&&r.rising.sign)_c(r.rising.sign);"
+            "Object.values(r.planets||{}).forEach(function(p){if(p.sign)_c(p.sign)});"
+            "Object.values(r.nodes||{}).forEach(function(n){if(n.sign)_c(n.sign)});"
+            "if(r.midheaven&&r.midheaven.sign)_c(r.midheaven.sign);"
+            "delete r.bigThree;delete r.summary;delete r.useEphemeris;delete r.hasLocation;delete r.allAspects;"
+            "JSON.stringify(r)"
+            % (date_str, hour_dec, tz_num, lat, lon)))
+    except Exception as e:
+        return {"system":"western_astrology","engine":"natalengine-js","error":str(e)}
     result={"system":"western_astrology","engine":"natalengine-js","natal":natal}
     _engs=["natalengine-js"]
     if isinstance(natal, dict) and 'error' in natal:

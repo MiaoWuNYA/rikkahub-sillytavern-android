@@ -122,22 +122,26 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, cards=None):
         try:
             kn = _to_kab(c.card_number, c.suit)
             if kn is None:
-                kaabalah_results.append(json.dumps({"error": f"unknown suit {c.suit}", "card": c.card_name}, ensure_ascii=False))
-                kaabalah_themes.append(json.dumps({"error": "number conversion failed"}))
+                kaabalah_results.append({"error": f"unknown suit {c.suit}", "card": c.card_name})
+                kaabalah_themes.append({"error": "number conversion failed"})
                 continue
-            corr = _js("kaabalah-engine", f"JSON.stringify(Kaabalah.getTarotCorrespondenceProfile({{tarotCardNumber:{kn}}}))")
-            kaabalah_results.append(corr)
-            theme = _js("kaabalah-engine", f"JSON.stringify(Kaabalah.getTarotThemeProfile({{tarotCardNumber:{kn}}}))")
-            kaabalah_themes.append(theme)
+            corr_str = _js("kaabalah-engine", f"JSON.stringify(Kaabalah.getTarotCorrespondenceProfile({{tarotCardNumber:{kn}}}))")
+            kaabalah_results.append(json.loads(corr_str))
+            theme_str = _js("kaabalah-engine", f"JSON.stringify(Kaabalah.getTarotThemeProfile({{tarotCardNumber:{kn}}}))")
+            kaabalah_themes.append(json.loads(theme_str))
         except Exception:
-            kaabalah_results.append(json.dumps({"error": "kaabalah bridge failed", "card": c.card_name}, ensure_ascii=False))
-            kaabalah_themes.append(json.dumps({"error": "kaabalah bridge failed"}))
+            kaabalah_results.append({"error": "kaabalah bridge failed", "card": c.card_name})
+            kaabalah_themes.append({"error": "kaabalah bridge failed"})
     result["kaabalah"] = kaabalah_results
     result["kaabalah_themes"] = kaabalah_themes
     try:
-        result["kaabalah_tree"] = _js("kaabalah-engine", "JSON.stringify(Kaabalah.buildKaabalisticMapData({}))")
-    except: pass
+        tree = _js("kaabalah-engine", "JSON.stringify(Kaabalah.buildKaabalisticMapData({}))")
+        result["kaabalah_tree"] = json.loads(tree)
+    except Exception:
+        pass
     try:
-        result["kaabalah_colors"] = _js("kaabalah-engine", "JSON.stringify(Kaabalah.COLORS_DATA)")
-    except: pass
+        colors = _js("kaabalah-engine", "JSON.stringify(Kaabalah.COLORS_DATA)")
+        result["kaabalah_colors"] = json.loads(colors)
+    except Exception:
+        pass
     return result
