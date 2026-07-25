@@ -33,7 +33,7 @@ def _yao_from_seed(seed, method):
     return "".join(str(v) for v in rng.choices([6, 7, 8, 9], weights=ws, k=6))
 
 # ===== 六爻梅花 =====
-def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="all"):
+def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="all", yao=None):
     # 自动生成seed以实现复盘
     if seed is None:
         seed = _rnd.randrange(1, 2**31)
@@ -43,7 +43,10 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
         "本路由返回六爻+梅花+太玄+荆诀四套数据。"
         "六爻与梅花易数共用数据入口(system='六爻'或'梅花易数'或'六爻梅花')，数据含六爻+梅花双份。"
         "system='六爻'→六爻纳甲模板, system='梅花易数'→梅花易数模板。"
-        "seed参数用于复盘:传同一seed+同一method→同一组卦。"}
+        "seed参数用于复盘:传同一seed+同一method→同一组卦。"
+        "起卦法:time(Py时间)/dayan(JS大衍)/lueshifa(JS略筮)/three_number(JS三数)/"
+        "number_array(JS数组)/manual_input(手动输爻)/coin(Py硬币)/number(Py随机)。"
+        "JS起卦法用JS引擎生成爻值→Python引擎同样解码→双引擎对照。"}
 
     # ---- 确定有效日期时间 ----
     _seed_dt=None
@@ -62,7 +65,15 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
         _yr,_mo,_dy,_hr,_min=_now.year,_now.month,_now.day,12,0
     result["date_used"] = {"year":_yr,"month":_mo,"day":_dy}
 
-    # === 第1步：生成爻值 + Python引擎排盘 ===
+    # === 第1步：统一爻值生成（择优引擎起卦） ===
+    #   time(now)         → Python qigua_time（直接produces hex_data）
+    #   dayan             → JS IchingShifa.dayan()（大衍筮法）
+    #   lueshifa          → JS IchingShifa.lueshifa()（略筮法）
+    #   three_number      → JS IchingShifa.threeNumberQiGua()（3数）
+    #   number_array      → JS IchingShifa.numberArrayQiGua()（数组+时辰）
+    #   manual_input      → 接受外部yao参数；无则seed生成→JS manualQiGua()校验
+    #   coin/number       → Python _yao_from_seed（JS无对应起卦）
+    #   * 所有非time方法：Python引擎从同一爻值重建hex_data，保证双引擎全量数据
     yao_string = None
     hex_data = None
     try:
@@ -70,31 +81,51 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
         from ichingshifa import Iching
         i = Iching()
 
-        if method in ("time", "now"):
+        if method == "time":
             hex_data = i.qigua_time(_yr,_mo,_dy,12,0)
             yao_string = _extract_yao(hex_data)
+        elif method == "dayan":
+            _js_load("iching-shifa-engine")
+            yao_string = json.loads(_js("iching-shifa-engine", "JSON.stringify(IchingShifa.dayan())"))
+        elif method == "lueshifa":
+            _js_load("iching-shifa-engine")
+            yao_string = json.loads(_js("iching-shifa-engine", "JSON.stringify(IchingShifa.lueshifa())"))
+        elif method == "three_number":
+            _js_load("iching-shifa-engine")
+            import hashlib
+            h=hashlib.md5(str(seed).encode()).hexdigest()
+            n1=int(h[0:4],16)%999+1; n2=int(h[4:8],16)%999+1; n3=int(h[8:12],16)%999+1
+            yao_string = json.loads(_js("iching-shifa-engine",
+                "JSON.stringify(IchingShifa.threeNumberQiGua(%d,%d,%d))" % (n1,n2,n3)))
+        elif method == "number_array":
+            _js_load("iching-shifa-engine")
+            import hashlib
+            h=hashlib.md5(str(seed).encode()).hexdigest()
+            nums=[int(h[i:i+2],16)%99+1 for i in range(0,12,2)]
+            hour_zhi=_hr//2+1
+            yao_string = json.loads(_js("iching-shifa-engine",
+                "JSON.stringify(IchingShifa.numberArrayQiGua([%s],%d))" % (",".join(str(n) for n in nums),hour_zhi)))
+        elif method == "manual_input":
+            raw = yao if yao else _yao_from_seed(seed, "dayan")
+            _js_load("iching-shifa-engine")
+            v = json.loads(_js("iching-shifa-engine", "JSON.stringify(IchingShifa.manualQiGua(%s))" % json.dumps(raw)))
+            if v: yao_string = v
+        elif method in ("coin", "number"):
+            yao_string = _yao_from_seed(seed, method)
         else:
-            # dayan/manual/number/coin: 先确定爻值
-            if method in ("dayan", "manual"):
-                yao_string = _yao_from_seed(seed, "dayan")
-            elif method == "number":
-                yao_string = _yao_from_seed(seed, "number")
-            elif method == "coin":
-                yao_string = _yao_from_seed(seed, "coin")
-            else:
-                hex_data = i.qigua_time(_yr,_mo,_dy,12,0)
-                yao_string = _extract_yao(hex_data)
+            hex_data = i.qigua_time(_yr,_mo,_dy,12,0)
+            yao_string = _extract_yao(hex_data)
 
-            # 非time方法: 从爻值手动构建hex_data(qigua_manual不存在于原库)
-            if yao_string and not hex_data:
-                gz = i.gangzhi(_yr,_mo,_dy,12,0)
-                dg = gz[2] if gz and len(gz) > 2 else None
-                details = i.mget_bookgua_details(yao_string)
-                if details:
-                    by = yao_string.replace("6","7").replace("9","8")
-                    bg = i.decode_gua(yao_string, dg) if dg else {}
-                    zg = i.decode_gua(by, dg) if dg else {}
-                    hex_data = {"日期":"%d年%d月%d日"%(_yr,_mo,_dy), "大衍筮法":details, "本卦":bg, "之卦":zg, "飛神":""}
+        # 非time方法：Python引擎从爻值重建hex_data（双引擎对照）
+        if yao_string and not hex_data:
+            gz = i.gangzhi(_yr,_mo,_dy,12,0)
+            dg = gz[2] if gz and len(gz) > 2 else None
+            details = i.mget_bookgua_details(yao_string)
+            if details:
+                by = yao_string.replace("6","7").replace("9","8")
+                bg = i.decode_gua(yao_string, dg) if dg else {}
+                zg = i.decode_gua(by, dg) if dg else {}
+                hex_data = {"日期":"%d年%d月%d日"%(_yr,_mo,_dy), "大衍筮法":details, "本卦":bg, "之卦":zg, "飛神":""}
 
         if hex_data:
             result["ichingshifa"] = hex_data
@@ -103,7 +134,7 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
     except Exception as e:
         result["py_error"] = str(e)
 
-    # === 第2步：Python 引擎 enrichment（六兽） ===
+    # === 第2步：Python enrichment（六兽） ===
     if hex_data and yao_string:
         try:
             gz = i.gangzhi(_yr,_mo,_dy,12,0)
@@ -112,8 +143,9 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
                 result["six_months_stars"] = i.find_six_mons(rg)
         except: pass
 
-    # === 第3步：JS 双引擎对照（同一爻值→decodePan完整排盘+高岛+青衣+常量库） ===
-    if yao_string and method not in ("lueshifa", "three_number", "number_array", "manual_input"):
+    # === 第3步：JS decodePan（通用——凡有爻值均调用） ===
+    #    decodePan内嵌了calculateQingyiXingXiu，不额外调
+    if yao_string:
         try:
             yao_safe = json.dumps(yao_string)
             _js_load("iching-shifa-engine")
@@ -121,23 +153,16 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
                 "var r="+yao_safe+";"
                 "var pan=null;try{pan=IchingShifa.decodePan(r,{year:"+str(_yr)+",month:"+str(_mo)+",day:"+str(_dy)+",hour:12});}catch(e){pan={error:e.message}}"
                 "var gdyd=null;try{gdyd=IchingShifa.getGaoDaoYiDuan(r);}catch(e){}"
-                # qingyi数据已在decodePan的benGua.yaoList[].xingXiu/suoBo中，不重复调
-                # 日辰计算
                 "var _rd=function(y,m,d){var t=new Date(y,m-1,d),r=new Date(1900,0,1);"
                 "var idx=((Math.round((t-r)/86400000)+10)%60+60)%60;"
                 "return ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'][idx%10]+['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'][idx%12]};"
                 "var riChen=_rd("+str(_yr)+","+str(_mo)+","+str(_dy)+");"
-                # 四柱展开
                 "var siZhu=null;try{var sl=IchingShifa.solarToLunar("+str(_yr)+","+str(_mo)+","+str(_dy)+",12);siZhu={year:sl.yearGanZhi,month:sl.monthGanZhi,day:sl.dayGanZhi,hour:sl.hourGanZhi};}catch(e){}"
-                # 独立旬空
                 "var dayKong=null;try{if(pan&&pan.ganZhiDay){dayKong=IchingShifa.calcXunKong(pan.ganZhiDay.gz);}}catch(e){}"
-                # 当前节气
                 "var jieQi=null;try{jieQi=IchingShifa.getCurrentSolarTerm("+str(_yr)+","+str(_mo)+","+str(_dy)+");}catch(e){}"
-                # 展开pan顶层字段
                 "var liuyao={};"
                 "if(pan&&!pan.error){Object.keys(pan).forEach(function(k){liuyao[k]=pan[k]});}"
                 "liuyao.riChen=riChen;"
-                # 常量参考库（精简版）
                 "var consts=null;try{consts={"
                 "  GUA64_ORDER:IchingShifa.GUA64_ORDER,"
                 "  BAGUA_XIANG:IchingShifa.BAGUA_XIANG,"
@@ -159,57 +184,7 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
                 result["iching_shifa_pan"] = js_decode
                 result["engine"] += "+iching-shifa-engine"
                 result["_hint"] += (" iching-shifa-engine(JS)完整排盘:本卦/之卦/互卦/纳甲/六亲/六神/世应/神煞/旬空/月建/动爻推辞+高岛易断+青衣星宿+四柱+节气+64卦库+纳音表+28宿+甲子。"
-                    "自探索:Object.keys(IchingShifa)含timeQiGua/lueshifa/threeNumberQiGua/numberArrayQiGua/manualQiGua/solarToLunar/shenSha等。")
-        except Exception as e:
-            if "py_error" not in result: result["py_error"] = str(e)
-    # === 第3.5步：JS引擎起卦法（lueshifa/threeNumber/numberArray/manual） ===
-    if method in ("lueshifa", "three_number", "number_array", "manual_input"):
-        try:
-            _js_load("iching-shifa-engine")
-            if method == "lueshifa":
-                yao_safe = json.loads(_js("iching-shifa-engine", "JSON.stringify(IchingShifa.lueshifa())"))
-            elif method == "three_number":
-                # 用seed作3数: 取前3组伪随机位
-                import hashlib
-                h=hashlib.md5(str(seed).encode()).hexdigest()
-                n1=int(h[0:4],16)%999+1; n2=int(h[4:8],16)%999+1; n3=int(h[8:12],16)%999+1
-                yao_safe = json.loads(_js("iching-shifa-engine",
-                    "JSON.stringify(IchingShifa.threeNumberQiGua(%d,%d,%d))" % (n1,n2,n3)))
-            elif method == "number_array":
-                import hashlib
-                h=hashlib.md5(str(seed).encode()).hexdigest()
-                nums=[int(h[i:i+2],16)%99+1 for i in range(0,12,2)]
-                hour_zhi=_hr//2+1  # 子→1, 丑→2, ...→12
-                yao_safe = json.loads(_js("iching-shifa-engine",
-                    "JSON.stringify(IchingShifa.numberArrayQiGua([%s],%d))" % (",".join(str(n) for n in nums),hour_zhi)))
-            elif method == "manual_input":
-                # manual_input需要从输入取爻值，这里先用seed确定性生成
-                yao_safe = _yao_from_seed(seed, "dayan")
-            if yao_safe:
-                if isinstance(yao_safe, str):
-                    yao_string = yao_safe
-                yao_safe = json.dumps(yao_string)
-                # decodePan + 巨量数据
-                js_decode = json.loads(_js("iching-shifa-engine",
-                    "var r="+yao_safe+";"
-                    "var pan=null;try{pan=IchingShifa.decodePan(r,{year:%d,month:%d,day:%d,hour:12});}catch(e){pan={error:e.message}}"
-                    "var gdyd=null;try{gdyd=IchingShifa.getGaoDaoYiDuan(r);}catch(e){}"
-                    "var siZhu=null;try{var sl=IchingShifa.solarToLunar(%d,%d,%d,12);siZhu={year:sl.yearGanZhi,month:sl.monthGanZhi,day:sl.dayGanZhi,hour:sl.hourGanZhi};}catch(e){}"
-                    "var jieQi=null;try{jieQi=IchingShifa.getCurrentSolarTerm(%d,%d,%d);}catch(e){}"
-                    "var liuyao={};if(pan&&!pan.error){Object.keys(pan).forEach(function(k){liuyao[k]=pan[k]});}"
-                    "var consts=null;try{consts={"
-                    "  GUA64_ORDER:IchingShifa.GUA64_ORDER,BAGUA_XIANG:IchingShifa.BAGUA_XIANG,"
-                    "  LIU_SHOU:IchingShifa.LIU_SHOU,LIU_QIN:IchingShifa.LIU_QIN,"
-                    "  XINGXIU_28:IchingShifa.XINGXIU_28,JIEQI_NAMES:IchingShifa.JIEQI_NAMES,"
-                    "  TIAN_GAN:IchingShifa.TIAN_GAN,DI_ZHI:IchingShifa.DI_ZHI,"
-                    "  JIAZI_60:IchingShifa.JIAZI_60,NAYIN_60:IchingShifa.NAYIN_60"
-                    "};}catch(e){}"
-                    "JSON.stringify({pan:pan,gaoDaoYiDuan:gdyd,liuyao:liuyao,fourPillars:siZhu,jieQi:jieQi,constants:consts})"
-                    % (_yr,_mo,_dy,_yr,_mo,_dy,_yr,_mo,_dy)))
-                if isinstance(js_decode, dict) and 'error' not in js_decode:
-                    result["iching_shifa_pan"] = js_decode
-                    result["engine"] += "+iching-shifa-engine("+method+")"
-                    result["_hint"] += " method="+method+" 起卦法经由JS引擎排盘。"
+                    "自探索:Object.keys(IchingShifa)含lueshifa/threeNumberQiGua/numberArrayQiGua/manualQiGua/solarToLunar/shenSha等。")
         except Exception as e:
             if "py_error" not in result: result["py_error"] = str(e)
 
