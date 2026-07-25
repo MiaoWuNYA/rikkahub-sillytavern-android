@@ -44,8 +44,9 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
         "六爻与梅花易数共用数据入口(system='六爻'或'梅花易数'或'六爻梅花')，数据含六爻+梅花双份。"
         "system='六爻'→六爻纳甲模板, system='梅花易数'→梅花易数模板。"
         "seed参数用于复盘:传同一seed+同一method→同一组卦。"
-        "起卦法:time(Py时间)/dayan(JS大衍)/lueshifa(JS略筮)/three_number(JS三数)/"
-        "number_array(JS数组)/manual_input(手动输爻)/coin(Py硬币)/number(Py随机)。"
+        "起卦法:time(Py时间)/js_time(JS时间梅花法)/dayan(JS大衍)/lueshifa(JS略筮)/"
+        "three_number(JS三数)/number_array(JS数组)/"
+        "manual_input/manual(手动输爻,需传yao参数)/coin(Py硬币)/number(Py随机)。"
         "JS起卦法用JS引擎生成爻值→Python引擎同样解码→双引擎对照。"}
 
     # ---- 确定有效日期时间 ----
@@ -105,7 +106,18 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
             hour_zhi=_hr//2+1
             yao_string = json.loads(_js("iching-shifa-engine",
                 "JSON.stringify(IchingShifa.numberArrayQiGua([%s],%d))" % (",".join(str(n) for n in nums),hour_zhi)))
-        elif method == "manual_input":
+        elif method == "js_time":
+            _js_load("iching-shifa-engine")
+            yao_string = json.loads(_js("iching-shifa-engine",
+                "try{var sl=IchingShifa.solarToLunar(%d,%d,%d,12);"
+                "var yz=sl.yearGanZhi?sl.yearGanZhi[1]:'子';"
+                "var hz=sl.hourGanZhi?sl.hourGanZhi[1]:'子';"
+                "JSON.stringify(IchingShifa.timeQiGua(%d,%d,%d,12,sl.lunarMonth,sl.lunarDay,yz,hz));"
+                "}catch(e){JSON.stringify({error:e.message})}"
+                % (_yr,_mo,_dy,_yr,_mo,_dy)))
+            if isinstance(yao_string, dict) and 'error' in yao_string:
+                yao_string = None
+        elif method in ("manual_input", "manual"):
             raw = yao if yao else _yao_from_seed(seed, "dayan")
             _js_load("iching-shifa-engine")
             v = json.loads(_js("iching-shifa-engine", "JSON.stringify(IchingShifa.manualQiGua(%s))" % json.dumps(raw)))
