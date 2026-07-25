@@ -108,7 +108,7 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
             import hashlib
             h=hashlib.md5(str(seed).encode()).hexdigest()
             nums=[int(h[i:i+2],16)%99+1 for i in range(0,12,2)]
-            hour_zhi=_hr//2+1
+            hour_zhi=((_hr+1)//2)%12+1
             yao_string = json.loads(_js("iching-shifa-engine",
                 "JSON.stringify(IchingShifa.numberArrayQiGua([%s],%d))" % (",".join(str(n) for n in nums),hour_zhi)))
         elif method == "js_time":
@@ -124,8 +124,9 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
         elif method in ("manual_input", "manual"):
             raw = yao if yao else _yao_from_seed(seed, "dayan")
             _js_load("iching-shifa-engine")
-            v = json.loads(_js("iching-shifa-engine", "JSON.stringify(IchingShifa.manualQiGua(%s))" % json.dumps(raw)))
-            if v: yao_string = v
+            _m = _js("iching-shifa-engine", "JSON.stringify(IchingShifa.manualQiGua(%s))" % json.dumps(raw))
+            if _m and _m.startswith('"') and len(_m) >= 8:
+                yao_string = json.loads(_m)
         elif method in ("coin", "number"):
             yao_string = _yao_from_seed(seed, method)
         else:
@@ -146,6 +147,9 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
         if hex_data:
             result["ichingshifa"] = hex_data
             result["engine"] += "ichingshifa"
+
+        if yao_string:
+            result["iching_shifa_js_yao"] = yao_string
 
     except Exception as e:
         result["py_error"] = str(e)
@@ -200,7 +204,7 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, feature="
                 result["iching_shifa_pan"] = js_decode
                 result["engine"] += "+iching-shifa-engine"
                 result["_hint"] += (" iching-shifa-engine(JS)完整排盘:本卦/之卦/互卦/纳甲/六亲/六神/世应/神煞/旬空/月建/动爻推辞+高岛易断+青衣星宿+四柱+节气+64卦库+纳音表+28宿+甲子。"
-                    "自探索:Object.keys(IchingShifa)含lueshifa/threeNumberQiGua/numberArrayQiGua/manualQiGua/solarToLunar/shenSha等。")
+                    "自探索:Object.keys(IchingShifa)含lueshifa/threeNumberQiGua/numberArrayQiGua/manualQiGua/solarToLunar等。")
         except Exception as e:
             if "py_error" not in result: result["py_error"] = str(e)
 

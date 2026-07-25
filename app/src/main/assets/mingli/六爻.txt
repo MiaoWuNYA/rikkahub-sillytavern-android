@@ -48,23 +48,15 @@
 
 ```
 【六爻纳甲核心字段】
-iching_shifa_js_yao（核心！JS dayan() 产生的6位爻值，如 "697887"）
+iching_shifa_js_yao：6位爻值字符串（如"697887"），双引擎共用
   → 6=老阴(动) 8=少阴 9=老阳(动) 7=少阳
   → 老阴老阳为"动爻"——全卦解读的焦点
-daykong（旬空/时辰空亡）
-  → 旬空之爻暂时"无力"，如同人不在场
-  → 出空填实（过此日/月）后恢复力量
-innate_cegui（先天策軌數）
-acquired_cegui（後天策軌數）
-  → 策軌數是整体能量的"数值化表达"，大数为能量强、小数为能量弱
+ichingshifa：Python ichingshifa 引擎原始排盘
+  → 日期 / 大衍筮法（卦名+卦爻辞+动爻分析）
+  → 本卦 / 之卦（卦名+用神+六亲）
+  → 飛神
 six_months_stars（六兽/六神：青龙/朱雀/勾陈/腾蛇/白虎/玄武）
   → 六兽修饰爻的含义——不改变吉凶，改变"吉凶的表现形式"
-shier_luck（十二运：长生沐浴冠带等十二状态）
-  → 爻在十二运中的位置决定其"生旺休囚"
-decode_gua（本卦解读）
-decode_two_gua（本卦+之卦合并解读）
-gua_description（卦辞）
-guaike（卦象综合分析）
 
 【IchingShifa JS 双引擎】
 iching_shifa_pan：decodePan 全量排盘（含以下子字段）
