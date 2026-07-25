@@ -59,7 +59,7 @@ def _ziwei(year,month,day,hour,minute=0,gender="male",engine="iztro"):
                 "heavenlyStem:h.hourly.heavenlyStem,earthlyBranch:h.hourly.earthlyBranch,"
                 "palaceNames:h.hourly.palaceNames,mutagen:h.hourly.mutagen,stars:h.hourly.stars}"
                 "}"
-                "})" % (date_str, ((hour+1)//2)%12, gender)))
+                "})" % (date_str, (hour+1)//2, gender)))
             if isinstance(result.get("iztro"), dict) and 'error' not in result["iztro"]:
                 _engs.append("iztro")
         except: pass
@@ -74,7 +74,7 @@ def _ziwei(year,month,day,hour,minute=0,gender="male",engine="iztro"):
         try:
             sys.path.insert(0,os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
             from ziwei_paipan import by_solar
-            result["ziwei_paipan"]=by_solar(date_str,((hour+1)//2)%12,gender)
+            result["ziwei_paipan"]=by_solar(date_str,(hour+1)//2,gender)
             _engs.append("ziwei_paipan")
         except Exception as e: result["ziwei_paipan_error"]=str(e)
     result["engine"]="+".join(_engs) if _engs else "none"
