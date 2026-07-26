@@ -27,12 +27,11 @@ def _js_load(lib):
     if _bridge:
         try:
             raw = _bridge.evalJavascript(lib, "")
-            if isinstance(raw, str) and raw.startswith("Error:"):
-                return json.dumps({"error": f"bridge:{raw}"}, ensure_ascii=False)
+            # Bridge returns raw "Error: ..." on failure — route checks this prefix
             return raw
         except Exception as e:
-            return json.dumps({"error": f"load: {e}"}, ensure_ascii=False)
-    return json.dumps({"error": "bridge not available"})
+            return f"Error: {e}"
+    return "Error: bridge not available"
 
 def compute_jd(year, month, day, hour, minute, tz_offset):
     """Compute Julian Day matching Caelus.isoToJd() result exactly.

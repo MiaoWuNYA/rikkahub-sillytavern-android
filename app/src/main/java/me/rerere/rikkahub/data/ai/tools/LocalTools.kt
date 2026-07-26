@@ -280,6 +280,15 @@ class LocalTools(private val context: Context, private val eventBus: AppEventBus
                                 "ok"
                             }
                             "load" -> {
+                                // Also check contextDirty here — if previous eval timed out, the old
+                                // context was abandoned by the eval branch. Without this check, load
+                                // uses the stale (or abandoned-null) context while loadedLibraries still
+                                // has entries, so it skips loading. Then the next eval creates a fresh
+                                // context with no libraries loaded → "'X' is not defined".
+                                if (contextDirty) {
+                                    abandonJSContext()
+                                    contextDirty = false
+                                }
                                 val lib = library ?: throw IllegalArgumentException("library is required for action='load'")
                                 val ctx = getOrCreateJSContext()
                                 if (lib !in loadedLibraries) {

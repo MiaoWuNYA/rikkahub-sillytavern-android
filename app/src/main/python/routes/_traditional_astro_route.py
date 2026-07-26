@@ -482,9 +482,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
         sun_lon = planets["sun"]["lon"]
         moon_lon = planets["moon"]["lon"]
         asc_idx = int(asc_lon / 30)
-        _js_load_ret=_js_load("caelus-engine")
-        if _js_load_ret and isinstance(_js_load_ret, str) and _js_load_ret.startswith("Error:"):
-            raise ValueError(f"Caelus load failed: {_js_load_ret[:500]}")
+        _js_load("caelus-engine")
 
 
         js_code = (
@@ -591,13 +589,10 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             "}),"
             "})"
         )
-        raw=_js("caelus-engine",
+        c = json.loads(_js("caelus-engine",
             js_code % (jd, lat, lon, "true" if is_day else "false",
                        year, month - 1, day, hour, minute,
-                       asc_idx))
-        if not raw or (isinstance(raw, str) and raw.startswith("Error:")):
-            raise ValueError(f"Caelus JS returned: {raw[:500]!r}")
-        c = json.loads(raw)
+                       asc_idx)))
 
         if isinstance(c, dict) and 'error' not in c:
             result["caelus"] = c
