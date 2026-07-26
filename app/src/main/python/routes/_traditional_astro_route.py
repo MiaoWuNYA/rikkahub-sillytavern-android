@@ -539,7 +539,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             "transitPositions:(function(){var tp={};p7.concat(['mean_node']).forEach(function(b){try{"
             "var lon=e.longitude(b,nowJd,{zodiac:'tropical'});"
             "var sg=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(lon/30)%%12];"
-            "tp[b]={lon:lon,sign:sg}}}catch(ex){});return tp})(),"
+            "tp[b]={lon:lon,sign:sg}}catch(ex){}});return tp})(),"
             # 赤纬相位
             "declinationAspects:sf(function(){return Caelus.declinationAspects(e,p7,nowJd,1)}),"
             # 行星留（全7星）
@@ -548,10 +548,25 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             # 行星回归（水金火木土3年窗口）
             "returns:(function(){var r={};['mercury','venus','mars','jupiter','saturn'].forEach(function(b){"
             "r[b]=sf(function(){return Caelus.returns(e,b,jd,jd,jd+365*3,'tropical').slice(0,3)})});return r})(),"
-            # 映点 + 反映点
-            "antiscionSun:Caelus.antiscion(%f),antiscionMoon:Caelus.antiscion(%f),"
-            "contraAntiscionSun:Caelus.contraAntiscion(%f),"
-            "contraAntiscionMoon:Caelus.contraAntiscion(%f),"
+            # 映点 + 反映点（全7星）
+            "antiscion:{"
+            "sun:Caelus.antiscion(chart.bodies.sun.lon),"
+            "moon:Caelus.antiscion(chart.bodies.moon.lon),"
+            "mercury:Caelus.antiscion(chart.bodies.mercury.lon),"
+            "venus:Caelus.antiscion(chart.bodies.venus.lon),"
+            "mars:Caelus.antiscion(chart.bodies.mars.lon),"
+            "jupiter:Caelus.antiscion(chart.bodies.jupiter.lon),"
+            "saturn:Caelus.antiscion(chart.bodies.saturn.lon)"
+            "},"
+            "contraAntiscion:{"
+            "sun:Caelus.contraAntiscion(chart.bodies.sun.lon),"
+            "moon:Caelus.contraAntiscion(chart.bodies.moon.lon),"
+            "mercury:Caelus.contraAntiscion(chart.bodies.mercury.lon),"
+            "venus:Caelus.contraAntiscion(chart.bodies.venus.lon),"
+            "mars:Caelus.contraAntiscion(chart.bodies.mars.lon),"
+            "jupiter:Caelus.contraAntiscion(chart.bodies.jupiter.lon),"
+            "saturn:Caelus.contraAntiscion(chart.bodies.saturn.lon)"
+            "},"
             # 时辰 + 恒星 + 月相 + 日月食 + 空亡 + 日出日落 + 中间点
             "planetaryHour:Caelus.planetaryHour(e,nowJd,_lat,_lon),"
             "starConjunctions:e.starConjunctions(chart,{orb:.5,maxMag:4.0}),"
@@ -579,8 +594,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
         raw=_js("caelus-engine",
             js_code % (jd, lat, lon, "true" if is_day else "false",
                        year, month - 1, day, hour, minute,
-                       asc_idx,
-                       float(sun_lon), float(moon_lon), float(sun_lon), float(moon_lon)))
+                       asc_idx))
         if not raw or (isinstance(raw, str) and raw.startswith("Error:")):
             raise ValueError(f"Caelus JS returned: {raw[:500]!r}")
         c = json.loads(raw)

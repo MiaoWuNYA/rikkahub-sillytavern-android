@@ -127,7 +127,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             # 宫位头(Placidus) + 当前行运位置
             "cusps:chart.cusps,"
             "transitPositions:(function(){var tp={};p10.concat(['mean_node','chiron']).forEach(function(b){try{tp[b]={lon:e.longitude(b,today,{zodiac:'tropical'}),"
-            "sign:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(e.longitude(b,today,{zodiac:'tropical'})/30)%%12]}}}catch(ex){});return tp})(),"
+            "sign:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(e.longitude(b,today,{zodiac:'tropical'})/30)%%12]}}catch(ex){}});return tp})(),"
             "chiron:sf(function(){return{lon:e.longitude('chiron',jd,{zodiac:'tropical'}),"
             "sign:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(e.longitude('chiron',jd,{zodiac:'tropical'})/30)%%12]}}),"
             "astrocartography:sf(function(){return Caelus.astrocartography(e,jd,['sun','moon','venus','mars','jupiter','saturn'],-60,60,5)}),"

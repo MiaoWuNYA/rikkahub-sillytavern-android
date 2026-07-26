@@ -31,8 +31,8 @@ fun createMingliTool(context: Context): Tool = Tool(
         "AI在拿到数据后，调用mingli_guide读取解读模板。" +
         "支持系统: 塔罗 | 雷诺曼 | 八字 | 紫微 | 现代西洋占星 | 传统西洋占星 | " +
         "吠陀 | 人类图 | 灵数卡巴拉 | 奇门(含大六壬) | 六爻(含梅花易数) | 深度古典占星(基于stellium组件引擎)。" +
-        "西洋占星分两种风格: 现代西洋占星(心理/成长取向) vs 传统西洋占星(事件判断取向)。" +
-        "深度古典占星(stellium)是组件化的深度引擎，支持Hellenistic/Medieval占星全栈(尊贵/互容/阿拉伯点/Firdaria/ZR/主限推运等)",
+        "西洋占星分两种风格: 现代西洋占星(心理/成长取向) vs 传统西洋占星(事件判断/卜卦取向)。" +
+        "深度古典占星(stellium)是组件化的深度引擎，支持Hellenistic/Medieval占星全栈(尊贵/互容/阿拉伯点/Firdaria/ZR/主限推运/卜卦等)",
     parameters = {
         InputSchema.Obj(
             properties = buildJsonObject {
