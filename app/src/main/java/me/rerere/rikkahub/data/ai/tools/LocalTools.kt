@@ -226,7 +226,7 @@ class LocalTools(private val context: Context, private val eventBus: AppEventBus
                 "- library: asset filename without .js (for action='load') — loads once, cached\n" +
                 "- function: (optional) call a global function by name with JSON args\n" +
                 "- code: JavaScript code to execute (for action='eval')\n" +
-                "- timeout: (optional) seconds, default 30, max 60",
+                "- timeout: (optional) seconds, default 60, max 60",
             parameters = {
                 InputSchema.Obj(
                     properties = buildJsonObject {
@@ -255,7 +255,7 @@ class LocalTools(private val context: Context, private val eventBus: AppEventBus
                         })
                         put("timeout", buildJsonObject {
                             put("type", "integer")
-                            put("description", "Timeout in seconds (default 30, max 60)")
+                            put("description", "Timeout in seconds (default 60, max 60)")
                         })
                     }
                 )
@@ -267,7 +267,7 @@ class LocalTools(private val context: Context, private val eventBus: AppEventBus
                 val code = it.jsonObject["code"]?.jsonPrimitive?.contentOrNull
                 val funcName = it.jsonObject["function"]?.jsonPrimitive?.contentOrNull
                 val rawArgs = it.jsonObject["args"]?.toString() // works for both arrays and objects
-                val timeoutSec = (it.jsonObject["timeout"]?.jsonPrimitive?.contentOrNull ?: "30").toLongOrNull() ?: 30L
+                val timeoutSec = (it.jsonObject["timeout"]?.jsonPrimitive?.contentOrNull ?: "60").toLongOrNull() ?: 60L
                 val safeTimeout = minOf(timeoutSec, 60L)
 
                 var future: java.util.concurrent.Future<String>? = null

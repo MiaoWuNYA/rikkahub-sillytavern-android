@@ -33,61 +33,105 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
     _engs=["natalengine-js"]
     if isinstance(natal, dict) and 'error' in natal:
         _engs[-1]="natalengine-js(ERROR)"
-    # Caelus: 全量现代技法+对照+行运+推运+增补
+    # Caelus: 分阶段JS评估 (全量现代技法+对照+行运+推运+增补)
+    caelus_data = {}
+    caelus_errors = []
     try:
         _js_load("caelus-engine")
-        today=datetime.datetime.now()
-        today_jd=compute_jd(today.year,today.month,today.day,today.hour,today.minute,0)
-        c=json.loads(_js("caelus-engine",
+        today = datetime.datetime.now()
+        today_jd = compute_jd(today.year, today.month, today.day, today.hour, today.minute, 0)
+
+        def _cp(name, js):
+            try:
+                raw = _js("caelus-engine", js)
+                p = json.loads(raw)
+                if isinstance(p, dict) and 'error' not in p:
+                    caelus_data.update(p)
+                elif isinstance(p, dict) and 'error' in p:
+                    caelus_errors.append(f"{name}: {p['error']}")
+                else:
+                    caelus_errors.append(f"{name}: type={type(p).__name__}")
+            except Exception as e:
+                caelus_errors.append(f"{name}: {e}")
+
+        # Phase 1 (fast ~5s): Engine init + chart + fast scalar data
+        _cp("p1",
             "var __cr;try{"
             "var e=new Caelus.Engine(Caelus.embeddedData);var jd=%s;var today=%s;"
-            "var _lat=%f;var _lon=%f;var chart=e.chartAt(jd,_lat,_lon,{});"
+            "var _lat=%f;var _lon=%f;"
+            "var chart=e.chartAt(jd,_lat,_lon,{});"
             "var isDay=Caelus.isDayChart(e,jd,_lat,_lon);"
             "var ascIdx=Math.floor(chart.angles.asc/30);"
-            "var fortuneLon=0;try{fortuneLon=Caelus.lots(e,jd,_lat,_lon).fortune.lon;}catch(e){}"
             "var ctx=Caelus.interpretationContext(chart);"
             "var sf=function(f){try{return f()}catch(ex){return null}};"
             "var isDayStr=isDay?'day':'night';"
             "var p7=['sun','moon','mercury','venus','mars','jupiter','saturn'];"
             "var p10=p7.concat(['uranus','neptune','pluto']);"
+            "var _allBodies=p10.concat(['mean_node']);"
+            "var _elems=['Fire','Earth','Air','Water'];var _elCount=[0,0,0,0];"
+            "_allBodies.forEach(function(b){try{var bc=chart.bodies[b];"
+            "if(bc){var si=Math.floor(bc.lon/30)%%12;_elCount[Math.floor(si/4)]++}}catch(ex){}});"
+            "var elementBalance={};_elems.forEach(function(e,i){elementBalance[e]=_elCount[i]});"
+            "var _ph={};_allBodies.forEach(function(b){try{var bc=chart.bodies[b];if(bc)_ph[b]=bc.house}catch(ex){}});"
+            "var _pd={};_allBodies.forEach(function(b){try{var bc=chart.bodies[b];if(bc)_pd[b]=bc.dignities}catch(ex){}});"
+            "__cr=JSON.stringify({"
+            "signature:Caelus.chartSignature(chart),elementBalance:elementBalance,"
+            "patterns:Caelus.detectPatterns(chart),"
+            "lots:Caelus.lots(e,jd,_lat,_lon),isDay:isDay,"
+            "voidOfCourse:Caelus.voidOfCourse(e,jd),"
+            "chartBrief:Caelus.chartBrief(ctx),"
+            "housesWholeSign:Caelus.housesWholeSign(chart.angles.asc),"
+            "cusps:chart.cusps,"
+            "vertex:chart.angles.vertex,"
+            "eastPoint:chart.angles.eastPoint,"
+            "planetHouses:_ph,aspects:chart.aspects,planetDignities:_pd"
+            "})"
+            "}catch(ex){__cr=JSON.stringify({error:'p1:'+ex.message})};__cr"
+            % (jd, today_jd, lat, lon))
+
+        # Phase 2 (mid ~8s): Per-planet computations (dignity, pheno, oob, midpoints, starConjunctions, antiscion, etc.)
+        _cp("p2",
+            "var __cr;try{"
             "var dScores={};p7.forEach(function(p){try{var b=chart.bodies[p];if(b)dScores[p]=Caelus.dignityScore(p,b.lon,isDayStr)}catch(ex){}});"
             "var dignOf={};p7.forEach(function(b){dignOf[b]=sf(function(){return Caelus.dignityOf(e,b,jd)})});"
             "var ph={};p7.forEach(function(b){ph[b]=sf(function(){return Caelus.pheno(e,b,jd)})});"
-            # stations for all p7 planets
-            "var allStations={};p7.forEach(function(b){allStations[b]=sf(function(){return Caelus.stations(e,b,jd,jd+365,5)})});"
-            # out-of-bounds for all planets
             "var oob={};p10.forEach(function(b){oob[b]=sf(function(){return{outOfBounds:Caelus.outOfBounds(e,b,jd),margin:Caelus.outOfBoundsMargin(e,b,jd)}})});"
-            # midpoints
             "var mp={};mp.sunMoon=sf(function(){return Caelus.midpointLon(chart.bodies.sun.lon,chart.bodies.moon.lon)});"
             "mp.ascMc=sf(function(){return Caelus.midpointLon(chart.angles.asc,chart.angles.mc)});"
             "mp.sunAsc=sf(function(){return Caelus.midpointLon(chart.bodies.sun.lon,chart.angles.asc)});"
             "mp.moonAsc=sf(function(){return Caelus.midpointLon(chart.bodies.moon.lon,chart.angles.asc)});"
-            # returns for inner planets (Mercury, Venus, Mars, Jupiter, Saturn)
-            "var ret={};['mercury','venus','mars','jupiter','saturn'].forEach(function(b){"
-            "ret[b]=sf(function(){return Caelus.returns(e,b,jd,jd,jd+365*3,'tropical').slice(0,3)})});"
-            # rise/set times for Sun and Moon (rise and set separately)
-            "var rs={};rs.sun={rise:sf(function(){return Caelus.riseSet(e,'sun',jd,_lat,_lon,'rise',{searchDays:1})}),"
-            "set:sf(function(){return Caelus.riseSet(e,'sun',jd,_lat,_lon,'set',{searchDays:1})})};"
-            "rs.moon={rise:sf(function(){return Caelus.riseSet(e,'moon',jd,_lat,_lon,'rise',{searchDays:1})}),"
-            "set:sf(function(){return Caelus.riseSet(e,'moon',jd,_lat,_lon,'set',{searchDays:1})})};"
-            # zodiac crossings: next sign entry for each planet
-            "var xings={};p10.forEach(function(b){"
-            "xings[b]=sf(function(){"
-            "var nextSign=Math.ceil(chart.bodies[b].lon/30)*30;"
-            "return Caelus.crossings(e,b,nextSign,jd,jd+365,'tropical',1)"
-            "})});"
-            # element balance from ALL bodies (not just Ascendant)
-            "var elems=['Fire','Earth','Air','Water'];"
-            "var elCount=[0,0,0,0];var allB=p10.concat(['mean_node']);"
-            "allB.forEach(function(b){try{var bc=chart.bodies[b];"
-            "if(bc){var si=Math.floor(bc.lon/30)%%12;elCount[Math.floor(si/4)]++}}catch(e){}});"
-            "var elementBalance={};elems.forEach(function(e,i){elementBalance[e]=elCount[i]});"
+            "var _sp={};p7.forEach(function(b){_sp[b]=sf(function(){return Caelus.solarPhase(e,b,jd)})});"
             "__cr=JSON.stringify({"
-            "signature:Caelus.chartSignature(chart),elementBalance:elementBalance,patterns:Caelus.detectPatterns(chart),"
-            "lots:Caelus.lots(e,jd,_lat,_lon),isDay:isDay,voidOfCourse:Caelus.voidOfCourse(e,jd),chartBrief:Caelus.chartBrief(ctx),"
+            "dignityScores:dScores,dignityOf:dignOf,pheno:ph,oob:oob,midpoints:mp,"
+            "solarPhase:_sp,"
+            "antiscionSun:Caelus.antiscion(chart.bodies.sun.lon),"
+            "antiscionMoon:Caelus.antiscion(chart.bodies.moon.lon),"
+            "contraAntiscionSun:Caelus.contraAntiscion(chart.bodies.sun.lon),"
+            "contraAntiscionMoon:Caelus.contraAntiscion(chart.bodies.moon.lon),"
+            "planetaryHour:Caelus.planetaryHour(e,jd,_lat,_lon),"
+            "almuten:Caelus.almuten(chart.angles.asc,isDayStr),"
+            "declinationAspects:sf(function(){return Caelus.declinationAspects(e,p7,jd,1)}),"
+            "starConjunctions:sf(function(){return e.starConjunctions(chart,{orb:.5,maxMag:2.5})}),"
+            "chiron:{lon:e.longitude('chiron',jd,{zodiac:'tropical'}),"
+            "sign:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(e.longitude('chiron',jd,{zodiac:'tropical'})/30)%12]}"
+            "})"
+            "}catch(ex){__cr=JSON.stringify({error:'p2:'+ex.message})};__cr")
+
+        # Phase 3 (mid ~10s): Timing techniques (profections, firdaria, progressions, stations, returns, lunarPhases, eclipses, riseSet, crossings, harmonic)
+        _cp("p3",
+            "var __cr;try{"
+            "var _stations={};p7.forEach(function(b){_stations[b]=sf(function(){return Caelus.stations(e,b,jd,jd+365,5)})});"
+            "var _returns={};['mercury','venus','mars','jupiter','saturn'].forEach(function(b){"
+            "_returns[b]=sf(function(){return Caelus.returns(e,b,jd,jd,jd+365*3,'tropical').slice(0,3)})});"
+            "var _xings={};p10.forEach(function(b){"
+            "_xings[b]=sf(function(){"
+            "var ns=Math.ceil(chart.bodies[b].lon/30)*30;"
+            "return Caelus.crossings(e,b,ns,jd,jd+365,'tropical',1)"
+            "})});"
+            "__cr=JSON.stringify({"
             "firdaria:sf(function(){return Caelus.firdaria(isDay,jd)}),"
             "profections:Caelus.profection(ascIdx,jd,jd+365),"
-            "primaryDirections:sf(function(){return Caelus.primaryDirections(e,jd,_lat,_lon)}),solarArc:Caelus.solarArc(e,jd,jd),"
+            "solarArc:Caelus.solarArc(e,jd,jd),"
             "progressedMoon:sf(function(){return Caelus.progressedLongitude(e,'moon',jd,jd+365*30)}),"
             "progressedSun:sf(function(){return Caelus.progressedLongitude(e,'sun',jd,jd+365*30)}),"
             "progressedOther:{mercury:sf(function(){return Caelus.progressedLongitude(e,'mercury',jd,jd+365*30)}),"
@@ -95,52 +139,51 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "mars:sf(function(){return Caelus.progressedLongitude(e,'mars',jd,jd+365*30)}),"
             "jupiter:sf(function(){return Caelus.progressedLongitude(e,'jupiter',jd,jd+365*30)}),"
             "saturn:sf(function(){return Caelus.progressedLongitude(e,'saturn',jd,jd+365*30)})},"
-            "declinationAspects:sf(function(){return Caelus.declinationAspects(e,p7,jd,1)}),"
-            "oob:oob,midpoints:mp,returns:ret,stations:allStations,riseSet:rs,"
-            "starConjunctions:sf(function(){return e.starConjunctions(chart,{orb:.5,maxMag:2.5})}),"
-            "antiscionSun:Caelus.antiscion(chart.bodies.sun.lon),antiscionMoon:Caelus.antiscion(chart.bodies.moon.lon),"
-            "contraAntiscionSun:Caelus.contraAntiscion(chart.bodies.sun.lon),contraAntiscionMoon:Caelus.contraAntiscion(chart.bodies.moon.lon),"
-            "planetaryHour:Caelus.planetaryHour(e,jd,_lat,_lon),housesWholeSign:Caelus.housesWholeSign(chart.angles.asc),"
-            "harmonicChart:sf(function(){return Caelus.harmonicChart(e,jd,['sun','moon','venus','mars'],5)}),"
-            "dignityScores:dScores,"
-            "almuten:Caelus.almuten(chart.angles.asc,isDayStr),"
+            "stations:_stations,returns:_returns,"
             "lunarPhases:Caelus.lunarPhases(e,jd,jd+30,8),"
             "eclipses:sf(function(){return{solar:Caelus.solarEclipses(e,jd,jd+365).slice(0,2),"
             "lunar:Caelus.lunarEclipses(e,jd,jd+365).slice(0,2)}}),"
-            "pheno:ph,"
-            "solarPhase:{mercury:sf(function(){return Caelus.solarPhase(e,'mercury',jd)}),"
-            "venus:sf(function(){return Caelus.solarPhase(e,'venus',jd)}),"
-            "mars:sf(function(){return Caelus.solarPhase(e,'mars',jd)})},"
-            "dignityOf:dignOf,"
+            "riseSet:{sun:{rise:sf(function(){return Caelus.riseSet(e,'sun',jd,_lat,_lon,'rise',{searchDays:1})}),"
+            "set:sf(function(){return Caelus.riseSet(e,'sun',jd,_lat,_lon,'set',{searchDays:1})})},"
+            "moon:{rise:sf(function(){return Caelus.riseSet(e,'moon',jd,_lat,_lon,'rise',{searchDays:1})}),"
+            "set:sf(function(){return Caelus.riseSet(e,'moon',jd,_lat,_lon,'set',{searchDays:1})})}},"
+            "crossings:_xings,"
+            "harmonicChart:sf(function(){return Caelus.harmonicChart(e,jd,['sun','moon','venus','mars'],5)})"
+            "})"
+            "}catch(ex){__cr=JSON.stringify({error:'p3:'+ex.message})};__cr")
+
+        # Phase 4 (heaviest ~12s): primaryDirections, transits, parans, astrocartography, solarReturn, lunarReturn, gauquelinSector
+        _cp("p4",
+            "var __cr;try{"
+            "var _tp={};p10.concat(['mean_node','chiron']).forEach(function(b){try{"
+            "_tp[b]={lon:e.longitude(b,today,{zodiac:'tropical'}),"
+            "sign:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(e.longitude(b,today,{zodiac:'tropical'})/30)%12]}}catch(ex){}});"
+            "__cr=JSON.stringify({"
+            "primaryDirections:sf(function(){return Caelus.primaryDirections(e,jd,_lat,_lon)}),"
+            "transits:sf(function(){return Caelus.transitAspects(chart,e,today,{bodies:p7})}),"
+            "transitPositions:_tp,"
+            "parans:sf(function(){return Caelus.parans(e,jd,_lat,p7,30)}),"
+            "astrocartography:sf(function(){return Caelus.astrocartography(e,jd,['sun','moon','venus','mars','jupiter','saturn'],-60,60,5)}),"
+            "solarReturn:sf(function(){return Caelus.solarReturn(e,jd,jd,jd+365*3)}),"
+            "lunarReturn:sf(function(){return Caelus.lunarReturn(e,jd,jd+27,jd+27*3)}),"
             "gauquelinSector:{sun:sf(function(){return Caelus.gauquelinSector(e,'sun',jd,_lat,_lon)}),"
             "moon:sf(function(){return Caelus.gauquelinSector(e,'moon',jd,_lat,_lon)}),"
             "mercury:sf(function(){return Caelus.gauquelinSector(e,'mercury',jd,_lat,_lon)}),"
             "venus:sf(function(){return Caelus.gauquelinSector(e,'venus',jd,_lat,_lon)}),"
             "mars:sf(function(){return Caelus.gauquelinSector(e,'mars',jd,_lat,_lon)}),"
             "jupiter:sf(function(){return Caelus.gauquelinSector(e,'jupiter',jd,_lat,_lon)}),"
-            "saturn:sf(function(){return Caelus.gauquelinSector(e,'saturn',jd,_lat,_lon)})},"
-            "vertex:chart.angles.vertex,eastPoint:chart.angles.eastPoint,"
-            "parans:sf(function(){return Caelus.parans(e,jd,_lat,p7,30)}),"
-            "transits:sf(function(){return Caelus.transitAspects(chart,e,today,{bodies:p7})}),"
-            # 宫位头(Placidus) + 当前行运位置
-            "cusps:chart.cusps,"
-            "transitPositions:(function(){var tp={};p10.concat(['mean_node','chiron']).forEach(function(b){try{tp[b]={lon:e.longitude(b,today,{zodiac:'tropical'}),"
-            "sign:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(e.longitude(b,today,{zodiac:'tropical'})/30)%%12]}}catch(ex){}});return tp})(),"
-            "chiron:sf(function(){return{lon:e.longitude('chiron',jd,{zodiac:'tropical'}),"
-            "sign:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(e.longitude('chiron',jd,{zodiac:'tropical'})/30)%%12]}}),"
-            "astrocartography:sf(function(){return Caelus.astrocartography(e,jd,['sun','moon','venus','mars','jupiter','saturn'],-60,60,5)}),"
-            "solarReturn:sf(function(){return Caelus.solarReturn(e,jd,jd,jd+365*3)}),"
-            "lunarReturn:sf(function(){return Caelus.lunarReturn(e,jd,jd+27,jd+27*3)})"
+            "saturn:sf(function(){return Caelus.gauquelinSector(e,'saturn',jd,_lat,_lon)})}"
             "})"
-            "}catch(e){__cr=JSON.stringify({error:'js:'+e.message})};__cr"
-            %(jd,today_jd,lat,lon)))
-        if isinstance(c, dict) and 'error' not in c:
-            result["caelus"]=c; _engs.append("Caelus")
-        elif isinstance(c, dict) and 'error' in c:
-            result["caelus_error"]=f"caelus_js_error: {c['error']}"
+            "}catch(ex){__cr=JSON.stringify({error:'p4:'+ex.message})};__cr")
+
+        if caelus_data:
+            result["caelus"] = caelus_data
+            _engs.append("Caelus")
+        if caelus_errors:
+            result["caelus_error"] = "; ".join(caelus_errors)
     except Exception as e:
-        result["caelus_error"]=f"caelus_exception: {e}"
-        import traceback; result["caelus_tb"]=traceback.format_exc()
+        result["caelus_error"] = f"caelus_exception: {e}"
+        import traceback; result["caelus_tb"] = traceback.format_exc()
     # 合盘: 仅当传入 partner_year 时触发
     if partner_year is not None:
         try:
