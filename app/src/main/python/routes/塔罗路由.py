@@ -135,7 +135,7 @@
                        │   │  大牌→{correspondences:{path:{hebrewLetter,fromSphere,toSphere}, astrology:[{planet,zodiacSign,element}]}}│
                        │   │  小牌→{correspondences:{sphere,planets}}              │
                        │   │  宫廷→{correspondences:{sign,planets}}  ⚠️ Page→{element}│
-                       │   │  大牌例: N=1(The Magician)→Beth(Path12)→Chokmah   │
+                       │   │  大牌例: N=1(The Magician)→Beth(Path12)→Kether→Binah   │
                        │   ├─ 4b. 牌原型 ───────────────────────────────────── │
                        │   │  getTarotArchetype({tarotCardNumber:N})            │
                        │   │  → {pathId,hebrewLetter,astrology:[{element,planet,zodiacSign}]}│

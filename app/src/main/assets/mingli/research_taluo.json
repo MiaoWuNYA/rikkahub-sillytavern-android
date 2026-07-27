@@ -1,0 +1,173 @@
+{
+  "template": "塔罗",
+  "fileSize": 60224,
+  "verified": false,
+  "errors": [
+    {
+      "severity": "high",
+      "location": "卡巴拉（Kaabalah）融合解读指南 → 融合范例（魔术师路径）",
+      "currentText": "魔术师...位于Kether（纯粹太一）通往Chokmah（智慧）的路径",
+      "issue": "魔术师（Beth, Path 12）连接的是Kether到Binah（理解），而非Kether到Chokmah（智慧）。Kether到Chokmah（Path 11）对应的是愚人（Aleph）。这是生命之树路径的根本性对应错误。",
+      "correctContent": "魔术师...位于Kether（纯粹太一）通往Binah（理解/原阴）的路径。若目标为Chokmah则引用愚人：愚人在卡巴拉体系中位于Kether（纯粹太一）通往Chokmah（智慧）的路径",
+      "source": "黄金黎明体系标准卡巴拉对应（Regardie《The Golden Dawn》、Crowley《777》、Dion Fortune《The Mystical Qabalah》）：Path 11=Fool/Aleph=Kether→Chokmah, Path 12=Magician/Beth=Kether→Binah"
+    },
+    {
+      "severity": "high",
+      "location": "七层框架 → 棋局 → 九、主题提炼 · 数字含义节（第438-441行）",
+      "currentText": "7=内省/智慧(战车/七牌)",
+      "issue": "战车（Chariot, card 7）的核心传统含义是意志力、掌控、胜利、征服对立力量，而非“内省/智慧”。内省是隐士（Hermit, card 9）的特征。小阿卡纳的7号牌（Sevens）代表考验/评估，但也与“内省”不同源。该关键词完全偏离标准牌义。",
+      "correctContent": "7=考验/评估/掌控（战车/七牌），或更准确：7=意志力/掌控（大牌战车），考验/评估（小牌七牌）。若强调Chariot则用“掌控/胜利”而非“内省/智慧”。",
+      "source": "A.E. Waite《Pictorial Key to the Tarot》、Eden Gray《Complete Guide to the Tarot》、Rachel Pollack《Seventy-Eight Degrees of Wisdom》：战车=Willpower, Victory, Control, Conquest"
+    },
+    {
+      "severity": "high",
+      "location": "七层框架 → 棋局 → 九、主题提炼 · 数字含义节（第438-441行）",
+      "currentText": "5=变化/冲突(教皇/五牌)",
+      "issue": "教皇（Hierophant, card 5）的传统含义是传统、精神导师、遵从权威、教化，而非“变化/冲突”。变化/冲突是小阿卡纳5号牌（Fives）的含义，但教皇本身代表的是传统与稳定。将教皇归为“变化/冲突”严重误导解读。",
+      "correctContent": "5=传统/教导（教皇），或冲突/瓦解（小牌五牌）。两者含义不同，不应合并。5=精神指引/传统（教皇/五牌）",
+      "source": "Waite《Pictorial Key》、Pollack《Seventy-Eight Degrees of Wisdom》：教皇=Tradition, Spiritual Authority, Conformity, Teacher"
+    },
+    {
+      "severity": "high",
+      "location": "七层框架 → 棋局 → 九、主题提炼 · 数字含义节（第438-441行）",
+      "currentText": "8=力量/因果(力量/八牌)",
+      "issue": "力量（Strength, card 8 RWS）的传统含义是勇气、内在力量、耐心、以柔克刚，而非“因果”。因果（karma/causality）不是标准Tarot中力量牌的牌义，也不是小阿卡纳8号牌的典型含义（8号牌代表发展/行动/速度）。该关键词属于凭空添加。",
+      "correctContent": "8=力量/勇气（力量/八牌），或发展/行动（小牌八牌）。删除“因果”二字，或替换为“发展”。",
+      "source": "Waite《Pictorial Key》：Strength=Fortitude, Courage, Patience, Inner Strength。Eights in Tarot=Development, Movement, Progress"
+    },
+    {
+      "severity": "medium",
+      "location": "七层框架 → 棋局 → 九、主题提炼 · 数字学部分（第441-443行）",
+      "currentText": "11(22)=大师数(直觉/灵性), 33=大师数(慈悲/服务), 44=大师数(物质显化)",
+      "issue": "将11和22写作“11(22)”暗示两者等价，实际上11和22是两个不同的主数（Master Numbers），有根本不同的含义：11=直觉/灵感/启示，22=建造师/物质显化/大师建造者。11和22不可互换，也不应用括号合并为一个概念。此外44作为主数在标准塔罗数术中罕见——44通常进一步简化为8，在数术中极少作为独立主数使用。",
+      "correctContent": "11=大师数(直觉/灵感/启示)，22=大师数(建造师/物质显化)。若保留44应注明非主流用法。11和22各自独立列出，不可合并。",
+      "source": "标准毕达哥拉斯数术（Numerology）：11=Master Intuitive, 22=Master Builder。Javane《Numerology and the Divine Triangle》、Decoz《Numerology for the 21st Century》"
+    },
+    {
+      "severity": "medium",
+      "location": "全模板多处（标题、指南、变量命名）",
+      "currentText": "Kaabalah（全文件使用此拼写）",
+      "issue": "“Kaabalah”是罕见的非标准拼写。西方神秘学传统中最常见的拼写为Kabbalah（犹太传统）或Qabalah（金色黎明/克劳利系统用以区分犹太传统）。Kaabalah在权威参考文献中几乎不存在，可能导致用户在查阅资料时找不到对应信息。",
+      "correctContent": "如需区分犹太传统应使用Qabalah（西方神秘学专用），或使用通用的Kabbalah。至少应在首次出现时注明标准拼写。",
+      "source": "Dion Fortune《The Mystical Qabalah》、Israel Regardie《A Garden of Pomegranates》、Crowley《777》：标准拼写为Qabalah或Kabbalah"
+    },
+    {
+      "severity": "medium",
+      "location": "七层框架 → 秘传 → 数字学（第436-444行）",
+      "currentText": "数字含义表格中：2=对立/平衡(女祭司/恋人)，将恋人（Lovers, card 6）与数字2关联作为示例",
+      "issue": "恋人（Lovers）是6号牌而非2号牌。将其作为数字2的示例会引起用户困惑——新手可能误以为恋人是2号牌。如果要从大牌视角解释数字2，应仅使用女祭司（card 2），或注明“恋人象征二元性（非数字对应）”。",
+      "correctContent": "2=对立/平衡(女祭司)。如需引用恋人应单独说明：“恋人也涉及选择/二元性但同为6号牌”",
+      "source": "标准塔罗编号：High Priestess=2号牌, Lovers=6号牌。Waite/PCS RWS系统标准编号"
+    },
+    {
+      "severity": "medium",
+      "location": "七层框架 → 故事线 → 第三幕·转化 · 特殊规则（第285-288行）",
+      "currentText": "审判→优先解释觉察/回应召唤/阶段总结, 禁止默认解释命运裁决",
+      "issue": "Judgement（审判/20号牌）在RWS标准中代表觉醒、重生、内在召唤、因果清算、最终审判/评估。“命运裁决”（fate/judgment）确实是其传统含义之一（源自圣经“最后的审判”），完全禁止这一层含义矫枉过正。应区分“武断的命运判决”（应避免）和“公正的因果评估/觉醒召唤”（是标准牌义），而非完全禁止所有涉及审判的字面含义。",
+      "correctContent": "审判→优先解释觉醒/内在召唤/自我评估/阶段总结, 避免宿命论式的“命运裁决”解读，但公正的因果评估（reckoning）是标准含义，不宜完全禁止。",
+      "source": "Waite《Pictorial Key》：Judgement=Judgment, Rebirth, Inner Calling, Absolution。Pollack《Seventy-Eight Degrees of Wisdom》第289-295页"
+    },
+    {
+      "severity": "medium",
+      "location": "七层框架 → 人物志 · 元素印记（第316行）",
+      "currentText": "元素印记: elemental_correspondences 取元素/星座/行星/希伯来字母/灵数/季节/时间/颜色/水晶/草药共10项增强语气",
+      "issue": "传统塔罗对应系统（黄金黎明/Crowley）中，标准对应项通常包括：元素、星座、行星、希伯来字母、数字（灵数）、颜色（占4个世界/尺度）、音符（音阶）、宝石/植物等，但“水晶”和“草药”作为必选项并非金色黎明或RWS传统标准。水晶/草药对应更多来自新纪元（New Age）融合体系，非传统塔罗核心对应。作为必选项可能产生在缺乏数据时编造的隐患。",
+      "correctContent": "应将水晶/草药降级为按需使用的附加值，或注明来自新纪元补充体系而非黄金黎明传统。核心对应应保持：元素、星座、行星、希伯来字母、灵数、颜色，而不应逐张牌要求水晶和草药数据。",
+      "source": "Crowley《777》、Regardie《The Golden Dawn》、Mathers《The Kabbalah Unveiled》：标准对应涉及Sephiroth、Paths、Planets、Signs、Colors、Sounds，未包含草药和水晶作为必选项"
+    },
+    {
+      "severity": "low",
+      "location": "七层框架 → 秘传 → 数字学（第441行）",
+      "currentText": "10=循环/命运(命运之轮/10牌)",
+      "issue": "命运之轮（Wheel of Fortune）在RWS中为10号牌，代表命运、循环、转折、因果。“循环/命运”是合理的，但“10牌”的写法暗示小牌10号的牌义也是循环/命运，而小牌10号（各花色第十牌）的含义因花色各异：钱币10=财富/家业，宝剑10=终结/毁灭，圣杯10=幸福/美满，权杖10=压迫/负担。将统一“循环/命运”归给所有花色10号牌是不准确的。",
+      "correctContent": "10=循环/命运(命运之轮)。小牌10号不应统一简化为“循环/命运”，应按花色区分。钱币10=物质圆满/家业，宝剑10=终结/毁灭，圣杯10=情感满足/幸福，权杖10=重压/负担。",
+      "source": "Waite《Pictorial Key》：各花色10号牌含义完全不同——10 of Wands=Oppression, 10 of Swords=Ruin/End, 10 of Cups=Contentment, 10 of Pentacles=Wealth/Inheritance"
+    },
+    {
+      "severity": "low",
+      "location": "叙事输出格式 → ③纵深·核心课题 · Fool's Journey阶段（第47行）",
+      "currentText": "卡巴拉对应（每牌的 CorrespondenceProfile 已随抽牌同时返回）：大牌→路径→源质",
+      "issue": "此处暗示每张牌都返回卡巴拉对应数据，但16张宫廷牌和40张数字牌在生命之树上仅对应10个源质（数字牌）和四世界框架下的4个球体（宫廷牌），只有22张大牌对应22条路径。“每牌”的说法容易造成误解，以为所有78张牌都有完整的路径/源质二元映射。实际上数字牌只对应单源质，宫廷牌是四世界+源质的交叉。",
+      "correctContent": "大牌→路径→源质（22路径）；数字牌→单一源质（1-10）；宫廷牌→四世界×源质（King=Atziluth+Chokmah, Queen=Briah+Binah等）。三种映射结构不同，不应统一写为“大牌→路径→源质”。",
+      "source": "黄金黎明对应体系：Regardie《The Golden Dawn》Book T - Tarot对应表"
+    },
+    {
+      "severity": "low",
+      "location": "七层框架 → 总体基调 → 画面定调（第170行）",
+      "currentText": "第一张牌的 Waite desc → 定下整局阅读的色调和氛围",
+      "issue": "指定“第一张牌”的画面定调整局氛围过于绝对。在大型牌阵（如凯尔特十字、马蹄铁）中，第一张牌（通常代表过去或基础）不一定最能代表整局氛围。中心牌、指示牌或唯一的大牌往往比“第一张牌”更影响全局基调。此规则可能导致解读氛围与牌阵核心脱节。",
+      "correctContent": "建议改为：优先选择最能代表全局基调的牌——中心牌、唯一大牌、或牌阵中视觉冲击力最强的牌——来定调整体氛围。第一张牌仅作参考而非强制。",
+      "source": "Rachel Pollack《Forest of Souls》及《Seventy-Eight Degrees of Wisdom》：整体氛围应从牌阵结构出发，而非机械地从第一张牌开始"
+    },
+    {
+      "severity": "low",
+      "location": "塔罗牌阵列表（第664-669行）",
+      "currentText": "horseshoe-traditional / horseshoe-apex",
+      "issue": "“horseshoe-apex”不是标准的马蹄铁牌阵变体名称。标准马蹄铁牌阵（7张）没有称为“apex”的公认变体。所有已知的Tarot文献（Bunning、Pollack、Greer、Waite）均未记录此名称。该名称可能是应用自定义或开发者命名错误。",
+      "correctContent": "如果指7张牌面向上方汇聚成弧形排列的经典马蹄铁，应统一使用horsehoe（7-card）并去掉“apex”变体。如有新变体应提供明确的布局和位置定义。",
+      "source": "Joan Bunning《Learning the Tarot》- Horseshoe Spread标准七张牌定义；Mary K. Greer《Tarot for Your Self》第167页马蹄铁变体也未使用“apex”命名"
+    },
+    {
+      "severity": "low",
+      "location": "七层框架 → 秘传 → 数字学（第435-436行）",
+      "currentText": "数字学（Pythagorean + 塔罗数字序列）",
+      "issue": "Pythagorean数术（1-9循环）与塔罗数字序列（Ace→10完成→循环重置为Ace）存在根本矛盾。毕达哥拉斯体系将数字缩减为1-9单数（11→2, 22→4等），而塔罗数字序列以10为完成，且主数（11/22等）在塔罗语境中有独立意义。将两者直接并列“+”号暗示可以简单叠加使用，实际需要谨慎协调。应说明何时使用毕达哥拉斯缩减，何时保留塔罗原始编号。",
+      "correctContent": "应增加规则说明：“Pythagorean数术用于加总计算（如日期/姓名分析），塔罗数字序列用于牌面编号解读。两者冲突时优先塔罗序列。Master Numbers在塔罗语境中按原始编号解读而非Pythagorean约分。”",
+      "source": "Mary K. Greer《21 Ways to Read a Tarot Card》第6章：Numerology in Tarot, 区分了Pythagorean和Tarot数字系统"
+    },
+    {
+      "severity": "low",
+      "location": "七层框架 → 牌阵关系学 → 元素尊贵 · 元素互惠（第373-397行）",
+      "currentText": "AI解读扩展(现代教学解释, 非传统规则): Fire+Water:冲突/转化/矛盾——行动与情感冲突;高阶表现:情绪驱动重大改变",
+      "issue": "将Fire+Water归类为“冲突”是合理的，但“高阶表现”用词模糊。Golden Dawn传统的元素尊贵中，Fire+Water是敌对关系（Enemy），代表能量削弱或矛盾，不存在自动“高阶转化”的正面提升。此处“高阶表现”可能误导AI认为冲突组合也能自动产生积极结果，与实际牌面情况可能不符。",
+      "correctContent": "应注明：Fire+Water=敌对元素。冲突组合可通过整合产生成长（Greer的转化视角），但不应默认存在“高阶表现”——需根据具体牌义和位置判断。",
+      "source": "Golden Dawn元素尊贵系统（Regardie《The Golden Dawn》Book T）：Fire+Water=Enemy（敌对）。Greer《Tarot for Your Self》第4章"
+    },
+    {
+      "severity": "low",
+      "location": "塔罗核心参考字典 → 四、宫廷牌层级 · 成长链（第530-544行）",
+      "currentText": "Page(侍从):学习/探索/接收/观察/消息/可能性——刚接触该元素, 愿意学习, 尚未成熟",
+      "issue": "Page（侍从）在RWS系统中通常被关联为Earth of the Element（该元素的土属性），代表该元素最物质/最不成熟的表现形式。而Knight（骑士）是该元素之火属性，Queen是水属性，King是风属性。模板未给出Page的“Earthy”特质（如实际、务实、扎根），而仅强调“学习”层面，遗漏了Page作为所对应元素物质极的重要维度。",
+      "correctContent": "应增加：Page=该元素的土/物质极——不仅代表学习和探索，也代表具体消息、实际开端、物质层面的初步显现。不同花色的Page有实质性差异。",
+      "source": "Golden Dawn体系：Page/Princess=Earth of the Element。Wang《The Qabalistic Tarot》第2章"
+    },
+    {
+      "severity": "low",
+      "location": "七层框架 → 秘传 → 月亮卡（第697行）",
+      "currentText": "18=Moon(Qoph, 29, 恐惧)",
+      "issue": "月亮牌（Moon）的核心含义包括：幻觉、潜意识、欺骗、恐惧、未知。“恐惧”只是月亮牌的一个维度而非核心主题。用“恐惧”单独概括月亮牌遗漏了“幻觉/幻象/潜意识”等更本质的含义。",
+      "correctContent": "18=Moon(Qoph, 29, 幻觉/恐惧) 或 18=Moon(Qoph, 29, 潜意识/幻象)。至少应包含“幻觉”或“潜意识”维度。",
+      "source": "Waite《Pictorial Key》：Moon=Fear, Illusion, Deception, The Subconscious。Pollack《Seventy-Eight Degrees of Wisdom》第7章"
+    },
+    {
+      "severity": "low",
+      "location": "七层框架 → 秘传 → 正义卡（第691行）",
+      "currentText": "11=Justice(Lamed, 22, 因果)",
+      "issue": "正义牌（Justice）的核心含义包括：公平、真相、平衡、法律、因果报应。“因果”（causality/karma）是其中之一但不够全面——遗漏了“公平/法律/真相”等同样重要的维度。此外“因果”偏佛教术语，而正义牌在RWS系统中更强调“天平上的公正/权衡”。",
+      "correctContent": "11=Justice(Lamed, 22, 公正/因果) 或 11=Justice(Lamed, 22, 公平/真相/因果)",
+      "source": "Waite《Pictorial Key》：Justice=Justice, Fairness, Truth, Balance, Law。Pollack同上"
+    }
+  ],
+  "omissions": [
+    "缺失中国传统命理融合——模板完全基于西方塔罗体系（RWS/GD/Crowley），未融入任何中国五行（Wu Xing）、易经（I Ching）、紫微斗数或中国占星元素。作为中文命理App，缺乏中国文化语境下的塔罗本地化改编",
+    "缺失灵魂牌/人格牌系统（Soul Card / Personality Card）——标准数术塔罗通过出生日期计算灵魂牌和人格牌，用于解读人生课题和天赋。模板只在数字学部分提及加总，但未提供完整的灵魂牌计算方法和解读框架",
+    "缺失指示牌（Significator）选择方法——传统塔罗阅读中通过选择一张指示牌（通常根据问卜者的外貌/星座/元素类型）代表问卜者自身。模板无一字提及",
+    "缺失时间对应框架（Timing）——Tarot常用于预测时间，但模板未提供基本的时间对应规则（如Wands=天/周、Cups=周/月、Pentacles=月/年、大牌=更长期/业力层面）",
+    "缺失Yes/No牌阵解读方法——模板未涉及如何将塔罗用于是非问答，也未提供Yes/No解读的规则框架",
+    "缺失Da'ath（知识/虚有源质）在卡巴拉体系中的说明——生命之树共有11个源质（包含看不见的Da'ath），但模板只列出了10个Sephiroth。Da'ath作为深渊之上的知识源质在塔罗秘传中具有重要地位",
+    "缺失Golden Dawn 'Opening of the Key' 高级牌阵——这是金色黎明最具代表性的复杂牌阵，涉及22张大牌、四元素方位和希伯来字母路径，是塔罗牌阵学的巅峰。对于声称融合Golden Dawn的模板而言是重要遗漏",
+    "缺失Thoth系统独立说明——模板引用了Crowley的《777》但未提供Thoth与RWS的差异对照表（如Justice=8/Strength=11调换、牌名差异如Temperance→Art、宫廷牌命名差异、占星对应不同）。若引擎支持Thoth则模板需补充差异说明",
+    "缺失神话对应体系——标准塔罗大牌有丰富的希腊/罗马/埃及神话对应（如女祭司=Isis/Persephone、皇帝=Zeus/Jupiter、命运之轮=Fortuna、月亮=Hecate/Diana等），模板完全未涉及",
+    "缺失卡巴拉第31号路径说明——生命之树0-32的33条路径中，第31路径（Shin/Judgement）连接Hod→Malkuth，但模板在路径/希伯来字母对应表中未解释每条路径连接哪两个源质",
+    "缺失颜色对应在解读中的使用指南——模板提到kaabalah_colors数据但未提供如何使用颜色信息增强解读的具体方法（如四世界颜色尺度、大牌的颜色象征）",
+    "缺失反牌/补充牌规则——当牌面含义不清晰或问卜者需要更多信息时，标准做法可抽取补充牌（clarifier card）。模板未涉及如何以及何时使用补充牌",
+    "缺失牌阵互动中的'焦点牌'（Focus Card）概念——当牌阵中无明确中心牌或指示牌时，应选取主题最相关或能量最强的牌作为解读焦点。模板只提到“主导牌”但未区分不同类型的焦点",
+    "缺失每日一牌（Card of the Day）实践框架——常见塔罗学习/练习方法，用于日常解牌练习和自我反思。作为AI模板可以包含但完全缺失",
+    "缺失切牌（Cutting the Deck）的规范——占卜者或问卜者切牌的方式会影响牌阵能量。模板未提及切牌程序或如何解读切牌产生的底牌",
+    "缺失大牌占星对应——标准大牌有行星/星座对应（如魔术师=水星、女祭司=月亮、皇后=金星等），模板仅通过“引擎返回”提及但未提供参考表",
+    "缺失塔罗伦理指南——未包含塔罗解读的基本伦理原则（如不造成恐惧、不替代医疗建议、尊重隐私、不进行绝对化预测等），这对AI输出尤其重要",
+    "缺失数字0的特殊性说明——愚人（0号牌）作为唯一0号在塔罗/数术中的特殊位置（非1-21循环的开端，而是在宇宙之外的潜在性）未得到强调",
+    "缺失卡巴拉76号路径说明：在Crowley的777系统中，除了22大牌路径外，还有称为“隐藏路径”（由数字牌代表的从Da'ath出发的连接）。模板未涉及这一复杂但重要的扩展层面"
+  ],
+  "overallAssessment": "该模板整体质量较高，引用了Rachel Pollack、Joan Bunning、Mary K. Greer、A.E. Waite和Crowley等权威塔罗学者及体系，结构设计吸收了现代叙事塔罗（storytelling approach）的前沿理念，在逆位处理（Bunning能量模型+Greer多视角）、元素尊贵（Golden Dawn体系）、卡巴拉对应和宫廷牌分层解读方面均有扎实的理论基础。叙事输出格式要求用故事流而非机械分节输出，体现了对Pollack“牌阵即戏剧”核心理念的深入理解。\n\n然而，存在4个严重错误（high severity）直接影响解读准确性：魔术师的卡巴拉路径完全错误（误将Kether→Chokmah赋予Magician，实际属于Fool）；战车（card 7）被称为“内省/智慧”完全偏离其意志力/掌控的核心牌义；教皇（card 5）被称为“变化/冲突”与其传统/教导的含义相反；力量牌被附加“因果”这一不存在于标准塔罗文献中的含义。这些错误如果在AI解读中被使用将产生实质性的误导。\n\n此外存在约15个中低严重度问题，包括：11和22主数被不当合并为同一概念（11≠22）、非标准拼写“Kaabalah”、恋人（card 6）被作为数字2的示例、审判牌的禁令矫枉过正、水晶/草药作为必选项偏离传统对应、忽略了中国文化融合等重要缺口。\n\n最大结构性缺陷是完全没有融入中国传统命理元素——作为一个中文命理App的塔罗模块，完全基于西方神秘学框架，未提供五行、易经、中国占星或任何本地化对应。灵魂牌/指示牌/时间框架/Yes-No规则等基础塔罗工具缺失，降低了模板的实用性。建议在修正高严重度错误的基础上，补充中国文化融合部分和缺失的基础工具，并明确区分RWS与Thoth系统的适用场景。"
+}

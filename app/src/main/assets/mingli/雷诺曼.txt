@@ -215,12 +215,16 @@ Charge动词映射:
 
 Functional Role(语义角色, 与modifier_behavior["type"]互补):
   启动器: Rider, Child | 信息载体: Letter, Birds
-  放大器: Sun, Bear, Stars | 侵蚀器: Mice | 阻断器: Mountain
+  放大器: Sun, Bear | 侵蚀器: Mice | 阻断器: Mountain
   终止器: Coffin | 转化器: Stork | 切割器: Scythe | 选择器: Crossroads
-  连接器: Ring | 固定器: Anchor
-  资源: Fish, Tree, Bouquet
-  权威: Bear, Tower
-  人物: Man, Woman, Child, Rider, Dog
+  连接器: Ring | 固定器: Anchor | 开启器: Key
+  健康根基: Tree | 资源: Fish | 社交/礼遇: Bouquet
+  权威: Bear, Tower | 忠诚/友谊: Dog
+  指引/希望: Star
+  欺骗/诱惑: Snake | 冲突/激情: Whip | 狡猾/自立: Fox
+  情感/爱: Heart | 秘密/知识: Book
+  性/伦理: Lilies | 情感/直觉: Moon
+  人物: Man, Woman, Child, Rider
   地点: House, Garden, Tower, Ship
   障碍: Mountain, Cross, Clouds
 

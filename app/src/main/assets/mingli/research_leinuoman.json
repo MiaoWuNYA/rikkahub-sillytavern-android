@@ -1,0 +1,157 @@
+{
+  "template": "雷诺曼",
+  "fileSize": 23860,
+  "verified": false,
+  "errors": [
+    {
+      "severity": "high",
+      "location": "核心数据参考字典 → Functional Role 功能角色映射表",
+      "currentText": "放大器: Sun, Bear, Stars",
+      "issue": "将 Star（星，16号牌）归类为“放大器”(intensifier/amplifier)完全不符合标准牌义。星在传统Lenormand中代表希望、灵感、乐观、精神指引、目标进展（Hope, Inspiration, Optimism, Spirituality, Progress to Goals），其核心功能是导向/照明/指引（beacon/guide），而非放大其他牌的含义。让AI将星当放大器使用会导致解读歪曲：如Star+Mountain会被误读为“放大障碍”而非正确的“希望克服困难”。",
+      "correctContent": "星应归类为“指引器/照明器”而非放大器。若保留功能角色分类，应为：指引/照明: Star。Sun和Bear作为放大器是合理的（Sun=成功/温暖增强，Bear=力量/权威扩大），但Star不在此列。",
+      "source": "Wikipedia Lenormand cards (#16 Star=Hope, Inspiration, Optimism, Spirituality, Dreams, Progress to Goals)；Rana George《The Essential Lenormand》Star=Guidance, Hope, Spiritual connection"
+    },
+    {
+      "severity": "high",
+      "location": "核心数据参考字典 → Functional Role 功能角色映射表",
+      "currentText": "资源: Fish, Tree, Bouquet",
+      "issue": "将 Bouquet（花束，9号牌）归类为“资源”严重偏离其标准含义。花束的传统含义是社交生活、邀约、愉悦、礼貌、审美、意外的礼物/赞美（Flattery, Social Life, Pleasantness, Cordiality, Etiquette, Politeness, Appreciation, Beauty, Art, An Unexpected Gift）。它不是“资源”（如Fish=金钱资源），而是社交/美学/事件卡。将其归为资源会导致AI在解读中错误地将Bouquet理解为可资利用的资源而非社交事件。",
+      "correctContent": "Bouquet应归类为“社交/邀约”或“礼遇”角色：社交/礼遇: Bouquet。若放入资源类需注明是“社交资源/人脉资产”而非物质资源。",
+      "source": "Wikipedia Lenormand cards (#9 Bouquet=Flattery, Social Life, Pleasantness, Cordiality, Art, Beauty, An Unexpected Gift)；Mary K. Greer《The Essential Lenormand》(原文：Bouquet=invitation, social event, gift)"
+    },
+    {
+      "severity": "high",
+      "location": "核心数据参考字典 → Functional Role 功能角色映射表",
+      "currentText": "资源: Fish, Tree, Bouquet",
+      "issue": "将 Tree（树，5号牌）归类为“资源”过于狭隘。树的核心含义是健康、成长、根基、家族/祖先联结、灵性根基（Health, Growth, Grounded, Past Connection, Family/Ancestors, Spirituality）。将其仅作为“资源”忽略其作为健康/根基指示卡的核心角色。虽然健康可以被视为一种资源，但树在Lenormand中首先是健康卡（the health card），将其仅仅归类为资源丢掉了最重要的解读维度。",
+      "correctContent": "Tree应归类为“健康/根基”角色，或至少同时标注双角色：健康/根基: Tree。作为健康指示卡是Lenormand核心用途之一。",
+      "source": "Wikipedia Lenormand cards (#5 Tree=Health, Growth, Grounded, Personal Growth, Spirituality, Family/Ancestors)；Rana George Tree=Health, stability, roots, family heritage"
+    },
+    {
+      "severity": "high",
+      "location": "核心数据参考字典 → Functional Role 功能角色映射表",
+      "currentText": "人物: Man, Woman, Child, Rider, Dog",
+      "issue": "将 Dog（狗，18号牌）归类为“人物”（person）会误导AI将其主要作为一个角色牌读取。狗的传统核心含义是忠诚、友谊、支持、陪伴（Loyalty, Friendship, A Follower, Devotion, Obedience, Support）。虽然狗可以代表一个忠诚的朋友（as_person激活时），但将其与Man/Woman/Child并列为主要人物卡会引导AI优先将Dog读成一个角色而非抽象概念（忠诚/友谊/支持），这在许多非人物解读场景中会产生偏差。",
+      "correctContent": "Dog应归类为“忠诚/友谊”（概念型），或在人物栏中注明“仅as_person激活时才读作人物，否则优先读作忠诚/友谊/支持等抽象概念”。标准Lenormand中人物卡（person cards）通常指：Man(28), Woman(29), Rider(1), Child(13)，以及可选的Fox(14作为心机人物)，Dog更偏概念卡。",
+      "source": "Wikipedia Lenormand cards (#18 Dog=Loyalty, Friendship, A Follower, Devotion, Obedience, Support)；Mary K. Greer将Dog归类为“attitudes and qualities”而非人物"
+    },
+    {
+      "severity": "high",
+      "location": "功能角色映射表 — 多张核心牌未被分配任何角色",
+      "currentText": "功能角色列表中缺失以下标准36张Lenormand卡牌的角色分配：Snake(7蛇), Whip(11鞭子), Fox(14狐狸), Heart(24心), Book(26书), Lilies(30百合), Moon(32月亮), Key(33钥匙)",
+      "issue": "模板的Functional Role列表仅覆盖36张卡中的约28张，缺失至少8张核心卡牌的功能角色定义。缺失的卡中包括重要牌：Snake(欺骗/诱惑)，Whip(冲突/激情)，Fox(狡猾/工作)，Heart(爱情核心)，Book(秘密/知识)，Lilies(性/道德)，Moon(情感/直觉)，Key(开启/解决)。当AI遇到这些卡的功能角色问题时没有任何参考，将导致解读质量下降。",
+      "correctContent": "必须为全部36张Lenormand卡分配功能角色。建议补充：欺诈/诱惑: Snake；冲突/激情: Whip；狡猾/自立: Fox；情感/爱: Heart；秘密/知识: Book；性/伦理: Lilies；情感/直觉: Moon；开启/解答: Key。或随引擎数据动态扩展角色定义而非硬编码部分列表。",
+      "source": "Wikipedia Lenormand cards完整36张列表；Rana George《The Essential Lenormand》各牌核心功能定义"
+    },
+    {
+      "severity": "medium",
+      "location": "扑克插片参考字典 → 花色含义（第176-179行）",
+      "currentText": "♣梅花=橡果/劳工 → 大凶。绝对阻力/烂摊子/巨大心理负担",
+      "issue": "将梅花/橡果（Clubs/Acorns）描述为“大凶”且“绝对阻力”过于绝对化，不符合德国传统Lenormand严谨的事件语境化原则。在Das Spiel der Hoffnung中，橡果（劳工阶层）代表辛勤工作和物质层面的挑战，但并非“绝对阻力”——Lilies(30)♠K=黑桃K在爱情语境下有正面性含义，Cross(36)♣6虽有负担感但也是灵性/责任之牌。将整个花色定性为“大凶”会导致AI在解读时对梅花类卡牌产生系统性负面偏见。",
+      "correctContent": "应改为：♣梅花/橡果=劳工/世俗负担→偏阻力/挑战，多为压力/辛劳/责任类议题，但需结合卡牌本身含义和各领域语境判断整体影响。不应使用“绝对阻力”“大凶”等绝对化定性。",
+      "source": "Wikipedia: Acorns (Clubs) = 劳工阶层, 卡牌含义需按具体卡判断（如Lilies♠=King of Spades有正面性含义）；德国Kartenlegen传统：花色只提供背景色调(event background)，不独立定吉凶"
+    },
+    {
+      "severity": "medium",
+      "location": "核心原则（第12-20行）",
+      "currentText": "⑤ Greer: 传统雷诺曼=先懂牌义再凭直觉串——'传统读者非常直觉，他们看一眼就知道牌在说什么，再用原义核实'",
+      "issue": "此条引用的Greer内容来源不明确，且“先凭直觉再看牌义核实”的描述与模板其他部分强调的Greer两步法（关键词法→叙事展开法）存在逻辑张力。Greer实际教学更强调结构化语法（syntax-based reading）而不仅仅是直觉——她教授的线型读法、配对读法和组合语法都是高度结构化的方法。将此简化为“直觉串牌”可能引导AI过度依赖直觉联想而非结构化解读。",
+      "correctContent": "应调整为更平衡的描述：Greer两步法结合结构化语法（关键词命名→语法构句→叙事展开）与直觉（用牌面核实直觉），而非单方面强调直觉优先。或注明此条为Greer某次讲座/访谈中的观点而非其核心方法论。",
+      "source": "Mary K. Greer《The Essential Lenormand》及Greer在Tarot Association的Lenormand课程：强调syntax-based reading, card combinations, positional grammar，结构远多于直觉"
+    },
+    {
+      "severity": "medium",
+      "location": "叙事输出格式 → ②中段·事件展开（第38-52行）",
+      "currentText": "combination_grammar（7种语法）→ 相邻牌如何组合成句",
+      "issue": "模板声称combination_grammar有7种语法类型，并将其列为引擎返回的标准数据字段。但这7种分类（名词+形容词、主体+动作、因果、状态变化、障碍路径、叙事链、自由组合）并非任何Lenormand权威来源（Greer、George、Boroveshengra、德国传统）的标准分类法。这是模板作者的自创分类，与权威来源旁列可能导致AI误以为这是Lenormand领域公认的分类标准。",
+      "correctContent": "应明确注明“本7种语法分类为引擎自定义标签，非Lenormand传统标准语法分类”，或直接使用Lenormand领域公认的配对语法：左牌=名词/主语、右牌=形容词/修饰语（Greer的noun-adjective pairs模型），简单明确。",
+      "source": "Mary K. Greer《The Essential Lenormand》及线上课程：标准Lenormand组合语法为左→右=名词+形容词（主语+修饰语），无7分法。Rana George书中也未使用此类结构化语法分类"
+    },
+    {
+      "severity": "medium",
+      "location": "扑克插片参考字典 → 数字含义（第187-193行）",
+      "currentText": "A=绝对开端/大洗牌；6=宿命感/深根蒂固(如十字架/塔)；7=琐碎/口舌是非(如老鼠/鸟)；8=群体瞩目/社会活动(如花园/月亮)；9=极端动静/大变局(如骑士/锚/棺材)；10=宏大格局/大体量(非结局, 如熊/狗/船)",
+      "issue": "将Lenormand卡牌的扑克牌数字含义（A,6-10）绑定到具体的情绪化标签（宿命感/琐碎/极端动静等）是模板作者的自创解释，并非标准Lenormand扑克牌数字含义。在德国传统中，扑克牌数字主要用于GT中识别同频共振的同数字牌，以及与原版桌游的移动规则相关，没有如此具体的情绪含义标签。这些标签会让AI在解读时硬套数字含义，偏离卡牌本身的核心牌义。",
+      "correctContent": "建议删除过度的情绪化数字含义，或明确注明“此数字标签为模板作者自创辅助记忆，非Lenormand传统标准。”德国传统中扑克数字仅用于：识别GT中同数字牌共振，以及在原桌游中决定棋子移动步数。",
+      "source": "Wikipedia: Das Spiel der Hoffnung使用6-10+J/Q/K/A对应36张牌，数字用于游戏移动；德国Kartenlegen传统中数字主要用于GT同频共振分析，无独立情绪含义"
+    },
+    {
+      "severity": "medium",
+      "location": "叙事输出格式 → 能量色调/电荷部分（第274-279行）",
+      "currentText": "同时检测'包围否定'效应: 若某牌被周围两张相反电荷的牌夹击, 其基础含义可能被削弱甚至反转 (德传Kartenlegen: umliegende Karten negieren)",
+      "issue": "引用德文“umliegende Karten negieren”声称这是德国Kartenlegen传统中关于包围否定的标准规则，但在权威的德国Lenormand文献中不存在此命名规则。德国传统确实承认相邻牌可以修改/影响中心牌的含义，但“negieren”（否定/撤销）一词过于绝对——相邻牌通常是modify（修改）而非negate（否定）。AI可能误认为周围负面牌就能完全撤销一张吉牌的含义，这是一种危险的简化。",
+      "correctContent": "应修正为：相邻牌对中心牌有修饰作用（modifying effect）而非否定作用。正负电荷夹击会削弱但极少完全反转含义。删除或修正“umliegende Karten negieren”的德文引用，或者提供准确的德国文献出处。",
+      "source": "德国Kartenlegen传统中无标准“umliegende Karten negieren”术语。相邻修饰是通用概念，但“否定”是过度翻译。Iris Treppner《Moderne Kartenlegen》及Elisabeth Zetzel风格：相邻=修改/影响，非否定"
+    },
+    {
+      "severity": "medium",
+      "location": "Person/Thing 区分规则（第305行）",
+      "currentText": "德传Sach/Person区分——部分牌(Bär/Storch/Hund)可兼人物两性, 标注'此牌在此处读作[人/物]'",
+      "issue": "模板称部分牌（熊/鹳/狗）可兼人物两性，但遗漏了更多本应包含在此规则中的卡牌。Fox(14狐狸)和Snake(7蛇)同样常在德国传统中被读作人物（狡猾之人/诱惑之人）。Rider(1骑手)和Child(13小孩)当然已经是人物卡所以无需此规则，但Fox和Snake的Person/Thing区分在实践中远比Bear/Stork更常见。",
+      "correctContent": "应补充：此规则也适用于Fox(14)和Snake(7)——两者在德国传统中同样经常需要Sach/Person区分。Fox=狡猾之人/工作状态，Snake=诱惑之人/欺骗情境。",
+      "source": "德国Kartenlegen传统：Fuchs kann als Person (listiger Mensch) oder als Sache (Berufsalltag) gelesen werden; Schlange kann als Person (Verführer) oder als Sache (Täuschung) gelesen werden"
+    },
+    {
+      "severity": "low",
+      "location": "GT追加模块 → 四角框架（第406-409行）",
+      "currentText": "四角框架: {左上=起点/初衷, 右上=远景期望, 左下=隐藏根基, 右下=最终结算}",
+      "issue": "在GT四角解读中，左下角（位置28=Man）的标准含义通常偏“过去/基础”而非“隐藏根基”。右下角（位置36=Cross）代表“最终结果/负担/灵性功课”而非“最终结算”。左上角（位置1=Rider）的“起点/初衷”可以接受，右上角（位置9=Bouquet）的“远景期望”也勉强可接受，但四个角的含义远不止这些标签所概括的，且不同权威有不同的四角解读方法。将这些简化为固定的四个标签可能局限AI的解读视角。",
+      "correctContent": "建议注明“此四角框架为参考框架之一，不同权威有不同解释方法。例如传统方法也关注两对角线的交叉验证（1+36和9+28）而非仅看四角独立含义。”或提供多套四角含义选项。",
+      "source": "Mary K. Greer Grand Tableau教程：四角解读方法有多重角度，包括Eckkarten in Kombination(对角配对)和独立位置含义。Rana George使用不同的四角框架"
+    },
+    {
+      "severity": "low",
+      "location": "GT追加模块 → Eigenes Haus自家（第427-429行）",
+      "currentText": "Eigenes Haus(自家): 牌落在与自己编号相同的位置时, 该牌性质无法施展——如Reiter(1)落1号位=不动/无消息 (Häusersystem: Karte im eigenen Haus kommt nicht zur Geltung)",
+      "issue": "Eigenes Haus（自家）的解释“该牌性质无法施展”过于绝对。在德国Häusersystem传统中，自家的含义更微妙：牌在自家时其能量被固化/强化但缺乏行动力/表达渠道（the card's energy is fixed in its own nature rather than being expressed externally），而非完全“无法施展”。例如Cross(36)落36号位不是没有负担，而是此人深受其信念束缚无法挣脱。Reiter(1)落1号位可能意味着关于消息的消息（metaphorical layering）而非完全无消息。",
+      "correctContent": "应调整为：Eigenes Haus：牌落在与自己编号相同的位置时，该牌处于“纯化/固化”状态——其本质特征被强调但缺乏外部表达渠道。如Reiter(1)落1号位=消息悬而未决/停滞但并非完全无消息。Guardian Angel Reading等德国学派不认为自家=无效，而是=纯化/强化。",
+      "source": "德国Häusersystem多位作者：Iris Treppner《Das Große Haus》及《Häuser und Häusersysteme》——Karte im eigenen Haus kommt zur Verdichtung（固化/纯化）而非kommt nicht zur Geltung（无法施展）"
+    },
+    {
+      "severity": "low",
+      "location": "输出模板 → 人物视线方向(Blickrichtung)（第331-341行）",
+      "currentText": "首牌人物视线朝右=面向未来, 朝左=回望过去",
+      "issue": "将人物视线方向关联到“未来/过去”是模板作者自己的延伸解释，非德国Kartenlegen传统标准。在德国传统中，Blickrichtung仅表示能量流向（向谁/向什么方向流动），不表示时间方向（未来/过去）。将视线方向映射为时间轴是创新用法但缺乏权威支持，且可能与其他时间框架方法（如牌序前后分过去未来）产生冲突。",
+      "correctContent": "应注明“此为时间映射的扩展用法，非德国传统标准。标准用法：眼睛看向哪张邻牌=能量向该牌代表的领域流动。”或在非GT牌阵中谨慎使用此时间映射。",
+      "source": "德国Kartenlegen传统：Blickrichtung = Energieflussrichtung（能量流向），无未来/过去区分。Königin der Karten（德国Lenormand论坛）及Iris Treppner教程均不将Blickrichtung关联到时间"
+    },
+    {
+      "severity": "low",
+      "location": "扑克插片参考字典 → 花色权重规则（第168-173行）",
+      "currentText": "【看整体趋势】主图80%+花色20%；【找人定性】主图50%+JQK标签50%；【数字】仅36张大阵抓同频共振",
+      "issue": "模板给出的百分比权重（80%/50%等）是任意数值，没有任何Lenormand权威来源支持此类量化权重分配。Lenormand解读是定性的（qualitative）而非定量的（quantitative），不同语境下主图/花色/JQK的权重关系应取决于具体牌阵和问题领域而非固定百分比。AI可能僵化地按照这些百分比分配注意力，影响解读的灵活性。",
+      "correctContent": "应删除百分比数值，改用定性描述：看整体趋势：主图定核心剧情，花色补充背景氛围；找人定性：JQK标签优先于花色，主图提供性格特征；数字：仅在GT中3-4张同数字扎堆时启用。建议删除所有百分比以保持Lenormand的定性传统。",
+      "source": "所有Lenormand权威教材（Greer, George, Boroveshengra, Matthews）均使用定性描述而非百分比量化。Lenormand的解读传统排斥量化权重分配"
+    },
+    {
+      "severity": "low",
+      "location": "GT追加模块 → Step2 MOD近远法（第416-418行）",
+      "currentText": "Step2 MOD近远法: Heart/Fish/Anchor/Cross/Tree 按final_weight排序, 最小=最快最强, direction(past/future)",
+      "issue": "MOD（Mitte-Oben-Distanz/中心-上部-距离）近远法中选择Heart/Fish/Anchor/Cross/Tree五张牌作为关键距离测量标志，这是某些现代Lenormand读者（如Andy Boroveshengra）提出的方法，但并非德国传统GT的标准技术。德国传统中的距离分析主要基于指示牌到各牌的物理距离（格数），而非预先选择特定牌作为测量点。将此方法作为标准GT程序可能导致AI忽略其他同样重要的距离参照。",
+      "correctContent": "应注明此MOD法为Boroveshengra/现代创新方法，非德国传统标准。标准德国GT距离分析法：直接计数指示牌到其他牌的网格距离（格数），不需要预设测量牌。Heart/Fish/Anchor/Cross/Tree法仅为参考选项之一。",
+      "source": "Andy Boroveshengra《Lenormand: Schnell, einfach, effektiv》中提出Heart/Fish/Anchor/Cross/Tree近远法；但德国传统方法（Iris Treppner等）直接使用网格距离计数"
+    }
+  ],
+  "omissions": [
+    "缺失完整的36张卡牌参考表（编号/德语名/中文名/法语/RWS对应名/扑克牌对应/核心关键词）——模板仅有分散的卡牌引用，无任何集中列表。AI无法在单个位置查看完整对应关系，需跨段拼接信息严重影响效率",
+    "缺失每张卡牌独立的核心含义详细定义——模板完全依赖引擎的core字段，但没有提供36张卡牌各自的核心含义参考字典供AI故障时回退，这是对AI解读鲁棒性的关键遗漏",
+    "缺失Das Spiel der Hoffnung原版桌游的历史背景说明——原局6×6棋盘、Rider(1)为起点、Anchor(35)为终点、Cross(36)为陷阱的移动规则是理解卡牌底层逻辑的基础，模板无一字提及此背景",
+    "缺失塔罗 vs 雷诺曼的详细对比表——模板有Anti-Tarot Guard禁止列表但无系统对比，AI无法系统理解两大系统的差异本质（78 vs 36张、大牌+小牌 vs 无分级、象征主义 vs 写实现实主义、灵性心理 vs 事件预测等）",
+    "缺失GT镜像（Mirroring）技术的完整说明——模板只提到karmic_mirrors字段但未解释GT中水平镜像（row mirror）、垂直镜像（column mirror）和三维镜像（horizontal/vertical/diagonal）的具体操作方法和解读规则",
+    "缺失GT骑士跳（Knight's Move）的完整说明——模板只提到FE.calculate_knights_move但未解释骑士跳在国际象棋中的L形移动规则、在GT中的解读策略、以及如何选择跳往的卡牌",
+    "缺失GT反射（Reflection）技术的说明——模板只提到reflection(35-idx隐藏本质)但未解释该方法的计算规则和解读策略，35-idx公式不够清晰",
+    "缺失GT中点法（Die Mitte）说明——德国传统GT中，36张牌的中心点（中位数牌，位置18.5附近）以及四个角落中点（9.5, 18.5, 27.5等）用于观察全局平衡，模板未提及",
+    "缺失德国日历法（Kalendermethode）的完整解释——模板仅一笔带过不说明具体如何将36个位置映射到日期/星期，对一个声称支持GT的AI模板是严重功能遗漏",
+    "缺失关于定牌（Schicksalskarte/Destiny Card）的说明——在德国传统中，通过出生日期确定个人命运牌用于深度解读，模板未提及此技术",
+    "缺失四元素体系在Lenormand中的可用性说明——虽然Lenormand拒绝塔罗四元素，但德国传统中将扑克牌的四个花色映射到古代四体液/气质理论（黑胆汁/黄胆汁/血液/粘液），模板未提及此对应",
+    "缺失Blind Card（盲牌/覆盖牌）解读技术——在德国GT中，当一张牌被其他牌覆盖时（在叠放式解读中），覆盖牌的含义会叠加到被覆盖牌上，模板未涉及",
+    "缺失多套GT布局方案的说明——35卡GT（省略一张/预留一张）和37卡GT（加入空白卡作为问卜者代表）等常见变体未提及",
+    "缺失Lenormand伦理指南——未包含解读伦理（医疗/法律/财务建议的边界，不造成恐惧，尊重隐私等），对AI输出安全至关重要",
+    "缺失如何在没有引擎数据时独立进行Lenormand解读的fallback方案——模板完全依赖引擎字段，如果引擎返回不完整数据AI没有任何手动解读框架可回退",
+    "缺失横纵轴解读（Row and Column Theme）的系统方法——GT中每行有主题（1-9/10-18/19-27/28-36），每列有连续主题，模板仅粗略提到行列概念但无系统解读方法",
+    "缺失Great Tableau中'长对角线'(Long Diagonals)的解读技术——从左上到右下和从右上到左下的长对角线包含9张牌构成叙事暗线，模板仅提到四角组合遗漏了完整对角线技术",
+    "缺失德国传统中卡牌的阴阳/昼夜属性（Tag- und Nachtkarten）——部分德国Lenormand作者按白天/黑夜分类卡牌以确定事件发生时间，模板未涉及此轻量级时间定位方法",
+    "缺失扑克牌对应中国本地化参考——模板使用标准扑克花色（♥♦♠♣）但未考虑中文用户更熟悉的对应名称和联想，影响中文用户体验"
+  ],
+  "overallAssessment": "该模板整体上是一份高质量、深度的中文Lenormand解读指南，正确引用了该领域的核心权威来源（Mary K. Greer的两步法及配对语法、Rana George的实践事件解读、Andy Boroveshengra/Caitlín Matthews的时间框架研究、德国Kartenlegen传统的Blickrichtung/Große Tafel/Eigenes Haus方法论），并成功区分了Lenormand的事件预测定位与Tarot的灵性心理定位（Anti-Tarot Guard）。模板中对GT专有数据（镜面反射、骑士跳、内九宫格、四角框架、级联链）的设计体现了对现代融合型Lenormand的深入了解。\n\n然而，研究发现3个高严重度错误（high severity）：(1)将Star(16星)归类为“放大器”完全偏离其希望/指引的核心含义；(2)将Bouquet(9花束)归类为“资源”严重扭曲其社交/邀约/礼物的核心牌义；(3)将Tree(5树)缩减为“资源”忽略其作为健康/根基指示卡的首要角色。此外Dog(18狗)被列入“人物”卡可能误导AI优先将其读为角色而非抽象概念（忠诚/友谊）。同时至少8张核心卡牌（Snake/Whip/Fox/Heart/Book/Lilies/Moon/Key）在功能角色映射表中完全缺失，导致覆盖不完整。\n\n多达8个中严重度问题(medium severity)涵盖：花色含义的绝对化定性（梅花=大凶/绝对阻力），引用来源不准确（Greer直觉引文、umliegende Karten negieren德文术语），自创分类与权威来源并列未区分（7种组合语法），自创含义标签（扑克数字的情绪化标签），以及缺失关键Person/Thing区分卡牌（Fox/Snake）。\n\n6个低严重度问题(low severity)涉及：四角框架单一化、Eigenes Haus解释偏差、Blickrichtung时间映射延伸、百分比数值的任意性、MOD近远法未注明为现代创新。\n\n结构性缺陷方面：缺失完整的36张卡牌参考表（这是最核心的遗漏），缺失GT镜像/骑士跳/反射等核心技术的操作说明，缺失德国日历法的详细解释，缺失Das Spiel der Hoffnung的桌游历史背景，缺失塔罗vs雷诺曼的系统对比表，以及缺失AI伦理入口。模板完全依赖引擎数据（core/combination_grammar等字段）而没有任何hand-fallback能力，一旦引擎数据出现问题AI将无法自主保障解读质量。\n\n建议优先级：首先修正3个高严重度的角色分类错误（Star/Bouquet/Tree），补充缺失的8张卡牌功能角色；其次在花色含义和自创分类（数字含义/7种语法/百分比权重）前添加明确的“非传统标准，为引擎自定义”声明；最后补充完整的36卡参考表、GT核心技术操作说明和伦理指南。"
+}
