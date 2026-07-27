@@ -134,6 +134,7 @@ def _qimen(year,month,day,hour=None,minute=0,feature="all",
         "  宫位十干克应含暗干/寄宫(palaceKeYing),"
         "  十二长生含各天干在宫位所有地支(palaceChangSheng),"
         "  宫位标记/寄干/地八神/用神天干(per-palace)."
+        "chart层可直接取: qimen.zhiFuPalace/zhiShiPalace/tianYiStar/tianYiPalace/jiGongArrow."
         "qimen_hourly_analysis: 基于时家盘的分析，与qimen_analysis结构完全相同但盘面数据对应时家，断事以此为准。"
         "大六壬富化字段(liuren): _liuQin(四课六亲), _riGanZhiWuXing(日干日支五行), _riGanZhiRelation(日干日支关系),"
         " liuren_nianming(年命,需AI主动问用户公历生日+性别男/女)."

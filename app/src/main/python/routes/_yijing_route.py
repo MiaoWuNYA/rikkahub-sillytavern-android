@@ -376,30 +376,16 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, hour=None
                 "var siZhu=null;try{var sl=IchingShifa.solarToLunar("+str(_yr)+","+str(_mo)+","+str(_dy)+","+str(_hr)+");siZhu={year:sl.yearGanZhi,month:sl.monthGanZhi,day:sl.dayGanZhi,hour:sl.hourGanZhi};}catch(e){}"
                 "var dayKong=null;try{if(pan&&pan.ganZhiDay){dayKong=IchingShifa.calcXunKong(pan.ganZhiDay.gz);}}catch(e){}"
                 "var jieQi=null;try{jieQi=IchingShifa.getCurrentSolarTerm("+str(_yr)+","+str(_mo)+","+str(_dy)+");}catch(e){}"
-                "var liuyao={};"
-                "if(pan&&!pan.error){Object.keys(pan).forEach(function(k){liuyao[k]=pan[k]});}"
-                "liuyao.riChen=riChen;"
-                "var consts=null;try{consts={"
-                "  GUA64_ORDER:IchingShifa.GUA64_ORDER,"
-                "  BAGUA_XIANG:IchingShifa.BAGUA_XIANG,"
-                "  LIU_SHOU:IchingShifa.LIU_SHOU,"
-                "  LIU_QIN:IchingShifa.LIU_QIN,"
-                "  XINGXIU_28:IchingShifa.XINGXIU_28,"
-                "  JIEQI_NAMES:IchingShifa.JIEQI_NAMES,"
-                "  TIAN_GAN:IchingShifa.TIAN_GAN,"
-                "  DI_ZHI:IchingShifa.DI_ZHI,"
-                "  JIAZI_60:IchingShifa.JIAZI_60,"
-                "  NAYIN_60:IchingShifa.NAYIN_60"
-                "};}catch(e){}"
                 "JSON.stringify({"
-                "  pan:pan,gaoDaoYiDuan:gdyd,liuyao:liuyao,"
-                "  fourPillars:siZhu,riChen:riChen,dayKong:dayKong,jieQi:jieQi,"
-                "  constants:consts"
+                "  pan:pan,gaoDaoYiDuan:gdyd,"
+                "  fourPillars:siZhu,riChen:riChen,dayKong:dayKong,jieQi:jieQi"
                 "})"))
             if isinstance(js_decode, dict) and 'error' not in js_decode:
                 result["iching_shifa_pan"] = js_decode
                 result["engine"] += "+iching-shifa-engine"
-                result["_hint"] += (" iching-shifa-engine(JS)完整排盘:本卦/之卦/互卦/纳甲/六亲/六神/世应/神煞/旬空/月建/动爻推辞+高岛易断+青衣星宿+四柱+节气+64卦库+纳音表+28宿+甲子。"
+                result["_hint"] += (" iching-shifa-engine(JS)完整排盘:本卦/之卦/互卦/纳甲/六亲/六神/世应/神煞/旬空/月建/动爻推辞+高岛易断+青衣星宿+四柱+节气。"
+                    "静态词典(不变,不用随盘返回): 用eval_javascript(library='iching-shifa-engine', action='eval')按需查——"
+                    "IchingShifa.GUA64_ORDER, BAGUA_XIANG, LIU_SHOU, LIU_QIN, XINGXIU_28, JIEQI_NAMES, TIAN_GAN, DI_ZHI, JIAZI_60, NAYIN_60."
                     "自探索:Object.keys(IchingShifa)含lueshifa/threeNumberQiGua/numberArrayQiGua/manualQiGua/solarToLunar等。")
         except Exception as e:
             if "py_error" not in result: result["py_error"] = str(e)
