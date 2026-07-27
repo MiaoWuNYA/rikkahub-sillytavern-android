@@ -155,7 +155,45 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, hour=None
                 result["six_months_stars"] = i.find_six_mons(rg)
         except: pass
 
-    # === 第3步：JS decodePan（通用——凡有爻值均调用） ===
+    # === 第3步：十二长生 + 旺相休囚（六爻纳甲旺衰判断核心） ===
+    if hex_data:
+        try:
+            gz = i.gangzhi(_yr,_mo,_dy,_hr,_min)
+            if gz and len(gz) > 2:
+                day_zhi = gz[2][1]
+                month_zhi = gz[1][1]
+                _DIZHI = ["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"]
+                _CHANGSHENG = ["长生","沐浴","冠带","临官","帝旺","衰","病","死","墓","绝","胎","养"]
+                _CS_START = {"金":5, "木":11, "水":8, "火":2, "土":8}
+                _ZHI_WX = {"寅":"木","卯":"木","辰":"土","巳":"火","午":"火","未":"土",
+                           "申":"金","酉":"金","戌":"土","亥":"水","子":"水","丑":"土"}
+                _WSXQX = {
+                    "木":{"木":"旺","火":"休","水":"相","土":"囚","金":"死"},
+                    "火":{"火":"旺","土":"休","木":"相","金":"囚","水":"死"},
+                    "土":{"土":"旺","金":"休","火":"相","水":"囚","木":"死"},
+                    "金":{"金":"旺","水":"休","土":"相","木":"囚","火":"死"},
+                    "水":{"水":"旺","木":"休","金":"相","火":"囚","土":"死"},
+                }
+                month_wx = _ZHI_WX.get(month_zhi, "土")
+                for gua_key in ("本卦", "之卦"):
+                    gua = hex_data.get(gua_key, {})
+                    zhi_list = gua.get("地支", [])
+                    wx_list = gua.get("五行", [])
+                    if len(zhi_list) == 6 and len(wx_list) == 6:
+                        cs = []
+                        ws = []
+                        for z, wx in zip(zhi_list, wx_list):
+                            start = _CS_START.get(wx, 8)
+                            idx = _DIZHI.index(z)
+                            step = (idx - start) % 12
+                            cs.append(_CHANGSHENG[step])
+                            ws.append(_WSXQX.get(month_wx, {}).get(wx, ""))
+                        gua["十二长生"] = cs
+                        gua["旺相休囚"] = ws
+        except Exception:
+            pass
+
+    # === 第4步：JS decodePan（通用——凡有爻值均调用） ===
     #    decodePan内嵌了calculateQingyiXingXiu，不额外调
     if yao_string:
         try:
