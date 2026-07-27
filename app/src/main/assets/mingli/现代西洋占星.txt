@@ -6,6 +6,87 @@
 本模板是一份写作流程，不是参考手册。
 请按以下顺序执行：看完配置数据 → 读 Part 2-3 建立方法论认知 → 按 Part 4 写作流程（步骤0→6）逐句写出 → 用步骤6的防呆清单核验后输出。
 
+## 数据字段地图
+
+```
+【natal 字段——NatalEngine 返回的完整本命盘数据】
+natal.sun / natal.moon / natal.rising / natal.midheaven
+  └ 每个含：{sign, degree, house, isRetrograde, ...}
+natal.planets → {mercury, venus, mars, jupiter, saturn, uranus, neptune, pluto}
+  └ 每个含：{sign, degree, house, retrograde, dignity, ...}
+natal.nodes → {northNode, southNode} / natal.lilith / natal.chiron
+natal.houses → [12个宫位，每宫含 sign/houses(跨宫)]
+natal.aspects[] → 全盘相位列表（每相位含 planet1/planet2/aspect/orb）
+natal.aspectsByPlanet → 每颗行星的相位聚合
+natal.elements → {fire, earth, air, water, total} 元素分布
+natal.signs → 各星座分布计数
+natal.bigThree → {sun, moon, rising} 简写（删除以省体积，可用 natals 字段获取）
+
+【caelus 字段——Caelus引擎计算的深度技法】
+（caelus 是一个对象，包含以下所有子键，按需使用）
+
+p1 — 基础数据：
+  signature → Caelus.chartSignature() 星盘指纹
+  elementBalance → {Fire, Earth, Air, Water} 元素量化分布
+  patterns → Caelus.detectPatterns() 星盘图形模式（碗型/提桶/跷跷板/散落/集团/火车头等）
+  lots → Caelus.lots() 阿拉伯点（福点/精神点/需要点等）
+  isDay → 日生/夜生 布尔值
+  voidOfCourse → 月亮空亡状态
+  chartBrief → Caelus.chartBrief() 简要特征摘要
+  housesWholeSign → 整宫制宫位
+  cusps → Placidus 宫头
+  vertex / eastPoint → 敏感轴点
+  planetHouses → {planet: house} 每星落宫
+  aspects → 宫相位列表
+  planetDignities → {planet: dignity} 每星尊贵信息
+
+p2 — 深度单星数据：
+  dignityScores → {planet: score} 尊贵度评分
+  dignityOf → {planet: {domicile/exalt/...}} 入庙/擢升等具体状态
+  pheno → {planet: {phase, speed, ...}} 行星现象（速度/光照状态）
+  oob → {planet: {outOfBounds, margin}} 越界检查（全10星）
+  midpoints → {sunMoon, ascMc, sunAsc, moonAsc} 中点
+  solarPhase → {planet: phase} 太阳相位（晨升/夕升/晨降/夕降等）
+  antiscionSun/Moon / contraAntiscionSun/Moon → 映点/反映点
+  planetaryHour → 出生时辰星
+  almuten → Almuten Figuris
+  declinationAspects → 赤纬相位（出相位/入相位）
+  starConjunctions → 恒星合相（0.5°容许度，2.5星等以内）
+  chiron → {lon, sign} 凯龙星位置
+
+p3a — 时间技法（快）：
+  firdaria → 法达大运（日生/夜生对应）
+  profections → 小限（未来一年逐月）
+  solarArc → 太阳弧推运
+  progressedMoon/Sun/Other → 次级推运（30年）
+  lunarPhases → 月相（30天8相位）
+  eclipses → {solar[], lunar[]} 未来一年日月食
+  riseSet → {sun: {rise, set}, moon: {rise, set}} 日月升降
+  crossings → {planet: [...]} 行星换座时间
+
+p3b — 时间技法（中）：
+  stations → {planet: [...]} 行星留（120天内）
+  returns → {planet: [...]} 行星回归（30年内）
+  harmonicChart → 调和盘（5倍频）
+
+p4 — 深度技法：
+  primaryDirections → 主限推运
+  transits → 行运方位相位
+  transitPositions → 当前行运行星位置（全13星含凯龙）
+  parans → Paran 星体出没
+  astrocartography → 简版占星地图（±60°纬度）
+  solarReturn → 太阳返照盘（3年）
+  lunarReturn → 月亮返照盘（3个月）
+  gauquelinSector → {planet: sector} 高克兰区
+
+【synastry 字段】（可选，传 partner_year 等参数时触发）
+NatalEngine.compareAstrology() 的合盘比较结果
+包含双方行星位置比较、相位、宫位互落等
+
+字段使用原则：全量字段引擎已返回，按写作流程步骤0选取2-4条主线。
+不在步骤0中选中的字段，不在正文中罗列。缺失则跳过不编造。
+```
+
 ---
 
 ## 第三部分：五位作者的方法论详解

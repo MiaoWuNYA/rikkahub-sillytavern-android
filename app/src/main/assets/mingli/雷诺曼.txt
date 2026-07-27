@@ -41,7 +41,7 @@
   * 每张牌依次推进剧情——左→右 = 因果链/时间线
   * 相邻牌自动形成"名词+修饰语"组合（combination_grammar）
   * 引擎预置的 combinations 固定组合数据可直接引用
-- 每张牌的解读融入：core（核心含义）+ modifier_behavior（修饰类型：
+- 每张牌的解读融入：core（核心含义）+ modifier（修饰类型：
   descriptor描述/intensifier放大/negator反转/pivot转折）
   + topic_contexts（领域语境）一句带过
 - 人物卡（as_person 有值时）：角色出场——性格+在叙事中的角色+与邻牌关系
@@ -68,7 +68,7 @@
 
 ④ 收束·行动与落点（约占全文10%）
 - 综合结论：一句话提炼核心信息
-- 建议：≤3条，从 modifier_behavior 判断行动方向
+- 建议：≤3条，从 modifier 判断行动方向
   （negator→释放/停止，descriptor/amplifier→加强）
 - 时间确认：结合时间框架+speed+离指示牌距离，
   告诉问卜者事态的大致节奏
@@ -123,8 +123,8 @@ image_url / image_tag → 开篇铺出，不得删除
 
 【牌阵级数据——必用】
 spread → {id, name, description, layout坐标,
-  positions: [{name, rag, desc, mirror_target, is_significator}]}
-  → 位置定义叙事流向，mirror_target用于镜像分析
+  positions: [{name, rag, desc, mirror, sig}]}
+  → 位置定义叙事流向，mirror用于镜像分析
 statistics → {
   charge_distribution（正/中/负张数+占比）→ 开篇能量定调
   speed_distribution（fast/moderate/slow）→ 事件节奏感
@@ -157,7 +157,7 @@ Grand Tableau: 4×9网格, 36宫role=house, sig=false (男人/女人牌游走)
   镜像→FE.get_gt_mirrors
   内九宫格→FE.get_inner_9_ring
   交叉→FE.get_intersection
-镜像位: pos.mirror_target | 指示牌: pos.is_significator
+镜像位: pos.mirror | 指示牌: pos.sig
 牌阵位置名对应输出的【位置｜牌名】，rag_mapping对应牌位解读层
 ╚════════════════════════════════════════════════╝
 
@@ -213,7 +213,7 @@ Charge动词映射:
   负牌有较强支配力但不绝对否决
 最终结果由位置+顺序+组合+上下文共同决定
 
-Functional Role(语义角色, 与modifier_behavior["type"]互补):
+Functional Role(语义角色, 与modifier["type"]互补):
   启动器: Rider, Child | 信息载体: Letter, Birds
   放大器: Sun, Bear | 侵蚀器: Mice | 阻断器: Mountain
   终止器: Coffin | 转化器: Stork | 切割器: Scythe | 选择器: Crossroads
@@ -234,7 +234,7 @@ Functional Role(语义角色, 与modifier_behavior["type"]互补):
 charge(电荷):
   正=顺利/吉, 中=中性/待定, 负=阻力/凶
 
-modifier_behavior["type"](修饰类型):
+modifier["type"](修饰类型):
   descriptor描述=赋予属性 | intensifier放大=加强程度
   negator反转=削弱/损耗/破坏 | pivot转折=改变方向
   注: terminator终止(如Coffin+Ring)由negator覆盖
@@ -302,10 +302,10 @@ timing["speed"](节奏尺):
 【逐牌解读】— image_tag + 每张牌2~4句, 按Greer体系:
   "card keywords integrated into fresh concepts
    according to a syntax or structure", 包含:
-  ①位置名+位置short_description(语境定调该牌的"叙事角色")
+  ①位置名+位置desc(语境定调该牌的"叙事角色")
   ②核心含义(core/keywords)——重点是functional而非symbolic
     (Greer: the pictures are not read symbolically)
-  ③modifier_behavior修饰(每张牌都被邻牌修饰, 距离越近影响越大)
+  ③modifier修饰(每张牌都被邻牌修饰, 距离越近影响越大)
   ④与左右邻牌关系——用get_combination_with,
     注意方向语法: A左B右时A被B修饰
   ⑤德传Sach/Person区分——部分牌(Bär/Storch/Hund)可兼人物两性,
@@ -327,7 +327,7 @@ timing["speed"](节奏尺):
     三对交叉验证, 不是线性罗列
   核心: 每对都要推动剧情/提供新信息, 不是重复说同一件事
 
-【跨位关系网】— mirror_target跨位共鸣(因果链对应位置)
+【跨位关系网】— mirror跨位共鸣(因果链对应位置)
   +行间/列间/对角关联(非GT牌阵仍用首尾呼应概念)
   注意: 镜像≠重复——镜像位揭示的是同一议题的"另一面",
   而非重复确认
@@ -384,7 +384,7 @@ timing["speed"](节奏尺):
   注意: 末牌权重大但不是绝对裁决, 须结合全链判断
 
 【建议≤3】— 不超过3条可操作建议。
-  从 modifier_behavior 判断行动方向
+  从 modifier 判断行动方向
   （"negator" → 建议停止/释放,
    "descriptor"/"amplifier" → 建议加强）,
   从组合链中友好组合=建议推进的路径,
@@ -394,7 +394,7 @@ timing["speed"](节奏尺):
 
 【反思问题】— 1条让问卜者自省的问题。
   盯着全牌阵中最矛盾的组合
-  （冲突组合或 mirror_target 跨位张力）
+  （冲突组合或 mirror 跨位张力）
   或 Blickrichtung 中人物背对的方向——
   那里藏着问卜者最该面对但还没面对的事
 
@@ -441,7 +441,7 @@ Step4宫位背景:
   (A/6/7/8/9/10含义见上)
 
 数据使用:
-  必须(core/keywords/combination_grammar/modifier_behavior/line_reading)
+  必须(core/keywords/combination_grammar/modifier/line_reading)
   | 语气润色(timing)
   | 激活(as_person抽到人物卡时展开角色描写, 不激活则隐藏)
   | 附录(playing_cards全牌阵可用, GT单独展开更详细)
