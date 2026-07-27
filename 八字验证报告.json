@@ -1,0 +1,100 @@
+{
+  "template": "八字",
+  "fileSize": 862,
+  "verified": false,
+  "errors": [
+    {
+      "severity": "high",
+      "location": "Lines 293-302, Section 3.4 \"十神基本定义\"",
+      "currentText": "正财（我克同性）→ 稳定收入、正当财、妻子\n偏财（我克异性）→ 偏财、投资、父亲、情人\n正官（克我同性）→ 事业、管理、丈夫（女命）、名望\n七杀（克我异性）→ 权力、挑战、严厉、压力\n正印（生我同性）→ 学识、母亲、庇护、学历\n偏印（生我异性）→ 偏才、继母、研究、玄学",
+      "issue": "SYSTEMATIC INVERSION: All six 正/偏 pairs of 财/官/印 have the 同性/异性 designations swapped. The rule is: '正' = 异性 (different gender from 日干), '偏' = 同性 (same gender as 日干). The template has every pair inverted. This means: 正财 = 我克异性 (NOT 同性), 偏财 = 我克同性 (NOT 异性), 正官 = 克我异性 (NOT 同性), 七杀 = 克我同性 (NOT 异性), 正印 = 生我异性 (NOT 同性), 偏印 = 生我同性 (NOT 异性). This is not a theoretical dispute - it is the universal foundational definition across ALL classical schools including 《渊海子平》, 《三命通会》, 《子平真诠》.",
+      "correctContent": "正财（我克异性）→ 稳定收入、正当财、妻子\n偏财（我克同性）→ 偏财、投资、父亲、情人\n正官（克我异性）→ 事业、管理、丈夫（女命）、名望\n七杀（克我同性）→ 权力、挑战、严厉、压力\n正印（生我异性）→ 学识、母亲、庇护、学历\n偏印（生我同性）→ 偏才、继母、研究、玄学",
+      "source": "《渊海子平》论十神: 正财乃甲见己、乙见戊...凡十神以阴阳正偏为则。阴见阳、阳见阴为正；阴见阴、阳见阳为偏。"
+    },
+    {
+      "severity": "high",
+      "location": "Line 105, Section 3.1 \"日主旺衰判断\"",
+      "currentText": "旺位（帝旺即禄，以上为禄，禄即旺位）",
+      "issue": "Fundamental 十二长生 (12 Stages) error: 帝旺 (Emperor) and 临官/禄 (Official) are DIFFERENT positions in the 十二长生 cycle. They are never the same. For example: 甲临官(禄)在寅, 帝旺在卯; 乙临官禄在卯, 帝旺在寅; 丙临官在巳, 帝旺在午. The template conflates them, which corrupts the entire 旺衰判定 system and internally contradicts the template's own 建禄格 vs 月刃格 distinction (lines 186-187).",
+      "correctContent": "旺位（帝旺）:\n甲-卯 乙-寅 丙-午 丁-巳 戊-午 己-巳 庚-酉 辛-申 壬-子 癸-亥\n\n禄位（临官）:\n甲-寅 乙-卯 丙-巳 丁-午 戊-巳 己-午 庚-申 辛-酉 壬-亥 癸-子\n\n帝旺和临官是十二长生中的不同位置，不可混淆。",
+      "source": "《渊海子平》十二长生表: 临官(禄)和帝旺(旺)为十二长生之二个不同阶段。"
+    },
+    {
+      "severity": "high",
+      "location": "Lines 391-392, Section 3.5 \"三刑\"",
+      "currentText": "丑戌未三刑 → 无礼之刑——是非口舌",
+      "issue": "Classification error: 丑未戌三刑 (also written 丑戌未) is 恃势之刑 (relying-on-power punishment), NOT 无礼之刑. 无礼之刑 is exclusively for 子卯刑. This is a distinct classification from all classical sources.",
+      "correctContent": "丑戌未三刑 → 恃势之刑——倚势欺凌、是非口舌\n\n(子卯刑 → 无礼之刑——情感纠葛; 寅巳申三刑 → 无恩之刑——互相伤害)",
+      "source": "《渊海子平》: 寅巳申为无恩之刑, 丑未戌为恃势之刑, 子卯为无礼之刑, 辰午酉亥自刑。"
+    },
+    {
+      "severity": "high",
+      "location": "Line 470, Section 3.7 \"天乙贵人\"",
+      "currentText": "口诀：甲戊庚牛羊，乙己鼠猴乡，丙丁猪鸡位，壬癸兔蛇藏，庚辛逢虎马",
+      "issue": "天乙贵人口诀 error: The classical version from 《渊海子平》 has '六辛逢虎马' NOT '庚辛逢虎马'. Under the correct version: 庚's 贵人是 丑(牛)/未(羊) (from the first phrase '甲戊庚牛羊'), and only 辛's 贵人是 寅(虎)/午(马). The template's version reassigns 庚's 贵人 from 丑未 to 寅午, which is a non-standard variant that contradicts the mainstream classical tradition.",
+      "correctContent": "口诀：甲戊庚牛羊，乙己鼠猴乡，丙丁猪鸡位，壬癸兔蛇藏，六辛逢虎马，此是贵人方。\n\n说明：甲/戊/庚 → 丑未; 乙/己 → 子申; 丙/丁 → 亥酉; 壬/癸 → 卯巳; 辛 → 寅午",
+      "source": "《渊海子平》卷三: '天乙贵人' 口诀标准版。"
+    },
+    {
+      "severity": "medium",
+      "location": "Lines 297-298, Section 3.4 \"十神组合 - 偏财 + 劫财\"",
+      "currentText": "偏财 + 劫财 → 偏财被夺 → 投资失利、合作纠纷",
+      "issue": "Technically imprecise 十神 interaction: 劫财 specifically 克 正财 (同五行异阴阳克同五行异阴阳), NOT 偏财. 比肩 (同五行同阴阳) 克 偏财. So 偏财 + 比肩 → 偏财被夺 is the correct pair. The template mixes up which type of 比劫 controls which type of 财.",
+      "correctContent": "偏财 + 比肩 → 偏财被夺 → 投资失利、合作纠纷\n正财 + 劫财 → 正财被夺 → 借贷难回、合伙破财\n\n(劫财克正财, 比肩克偏财, 这是十神生克的基本规则)",
+      "source": "《子平真诠》论十神生克: 比劫分阴阳以克财，劫财克正财，比肩克偏财。"
+    },
+    {
+      "severity": "medium",
+      "location": "Line 479, Section 3.7 \"文昌贵人\"",
+      "currentText": "以食神之临官为文昌",
+      "issue": "The explanation '以食神之临官为文昌' is factually incorrect. While it works for 甲(食神丙临官巳→甲文昌巳) and 乙(食神丁临官午→乙文昌午), it fails for 丙(食神戊临官巳→but 丙文昌在申) and 丁(食神己临官午→but 丁文昌在酉). The 文昌口诀 itself is correctly stated, but the underlying theory explanation is wrong.",
+      "correctContent": "文昌贵人的查法严格遵循口诀，不可用'食神之临官'推导。\n正确口诀：甲乙巳午报君知，丙戊申宫丁己鸡，庚猪辛鼠壬逢虎，癸人见卯入云梯。",
+      "source": "《渊海子平》/'《三命通会》论文昌贵人。"
+    },
+    {
+      "severity": "medium",
+      "location": "Lines 358-361, Section 3.5 \"天干五合 - 合化条件\"",
+      "currentText": "合化条件：天干合 + 月支支持合化后的五行 → 合化成功\n例：甲己合土，月支为辰/戌/丑/未（土月）→ 合化成功",
+      "issue": "Oversimplified 合化条件: In classical theory, 天干五合 requires at least one of the following additional conditions for successful 合化 beyond just 月支 support: (1) 天干透出所化五行之引神 (e.g., 甲己合土 needs 戊/己 透出 to 引化); (2) 地支中有所化五行的强根; (3) the 化神 must be in its 旺 phase. Simply having 月支为土月 is not sufficient - the 合 would remain 合绊 (bound but not transformed).",
+      "correctContent": "合化条件：天干合 + 月支支持合化后的五行 + 透出化神引化 → 合化成功\n例：甲己合土，月支为辰/戌/丑/未（土月），天干有戊或己土引出 → 合化成功\n若无化神引出 → 仅为合绊，力量被牵制但未转化",
+      "source": "《子平真诠》论十干合化: '合化必得月令之气，更得化神引透乃真。'"
+    },
+    {
+      "severity": "low",
+      "location": "Line 519, Section 3.7 \"羊刃\"",
+      "currentText": "羊刃查法（日干查四支）：甲卯乙辰丙午丁未庚酉辛戌壬子癸丑",
+      "issue": "Non-standard 羊刃 lookup for 阴干. The classical 《渊海子平》tradition holds that 羊刃 applies ONLY to 阳干 (五阳干有刃): 甲卯丙午戊午庚酉壬子. 阴干 (乙丁己辛癸) traditionally do NOT have 羊刃, or if they do, the 羊刃 is at the 帝旺 position (乙寅丁巳己巳辛申癸亥), not at 冠带 (乙辰丁未辛戌癸丑) as the template states. The template uses a non-mainstream '冠带为阴干之刃' theory.",
+      "correctContent": "标准羊刃查法（日干）：\n甲→卯、丙→午、戊→午、庚→酉、壬→子（阳干羊刃=帝旺）\n乙→寅、丁→巳、己→巳、辛→申、癸→亥（如用阴干羊刃，则取帝旺非冠带）\n\n或标注: 传统子平以阳干有刃、阴干无刃。",
+      "source": "《渊海子平》卷四论羊刃: '阳刃者，甲卯丙午戊午庚酉壬子是也。阴干无刃。'"
+    },
+    {
+      "severity": "low",
+      "location": "Line 186, Section 3.2 \"建禄格\"",
+      "currentText": "建禄格（月支为日主禄位，不透干）→ 身旺但格局不明，靠财官显贵",
+      "issue": "Internal inconsistency: Line 105 says 帝旺=禄, but line 186 says 建禄格=月支为禄位 (临官). If 帝旺=禄 as claimed on line 105, then 月刃格 (line 187, 月支为帝旺) should also be 建禄格. The template itself recognizes them as different patterns, which contradicts its own earlier conflation.",
+      "correctContent": "建禄格 = 月支为日主临官（禄位）。月刃格 = 月支为日主帝旺。这两个格局不同，需明确区分。",
+      "source": "内部逻辑一致性。"
+    },
+    {
+      "severity": "low",
+      "location": "Line 103-108, Section 3.1 \"得令\"",
+      "currentText": "月支是日主的禄旺位 → 日主得令\n注意：月支是日主的印位（生我者）也是得令，但力量小于禄位。\n例：甲木生于亥月（亥为甲木长生）、甲木生于子月（子为甲木沐浴）\n这些也算得令",
+      "issue": "The template uses 十二长生 position to determine 得令, which differs from the classical 四季旺相 approach (春木旺/夏火旺/秋金旺/冬水旺/季末土旺). While the 十二长生 approach is used by some practitioners, the classical approach is the mainstream. The example says '甲木生于子月也算得令' which would NOT be correct under the seasonal approach (子月冬, 水旺木休). Using 十二长生 for 得令 can produce results that contradict classical 旺相休囚死.",
+      "correctContent": "建议补充四季旺相法作为对照：\n春（寅卯辰）木旺 → 甲乙木得令\n夏（巳午未）火旺 → 丙丁火得令\n秋（申酉戌）金旺 → 庚辛金得令\n冬（亥子丑）水旺 → 壬癸水得令\n辰戌丑未月土旺 → 戊己土得令",
+      "source": "《滴天髓》论旺衰: '得令者，天时之正也。如春木夏火秋金冬水，各乘其时。'"
+    }
+  ],
+  "omissions": [
+    "1. 十二长生完整表缺失: 模板仅列出了长生位和禄位，但缺少完整的十二长生表（长生/沐浴/冠带/临官/帝旺/衰/病/死/墓/绝/胎/养），导致十二运(dishifor)的解读缺乏完整依据。应附上十干十二长生完整对照表。",
+    "2. 五行旺相休囚死表缺失: 四季五行旺相休囚死的完整规则没有在模板中明确列出，而这是判断五行力量的核心依据之一。模板仅通过'得令/得地/得势'间接处理，缺少系统说明。",
+    "3. 大运顺逆排法规则缺失: 大运的核心计算规则（阳男阴女顺排、阴男阳女逆排，3天=1年起运）没有被提及。虽然模板声明数据来自引擎不必计算，但AI仍需理解这些规则才能验证引擎结果的正确性。",
+    "4. 天干五合化气条件不完整: 如错误#7所述，缺少'化神引透'这一关键条件，仅靠月令支持不足以合化成功。",
+    "5. 地支三合/半三合规则缺失: 模板列出了六合、六冲、六害、三刑，但没有提到地支三合局（申子辰合水、亥卯未合木、寅午戌合火、巳酉丑合金）和半三合，这些在实战中非常重要。",
+    "6. 暗合/暗冲概念缺失: 模板没有提及地支暗合及暗冲的概念，这些在格局不明显的命局中常起关键作用。",
+    "7. 十神具体查法表缺失: 模板给出了十神的定义但缺少完整的十神查对表（日干×天干/藏干→十神），对于AI来说，直接提供查对表比让AI自己推算更可靠。",
+    "8. 五行生克基本表缺失: 五行相生（金生水、水生木、木生火、火生土、土生金）和相克（金克木、木克土、土克水、水克火、火克金）的基本关系没有明确列表。",
+    "9. 神煞合婚/年柱空亡查法说明: 合婚中提到'生肖合冲害'但没有给出完整的生肖六合/三合/冲害表。",
+    "10. 纳音六十甲子完整列表缺失: 纳音部分仅给出了五行分类，但完整的六十甲子纳音表（哪个干支对应哪个纳音）没有列出。"
+  ],
+  "overallAssessment": "该模板在整体框架设计和方法论表述上是扎实的，涵盖了子平命理的核心维度（旺衰、格局、调候、十神、干支关系、大运流年、神煞、三垣、纳音）。叙事输出格式和防幻觉规则的设计质量很高。\n\n然而，该模板存在严重的技术事实错误，最核心的是十神定义中所有正偏对的同性/异性标注被系统性颠倒（正官/七杀、正财/偏财、正印/偏印共6处），这是八字理论的根基性错误——如果AI用这些错误公式推导十神，每盘都会出错。此外还有帝旺=禄的混淆、三刑分类错误、天乙贵人口诀错误等重大问题。\n\n总体评价：模板架构优秀但核心数据有致命错误，不能在未修正的情况下直接使用。建议优先修复标记为HIGH的4个错误（十神定义系统反转、帝旺=禄、三刑分类、天乙贵人），这些会影响每一个八字解读的正确性。"
+}
