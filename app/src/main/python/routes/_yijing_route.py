@@ -155,45 +155,56 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, hour=None
                 result["six_months_stars"] = i.find_six_mons(rg)
         except: pass
 
-    # === 第3步：十二长生 + 旺相休囚（六爻纳甲旺衰判断核心） ===
+    # === 第2.5步：Python engine 额外数据（十二长生/策轨/节气旺相——GitHub版特有方法） ===
     if hex_data:
         try:
             gz = i.gangzhi(_yr,_mo,_dy,_hr,_min)
-            if gz and len(gz) > 2:
-                day_zhi = gz[2][1]
-                month_zhi = gz[1][1]
-                _DIZHI = ["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"]
-                _CHANGSHENG = ["长生","沐浴","冠带","临官","帝旺","衰","病","死","墓","绝","胎","养"]
-                _CS_START = {"金":5, "木":11, "水":8, "火":2, "土":8}
-                _ZHI_WX = {"寅":"木","卯":"木","辰":"土","巳":"火","午":"火","未":"土",
-                           "申":"金","酉":"金","戌":"土","亥":"水","子":"水","丑":"土"}
-                _WSXQX = {
-                    "木":{"木":"旺","火":"相","水":"休","金":"囚","土":"死"},
-                    "火":{"火":"旺","土":"相","木":"休","水":"囚","金":"死"},
-                    "土":{"土":"旺","金":"相","火":"休","木":"囚","水":"死"},
-                    "金":{"金":"旺","水":"相","土":"休","火":"囚","木":"死"},
-                    "水":{"水":"旺","木":"相","金":"休","土":"囚","火":"死"},
-                }
-                month_wx = _ZHI_WX.get(month_zhi, "土")
+            if gz and len(gz) >= 4:
+                dg = gz[2][0]  # 日干
+                hg = gz[3][0]  # 时干
+                # 2.5.1 十二长生（日支运/时支运）——按天干阳顺阴逆
+                luck_day = i.find_shier_luck(dg)
+                luck_hour = i.find_shier_luck(hg)
+                result["十二长生"] = {"日支运": luck_day, "时支运": luck_hour}
+                # Per-爻时支十二长生（attach到本卦/之卦每爻）
                 for gua_key in ("本卦", "之卦"):
                     gua = hex_data.get(gua_key, {})
                     zhi_list = gua.get("地支", [])
-                    wx_list = gua.get("五行", [])
-                    if len(zhi_list) == 6 and len(wx_list) == 6:
-                        cs = []
-                        ws = []
-                        for z, wx in zip(zhi_list, wx_list):
-                            start = _CS_START.get(wx, 8)
-                            idx = _DIZHI.index(z)
-                            step = (idx - start) % 12
-                            cs.append(_CHANGSHENG[step])
-                            ws.append(_WSXQX.get(month_wx, {}).get(wx, ""))
-                        gua["十二长生"] = cs
-                        gua["旺相休囚"] = ws
+                    if len(zhi_list) == 6:
+                        gua["时支十二长生"] = [luck_hour.get(z, "") for z in zhi_list]
+                # 2.5.2 日空/时空
+                try:
+                    ds = i.daykong_shikong(_yr,_mo,_dy,_hr,_min)
+                    if ds:
+                        result["日空"] = ds.get("日空")
+                        result["时空"] = ds.get("時空")
+                except: pass
+                # 2.5.3 节气八卦旺相
+                try:
+                    from ichingshifa.jieqi import jq, gong_wangzhuai
+                    jq_name = jq(_yr,_mo,_dy,_hr,_min)
+                    ws = gong_wangzhuai(jq_name)
+                    result["节气旺相"] = {
+                        "节气": jq_name,
+                        "旺": ws[1].get("旺"),
+                        "相": ws[1].get("相"),
+                        "卦旺衰表": ws[0],
+                    }
+                except: pass
+                # 2.5.4 先天策轨数
+                try: result["先天策数"] = i.innate_cegui(_yr,_mo,_dy,_hr,_min)
+                except: pass
+                # 2.5.5 后天策轨数 + 后天卦辞
+                try: result["后天策数"] = i.acquired_cegui(_yr,_mo,_dy,_hr,_min)
+                except: pass
+                try:
+                    ac = i.get_acquired_code(_yr,_mo,_dy,_hr,_min)
+                    if ac: result["后天卦辞"] = ac
+                except: pass
         except Exception:
             pass
 
-    # === 第4步：JS decodePan（通用——凡有爻值均调用） ===
+    # === 第3步：JS decodePan（通用——凡有爻值均调用） ===
     #    decodePan内嵌了calculateQingyiXingXiu，不额外调
     if yao_string:
         try:
