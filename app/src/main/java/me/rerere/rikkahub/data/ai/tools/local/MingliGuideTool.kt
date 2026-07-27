@@ -15,13 +15,13 @@ import me.rerere.ai.ui.UIMessagePart
  * mingli_guide 工具 — 读取命理解读模板。
  *
  * AI 在第一次拿到某系统的结构化数据后，调一次本工具获取解读指导。
- * 模板存储在 assets/mingli/{system}.txt，与 JS 引擎相同的 assets 模式。
+ * 模板存储在 assets/mingli/{system}.md，纯 Markdown 格式，AI 直接按 Markdown 结构解读。
  */
 fun createMingliGuideTool(context: Context): Tool = Tool(
     name = "mingli_guide",
-    description = "读取指定命理系统的解读模板/叙事框架/输出规范。" +
-        "AI在调完mingli拿到数据后，首次遇到该系统时调一次本工具。" +
-        "之后可缓存模板内容，无需再次读取。" +
+    description = "【必读】读取指定命理系统的解读模板。AI在拿到mingli数据后必须调本工具，然后严格按模板逐条解读，不得偏离。" +
+        "模板内容为确定性解读规则，不是参考建议。任何规则都必须遵守。" +
+        "首次遇到某系统时调一次，之后可缓存，但同系统每次解读都必须严格按模板。" +
         "系统名与mingli工具一致。可用系统: 塔罗/雷诺曼/八字/紫微/现代西洋占星/" +
         "传统西洋占星/深度古典占星(stellium)/吠陀/人类图/灵数卡巴拉/奇门遁甲/大六壬/六爻/梅花易数。" +
         "其中西洋占星分三种:" +
@@ -98,7 +98,7 @@ fun createMingliGuideTool(context: Context): Tool = Tool(
             ?: error("未知系统: $system，可用系统: ${fileMap.keys}")
 
         try {
-            val template = context.assets.open("mingli/$fileName.txt")
+            val template = context.assets.open("mingli/$fileName.md")
                 .bufferedReader().readText()
             listOf(UIMessagePart.Text(template))
         } catch (e: Exception) {

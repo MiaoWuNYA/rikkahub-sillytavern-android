@@ -28,7 +28,7 @@ import me.rerere.rikkahub.data.ai.python.JsBridge
 fun createMingliTool(context: Context): Tool = Tool(
     name = "mingli",
     description = "命理排盘/抽牌/占卜统一入口。返回结构化JSON数据。" +
-        "AI在拿到数据后，调用mingli_guide读取解读模板。" +
+        "【强制】AI拿到数据后必须调mingli_guide读取该系统的解读模板，然后严格按模板逐条解读，不得跳过模板或自行发挥。" +
         "支持系统: 塔罗 | 雷诺曼 | 八字 | 紫微 | 现代西洋占星 | 传统西洋占星 | " +
         "吠陀 | 人类图 | 灵数卡巴拉 | 奇门(含大六壬) | 六爻(含梅花易数) | 深度古典占星(基于stellium组件引擎)。" +
         "西洋占星分两种风格: 现代西洋占星(心理/成长取向) vs 传统西洋占星(事件判断/卜卦取向)。" +

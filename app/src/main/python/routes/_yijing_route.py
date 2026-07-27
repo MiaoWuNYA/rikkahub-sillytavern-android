@@ -126,15 +126,21 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, hour=None
             yao_string = _extract_yao(hex_data)
 
         # 非time方法：Python引擎从爻值重建hex_data（双引擎对照）
+        # 使用 qigua_manual() 确保飛神等字段真实计算，不手搭
         if yao_string and not hex_data:
-            gz = i.gangzhi(_yr,_mo,_dy,_hr,_min)
-            dg = gz[2] if gz and len(gz) > 2 else None
-            details = i.mget_bookgua_details(yao_string)
-            if details:
-                by = yao_string.replace("6","7").replace("9","8")
-                bg = i.decode_gua(yao_string, dg) if dg else {}
-                zg = i.decode_gua(by, dg) if dg else {}
-                hex_data = {"日期":"%d年%d月%d日"%(_yr,_mo,_dy), "大衍筮法":details, "本卦":bg, "之卦":zg, "飛神":""}
+            try:
+                hex_data = i.qigua_manual(_yr,_mo,_dy,_hr,0, yao_string)
+            except Exception:
+                pass
+            if not hex_data:
+                gz = i.gangzhi(_yr,_mo,_dy,_hr,_min)
+                dg = gz[2] if gz and len(gz) > 2 else None
+                details = i.mget_bookgua_details(yao_string)
+                if details:
+                    by = yao_string.replace("6","7").replace("9","8")
+                    bg = i.decode_gua(yao_string, dg) if dg else {}
+                    zg = i.decode_gua(by, dg) if dg else {}
+                    hex_data = {"日期":"%d年%d月%d日"%(_yr,_mo,_dy), "大衍筮法":details, "本卦":bg, "之卦":zg, "飛神":""}
 
         if hex_data:
             result["ichingshifa"] = hex_data
@@ -191,16 +197,165 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, hour=None
                         "卦旺衰表": ws[0],
                     }
                 except: pass
-                # 2.5.4 先天策轨数
-                try: result["先天策数"] = i.innate_cegui(_yr,_mo,_dy,_hr,_min)
-                except: pass
-                # 2.5.5 后天策轨数 + 后天卦辞
-                try: result["后天策数"] = i.acquired_cegui(_yr,_mo,_dy,_hr,_min)
+                # 2.5.4 农历日期 + 月建
+                try:
+                    lunar = i.lunar_date_d(_yr,_mo,_dy)
+                    if lunar: result["农历"] = "%d年%d月%d日" % (lunar["年"], lunar["月"], lunar["日"])
                 except: pass
                 try:
-                    ac = i.get_acquired_code(_yr,_mo,_dy,_hr,_min)
-                    if ac: result["后天卦辞"] = ac
+                    lm = i.find_lunar_month(gz[0]).get(lunar.get("月")) if lunar else None
+                    if lm: result["月建"] = lm
                 except: pass
+        except Exception:
+            pass
+
+    # === 第2.6步：衍生分析（世应/飞伏/动爻/互卦——参照display_pan_m逻辑） ===
+    if hex_data and yao_string:
+        try:
+            bg = hex_data.get("本卦", {})
+            bz = bg.get("六親用神", [])
+            bzhi = bg.get("地支", [])
+            bwx = bg.get("五行", [])
+            bsy = bg.get("世應爻", [])
+            bfs = bg.get("伏神", {})
+            if not isinstance(bfs, dict): bfs = {}
+            b6s = bg.get("六獸", [])
+            if not b6s: b6s = result.get("six_months_stars", [])
+
+            # 世应位置索引
+            shi_idx = bsy.index("世") if "世" in bsy else -1
+            ying_idx = bsy.index("應") if "應" in bsy else -1
+            shi_z = bzhi[shi_idx] if 0 <= shi_idx < len(bzhi) else ""
+            ying_z = bzhi[ying_idx] if 0 <= ying_idx < len(bzhi) else ""
+
+            # 2.6.1 卦缺六亲（参照display_pan_m line 708-714）
+            missing = set("官父妻兄子") - set(bz)
+            if missing: result["卦缺六亲"] = "".join(missing)
+
+            # 2.6.2 世应基础信息（位置/地支/六亲）
+            if shi_idx >= 0:
+                result["世爻"] = {"位置": shi_idx, "地支": shi_z, "六亲": bz[shi_idx] if shi_idx < len(bz) else ""}
+            if ying_idx >= 0:
+                result["应爻"] = {"位置": ying_idx, "地支": ying_z, "六亲": bz[ying_idx] if ying_idx < len(bz) else ""}
+
+            # 2.6.3 六亲持世 + 六神持世/持应（参照display_pan_m line 842-843, 856-860）
+            if shi_idx >= 0 and shi_idx < len(bz):
+                result["持世"] = bz[shi_idx]
+            if shi_idx >= 0 and b6s and shi_idx < len(b6s):
+                result["世神"] = b6s[shi_idx]
+            if ying_idx >= 0 and b6s and ying_idx < len(b6s):
+                result["应神"] = b6s[ying_idx]
+
+            # 2.6.4 世应五行关系（参照display_pan_m line 829: self.find_wx_relation(shi[2], ying[2])）
+            if shi_z and ying_z:
+                try: result["世应关系"] = i.find_wx_relation(shi_z, ying_z)
+                except: pass
+
+            # 2.6.5 世应长生（从时支十二长生取）
+            lk_h = result.get("十二长生", {}).get("时支运", {})
+            if shi_z and shi_z in lk_h: result["世爻长生"] = lk_h[shi_z]
+            if ying_z and ying_z in lk_h: result["应爻长生"] = lk_h[ying_z]
+
+            # 2.6.6 世应旬空判断（参照display_pan_m line 848-851, 861-863）
+            # 源代码同时检测 日空 和 时空（display_pan_m 战场版逻辑）
+            rk = result.get("日空", "")
+            sk2 = result.get("时空", "")
+            shi_kong = set()
+            if rk: shi_kong.update(rk)
+            if sk2: shi_kong.update(sk2)
+            if shi_z and shi_z in shi_kong:
+                result["世爻旬空"] = True
+            if ying_z and ying_z in shi_kong:
+                result["应爻旬空"] = True
+
+            # 2.6.7 飞伏关系（参照display_pan_m line 755: self.find_wx_relation(flygodyao[0], fugodyao[0])）
+            if bfs and bfs.get("伏神爻"):
+                try:
+                    fly_z = bfs.get("本卦伏神所在爻", "")[2:]
+                    fu_z = bfs.get("伏神爻", "")[2:]
+                    if fly_z and fu_z:
+                        result["飞伏关系"] = i.find_wx_relation(fly_z[0], fu_z[0])
+                except: pass
+
+            # 2.6.8 动爻分析
+            # 注意：源代码display_pan_m line 879-885 优先取9(老阳)，无9才取6(老阴)
+            # 不能简单地 position-first
+            if "9" in yao_string:
+                d_i = yao_string.index("9")
+            elif "6" in yao_string:
+                d_i = yao_string.index("6")
+            else:
+                d_i = -1
+            if d_i >= 0:
+                d_z = bzhi[d_i] if d_i < len(bzhi) else ""
+                d_lq = bz[d_i] if d_i < len(bz) else ""
+                d_wx = bwx[d_i] if d_i < len(bwx) else ""
+                d_info = {"位置": d_i, "值": yao_string[d_i]}
+                if d_z: d_info["地支"] = d_z
+                if d_lq: d_info["六亲"] = d_lq
+                if d_wx: d_info["五行"] = d_wx
+                result["动爻"] = d_info
+                # 动爻与世/应五行关系（参照display_pan_m line 903-908）
+                if d_z and shi_z:
+                    try: result["动世关系"] = i.find_wx_relation(d_z, shi_z)
+                    except: pass
+                if d_z and ying_z:
+                    try: result["动应关系"] = i.find_wx_relation(d_z, ying_z)
+                    except: pass
+                # 动爻与日辰时支刑克（参照display_pan_m line 886-889: yingke字典）
+                try:
+                    from ichingshifa import yingke
+                    gz2 = i.gangzhi(_yr,_mo,_dy,_hr,_min)
+                    if gz2 and len(gz2) >= 4:
+                        ri_z = gz2[2][1] if len(gz2[2]) > 1 else ""
+                        hr_z = gz2[3][1] if len(gz2[3]) > 1 else ""
+                        xk_list = []
+                        if ri_z and i.multi_key_dict_get(yingke, ri_z+d_z):
+                            xk_list.append("日辰")
+                        if hr_z and i.multi_key_dict_get(yingke, hr_z+d_z):
+                            xk_list.append("时支")
+                        if xk_list: result["动爻刑克"] = "/".join(xk_list)
+                except: pass
+
+            # 2.6.9 互卦（参照display_pan_m line 697: wugua = ogua[1:4]+gb[2:5]）
+            try:
+                gb = yao_string.replace("9","8").replace("6","7")
+                wu_str = yao_string.replace("9","7").replace("6","8")[1:4] + gb[2:5]
+                result["互卦"] = wu_str
+                # 互卦上下卦名
+                eg = {'777':"乾",'778':"兌",'787':"離",'788':"震",
+                      '877':"巽",'878':"坎",'887':"艮",'888':"坤"}
+                wu_down = eg.get(wu_str[0:3], "")
+                wu_up = eg.get(wu_str[3:6], "")
+                if wu_down and wu_up: result["互卦卦名"] = wu_down+wu_up
+            except: pass
+
+            # 2.6.10 下卦上卦旺衰（参照display_pan_m line 808-813: eightgua + gong_wangzhuai）
+            try:
+                ogua = yao_string.replace("6","8").replace("9","7")
+                eg2 = {'777':"乾金",'778':"兌金",'787':"離火",'788':"震木",
+                       '877':"巽木",'878':"坎水",'887':"艮土",'888':"坤土"}
+                dw_gua = eg2.get(ogua[0:3], "")
+                up_gua = eg2.get(ogua[3:6], "")
+                ws = result.get("节气旺相", {}).get("卦旺衰表", {})
+                if dw_gua and ws:
+                    result["下卦旺衰"] = dw_gua[0] + ws.get(dw_gua[0], "")
+                if up_gua and ws:
+                    result["上卦旺衰"] = up_gua[0] + ws.get(up_gua[0], "")
+            except: pass
+
+            # 2.6.11 爻象可视化（参照display_pan_m line 716-717: guayaodict）
+            try:
+                vd = {"6":"▅▅ ▅▅ X","7":"▅▅▅▅▅  ","8":"▅▅ ▅▅  ","9":"▅▅▅▅▅ O"}
+                vis = {"本卦": [vd[v] for v in yao_string if v in vd]}
+                gb_vis = [vd[v.replace("6","7").replace("9","8")] for v in yao_string if v in "6789"]
+                if gb_vis: vis["之卦"] = gb_vis
+                wu_v = result.get("互卦", "")
+                if wu_v and len(wu_v) == 6:
+                    vis["互卦"] = [vd[v] for v in wu_v if v in vd]
+                if vis: result["爻象"] = vis
+            except: pass
+
         except Exception:
             pass
 
@@ -263,6 +418,12 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, hour=None
             if mh_moving:
                 # 有动爻 → 走引擎 compute_hexagrams 做体用
                 hg=meihua_yi.compute_hexagrams(mh_lines,mh_moving)
+                # 调用引擎自带的 analyze_ti_yong 算体用生克关系
+                try:
+                    rel = meihua_yi.analyze_ti_yong(hg["ti"]["element"], hg["yong"]["element"])
+                    hg["体用生克"] = rel[0]
+                    hg["体用吉凶"] = rel[1]
+                except: pass
                 result["meihua_formatted"]=meihua_yi.format_hexagram_text(mh_lines,mh_moving)
             else:
                 # 无动爻 → 引擎 compute_hexagrams 会崩，手工搭体用
@@ -271,6 +432,11 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, hour=None
                     "mutual":{"lines":mu,"bot":bg[tuple(mu[0:3])],"top":bg[tuple(mu[3:6])]},
                     "changed":{"lines":list(mh_lines),"bot":bg[tuple(mh_lines[0:3])],"top":bg[tuple(mh_lines[3:6])]},
                     "ti":bg[tuple(mh_lines[0:3])],"yong":bg[tuple(mh_lines[3:6])],"moving_indices":[]}
+                try:
+                    rel = meihua_yi.analyze_ti_yong(hg["ti"]["element"], hg["yong"]["element"])
+                    hg["体用生克"] = rel[0]
+                    hg["体用吉凶"] = rel[1]
+                except: pass
             result["meihua_tiyong"]=hg
         except: pass
 
@@ -289,12 +455,13 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, hour=None
         except: pass
     except: pass
 
-    # ---- jingjue ----
+    # ---- jingjue（坚荆诀，按qigua() api调用） ----
     try:
         import jingjue
         result["engine"] += "+jingjue"
-        if hasattr(jingjue,'jie'):
-            result["jingjue"] = jingjue.jie(seed or "777777")
+        jg = jingjue.qigua()
+        if jg and len(jg) >= 2:
+            result["jingjue"] = {"天干": jg[0], "卦辞": jg[1]}
     except: pass
 
     return result
