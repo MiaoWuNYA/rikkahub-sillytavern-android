@@ -51,7 +51,7 @@ fun createMingliTool(context: Context): Tool = Tool(
                             " 紫微: {year, month, day, hour, minute?, gender, engine?=iztro}" +
                             " 现代西洋占星: {year, month, day, hour, minute?, tz, lat, lon, partner_year?, partner_month?, partner_day?, partner_hour?, partner_minute?, partner_tz?=IANA, partner_lat?, partner_lon?}" +
                             " 传统西洋占星: {year, month, day, hour, minute?, tz_offset, lat, lon}" +
-                            " 吠陀: {year, month, day, hour, minute?, tz, lat?, lon?}" +
+                            " 吠陀: {year, month, day, hour, minute?, tz=IANA时区/数字偏移, lat?, lon?}" +
                             " 人类图: {year, month, day, hour, minute?, tz, gene_keys?=false(bool), transits?=false(bool)}" +
                             " 灵数卡巴拉: {year, month, day, word?, feature=numerology|gematria|odu|tarot|tree|all}" +
                             " 奇门(含大六壬): {year, month, day, hour?, minute?, feature=qimen|liuren|all} (大六壬需feature=liuren)" +
