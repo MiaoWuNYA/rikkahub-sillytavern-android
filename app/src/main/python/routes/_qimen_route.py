@@ -110,8 +110,8 @@ def _qimen(year,month,day,hour=None,minute=0,feature="all",
             lr=json.loads(_js("liuren-engine",
                 "try{"
                 "var lr=LiuRen.getLiuRenByDate(new Date(%d,%d,%d,%d,%d));"
-                "var riGan=lr.dateInfo.day.gan;"
-                "var riZhi=lr.dateInfo.day.zhi;"
+                "var riGan=lr.dateInfo.bazi.split(' ')[2][0];"
+                "var riZhi=lr.dateInfo.bazi.split(' ')[2][1];"
                 "try{"
                 "  var liuQin={};"
                 "  ['ke1','ke2','ke3','ke4'].forEach(function(k){"
@@ -121,7 +121,7 @@ def _qimen(year,month,day,hour=None,minute=0,feature="all",
                 "  lr._liuQin=liuQin;"
                 "}catch(e){}"
                 "try{lr._riGanZhiWuXing=LiuRen.getGanZhi2WuXing(riGan)+LiuRen.getGanZhi2WuXing(riZhi);}catch(e){}"
-                "try{lr._riGanZhiRelation=LiuRen.getGanZhi2Relation(riGan+riZhi);}catch(e){}"
+                "try{lr._riGanZhiRelation=LiuRen.getGanZhi2Relation(lr.dateInfo.bazi.split(' ')[2]);}catch(e){}"
                 "JSON.stringify(lr)"
                 "}catch(e){JSON.stringify({error:e.message})}" % (year, month-1, day, hour if hour is not None else 12, minute)))
             if isinstance(lr, dict) and 'error' not in lr:
