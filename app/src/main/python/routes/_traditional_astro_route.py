@@ -481,7 +481,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
     caelus_errors = []
     try:
         jd = compute_jd(year, month, day, hour, minute, tz_offset)
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(datetime.timezone.utc)
         now_jd = compute_jd(now.year, now.month, now.day, now.hour, now.minute, 0)
         _js_load("caelus-engine")
 

@@ -38,7 +38,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
     caelus_errors = []
     try:
         _js_load("caelus-engine")
-        today = datetime.datetime.now()
+        today = datetime.datetime.now(datetime.timezone.utc)
         today_jd = compute_jd(today.year, today.month, today.day, today.hour, today.minute, 0)
 
         def _cp(name, js):
