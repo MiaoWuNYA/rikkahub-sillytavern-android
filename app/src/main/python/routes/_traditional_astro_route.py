@@ -584,7 +584,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             "transits:sf(function(){return Caelus.transitAspects(chart,e,nowJd,{bodies:p7})}),"
             "transitPositions:(function(){var tp={};p7.concat(['mean_node']).forEach(function(b){try{"
             "var lon=e.longitude(b,nowJd,{zodiac:'tropical'});"
-            "var sg=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(lon/30)%12];"
+            "var sg=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(lon/30)%%12];"
             "tp[b]={lon:lon,sign:sg}}catch(ex){}});return tp})(),"
             "declinationAspects:sf(function(){return Caelus.declinationAspects(e,p7,nowJd,1)}),"
             "returns:_returns,"

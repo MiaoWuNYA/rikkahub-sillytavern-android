@@ -122,7 +122,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "declinationAspects:sf(function(){return Caelus.declinationAspects(e,p7,jd,1)}),"
             "starConjunctions:sf(function(){return e.starConjunctions(chart,{orb:.5,maxMag:2.5})}),"
             "chiron:{lon:e.longitude('chiron',jd,{zodiac:'tropical'}),"
-            "sign:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(e.longitude('chiron',jd,{zodiac:'tropical'})/30)%12]}"
+            "sign:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(e.longitude('chiron',jd,{zodiac:'tropical'})/30)%%12]}"
             "})"
             "}catch(ex){__cr=JSON.stringify({error:'p2:'+ex.message})};__cr"
             % (jd, lat, lon, jd, lat, lon, jd, lat, lon))
@@ -203,7 +203,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "ascIdx=Math.floor(chart.angles.asc/30);}"
             "var _tp={};p10.concat(['mean_node','chiron']).forEach(function(b){try{"
             "_tp[b]={lon:e.longitude(b,today,{zodiac:'tropical'}),"
-            "sign:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(e.longitude(b,today,{zodiac:'tropical'})/30)%12]}}catch(ex){}});"
+            "sign:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(e.longitude(b,today,{zodiac:'tropical'})/30)%%12]}}catch(ex){}});"
             "__cr=JSON.stringify({"
             "primaryDirections:sf(function(){return Caelus.primaryDirections(e,jd,_lat,_lon)}),"
             "transits:sf(function(){return Caelus.transitAspects(chart,e,today,{bodies:p7})}),"
