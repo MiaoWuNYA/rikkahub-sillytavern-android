@@ -130,7 +130,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
         # Phase 3a (~12s): Fast timing (firdaria/profections/solarArc/progressions/lunarPhases/eclipses/riseSet/crossings)
         _cp("p3a",
             "var __cr;try{"
-            "var jd=%s;var _lat=%s;var _lon=%s;"
+            "var jd=%s;var today=%s;var _lat=%s;var _lon=%s;"
             "if(typeof e==='undefined'){"
             "e=new Caelus.Engine(Caelus.embeddedData);chart=e.chartAt(%s,%s,%s,{});"
             "isDay=Caelus.isDayChart(e,%s,%s,%s);"
@@ -147,7 +147,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "__cr=JSON.stringify({"
             "firdaria:sf(function(){return Caelus.firdaria(isDay,jd)}),"
             "profections:Caelus.profection(ascIdx,jd,jd+365),"
-            "solarArc:Caelus.solarArc(e,jd,jd),"
+            "solarArc:Caelus.solarArc(e,jd,today),"
             "progressedMoon:sf(function(){return Caelus.progressedLongitude(e,'moon',jd,jd+365*30)}),"
             "progressedSun:sf(function(){return Caelus.progressedLongitude(e,'sun',jd,jd+365*30)}),"
             "progressedOther:{mercury:sf(function(){return Caelus.progressedLongitude(e,'mercury',jd,jd+365*30)}),"
@@ -165,7 +165,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "crossings:_xings"
             "})"
             "}catch(ex){__cr=JSON.stringify({error:'p3a:'+ex.message})};__cr"
-            % (jd, lat, lon, jd, lat, lon, jd, lat, lon))
+            % (jd, today_jd, lat, lon, jd, lat, lon, jd, lat, lon))
 
         # Phase 3b (~10s): Stations + returns + harmonicChart
         _cp("p3b",
@@ -181,7 +181,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "ascIdx=Math.floor(chart.angles.asc/30);}"
             "var _stations={};p7.forEach(function(b){_stations[b]=sf(function(){return Caelus.stations(e,b,jd,jd+120,5)})});"
             "var _returns={};['mercury','venus','mars','jupiter','saturn'].forEach(function(b){"
-            "_returns[b]=sf(function(){return Caelus.returns(e,b,jd,jd,jd+365*3,'tropical').slice(0,3)})});"
+            "_returns[b]=sf(function(){return Caelus.returns(e,b,jd,jd,jd+365*30,'tropical').slice(0,3)})});"
             "__cr=JSON.stringify({"
             "stations:_stations,returns:_returns,"
             "harmonicChart:sf(function(){return Caelus.harmonicChart(e,jd,['sun','moon','venus','mars'],5)})"
