@@ -80,7 +80,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "lots:Caelus.lots(e,jd,_lat,_lon),isDay:isDay,"
             "voidOfCourse:Caelus.voidOfCourse(e,jd),"
             "chartBrief:Caelus.chartBrief(ctx),"
-            "housesWholeSign:Caelus.housesWholeSign(chart.angles.asc*0.017453292519943295),"
+            "housesWholeSign:Caelus.housesWholeSign(chart.angles.asc*(Math.PI/180)),"
             "cusps:chart.cusps,"
             "vertex:chart.angles.vertex,"
             "eastPoint:chart.angles.eastPoint,"
