@@ -102,19 +102,19 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
             }
         except: pass
         # ——— 7. 行星擢升/落陷 ———
-        try:
-            _planet_names={0:"Sun",1:"Moon",2:"Mars",3:"Mercury",4:"Jupiter",5:"Venus",6:"Saturn"}
-            _exalted=[]; _debilitated=[]
-            for p_id,(_rasi,_deg) in pp:
-                if p_id in _planet_names:
+        _planet_names={0:"Sun",1:"Moon",2:"Mars",3:"Mercury",4:"Jupiter",5:"Venus",6:"Saturn"}
+        _exalted=[]; _debilitated=[]
+        for p_id,(_rasi,_deg) in pp:
+            if p_id in _planet_names:
+                try:
                     _pn=_planet_names[p_id]
                     _strength=const.house_strengths_of_planets[p_id][_rasi]
                     if _strength >= const._EXALTED_UCCHAM:
                         _exalted.append({"planet":_pn,"id":p_id,"rasi":_rasi,"deg":_deg})
                     if _strength == const._DEBILITATED_NEECHAM:
                         _debilitated.append({"planet":_pn,"id":p_id,"rasi":_rasi,"deg":_deg})
-            py["planet_dignity"]={"exalted":_exalted,"debilitated":_debilitated}
-        except: pass
+                except: pass
+        py["planet_dignity"]={"exalted":_exalted,"debilitated":_debilitated}
         # ——— 8. 行星在宫位分布 ———
         try: py["houses"]={"planets_in_quadrants":house.get_planets_in_quadrants(p_to_h),"planets_in_trines":house.get_planets_in_trines(p_to_h),"planets_in_dushthanas":house.get_planets_in_dushthanas(p_to_h)}
         except: pass
