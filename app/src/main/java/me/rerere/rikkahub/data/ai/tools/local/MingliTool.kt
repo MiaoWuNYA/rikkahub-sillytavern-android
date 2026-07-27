@@ -48,12 +48,12 @@ fun createMingliTool(context: Context): Tool = Tool(
                             " 塔罗: {spread, seed, question_type, cards}" +
                             " 雷诺曼: {spread, seed, cards}" +
                             " 八字: {year, month, day, hour, minute?, gender, feature?=bazi|shengxiao|luohou|all}" +
-                            " 紫微: {year, month, day, hour, minute?, gender, engine}" +
-                            " 现代西洋占星: {year, month, day, hour, minute?, tz, lat, lon, partner_year?, partner_month?, partner_day?, partner_hour?, partner_minute?, partner_tz?, partner_lat?, partner_lon?}" +
+                            " 紫微: {year, month, day, hour, minute?, gender, engine?=iztro}" +
+                            " 现代西洋占星: {year, month, day, hour, minute?, tz, lat, lon, partner_year?, partner_month?, partner_day?, partner_hour?, partner_minute?, partner_tz?=IANA, partner_lat?, partner_lon?}" +
                             " 传统西洋占星: {year, month, day, hour, minute?, tz_offset, lat, lon}" +
                             " 吠陀: {year, month, day, hour, minute?, tz, lat?, lon?}" +
-                            " 人类图: {year, month, day, hour, minute?, tz, gene_keys, transits}" +
-                            " 灵数卡巴拉: {year, month, day, word, feature=numerology|gematria|odu|tarot|tree|all}" +
+                            " 人类图: {year, month, day, hour, minute?, tz, gene_keys?=false(bool), transits?=false(bool)}" +
+                            " 灵数卡巴拉: {year, month, day, word?, feature=numerology|gematria|odu|tarot|tree|all}" +
                             " 奇门(含大六壬): {year, month, day, hour?, minute?, feature=qimen|liuren|all} (大六壬需feature=liuren)" +
                             " (大六壬年命: birth_year?, birth_month?, birth_day? (以上均为公历), gender? (填\"男\"或\"女\"))" +
                             " 注: 大六壬年命需要AI主动向用户询问出生公历年月日和性别(男/女); 不要猜测; 不提供则跳过年命;" +
@@ -67,8 +67,9 @@ fun createMingliTool(context: Context): Tool = Tool(
                             "manual或manual_input(手动输爻,需传yao参数)/" +
                             "coin(Python硬币法,同seed同结果,可复盘)/" +
                             "number(Python均匀随机,同seed同结果,可复盘), " +
-                            "seed(传回可复盘受种子控制的method), year, month, day, feature, " +
-                            "yao(manual/manual_input时传6位6789字符串)}" +
+                            "seed(传回可复盘受种子控制的method), year, month, day, hour?, feature, " +
+                            "yao(manual/manual_input时传6位6789字符串), " +
+                            "numbers(number_array时传数组)}" +
                             " 深度古典占星(stellium/hellenistic): " +
                             "{year, month, day, hour, minute?, tz?=IANA时区, lat?, lon?, " +
                             "house_system?=placidus|whole_sign|equal|koch|regiomontanus|porphyry|campanus" +

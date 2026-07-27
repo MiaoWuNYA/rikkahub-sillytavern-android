@@ -1,9 +1,9 @@
 """Route: traditional astro — Hellenistic/Medieval traditional Western astrology"""
 import json, sys, os, datetime
-from ._shared import _js, _js_load, compute_jd
+from ._shared import _js, _js_load, compute_jd, resolve_tz
 
 def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
-    tz_offset = float(tz_offset) if tz_offset is not None else 0.0
+    tz_offset = resolve_tz(tz_offset)
     if isinstance(lat, str): lat = float(lat)
     if isinstance(lon, str): lon = float(lon)
 
