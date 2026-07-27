@@ -18,8 +18,10 @@
     尤其擅长行星交角( conjunction)解读和长寿判定。
 
 第二层级（阐释与应用）：
-  ③《Phaladeepika》(Mantreswara)——28章865颂，对Yoga解读尤其权威，
-    逆行行星视同擢升(无论落于何座)是其独特贡献。
+  ③《Phaladeepika》(Mantreswara)——28章865颂，对Yoga解读尤其权威。
+    注：Phaladeepika 对逆行有特殊看重——逆行获得显著力量增益（Vakri Bala/Cheṣṭā Bala），
+    可补偿部分尊贵度不足，但不等同于擢升（Uccha）。一颗在落陷星座逆行的行星仍为落陷，
+    只是获得一定补偿强度。
   ④《Jataka Parijata》(Vaidyanatha Dikshita)——综合多位权威的集大成者。
   ⑤《Hora Sara》(Prithuyasas)——处理矛盾原则，进阶研究首选。
   ⑥《Saravali》(Kalyana Varma)——BPHS原则的实践应用。
@@ -74,7 +76,7 @@ D16 Shodasamsa（十六分盘）→ 交通工具、物质享受
 D20 Vimsamsa（二十分盘）→ 宗教、灵性修行
 D24 Chaturvimsamsa（二十四分盘）→ 教育、学识
 D27 Nakshatramsa（二十七分盘）→ 优缺点、先天禀性
-D30 Trimsamsa（三十分盘）→ 恶业、疾病、潜意识
+D30 Trimsamsa（三十分盘）→ 恶业、障碍、隐秘敌人
 D40 Khavedamsa（四十分盘）→ 吉凶事件
 D45 Akshavedamsa（四十五分盘）→ 综合状况
 D60 Shashtyamsa（六十分盘）→ 累世业力对账单（高精度出生时间必须，否则权重大幅降低）
@@ -83,13 +85,14 @@ D60 Shashtyamsa（六十分盘）→ 累世业力对账单（高精度出生时�
 D1(基础) > D9(最重要的分盘) > D10/D7/D3/D12(次重要) > 其余(辅助修正)
 D60特殊：出生时间精度极高时权重等于D9；不可靠时仅为辅助信号。
 
-【Chara Karaka 七大代理星（Jaimini体系）】
+【Chara Karaka 八大代理星（Jaimini体系）】
 按从出生星盘中的度数（从大到小）排序：
 Atmakaraka（AK）→ 灵魂之星——此生最重要的课题，灵魂渴望的方向
 Amatyakaraka（AmK）→ 事业之星——职业成就、社会地位
 Bhratrukaraka（BK）→ 手足之星——兄弟姐妹、同辈关系
 Matrukaraka（MK）→ 母亲之星——母亲、养育、直觉
 Pitrukaraka（PiK）→ 父亲之星——父亲、权威、保护
+Putrakaraka（PuK）→ 子女之星——子女、创造力、传承
 Gnatikaraka（GK）→ 亲属之星——亲戚、社交网络
 Darakaraka（DK）→ 伴侣之星——婚姻、伴侣关系
 

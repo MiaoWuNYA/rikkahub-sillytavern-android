@@ -184,16 +184,17 @@ AI 必须按以下步骤将 12 维信息合并为最终评级（极强/强/中/�
 【评估流程——五步操作化】
 
 第一步：评估 Essential Dignity（先天尊贵——权重最高，是"基础分"）
-- Domicile(庙) +3   Exaltation(旺) +2   Triplicity(三分) +1
-  Term(界) +0.5   Face(面) +0
-- Detriment(陷) -2   Fall(弱) -1
+  传统五星尊贵度评分（参考 Demetra George 的 5/4/3/2/1 体系）：
+  - Domicile(庙) +5   Exaltation(旺) +4   Triplicity(三分) +3
+    Term(界) +2   Face(面) +1
+  - Detriment(陷) -5   Fall(弱) -4
 - 计算出基础分后，得到一个"先天底数"——这是最终评级的起点
 - 硬规则：基础分决定了评级的上限——Domicile的行星不可能"极弱"，
   Detriment的行星不可能"极强"
 
 第二步：检查 Accidental Dignity（后天加成——量化修正）
 - Angular(角宫) +2     Succedent(续宫) +1     Cadent(果宫) 0
-- Direct(顺行) +1      Retrograde(逆行) -1     Stationary(停滞) +1
+- Direct(顺行) +1      Retrograde(逆行) -1     Stationary(停滞) +2（注：停滞为行星转向关键点，力量远超普通顺行）
 - Fast(快速) +1         Slow(慢速) -1           Average 0
 - Cazimi(日核) +3       Combust(焦伤) -3       Under Beams(日光下) -1
 - Morning Star(晨星) +1  Evening Star(暮星) 0
@@ -231,6 +232,19 @@ AI 必须按以下步骤将 12 维信息合并为最终评级（极强/强/中/�
 ## 十、Reception 系统
 
 必须检查单向接纳、双向接纳、Mutual Reception。Reception 可以缓解困难、增强合作、改变事务结果。属于高权重技术，不得忽略。
+
+## 十·五、相位容许度——传统标准
+
+```
+传统西洋占星采用双方行星容许度之和的一半（moiety）方法：
+  日15° / 月12° / 木9° / 土9° / 火7° / 金7° / 水7° / 天5° / 海5° / 冥5°
+
+此容许度适用于所有主要相位（合、冲、三分、四分、六合），不以相位类型区分宽容度。
+应用规则：两行星夹角 ≤（行星A容许度 + 行星B容许度）÷ 2 → 视为入相
+  例：日（15°）+ 月（12°）= 27°，27÷2=13.5°——日月夹角 ≤13.5° 即入相
+
+注：传统容许度标准来自 Ptolemy 和 Lilly。三王星为现代补充，沿用土木的 9° 或采用 5° 均可行，但应保持统一。
+```
 
 ## 十一、传统特殊结构
 
@@ -327,8 +341,8 @@ Reception（接纳）→ 行星之间"互相帮忙"，A愿意帮B实现目标
 
 冲突时优先级如下（低层不得推翻高层）：
 ```
-Topic Governor → Master of Nativity → Sect Light → Chart Ruler
-→ Essential Dignity → Accidental Dignity → Reception
+Topic Governor → Master of Nativity → Chart Ruler → Sect Light
+→ Essential Dignity → Reception + Accidental Dignity（同级互参）
 → Traditional Configurations → Aspects → Natural Signification
 ```
 

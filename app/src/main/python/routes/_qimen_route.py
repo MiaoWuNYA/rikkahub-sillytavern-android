@@ -3,7 +3,8 @@ import json, sys, os
 from ._shared import _js, _js_load
 
 # ===== 奇门三式 =====
-def _qimen(year,month,day,hour=None,minute=0,feature="all"):
+def _qimen(year,month,day,hour=None,minute=0,feature="all",
+           birth_year=None,birth_month=None,birth_day=None,gender=None):
     result={"system":"qimen","engine":""}
     _engs=[]
     # Qimen Dunjia (日家+时家)
@@ -45,73 +46,108 @@ def _qimen(year,month,day,hour=None,minute=0,feature="all"):
                     _engs[-1]="QimenEngine(日家+时家)"
             except: pass
         # 解读层（独立 try，失败不影响基础数据）
+        # 分析JS模板：chart c 替换为 inline JSON
+        _QMA_JS=("try{"
+            "var c=%s;var fp=c.fourPillars||{};var yg=fp.year?fp.year.gan:null;var mg=fp.month?fp.month.gan:null;"
+            "var dg=fp.day?fp.day.gan:null;var dz=fp.day?fp.day.zhi:null;"
+            "var zsd=c.zhiShiDoor;var zfs=c.zhiFuStar;"
+            "JSON.stringify({"
+            "starDetail:typeof QimenEngine.getStarDetail==='function'?"
+            "  ['天蓬','天芮','天冲','天辅','天禽','天心','天柱','天任','天英'].map(function(s){return QimenEngine.getStarDetail(s)}):null,"
+            "doorDetail:typeof QimenEngine.getDoorDetail==='function'?"
+            "  ['休门','生门','伤门','杜门','景门','死门','惊门','开门'].map(function(d){return QimenEngine.getDoorDetail(d)}):null,"
+            "godDetail:typeof QimenEngine.getGodDetail==='function'?"
+            "  ['值符','腾蛇','太阴','六合','白虎','玄武','九地','九天'].map(function(g){return QimenEngine.getGodDetail(g)}):null,"
+            "palaceDetail:typeof QimenEngine.getPalaceDetail==='function'?"
+            "  [1,2,3,4,5,6,7,8,9].map(function(p){return QimenEngine.getPalaceDetail(p)}):null,"
+            "shenJiangDetail:typeof QimenEngine.getShenJiangDetail==='function'?"
+            "  ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'].map(function(b){return QimenEngine.getShenJiangDetail(b)}):null,"
+            "allJiGe:typeof QimenEngine.getAllJiGe==='function'?QimenEngine.getAllJiGe():null,"
+            "allXiongGe:typeof QimenEngine.getAllXiongGe==='function'?QimenEngine.getAllXiongGe():null,"
+            "yongShen:{"
+            "  day:typeof QimenEngine.getYongShen==='function'?QimenEngine.getYongShen(dg):null,"
+            "  year:yg?typeof QimenEngine.getYongShen==='function'?QimenEngine.getYongShen(yg):null:null,"
+            "  month:mg?typeof QimenEngine.getYongShen==='function'?QimenEngine.getYongShen(mg):null:null"
+            "},"
+            "zhiFuKeYing:dz?typeof QimenEngine.getZhiFuKeYing==='function'?QimenEngine.getZhiFuKeYing(zfs,dz):null:null,"
+            "palaceAnalysis:c.palaces.map(function(p){"
+            "  return{"
+            "    palaceNumber:p.palaceNumber,"
+            "    specialPatterns:typeof QimenEngine.detectSpecialPatterns==='function'?"
+            "      QimenEngine.detectSpecialPatterns(p.palaceNumber,p.earthStem,p.skyStem,p.door,p.star,p.god,zsd,dg,yg,mg):null,"
+            "    palaceKeYing:typeof QimenEngine.getPalaceKeYing==='function'?"
+            "      QimenEngine.getPalaceKeYing(p.skyStem,p.earthStem,p.hiddenStems||[],p.jiGanStem):null,"
+            "    yunChouPatterns:typeof QimenEngine.getYunChouPatterns==='function'?"
+            "      QimenEngine.getYunChouPatterns(p.door,p.earthStem,p.skyStem,p.god,p.palaceNumber):null,"
+            "    palaceChangSheng:typeof QimenEngine.getPalaceChangSheng==='function'?"
+            "      QimenEngine.getPalaceChangSheng(p.palaceNumber,p.skyStem,p.earthStem,p.hiddenStems||[],p.jiGanStem):null,"
+            "    marks:p.marks,"
+            "    jiGanStem:p.jiGanStem,"
+            "    diGod:p.diGod,"
+            "    highlightStem:p.highlightStem"
+            "  }"
+            "})"
+            "})"
+            "}catch(e){JSON.stringify({error:e.message})}")
+        # 日家分析（背景参考）
         if result.get("qimen"):
             try:
-                qa=json.loads(_js("qimen-engine",
-                    "try{"
-                    "var b=QimenEngine.generateQimenChart({type:'rijia',year:%d,month:%d,day:%d});"
-                    "var fp=b.fourPillars||{};var yg=fp.year?fp.year.gan:null;var mg=fp.month?fp.month.gan:null;"
-                    "var dg=fp.day?fp.day.gan:null;var dz=fp.day?fp.day.zhi:null;"
-                    "var zsd=b.zhiShiDoor;var zfs=b.zhiFuStar;"
-                    "JSON.stringify({"
-                    "starDetail:typeof QimenEngine.getStarDetail==='function'?"
-                    "  ['天蓬','天芮','天冲','天辅','天禽','天心','天柱','天任','天英'].map(function(s){return QimenEngine.getStarDetail(s)}):null,"
-                    "doorDetail:typeof QimenEngine.getDoorDetail==='function'?"
-                    "  ['休门','生门','伤门','杜门','景门','死门','惊门','开门'].map(function(d){return QimenEngine.getDoorDetail(d)}):null,"
-                    "godDetail:typeof QimenEngine.getGodDetail==='function'?"
-                    "  ['值符','腾蛇','太阴','六合','白虎','玄武','九地','九天'].map(function(g){return QimenEngine.getGodDetail(g)}):null,"
-                    "palaceDetail:typeof QimenEngine.getPalaceDetail==='function'?"
-                    "  [1,2,3,4,5,6,7,8,9].map(function(p){return QimenEngine.getPalaceDetail(p)}):null,"
-                    "shenJiangDetail:typeof QimenEngine.getShenJiangDetail==='function'?"
-                    "  ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'].map(function(b){return QimenEngine.getShenJiangDetail(b)}):null,"
-                    "allJiGe:typeof QimenEngine.getAllJiGe==='function'?QimenEngine.getAllJiGe():null,"
-                    "allXiongGe:typeof QimenEngine.getAllXiongGe==='function'?QimenEngine.getAllXiongGe():null,"
-                    "yongShen:{"
-                    "  day:typeof QimenEngine.getYongShen==='function'?QimenEngine.getYongShen(dg):null,"
-                    "  year:yg?typeof QimenEngine.getYongShen==='function'?QimenEngine.getYongShen(yg):null:null,"
-                    "  month:mg?typeof QimenEngine.getYongShen==='function'?QimenEngine.getYongShen(mg):null:null"
-                    "},"
-                    "zhiFuKeYing:dz?typeof QimenEngine.getZhiFuKeYing==='function'?QimenEngine.getZhiFuKeYing(zfs,dz):null:null,"
-                    "palaceAnalysis:b.palaces.map(function(p){"
-                    "  return{"
-                    "    palaceNumber:p.palaceNumber,"
-                    "    specialPatterns:typeof QimenEngine.detectSpecialPatterns==='function'?"
-                    "      QimenEngine.detectSpecialPatterns(p.palaceNumber,p.skyStem,p.earthStem,p.door,p.star,p.god,zsd,dg,yg,mg):null,"
-                    "    palaceKeYing:typeof QimenEngine.getPalaceKeYing==='function'?"
-                    "      QimenEngine.getPalaceKeYing(p.earthStem,p.skyStem,p.hiddenStems||[],p.jiGanStem):null,"
-                    "    yunChouPatterns:typeof QimenEngine.getYunChouPatterns==='function'?"
-                    "      QimenEngine.getYunChouPatterns(p.door,p.skyStem,p.earthStem,p.god,p.palaceNumber):null,"
-                    "    palaceChangSheng:typeof QimenEngine.getPalaceChangSheng==='function'?"
-                    "      QimenEngine.getPalaceChangSheng(p.palaceNumber,p.earthStem,p.skyStem,p.hiddenStems||[],p.jiGanStem):null,"
-                    "    marks:p.marks,"
-                    "    jiGanStem:p.jiGanStem,"
-                    "    diGod:p.diGod,"
-                    "    highlightStem:p.highlightStem"
-                    "  }"
-                    "})"
-                    "})"
-                    "}catch(e){JSON.stringify({error:e.message})}" % (year, month, day)))
+                qa=json.loads(_js("qimen-engine", _QMA_JS % json.dumps(result["qimen"], ensure_ascii=False)))
                 if isinstance(qa, dict) and 'error' not in qa:
                     result["qimen_analysis"]=qa
+            except: pass
+        # 时家分析（断事正用）
+        if result.get("qimen_hourly"):
+            try:
+                qha=json.loads(_js("qimen-engine", _QMA_JS % json.dumps(result["qimen_hourly"], ensure_ascii=False)))
+                if isinstance(qha, dict) and 'error' not in qha:
+                    result["qimen_hourly_analysis"]=qha
             except: pass
     # 大六壬
     if feature in ("liuren","all"):
         try:
             _js_load("liuren-engine")
-            lr=json.loads(_js("liuren-engine",f"JSON.stringify(LiuRen.getLiuRenByDate(new Date({year},{month-1},{day},{hour if hour is not None else 12},{minute})))"))
+            lr=json.loads(_js("liuren-engine",
+                "try{"
+                "var lr=LiuRen.getLiuRenByDate(new Date(%d,%d,%d,%d,%d));"
+                "var riGan=lr.dateInfo.day.gan;"
+                "var riZhi=lr.dateInfo.day.zhi;"
+                "try{"
+                "  var liuQin={};"
+                "  ['ke1','ke2','ke3','ke4'].forEach(function(k){"
+                "    var ke=lr.siKe[k];"
+                "    if(ke&&ke[0]){liuQin[k]={shangShen:ke[0][0],liuQin:LiuRen.getLiuQin(riGan,ke[0][0])};}"
+                "  });"
+                "  lr._liuQin=liuQin;"
+                "}catch(e){}"
+                "try{lr._riGanZhiWuXing=LiuRen.getGanZhi2WuXing(riGan)+LiuRen.getGanZhi2WuXing(riZhi);}catch(e){}"
+                "try{lr._riGanZhiRelation=LiuRen.getGanZhi2Relation(riGan+riZhi);}catch(e){}"
+                "JSON.stringify(lr)"
+                "}catch(e){JSON.stringify({error:e.message})}" % (year, month-1, day, hour if hour is not None else 12, minute)))
             if isinstance(lr, dict) and 'error' not in lr:
                 result["liuren"]=lr
                 _engs.append("LiuRen")
+        except: pass
+    # 大六壬 年命（需提供出生年月日+性别）
+    if feature in ("liuren","all") and all(k is not None for k in [birth_year,birth_month,birth_day,gender]):
+        try:
+            nm=json.loads(_js("liuren-engine",
+                "JSON.stringify(LiuRen.getNianMing(new Date(%d,%d,%d),'%s'))" % (birth_year, birth_month-1, birth_day, gender)))
+            if isinstance(nm, dict) and 'error' not in nm:
+                result["liuren_nianming"]=nm
         except: pass
     result["engine"]="+".join(_engs) if _engs else "none"
     result["_hint"]=("QimenEngine: 日家(qimen)+时家(qimen_hourly,拆补法)。断事以时家为主，日家为辅。"
         "大六壬与奇门遁甲共用一个数据入口(system='奇门')，通过feature='liuren'读取大六壬排盘。"
         "system='大六壬'或'六壬'等同 system='奇门'，返回数据含qimen+liuren双份。"
-        "Qimen分析层(qimen_analysis):"
+        "Qimen分析层(qimen_analysis): 基于日家盘。断事请用时家分析(qimen_hourly_analysis)。"
         "  格局全列表(allJiGe+allXiongGe), 用神万物类象(yongShen),"
         "  值符克应(zhiFuKeYing), 十二神将详解(shenJiangDetail),"
         "  宫位十干克应含暗干/寄宫(palaceKeYing),"
         "  十二长生含各天干在宫位所有地支(palaceChangSheng),"
         "  宫位标记/寄干/地八神/用神天干(per-palace)."
+        "qimen_hourly_analysis: 基于时家盘的分析，与qimen_analysis结构完全相同但盘面数据对应时家，断事以此为准。"
+        "大六壬富化字段(liuren): _liuQin(四课六亲), _riGanZhiWuXing(日干日支五行), _riGanZhiRelation(日干日支关系),"
+        " liuren_nianming(年命,需AI主动问用户公历生日+性别男/女)."
         "自探索:Object.keys(QimenEngine)/Object.keys(LiuRen)")
     return result

@@ -97,9 +97,9 @@
 | 反轴点(Antiscia) | 镜像反射点——隐性联系 |
 | 月相(MoonPhase) | 盈亏状态——当事人的月相性格 |
 | VOC月亮(voc_moon) | 空亡状态——事务执行力 |
-| 龙首图(Draconic) | 灵魂/业力面向——辅助透视层 |
+| 龙首图(Draconic) | 灵魂/业力面向——辅助透视层（注：Draconic 为 20 世纪现代占星发展，非古典体系原生概念，本模板保留作为可选视角但慎用） |
 | 星盘形状(ChartShape) | Bundle/Bowl/Bucket/Locomotive 等——整体调度模式 |
-| 出生时辰星(PlanetaryHour) | 出生时刻的巴比伦时辰主星——附加视角 |
+| 出生时辰星(PlanetaryHour) | 出生时刻的巴比伦时辰主星——附加视角（注：行星时辰在本命解读中的应用为现代拓展，古典主要用于择时） |
 | Almuten | 最强者行星 + ASC 面的尊贵度胜出者 |
 | 小限(Profection) | 每年激活的宫位+年主星 |
 | 法达(Firdaria) | 波斯时期主星大运（当前阶段+主星+副星） |
@@ -134,7 +134,7 @@
 ## 三、默认技术标准
 
 ### 宫制
-默认：Placidus（可通过 house_system 参数切换 Whole Sign / Regiomontanus / Equal 等）。
+默认：Whole Sign（整宫制——希腊化占星的原生宫制，符合本模板的古典定位。可通过 house_system 参数切换 Placidus / Regiomontanus / Equal 等）。
 
 ### 守护星体系
 默认传统守护体系：
@@ -146,7 +146,8 @@
 禁止使用天王守水瓶、海王守双鱼、冥王守天蝎等现代守护体系。
 
 ### 容许度
-默认莉莉(1647)标准：日15° / 月12° / 土木9° / 火8° / 金7° / 水7°。
+默认莉莉(1647)标准：日15° / 月12° / 土木9° / 火7° / 金7° / 水7°。
+注：此容许度适用于所有主要相位（合、冲、三分、四分、六合），以双方行星容许度之和的一半计算。
 
 ### Sect
 ```
@@ -249,12 +250,12 @@ Joy 不等于吉凶，代表行星更容易表现其本性的辅助增益。
 ### 综合评级（五步操作化，基于 Demetra George 方法论）
 ```
 第一步：Essential Dignity（先天分，权重最高）
-  Domicile+3  Exaltation+2  Triplicity+1  Term+0.5  Face+0
-  Detriment-2  Fall-1
+  Domicile+5  Exaltation+4  Triplicity+3  Term+2  Face+1
+  Detriment-5  Fall-4
 
 第二步：Accidental Dignity（后天分）
   Angular+2  Succedent+1  Cadent 0
-  Direct+1  Retrograde-1  Stationary+1
+  Direct+1  Retrograde-1  Stationary+2（注：在传统占星中，停滞行星力量远超普通顺行）
   Cazimi+3  Combust-3  Under Beams-1
 
 第三步：Sect 修正
