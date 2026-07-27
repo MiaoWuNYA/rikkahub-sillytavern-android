@@ -73,7 +73,7 @@ meihua_tiyong：体用生克（核心！）
 
 【同根六爻数据（交叉验证参考，非梅花主体）】
 iching_shifa_js_yao：6位爻值（与梅花meihua_data源自同一组数）
-decode_gua / decode_two_gua：卦名解读
+ichingshifa.本卦 / ichingshifa.之卦：卦名解读
 
 梅花解读时以 meihua_tiyong 为绝对核心，六爻数据仅作为交叉验证参考。
 ```

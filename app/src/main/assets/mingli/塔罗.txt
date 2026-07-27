@@ -201,15 +201,15 @@ AI 在拿到数据后，先用这7层逐层推理，但输出时必须按叙事�
 
                            Second Pass — 分析穿透（4层深度，从浅到深）:
                              ① 外部事件层（实际会发生什么）:
-                                用 position_interpretations + contextualMeanings.work/love
+                                用 interpretation + contextual_meanings.work/love
                                 回答"What will happen?"
                              ② 心理内省层（内心在经历什么）:
-                                用 get_core_meaning(reversed=...)["psychological"] + readingAspects.innerState
+                                用 core_meaning["psychological"] + reading_aspects.innerState
                                 回答"What is my subconscious telling me?"
                              ③ 灵性成长层（灵魂在学什么课）:
                                用 Fool's Journey 阶段（大牌时）+ archetype + meditation_focus 回答"What is my soul's lesson here?"
                              ④ 行动决策层（下一步该怎么做）:
-                               用 readingAspects.advice + guidance_and_action 回答"What should I do?"
+                               用 reading_aspects.advice + guidance_and_action 回答"What should I do?"
 
                            Third Pass — 综合叙事（把所有碎片串成故事）:
                              进入【故事线】输出
@@ -289,7 +289,7 @@ AI 在拿到数据后，先用这7层逐层推理，但输出时必须按叙事�
                                   ⚠️ 禁止机械套用——说清楚旧模式为何不再适用，新方向正在何处浮现。
 
                               第四幕·归来（结尾位置 — 收束）:
-                                用 development / contextualMeanings 铺向未来
+                                用 development / contextual_meanings 铺向未来
                                 最末一对牌收束全局
                                 收尾:
                                 话术提示(故事线·第四幕归来):
@@ -307,15 +307,15 @@ AI 在拿到数据后，先用这7层逐层推理，但输出时必须按叙事�
                               【逐牌】
                               【位置名｜牌名】
                               镜头拉开: image_tag → 分牌逐张解读
-                              角色速写: coreKeyword + archetype（一词原型）
+                              角色速写: core_meaning + archetype（一词原型）
                               大牌补充: Fool's Journey 阶段
-                              内心独白: readingAspects.innerState（正/逆位）
-                              当前处境: 位置含义 + position_interpretations(rag)
-                              心理挖掘: get_core_meaning(reversed=...)["psychological"] + ["practical"]
-                              象征点缀: get_symbols 选一个最有张力的符号展开
-                              元素印记: elemental_correspondences 取元素/星座/行星/希伯来字母/灵数/季节/时间/颜色/水晶/草药共10项增强语气
+                              内心独白: reading_aspects.innerState（正/逆位）
+                              当前处境: 位置含义 + interpretation(rag)
+                              心理挖掘: core_meaning["psychological"] + ["practical"]
+                              象征点缀: symbols 选一个最有张力的符号展开
+                              元素印记: elemental 取元素/星座/行星/希伯来字母/灵数/季节/时间/颜色/水晶/草药共10项增强语气
                               宫廷牌(代表人物特征/态度/成熟度, 有时是行动信号)
-                              暗线关联: card_relationships 与前后牌的增幅/挑战
+                              暗线关联: relationships 与前后牌的增幅/挑战
                               每张 3-5 句，像速写一个角色，不是罗列数据
                               话术提示(人物志·逐牌深度解读):
                                 优先观察:①画面主体(人物/动作/姿态/表情/视线方向/位置关系) ②核心象征(颜色/数字/动物/植物/器物/建筑/自然元素/重复符号) ③能量状态(主动/被动/等待/行动/扩张/收缩/稳定/失衡) ④心理层(正在相信什么/害怕什么/追求什么/回避什么) ⑤行为层(会如何行动/回应压力/做决定) ⑥现实映射(可能表现为人物/关系/处境/事件/选择)
@@ -445,10 +445,10 @@ AI 在拿到数据后，先用这7层逐层推理，但输出时必须按叙事�
 
                               ── 7. 落幕与回响 ──
                               【结论】一句话核心洞见
-                              【建议】≤3条，优先用 readingAspects.advice（正/逆位对应）；若牌阵有 Advice/Your Approach 位置则用 position_interpretations.guidance_and_action；辅以 Waite meaning_up/meaning_rev 作参考；affirmations 融合润色。每条建议要具体可执行，不空泛
+                              【建议】≤3条，优先用 reading_aspects.advice（正/逆位对应）；若牌阵有 Advice/Your Approach 位置则用 interpretation.guidance_and_action；辅以 Waite meaning_up/meaning_rev 作参考；affirmations 融合润色。每条建议要具体可执行，不空泛
                               【肯定语】1条 affirmations 鼓舞收尾
-                              【反思问题】1条切中阅读主题的问题。从 journaling_prompts 中选与【主题定性】最相关的一条，或根据 readingAspects.innerState 自己拟一句。问题要开放、不自问自答，让问卜者带着这句话离开牌桌
-                              【箴言】从 coreKeyword / get_core_meaning(reversed=...)["essence"] / affirmations 中提炼成一句隐喻式收尾——不直接重复牌义，用牌面符号做画面类比——让问卜者带走一个能反复回味的意象
+                              【反思问题】1条切中阅读主题的问题。从 journaling_prompts 中选与【主题定性】最相关的一条，或根据 reading_aspects.innerState 自己拟一句。问题要开放、不自问自答，让问卜者带着这句话离开牌桌
+                              【箴言】从 core_meaning / core_meaning["essence"] / affirmations 中提炼成一句隐喻式收尾——不直接重复牌义，用牌面符号做画面类比——让问卜者带走一个能反复回味的意象
 ╔══════════════════ 塔罗数据字段全映射 ═════════════════╗
 引擎(_tarot_route.py)每张牌返回以下字段，**全部必须融入叙事输出**：
 

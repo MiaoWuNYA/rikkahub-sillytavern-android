@@ -50,56 +50,65 @@
 ## 二、数据字段地图
 
 ```
-【灵数核心字段】（必须使用）
-numerology_data 包含以下计算：
-  ┌ life_path_number：生命道路数（1-9 或 11/22/33/44）
-  ├ expression_number：表达数（全名字母加总）
-  ├ soul_urge_number：灵魂渴望数（元音加总）
-  ├ personality_number：个性数（辅音加总）
-  ├ birthday_number：生日数（出生日 1-31）
-  ├ personal_year：个人年
-  ├ personal_month：个人月
-  ├ personal_day：个人日
-  └ challenge_numbers[]：挑战数数组（4个: 童年/中年/晚期/终身）
+【灵数核心字段】（顶层字段，无numerology_data包装）
+life_path → Kaabalah.calculateKaabalisticLifePath() 的结果
+  ┌ lifePathNumber：生命道路数
+  ├ masterNumber：大师数（如有）
+  ├ rootNumber：底层数（masterNumber同时返回）
+  └ periodCycles[]：周期数数组
 
-【年/龄/月周期字段】（cycles_info，来自Kaabalah.calculateCycles）
-cycles_info 包含：
-  ┌ yearly：年周期数据数组
-  ├ age：年龄周期数据数组
-  └ monthly：月周期数据数组
+personal → Kaabalah 个人年/挑战/斐波那契/日期能量计算
+  ┌ personalYear：个人年
+  ├ challenges[]：挑战数数组
+  ├ fibonacci：斐波那契周期
+  │  ├ number：当前斐波那契数
+  │  ├ description：含义描述
+  │  └ influence：影响时段
+  ├ dateEnergies：当前日期能量
+  │  ├ universal：宇宙日数
+  │  ├ personal：个人日数
+  │  └ energy：能量描述
+  └ personalMonths[]：各月个人月数
 
-【Gematria 字段】
+【年/龄/月周期字段】
+cycles_info → Kaabalah.calculateCycles() 结果
+  ┌ yearly[]：年周期数据（每年一条，含 year/number/description）
+  ├ age[]：年龄周期（每岁一条）
+  └ monthly[]：月周期（每月一条）
+
+【Gematria 字段】（需传入 word 参数才返回）
 gematria 包含：
-  ┌ positive_lookup：希伯来文字→数值
-  ├ reverse_lookup：数值→同值希伯来文字列表
-  └ system_type：使用的 Gematria 类型（Standard/Gadol/Katan/Ordinal）
+  ┌ forward：正查结果
+  │  ├ word：原词
+  │  ├ value：数值
+  │  └ system：使用的 Gematria 类型
+  ├ reverse：反查结果
+  │  ├ value：反查数值
+  │  └ matches[]：同值希伯来文字列表
+  └ system_type：系统类型（Standard/Gadol/Katan/Ordinal）
 
-【生命之树字段】
-tree_of_life 包含：
-  ┌ sephiroth[]：10 个源质的状态/激活情况
-  │  └ Kether/Chokmah/Binah/Chesed/Geburah/Tiphareth/Netzach/Hod/Yesod/Malkuth
-  ├ paths[]：22 条路径（连接源质，对应塔罗大牌）
-  └ active_circuit：当前活跃的能量回路
+【生命之树字段】（feature=tree/all时返回）
+tree_of_life → Kaabalah.buildKaabalisticMapData({}) 结果
+  ┌ sephiroth[]：10 个源质
+  │  └ 每个含 name/number/hebrew/translation/title/description
+  │     /color/position/linkedPaths[]
+  ├ paths[]：22 条路径
+  │  └ 每个含 number/hebrewLetter/fromSphere/toSphere/meaning/color
+  └ fourWorlds[]：四世界映射
 
-【Ifá 字段】
-ifa_data 包含：
-  ┌ current_odu：当前 Odu 名称
+【Ifá / Odu 字段】（feature=odu/all时返回）
+odu → Kaabalah.calculateOdu() 结果
+  ┌ currentOdu：当前 Odu 名称
   ├ odu_story：Odu 对应神话故事
-  ├ proverbs：Odu 的智慧箴言
+  ├ proverbs：智慧箴言
   ├ taboos：禁忌事项
   └ rituals：传统仪式建议
 
-【777 对应字段】
-correspondence_777 包含：
-  ┌ planet：行星对应
-  ├ zodiac：星座对应
-  ├ element：元素对应
-  ├ hebrew_letter：希伯来字母
-  ├ letter_value：字母数值
-  ├ color：颜色对应
-  ├ stone/gem：宝石对应
-  ├ plant：植物对应
-  └ deity/angel：神祇/天使对应
+注意：
+- expression_number / soul_urge_number / personality_number / birthday_number
+  需要名字输入，当前路由只传日期，不计算这些字段。
+- 777 对应数据在塔罗路由（_tarot_route.py）的 kaabalah 子字段中返回，
+  本路由（_kabbalah_route.py）不返回 777 表。如需 777 请走塔罗路由。
 ```
 
 ## 三、核心解读体系——按体系分区

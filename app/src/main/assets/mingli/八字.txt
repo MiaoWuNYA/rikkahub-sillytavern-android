@@ -57,7 +57,7 @@
   hide_gan（藏干——地支中潜伏的天干，透出后方显）
   shishen（天干十神——天干的十神关系）
   shishen_zhi（地支藏干十神——地支中各藏干的十神）
-  dishifor（十二运——日干在地支中的十二长生状态）
+  dishi（十二运——日干在地支中的十二长生状态）
 
 【大运】(dayun[])
   ganzhi（干支组合）/ start_age / end_age
