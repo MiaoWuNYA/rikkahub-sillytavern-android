@@ -103,7 +103,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
         except: pass
         # ——— 7. 行星擢升/落陷 ———
         try:
-            _planet_names={0:"Sun",1:"Moon",2:"Mars",3:"Mercury",4:"Jupiter",5:"Venus",6:"Saturn"}
+            _planet_names={0:"Sun",1:"Moon",2:"Mars",3:"Mercury",4:"Jupiter",5:"Venus",6:"Saturn",7:"Rahu",8:"Ketu"}
             _exalted=[]; _debilitated=[]
             for p_id,(_rasi,_deg) in pp:
                 if p_id in _planet_names:
