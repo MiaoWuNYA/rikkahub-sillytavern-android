@@ -487,6 +487,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
 
         def _cp(name, js):
             try:
+                _js_load("caelus-engine")  # re-init guard — no-op when cached, re-loads after timeout
                 raw = _js("caelus-engine", js)
                 p = json.loads(raw)
                 if isinstance(p, dict) and 'error' not in p:
@@ -560,8 +561,8 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             % (jd, now_jd, lat, lon, "true" if is_day else "false",
                int(asc_lon / 30)))
 
-        # Phase 2a (~12s): Progressions + transits + starConjunctions + returns + declination + eclipses + riseSet
-        _cp("p2a",
+        # Phase 2a1 (~12s): Returns + progressions + solarArc + transits + transitPositions
+        _cp("p2a1",
             "var __cr;try{"
             "var jd=%s;var nowJd=%s;var _lat=%s;var _lon=%s;"
             "if(typeof e==='undefined'){"
@@ -586,8 +587,23 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             "var lon=e.longitude(b,nowJd,{zodiac:'tropical'});"
             "var sg=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(lon/30)%%12];"
             "tp[b]={lon:lon,sign:sg}}catch(ex){}});return tp})(),"
+            "returns:_returns"
+            "})"
+            "}catch(ex){__cr=JSON.stringify({error:'p2a1:'+ex.message})};__cr"
+            % (jd, now_jd, lat, lon, jd, lat, lon, jd, lat, lon))
+
+        # Phase 2a2 (~12s): Star conjunctions + declination aspects + eclipses + riseSet
+        _cp("p2a2",
+            "var __cr;try{"
+            "var jd=%s;var nowJd=%s;var _lat=%s;var _lon=%s;"
+            "if(typeof e==='undefined'){"
+            "e=new Caelus.Engine(Caelus.embeddedData);chart=e.chartAt(%s,%s,%s,{});"
+            "isDay=Caelus.isDayChart(e,%s,%s,%s);"
+            "sf=function(fn){try{return fn()}catch(ex){return null}};"
+            "isDayStr=isDay?'day':'night';"
+            "p7=['sun','moon','mercury','venus','mars','jupiter','saturn'];}"
+            "__cr=JSON.stringify({"
             "declinationAspects:sf(function(){return Caelus.declinationAspects(e,p7,nowJd,1)}),"
-            "returns:_returns,"
             "starConjunctions:sf(function(){return e.starConjunctions(chart,{orb:.5,maxMag:2.5})}),"
             "eclipses:sf(function(){return{solar:Caelus.solarEclipses(e,nowJd,nowJd+180).slice(0,2),"
             "lunar:Caelus.lunarEclipses(e,nowJd,nowJd+180).slice(0,2)}}),"
@@ -596,7 +612,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             "moon:{rise:sf(function(){return Caelus.riseSet(e,'moon',jd,_lat,_lon,'rise',{searchDays:1})}),"
             "set:sf(function(){return Caelus.riseSet(e,'moon',jd,_lat,_lon,'set',{searchDays:1})})}}"
             "})"
-            "}catch(ex){__cr=JSON.stringify({error:'p2a:'+ex.message})};__cr"
+            "}catch(ex){__cr=JSON.stringify({error:'p2a2:'+ex.message})};__cr"
             % (jd, now_jd, lat, lon, jd, lat, lon, jd, lat, lon))
 
         # Phase 2b (~12s): Stations + parans + primaryDirections

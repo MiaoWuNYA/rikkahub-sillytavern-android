@@ -43,6 +43,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
 
         def _cp(name, js):
             try:
+                _js_load("caelus-engine")  # re-init guard — no-op when cached, re-loads after timeout
                 raw = _js("caelus-engine", js)
                 p = json.loads(raw)
                 if isinstance(p, dict) and 'error' not in p:
@@ -89,8 +90,8 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "}catch(ex){__cr=JSON.stringify({error:'p1:'+ex.message})};__cr"
             % (jd, today_jd, lat, lon))
 
-        # Phase 2 (~8s): Per-planet computations (dignity, pheno, oob, midpoints, starConjunctions, antiscion, etc.)
-        _cp("p2",
+        # Phase 2a (~8s): Per-planet computations (dignity, pheno, oob, midpoints, solarPhase, antiscion, planetaryHour, almuten)
+        _cp("p2a",
             "var __cr;try{"
             "var jd=%s;var _lat=%s;var _lon=%s;"
             "if(typeof e==='undefined'){"
@@ -118,13 +119,30 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "contraAntiscionSun:Caelus.contraAntiscion(chart.bodies.sun.lon),"
             "contraAntiscionMoon:Caelus.contraAntiscion(chart.bodies.moon.lon),"
             "planetaryHour:Caelus.planetaryHour(e,jd,_lat,_lon),"
-            "almuten:Caelus.almuten(chart.angles.asc,isDayStr),"
+            "almuten:Caelus.almuten(chart.angles.asc,isDayStr)"
+            "})"
+            "}catch(ex){__cr=JSON.stringify({error:'p2a:'+ex.message})};__cr"
+            % (jd, lat, lon, jd, lat, lon, jd, lat, lon))
+
+        # Phase 2b (~8s): Star conjunctions, declination aspects, chiron position
+        _cp("p2b",
+            "var __cr;try{"
+            "var jd=%s;var _lat=%s;var _lon=%s;"
+            "if(typeof e==='undefined'){"
+            "e=new Caelus.Engine(Caelus.embeddedData);chart=e.chartAt(%s,%s,%s,{});"
+            "isDay=Caelus.isDayChart(e,%s,%s,%s);"
+            "sf=function(fn){try{return fn()}catch(ex){return null}};"
+            "isDayStr=isDay?'day':'night';"
+            "p7=['sun','moon','mercury','venus','mars','jupiter','saturn'];"
+            "p10=p7.concat(['uranus','neptune','pluto']);"
+            "ascIdx=Math.floor(chart.angles.asc/30);}"
+            "__cr=JSON.stringify({"
             "declinationAspects:sf(function(){return Caelus.declinationAspects(e,p7,jd,1)}),"
             "starConjunctions:sf(function(){return e.starConjunctions(chart,{orb:.5,maxMag:2.5})}),"
             "chiron:{lon:e.longitude('chiron',jd,{zodiac:'tropical'}),"
             "sign:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(e.longitude('chiron',jd,{zodiac:'tropical'})/30)%%12]}"
             "})"
-            "}catch(ex){__cr=JSON.stringify({error:'p2:'+ex.message})};__cr"
+            "}catch(ex){__cr=JSON.stringify({error:'p2b:'+ex.message})};__cr"
             % (jd, lat, lon, jd, lat, lon, jd, lat, lon))
 
         # Phase 3a (~12s): Fast timing (firdaria/profections/solarArc/progressions/lunarPhases/eclipses/riseSet/crossings)
@@ -189,8 +207,8 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "}catch(ex){__cr=JSON.stringify({error:'p3b:'+ex.message})};__cr"
             % (jd, jd, lat, lon, jd, lat, lon))
 
-        # Phase 4 (~12s): primaryDirections, transits, parans, astrocartography, solarReturn, lunarReturn, gauquelinSector
-        _cp("p4",
+        # Phase 4a (~5s): primaryDirections + transits + transitPositions + solarReturn + lunarReturn
+        _cp("p4a",
             "var __cr;try{"
             "var jd=%s;var today=%s;var _lat=%s;var _lon=%s;"
             "if(typeof e==='undefined'){"
@@ -208,10 +226,27 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "primaryDirections:sf(function(){return Caelus.primaryDirections(e,jd,_lat,_lon)}),"
             "transits:sf(function(){return Caelus.transitAspects(chart,e,today,{bodies:p7})}),"
             "transitPositions:_tp,"
+            "solarReturn:sf(function(){return Caelus.solarReturn(e,jd,jd,jd+365*3)}),"
+            "lunarReturn:sf(function(){return Caelus.lunarReturn(e,jd,jd+27,jd+27*3)})"
+            "})"
+            "}catch(ex){__cr=JSON.stringify({error:'p4a:'+ex.message})};__cr"
+            % (jd, today_jd, lat, lon, jd, lat, lon, jd, lat, lon))
+
+        # Phase 4b (~8s): parans + astrocartography + gauquelinSector
+        _cp("p4b",
+            "var __cr;try{"
+            "var jd=%s;var today=%s;var _lat=%s;var _lon=%s;"
+            "if(typeof e==='undefined'){"
+            "e=new Caelus.Engine(Caelus.embeddedData);chart=e.chartAt(%s,%s,%s,{});"
+            "isDay=Caelus.isDayChart(e,%s,%s,%s);"
+            "sf=function(fn){try{return fn()}catch(ex){return null}};"
+            "isDayStr=isDay?'day':'night';"
+            "p7=['sun','moon','mercury','venus','mars','jupiter','saturn'];"
+            "p10=p7.concat(['uranus','neptune','pluto']);"
+            "ascIdx=Math.floor(chart.angles.asc/30);}"
+            "__cr=JSON.stringify({"
             "parans:sf(function(){return Caelus.parans(e,jd,_lat,p7,30)}),"
             "astrocartography:sf(function(){return Caelus.astrocartography(e,jd,['sun','moon','venus','mars','jupiter','saturn'],-60,60,5)}),"
-            "solarReturn:sf(function(){return Caelus.solarReturn(e,jd,jd,jd+365*3)}),"
-            "lunarReturn:sf(function(){return Caelus.lunarReturn(e,jd,jd+27,jd+27*3)}),"
             "gauquelinSector:{sun:sf(function(){return Caelus.gauquelinSector(e,'sun',jd,_lat,_lon)}),"
             "moon:sf(function(){return Caelus.gauquelinSector(e,'moon',jd,_lat,_lon)}),"
             "mercury:sf(function(){return Caelus.gauquelinSector(e,'mercury',jd,_lat,_lon)}),"
@@ -220,7 +255,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "jupiter:sf(function(){return Caelus.gauquelinSector(e,'jupiter',jd,_lat,_lon)}),"
             "saturn:sf(function(){return Caelus.gauquelinSector(e,'saturn',jd,_lat,_lon)})}"
             "})"
-            "}catch(ex){__cr=JSON.stringify({error:'p4:'+ex.message})};__cr"
+            "}catch(ex){__cr=JSON.stringify({error:'p4b:'+ex.message})};__cr"
             % (jd, today_jd, lat, lon, jd, lat, lon, jd, lat, lon))
 
         if caelus_data:
