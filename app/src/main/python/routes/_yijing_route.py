@@ -365,6 +365,9 @@ def _yijing(method="time", seed=None, year=None, month=None, day=None, hour=None
         try:
             yao_safe = json.dumps(yao_string)
             _js_load("iching-shifa-engine")
+            # 验证引擎实际已加载（处理context被重置导致静默失效的情况）
+            if json.loads(_js("iching-shifa-engine", "JSON.stringify(typeof IchingShifa)")) == "undefined":
+                _js_load("iching-shifa-engine")  # 重载一次
             js_decode = json.loads(_js("iching-shifa-engine",
                 "var r="+yao_safe+";"
                 "var pan=null;try{pan=IchingShifa.decodePan(r,{year:"+str(_yr)+",month:"+str(_mo)+",day:"+str(_dy)+",hour:"+str(_hr)+"});}catch(e){pan={error:e.message}}"
