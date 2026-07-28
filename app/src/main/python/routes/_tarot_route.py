@@ -12,6 +12,7 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, cards=None):
     sp = load_spread(spread)
     from arcanite.core.models import DrawnCard, Orientation
     # 自动生成seed以实现复盘
+    errors = []
     if not cards or not isinstance(cards, list):
         if seed is None: seed = random.randrange(1, 2**31)
         drawn = deck.draw(len(sp.positions), seed=seed)
@@ -21,9 +22,10 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, cards=None):
             if isinstance(entry, str):
                 entry = {"id": entry, "reversed": False}
             cid, is_rev = entry["id"], entry.get("reversed", False)
-            card = deck.get_card(cid)
-            if card is None:
-                cards.append({"position": sp.positions[i].rag_mapping if i < len(sp.positions) else None, "error": f"card not found: {cid}"})
+            try:
+                card = deck.get_card(cid)
+            except KeyError:
+                errors.append({"position": sp.positions[i].rag_mapping if i < len(sp.positions) else None, "error": f"card not found: {cid}"})
                 continue
             dc = DrawnCard(card_id=card.card_id, card_name=card.card_name,
                            position_index=i, position_name="",
@@ -84,6 +86,8 @@ def _tarot(spread="celtic-cross", seed=None, question_type=None, cards=None):
     },
         "cards": cards, "ee_analysis": ee_result,
     }
+    if errors:
+        result["manual_card_errors"] = errors
     # 补全 EE 4个未包方法: 三牌尊贵/架桥/关系分类/流向
     try:
         els = [r["primary_element"] for r in result["ee_analysis"]["spread_dignity"]]

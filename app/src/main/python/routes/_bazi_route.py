@@ -143,7 +143,7 @@ def _bazi(year, month, day, hour, minute=0, gender=1, feature="bazi"):
             "jinshen":datas.jins.get(dg,""),
             "wang":datas.wangs.get(dz,""),
             "jiesha":datas.jieshas.get(yz,""),
-            "lu_ku_cai":{k:datas.lu_ku_cai.get(k,"") for k in ["官","杀"]},
+            "lu_ku_cai":datas.lu_ku_cai.get(dg,""),
             # 神煞详细解释 (孤辰寡宿/大耗/天德/月德等)
             "shensha_detail":{k:v for k,v in datas.shens_infos.items()
                 if any(s in k for s in [str(dz),str(mz),str(yz)])} if hasattr(datas,'shens_infos') else {},
@@ -158,7 +158,7 @@ def _bazi(year, month, day, hour, minute=0, gender=1, feature="bazi"):
             "chen_shi":datas.chens.get(tz,"") if hasattr(datas,'chens') else "",
             # 干支关系 (全量)
             "gan_he":{g:_tup(ganzhi.gan_hes,g) for g in [yg,dg,tg] if g},
-            "gan_chong":{g:ganzhi.gan_chongs.get(g,"") for g in [yg,dg,tg] if g} if hasattr(ganzhi,'gan_chongs') else {},
+            "gan_chong":{g:_tup(ganzhi.gan_chongs,g) for g in [yg,dg,tg] if g} if hasattr(ganzhi,'gan_chongs') else {},
             "zhi_he":{z:_strk(ganzhi.zhi_6hes,z) for z in [yz,mz,dz,tz] if z},
             "zhi_3he":{z:_find_3he(ganzhi.zhi_3hes,z) for z in [yz,mz,dz,tz] if z} if hasattr(ganzhi,'zhi_3hes') else {},
             "zhi_half_3he":{z:_tup(ganzhi.zhi_half_3hes,z) for z in [yz,mz,dz,tz] if z} if hasattr(ganzhi,'zhi_half_3hes') else {},

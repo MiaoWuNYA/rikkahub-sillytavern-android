@@ -12,6 +12,7 @@ def _lenormand(spread="line-5", seed=None, cards=None):
     from arcanite.core.models import DrawnCard, Orientation
     from arcanite.core.deck import LenormandDrawnCard
     # 自动生成seed以实现复盘
+    errors = []
     if not cards or not isinstance(cards, list):
         if seed is None: seed = random.randrange(1, 2**31)
         items = d.draw_with_data(len(sp.positions), seed=seed, allow_reversals=False)
@@ -21,9 +22,10 @@ def _lenormand(spread="line-5", seed=None, cards=None):
             if isinstance(entry, str):
                 entry = {"id": entry}
             cid = entry["id"]
-            card = d.get_card(cid)
-            if card is None:
-                cards.append({"position": sp.positions[i].name if i < len(sp.positions) else None, "error": f"card not found: {cid}"})
+            try:
+                card = d.get_card(cid)
+            except KeyError:
+                errors.append({"position": sp.positions[i].name if i < len(sp.positions) else None, "error": f"card not found: {cid}"})
                 continue
             dc = DrawnCard(card_id=card.card_id, card_name=card.card_name,
                            position_index=i, position_name="", orientation=Orientation.UPRIGHT,
@@ -67,6 +69,8 @@ def _lenormand(spread="line-5", seed=None, cards=None):
         "karmic_mirrors": FE.parse_karmic_mirrors(sp.positions, items),
         "fe_portrait": FE.parse_portrait_3x3_cage(items, spread),
     }
+    if errors:
+        result["manual_card_errors"] = errors
     if spread == "grand-tableau":
         result["gt_master"] = FE.parse_grand_tableau_master_mode(items, sp.positions)
         sig_idx = result["gt_master"].get("significator_absolute_index", 0)
