@@ -460,8 +460,11 @@ def _stellium(
     if partner_year is not None:
         try:
             p_dt = _build_dt(
-                partner_year, partner_month or 1, partner_day or 1,
-                partner_hour or 12, partner_minute or 0, partner_tz or tz,
+                partner_year,
+                partner_month if partner_month is not None else 1,
+                partner_day if partner_day is not None else 1,
+                partner_hour if partner_hour is not None else 12,
+                partner_minute or 0, partner_tz or tz,
             )
             partner = _chart(
                 p_dt, partner_lat or lat, partner_lon or lon,

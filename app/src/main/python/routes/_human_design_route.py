@@ -5,7 +5,7 @@ from ._shared import _js, _js_load, resolve_tz_checked
 # ===== 人类图 =====
 def _human_design(year,month,day,hour,tz,minute=0,gene_keys=False,transits=False):
     try:
-        tz_num, _=resolve_tz_checked(tz)
+        tz_num, _=resolve_tz_checked(tz, at=(year, month, day, hour, minute))
         date_str=f"{year}-{month:02d}-{day}"
         _js_load("natalengine-engine")
         hd_raw=_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateHumanDesign('{date_str}',{hour+minute/60},{tz_num}))")

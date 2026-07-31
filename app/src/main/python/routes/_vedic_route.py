@@ -1,22 +1,17 @@
 """Route:  vedic"""
 import json, sys, os, datetime
-from ._shared import _js, _js_load, compute_jd, resolve_tz_checked
+from ._shared import resolve_tz_checked
 
 # ===== 吠陀 =====
 def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
     if isinstance(lat, str): lat = float(lat)
     if isinstance(lon, str): lon = float(lon)
     try:
-        tz_vd, _ = resolve_tz_checked(tz)
+        tz_vd, _ = resolve_tz_checked(tz, at=(year, month, day, hour, minute))
     except ValueError as e:
         return {"system": "vedic", "error": f"时区参数错误: {e}"}
-    date_str=f"{year}-{month:02d}-{day}"
     tz_vd_sign = "+" if tz_vd >= 0 else "-"
     tz_vd_abs = abs(tz_vd)
-    tz_vd_str = f"{tz_vd_sign}{int(tz_vd_abs):02d}:{int((tz_vd_abs - int(tz_vd_abs)) * 60 + 0.5):02d}"
-    iso_vd_date = f"{date_str}T{hour:02d}:{minute:02d}:00{tz_vd_str}"
-    jd_vd = compute_jd(year, month, day, hour, minute, tz_vd)
-    hour_dec = hour + minute/60
 
     result={"system":"vedic"}
     jd_local=None; place=None

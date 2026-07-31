@@ -39,7 +39,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
                    partner_hour=None,partner_tz=None,partner_lat=None,partner_lon=None,
                    partner_minute=0):
     try:
-        tz_num, _ = resolve_tz_checked(tz)
+        tz_num, _ = resolve_tz_checked(tz, at=(year, month, day, hour, minute))
     except ValueError as e:
         return {"system": "western_astrology", "error": f"时区参数错误: {e}"}
     if isinstance(lat, str): lat = float(lat)
@@ -284,11 +284,16 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
     # 合盘: 仅当传入 partner_year 时触发
     if partner_year is not None:
         try:
-            pt, _ = resolve_tz_checked(partner_tz, tz_num)
+            pt, _ = resolve_tz_checked(
+                partner_tz, tz_num,
+                at=(partner_year, partner_month or month, partner_day or day,
+                    hour if partner_hour is None else partner_hour,
+                    partner_minute or 0))
             pl=float(partner_lat) if partner_lat else lat or 0
             pn=float(partner_lon) if partner_lon else lon or 0
             jdB = compute_jd(partner_year, partner_month or month, partner_day or day,
-                             partner_hour or hour, partner_minute, pt)
+                             hour if partner_hour is None else partner_hour,
+                             partner_minute or 0, pt)
             _js_load("caelus-engine")
             raw = _js("caelus-engine",
                 "var __cr;try{"

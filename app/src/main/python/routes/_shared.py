@@ -70,13 +70,15 @@ def resolve_tz(tz_val, default=8.0):
         return default
 
 
-def resolve_tz_checked(tz_val, default=8.0):
+def resolve_tz_checked(tz_val, default=8.0, at=None):
     """严格校验时区参数：合法则返回小时偏移，非法则抛 ValueError。
 
     只接受三种形式，其他一律报错（不自动换算、不回退默认，防止无声错盘）：
       1. IANA 时区名（如 "Asia/Shanghai"，pytz 解析，含夏令时）；
       2. UTC/GMT 前缀偏移（如 "UTC+8"、"GMT-4"）；
       3. 数字小时偏移，范围 -12 ~ +14（东八区=8，不是 480）。
+    at 传 (year, month, day, hour, minute)：IANA 时区按该时刻的真实偏移
+     （含历史 DST 规则）计算；不传则用当前时刻。
     返回 (offset_hours, warning_or_None)；warning 保留给将来可恢复的提示。
     """
     if tz_val is None:
@@ -95,7 +97,16 @@ def resolve_tz_checked(tz_val, default=8.0):
         try:
             import pytz
             tz = pytz.timezone(s)
-            offset = tz.utcoffset(datetime.now()).total_seconds() / 3600
+            if at is not None:
+                naive = datetime(year=at[0], month=at[1], day=at[2], hour=at[3], minute=at[4])
+                try:
+                    aware = tz.localize(naive, is_dst=None)
+                except Exception:
+                    # DST 切换的模糊/缺口时刻：退化为标准时间
+                    aware = tz.localize(naive, is_dst=False)
+                offset = aware.utcoffset().total_seconds() / 3600
+            else:
+                offset = tz.utcoffset(datetime.now()).total_seconds() / 3600
             return offset, None
         except Exception:
             raise ValueError(

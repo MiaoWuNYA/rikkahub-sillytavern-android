@@ -28,7 +28,7 @@ _CAELUS_ORDER = ["chart", "state", "events", "progressions", "transits", "releas
 
 def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
     try:
-        tz_offset, _ = resolve_tz_checked(tz_offset)
+        tz_offset, _ = resolve_tz_checked(tz_offset, at=(year, month, day, hour, minute))
     except ValueError as e:
         return {"system": "traditional_astrology", "error": f"时区参数错误: {e}"}
     if isinstance(lat, str): lat = float(lat)
