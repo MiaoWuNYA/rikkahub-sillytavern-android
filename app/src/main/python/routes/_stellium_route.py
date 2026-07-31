@@ -276,29 +276,21 @@ def _stellium(
     except Exception as e:
         result["moon_phase_error"] = str(e)
 
-    # ── 5b. Planetary phases (always, classical morning/evening star) ──
+    # ── 5b. Planetary phases (always, engine PhaseData only) ──
     # 只保留古典七星中的水金火木土：太阳相位无信息量，月亮另有 moon_phase；
-    # 三王星/凯龙/交点不属于古典晨昏星体系。
+    # 三王星/凯龙/交点不属于古典体系。仅透出引擎 PhaseData 原生字段，
+    # 不自行推导任何派生值。
     try:
         phases = []
-        sun_obj = chart.get_object("Sun")
-        sun_lon = sun_obj.longitude if sun_obj else None
         for p in chart.positions:
             if p.phase is not None and p.name in ("Mercury", "Venus", "Mars", "Jupiter", "Saturn"):
-                item = {
+                phases.append({
                     "name": p.name,
                     "phase_angle": p.phase.phase_angle,
                     "illuminated_fraction": p.phase.illuminated_fraction,
                     "elongation": p.phase.elongation,
                     "apparent_magnitude": p.phase.apparent_magnitude,
-                }
-                # 晨星/昏星由黄经差直接推导（对照 swisseph 黄经，纯几何无假设）：
-                # diff<180°=行星在太阳东侧（日落前后可见=昏星）；diff>180°=西侧（日出前可见=晨星）
-                if sun_lon is not None:
-                    diff = (p.longitude - sun_lon) % 360
-                    item["side_of_sun"] = "east" if diff < 180 else "west"
-                    item["zodiacal_elongation"] = round(diff, 4)
-                phases.append(item)
+                })
         if phases:
             result["planetary_phases"] = phases
     except Exception as e:
