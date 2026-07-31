@@ -76,8 +76,8 @@ android {
         applicationId = "me.rerere.rikkahub"
         minSdk = 26
         targetSdk = 37
-        versionCode = 171
-        versionName = "2.4.3"
+        versionCode = 172
+        versionName = "2.4.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -260,6 +260,8 @@ dependencies {
     implementation(libs.coil.cache.control)
     // serialization
     implementation(libs.kotlinx.serialization.json)
+    // QuickJS (JS 引擎执行; 原由 highlight 模块 api 传递, 上游重写 highlight 后需显式声明)
+    implementation(libs.quickjs)
     // zxing
     implementation(libs.zxing.core)
     // quickie (qrcode scanner)

@@ -263,14 +263,16 @@ fun ChatDrawerContent(
                     vm.generateTitle(it, true)
                 },
                 onDelete = {
-                    vm.deleteConversation(it)
-                    // Refresh the conversation list to immediately remove the deleted item
-                    // This fixes the issue where deleted conversations sometimes remain visible
-                    // until manually clicked (issue #747)
-                    conversations.refresh()
-                    if (it.id == current.id) {
-                        scope.launch { drawerState.animateTo(DrawerValue.Closed, tween(150)) }
-                        navigateToChatPage(navController)
+                    scope.launch {
+                        vm.deleteConversation(it).join()
+                        // Refresh the conversation list to immediately remove the deleted item
+                        // This fixes the issue where deleted conversations sometimes remain visible
+                        // until manually clicked (issue #747)
+                        conversations.refresh()
+                        if (it.id == current.id) {
+                            drawerState.animateTo(DrawerValue.Closed, tween(150))
+                            navigateToChatPage(navController)
+                        }
                     }
                 },
                 onPin = {
@@ -290,8 +292,9 @@ fun ChatDrawerContent(
             AssistantPicker(
                 settings = settings,
                 onUpdateSettings = {
+                    val updateJob = vm.updateSettings(it)
                     scope.launch {
-                        vm.updateSettingsAndWait(it)
+                        updateJob.join()
                         val id = if (context.readBooleanPreference("create_new_conversation_on_start", true)) {
                             Uuid.random()
                         } else {

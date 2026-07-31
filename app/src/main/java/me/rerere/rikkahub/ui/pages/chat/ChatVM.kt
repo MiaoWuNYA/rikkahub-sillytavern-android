@@ -126,8 +126,8 @@ class ChatVM(
     val mcpManager = chatService.mcpManager
 
     // 更新设置
-    fun updateSettings(newSettings: Settings) {
-        viewModelScope.launch {
+    fun updateSettings(newSettings: Settings): Job {
+        return viewModelScope.launch {
             val oldSettings = settings.value
             checkUserAvatarDelete(oldSettings, newSettings)
             settingsStore.update(newSettings)
@@ -271,11 +271,10 @@ class ChatVM(
         }
     }
 
-    fun deleteConversation(conversation: Conversation) {
+    fun deleteConversation(conversation: Conversation): Job =
         viewModelScope.launch {
             conversationRepo.deleteConversation(conversation)
         }
-    }
 
     fun updatePinnedStatus(conversation: Conversation) {
         viewModelScope.launch {
