@@ -209,8 +209,10 @@ def _stellium(
 
     # Current age for timing calculations
     try:
+        # 用 chart.datetime.utc_datetime（真正的出生 UTC 时刻）算年龄，
+        # 避免把本地时间误当 UTC（时区偏差在生日前后会令 profection 岁数差 1）
         current_age = (
-            datetime.now(pytz.UTC) - datetime(year, month, day, hour, minute, tzinfo=pytz.UTC)
+            datetime.now(pytz.UTC) - chart.datetime.utc_datetime
         ).total_seconds() / 31557600
     except Exception:
         current_age = 30.0
