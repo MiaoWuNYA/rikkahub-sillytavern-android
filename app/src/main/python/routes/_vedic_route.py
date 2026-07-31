@@ -461,10 +461,10 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                         if isinstance(lords[0], (list, tuple)):
                             # 嵌套 lords（如 Sudharsana 的 [rasi,sub,subsub] 对）
                             lnames = [" / ".join(
-                                (_rname(x, one_based=True) if rasi_based else _pname(x)) for x in group)
+                                (_rname(x) if rasi_based else _pname(x)) for x in group)
                                 for group in lords]
                         elif rasi_based:
-                            lnames = [_rname(x, one_based=True) for x in lords]
+                            lnames = [_rname(x) for x in lords]
                         else:
                             lnames = [_pname(x) for x in lords]
                         out.append({"lords": lnames, "start_date": _date_arr_str(date_arr),
@@ -488,8 +488,9 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                     py[_vk] = {_pname(p): _pos([r,d]) for p,(r,d) in py[_vk]}
             for _vk in ("varga_d9_64th_navamsa","varga_d3_22nd_drekkana"):
                 if isinstance(py.get(_vk), dict):
-                    py[_vk] = {_pname(k): {"nakshatra": v[0], "nakshatra_name": _nakname(v[0]),
-                                           "pada": v[1]} for k,v in py[_vk].items()}
+                    # jhora 源码: get_64th_navamsa/get_22nd_drekkana 返回 (星座索引, 宫主星ID)
+                    py[_vk] = {_pname(k): {"rasi": v[0], "rasi_name": _rname(v[0]),
+                                           "lord": _pname(v[1])} for k,v in py[_vk].items()}
             for _k in ("planet_nakshatra",):
                 if isinstance(py.get(_k), dict):
                     py[_k] = {_pname(k): {"nakshatra": v[0], "nakshatra_name": _nakname(v[0]),
@@ -505,7 +506,14 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
             try:
                 ps = py.get("planet_status", {})
                 for f in ("combustion","retrograde","marana_karaka_sthana"):
-                    if isinstance(ps.get(f), list): ps[f] = [_pname(x) for x in ps[f]]
+                    if f in ("combustion","retrograde") and isinstance(ps.get(f), list):
+                        ps[f] = [_pname(x) for x in ps[f]]
+                # jhora 源码: MKS 返回 [(行星ID, 相对宫位1-12), ...]
+                if isinstance(ps.get("marana_karaka_sthana"), list):
+                    ps["marana_karaka_sthana"] = [
+                        {"planet": _pname(x[0]), "house": x[1]}
+                        for x in ps["marana_karaka_sthana"]
+                        if isinstance(x, (list, tuple)) and len(x)>=2]
                 if isinstance(ps.get("kp_lords"), dict):
                     ps["kp_lords"] = {("Lagna" if k==const._ascendant_symbol else _pname(k)): v
                                       for k,v in ps["kp_lords"].items()}
@@ -605,9 +613,10 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
             except Exception: pass
             try:
                 if isinstance(py.get("vedic_time"), (list, tuple)) and len(py["vedic_time"])>=3:
-                    py["vedic_time"] = {"hour": int(py["vedic_time"][0]),
-                                        "minute": int(py["vedic_time"][1]),
-                                        "second": int(py["vedic_time"][2])}
+                    # jhora 源码: vedic_time 返回 (ghati, phala, vighati)
+                    py["vedic_time"] = {"ghati": int(py["vedic_time"][0]),
+                                        "phala": int(py["vedic_time"][1]),
+                                        "vighati": int(py["vedic_time"][2])}
             except Exception: pass
             try:
                 if isinstance(py.get("amrita_gadiya"), (list, tuple)) and len(py["amrita_gadiya"])>=2:
