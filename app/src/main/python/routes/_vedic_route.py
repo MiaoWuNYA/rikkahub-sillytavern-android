@@ -82,8 +82,10 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
         except: pass
         try:
             from jhora.horoscope.dhasa import sudharsana_chakra as _sc
-            py["sudharsana_chakra"]=_sc.sudharshana_chakra_chart(jd_local,place,drik.Date(year,month,day))
-            py["sudharsana_dhasa"]=_sc.get_dhasa_bhukthi(jd_local,place)
+            # jhora UI 标准调用 years_from_dob=0（以出生年排轮盘种子，行年逐年推进）
+            py["sudharsana_chakra"]=_sc.sudharshana_chakra_chart(jd_local,place,drik.Date(year,month,day),years_from_dob=0)
+            # jhora info._get_sudharsana_chakra_dhasa 标准调用: dhasa_cycles=1(12年轮盘)
+            py["sudharsana_dhasa"]=_sc.get_dhasa_bhukthi(jd_local,place,dhasa_cycles=1,antardhasa_from_lord_of_dhasa_sign=True)
         except: pass
         # ——— 4. House 宫位关键分析 ———
         try:
