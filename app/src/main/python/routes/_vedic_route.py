@@ -145,8 +145,10 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
         # ——— 12. Ashtakavarga ———
         try:
             _bav_raw=ashtakavarga.get_ashtaka_varga(h_to_p)
-            py["ashtakavarga"]={"bav":_bav_raw[0],"sav":_bav_raw[1],"pav":_bav_raw[2]}
-            py["ashtakavarga_sodhaya"]=ashtakavarga.sodhaya_pindas(_bav_raw[0],h_to_p)
+            # sodhaya_pindas 内部浅拷贝会就地修改 bav 行，必须给深拷贝行，保留原始 BAV
+            _bav_rows=[row[:] for row in _bav_raw[0]]
+            py["ashtakavarga"]={"bav":_bav_rows,"sav":_bav_raw[1],"pav":_bav_raw[2]}
+            py["ashtakavarga_sodhaya"]=ashtakavarga.sodhaya_pindas([row[:] for row in _bav_raw[0]],h_to_p)
         except: pass
         # ——— 13. Dosha 凶格 ———
         try:
