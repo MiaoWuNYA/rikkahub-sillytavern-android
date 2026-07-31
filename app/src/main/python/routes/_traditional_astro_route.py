@@ -404,10 +404,14 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
         s_jd = syzygyJD(jd)
         s_sun = _flatlib_swe.sweObjectLon(const.SUN, s_jd)
         s_moon = _flatlib_swe.sweObjectLon(const.MOON, s_jd)
-        s_dist = abs(s_sun - s_moon)
+        # 最短角距：太阳/月亮经度可能跨越 0°/360° 边界，线性差会误判；
+        # 朔望事件本身离 0°(合)或 180°(冲)都在极小量内，90° 阈值判型安全。
+        s_dist = abs(s_sun - s_moon) % 360.0
+        if s_dist > 180.0:
+            s_dist = 360.0 - s_dist
         syzygy = {
             "jd": s_jd,
-            "type": "new_moon" if s_dist < 180 else "full_moon",
+            "type": "new_moon" if s_dist < 90 else "full_moon",
             "sun_lon": s_sun, "moon_lon": s_moon,
         }
         syzygy["sun_sign"] = sign_names[int(s_sun // 30)]
@@ -507,7 +511,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
     caelus_data = {}
     caelus_errors = []
     _caelus_start = _time.monotonic()
-    _caelus_budget = 30.0  # Caelus 总预算秒数，超预算跳过剩余阶段，保证路由 60s 内返回
+    _caelus_budget = 45.0  # Caelus 总预算秒数（QuickJS 实测约 Node 的 30-70 倍），超预算跳过剩余阶段
     try:
         jd = compute_jd(year, month, day, hour, minute, tz_offset)
         today = datetime.datetime.now(datetime.timezone.utc)
@@ -587,7 +591,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             "},"
             "currentPlanetaryHour:Caelus.planetaryHour(e,today,_lat,_lon),"
             "currentVoidOfCourse:Caelus.voidOfCourse(e,today),"
-            "lunarPhases:Caelus.lunarPhases(e,today,today+90,8)"
+            "lunarPhases:Caelus.lunarPhases(e,today,today+30,8)"
             "})"
             "}catch(ex){__cr=JSON.stringify({error:'p1:'+ex.message})};__cr"
             % (jd, today_jd, lat, lon, "true" if is_day else "false",
@@ -655,7 +659,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             "isDayStr=isDay?'day':'night';"
             "p7=['sun','moon','mercury','venus','mars','jupiter','saturn'];}"
             "var _stations={};p7.forEach(function(b){"
-            "_stations[b]=sf(function(){return Caelus.stations(e,b,today,today+90,5)})});"
+            "_stations[b]=sf(function(){return Caelus.stations(e,b,today,today+60,5)})});"
             "__cr=JSON.stringify({"
             "stations:_stations,"
             "primaryDirections:sf(function(){return Caelus.primaryDirections(e,jd,_lat,_lon)})"
@@ -677,7 +681,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             "__cr=JSON.stringify({"
             "electional:{"
             "natalFeatures:natVec,"
-            "search:Caelus.searchConfigurations(e,natVec,{start:today,end:today+90,step:1,limit:10,bodies:p7,zodiac:'tropical'})"
+            "search:Caelus.searchConfigurations(e,natVec,{start:today,end:today+60,step:1,limit:10,bodies:p7,zodiac:'tropical'})"
             "}"
             "})"
             "}catch(ex){__cr=JSON.stringify({error:'p3:'+ex.message})};__cr"
@@ -698,11 +702,12 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
         "星座 fertility+figure/三主(Triplicity)/Syzygy。"
         "Caelus:推运(Firdaria75y/主限/小限/太阳弧)+次限推运(月/日+水金火木土,推至当前年龄)"
         "+ZR(Spirit+Fortune,当前活跃+L1-L2时限)+行运Aspects(当前)+行运位置(全7星+北交经度/星座)"
-        "+FixedStars(maxMag4)+月相/日月食/留(全7星90d)"
+        "+FixedStars(maxMag4)+月相/日月食/留(全7星60d)"
         "+currentVoidOfCourse(当前空亡)/currentPlanetaryHour(当前时主星)/映点+反映点/currentDeclinationAspects(当前赤纬)/日出日落(出生后首次)"
         "/条件矩阵(dignityScore+pheno+solarPhase+house+angularity)+AlmutenFiguris"
-        "+择时(Caelus.chartFeatures+searchConfigurations)(90天内最佳时机查询)。"
+        "+择时(Caelus.chartFeatures+searchConfigurations)(60天内最佳时机查询)。"
         "caelus 已按 chart/state/events/progressions/transits/releasing/electional 分组返回。"
-        "注: Caelus 已限预算(30s)防超时; 重型技法(行星回归30年/Parans)在移动端 QuickJS 上过慢已移除。"
+        "注: Caelus 已限预算(45s); 重型技法(行星回归30年/Parans)在移动端 QuickJS 上过慢已移除;"
+        "月相窗口30天/行星留60天/择时60天, 以保证全阶段在预算内返回。"
     )
     return result
