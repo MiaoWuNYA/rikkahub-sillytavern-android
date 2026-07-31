@@ -575,10 +575,14 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                 if isinstance(pc.get("vaara"), (int,float)):
                     pc["vaara"] = {"vaara_index": int(pc["vaara"]),
                                    "vaara": _weekday_names[int(pc["vaara"])%7]}
+                # jhora 源码: sunrise/sunset/moonrise/moonset 返回 [本地小时(float), 时间字符串, 事件JD]
+                # 注意: moonrise/moonset 的 JD 是 UTC 原始 JD, 不能直接转成本地日期;
+                # 统一用"出生日期 + 本地小时"推导本地日期（可跨天/负值）
                 for f in ("sunrise","sunset","moonrise","moonset"):
-                    if isinstance(pc.get(f), (list, tuple)) and len(pc[f])>=4:
-                        pc[f] = {"date": _jd_local_str(pc[f][0]),
-                                 "time_local": f"{int(pc[f][1]):02d}:{int(pc[f][2]):02d}:{int(pc[f][3]):02d}"}
+                    if isinstance(pc.get(f), (list, tuple)) and len(pc[f])>=3:
+                        pc[f] = {"local_hour": pc[f][0], "time": pc[f][1],
+                                 "date": (_dtm.datetime(year, month, day)
+                                          + _dtm.timedelta(hours=float(pc[f][0]))).strftime("%Y-%m-%d")}
                 for f in ("day_length","night_length"):
                     if isinstance(pc.get(f), (int,float)):
                         pc[f] = {"hours": round(float(pc[f]),3)}
@@ -595,7 +599,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
             try:
                 li = py.get("lunar_info", {})
                 if isinstance(li.get("month_index"), (int,float)):
-                    li["month_name"] = _lunar_months[int(li["month_index"])%12]
+                    li["month_name"] = _lunar_months[(int(li["month_index"])-1)%12]
                 if isinstance(li.get("ritu_index"), (int,float)):
                     li["ritu_name"] = _ritus[int(li["ritu_index"])%6]
             except Exception: pass
@@ -667,7 +671,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
             except Exception: pass
             try:
                 if isinstance(py.get("bhaava_madhya"), list):
-                    py["bhaava_madhya"] = {f"house_{i+1}_cusp": v
+                    py["bhaava_madhya"] = {f"house_{i+1}_madhya": v
                                            for i,v in enumerate(py["bhaava_madhya"])}
             except Exception: pass
             try:
