@@ -1,5 +1,6 @@
 """Route:  western astro"""
 import json, sys, os, datetime
+import time as _time
 from ._shared import _js, _js_load, compute_jd, resolve_tz
 
 # ===== 现代西洋占星（双引擎对照） =====
@@ -36,6 +37,8 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
     # Caelus: 分阶段JS评估 (全量现代技法+对照+行运+推运+增补)
     caelus_data = {}
     caelus_errors = []
+    _caelus_start = _time.monotonic()
+    _caelus_budget = 30.0  # Caelus 总预算秒数，超预算跳过剩余阶段，保证路由 60s 内返回
     try:
         _js_load("caelus-engine")
         today = datetime.datetime.now(datetime.timezone.utc)
@@ -43,6 +46,9 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
 
         def _cp(name, js):
             try:
+                if _time.monotonic() - _caelus_start > _caelus_budget:
+                    caelus_errors.append(f"{name}: skipped (Caelus 预算 {_caelus_budget:.0f}s 已用尽)")
+                    return
                 _js_load("caelus-engine")  # re-init guard — no-op when cached, re-loads after timeout
                 raw = _js("caelus-engine", js)
                 p = json.loads(raw)
@@ -145,7 +151,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "}catch(ex){__cr=JSON.stringify({error:'p2b:'+ex.message})};__cr"
             % (jd, lat, lon, jd, lat, lon, jd, lat, lon))
 
-        # Phase 3a (~12s): Fast timing (firdaria/profections/solarArc/progressions/lunarPhases/eclipses/riseSet/crossings)
+        # Phase 3a (~8s): Fast timing (firdaria/profections/solarArc/progressions/lunarPhases/eclipses/riseSet/crossings 90d)
         _cp("p3a",
             "var __cr;try{"
             "var jd=%s;var today=%s;var _lat=%s;var _lon=%s;"
@@ -160,7 +166,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "var _xings={};p10.forEach(function(b){"
             "_xings[b]=sf(function(){"
             "var ns=Math.ceil(chart.bodies[b].lon/30)*30;"
-            "return Caelus.crossings(e,b,ns,jd,jd+365,'tropical',1)"
+            "return Caelus.crossings(e,b,ns,jd,jd+90,'tropical',1)"
             "})});"
             "__cr=JSON.stringify({"
             "firdaria:sf(function(){return Caelus.firdaria(isDay,jd)}),"
@@ -174,8 +180,8 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "jupiter:sf(function(){return Caelus.progressedLongitude(e,'jupiter',jd,jd+365*30)}),"
             "saturn:sf(function(){return Caelus.progressedLongitude(e,'saturn',jd,jd+365*30)})},"
             "lunarPhases:Caelus.lunarPhases(e,jd,jd+30,8),"
-            "eclipses:sf(function(){return{solar:Caelus.solarEclipses(e,jd,jd+365).slice(0,2),"
-            "lunar:Caelus.lunarEclipses(e,jd,jd+365).slice(0,2)}}),"
+            "eclipses:sf(function(){return{solar:Caelus.solarEclipses(e,jd,jd+180).slice(0,2),"
+            "lunar:Caelus.lunarEclipses(e,jd,jd+180).slice(0,2)}}),"
             "riseSet:{sun:{rise:sf(function(){return Caelus.riseSet(e,'sun',jd,_lat,_lon,'rise',{searchDays:1})}),"
             "set:sf(function(){return Caelus.riseSet(e,'sun',jd,_lat,_lon,'set',{searchDays:1})})},"
             "moon:{rise:sf(function(){return Caelus.riseSet(e,'moon',jd,_lat,_lon,'rise',{searchDays:1})}),"
@@ -185,7 +191,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "}catch(ex){__cr=JSON.stringify({error:'p3a:'+ex.message})};__cr"
             % (jd, today_jd, lat, lon, jd, lat, lon, jd, lat, lon))
 
-        # Phase 3b (~10s): Stations + returns + harmonicChart
+        # Phase 3b (~5s): Stations(90d) + harmonicChart (去掉 returns 30yr: 单技法 29s+, QuickJS 不可行)
         _cp("p3b",
             "var __cr;try{"
             "var jd=%s;"
@@ -197,11 +203,9 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "p7=['sun','moon','mercury','venus','mars','jupiter','saturn'];"
             "p10=p7.concat(['uranus','neptune','pluto']);"
             "ascIdx=Math.floor(chart.angles.asc/30);}"
-            "var _stations={};p7.forEach(function(b){_stations[b]=sf(function(){return Caelus.stations(e,b,jd,jd+120,5)})});"
-            "var _returns={};['mercury','venus','mars','jupiter','saturn'].forEach(function(b){"
-            "_returns[b]=sf(function(){return Caelus.returns(e,b,jd,jd,jd+365*30,'tropical').slice(0,3)})});"
+            "var _stations={};p7.forEach(function(b){_stations[b]=sf(function(){return Caelus.stations(e,b,jd,jd+90,5)})});"
             "__cr=JSON.stringify({"
-            "stations:_stations,returns:_returns,"
+            "stations:_stations,"
             "harmonicChart:sf(function(){return Caelus.harmonicChart(e,jd,['sun','moon','venus','mars'],5)})"
             "})"
             "}catch(ex){__cr=JSON.stringify({error:'p3b:'+ex.message})};__cr"
@@ -232,7 +236,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "}catch(ex){__cr=JSON.stringify({error:'p4a:'+ex.message})};__cr"
             % (jd, today_jd, lat, lon, jd, lat, lon, jd, lat, lon))
 
-        # Phase 4b (~8s): parans + astrocartography + gauquelinSector
+        # Phase 4b (~1s): astrocartography (去掉 parans/gauquelinSector: QuickJS 上分别 8-17s/13-26s)
         _cp("p4b",
             "var __cr;try{"
             "var jd=%s;var today=%s;var _lat=%s;var _lon=%s;"
@@ -245,15 +249,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "p10=p7.concat(['uranus','neptune','pluto']);"
             "ascIdx=Math.floor(chart.angles.asc/30);}"
             "__cr=JSON.stringify({"
-            "parans:sf(function(){return Caelus.parans(e,jd,_lat,p7,30)}),"
             "astrocartography:sf(function(){return Caelus.astrocartography(e,jd,['sun','moon','venus','mars','jupiter','saturn'],-60,60,5)}),"
-            "gauquelinSector:{sun:sf(function(){return Caelus.gauquelinSector(e,'sun',jd,_lat,_lon)}),"
-            "moon:sf(function(){return Caelus.gauquelinSector(e,'moon',jd,_lat,_lon)}),"
-            "mercury:sf(function(){return Caelus.gauquelinSector(e,'mercury',jd,_lat,_lon)}),"
-            "venus:sf(function(){return Caelus.gauquelinSector(e,'venus',jd,_lat,_lon)}),"
-            "mars:sf(function(){return Caelus.gauquelinSector(e,'mars',jd,_lat,_lon)}),"
-            "jupiter:sf(function(){return Caelus.gauquelinSector(e,'jupiter',jd,_lat,_lon)}),"
-            "saturn:sf(function(){return Caelus.gauquelinSector(e,'saturn',jd,_lat,_lon)})}"
             "})"
             "}catch(ex){__cr=JSON.stringify({error:'p4b:'+ex.message})};__cr"
             % (jd, today_jd, lat, lon, jd, lat, lon, jd, lat, lon))
@@ -286,9 +282,10 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
         except: pass
     result["engine"]="+".join(_engs)
     result["_hint"]=("NatalEngine:日月升+7星+元素+相位+合盘(synastry)。"
-        "Caelus全量:bodies/cusps(Placidus)/angles/patterns/lots/空亡/映点/赤纬/越界(全10星)/恒星合相/尊贵/almuten/月相/行星留(全7星)/日月食/"
-        "firdaria/profections/primaryDirections/parans/调和盘/行运方位相位+Aspects(当前)/行运行星位置(全13星含凯龙)+凯龙本命/ACG(简)/太阳返照/月亮返照/"
-        "次级推运(全7星30年)/genericReturns(水金火木土3yr)/midpoints(日月+Asc+MC)/riseSet(日月)/signCrossings(全10星)。"
+        "Caelus:bodies/cusps(Placidus)/angles/patterns/lots/空亡/映点/赤纬/越界(全10星)/恒星合相/尊贵/almuten/月相/行星留(全7星90d)/日月食(180d)/"
+        "firdaria/profections/primaryDirections/调和盘/行运方位相位+Aspects(当前)/行运行星位置(全13星含凯龙)+凯龙本命/ACG(简)/太阳返照/月亮返照/"
+        "次级推运(全7星30年)/midpoints(日月+Asc+MC)/riseSet(日月)/signCrossings(全10星90d)。"
+        "注: Caelus 已限预算(30s)防超时; 重型技法(行星回归30年/Parans/高魁林区)在移动端 QuickJS 上过慢已移除。"
         "合盘:传partner_year/partner_month/partner_day/partner_hour触发。"
         "自探索:Object.keys(Caelus)")
     return result

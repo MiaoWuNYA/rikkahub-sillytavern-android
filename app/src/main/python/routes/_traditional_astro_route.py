@@ -1,5 +1,6 @@
 """Route: traditional astro — Hellenistic/Medieval traditional Western astrology"""
 import json, sys, os, datetime
+import time as _time
 from ._shared import _js, _js_load, compute_jd, resolve_tz
 
 def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
@@ -479,6 +480,8 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
     # --- Caelus JS (分阶段): traditional timing + condition matrix + ZR + electional ---
     caelus_data = {}
     caelus_errors = []
+    _caelus_start = _time.monotonic()
+    _caelus_budget = 30.0  # Caelus 总预算秒数，超预算跳过剩余阶段，保证路由 60s 内返回
     try:
         jd = compute_jd(year, month, day, hour, minute, tz_offset)
         now = datetime.datetime.now(datetime.timezone.utc)
@@ -487,6 +490,9 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
 
         def _cp(name, js):
             try:
+                if _time.monotonic() - _caelus_start > _caelus_budget:
+                    caelus_errors.append(f"{name}: skipped (Caelus 预算 {_caelus_budget:.0f}s 已用尽)")
+                    return
                 _js_load("caelus-engine")  # re-init guard — no-op when cached, re-loads after timeout
                 raw = _js("caelus-engine", js)
                 p = json.loads(raw)
@@ -561,7 +567,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             % (jd, now_jd, lat, lon, "true" if is_day else "false",
                int(asc_lon / 30)))
 
-        # Phase 2a1 (~12s): Returns + progressions + solarArc + transits + transitPositions
+        # Phase 2a1 (~2s): progressions + solarArc + transits + transitPositions (去掉 returns 30yr: 单技法 29s+, QuickJS 不可行)
         _cp("p2a1",
             "var __cr;try{"
             "var jd=%s;var nowJd=%s;var _lat=%s;var _lon=%s;"
@@ -571,8 +577,6 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             "sf=function(fn){try{return fn()}catch(ex){return null}};"
             "isDayStr=isDay?'day':'night';"
             "p7=['sun','moon','mercury','venus','mars','jupiter','saturn'];}"
-            "var _returns={};['mercury','venus','mars','jupiter','saturn'].forEach(function(b){"
-            "_returns[b]=sf(function(){return Caelus.returns(e,b,jd,jd,jd+365*30,'tropical').slice(0,3)})});"
             "__cr=JSON.stringify({"
             "solarArc:Caelus.solarArc(e,jd,nowJd),"
             "progressedMoon:sf(function(){return Caelus.progressedLongitude(e,'moon',jd,jd+365*30)}),"
@@ -586,8 +590,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             "transitPositions:(function(){var tp={};p7.concat(['mean_node']).forEach(function(b){try{"
             "var lon=e.longitude(b,nowJd,{zodiac:'tropical'});"
             "var sg=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][Math.floor(lon/30)%%12];"
-            "tp[b]={lon:lon,sign:sg}}catch(ex){}});return tp})(),"
-            "returns:_returns"
+            "tp[b]={lon:lon,sign:sg}}catch(ex){}});return tp})()"
             "})"
             "}catch(ex){__cr=JSON.stringify({error:'p2a1:'+ex.message})};__cr"
             % (jd, now_jd, lat, lon, jd, lat, lon, jd, lat, lon))
@@ -615,7 +618,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             "}catch(ex){__cr=JSON.stringify({error:'p2a2:'+ex.message})};__cr"
             % (jd, now_jd, lat, lon, jd, lat, lon, jd, lat, lon))
 
-        # Phase 2b (~12s): Stations + parans + primaryDirections
+        # Phase 2b (~4s): Stations(90d) + primaryDirections (去掉 parans: QuickJS 上 8-17s)
         _cp("p2b",
             "var __cr;try{"
             "var jd=%s;var nowJd=%s;var _lat=%s;var _lon=%s;"
@@ -626,10 +629,9 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             "isDayStr=isDay?'day':'night';"
             "p7=['sun','moon','mercury','venus','mars','jupiter','saturn'];}"
             "var _stations={};p7.forEach(function(b){"
-            "_stations[b]=sf(function(){return Caelus.stations(e,b,nowJd,nowJd+120,5)})});"
+            "_stations[b]=sf(function(){return Caelus.stations(e,b,nowJd,nowJd+90,5)})});"
             "__cr=JSON.stringify({"
             "stations:_stations,"
-            "parans:sf(function(){return Caelus.parans(e,nowJd,_lat,p7,30)}),"
             "primaryDirections:sf(function(){return Caelus.primaryDirections(e,jd,_lat,_lon)})"
             "})"
             "}catch(ex){__cr=JSON.stringify({error:'p2b:'+ex.message})};__cr"
@@ -670,9 +672,10 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
         "星座 fertility+figure/三主(Triplicity)/Syzygy。"
         "Caelus:推运(Firdaria75y/主限/小限/太阳弧)+次限推运(月/日+水金火木土30yr)"
         "+ZR(Spirit+Fortune,当前活跃+L1-L2时限)+行运Aspects(当前)+行运位置(全7星+北交经度/星座)"
-        "+FixedStars(maxMag4)+月相/日月食/留(全7星)/行星回归(水金火木土3yr)"
-        "+空亡(当前)/时主星/Parans/映点+反映点/赤纬相位/日出日落"
+        "+FixedStars(maxMag4)+月相/日月食/留(全7星90d)"
+        "+空亡(当前)/时主星/映点+反映点/赤纬相位/日出日落"
         "/条件矩阵(dignityScore+pheno+solarPhase+house+angularity)+AlmutenFiguris"
         "+择时(Caelus.chartFeatures+searchConfigurations)(90天内最佳时机查询)。"
+        "注: Caelus 已限预算(30s)防超时; 重型技法(行星回归30年/Parans)在移动端 QuickJS 上过慢已移除。"
     )
     return result
