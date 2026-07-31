@@ -28,6 +28,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
         from jhora.horoscope.transit import saham as _sh
         from jhora.panchanga.eclipse import next_solar_eclipse, next_lunar_eclipse
         place=drik.Place("loc",lat or 0,lon or 0,tz_vd)
+        drik.set_ayanamsa_mode('LAHIRI')  # 标准 Lahiri(Chitrapaksha)岁差，与主流Panchanga及CAE sidereal:lahiri一致
         jd_local=utils.julian_day_number(drik.Date(year,month,day),(hour,minute,0))
         pp=drik.dhasavarga(jd_local,place,1)
         asc_raw=drik.ascendant(jd_local,place)
@@ -39,7 +40,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
         result["engine"]="PyJHora"
         # ——— 1. 排盘（最核心） ———
         py["planets"]=pp[1:]; py["lagna"]={"rasi":asc_raw[0],"deg":asc_raw[1],"nak":asc_raw[2],"pada":asc_raw[3]}
-        py["ayanamsa"]=drik.get_ayanamsa_value(jd_local)
+        py["ayanamsa"]=drik.get_ayanamsa_value(jd_local); py["ayanamsa_mode"]="LAHIRI"
         # ——— 2. Panchanga（基础信息） ———
         try: py["panchanga"]={"tithi":drik.tithi(jd_local,place),"nakshatra":drik.nakshatra(jd_local,place),"yogam":drik.yogam(jd_local,place),"karana":drik.karana(jd_local,place),"vaara":drik.vaara(jd_local,place),"sunrise":drik.sunrise(jd_local,place),"sunset":drik.sunset(jd_local,place),"moonrise":drik.moonrise(jd_local,place),"moonset":drik.moonset(jd_local,place),"day_length":drik.day_length(jd_local,place),"night_length":drik.night_length(jd_local,place)}
         except: pass
@@ -257,127 +258,119 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
             }
         except Exception:
             pass
+        # ——— 22. Gochara 行运（当前时刻，标准 BPHS Ch.29 + 传统土星行运） ———
+        try:
+            import datetime as _dtm
+            _now_utc = _dtm.datetime.now(_dtm.timezone.utc)
+            # 用出生地时区构造"当前本地时间"（与 jd_local 的本地语义一致）
+            _now_local = _now_utc + _dtm.timedelta(hours=tz_vd)
+            now_jd = utils.julian_day_number(
+                drik.Date(_now_local.year, _now_local.month, _now_local.day),
+                (_now_local.hour, _now_local.minute, 0))
+            # 行运位置：与全路由排盘同一 API（dhasavarga 返回 [pid,[rasi,deg]]，仅九曜；
+            # planetary_positions 在 pyjhora 4.8.7 中因 planet_list.index 缺陷不可用）
+            _tr_pl = drik.dhasavarga(now_jd, place, 1)
+            _tr_names = {0:'Sun',1:'Moon',2:'Mars',3:'Mercury',4:'Jupiter',5:'Venus',
+                         6:'Saturn',7:'Rahu',8:'Ketu'}
+            _rasi_names = const.rasi_names_en
+            _moon_rasi = pp[2][1][0]  # 本命月亮星座（Gochara 主基准 = Chandra Lagna）
+            # BPHS Ch.29 各行星吉宫（从本命月亮起算）；Rahu/Ketu 传统同火星论(3/6/11)
+            _bphs_good = {
+                0:[3,6,10,11], 1:[1,3,6,7,10,11], 2:[3,6,11], 3:[2,4,6,8,10,11],
+                4:[2,5,7,9,11], 5:[1,2,3,4,5,8,9,11,12], 6:[3,6,11], 7:[3,6,11], 8:[3,6,11],
+            }
+            # BPHS Ch.29 Vedha 阻碍对：吉宫 -> 阻碍宫（另一行星在该宫时吉运被挡）
+            _bphs_vedha = {
+                0:{3:9,6:12,10:4,11:5},
+                1:{1:5,3:9,6:12,7:2,10:4,11:8},
+                2:{3:12,6:9,11:5},
+                3:{2:5,4:3,6:9,8:1,10:8,11:12},
+                4:{2:12,5:4,7:3,9:10,11:8},
+                5:{1:8,2:7,3:1,4:10,5:9,8:5,9:11,11:6,12:3},
+                6:{3:12,6:9,11:5},
+                7:{3:12,6:9,11:5},
+                8:{3:12,6:9,11:5},
+            }
+            _transit = {}
+            _tr_rasi_of = {}
+            for _pid, (_rasi, _coords) in _tr_pl:
+                _lon = _rasi * 30 + _coords
+                _nak = drik.nakshatra_pada(_lon)
+                _h_moon = (_rasi - _moon_rasi) % 12 + 1
+                _h_lagna = (_rasi - asc_house) % 12 + 1
+                _good = _h_moon in _bphs_good[_pid]
+                _entry = {
+                    "longitude": round(_lon, 4),
+                    "rasi": _rasi,
+                    "rasi_name": _rasi_names[_rasi],
+                    "degree": round(_coords, 4),
+                    "nakshatra": _nak[0],
+                    "pada": _nak[1],
+                    "house_from_moon": _h_moon,
+                    "house_from_lagna": _h_lagna,
+                    "gochara_effect": "benefic" if _good else "malefic",
+                }
+                # Vedha：吉宫行运被阻碍宫内的其他行运行星所挡
+                # （Parashari 惯例豁免 日月互阻 / 木水互阻）
+                if _good:
+                    _vh = _bphs_vedha[_pid].get(_h_moon)
+                    if _vh is not None:
+                        _target = (_moon_rasi + _vh - 1) % 12
+                        _vedha = []
+                        for _oid, (_orasi, _odeg) in _tr_pl:
+                            if _oid == _pid or _orasi != _target:
+                                continue
+                            if (_pid == 0 and _oid == 1) or (_pid == 1 and _oid == 0) or \
+                               (_pid == 4 and _oid == 3) or (_pid == 3 and _oid == 4):
+                                continue
+                            _vedha.append(_tr_names[_oid])
+                        if _vedha:
+                            _entry["vedha_planets"] = _vedha
+                _transit[_tr_names[_pid]] = _entry
+                _tr_rasi_of[_pid] = _rasi
+            py["transit"] = _transit
+            # 行运对本命 drishti 相位（对照 const.graha_drishti 传统规则）
+            try:
+                _tr_drishti = {}
+                for _pid, _rasi in _tr_rasi_of.items():
+                    _asp = []
+                    for _off in const.graha_drishti.get(_pid, [7]):
+                        _ar = (_rasi + _off) % 12
+                        for _nid, (_nrasi, _ndeg) in pp[1:]:
+                            if _nid != const._ascendant_symbol and _nrasi == _ar:
+                                _asp.append(_tr_names.get(_nid, str(_nid)))
+                    if _asp:
+                        _tr_drishti[_tr_names.get(_pid, str(_pid))] = _asp
+                if _tr_drishti:
+                    py["transit_drishti"] = _tr_drishti
+            except Exception:
+                pass
+            # 土星专项行运（均以本命月亮为基准）
+            try:
+                _sat_rasi = _tr_rasi_of.get(6)
+                if _sat_rasi is not None:
+                    _diff = (_sat_rasi - _moon_rasi) % 12  # 0=第1宫, 11=第12宫
+                    py["sade_sati"] = (
+                        "peak" if _diff == 0
+                        else "rising" if _diff == 11
+                        else "setting" if _diff == 1 else "none")
+                    py["saturn_transits"] = {
+                        "saturn_house_from_moon": _diff + 1,
+                        "sade_sati": py["sade_sati"],
+                        "ashtama_shani": _diff == 7,          # 第8宫
+                        "ardha_ashtama_shani": _diff == 3,    # 第4宫（Dhaiya）
+                        "kantaka_shani": _diff in (3, 6, 9),  # 第4/7/10宫
+                    }
+            except Exception:
+                pass
+        except Exception:
+            pass
         # ——— engine 已在上文各阶段累计 ———
     except Exception as e:
         result["pyjhora_error"]=str(e)
         result["engine"]=""
-    # ===== NodeJhora (DE440) =====
-    if lat and lon:
-        try:
-            _js_load("node-jhora-engine")
-            nj=json.loads(_js("node-jhora-engine",
-                "try{"
-                "var dt=NodeJhora.DateTime.fromISO('%s');"
-                "var nj=NodeJhora.EphemerisEngine.getInstance();"
-                "var planets=nj.getPlanets(dt,{latitude:%f,longitude:%f},{ayanamsaOrder:1});"
-                "if(!planets||!planets.length){JSON.stringify({error:'getPlanets returned empty'})}else{"
-                "var jd=nj.julday(dt);"
-                "var houses=nj.getHouses(jd,%f,%f,'W',true);"
-                "var moon=planets.find(function(p){return p.id===1})||{};"
-                "var sun=planets.find(function(p){return p.id===0})||{};"
-                "var idToName={0:'Sun',1:'Moon',2:'Mercury',3:'Venus',4:'Mars',5:'Jupiter',6:'Saturn',10:'Rahu',99:'Ketu'};"
-                "var chart={planets:planets.map(function(p){return{name:idToName[p.id]||'Unknown',longitude:p.longitude}}),houses:{ascendant:houses.ascendant}};"
-                "var tradPlanets=planets.filter(function(p){return p.id>=0&&p.id<=6});"
-                "var charaKarakas=NodeJhora.JaiminiCore?NodeJhora.JaiminiCore.calculateCharaKarakas(tradPlanets):null;"
-                "var atmakaraka=charaKarakas&&charaKarakas.length?charaKarakas[0]:null;"
-                "var planetsSAV=planets.map(function(p){return p.id===99?{id:99,name:'Lagna',longitude:houses.ascendant}:p});"
-                "var ashtakavarga=NodeJhora.Ashtakavarga?NodeJhora.Ashtakavarga.calculateSAV(planetsSAV):null;"
-                "var yogini=NodeJhora.YoginiDasha&&moon.longitude?NodeJhora.YoginiDasha.calculate(moon.longitude,dt,50):null;"
-                "var yogas=NodeJhora.YogaEngine?NodeJhora.YogaEngine.findYogas(chart,NodeJhora.YOGA_LIBRARY||[]):null;"
-                "var safe=function(f){try{return f()}catch(e){return null}};"
-                "var panchanga=safe(function(){return NodeJhora.calculatePanchanga(sun.longitude,moon.longitude,dt,6)});"
-                "var vimshottari=safe(function(){return typeof NodeJhora.generateVimshottari==='function'?NodeJhora.generateVimshottari(dt,moon.longitude,2):null});"
-                "var dashaBalance=safe(function(){return typeof NodeJhora.calculateDashaBalance==='function'?NodeJhora.calculateDashaBalance(moon.longitude):null});"
-                "var chart2={planets:planets.map(function(p){return{name:p.id,longitude:p.longitude}}),houses:{}};"
-                "var narayanaDasha=safe(function(){return NodeJhora.NarayanaDasha?NodeJhora.NarayanaDasha.calculate(chart2,dt,80):null});"
-                "var vargaD9=safe(function(){return typeof NodeJhora.calculateVarga==='function'?NodeJhora.calculateVarga(moon.longitude,9):null});"
-                "var _as=Math.floor(houses.ascendant/30)+1;var _ms=Math.floor((moon.longitude||0)/30)+1;"
-                "var induLagna=NodeJhora.calculateInduLagna?safe(function(){return NodeJhora.calculateInduLagna(_as,_ms,planets)}):null;"
-                "var dhumadiUpagrahas=NodeJhora.calculateDhumadiUpagrahas?NodeJhora.calculateDhumadiUpagrahas(sun.longitude||0):null;"
-                "JSON.stringify({planets:planets,houses:houses,moonLon:moon.longitude||0,sunLon:sun.longitude||0,"
-                "charaKarakas:charaKarakas,atmakaraka:atmakaraka,ashtakavarga:ashtakavarga,"
-                "yogini:yogini,yogas:yogas,panchanga:panchanga,vimshottari:vimshottari,"
-                "dashaBalance:dashaBalance,narayanaDasha:narayanaDasha,vargaD9:vargaD9,"
-                "induLagna:induLagna,dhumadiUpagrahas:dhumadiUpagrahas})}"
-                "}catch(e){JSON.stringify({error:e.message})}" % (
-                    iso_vd_date, lat, lon, lat, lon)))
-            if isinstance(nj, dict) and 'error' not in nj:
-                result["nodejhora"]=nj
-                result["engine"] = (result.get("engine","") or "") + "+NodeJhora"
-        except: pass
-    # ===== NatalEngine =====
-    try:
-        _js_load("natalengine-engine")
-        v=json.loads(_js("natalengine-engine",f"JSON.stringify(NatalEngine.calculateVedic('{date_str}',{hour_dec},{tz},{lat or 0},{lon or 0}))"))
-        if isinstance(v, dict) and 'error' not in v: result["natal"]=v; result["engine"]=result.get("engine","")+"+NatalEngine"
-    except: pass
-    # ===== Caelus =====
-    try:
-        _js_load("caelus-engine")
-        if lat and lon:
-            today=datetime.datetime.now()
-            today_jd=compute_jd(today.year,today.month,today.day,today.hour,today.minute,0)
-            c=json.loads(_js("caelus-engine",
-                "var e=new Caelus.Engine(Caelus.embeddedData);var jd=%s;var today=%s;var _lat=%f;var _lon=%f;"
-                "var bodies=['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune','pluto','chiron'];"
-                "var sf=function(f){try{return f()}catch(e){return null}};"
-                "var moonLon=e.longitude('moon',jd,{zodiac:'sidereal:lahiri'});"
-                "var r={vimshottari:Caelus.vimshottariDashas(moonLon,jd)};"
-                "try{r.vargaD9=Caelus.vargaChart(e,jd,9,bodies,'sidereal:lahiri');}catch(ex){}"
-                "try{r.vargaD3=Caelus.vargaChart(e,jd,3,bodies,'sidereal:lahiri');}catch(ex){}"
-                "try{r.vargaD10=Caelus.vargaChart(e,jd,10,bodies,'sidereal:lahiri');}catch(ex){}"
-                "try{r.vargaD12=Caelus.vargaChart(e,jd,12,bodies,'sidereal:lahiri');}catch(ex){}"
-                "try{r.vargaD30=Caelus.vargaChart(e,jd,30,bodies,'sidereal:lahiri');}catch(ex){}"
-                "try{r.ashtottariDashas=Caelus.ashtottariDashas(moonLon,jd);}catch(ex){}"
-                "try{r.yoginiDashas=Caelus.yoginiDashas(moonLon,jd);}catch(ex){}"
-                "try{r.nakshatraBodies={};bodies.forEach(function(b){r.nakshatraBodies[b]=Caelus.nakshatraAt(e,jd,b,'sidereal:lahiri')})}catch(ex){}"
-                "try{r.yogas=Caelus.yogasAt(e,jd,_lat,_lon,'sidereal:lahiri');}catch(ex){}"
-                "try{r.kemadruma=Caelus.kemadrumaAt(e,jd,_lat,_lon,false,false,'sidereal:lahiri');}catch(ex){}"
-                "try{r.vimshottariNow=Caelus.vimshottariAt(e,jd,today,'sidereal:lahiri');}catch(ex){}"
-                "try{r.rajaYogas=Caelus.rajaYogasAt(e,jd,_lat,_lon,'sidereal:lahiri');}catch(ex){}"
-                "try{r.dhanaYogas=Caelus.dhanaYogasAt(e,jd,_lat,_lon,'sidereal:lahiri');}catch(ex){}"
-                # stations for graha motion
-                "try{var gr=['sun','moon','mars','mercury','jupiter','venus','saturn'];"
-                "r.stations={};gr.forEach(function(b){"
-                "r.stations[b]=sf(function(){return Caelus.stations(e,b,jd,jd+365,5)})})}catch(ex){}"
-                # returns for transit timing
-                "try{r.returns={};['mars','jupiter','saturn'].forEach(function(b){"
-                "r.returns[b]=sf(function(){return Caelus.returns(e,b,jd,jd,jd+365*3,'sidereal:lahiri').slice(0,3)})})}catch(ex){}"
-                # 行运 Gochara
-                "var trBodies=['sun','moon','mars','mercury','jupiter','venus','saturn','north_node','south_node'];"
-                "r.transit={}; trBodies.forEach(function(b){"
-                "var lon=e.longitude(b,today,{zodiac:'sidereal:lahiri'});"
-                "var sg=Math.floor(lon/30);"
-                "r.transit[b]={longitude:lon,sign:sg,degree:lon%30};"
-                "});"
-                # Sade Sati
-                "var _ms=Math.floor(moonLon/30);var _ss=Math.floor(r.transit.saturn.longitude/30);"
-                "if(_ss===_ms)r.transit.sadeSati='peak';"
-                "else if(_ss===((_ms+11)%%12))r.transit.sadeSati='rising';"
-                "else if(_ss===((_ms+1)%%12))r.transit.sadeSati='setting';"
-                # Transit nakshatra
-                "try{r.transitNakshatra={};"
-                "var _trNakBodies=['sun','moon','mars','mercury','jupiter','venus','saturn','north_node','south_node'];"
-                "_trNakBodies.forEach(function(b){r.transitNakshatra[b]=Caelus.nakshatraAt(e,today,b,'sidereal:lahiri');});"
-                "}catch(ex){}"
-                # Transit aspects
-                "try{"
-                "var _allB=Caelus.BODIES.filter(function(b){return b!=='mean_node'&&b!=='true_node';});"
-                "var _natalB={};"
-                "_allB.forEach(function(b){_natalB[b]={lon:e.longitude(b,jd,{zodiac:'sidereal:lahiri'})};});"
-                "var _asc=Caelus.angles(Caelus.embeddedData,jd,_lat,_lon)[0];"
-                "var _wh=Caelus.housesWholeSign(_asc);"
-                "var _natalChart={bodies:_natalB,cusps:_wh.map(function(c){return c/Caelus.DEG;}),zodiac:'sidereal:lahiri'};"
-                "r.transitAspects=Caelus.transitAspects(_natalChart,e,today,{zodiac:'sidereal:lahiri'});"
-                "}catch(ex){}"
-                "JSON.stringify(r)"
-                %(jd_vd,today_jd,lat,lon)))
-            if isinstance(c, dict) and 'error' not in c:
-                result["caelus"]=c
-                result["engine"]=result.get("engine","")+"+Caelus"
-    except: pass
     result["_hint"]=("PyJHora全量:Panchanga(含月出/落+日/夜长+7日星宿)/Muhurtha/VedicTime/Dasha(Vimshottari/Ashtottari/Yogini/Narayana+分盘/Chara/Kalachakra/Sudharsana)/House(CharaKarakas/Marakas/函益/Argala/Brahma/Rudra/YogaKaaraka)/行星强度排名/吉凶星/GrahaDrishti/行星状态(combustion/retrograde/MKS/KP)/行星擢升落陷(planet_dignity)/宫位分布/Shadbala+Bhavabala+BhavaDrishti+PanchaVargeeya/特殊格局(RajaYoga+YogaDetails)/瑜伽(Sunapha/Anapha/Duradhara/GajaKesari/Vesi/Vosi/Ubhayachara)/Ashtakavarga(含SodhayaPindas)/Dosha8(含Ghata)/Arudha/全部分盘(D2-D60)+64thNavamsa+22ndDrekkana/逐星Nakshatra+速度+GrahaYuddha+BhaavaMadhya/SpecialLagnas(Sree/Pranapada/BhriguBindhu/Bhava/Hora/Ghati)/Upagrahas(含Kaala/Mrityu/Gulika等非太阳余炁)/农历/季节/Naisargika+SthiraKarakas/VivahaChakra/Chandrashtama/Tajaka年运+TajakaYogas/全19Saham/Eclipses/Thaaraabalam/AmritaGadiya/Varjyam/Sankranti/DhasaYearDuration/Sphuta8(Tri/Chatur/Prana/Deha/Mrityu/Beeja/Yogi/Avayogi)。"
-        "NodeJhora(DE440):行星/宫位/Jaimini/Ashtakavarga/Yogini/Yoga/Panchanga/Vimshottari+NarayanaDasha/VargaD9/InduLagna/DhumadiUpagrahas。"
-        "Caelus:Vimshottari+Varga(D3/D9/D10/D12/D30)/NakshatraBodies/Yogas/Kemadruma/RajaYogas/DhanaYogas/Ashtottari/Yogini/行运(全9星西达尔经度/星座/度数)+SadeSati/留(全7星)/returns(火木土)/行运Nakshatra/行运对本命相位(含本命宫位)。"
-        "自探索:dir(jhora)/Object.keys(NodeJhora)/Object.keys(Caelus)")
+        "Gochara行运(九曜当前西达尔经度/星座/度数/星宿+分度/月亮与上升双基准宫位/BPHS第29章吉凶+Vedha阻碍/行运对本命Drishti/"
+        "SadeSati+AshtamaShani+ArdhaAshtama+KantakaShani)/Lahiri岁差。"
+        "自探索:dir(jhora)")
     return result
