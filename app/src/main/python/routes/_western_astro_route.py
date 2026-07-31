@@ -51,7 +51,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
     caelus_data = {}
     caelus_errors = []
     _caelus_start = _time.monotonic()
-    _caelus_budget = 45.0  # Caelus 总预算秒数（QuickJS 实测约 Node 的 30-70 倍），超预算跳过剩余阶段
+    _caelus_budget = 60.0  # Caelus 总预算秒数（QuickJS 实测约 Node 的 30-70 倍），超预算跳过剩余阶段
     try:
         _js_load("caelus-engine")
         today = datetime.datetime.now(datetime.timezone.utc)
@@ -329,7 +329,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
         "firdaria/profections/primaryDirections/调和盘/行运方位相位+Aspects(当前)/行运行星位置(全13星含凯龙)+凯龙本命/ACG(简)/太阳返照/月亮返照/"
         "次级推运(全7星,推至当前年龄)/midpoints(日月+Asc+MC)/riseSet(出生后首次日月升降)/signCrossings(全10星60d)。"
         "caelus 已按 chart/bodies/events/progressions/transits/harmonics/astrocartography 分组返回。"
-        "注: Caelus 已限预算(45s); 重型技法(行星回归30年/Parans/高魁林区)在移动端 QuickJS 上过慢已移除;"
+        "注: Caelus 已限预算(60s); 重型技法(行星回归30年/Parans/高魁林区)在移动端 QuickJS 上过慢已移除;"
         "换座/行星留窗口为60天, 太阳返照1年/月亮返照1月, 以保证全阶段在预算内返回。"
         "合盘:传partner_year/partner_month/partner_day/partner_hour触发。"
         "自探索:Object.keys(Caelus)")

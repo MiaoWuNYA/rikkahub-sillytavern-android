@@ -515,7 +515,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
     caelus_data = {}
     caelus_errors = []
     _caelus_start = _time.monotonic()
-    _caelus_budget = 45.0  # Caelus 总预算秒数（QuickJS 实测约 Node 的 30-70 倍），超预算跳过剩余阶段
+    _caelus_budget = 60.0  # Caelus 总预算秒数（QuickJS 实测约 Node 的 30-70 倍），超预算跳过剩余阶段
     try:
         jd = compute_jd(year, month, day, hour, minute, tz_offset)
         today = datetime.datetime.now(datetime.timezone.utc)
@@ -711,7 +711,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
         "/条件矩阵(dignityScore+pheno+solarPhase+house+angularity)+AlmutenFiguris"
         "+择时(Caelus.chartFeatures+searchConfigurations)(60天内最佳时机查询)。"
         "caelus 已按 chart/state/events/progressions/transits/releasing/electional 分组返回。"
-        "注: Caelus 已限预算(45s); 重型技法(行星回归30年/Parans)在移动端 QuickJS 上过慢已移除;"
+        "注: Caelus 已限预算(60s); 重型技法(行星回归30年/Parans)在移动端 QuickJS 上过慢已移除;"
         "月相窗口30天/行星留60天/择时60天, 以保证全阶段在预算内返回。"
     )
     return result
