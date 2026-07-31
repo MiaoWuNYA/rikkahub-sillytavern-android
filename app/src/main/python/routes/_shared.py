@@ -131,14 +131,17 @@ def convert_caelus_dates(c):
         c["lunarReturn"] = [jd_to_str(j) for j in (c["lunarReturn"] or [])]
     if "chartBrief" in c and isinstance(c["chartBrief"], dict) and "jdUt" in c["chartBrief"]:
         c["chartBrief"]["jdUt"] = jd_to_str(c["chartBrief"]["jdUt"])
-    if "planetaryHour" in c and isinstance(c["planetaryHour"], dict):
-        for f in ("start", "end"):
-            if f in c["planetaryHour"]:
-                c["planetaryHour"][f] = jd_to_str(c["planetaryHour"][f])
-    if "voidOfCourse" in c and isinstance(c["voidOfCourse"], dict):
-        for f in ("signExit", "nextAspect"):
-            if f in c["voidOfCourse"]:
-                c["voidOfCourse"][f] = jd_to_str(c["voidOfCourse"][f])
+    # 时主星/空亡：兼容旧字段名与区分本命/当前的显式字段名
+    for _pk in ("planetaryHour", "birthPlanetaryHour", "currentPlanetaryHour"):
+        if _pk in c and isinstance(c[_pk], dict):
+            for f in ("start", "end"):
+                if f in c[_pk]:
+                    c[_pk][f] = jd_to_str(c[_pk][f])
+    for _vk in ("voidOfCourse", "natalVoidOfCourse", "currentVoidOfCourse"):
+        if _vk in c and isinstance(c[_vk], dict):
+            for f in ("signExit", "nextAspect"):
+                if f in c[_vk]:
+                    c[_vk][f] = jd_to_str(c[_vk][f])
     if "firdaria" in c:
         _seg_list(c["firdaria"])
     if "zodiacalReleasing" in c and isinstance(c["zodiacalReleasing"], dict):
