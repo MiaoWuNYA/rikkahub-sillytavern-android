@@ -51,6 +51,19 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
         # ——— 3. Dasha 运势（核心推运） ———
         try: py["vimshottari"]=vimsottari.get_vimsottari_dhasa_bhukthi(jd_local,place)
         except: pass
+        # 当前运行的大运阶梯：Maha→Antara(Bhukthi)→Pratyantara→Sukshma→Prana
+        # （对齐 jhora "Show Running Dhasa" 对话框的 dhasa_level_index=PRANA 用法）
+        try:
+            import datetime as _dtm
+            _now_utc = _dtm.datetime.now(_dtm.timezone.utc)
+            _now_local = _now_utc + _dtm.timedelta(hours=tz_vd)
+            _cur_jd = utils.julian_day_number(
+                drik.Date(_now_local.year, _now_local.month, _now_local.day),
+                (_now_local.hour, _now_local.minute, 0))
+            py["vimshottari_running"] = vimsottari.get_running_dhasa_for_given_date(
+                _cur_jd, jd_local, place, dhasa_level_index=const.MAHA_DHASA_DEPTH.PRANA)
+        except Exception:
+            pass
         try:
             from jhora.horoscope.dhasa.graha import ashtottari as a_py, yogini as y_py
             py["ashtottari_dasha"]=a_py.get_ashtottari_dhasa_bhukthi(jd_local,place)
@@ -99,9 +112,37 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                 "combustion":charts.planets_in_combustion(pp),
                 "retrograde":charts.planets_in_retrograde(pp),
                 "marana_karaka_sthana":charts.get_planets_in_marana_karaka_sthana(pp),
-                "kp_lords":charts.get_KP_lords_from_planet_positions(pp),
             }
         except: pass
+        # ——— 6b. Pushkara Navamsa / Pushkara Bhaga（强吉分度） ———
+        try:
+            _pna, _pbg = charts.planets_in_pushkara_navamsa_bhaga(pp)
+            py["pushkara"] = {"pushkara_navamsa_planets": _pna, "pushkara_bhaga_planets": _pbg}
+        except Exception:
+            pass
+        # ——— 6c. Vimsopaka Bala（四档分盘力量计分） ———
+        try:
+            py["vimsopaka_bala"] = {
+                "shadvarga": charts.vimsopaka_shadvarga_of_planets(jd_local, place),
+                "sapthavarga": charts.vimsopaka_sapthavarga_of_planets(jd_local, place),
+                "dhasavarga": charts.vimsopaka_dhasavarga_of_planets(jd_local, place),
+                "shodhasavarga": charts.vimsopaka_shodhasavarga_of_planets(jd_local, place),
+            }
+        except Exception:
+            pass
+        # ——— 6d. 行星自然友谊矩阵（const.planet_relations 静态表） ———
+        try:
+            _rel_names = {0:"Sun",1:"Moon",2:"Mars",3:"Mercury",4:"Jupiter",
+                          5:"Venus",6:"Saturn",7:"Rahu",8:"Ketu"}
+            py["planet_relations"] = {
+                _rel_names[p]: {
+                    "friends": [ _rel_names[f] for f in const.friendly_planets[p] ],
+                    "neutrals": [ _rel_names[n] for n in const.neutral_planets[p] ],
+                    "enemies": [ _rel_names[e] for e in const.enemy_planets[p] ],
+                } for p in range(9)
+            }
+        except Exception:
+            pass
         # ——— 7. 行星擢升/落陷 ———
         try:
             _planet_names={0:"Sun",1:"Moon",2:"Mars",3:"Mercury",4:"Jupiter",5:"Venus",6:"Saturn",7:"Rahu",8:"Ketu"}
@@ -516,9 +557,42 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                         {"planet": _pname(x[0]), "house": x[1]}
                         for x in ps["marana_karaka_sthana"]
                         if isinstance(x, (list, tuple)) and len(x)>=2]
-                if isinstance(ps.get("kp_lords"), dict):
-                    ps["kp_lords"] = {("Lagna" if k==const._ascendant_symbol else _pname(k)): v
-                                      for k,v in ps["kp_lords"].items()}
+            except Exception: pass
+            # Pushkara Navamsa / Pushkara Bhaga（jhora 源码返回行星ID列表）
+            try:
+                if isinstance(py.get("pushkara"), dict):
+                    py["pushkara"] = {
+                        "pushkara_navamsa_planets": [_pname(x) for x in py["pushkara"].get("pushkara_navamsa_planets") or []],
+                        "pushkara_bhaga_planets": [_pname(x) for x in py["pushkara"].get("pushkara_bhaga_planets") or []],
+                    }
+            except Exception: pass
+            # Vimsopaka Bala：jhora 源码 pdc[p]=[varga_count, dignity_sequence, weighted_score]
+            try:
+                _vims_amsa_names = {
+                    "shadvarga": ["No Amsa","No Amsa","Kimsukaamsa","Vyanjanaamsa","Chaamaraamsa","Chatraamsa","Kundalaamsa"],
+                    "sapthavarga": ["No Amsa","No Amsa","Kimsukaamsa","Vyanjanaamsa","Chaamaraamsa","Chatraamsa","Kundalaamsa","Mukutaamsa"],
+                    "dhasavarga": ["No Amsa","No Amsa","Paarijaataamsa","Uttamaamsa","Gopuraamsa","Simhaasanaamsa","Paaraavataamsa","Devalokaamsa","Brahmalokamsa","Airaavataamsa","Sreedhaamaamsa"],
+                    "shodhasavarga": ["No Amsa","No Amsa","Bhedakaamsa","Kusumaamsa","Nagapurushaamsa","Kandukaamsa","Keralaamsa","Kalpavrikshaamsa","Chandanavanaamsa","Poornachandraamsa","Uchchaisravaamsa","Dhanvantaryamsa","Sooryakaantaamsa","Vidrumaamsa","Indraasanaamsa","Golokaamsa","Sree Vallabhaamsa"],
+                }
+                if isinstance(py.get("vimsopaka_bala"), dict):
+                    for _vk, _vnames in _vims_amsa_names.items():
+                        _vsrc = py["vimsopaka_bala"].get(_vk)
+                        if isinstance(_vsrc, dict):
+                            py["vimsopaka_bala"][_vk] = {
+                                _pname(k): {
+                                    "varga_count": int(v[0]),
+                                    "varga_name": _vnames[int(v[0])] if 0 <= int(v[0]) < len(_vnames) else str(v[0]),
+                                    "dignity_sequence": v[1],
+                                    "vimsopaka_score": round(float(v[2]), 4),
+                                } for k, v in _vsrc.items()
+                            }
+            except Exception: pass
+            # 行星自然友谊矩阵（已在计算层名称化，这里兜底）
+            try:
+                if isinstance(py.get("planet_relations"), dict):
+                    py["planet_relations"] = {
+                        _pname(p): {k: [_pname(x) for x in v] for k, v in rel.items()}
+                        for p, rel in py["planet_relations"].items()}
             except Exception: pass
             for f in ("benefics","malefics"):
                 if isinstance(py.get(f), list): py[f] = [_pname(x) for x in py[f]]
@@ -757,6 +831,43 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                         "balance": {"years": bal[0], "months": bal[1], "days": bal[2]},
                         "periods": _dasha_periods(rows)}
             except Exception: pass
+            # vimshottari_running：jhora get_running_dhasa_for_given_date 返回
+            # [[lords_tuple, start_tuple, end_tuple], ...]（1级Maha..5级Prana）
+            try:
+                if isinstance(py.get("vimshottari_running"), (list, tuple)):
+                    _lvl_names = {1:"Maha Dasha",2:"Antara Dasha (Bhukthi)",3:"Pratyantara Dasha",
+                                  4:"Sukshma Dasha",5:"Prana Dasha",6:"Deha-antara Dasha"}
+                    _ydur = py.get("dhasa_year_duration") or drik.dhasa_year_duration(jd=jd_local, place=place)
+                    _out = []
+                    for _row in py["vimshottari_running"]:
+                        if not (isinstance(_row, (list, tuple)) and len(_row) >= 3):
+                            continue
+                        _lords, _st, _en = _row[0], _row[1], _row[2]
+                        if not isinstance(_lords, (list, tuple)): _lords = [_lords]
+                        _lvl = len(_lords)
+                        def _run_date(t):
+                            try:
+                                y, m, d, fh = t
+                                hh = int(float(fh)); mm = int((float(fh)-hh)*60)
+                                return f"{int(y):04d}-{int(m):02d}-{int(d):02d} {hh:02d}:{mm:02d} local"
+                            except Exception:
+                                return t
+                        try:
+                            _st_jd = utils.julian_day_number(drik.Date(_st[0], _st[1], _st[2]), (float(_st[3]), 0, 0))
+                            _en_jd = utils.julian_day_number(drik.Date(_en[0], _en[1], _en[2]), (float(_en[3]), 0, 0))
+                            _yrs = round((_en_jd - _st_jd) / float(_ydur), 4)
+                        except Exception:
+                            _yrs = None
+                        _out.append({
+                            "level": _lvl,
+                            "level_name": _lvl_names.get(_lvl, str(_lvl)),
+                            "lords": [_pname(x) for x in _lords],
+                            "start_date": _run_date(_st),
+                            "end_date": _run_date(_en),
+                            "years": _yrs,
+                        })
+                    py["vimshottari_running"] = _out
+            except Exception: pass
             for _dk, _rasi_based, _yogini in [
                     ("ashtottari_dasha",False,False), ("yogini_dasha",False,False),
                     ("narayana_dasha",True,False), ("narayana_varga_dasha",True,False),
@@ -826,7 +937,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
     except Exception as e:
         result["pyjhora_error"]=str(e)
         result["engine"]=""
-    result["_hint"]=("PyJHora全量:Panchanga(含月出/落+日/夜长+7日星宿)/Muhurtha/VedicTime/Dasha(Vimshottari/Ashtottari/Yogini/Narayana+分盘/Chara/Kalachakra/Sudharsana)/House(CharaKarakas/Marakas/函益/Argala/Brahma/Rudra/YogaKaaraka)/行星强度排名/吉凶星/GrahaDrishti/行星状态(combustion/retrograde/MKS/KP)/行星擢升落陷(planet_dignity)/宫位分布/Shadbala+Bhavabala+BhavaDrishti+PanchaVargeeya/特殊格局(RajaYoga+YogaDetails)/瑜伽(Sunapha/Anapha/Duradhara/GajaKesari/Vesi/Vosi/Ubhayachara)/Ashtakavarga(含SodhayaPindas)/Dosha8(含Ghata)/Arudha/全部分盘(D2-D60)+64thNavamsa+22ndDrekkana/逐星Nakshatra+速度+GrahaYuddha+BhaavaMadhya/SpecialLagnas(Sree/Pranapada/BhriguBindhu/Bhava/Hora/Ghati)/Upagrahas(含Kaala/Mrityu/Gulika等非太阳余炁)/农历/季节/Naisargika+SthiraKarakas/VivahaChakra/Chandrashtama/Tajaka年运+TajakaYogas/全19Saham/Eclipses/Thaaraabalam/AmritaGadiya/Varjyam/Sankranti/DhasaYearDuration/Sphuta8(Tri/Chatur/Prana/Deha/Mrityu/Beeja/Yogi/Avayogi)。"
+    result["_hint"]=("PyJHora全量:Panchanga(含月出/落+日/夜长+7日星宿)/Muhurtha/VedicTime/Dasha(Vimshottari+当前运行阶梯Maha→Antara→Pratyantara→Sukshma→Prana/Ashtottari/Yogini/Narayana+分盘/Chara/Kalachakra/Sudharsana)/House(CharaKarakas/Marakas/函益/Argala/Brahma/Rudra/YogaKaaraka)/行星强度排名/吉凶星/GrahaDrishti/行星状态(combustion/retrograde/MKS)/PushkaraNavamsa+PushkaraBhaga/VimsopakaBala四档(Shadvarga/Sapthavarga/Dhasavarga/Shodhasavarga)/行星自然友谊矩阵/行星擢升落陷(planet_dignity)/宫位分布/Shadbala+Bhavabala+BhavaDrishti+PanchaVargeeya/特殊格局(RajaYoga+YogaDetails)/瑜伽(Sunapha/Anapha/Duradhara/GajaKesari/Vesi/Vosi/Ubhayachara)/Ashtakavarga(含SodhayaPindas)/Dosha8(含Ghata)/Arudha/全部分盘(D2-D60)+64thNavamsa+22ndDrekkana/逐星Nakshatra+速度+GrahaYuddha+BhaavaMadhya/SpecialLagnas(Sree/Pranapada/BhriguBindhu/Bhava/Hora/Ghati)/Upagrahas(含Kaala/Mrityu/Gulika等非太阳余炁)/农历/季节/Naisargika+SthiraKarakas/VivahaChakra/Chandrashtama/Tajaka年运+TajakaYogas/全19Saham/Eclipses/Thaaraabalam/AmritaGadiya/Varjyam/Sankranti/DhasaYearDuration/Sphuta8(Tri/Chatur/Prana/Deha/Mrityu/Beeja/Yogi/Avayogi)。"
         "Gochara行运(九曜当前西达尔经度/星座/度数/星宿+分度/月亮与上升双基准宫位/BPHS第29章吉凶+Vedha阻碍/行运对本命Drishti/"
         "SadeSati+AshtamaShani+ArdhaAshtama+KantakaShani)/Lahiri岁差。"
         "输出已可读化:行星/星座/星宿一律带名称,日期为本地时间(YYYY-MM-DD HH:MM local),"
