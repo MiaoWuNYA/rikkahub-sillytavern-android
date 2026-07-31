@@ -379,6 +379,434 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                 pass
         except Exception:
             pass
+        # ——— 23. 输出可读性标注（对照 jhora 源码语义：数字ID→名称、裸tuple→命名对象、日期→本地时间） ———
+        try:
+            _pl_names = {0:"Sun",1:"Moon",2:"Mars",3:"Mercury",4:"Jupiter",5:"Venus",
+                         6:"Saturn",7:"Rahu",8:"Ketu"}
+            _rasi_names = const.rasi_names_en
+            _nak_names = ["Ashwini","Bharani","Krittika","Rohini","Mrigashira","Ardra",
+                "Punarvasu","Pushya","Ashlesha","Magha","Purva Phalguni","Uttara Phalguni",
+                "Hasta","Chitra","Swati","Vishakha","Anuradha","Jyeshtha","Mula",
+                "Purva Ashadha","Uttara Ashadha","Shravana","Dhanishta","Shatabhisha",
+                "Purva Bhadrapada","Uttara Bhadrapada","Revati"]
+            _tithi_names = ["Pratipada","Dwitiya","Tritiya","Chaturthi","Panchami","Shashthi",
+                "Saptami","Ashtami","Navami","Dashami","Ekadashi","Dwadashi","Trayodashi",
+                "Chaturdashi","Purnima","Pratipada","Dwitiya","Tritiya","Chaturthi","Panchami",
+                "Shashthi","Saptami","Ashtami","Navami","Dashami","Ekadashi","Dwadashi",
+                "Trayodashi","Chaturdashi","Amavasya"]
+            _yoga_names = ["Vishkambha","Priti","Ayushman","Saubhagya","Shobhana","Atiganda",
+                "Sukarman","Dhriti","Shula","Ganda","Vriddhi","Dhruva","Vyaghata","Harshana",
+                "Vajra","Siddhi","Vyatipata","Variyana","Parigha","Shiva","Siddha","Sadhya",
+                "Shubha","Shukla","Brahma","Indra","Vaidhriti"]
+            _weekday_names = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
+            _lunar_months = ["Chaitra","Vaishakha","Jyeshtha","Ashadha","Shravana","Bhadrapada",
+                "Ashwina","Kartika","Margashirsha","Pausha","Magha","Phalguna"]
+            _ritus = ["Vasanta","Grishma","Varsha","Sharad","Hemanta","Shishira"]
+
+            def _pname(x):
+                try: return _pl_names.get(int(x), str(x))
+                except Exception: return x
+
+            def _rname(i, one_based=False):
+                try: return _rasi_names[int(i) - (1 if one_based else 0)]
+                except Exception: return i
+
+            def _nakname(i):
+                try: return _nak_names[int(i)-1]
+                except Exception: return i
+
+            def _jd_local_str(jd):
+                try:
+                    y,m,d,fh = utils.jd_to_gregorian(float(jd))
+                    hh = int(fh); mm = int((fh-hh)*60)
+                    return f"{y:04d}-{m:02d}-{d:02d} {hh:02d}:{mm:02d} local"
+                except Exception:
+                    return jd
+
+            def _date_arr_str(v):
+                try:
+                    y,m,d,fh = v[0],v[1],v[2],float(v[3])
+                    hh = int(fh); mm = int((fh-hh)*60)
+                    return f"{y:04d}-{m:02d}-{d:02d} {hh:02d}:{mm:02d} local"
+                except Exception:
+                    return v
+
+            def _pos(rasi_deg, one_based=False):
+                try:
+                    r,d = rasi_deg
+                    r = int(r)
+                    return {"rasi": r, "rasi_name": _rname(r, one_based),
+                            "degree_in_rasi": round(float(d),4),
+                            "longitude": round((r-(1 if one_based else 0))*30+float(d),4)}
+                except Exception:
+                    return rasi_deg
+
+            def _planet_positions_list(pp):
+                out = []
+                for p,(r,d) in pp:
+                    out.append({"planet": ("Lagna" if p==const._ascendant_symbol else _pname(p)),
+                                **_pos([r,d])})
+                return out
+
+            def _keyed_by_planet(d):
+                return {("Lagna" if k==const._ascendant_symbol else _pname(k)): v
+                        for k,v in (d or {}).items()}
+
+            def _dasha_periods(rows, rasi_based=False, yogini=False):
+                out = []
+                for row in (rows or []):
+                    try:
+                        lords, date_arr, years = row[0], row[1], row[2]
+                        if not isinstance(lords, (list, tuple)): lords = [lords]
+                        if isinstance(lords[0], (list, tuple)):
+                            # 嵌套 lords（如 Sudharsana 的 [rasi,sub,subsub] 对）
+                            lnames = [" / ".join(
+                                (_rname(x, one_based=True) if rasi_based else _pname(x)) for x in group)
+                                for group in lords]
+                        elif rasi_based:
+                            lnames = [_rname(x, one_based=True) for x in lords]
+                        else:
+                            lnames = [_pname(x) for x in lords]
+                        out.append({"lords": lnames, "start_date": _date_arr_str(date_arr),
+                                    "years": round(float(years),4)})
+                    except Exception:
+                        out.append(row)
+                return out
+
+            def _cell_planets(s):
+                if not s: return ""
+                parts = str(s).split("/")
+                return "/".join("Lagna" if p==const._ascendant_symbol else _pname(p) for p in parts)
+
+            # planets / vargas / lagna / transit 名称化
+            py["planets"] = {_pname(p): _pos([r,d]) for p,(r,d) in pp[1:]}
+            py["lagna"]["rasi_name"] = _rname(py["lagna"]["rasi"])
+            for _vk in list(py.keys()):
+                if _vk.startswith("varga_d") and isinstance(py[_vk], list) and py[_vk] and \
+                   isinstance(py[_vk][0], list) and len(py[_vk][0])==2 and \
+                   not isinstance(py[_vk][0][0], (list, tuple)):
+                    py[_vk] = {_pname(p): _pos([r,d]) for p,(r,d) in py[_vk]}
+            for _vk in ("varga_d9_64th_navamsa","varga_d3_22nd_drekkana"):
+                if isinstance(py.get(_vk), dict):
+                    py[_vk] = {_pname(k): {"nakshatra": v[0], "nakshatra_name": _nakname(v[0]),
+                                           "pada": v[1]} for k,v in py[_vk].items()}
+            for _k in ("planet_nakshatra",):
+                if isinstance(py.get(_k), dict):
+                    py[_k] = {_pname(k): {"nakshatra": v[0], "nakshatra_name": _nakname(v[0]),
+                                          "pada": v[1], "remaining_deg": round(float(v[2]),4)}
+                              for k,v in py[_k].items()}
+            if isinstance(py.get("planet_speed"), dict):
+                _speed_labels = ["longitude","latitude","distance_from_earth_au",
+                                 "longitude_speed_deg_day","latitude_speed_deg_day","distance_speed_au_day"]
+                py["planet_speed"] = {_pname(k): dict(zip(_speed_labels,
+                    [round(float(x),6) if isinstance(x,(int,float)) else x for x in v]))
+                    for k,v in py["planet_speed"].items()}
+            # 行星状态 / 吉凶星 / 排名 / 宫位分布
+            try:
+                ps = py.get("planet_status", {})
+                for f in ("combustion","retrograde","marana_karaka_sthana"):
+                    if isinstance(ps.get(f), list): ps[f] = [_pname(x) for x in ps[f]]
+                if isinstance(ps.get("kp_lords"), dict):
+                    ps["kp_lords"] = {("Lagna" if k==const._ascendant_symbol else _pname(k)): v
+                                      for k,v in ps["kp_lords"].items()}
+            except Exception: pass
+            for f in ("benefics","malefics"):
+                if isinstance(py.get(f), list): py[f] = [_pname(x) for x in py[f]]
+            if isinstance(py.get("planet_strength_ranking"), list):
+                py["planet_strength_ranking"] = [_pname(x) for x in py["planet_strength_ranking"]]
+            if isinstance(py.get("rasi_strength_ranking"), list):
+                py["rasi_strength_ranking"] = [_rname(x) for x in py["rasi_strength_ranking"]]
+            try:
+                hs = py.get("houses", {})
+                for f in ("planets_in_quadrants","planets_in_trines","planets_in_dushthanas"):
+                    if isinstance(hs.get(f), list):
+                        hs[f] = [("Lagna" if x==const._ascendant_symbol else _pname(x)) for x in hs[f]]
+            except Exception: pass
+            # House 分析
+            try:
+                ha = py.get("house_analysis", {})
+                _ck_roles = ["atma","amatya","bhratri","maitri","pitri","putra","jnaati","dara"]
+                if isinstance(ha.get("chara_karakas"), list):
+                    ha["chara_karakas"] = {_ck_roles[i] if i<len(_ck_roles) else str(i): _pname(x)
+                                           for i,x in enumerate(ha["chara_karakas"])}
+                if isinstance(ha.get("yoga_kaaraka"), dict):
+                    ha["yoga_kaaraka"] = {_pname(k): v for k,v in ha["yoga_kaaraka"].items()}
+                if isinstance(ha.get("argala"), (tuple, list)) and len(ha["argala"])==2:
+                    ha["argala"], ha["virodhargala"] = ha["argala"]
+                    for _ak in ("argala","virodhargala"):
+                        ha[_ak] = [[_cell_planets(c) for c in row] for row in ha[_ak]]
+            except Exception: pass
+            # Graha Drishti（arp=对星座 / ahp=对宫位 / app=对行星）
+            try:
+                if isinstance(py.get("graha_drishti"), (tuple, list)) and len(py["graha_drishti"])==3:
+                    arp, ahp, app = py["graha_drishti"]
+                    py["graha_drishti"] = {
+                        "drishti_on_raasis": {_pname(k): [_rname(x) for x in v] for k,v in arp.items()},
+                        "drishti_on_houses": {_pname(k): [int(x)+1 for x in v] for k,v in ahp.items()},
+                        "drishti_on_planets": {_pname(k): [_pname(x) for x in v] for k,v in app.items()},
+                    }
+            except Exception: pass
+            # Panchanga / Muhurtha / 时间类
+            try:
+                pc = py.get("panchanga", {})
+                if isinstance(pc.get("tithi"), list) and len(pc["tithi"])>=3:
+                    t = pc["tithi"]
+                    pc["tithi"] = {"tithi": t[0], "tithi_name": _tithi_names[t[0]-1] if 1<=t[0]<=30 else t[0],
+                                   "start_local_hour": t[1], "end_local_hour": t[2]}
+                    if len(t)>=6:
+                        pc["tithi"].update({"next_tithi": t[3],
+                            "next_start_local_hour": t[4], "next_end_local_hour": t[5]})
+                if isinstance(pc.get("nakshatra"), list) and len(pc["nakshatra"])>=4:
+                    n = pc["nakshatra"]
+                    pc["nakshatra"] = {"nakshatra": n[0], "nakshatra_name": _nakname(n[0]),
+                                       "pada": n[1], "start_local_hour": n[2], "end_local_hour": n[3]}
+                    if len(n)>=7:
+                        pc["nakshatra"].update({"next_nakshatra": n[4],
+                            "next_nakshatra_name": _nakname(n[4]), "next_pada": n[5],
+                            "next_end_local_hour": n[6]})
+                if isinstance(pc.get("yogam"), list) and len(pc["yogam"])>=3:
+                    y = pc["yogam"]
+                    pc["yogam"] = {"yoga": y[0],
+                                   "yoga_name": _yoga_names[y[0]-1] if 1<=y[0]<=27 else y[0],
+                                   "start_local_hour": y[1], "end_local_hour": y[2]}
+                if isinstance(pc.get("karana"), (list, tuple)) and len(pc["karana"])>=3:
+                    k = pc["karana"]
+                    pc["karana"] = {"karana": k[0], "start_local_hour": k[1], "end_local_hour": k[2]}
+                if isinstance(pc.get("vaara"), (int,float)):
+                    pc["vaara"] = {"vaara_index": int(pc["vaara"]),
+                                   "vaara": _weekday_names[int(pc["vaara"])%7]}
+                for f in ("sunrise","sunset","moonrise","moonset"):
+                    if isinstance(pc.get(f), (list, tuple)) and len(pc[f])>=4:
+                        pc[f] = {"date": _jd_local_str(pc[f][0]),
+                                 "time_local": f"{int(pc[f][1]):02d}:{int(pc[f][2]):02d}:{int(pc[f][3]):02d}"}
+                for f in ("day_length","night_length"):
+                    if isinstance(pc.get(f), (int,float)):
+                        pc[f] = {"hours": round(float(pc[f]),3)}
+            except Exception: pass
+            try:
+                mh = py.get("muhurtha", {})
+                for f in ("rahu_kaalam","yamagandam","gulikai","abhijit"):
+                    if isinstance(mh.get(f), (list, tuple)) and len(mh[f])==2:
+                        mh[f] = {"start": mh[f][0], "end": mh[f][1]}
+                if isinstance(mh.get("brahma_muhurtha"), (list, tuple)) and len(mh["brahma_muhurtha"])==2:
+                    mh["brahma_muhurtha"] = {"start_local_hour": mh["brahma_muhurtha"][0],
+                                             "end_local_hour": mh["brahma_muhurtha"][1]}
+            except Exception: pass
+            try:
+                li = py.get("lunar_info", {})
+                if isinstance(li.get("month_index"), (int,float)):
+                    li["month_name"] = _lunar_months[int(li["month_index"])%12]
+                if isinstance(li.get("ritu_index"), (int,float)):
+                    li["ritu_name"] = _ritus[int(li["ritu_index"])%6]
+            except Exception: pass
+            try:
+                if isinstance(py.get("vedic_time"), (list, tuple)) and len(py["vedic_time"])>=3:
+                    py["vedic_time"] = {"hour": int(py["vedic_time"][0]),
+                                        "minute": int(py["vedic_time"][1]),
+                                        "second": int(py["vedic_time"][2])}
+            except Exception: pass
+            try:
+                if isinstance(py.get("amrita_gadiya"), (list, tuple)) and len(py["amrita_gadiya"])>=2:
+                    py["amrita_gadiya"] = {"start_local_hour": py["amrita_gadiya"][0],
+                                           "end_local_hour": py["amrita_gadiya"][1]}
+                if isinstance(py.get("varjyam"), (list, tuple)) and len(py["varjyam"])>=2:
+                    vj = py["varjyam"]
+                    py["varjyam"] = {"start_local_hour": vj[0], "end_local_hour": vj[1]}
+                    if len(vj)>=4:
+                        py["varjyam"]["second_window"] = {"start_local_hour": vj[2], "end_local_hour": vj[3]}
+            except Exception: pass
+            try:
+                if isinstance(py.get("thaaraabalam"), list):
+                    py["thaaraabalam"] = {"good_nakshatra_indexes": py["thaaraabalam"],
+                                          "good_nakshatra_names": [_nakname(x) for x in py["thaaraabalam"]]}
+            except Exception: pass
+            try:
+                if isinstance(py.get("chandrashtama"), (list, tuple)) and len(py["chandrashtama"])==2:
+                    cr, jd2 = py["chandrashtama"]
+                    py["chandrashtama"] = {"rasi": cr, "rasi_name": _rname(cr, one_based=True),
+                                           "next_moon_transit_date": _jd_local_str(jd2)}
+            except Exception: pass
+            try:
+                sk = py.get("sankranti", {})
+                for f in ("next","previous"):
+                    if isinstance(sk.get(f), (list, tuple)) and len(sk[f])>=4:
+                        d,tm,mo,td = sk[f]
+                        sk[f] = {"date": f"{d[0]:04d}-{d[1]:02d}-{d[2]:02d}",
+                                 "time_local_hour": tm, "tamil_month": mo, "tamil_date": td}
+            except Exception: pass
+            try:
+                ec = py.get("eclipses", {})
+                for f in ("next_solar","next_lunar"):
+                    if isinstance(ec.get(f), (list, tuple)) and len(ec[f])==2:
+                        etype, dates = ec[f]
+                        ec[f] = {"type": etype,
+                                 "begin": _date_arr_str(dates[0]) if dates else None,
+                                 "maximum": _date_arr_str(dates[1]) if len(dates)>1 else None,
+                                 "end": _date_arr_str(dates[2]) if len(dates)>2 else None}
+            except Exception: pass
+            # 力量类
+            try:
+                if isinstance(py.get("shadbala"), (list, tuple)) and len(py["shadbala"])>=9:
+                    comps = ["sthana_bala","kaala_bala","dig_bala","cheshta_bala",
+                             "naisargika_bala","drik_bala","total_shadbala",
+                             "shadbala_in_rupas","shadbala_strength"]
+                    py["shadbala"] = {comps[i]: {_pname(j): v for j,v in enumerate(py["shadbala"][i])}
+                                      for i in range(len(comps))}
+            except Exception: pass
+            try:
+                if isinstance(py.get("bhava_bala"), (list, tuple)) and len(py["bhava_bala"])>=3:
+                    py["bhava_bala"] = {
+                        "bhava_bala": {f"house_{i+1}": v for i,v in enumerate(py["bhava_bala"][0])},
+                        "bhava_bala_rupas": {f"house_{i+1}": v for i,v in enumerate(py["bhava_bala"][1])},
+                        "bhava_bala_strength": {f"house_{i+1}": v for i,v in enumerate(py["bhava_bala"][2])}}
+            except Exception: pass
+            try:
+                if isinstance(py.get("bhava_drishti_bala"), list):
+                    py["bhava_drishti_bala"] = {f"house_{i+1}": v
+                                                for i,v in enumerate(py["bhava_drishti_bala"])}
+            except Exception: pass
+            try:
+                if isinstance(py.get("bhaava_madhya"), list):
+                    py["bhaava_madhya"] = {f"house_{i+1}_cusp": v
+                                           for i,v in enumerate(py["bhaava_madhya"])}
+            except Exception: pass
+            try:
+                if isinstance(py.get("pancha_vargeeya_bala"), dict):
+                    py["pancha_vargeeya_bala"] = {_pname(k): v
+                                                  for k,v in py["pancha_vargeeya_bala"].items()}
+            except Exception: pass
+            # Ashtakavarga
+            try:
+                av = py.get("ashtakavarga", {})
+                if isinstance(av.get("bav"), list):
+                    av["bav"] = {(_pname(i) if i<7 else "Lagna"): v
+                                 for i,v in enumerate(av["bav"])}
+                if isinstance(av.get("sav"), list):
+                    av["sav"] = {_rname(i): v for i,v in enumerate(av["sav"])}
+                if isinstance(av.get("pav"), list):
+                    av["pav"] = {(_pname(i) if i<7 else "Lagna"): {
+                        (_pname(j) if j<7 else "Lagna" if j==7 else "total"): row
+                        for j,row in enumerate(rows)} for i,rows in enumerate(av["pav"])}
+            except Exception: pass
+            try:
+                if isinstance(py.get("ashtakavarga_sodhaya"), (list, tuple)) and len(py["ashtakavarga_sodhaya"])==3:
+                    rp, gp, sp = py["ashtakavarga_sodhaya"]
+                    py["ashtakavarga_sodhaya"] = {
+                        "raasi_pindas": {_pname(i): v for i,v in enumerate(rp)},
+                        "graha_pindas": {_pname(i): v for i,v in enumerate(gp)},
+                        "sodhya_pindas": {_pname(i): v for i,v in enumerate(sp)}}
+            except Exception: pass
+            # Dosha
+            try:
+                ds = py.get("dosha", {})
+                if isinstance(ds.get("manglik"), (list, tuple)) and len(ds["manglik"])>=3:
+                    ds["manglik"] = {"is_manglik": ds["manglik"][0],
+                                     "exceptions_applied": ds["manglik"][1],
+                                     "exception_indices": ds["manglik"][2]}
+                if isinstance(ds.get("guru_chandala"), (list, tuple)) and len(ds["guru_chandala"])==2:
+                    ds["guru_chandala"] = {"is_guru_chandala": ds["guru_chandala"][0],
+                                           "jupiter_is_stronger": ds["guru_chandala"][1]}
+                if isinstance(ds.get("pitru_dosha"), (list, tuple)) and len(ds["pitru_dosha"])==2:
+                    ds["pitru_dosha"] = {"has_pitru_dosha": ds["pitru_dosha"][0],
+                                         "active_rule_indices": ds["pitru_dosha"][1]}
+            except Exception: pass
+            # Karakas
+            try:
+                if isinstance(py.get("naisargika_karakas"), list):
+                    py["naisargika_karakas"] = {f"house_{i+1}": _pname(x)
+                                                for i,x in enumerate(py["naisargika_karakas"])}
+                if isinstance(py.get("sthira_karakas"), list):
+                    py["sthira_karakas"] = [_pname(x) for x in py["sthira_karakas"]]
+            except Exception: pass
+            # 特殊点 / Upagraha / Sphuta / Saham
+            for _fk in ("sree_lagna","pranapada_lagna","bhrigu_bindhu","bhava_lagna",
+                        "hora_lagna","ghati_lagna","upagrahas","non_solar_upagrahas","sphuta"):
+                try:
+                    if isinstance(py.get(_fk), dict):
+                        py[_fk] = {k: _pos(v, one_based=False) for k,v in py[_fk].items()}
+                    elif isinstance(py.get(_fk), (list, tuple)) and len(py[_fk])==2:
+                        py[_fk] = _pos(py[_fk], one_based=False)
+                except Exception: pass
+            try:
+                if isinstance(py.get("saham"), dict):
+                    py["saham"] = {k: {"longitude": round(float(v),4),
+                                       "rasi": int(float(v)//30),
+                                       "rasi_name": _rname(int(float(v)//30))}
+                                   for k,v in py["saham"].items()}
+            except Exception: pass
+            # Dasha 系列
+            try:
+                if isinstance(py.get("vimshottari"), (list, tuple)) and len(py["vimshottari"])==2:
+                    bal, rows = py["vimshottari"]
+                    py["vimshottari"] = {
+                        "balance": {"years": bal[0], "months": bal[1], "days": bal[2]},
+                        "periods": _dasha_periods(rows)}
+            except Exception: pass
+            for _dk, _rasi_based, _yogini in [
+                    ("ashtottari_dasha",False,False), ("yogini_dasha",False,False),
+                    ("narayana_dasha",True,False), ("narayana_varga_dasha",True,False),
+                    ("chara_dasha",True,False), ("kalachakra_dhasa",True,False),
+                    ("sudharsana_dhasa",True,False)]:
+                try:
+                    if isinstance(py.get(_dk), list):
+                        py[_dk] = _dasha_periods(py[_dk], rasi_based=_rasi_based, yogini=_yogini)
+                except Exception: pass
+            try:
+                if isinstance(py.get("sudharsana_chakra"), (list, tuple)):
+                    py["sudharsana_chakra"] = [
+                        [[int(c[0]), _cell_planets(c[1])] if isinstance(c, (list, tuple)) and len(c)>=2 else c
+                         for c in row]
+                        for row in py["sudharsana_chakra"]]
+            except Exception: pass
+            # Tajaka
+            try:
+                tj = py.get("tajaka", {})
+                if isinstance(tj.get("varsha_pravesh"), (list, tuple)):
+                    _vp = tj["varsha_pravesh"]
+                    if len(_vp)>=2:
+                        _pd = _vp[1][0]
+                        tj["varsha_pravesh"] = {
+                            "chart": _planet_positions_list(_vp[0]),
+                            "pravesh_date": f"{_pd[0]:04d}-{_pd[1]:02d}-{_pd[2]:02d}",
+                            "pravesh_time": _vp[1][1],
+                        }
+                    else:
+                        tj["varsha_pravesh"] = {"chart": _planet_positions_list(_vp[0])}
+            except Exception: pass
+            try:
+                ty = py.get("tajaka_yoga", {})
+                if isinstance(ty.get("nakta"), (list, tuple)) and len(ty["nakta"])==2:
+                    ty["nakta"] = {"lord": _pname(ty["nakta"][0]),
+                                   "planets": [_pname(x) for x in ty["nakta"][1]]}
+                if isinstance(ty.get("ithasala"), list):
+                    ty["ithasala"] = [{"planet_a": _pname(x[0]), "planet_b": _pname(x[1]),
+                                       "type": x[2] if len(x)>2 else None} for x in ty["ithasala"]]
+                for _tf in ("eesarpha","manahoo","kamboola"):
+                    if isinstance(ty.get(_tf), list):
+                        ty[_tf] = [[_pname(x) for x in row] for row in ty[_tf]]
+                if isinstance(ty.get("yamaya"), list):
+                    ty["yamaya"] = [[_pname(x) for x in row] for row in ty["yamaya"]]
+            except Exception: pass
+            # 行星尊贵补 rasi_name
+            try:
+                pdg = py.get("planet_dignity", {})
+                for _lst_name in ("exalted","debilitated"):
+                    for _e in pdg.get(_lst_name, []) or []:
+                        _e["rasi_name"] = _rname(_e["rasi"])
+            except Exception: pass
+            # 行运补 nakshatra_name
+            try:
+                for _t in (py.get("transit") or {}).values():
+                    if isinstance(_t, dict) and "nakshatra" in _t:
+                        _t["nakshatra_name"] = _nakname(_t["nakshatra"])
+            except Exception: pass
+            py["meta"] = {
+                "planet_id_to_name": _pl_names,
+                "note": "行星一律用名称; rasi/nakshatra 均附英文名; 所有日期为出生地本地时间"
+                        "(格式 YYYY-MM-DD HH:MM local); panchanga 时间以本地小时表示, 大于24表示次日;"
+                        "dasha periods 的 lords 为名称列表(rasi dasha 为星座名)。"}
+        except Exception:
+            pass
         # ——— engine 已在上文各阶段累计 ———
     except Exception as e:
         result["pyjhora_error"]=str(e)
@@ -386,5 +814,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
     result["_hint"]=("PyJHora全量:Panchanga(含月出/落+日/夜长+7日星宿)/Muhurtha/VedicTime/Dasha(Vimshottari/Ashtottari/Yogini/Narayana+分盘/Chara/Kalachakra/Sudharsana)/House(CharaKarakas/Marakas/函益/Argala/Brahma/Rudra/YogaKaaraka)/行星强度排名/吉凶星/GrahaDrishti/行星状态(combustion/retrograde/MKS/KP)/行星擢升落陷(planet_dignity)/宫位分布/Shadbala+Bhavabala+BhavaDrishti+PanchaVargeeya/特殊格局(RajaYoga+YogaDetails)/瑜伽(Sunapha/Anapha/Duradhara/GajaKesari/Vesi/Vosi/Ubhayachara)/Ashtakavarga(含SodhayaPindas)/Dosha8(含Ghata)/Arudha/全部分盘(D2-D60)+64thNavamsa+22ndDrekkana/逐星Nakshatra+速度+GrahaYuddha+BhaavaMadhya/SpecialLagnas(Sree/Pranapada/BhriguBindhu/Bhava/Hora/Ghati)/Upagrahas(含Kaala/Mrityu/Gulika等非太阳余炁)/农历/季节/Naisargika+SthiraKarakas/VivahaChakra/Chandrashtama/Tajaka年运+TajakaYogas/全19Saham/Eclipses/Thaaraabalam/AmritaGadiya/Varjyam/Sankranti/DhasaYearDuration/Sphuta8(Tri/Chatur/Prana/Deha/Mrityu/Beeja/Yogi/Avayogi)。"
         "Gochara行运(九曜当前西达尔经度/星座/度数/星宿+分度/月亮与上升双基准宫位/BPHS第29章吉凶+Vedha阻碍/行运对本命Drishti/"
         "SadeSati+AshtamaShani+ArdhaAshtama+KantakaShani)/Lahiri岁差。"
+        "输出已可读化:行星/星座/星宿一律带名称,日期为本地时间(YYYY-MM-DD HH:MM local),"
+        "panchanga为本地小时(负=前一天/>24=次日),Dasha/Shadbala/Ashtakavarga等均为命名结构。"
         "自探索:dir(jhora)")
     return result
