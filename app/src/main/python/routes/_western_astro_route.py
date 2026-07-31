@@ -1,7 +1,37 @@
 """Route:  western astro"""
 import json, sys, os, datetime
 import time as _time
-from ._shared import _js, _js_load, compute_jd, resolve_tz, convert_caelus_dates
+from ._shared import _js, _js_load, compute_jd, resolve_tz, convert_caelus_dates, group_caelus
+
+# Caelus 输出按源码模块分组（chart/derived/events/eclipses/firdaria/profections/directions/relational/astrocartography）
+_CAELUS_GROUPS = {
+    # 本命盘基础 (chart.js / brief.js / compiler.js)
+    "signature": "chart", "elementBalance": "chart", "patterns": "chart", "lots": "chart",
+    "isDay": "chart", "chartBrief": "chart", "housesWholeSign": "chart", "cusps": "chart",
+    "vertex": "chart", "eastPoint": "chart", "planetHouses": "chart", "aspects": "chart",
+    "planetDignities": "chart",
+    # 行星深度分析 (derived.js / electional.js 本命因子)
+    "dignityScores": "bodies", "dignityOf": "bodies", "pheno": "bodies", "oob": "bodies",
+    "midpoints": "bodies", "solarPhase": "bodies", "antiscionSun": "bodies",
+    "antiscionMoon": "bodies", "contraAntiscionSun": "bodies", "contraAntiscionMoon": "bodies",
+    "birthPlanetaryHour": "bodies", "almuten": "bodies", "natalDeclinationAspects": "bodies",
+    "starConjunctions": "bodies", "chiron": "bodies", "natalVoidOfCourse": "bodies",
+    # 天象事件 (events.js / eclipses.js)
+    "lunarPhases": "events", "eclipses": "events", "crossings": "events",
+    "stations": "events", "riseSet": "events",
+    # 推运 (firdaria.js / profections.js / directions.js / derived.js)
+    "firdaria": "progressions", "profections": "progressions", "solarArc": "progressions",
+    "progressedMoon": "progressions", "progressedSun": "progressions",
+    "progressedOther": "progressions", "primaryDirections": "progressions",
+    "solarReturn": "progressions", "lunarReturn": "progressions",
+    # 行运 (relational.js)
+    "transits": "transits", "transitPositions": "transits",
+    # 调和盘 (derived.js harmonicChart)
+    "harmonicChart": "harmonics",
+    # 占星地图 (astrocartography.js)
+    "astrocartography": "astrocartography",
+}
+_CAELUS_ORDER = ["chart", "bodies", "events", "progressions", "transits", "harmonics", "astrocartography"]
 
 # ===== 现代西洋占星（双引擎对照） =====
 def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
@@ -255,7 +285,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             % (jd, today_jd, lat, lon, jd, lat, lon, jd, lat, lon))
 
         if caelus_data:
-            result["caelus"] = convert_caelus_dates(caelus_data)
+            result["caelus"] = group_caelus(convert_caelus_dates(caelus_data), _CAELUS_GROUPS, _CAELUS_ORDER)
             _engs.append("Caelus")
         if caelus_errors:
             result["caelus_error"] = "; ".join(caelus_errors)
@@ -285,6 +315,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
         "Caelus:bodies/cusps(Placidus)/angles/patterns/lots/natalVoidOfCourse(本命空亡)/映点/natalDeclinationAspects(本命赤纬)/birthPlanetaryHour(出生时主星)/越界(全10星)/恒星合相/尊贵/almuten/月相/行星留(全7星90d)/日月食(180d)/"
         "firdaria/profections/primaryDirections/调和盘/行运方位相位+Aspects(当前)/行运行星位置(全13星含凯龙)+凯龙本命/ACG(简)/太阳返照/月亮返照/"
         "次级推运(全7星,推至当前年龄)/midpoints(日月+Asc+MC)/riseSet(出生后首次日月升降)/signCrossings(全10星90d)。"
+        "caelus 已按 chart/bodies/events/progressions/transits/harmonics/astrocartography 分组返回。"
         "注: Caelus 已限预算(30s)防超时; 重型技法(行星回归30年/Parans/高魁林区)在移动端 QuickJS 上过慢已移除。"
         "合盘:传partner_year/partner_month/partner_day/partner_hour触发。"
         "自探索:Object.keys(Caelus)")

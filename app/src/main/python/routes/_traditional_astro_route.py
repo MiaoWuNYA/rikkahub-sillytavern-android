@@ -1,7 +1,30 @@
 """Route: traditional astro — Hellenistic/Medieval traditional Western astrology"""
 import json, sys, os, datetime
 import time as _time
-from ._shared import _js, _js_load, compute_jd, resolve_tz, convert_caelus_dates, jd_to_str
+from ._shared import _js, _js_load, compute_jd, resolve_tz, convert_caelus_dates, jd_to_str, group_caelus
+
+# Caelus 输出按源码模块分组（chart/electional/events/firdaria/profections/directions/relational/releasing）
+_CAELUS_GROUPS = {
+    # 本命盘基础 (chart.js / features 条件矩阵)
+    "conditions": "chart", "cusps": "chart", "almutenFiguris": "chart",
+    "antiscion": "chart", "contraAntiscion": "chart", "starConjunctions": "chart",
+    # 当前天空状态 (electional.js / derived.js)
+    "currentVoidOfCourse": "state", "currentPlanetaryHour": "state",
+    "currentDeclinationAspects": "state",
+    # 天象事件 (events.js / eclipses.js)
+    "lunarPhases": "events", "eclipses": "events", "stations": "events", "riseSet": "events",
+    # 推运 (firdaria.js / profections.js / directions.js / derived.js)
+    "firdaria": "progressions", "profections": "progressions", "solarArc": "progressions",
+    "progressedMoon": "progressions", "progressedSun": "progressions",
+    "progressedOther": "progressions", "primaryDirections": "progressions",
+    # 行运 (relational.js)
+    "transits": "transits", "transitPositions": "transits",
+    # 黄道释放 (releasing.js)
+    "zodiacalReleasing": "releasing",
+    # 择时 (features.js / electional.js)
+    "electional": "electional",
+}
+_CAELUS_ORDER = ["chart", "state", "events", "progressions", "transits", "releasing", "electional"]
 
 def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
     tz_offset = resolve_tz(tz_offset)
@@ -661,7 +684,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             % (jd, today_jd, lat, lon, jd, lat, lon, jd, lat, lon))
 
         if caelus_data:
-            result["caelus"] = convert_caelus_dates(caelus_data)
+            result["caelus"] = group_caelus(convert_caelus_dates(caelus_data), _CAELUS_GROUPS, _CAELUS_ORDER)
             result["engine"] += "+Caelus"
         if caelus_errors:
             result["caelus_error"] = "; ".join(caelus_errors)
@@ -679,6 +702,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
         "+currentVoidOfCourse(当前空亡)/currentPlanetaryHour(当前时主星)/映点+反映点/currentDeclinationAspects(当前赤纬)/日出日落(出生后首次)"
         "/条件矩阵(dignityScore+pheno+solarPhase+house+angularity)+AlmutenFiguris"
         "+择时(Caelus.chartFeatures+searchConfigurations)(90天内最佳时机查询)。"
+        "caelus 已按 chart/state/events/progressions/transits/releasing/electional 分组返回。"
         "注: Caelus 已限预算(30s)防超时; 重型技法(行星回归30年/Parans)在移动端 QuickJS 上过慢已移除。"
     )
     return result

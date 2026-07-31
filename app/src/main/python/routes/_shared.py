@@ -158,3 +158,17 @@ def convert_caelus_dates(c):
             if isinstance(hit, dict) and "jd" in hit:
                 hit["jd"] = jd_to_str(hit["jd"])
     return c
+
+
+def group_caelus(c, group_map, order):
+    """按 Caelus 源码模块把平铺结果分组成嵌套结构（字段形状保持不变）。
+    group_map: {字段名: 分组名}; order: 分组输出顺序；未匹配字段落入 other。"""
+    out = {}
+    for g in order:
+        keys = [k for k in c if group_map.get(k) == g]
+        if keys:
+            out[g] = {k: c[k] for k in keys}
+    rest = [k for k in c if k not in group_map]
+    if rest:
+        out["other"] = {k: c[k] for k in rest}
+    return out
