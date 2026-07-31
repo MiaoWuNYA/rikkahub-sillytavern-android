@@ -27,7 +27,10 @@ _CAELUS_GROUPS = {
 _CAELUS_ORDER = ["chart", "state", "events", "progressions", "transits", "releasing", "electional"]
 
 def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
-    tz_offset, tz_warn = resolve_tz_checked(tz_offset)
+    try:
+        tz_offset, _ = resolve_tz_checked(tz_offset)
+    except ValueError as e:
+        return {"system": "traditional_astrology", "error": f"时区参数错误: {e}"}
     if isinstance(lat, str): lat = float(lat)
     if isinstance(lon, str): lon = float(lon)
 
@@ -504,8 +507,6 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
         "aspects": aspects,
         "configurations": configs, "reception": reception,
     }
-    if tz_warn:
-        result["tz_warning"] = tz_warn
     # 产前朔望的 JD 也是原始大数，转成 UTC 日期字符串供 AI 直接解读
     if syzygy and "jd" in syzygy:
         syzygy["jd"] = jd_to_str(syzygy["jd"])

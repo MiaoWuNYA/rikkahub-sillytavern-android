@@ -71,53 +71,51 @@ def resolve_tz(tz_val, default=8.0):
 
 
 def resolve_tz_checked(tz_val, default=8.0):
-    """resolve_tz + 单位兜底：返回 (offset_hours, warning_or_None)。
+    """严格校验时区参数：合法则返回小时偏移，非法则抛 ValueError。
 
-    时区合法范围约为 -12 ~ +14 小时。数字绝对值超过 14 时（如 480），
-    判定为“分钟”语义并自动换算为小时（480 → 8），并返回警告提示，
-    避免用户误传分钟导致整盘无声偏移（如 480 小时 = 20 天）。
-    另支持 "UTC+8" / "GMT+8" 形式。
+    只接受三种形式，其他一律报错（不自动换算、不回退默认，防止无声错盘）：
+      1. IANA 时区名（如 "Asia/Shanghai"，pytz 解析，含夏令时）；
+      2. UTC/GMT 前缀偏移（如 "UTC+8"、"GMT-4"）；
+      3. 数字小时偏移，范围 -12 ~ +14（东八区=8，不是 480）。
+    返回 (offset_hours, warning_or_None)；warning 保留给将来可恢复的提示。
     """
     if tz_val is None:
         return default, None
     if isinstance(tz_val, str):
         s = str(tz_val).strip()
-        # UTC+8 / GMT+8 / utc+5.5 / 纯数字 形式（纯数字也走分钟兜底）
         import re
         m = re.match(r'^(?:UTC|GMT)?([+-]?\d+(?:\.\d+)?)$', s, re.IGNORECASE)
         if m:
             try:
                 v = float(m.group(1))
-                return _normalize_tz_hours(v, default)
             except (ValueError, TypeError):
-                pass
+                raise ValueError(
+                    f"时区 '{s}' 不是数字偏移")
+            return _check_tz_hours(v)
         try:
             import pytz
             tz = pytz.timezone(s)
             offset = tz.utcoffset(datetime.now()).total_seconds() / 3600
             return offset, None
         except Exception:
-            pass
-        try:
-            v = float(s)
-        except (ValueError, TypeError):
-            return default, f"时区 '{tz_val}' 无法解析, 回退 {default:g} 小时"
-        return _normalize_tz_hours(v, default)
+            raise ValueError(
+                f"时区 '{s}' 不是合法IANA时区名（如 Asia/Shanghai），"
+                "也不是数字小时偏移（东八区=8，范围-12~+14）")
     try:
         v = float(tz_val)
     except (ValueError, TypeError):
-        return default, f"时区 '{tz_val}' 无法解析, 回退 {default:g} 小时"
-    return _normalize_tz_hours(v, default)
+        raise ValueError(f"时区 '{tz_val}' 不是数字")
+    return _check_tz_hours(v)
 
 
-def _normalize_tz_hours(v, default):
-    """数字时区：|v|<=14 视为小时；否则视为分钟换算（480→8）。"""
-    if -14.0 <= v <= 14.0:
+def _check_tz_hours(v):
+    """数字小时偏移：合法范围 -12 ~ +14，否则报错并提示正确写法。"""
+    if -12.0 <= v <= 14.0:
         return v, None
-    vh = v / 60.0
-    if -14.0 <= vh <= 14.0:
-        return vh, f"tz={v:g} 超出小时范围, 已按分钟解释为 {vh:g} 小时"
-    return default, f"tz={v:g} 无法解释为合法时区, 回退 {default:g} 小时"
+    raise ValueError(
+        f"时区偏移 {v:g} 超出合法范围(-12~+14小时)。"
+        "单位是小时：东八区=8；若想表达的是分钟（如480分钟=8小时），"
+        "请先换算成小时数再传，不要直接传480")
 
 
 def jd_to_str(jd):
