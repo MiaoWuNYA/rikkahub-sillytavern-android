@@ -1,7 +1,7 @@
 """Route:  western astro"""
 import json, sys, os, datetime
 import time as _time
-from ._shared import _js, _js_load, compute_jd, resolve_tz, convert_caelus_dates, group_caelus
+from ._shared import _js, _js_load, compute_jd, resolve_tz_checked, convert_caelus_dates, group_caelus
 
 # Caelus 输出按源码模块分组（chart/derived/events/eclipses/firdaria/profections/directions/relational/astrocartography）
 _CAELUS_GROUPS = {
@@ -38,11 +38,13 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
                    partner_year=None,partner_month=None,partner_day=None,
                    partner_hour=None,partner_tz=None,partner_lat=None,partner_lon=None,
                    partner_minute=0):
-    tz_num = resolve_tz(tz)
+    tz_num, tz_warn = resolve_tz_checked(tz)
     if isinstance(lat, str): lat = float(lat)
     if isinstance(lon, str): lon = float(lon)
     jd = compute_jd(year, month, day, hour, minute, tz_num)
     result={"system":"western_astrology","engine":"caelus-js"}
+    if tz_warn:
+        result["tz_warning"] = tz_warn
     _engs=["caelus-js"]
     # Caelus: 分阶段JS评估 (全量现代技法+对照+行运+推运+增补)
     caelus_data = {}
@@ -281,7 +283,9 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
     # 合盘: 仅当传入 partner_year 时触发
     if partner_year is not None:
         try:
-            pt=resolve_tz(partner_tz, resolve_tz(tz))
+            pt, pt_warn = resolve_tz_checked(partner_tz, tz_num)
+            if pt_warn:
+                result["tz_warning"] = (result.get("tz_warning") + "; " if result.get("tz_warning") else "") + pt_warn
             pl=float(partner_lat) if partner_lat else lat or 0
             pn=float(partner_lon) if partner_lon else lon or 0
             jdB = compute_jd(partner_year, partner_month or month, partner_day or day,

@@ -1,12 +1,12 @@
 """Route:  vedic"""
 import json, sys, os, datetime
-from ._shared import _js, _js_load, compute_jd, resolve_tz
+from ._shared import _js, _js_load, compute_jd, resolve_tz_checked
 
 # ===== 吠陀 =====
 def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
     if isinstance(lat, str): lat = float(lat)
     if isinstance(lon, str): lon = float(lon)
-    tz_vd = resolve_tz(tz)
+    tz_vd, tz_warn = resolve_tz_checked(tz)
     date_str=f"{year}-{month:02d}-{day}"
     tz_vd_sign = "+" if tz_vd >= 0 else "-"
     tz_vd_abs = abs(tz_vd)
@@ -16,6 +16,8 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
     hour_dec = hour + minute/60
 
     result={"system":"vedic"}
+    if tz_warn:
+        result["tz_warning"] = tz_warn
     jd_local=None; place=None
     # ===== PyJHora (Python/Chaquopy) =====
     try:

@@ -53,9 +53,9 @@ fun createMingliTool(context: Context): Tool = Tool(
                             " 雷诺曼: {spread, seed, cards}" +
                             " 八字: {year, month, day, hour, minute?, gender, feature?=bazi|shengxiao|luohou|all}" +
                             " 紫微: {year, month, day, hour, minute?, gender, engine?=iztro}" +
-                            " 现代西洋占星: {year, month, day, hour, minute?, tz, lat, lon, partner_year?, partner_month?, partner_day?, partner_hour?, partner_minute?, partner_tz?=IANA, partner_lat?, partner_lon?}" +
-                            " 传统西洋占星: {year, month, day, hour, minute?, tz_offset, lat, lon} (tz_offset单位=小时, 东八区写8, 不是分钟! 传480会把整盘平移20天)" +
-                            " 吠陀: {year, month, day, hour, minute?, tz=IANA时区/数字偏移, lat?, lon?}" +
+                            " 现代西洋占星: {year, month, day, hour, minute?, tz, lat, lon, partner_year?, partner_month?, partner_day?, partner_hour?, partner_minute?, partner_tz?=IANA, partner_lat?, partner_lon?} (tz=IANA时区如Asia/Shanghai或数字偏移小时数)" +
+                            " 传统西洋占星: {year, month, day, hour, minute?, tz_offset, lat, lon} (tz_offset单位=小时, 东八区写8; 若误传分钟会自动识别换算如480→8小时, 返回带tz_warning)" +
+                            " 吠陀: {year, month, day, hour, minute?, tz=IANA时区/数字偏移小时数, lat?, lon?} (误传分钟如480会自动换算为8小时)" +
                             " 人类图: {year, month, day, hour, minute?, tz, gene_keys?=false(bool), transits?=false(bool)}" +
                             " 灵数卡巴拉: {year, month, day, word?, feature=numerology|gematria|odu|tarot|tree|all}" +
                             " 奇门(含大六壬): {year, month, day, hour?, minute?, feature=qimen|liuren|all} (大六壬需feature=liuren)" +

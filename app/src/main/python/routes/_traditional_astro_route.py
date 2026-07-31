@@ -1,7 +1,7 @@
 """Route: traditional astro — Hellenistic/Medieval traditional Western astrology"""
 import json, sys, os, datetime
 import time as _time
-from ._shared import _js, _js_load, compute_jd, resolve_tz, convert_caelus_dates, jd_to_str, group_caelus
+from ._shared import _js, _js_load, compute_jd, resolve_tz_checked, convert_caelus_dates, jd_to_str, group_caelus
 
 # Caelus 输出按源码模块分组（chart/electional/events/firdaria/profections/directions/relational/releasing）
 _CAELUS_GROUPS = {
@@ -27,7 +27,7 @@ _CAELUS_GROUPS = {
 _CAELUS_ORDER = ["chart", "state", "events", "progressions", "transits", "releasing", "electional"]
 
 def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
-    tz_offset = resolve_tz(tz_offset)
+    tz_offset, tz_warn = resolve_tz_checked(tz_offset)
     if isinstance(lat, str): lat = float(lat)
     if isinstance(lon, str): lon = float(lon)
 
@@ -492,6 +492,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
     # --- Result (flatlib portion) ---
     result = {
         "system": "traditional_astrology", "engine": "flatlib",
+        "tz_offset": tz_offset,
         "objects": objs, "houses": houses, "houses_whole_sign": houses_whole_sign,
         "asc": chart.getAngle(const.ASC), "mc": chart.getAngle(const.MC),
         "dignities": dignities, "accidental": accidental,
@@ -503,6 +504,8 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
         "aspects": aspects,
         "configurations": configs, "reception": reception,
     }
+    if tz_warn:
+        result["tz_warning"] = tz_warn
     # 产前朔望的 JD 也是原始大数，转成 UTC 日期字符串供 AI 直接解读
     if syzygy and "jd" in syzygy:
         syzygy["jd"] = jd_to_str(syzygy["jd"])

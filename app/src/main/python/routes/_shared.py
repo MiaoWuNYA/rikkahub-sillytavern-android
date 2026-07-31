@@ -70,6 +70,56 @@ def resolve_tz(tz_val, default=8.0):
         return default
 
 
+def resolve_tz_checked(tz_val, default=8.0):
+    """resolve_tz + 单位兜底：返回 (offset_hours, warning_or_None)。
+
+    时区合法范围约为 -12 ~ +14 小时。数字绝对值超过 14 时（如 480），
+    判定为“分钟”语义并自动换算为小时（480 → 8），并返回警告提示，
+    避免用户误传分钟导致整盘无声偏移（如 480 小时 = 20 天）。
+    另支持 "UTC+8" / "GMT+8" 形式。
+    """
+    if tz_val is None:
+        return default, None
+    if isinstance(tz_val, str):
+        s = str(tz_val).strip()
+        # UTC+8 / GMT+8 / utc+5.5 / 纯数字 形式（纯数字也走分钟兜底）
+        import re
+        m = re.match(r'^(?:UTC|GMT)?([+-]?\d+(?:\.\d+)?)$', s, re.IGNORECASE)
+        if m:
+            try:
+                v = float(m.group(1))
+                return _normalize_tz_hours(v, default)
+            except (ValueError, TypeError):
+                pass
+        try:
+            import pytz
+            tz = pytz.timezone(s)
+            offset = tz.utcoffset(datetime.now()).total_seconds() / 3600
+            return offset, None
+        except Exception:
+            pass
+        try:
+            v = float(s)
+        except (ValueError, TypeError):
+            return default, f"时区 '{tz_val}' 无法解析, 回退 {default:g} 小时"
+        return _normalize_tz_hours(v, default)
+    try:
+        v = float(tz_val)
+    except (ValueError, TypeError):
+        return default, f"时区 '{tz_val}' 无法解析, 回退 {default:g} 小时"
+    return _normalize_tz_hours(v, default)
+
+
+def _normalize_tz_hours(v, default):
+    """数字时区：|v|<=14 视为小时；否则视为分钟换算（480→8）。"""
+    if -14.0 <= v <= 14.0:
+        return v, None
+    vh = v / 60.0
+    if -14.0 <= vh <= 14.0:
+        return vh, f"tz={v:g} 超出小时范围, 已按分钟解释为 {vh:g} 小时"
+    return default, f"tz={v:g} 无法解释为合法时区, 回退 {default:g} 小时"
+
+
 def jd_to_str(jd):
     """Julian Day (UT) → 人类可读 UTC 时间字符串，供 AI 直接解读。"""
     import datetime as _dt
