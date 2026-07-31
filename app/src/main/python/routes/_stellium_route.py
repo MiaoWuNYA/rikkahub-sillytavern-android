@@ -167,6 +167,7 @@ def _chart(chart_dt, lat, lon, tz_name, house_system):
     builder = (
         ChartBuilder(chart_dt, loc)
         .with_aspects()
+        .with_declination_aspects(orb=1.0)
         .with_house_systems(HS.get(house_system, [PlacidusHouses()]))
     )
     from stellium.components import (
@@ -275,6 +276,34 @@ def _stellium(
     except Exception as e:
         result["moon_phase_error"] = str(e)
 
+    # ── 5b. Planetary phases (always, classical morning/evening star) ──
+    # 只保留古典七星中的水金火木土：太阳相位无信息量，月亮另有 moon_phase；
+    # 三王星/凯龙/交点不属于古典晨昏星体系。
+    try:
+        phases = []
+        sun_obj = chart.get_object("Sun")
+        sun_lon = sun_obj.longitude if sun_obj else None
+        for p in chart.positions:
+            if p.phase is not None and p.name in ("Mercury", "Venus", "Mars", "Jupiter", "Saturn"):
+                item = {
+                    "name": p.name,
+                    "phase_angle": p.phase.phase_angle,
+                    "illuminated_fraction": p.phase.illuminated_fraction,
+                    "elongation": p.phase.elongation,
+                    "apparent_magnitude": p.phase.apparent_magnitude,
+                }
+                # 晨星/昏星由黄经差直接推导（对照 swisseph 黄经，纯几何无假设）：
+                # diff<180°=行星在太阳东侧（日落前后可见=昏星）；diff>180°=西侧（日出前可见=晨星）
+                if sun_lon is not None:
+                    diff = (p.longitude - sun_lon) % 360
+                    item["side_of_sun"] = "east" if diff < 180 else "west"
+                    item["zodiacal_elongation"] = round(diff, 4)
+                phases.append(item)
+        if phases:
+            result["planetary_phases"] = phases
+    except Exception as e:
+        result["planetary_phases_error"] = str(e)
+
     # ── 6. Draconic chart (always) ──
     try:
         result["draconic"] = chart.draconic().to_dict()
@@ -308,6 +337,22 @@ def _stellium(
             "preset": ft.preset, "sect": ft.sect,
             "current": asdict(fp) if fp else None,
         }
+        # 未来若干期（主期+副期按时间混排），供中短期趋势判断
+        try:
+            now = datetime.now(pytz.UTC)
+            upcoming = []
+            for p in sorted(ft.periods, key=lambda x: x.start):
+                if p.start > now and len(upcoming) < 6:
+                    upcoming.append({
+                        "level": p.level,
+                        "ruler": p.ruler,
+                        "sub_ruler": p.sub_ruler,
+                        "start_age": round(p.start_age, 2),
+                        "end_age": round(p.end_age, 2),
+                    })
+            result["firdaria"]["upcoming"] = upcoming
+        except Exception:
+            pass
     except Exception as e:
         result["firdaria_error"] = str(e)
 
@@ -324,6 +369,36 @@ def _stellium(
             p = getattr(snap, f"l{lvl}")
             if p:
                 result["zodiacal_releasing"][f"l{lvl}"] = asdict(p)
+        # 未来峰值与脱绑节点（Valens 时间技术的中短期拐点）
+        try:
+            def _future_periods(pred):
+                out = []
+                for lvl in range(1, 5):
+                    for p in zr.periods.get(lvl, []):
+                        if p.end > snap.date and pred(p):
+                            out.append({
+                                "level": p.level,
+                                "sign": p.sign,
+                                "ruler": p.ruler,
+                                "start": p.start.date().isoformat(),
+                                "end": p.end.date().isoformat(),
+                                "length_days": p.length_days,
+                            })
+                return out
+            peaks = sorted(
+                _future_periods(lambda p: p.is_peak),
+                key=lambda x: x["start"],
+            )[:3]
+            lbs = sorted(
+                _future_periods(lambda p: p.is_loosing_bond),
+                key=lambda x: x["start"],
+            )[:3]
+            if peaks:
+                result["zodiacal_releasing"]["upcoming_peaks"] = peaks
+            if lbs:
+                result["zodiacal_releasing"]["upcoming_loosing_bonds"] = lbs
+        except Exception:
+            pass
     except Exception as e:
         result["zr_error"] = str(e)
 
