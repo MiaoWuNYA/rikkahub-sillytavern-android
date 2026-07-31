@@ -76,7 +76,9 @@ def jd_to_str(jd):
     try:
         jd = float(jd)
         unix = (jd - 2440587.5) * 86400.0
-        return _dt.datetime.fromtimestamp(unix, _dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        # JD 是 float，整分边界上可能有毫秒级浮点误差；
+        # 先四舍五入到整秒再格式化，避免 03:59:59.999 被截断显示成 03:59。
+        return _dt.datetime.fromtimestamp(round(unix), _dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     except Exception:
         return jd
 
@@ -102,11 +104,14 @@ def convert_caelus_dates(c):
                             s[f] = jd_to_str(s[f])
 
     if "crossings" in c and isinstance(c["crossings"], dict):
-        c["crossings"] = {k: [jd_to_str(j) for j in v] for k, v in c["crossings"].items()}
+        c["crossings"] = {k: [jd_to_str(j) for j in (v or [])] for k, v in c["crossings"].items()}
     if "stations" in c and isinstance(c["stations"], dict):
-        c["stations"] = {k: [[jd_to_str(x[0]), x[1]] for x in v] for k, v in c["stations"].items()}
+        c["stations"] = {k: [[jd_to_str(x[0]), x[1]] for x in (v or [])
+                             if isinstance(x, (list, tuple)) and len(x) >= 1]
+                         for k, v in c["stations"].items()}
     if "lunarPhases" in c and isinstance(c["lunarPhases"], list):
-        c["lunarPhases"] = [[jd_to_str(x[0]), x[1]] for x in c["lunarPhases"]]
+        c["lunarPhases"] = [[jd_to_str(x[0]), x[1]] for x in (c["lunarPhases"] or [])
+                            if isinstance(x, (list, tuple)) and len(x) >= 1]
     if "riseSet" in c and isinstance(c["riseSet"], dict):
         for k in ("sun", "moon"):
             o = c["riseSet"].get(k) or {}
@@ -117,13 +122,23 @@ def convert_caelus_dates(c):
         for k in ("solar", "lunar"):
             for ev in c["eclipses"].get(k, []) or []:
                 for f in ("tMax", "begin", "end", "penumbralBegin", "penumbralEnd",
-                          "umbralBegin", "umbralEnd"):
+                          "partialBegin", "partialEnd", "totalBegin", "totalEnd"):
                     if f in ev:
                         ev[f] = jd_to_str(ev[f])
     if "solarReturn" in c and isinstance(c["solarReturn"], list):
-        c["solarReturn"] = [jd_to_str(j) for j in c["solarReturn"]]
+        c["solarReturn"] = [jd_to_str(j) for j in (c["solarReturn"] or [])]
     if "lunarReturn" in c and isinstance(c["lunarReturn"], list):
-        c["lunarReturn"] = [jd_to_str(j) for j in c["lunarReturn"]]
+        c["lunarReturn"] = [jd_to_str(j) for j in (c["lunarReturn"] or [])]
+    if "chartBrief" in c and isinstance(c["chartBrief"], dict) and "jdUt" in c["chartBrief"]:
+        c["chartBrief"]["jdUt"] = jd_to_str(c["chartBrief"]["jdUt"])
+    if "planetaryHour" in c and isinstance(c["planetaryHour"], dict):
+        for f in ("start", "end"):
+            if f in c["planetaryHour"]:
+                c["planetaryHour"][f] = jd_to_str(c["planetaryHour"][f])
+    if "voidOfCourse" in c and isinstance(c["voidOfCourse"], dict):
+        for f in ("signExit", "nextAspect"):
+            if f in c["voidOfCourse"]:
+                c["voidOfCourse"][f] = jd_to_str(c["voidOfCourse"][f])
     if "firdaria" in c:
         _seg_list(c["firdaria"])
     if "zodiacalReleasing" in c and isinstance(c["zodiacalReleasing"], dict):

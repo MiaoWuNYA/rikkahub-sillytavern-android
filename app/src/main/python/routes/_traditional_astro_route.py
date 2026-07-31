@@ -1,7 +1,7 @@
 """Route: traditional astro — Hellenistic/Medieval traditional Western astrology"""
 import json, sys, os, datetime
 import time as _time
-from ._shared import _js, _js_load, compute_jd, resolve_tz, convert_caelus_dates
+from ._shared import _js, _js_load, compute_jd, resolve_tz, convert_caelus_dates, jd_to_str
 
 def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
     tz_offset = resolve_tz(tz_offset)
@@ -476,6 +476,9 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
         "aspects": aspects,
         "configurations": configs, "reception": reception,
     }
+    # 产前朔望的 JD 也是原始大数，转成 UTC 日期字符串供 AI 直接解读
+    if syzygy and "jd" in syzygy:
+        syzygy["jd"] = jd_to_str(syzygy["jd"])
 
     # --- Caelus JS (分阶段): traditional timing + condition matrix + ZR + electional ---
     caelus_data = {}
