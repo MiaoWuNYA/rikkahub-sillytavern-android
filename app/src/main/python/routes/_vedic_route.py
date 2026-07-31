@@ -72,7 +72,6 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
         try:
             from jhora.horoscope.dhasa.raasi import narayana, chara
             py["narayana_dasha"]=narayana.narayana_dhasa_for_rasi_chart(drik.Date(year,month,day),(hour,minute,0),place)
-            py["narayana_varga_dasha"]=narayana.narayana_dhasa_for_divisional_chart(drik.Date(year,month,day),(hour,minute,0),place,divisional_chart_factor=9)
             py["chara_dasha"]=chara.get_dhasa_antardhasa(drik.Date(year,month,day),(hour,minute,0),place)
         except: pass
         try:
@@ -872,7 +871,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
             except Exception: pass
             for _dk, _rasi_based, _yogini in [
                     ("ashtottari_dasha",False,False), ("yogini_dasha",False,False),
-                    ("narayana_dasha",True,False), ("narayana_varga_dasha",True,False),
+                    ("narayana_dasha",True,False),
                     ("chara_dasha",True,False), ("kalachakra_dhasa",True,False),
                     ("sudharsana_dhasa",True,False)]:
                 try:
@@ -939,7 +938,7 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
     except Exception as e:
         result["pyjhora_error"]=str(e)
         result["engine"]=""
-    result["_hint"]=("PyJHora全量:Panchanga(含月出/落+日/夜长+7日星宿)/Muhurtha/VedicTime/Dasha(Vimshottari+当前运行阶梯Maha→Antara→Pratyantara→Sukshma→Prana/Ashtottari/Yogini/Narayana+分盘/Chara/Kalachakra/Sudharsana)/House(CharaKarakas/Marakas/函益/Argala/Brahma/Rudra/YogaKaaraka)/行星强度排名/吉凶星/GrahaDrishti/行星状态(combustion/retrograde/MKS)/PushkaraNavamsa+PushkaraBhaga/VimsopakaBala四档(Shadvarga/Sapthavarga/Dhasavarga/Shodhasavarga)/行星自然友谊矩阵/行星擢升落陷(planet_dignity)/宫位分布/Shadbala+Bhavabala+BhavaDrishti+PanchaVargeeya/特殊格局(RajaYoga+YogaDetails)/瑜伽(Sunapha/Anapha/Duradhara/GajaKesari/Vesi/Vosi/Ubhayachara)/Ashtakavarga(含SodhayaPindas)/Dosha8(含Ghata)/Arudha/全部分盘(D2-D60)+64thNavamsa+22ndDrekkana/逐星Nakshatra+速度+GrahaYuddha+BhaavaMadhya/SpecialLagnas(Sree/Pranapada/BhriguBindhu/Bhava/Hora/Ghati)/Upagrahas(含Kaala/Mrityu/Gulika等非太阳余炁)/农历/季节/Naisargika+SthiraKarakas/VivahaChakra/Chandrashtama/Tajaka年运+TajakaYogas/全19Saham/Eclipses/Thaaraabalam/AmritaGadiya/Varjyam/Sankranti/DhasaYearDuration/Sphuta8(Tri/Chatur/Prana/Deha/Mrityu/Beeja/Yogi/Avayogi)。"
+    result["_hint"]=("PyJHora全量:Panchanga(含月出/落+日/夜长+7日星宿)/Muhurtha/VedicTime/Dasha(Vimshottari+当前运行阶梯Maha→Antara→Pratyantara→Sukshma→Prana/Ashtottari/Yogini/Narayana/Chara/Kalachakra/Sudharsana)/House(CharaKarakas/Marakas/函益/Argala/Brahma/Rudra/YogaKaaraka)/行星强度排名/吉凶星/GrahaDrishti/行星状态(combustion/retrograde/MKS)/PushkaraNavamsa+PushkaraBhaga/VimsopakaBala四档(Shadvarga/Sapthavarga/Dhasavarga/Shodhasavarga)/行星自然友谊矩阵/行星擢升落陷(planet_dignity)/宫位分布/Shadbala+Bhavabala+BhavaDrishti+PanchaVargeeya/特殊格局(RajaYoga+YogaDetails)/瑜伽(Sunapha/Anapha/Duradhara/GajaKesari/Vesi/Vosi/Ubhayachara)/Ashtakavarga(含SodhayaPindas)/Dosha8(含Ghata)/Arudha/全部分盘(D2-D60)+64thNavamsa+22ndDrekkana/逐星Nakshatra+速度+GrahaYuddha+BhaavaMadhya/SpecialLagnas(Sree/Pranapada/BhriguBindhu/Bhava/Hora/Ghati)/Upagrahas(含Kaala/Mrityu/Gulika等非太阳余炁)/农历/季节/Naisargika+SthiraKarakas/VivahaChakra/Chandrashtama/Tajaka年运+TajakaYogas/全19Saham/Eclipses/Thaaraabalam/AmritaGadiya/Varjyam/Sankranti/DhasaYearDuration/Sphuta8(Tri/Chatur/Prana/Deha/Mrityu/Beeja/Yogi/Avayogi)。"
         "Gochara行运(九曜当前西达尔经度/星座/度数/星宿+分度/月亮与上升双基准宫位/BPHS第29章吉凶+Vedha阻碍/行运对本命Drishti/"
         "SadeSati+AshtamaShani+ArdhaAshtama+KantakaShani)/Lahiri岁差。"
         "输出已可读化:行星/星座/星宿一律带名称,日期为本地时间(YYYY-MM-DD HH:MM,不再逐行标注local),"
