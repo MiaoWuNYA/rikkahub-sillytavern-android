@@ -9,13 +9,13 @@ _CAELUS_GROUPS = {
     "signature": "chart", "elementBalance": "chart", "patterns": "chart", "lots": "chart",
     "isDay": "chart", "chartBrief": "chart", "housesWholeSign": "chart", "cusps": "chart",
     "vertex": "chart", "eastPoint": "chart", "planetHouses": "chart", "aspects": "chart",
-    "planetDignities": "chart",
+    "planetDignities": "chart", "planetPositions": "chart", "angles": "chart",
     # 行星深度分析 (derived.js / electional.js 本命因子)
     "dignityScores": "bodies", "dignityOf": "bodies", "pheno": "bodies", "oob": "bodies",
     "midpoints": "bodies", "solarPhase": "bodies", "antiscionSun": "bodies",
     "antiscionMoon": "bodies", "contraAntiscionSun": "bodies", "contraAntiscionMoon": "bodies",
     "birthPlanetaryHour": "bodies", "almuten": "bodies", "natalDeclinationAspects": "bodies",
-    "starConjunctions": "bodies", "chiron": "bodies", "natalVoidOfCourse": "bodies",
+    "starConjunctions": "bodies", "chiron": "bodies", "lilith": "bodies", "natalVoidOfCourse": "bodies",
     # 天象事件 (events.js / eclipses.js)
     "lunarPhases": "events", "eclipses": "events", "crossings": "events",
     "stations": "events", "riseSet": "events",
@@ -38,37 +38,17 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
                    partner_year=None,partner_month=None,partner_day=None,
                    partner_hour=None,partner_tz=None,partner_lat=None,partner_lon=None,
                    partner_minute=0):
-    date_str=f"{year}-{month:02d}-{day}"
     tz_num = resolve_tz(tz)
     if isinstance(lat, str): lat = float(lat)
     if isinstance(lon, str): lon = float(lon)
     jd = compute_jd(year, month, day, hour, minute, tz_num)
-    hour_dec = hour + minute/60
-    _js_load("natalengine-engine")
-    try:
-        natal=json.loads(_js("natalengine-engine",
-            "function _c(o){if(o&&o.name){delete o.startMonth;delete o.startDay;delete o.endMonth;delete o.endDay;delete o.traits;delete o.shadow}return o}"
-            "var r=NatalEngine.calculateAstrology('%s',%f,%f,%f,%f);"
-            "if(r.sun&&r.sun.sign)_c(r.sun.sign);"
-            "if(r.moon&&r.moon.sign)_c(r.moon.sign);"
-            "if(r.rising&&r.rising.sign)_c(r.rising.sign);"
-            "Object.values(r.planets||{}).forEach(function(p){if(p.sign)_c(p.sign)});"
-            "Object.values(r.nodes||{}).forEach(function(n){if(n.sign)_c(n.sign)});"
-            "if(r.midheaven&&r.midheaven.sign)_c(r.midheaven.sign);"
-            "delete r.bigThree;delete r.summary;delete r.useEphemeris;delete r.hasLocation;delete r.allAspects;"
-            "JSON.stringify(r)"
-            % (date_str, hour_dec, tz_num, lat, lon)))
-    except Exception as e:
-        return {"system":"western_astrology","engine":"natalengine-js","error":str(e)}
-    result={"system":"western_astrology","engine":"natalengine-js","natal":natal}
-    _engs=["natalengine-js"]
-    if isinstance(natal, dict) and 'error' in natal:
-        _engs[-1]="natalengine-js(ERROR)"
+    result={"system":"western_astrology","engine":"caelus-js"}
+    _engs=["caelus-js"]
     # Caelus: 分阶段JS评估 (全量现代技法+对照+行运+推运+增补)
     caelus_data = {}
     caelus_errors = []
     _caelus_start = _time.monotonic()
-    _caelus_budget = 30.0  # Caelus 总预算秒数，超预算跳过剩余阶段，保证路由 60s 内返回
+    _caelus_budget = 45.0  # Caelus 总预算秒数（QuickJS 实测约 Node 的 30-70 倍），超预算跳过剩余阶段
     try:
         _js_load("caelus-engine")
         today = datetime.datetime.now(datetime.timezone.utc)
@@ -104,13 +84,16 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "var isDayStr=isDay?'day':'night';"
             "var p7=['sun','moon','mercury','venus','mars','jupiter','saturn'];"
             "var p10=p7.concat(['uranus','neptune','pluto']);"
-            "var _allBodies=p10.concat(['mean_node']);"
+            "var _allBodies=p10.concat(['mean_node','chiron']);"
+            "var _elBodies=p10.concat(['chiron']);"
             "var _elems=['Fire','Earth','Air','Water'];var _elCount=[0,0,0,0];"
-            "_allBodies.forEach(function(b){try{var bc=chart.bodies[b];"
-            "if(bc){var si=Math.floor(bc.lon/30)%%12;_elCount[Math.floor(si/4)]++}}catch(ex){}});"
+            "_elBodies.forEach(function(b){try{var bc=chart.bodies[b];"
+            "if(bc){var si=Math.floor(bc.lon/30)%%12;_elCount[si%%4]++}}catch(ex){}});"
             "var elementBalance={};_elems.forEach(function(e,i){elementBalance[e]=_elCount[i]});"
             "var _ph={};_allBodies.forEach(function(b){try{var bc=chart.bodies[b];if(bc)_ph[b]=bc.house}catch(ex){}});"
             "var _pd={};_allBodies.forEach(function(b){try{var bc=chart.bodies[b];if(bc)_pd[b]=bc.dignities}catch(ex){}});"
+            "var _pos={};_allBodies.forEach(function(b){try{var bc=chart.bodies[b];"
+            "if(bc)_pos[b]={lon:bc.lon,sign:bc.sign,signDeg:bc.signDeg,house:bc.house,retrograde:bc.retrograde,speed:bc.speed}}catch(ex){}});"
             "__cr=JSON.stringify({"
             "signature:Caelus.chartSignature(chart),elementBalance:elementBalance,"
             "patterns:Caelus.detectPatterns(chart),"
@@ -121,7 +104,10 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "cusps:chart.cusps,"
             "vertex:chart.angles.vertex,"
             "eastPoint:chart.angles.eastPoint,"
-            "planetHouses:_ph,aspects:chart.aspects,planetDignities:_pd"
+            "planetHouses:_ph,aspects:chart.aspects,planetDignities:_pd,"
+            "planetPositions:_pos,angles:chart.angles,"
+            "lilith:{mean:sf(function(){return e.longitude('mean_lilith',jd,{zodiac:'tropical'})}),"
+            "true:sf(function(){return e.longitude('true_lilith',jd,{zodiac:'tropical'})})}"
             "})"
             "}catch(ex){__cr=JSON.stringify({error:'p1:'+ex.message})};__cr"
             % (jd, today_jd, lat, lon))
@@ -196,7 +182,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "var _xings={};p10.forEach(function(b){"
             "_xings[b]=sf(function(){"
             "var ns=Math.ceil(chart.bodies[b].lon/30)*30;"
-            "return Caelus.crossings(e,b,ns,today,today+90,'tropical',1)"
+            "return Caelus.crossings(e,b,ns,today,today+60,'tropical',1)"
             "})});"
             "__cr=JSON.stringify({"
             "firdaria:sf(function(){return Caelus.firdaria(isDay,jd)}),"
@@ -233,7 +219,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "p7=['sun','moon','mercury','venus','mars','jupiter','saturn'];"
             "p10=p7.concat(['uranus','neptune','pluto']);"
             "ascIdx=Math.floor(chart.angles.asc/30);}"
-            "var _stations={};p7.forEach(function(b){_stations[b]=sf(function(){return Caelus.stations(e,b,today,today+90,5)})});"
+            "var _stations={};p7.forEach(function(b){_stations[b]=sf(function(){return Caelus.stations(e,b,today,today+60,5)})});"
             "__cr=JSON.stringify({"
             "stations:_stations,"
             "harmonicChart:sf(function(){return Caelus.harmonicChart(e,jd,['sun','moon','venus','mars'],5)})"
@@ -260,8 +246,8 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "primaryDirections:sf(function(){return Caelus.primaryDirections(e,jd,_lat,_lon)}),"
             "transits:sf(function(){return Caelus.transitAspects(chart,e,today,{bodies:p7})}),"
             "transitPositions:_tp,"
-            "solarReturn:sf(function(){return Caelus.solarReturn(e,jd,today,today+365*3)}),"
-            "lunarReturn:sf(function(){return Caelus.lunarReturn(e,jd,today,today+27*3)})"
+            "solarReturn:sf(function(){return Caelus.solarReturn(e,jd,today,today+366)}),"
+            "lunarReturn:sf(function(){return Caelus.lunarReturn(e,jd,today,today+28)})"
             "})"
             "}catch(ex){__cr=JSON.stringify({error:'p4a:'+ex.message})};__cr"
             % (jd, today_jd, lat, lon, jd, lat, lon, jd, lat, lon))
@@ -295,28 +281,48 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
     # 合盘: 仅当传入 partner_year 时触发
     if partner_year is not None:
         try:
-            partner_date=f"{partner_year}-{partner_month or month:02d}-{partner_day or day}"
             pt=resolve_tz(partner_tz, resolve_tz(tz))
-            ph=partner_hour + partner_minute/60
             pl=float(partner_lat) if partner_lat else lat or 0
             pn=float(partner_lon) if partner_lon else lon or 0
-            syn=json.loads(_js("natalengine-engine",
-                "var a=NatalEngine.calculateAstrology('%s',%f,%f,%f,%f);"
-                "var b=NatalEngine.calculateAstrology('%s',%f,%f,%f,%f);"
-                "JSON.stringify(NatalEngine.compareAstrology(a,b))"
-                % (date_str, hour_dec, tz_num, lat, lon,
-                   partner_date, ph, pt, pl, pn)))
+            jdB = compute_jd(partner_year, partner_month or month, partner_day or day,
+                             partner_hour or hour, partner_minute, pt)
+            _js_load("caelus-engine")
+            raw = _js("caelus-engine",
+                "var __cr;try{"
+                "var jdB=%s;var latB=%s;var lonB=%s;"
+                "if(typeof e==='undefined'){"
+                "e=new Caelus.Engine(Caelus.embeddedData);chart=e.chartAt(%s,%s,%s,{});}"
+                "var chartB=e.chartAt(jdB,latB,lonB,{});"
+                "var sf=function(fn){try{return fn()}catch(ex){return null}};"
+                "var dv=Caelus.davisonParams(%s,%s,%s,%s,%s,%s);"
+                "__cr=JSON.stringify({"
+                "aspects:sf(function(){return Caelus.synastryAspects(chart,chartB)}),"
+                "overlays:sf(function(){return Caelus.synastryOverlays(chart,chartB)}),"
+                "composite:sf(function(){return Caelus.compositePlacements(e,%s,%s)}),"
+                "davison:sf(function(){var dc=e.chartAt(dv[0],dv[1],dv[2],{});var o={};"
+                "for(var k in dc.bodies){var p=dc.bodies[k];if(p)o[k]={lon:p.lon,sign:p.sign,signDeg:p.signDeg,house:p.house}};"
+                "return{midJd:dv[0],midLat:dv[1],midLon:dv[2],chart:o}})"
+                "})"
+                "}catch(ex){__cr=JSON.stringify({error:'synastry:'+ex.message})};__cr"
+                % (jdB, pl, pn, jd, lat, lon,
+                   jd, jdB, lat, pl, lon, pn,
+                   jd, jdB))
+            syn = json.loads(raw)
             if isinstance(syn, dict) and 'error' not in syn:
-                result["synastry"]=syn
-                _engs.append("合盘")
-        except: pass
+                result["synastry"] = syn
+                _engs.append("Caelus合盘")
+            elif isinstance(syn, dict):
+                result["synastry_error"] = syn.get("error")
+        except Exception as e:
+            result["synastry_error"] = str(e)
     result["engine"]="+".join(_engs)
-    result["_hint"]=("NatalEngine:日月升+7星+元素+相位+合盘(synastry)。"
-        "Caelus:bodies/cusps(Placidus)/angles/patterns/lots/natalVoidOfCourse(本命空亡)/映点/natalDeclinationAspects(本命赤纬)/birthPlanetaryHour(出生时主星)/越界(全10星)/恒星合相/尊贵/almuten/月相/行星留(全7星90d)/日月食(180d)/"
+    result["_hint"]=("Caelus 单引擎(本命+合盘, 已移除重复的 NatalEngine):"
+        "planetPositions(全13体本命位置)/angles/cusps(Placidus)/aspects/patterns/lots/natalVoidOfCourse(本命空亡)/映点/natalDeclinationAspects(本命赤纬)/birthPlanetaryHour(出生时主星)/越界(全10星)/恒星合相/尊贵/almuten/月相/行星留(全7星60d)/日月食(180d)/"
         "firdaria/profections/primaryDirections/调和盘/行运方位相位+Aspects(当前)/行运行星位置(全13星含凯龙)+凯龙本命/ACG(简)/太阳返照/月亮返照/"
-        "次级推运(全7星,推至当前年龄)/midpoints(日月+Asc+MC)/riseSet(出生后首次日月升降)/signCrossings(全10星90d)。"
+        "次级推运(全7星,推至当前年龄)/midpoints(日月+Asc+MC)/riseSet(出生后首次日月升降)/signCrossings(全10星60d)。"
         "caelus 已按 chart/bodies/events/progressions/transits/harmonics/astrocartography 分组返回。"
-        "注: Caelus 已限预算(30s)防超时; 重型技法(行星回归30年/Parans/高魁林区)在移动端 QuickJS 上过慢已移除。"
+        "注: Caelus 已限预算(45s); 重型技法(行星回归30年/Parans/高魁林区)在移动端 QuickJS 上过慢已移除;"
+        "换座/行星留窗口为60天, 太阳返照1年/月亮返照1月, 以保证全阶段在预算内返回。"
         "合盘:传partner_year/partner_month/partner_day/partner_hour触发。"
         "自探索:Object.keys(Caelus)")
     return result

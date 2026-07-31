@@ -426,7 +426,7 @@ jobs:
           cp caelus-birth.js ${GITHUB_WORKSPACE}/app/src/main/assets/
           echo "Caelus Birth (timezone→UT) compiled: $(wc -c < caelus-birth.js) bytes"
 
-      - name: Compile NatalEngine JS (natalengine — 西洋占星+印度吠陀+Human Design, 依赖astronomy-engine)
+      - name: Compile NatalEngine JS (natalengine — 人类图/基因钥匙, 现代西洋占星已改用Caelus不再调用)
         run: |
           mkdir -p /tmp/natalengine_build
           cd /tmp && npm pack natalengine --pack-destination /tmp/natalengine_build 2>&1

@@ -219,7 +219,7 @@ class LocalTools(private val context: Context, private val eventBus: AppEventBus
                 "  qimen-engine (QiMen) | ziwei-nihai (ZiweiNihai) | iching-shifa-engine (IchingShifa) | taixuan-engine (TaixuanLib)\n" +
                 "  lunar-engine (Lunar) | astronomy-engine (Astronomy) | horoscope-engine (HoroscopeJS) | kaabalah-engine (Kaabalah)\n" +
                 "  caelus-engine (Caelus: Western+Vedic astrology) | caelus-birth (CaelusBirth: timezone→UT)\n" +
-                "  iztro-engine (Iztro: 紫微斗数) | natalengine-engine (NatalEngine: 西洋+吠陀+人类图)\n" +
+                "  iztro-engine (Iztro: 紫微斗数) | natalengine-engine (NatalEngine: 人类图/基因钥匙)\n" +
                 "  node-jhora-engine (NodeJhora: 印度占星深度版, DE440/Shadbala/Ashtakavarga/Jaimini/KP)\n\n" +
 
                 "- action: 'eval' (default) | 'load' | 'reset'\n" +
