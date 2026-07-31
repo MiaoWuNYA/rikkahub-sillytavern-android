@@ -291,6 +291,12 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                 7:{3:12,6:9,11:5},
                 8:{3:12,6:9,11:5},
             }
+            # 传统 Gochara Phala 每行星单星座停留时长（Brihat Jataka/BPHS 惯例，约数）
+            _gochara_duration = {
+                0:"~1 month", 1:"~2.25 days", 2:"~45 days", 3:"~1 month",
+                4:"~1 year", 5:"~1 month", 6:"~2.5 years",
+                7:"~1.5 years", 8:"~1.5 years",
+            }
             _transit = {}
             _tr_rasi_of = {}
             for _pid, (_rasi, _coords) in _tr_pl:
@@ -309,9 +315,10 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                     "house_from_moon": _h_moon,
                     "house_from_lagna": _h_lagna,
                     "gochara_effect": "benefic" if _good else "malefic",
+                    "sign_duration": _gochara_duration.get(_pid, "n/a"),
                 }
                 # Vedha：吉宫行运被阻碍宫内的其他行运行星所挡
-                # （Parashari 惯例豁免 日月互阻 / 木水互阻）
+                # （Parashari 惯例豁免：日月互阻、木水互阻、土罗互阻）
                 if _good:
                     _vh = _bphs_vedha[_pid].get(_h_moon)
                     if _vh is not None:
@@ -321,7 +328,8 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                             if _oid == _pid or _orasi != _target:
                                 continue
                             if (_pid == 0 and _oid == 1) or (_pid == 1 and _oid == 0) or \
-                               (_pid == 4 and _oid == 3) or (_pid == 3 and _oid == 4):
+                               (_pid == 4 and _oid == 3) or (_pid == 3 and _oid == 4) or \
+                               (_pid == 6 and _oid == 7) or (_pid == 7 and _oid == 6):
                                 continue
                             _vedha.append(_tr_names[_oid])
                         if _vedha:
@@ -329,6 +337,12 @@ def _vedic(year,month,day,hour,tz,lat=None,lon=None,minute=0):
                 _transit[_tr_names[_pid]] = _entry
                 _tr_rasi_of[_pid] = _rasi
             py["transit"] = _transit
+            py["transit_meta"] = {
+                "basis": "BPHS Ch.29 Gochara",
+                "reference": "natal Moon sign (Chandra Lagna) primary; natal Lagna secondary",
+                "notes": "Rahu/Ketu follow the traditional extension (same as Mars: benefic 3/6/11, vedha 12/9/5); BPHS Ch.29 itself covers the seven classical grahas. Vedha exemptions: Sun-Moon, Jupiter-Mercury, Saturn-Rahu.",
+                "ayanamsa": "LAHIRI",
+            }
             # 行运对本命 drishti 相位（对照 const.graha_drishti 传统规则）
             try:
                 _tr_drishti = {}
