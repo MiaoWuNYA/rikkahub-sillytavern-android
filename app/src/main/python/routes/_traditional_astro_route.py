@@ -1,7 +1,7 @@
 """Route: traditional astro — Hellenistic/Medieval traditional Western astrology"""
 import json, sys, os, datetime
 import time as _time
-from ._shared import _js, _js_load, compute_jd, resolve_tz
+from ._shared import _js, _js_load, compute_jd, resolve_tz, convert_caelus_dates
 
 def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
     tz_offset = resolve_tz(tz_offset)
@@ -225,7 +225,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
                 try:
                     a, b = bnames_7[i], bnames_7[j]
                     asp = _getAspect(brows[a], brows[b], const.MAJOR_ASPECTS)
-                    if asp:
+                    if asp and asp.type in (0, 60, 90, 120, 180):
                         mov = asp.movement()
                         aspects.append({
                             "a": a, "b": b,
@@ -658,7 +658,7 @@ def _traditional_astro(year, month, day, hour, tz_offset, lat, lon, minute=0):
             % (jd, now_jd, lat, lon, jd, lat, lon, jd, lat, lon))
 
         if caelus_data:
-            result["caelus"] = caelus_data
+            result["caelus"] = convert_caelus_dates(caelus_data)
             result["engine"] += "+Caelus"
         if caelus_errors:
             result["caelus_error"] = "; ".join(caelus_errors)

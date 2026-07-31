@@ -1,7 +1,7 @@
 """Route:  western astro"""
 import json, sys, os, datetime
 import time as _time
-from ._shared import _js, _js_load, compute_jd, resolve_tz
+from ._shared import _js, _js_load, compute_jd, resolve_tz, convert_caelus_dates
 
 # ===== 现代西洋占星（双引擎对照） =====
 def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
@@ -166,11 +166,11 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "var _xings={};p10.forEach(function(b){"
             "_xings[b]=sf(function(){"
             "var ns=Math.ceil(chart.bodies[b].lon/30)*30;"
-            "return Caelus.crossings(e,b,ns,jd,jd+90,'tropical',1)"
+            "return Caelus.crossings(e,b,ns,today,today+90,'tropical',1)"
             "})});"
             "__cr=JSON.stringify({"
             "firdaria:sf(function(){return Caelus.firdaria(isDay,jd)}),"
-            "profections:Caelus.profection(ascIdx,jd,jd+365),"
+            "profections:Caelus.profection(ascIdx,jd,today),"
             "solarArc:Caelus.solarArc(e,jd,today),"
             "progressedMoon:sf(function(){return Caelus.progressedLongitude(e,'moon',jd,jd+365*30)}),"
             "progressedSun:sf(function(){return Caelus.progressedLongitude(e,'sun',jd,jd+365*30)}),"
@@ -179,9 +179,9 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "mars:sf(function(){return Caelus.progressedLongitude(e,'mars',jd,jd+365*30)}),"
             "jupiter:sf(function(){return Caelus.progressedLongitude(e,'jupiter',jd,jd+365*30)}),"
             "saturn:sf(function(){return Caelus.progressedLongitude(e,'saturn',jd,jd+365*30)})},"
-            "lunarPhases:Caelus.lunarPhases(e,jd,jd+30,8),"
-            "eclipses:sf(function(){return{solar:Caelus.solarEclipses(e,jd,jd+180).slice(0,2),"
-            "lunar:Caelus.lunarEclipses(e,jd,jd+180).slice(0,2)}}),"
+            "lunarPhases:Caelus.lunarPhases(e,today,today+30,8),"
+            "eclipses:sf(function(){return{solar:Caelus.solarEclipses(e,today,today+180).slice(0,2),"
+            "lunar:Caelus.lunarEclipses(e,today,today+180).slice(0,2)}}),"
             "riseSet:{sun:{rise:sf(function(){return Caelus.riseSet(e,'sun',jd,_lat,_lon,'rise',{searchDays:1})}),"
             "set:sf(function(){return Caelus.riseSet(e,'sun',jd,_lat,_lon,'set',{searchDays:1})})},"
             "moon:{rise:sf(function(){return Caelus.riseSet(e,'moon',jd,_lat,_lon,'rise',{searchDays:1})}),"
@@ -194,7 +194,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
         # Phase 3b (~5s): Stations(90d) + harmonicChart (去掉 returns 30yr: 单技法 29s+, QuickJS 不可行)
         _cp("p3b",
             "var __cr;try{"
-            "var jd=%s;"
+            "var jd=%s;var today=%s;"
             "if(typeof e==='undefined'){"
             "e=new Caelus.Engine(Caelus.embeddedData);chart=e.chartAt(%s,%s,%s,{});"
             "isDay=Caelus.isDayChart(e,%s,%s,%s);"
@@ -203,13 +203,13 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "p7=['sun','moon','mercury','venus','mars','jupiter','saturn'];"
             "p10=p7.concat(['uranus','neptune','pluto']);"
             "ascIdx=Math.floor(chart.angles.asc/30);}"
-            "var _stations={};p7.forEach(function(b){_stations[b]=sf(function(){return Caelus.stations(e,b,jd,jd+90,5)})});"
+            "var _stations={};p7.forEach(function(b){_stations[b]=sf(function(){return Caelus.stations(e,b,today,today+90,5)})});"
             "__cr=JSON.stringify({"
             "stations:_stations,"
             "harmonicChart:sf(function(){return Caelus.harmonicChart(e,jd,['sun','moon','venus','mars'],5)})"
             "})"
             "}catch(ex){__cr=JSON.stringify({error:'p3b:'+ex.message})};__cr"
-            % (jd, jd, lat, lon, jd, lat, lon))
+            % (jd, today_jd, jd, lat, lon, jd, lat, lon))
 
         # Phase 4a (~5s): primaryDirections + transits + transitPositions + solarReturn + lunarReturn
         _cp("p4a",
@@ -230,8 +230,8 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             "primaryDirections:sf(function(){return Caelus.primaryDirections(e,jd,_lat,_lon)}),"
             "transits:sf(function(){return Caelus.transitAspects(chart,e,today,{bodies:p7})}),"
             "transitPositions:_tp,"
-            "solarReturn:sf(function(){return Caelus.solarReturn(e,jd,jd,jd+365*3)}),"
-            "lunarReturn:sf(function(){return Caelus.lunarReturn(e,jd,jd+27,jd+27*3)})"
+            "solarReturn:sf(function(){return Caelus.solarReturn(e,jd,today,today+365*3)}),"
+            "lunarReturn:sf(function(){return Caelus.lunarReturn(e,jd,today,today+27*3)})"
             "})"
             "}catch(ex){__cr=JSON.stringify({error:'p4a:'+ex.message})};__cr"
             % (jd, today_jd, lat, lon, jd, lat, lon, jd, lat, lon))
@@ -255,7 +255,7 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
             % (jd, today_jd, lat, lon, jd, lat, lon, jd, lat, lon))
 
         if caelus_data:
-            result["caelus"] = caelus_data
+            result["caelus"] = convert_caelus_dates(caelus_data)
             _engs.append("Caelus")
         if caelus_errors:
             result["caelus_error"] = "; ".join(caelus_errors)
