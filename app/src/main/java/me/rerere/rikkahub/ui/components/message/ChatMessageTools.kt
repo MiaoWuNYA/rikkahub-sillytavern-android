@@ -62,7 +62,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import me.rerere.ai.ui.ToolApprovalState
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.common.http.jsonObjectOrNull
-import me.rerere.highlight.HighlightText
+import me.rerere.highlight.CodeHighlightText
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.AiMagic
@@ -797,7 +797,7 @@ private fun SearchWebPreview(
             }
         } else {
             item {
-                HighlightText(
+                CodeHighlightText(
                     code = JsonInstantPretty.encodeToString(content),
                     language = "json",
                     fontSize = 12.sp
