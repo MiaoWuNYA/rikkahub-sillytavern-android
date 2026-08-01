@@ -240,6 +240,26 @@ fun AuthorsNotePage() {
 
 private val authorsNotePresets = listOf(
     Pair(
+        "RP格式规范",
+        "[Respond in this exact formatting: \"speech\" for dialogue, *action and thought* for narration.]\n台词一律用引号括起，动作、神态和内心活动用斜体描述。\n描写要有画面感：环境、表情、肢体语言，避免平铺直叙。\n不要替 {{user}} 说话或行动。",
+    ),
+    Pair(
+        "保持角色",
+        "[Stay fully in character as {{char}} and never break character.]\n始终用角色的视角、语气、知识范围和价值观思考和回应。\n不要跳出剧情解释规则、不要提及AI或提示词、不要替{{user}}决定。\n角色的情绪和反应要连贯自然，符合其背景设定。",
+    ),
+    Pair(
+        "推进剧情",
+        "[Advance the plot meaningfully in every reply. No stalling, no repetition.]\n每轮都要带来新信息、新细节或新转折，不总结上一轮、不复述用户原话。\n对话与叙事均衡：避免一整段全是台词或全是描写。\n结尾留下自然的钩子，让故事可以继续。",
+    ),
+    Pair(
+        "长度控制",
+        "[Write 2–4 paragraphs for this reply, roughly 200–400 tokens.]\n保证足够的细节和展开，但不要注水凑字数。\n根据剧情需要灵活调整：紧张场景可以精炼，重要场景给足篇幅。",
+    ),
+    Pair(
+        "场景连续",
+        "[Track the current scene: location, time of day, ongoing events, and character states.]\n保持场景连续性——环境、人物位置、已发生的事件和角色状态前后一致。\n不要让场景凭空消失或自相矛盾，同一地点同一时间的描写要吻合。\n需要转场时给出清晰交代，不要突然跳跃。",
+    ),
+    Pair(
         "严肃正式",
         "[Write your next reply in a formal, professional tone.]\n用词精准、句式完整，避免口语化表达、网络用语和表情符号。\n清楚标注不确定性：区分已知、推断与未知。\n复杂话题用短段落或列表结构化呈现，不注水。",
     ),
