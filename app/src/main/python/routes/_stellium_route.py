@@ -204,17 +204,18 @@ def _fix_draconic_metadata(draconic_chart):
     positions = list(draconic_chart.positions)
     house_systems_map = dict(draconic_chart.house_systems)
 
-    # 1. 落宫：按旋转后的 cusps 重算
+    # 1. 落宫：按旋转后的 cusps 重算。
+    #    与引擎 assign_houses 口径一致：全部对象（含固定星/中点/映点/
+    #    反映点/阿拉伯点/角度）都参与落宫，不做对象类型过滤，
+    #    否则龙首盘 house_placements 会比主盘少一批键。
     house_placements_map = {}
-    _house_types = ("planet", "node", "asteroid", "point", "angle", "arabic_part")
     for sys_name, hc in house_systems_map.items():
         cusps = tuple(hc.cusps)
         house_placements_map[sys_name] = {}
         for pos in positions:
-            if pos.object_type.value in _house_types:
-                house_placements_map[sys_name][pos.name] = find_house_for_longitude(
-                    pos.longitude, cusps
-                )
+            house_placements_map[sys_name][pos.name] = find_house_for_longitude(
+                pos.longitude, cusps
+            )
 
     # 2-3. 本命尊贵(essential)+互容+sect、偶然尊贵(accidental)
     dcomp = DignityComponent()
