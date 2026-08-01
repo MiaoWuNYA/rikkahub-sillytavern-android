@@ -3,8 +3,8 @@ package me.rerere.ai.provider.providers
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.onFailure
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
@@ -27,22 +27,22 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.core.ReasoningLevel
-import me.rerere.ai.provider.TextGenerationParams
 import me.rerere.ai.core.TokenUsage
 import me.rerere.ai.provider.ClaudePromptCacheTtl
 import me.rerere.ai.provider.ImageGenerationParams
 import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.ModelAbility
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.ai.ui.ClaudeReasoningMetadata
-import me.rerere.ai.ui.metadataAs
-import me.rerere.ai.ui.toMetadata
 import me.rerere.ai.provider.Provider
+import me.rerere.ai.provider.ProviderSetting
+import me.rerere.ai.provider.TextGenerationParams
 import me.rerere.ai.ui.ImageGenerationItem
 import me.rerere.ai.ui.MessageChunk
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessageChoice
+import me.rerere.ai.ui.ClaudeReasoningMetadata
 import me.rerere.ai.ui.UIMessagePart
+import me.rerere.ai.ui.metadataAs
+import me.rerere.ai.ui.toMetadata
 import me.rerere.ai.util.KeyRoulette
 import me.rerere.ai.util.configureReferHeaders
 import me.rerere.ai.util.encodeBase64
@@ -213,6 +213,10 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
                     usage = tokenUsage
                 )
 
+                trySend(messageChunk).onFailure { e ->
+                    Log.w(TAG, "onEvent: chunk dropped (${e?.message})")
+                }
+
                 when (type) {
                     "message_stop" -> {
                         Log.d(TAG, "Stream ended")
@@ -224,10 +228,6 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
                         val error = eventData["error"]?.parseErrorDetail()
                         close(error)
                     }
-                }
-
-                trySend(messageChunk).onFailure { e ->
-                    Log.w(TAG, "onEvent: chunk dropped (${e?.message})")
                 }
             }
 
@@ -264,9 +264,9 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
             Log.d(TAG, "Closing eventSource")
             eventSource.cancel()
         }
+        // trySend 在缓冲满时会静默丢弃 delta，导致回复中间缺字 (#1295)，因此缓冲必须无界
     }.buffer(Channel.UNLIMITED)
 
-    // trySend 在缓冲满时会静默丢弃 delta，导致回复中间缺字 (#1295)，因此缓冲必须无界
     private fun buildMessageRequest(
         providerSetting: ProviderSetting.Claude,
         messages: List<UIMessage>,

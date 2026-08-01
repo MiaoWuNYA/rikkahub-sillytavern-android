@@ -1,7 +1,0 @@
-R_DEF: Internal format may change without notice
-local
-string bing_desc
-string click_to_get_api_key
-string custom_js_desc
-string searxng_desc_1
-string searxng_desc_2

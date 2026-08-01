@@ -313,9 +313,9 @@ class ResponseAPI(
                                     contentBuffer.clear()
                                 }
                                 // 输出 reasoning item
+                                val reasoningMetadata = part.metadataAs<OpenAIReasoningMetadata>()
                                 add(buildJsonObject {
                                     put("type", "reasoning")
-                                    val reasoningMetadata = part.metadataAs<OpenAIReasoningMetadata>()
                                     reasoningMetadata?.reasoningId?.let {
                                         put("id", it)
                                     }

@@ -4,12 +4,14 @@
 /.idea
 .DS_Store
 /build
+**/build/
 /captures
 .externalNativeBuild
 .cxx
 local.properties
 .cursor
 .history
+.kotlin
 __pycache__/
 tmp_stellium/
 build.log

@@ -1,5 +1,0 @@
-int string bing_desc 0x0
-int string click_to_get_api_key 0x0
-int string custom_js_desc 0x0
-int string searxng_desc_1 0x0
-int string searxng_desc_2 0x0
