@@ -63,12 +63,14 @@ fun Route.conversationRoutes(
             call.respond(conversations)
         }
 
-        // GET /api/conversations/paged?offset=0&limit=20&query=foo - List conversations with pagination
+        // GET /api/conversations/paged?offset=0&limit=20&query=foo&folderId=none|<uuid>
+        // folderId: absent = all conversations, "none" = unfiled only, <uuid> = that folder
         get("/paged") {
             val settings = settingsStore.settingsFlow.first()
             val offset = call.request.queryParameters["offset"]?.toIntOrNull() ?: 0
             val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 20
             val query = call.request.queryParameters["query"]?.trim().orEmpty()
+            val folderParam = call.request.queryParameters["folderId"]?.trim()
 
             if (offset < 0) {
                 throw BadRequestException("offset must be >= 0")
@@ -77,16 +79,30 @@ fun Route.conversationRoutes(
                 throw BadRequestException("limit must be in 1..100")
             }
 
-            val page = if (query.isBlank()) {
-                conversationRepo.getConversationsOfAssistantPage(
+            val page = when {
+                // Search ignores folder filter (searches across all conversations of the assistant)
+                query.isNotBlank() -> conversationRepo.searchConversationsOfAssistantPage(
+                    assistantId = settings.assistantId,
+                    titleKeyword = query,
+                    offset = offset,
+                    limit = limit
+                )
+
+                folderParam == null -> conversationRepo.getConversationsOfAssistantPage(
                     assistantId = settings.assistantId,
                     offset = offset,
                     limit = limit
                 )
-            } else {
-                conversationRepo.searchConversationsOfAssistantPage(
-                    assistantId = settings.assistantId,
-                    titleKeyword = query,
+
+                folderParam.isEmpty() || folderParam == "none" ->
+                    conversationRepo.getUnfiledConversationsOfAssistantPage(
+                        assistantId = settings.assistantId,
+                        offset = offset,
+                        limit = limit
+                    )
+
+                else -> conversationRepo.getConversationsOfFolderPage(
+                    folderId = folderParam.toUuid("folderId"),
                     offset = offset,
                     limit = limit
                 )

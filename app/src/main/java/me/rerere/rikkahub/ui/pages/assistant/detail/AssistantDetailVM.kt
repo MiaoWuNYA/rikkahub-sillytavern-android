@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.SettingsStore
+import me.rerere.rikkahub.data.db.entity.WorkspaceEntity
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.files.SkillManager
 import me.rerere.rikkahub.data.files.SkillMetadata
@@ -27,6 +28,7 @@ import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.SelectiveLogic
 import me.rerere.rikkahub.data.model.Tag
 import me.rerere.rikkahub.data.repository.MemoryRepository
+import me.rerere.rikkahub.data.repository.WorkspaceRepository
 import kotlin.uuid.Uuid
 
 private const val TAG = "AssistantDetailVM"
@@ -37,11 +39,20 @@ class AssistantDetailVM(
     private val memoryRepository: MemoryRepository,
     private val filesManager: FilesManager,
     private val skillManager: SkillManager,
+    private val workspaceRepository: WorkspaceRepository,
 ) : ViewModel() {
     private val assistantId = Uuid.parse(id)
 
     private val _skills = MutableStateFlow<List<SkillMetadata>>(emptyList())
     val skills = _skills.asStateFlow()
+
+    val workspaces: StateFlow<List<WorkspaceEntity>> = workspaceRepository
+        .listFlow()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = emptyList(),
+        )
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
