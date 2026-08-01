@@ -690,14 +690,14 @@ def _skewness(data):
     n = len(data)
     if n < 3: return 0
     m = statistics.mean(data)
-    s = statistics.stdev(data)
+    s = math.sqrt(sum((x-m)**2 for x in data)/n)  # 总体标准差，与总体三阶矩同口径
     return sum((x-m)**3 for x in data) / (n * s**3) if s > 0 else 0
 
 def _kurtosis(data):
     n = len(data)
     if n < 4: return 0
     m = statistics.mean(data)
-    s = statistics.stdev(data)
+    s = math.sqrt(sum((x-m)**2 for x in data)/n)  # 总体标准差（超额峰度）
     return sum((x-m)**4 for x in data) / (n * s**4) - 3 if s > 0 else 0
 
 
@@ -953,7 +953,8 @@ def _irr(cfs, guess=0.1):
     return rate
 
 def _loan(principal, rate, years):
-    return _pmt(rate/12, years*12, -principal)
+    # 与 _pmt 符号口径一致：正本金 → 负月供（现金流出）
+    return _pmt(rate/12, years*12, principal)
 
 def _compound(principal, rate, periods):
     return principal*(1+rate)**periods - principal
@@ -987,7 +988,7 @@ def _pyramid_vol(base_area,h): return base_area*h/3
 
 def _dms_to_dd(d,m,s):
     sign = -1 if d<0 else 1
-    return abs(d)+m/60+s/3600*sign
+    return sign*(abs(d)+m/60+s/3600)
 
 def _dd_to_dms(dd):
     s = "-" if dd<0 else ""; dd=abs(dd)
@@ -1140,9 +1141,9 @@ def _ohms(v=None,i=None,r=None):
     raise ValueError("Provide 2 of V,I,R")
 
 def _pwr_elec(v=None,i=None,r=None):
-    if v and i: return v*i
-    if v and r: return v*v/r
-    if i and r: return i*i*r
+    if v is not None and i is not None: return v*i
+    if v is not None and r is not None: return v*v/r
+    if i is not None and r is not None: return i*i*r
     raise ValueError("Provide 2 of V,I,R")
 
 def _res_series(*r): return sum(r)
@@ -1205,20 +1206,20 @@ def _terminal_v(m,g,rho,Cd,A): return math.sqrt(2*m*g/(rho*Cd*A))
 # ── Physics: Optics ──
 
 def _lens(do=None,di=None,f=None):
-    if do and di: return {"do":do,"di":di,"f":1/(1/do+1/di)}
-    if do and f: return {"do":do,"di":1/(1/f-1/do),"f":f}
-    if di and f: return {"do":1/(1/f-1/di),"di":di,"f":f}
+    if do is not None and di is not None: return {"do":do,"di":di,"f":1/(1/do+1/di)}
+    if do is not None and f is not None: return {"do":do,"di":1/(1/f-1/do),"f":f}
+    if di is not None and f is not None: return {"do":1/(1/f-1/di),"di":di,"f":f}
     raise ValueError("Provide 2 of do,di,f")
 
 def _magnification(hi=None,ho=None,di=None,do=None):
-    if hi and ho: return hi/ho
-    if di and do: return -di/do
+    if hi is not None and ho is not None: return hi/ho
+    if di is not None and do is not None: return -di/do
     raise ValueError("Provide hi&ho or di&do")
 
 def _snell(n1,n2,theta1=None,theta2=None):
-    if theta1 and n2:
+    if theta1 is not None and n2 is not None:
         return {"theta1":theta1,"theta2":math.degrees(math.asin(n1*math.sin(math.radians(theta1))/n2)),"n1":n1,"n2":n2}
-    if theta2 and n1:
+    if theta2 is not None and n1 is not None:
         return {"theta1":math.degrees(math.asin(n2*math.sin(math.radians(theta2))/n1)),"theta2":theta2,"n1":n1,"n2":n2}
     raise ValueError("Provide n1,n2, and 1 angle")
 
@@ -1251,9 +1252,9 @@ def _lens_makers(n, r1, r2, d=0):
 
 def _mirror_formula(f=None, u=None, v=None):
     """1/f = 1/u + 1/v. Give any 2."""
-    if u and v: return 1/(1/u + 1/v)
-    if f and u: return 1/(1/f - 1/u)
-    if f and v: return 1/(1/f - 1/v)
+    if u is not None and v is not None: return 1/(1/u + 1/v)
+    if f is not None and u is not None: return 1/(1/f - 1/u)
+    if f is not None and v is not None: return 1/(1/f - 1/v)
     raise ValueError("Give 2 of f, u, v")
 
 def _hyperfocal(f, N, c):
@@ -1275,8 +1276,7 @@ def _gaussian_conj(s_in, z_r_in, f):
     denom = (f-s_in)**2 + z_r_in**2
     s_out = f + f*f*(s_in-f)/denom
     z_r_out = f*f*z_r_in/denom
-    mag = math.sqrt((s_out/f - 1)**2 + (z_r_out/f)**2) * math.sqrt(0)  # simplified
-    mag = 1/math.sqrt((1-s_in/f)**2 + (z_r_in/f)**2) if f != 0 else 0
+    mag = 1/math.sqrt((1-s_in/f)**2 + (z_r_in/f)**2)
     return {"s_out": s_out, "z_r_out": z_r_out, "magnification": mag}
 
 def _deviation(theta, n1=1, n2=1.5):
@@ -1466,7 +1466,14 @@ def _annuity(principal, rate, periods):
     return principal*rate/(1-(1+rate)**-periods) if rate>0 else principal/periods
 
 def _perpetuity(principal, rate):
-    return principal*rate
+    """永续年金现值 PV = 年付款 / 利率（金融标准口径）。
+    注意：参数是每年的付款额 payment，不是本金。"""
+    return principal/rate if rate > 0 else float('inf')
+
+
+def _perpetuity_payment(pv, rate):
+    """给定现值 PV 的永续年金年付款额 = PV * rate。"""
+    return pv*rate
 
 def _dividend_yield(dps, pps):
     return dps/pps if pps>0 else 0
@@ -1530,8 +1537,8 @@ def _poisson_prob(k,lam):
     return lam**k*math.exp(-lam)/math.factorial(k)
 
 def _conf_mean(data, conf=0.95):
-    """Confidence interval for the mean. Handles any confidence level (0-1)
-    by computing z-score from inverse error function."""
+    """Confidence interval for the mean.
+    小样本(n<30)用 t 分布分位数，大样本用正态 z（逆误差函数）。"""
     n=len(data)
     if n<2: return None
     m=statistics.mean(data); se=statistics.stdev(data)/math.sqrt(n)
@@ -1545,8 +1552,13 @@ def _conf_mean(data, conf=0.95):
         ln1x2 = math.log(1 - x*x)
         term = 2/(math.pi*a) + ln1x2/2
         return math.copysign(math.sqrt(math.sqrt(term*term - ln1x2/a) - term), x)
-    z = math.sqrt(2) * _erfinv(conf)  # two-tailed normal CI
-    return {"mean":m,"ci_lower":m-z*se,"ci_upper":m+z*se,"se":se, "z":z}
+    if n < 30:
+        z = _t_ppf((1+conf)/2, n-1)
+        dist = "t"
+    else:
+        z = math.sqrt(2) * _erfinv(conf)  # two-tailed normal CI
+        dist = "z"
+    return {"mean":m,"ci_lower":m-z*se,"ci_upper":m+z*se,"se":se, "z":z, "dist":dist}
  
  
 # ── Astronomy
@@ -1658,9 +1670,10 @@ def _tip_split(bill, pct, people):
     return total/people, total
 
 def _time_diff(h1, h2):
-    diff=abs(h1-h2)
-    if diff<=1: return f"{int(diff*60)} min diff" if diff<1 else f"{int(diff)} hr diff"
-    return f"{int(diff)} hr {int((diff%1)*60)} min"
+    """两个钟点(0-24)之间的最短小时差（跨午夜取小者），返回数值小时。"""
+    d = (h2 - h1) % 24
+    d = min(d, 24 - d)
+    return d
 
 # ── Arithmetic extras ──
 
@@ -1760,14 +1773,14 @@ def _law_of_sines(a=None, b=None, c=None, A=None, B=None, C=None):
 
 def _law_of_cosines(a=None, b=None, c=None, C=None):
     """c² = a² + b² - 2ab·cosC. Give 3 to get the 4th."""
-    if a and b and C:
+    if a is not None and b is not None and C is not None:
         return math.sqrt(a*a + b*b - 2*a*b*math.cos(math.radians(C)))
-    if a and c and b:
+    if a is not None and b is not None and c is not None:
         return math.degrees(math.acos((a*a+b*b-c*c)/(2*a*b)))
-    if a and c and C:
+    if a is not None and c is not None and C is not None:
         b = a*a + c*c - 2*a*c*math.cos(math.radians(C))
         return math.sqrt(b) if b > 0 else float('nan')
-    if b and c and C:
+    if b is not None and c is not None and C is not None:
         a = b*b + c*c - 2*b*c*math.cos(math.radians(C))
         return math.sqrt(a) if a > 0 else float('nan')
     raise ValueError("Need a,b,C or a,b,c or a,c,C or b,c,C")
@@ -2845,9 +2858,78 @@ def _f_pdf(x, d1, d2):
     return num/den if den > 0 else 0
 
 def _t_cdf(t, df):
-    """t-distribution CDF approximation."""
-    x = df/(t*t+df)
-    return 1 - 0.5*_beta_func(df/2, 0.5)*x**(df/2)*_hyp2f1_approx(0.5, df/2, 1.5, 1-x)
+    """Student t 分布 CDF：F(t) = 1 - ½·I_x(ν/2, 1/2), x = ν/(ν+t²)。
+    用正则化不完全 Beta 连分式（Numerical Recipes betacf），t<0 用对称性。"""
+    if df <= 0:
+        raise ValueError("df must be > 0")
+    if t == 0:
+        return 0.5
+    x = df/(t*t + df)
+    ib = _betainc_reg(df/2, 0.5, x)
+    if t > 0:
+        return 1 - 0.5*ib
+    return 0.5*ib
+
+
+def _betainc_reg(a, b, x):
+    """正则化不完全 Beta 函数 I_x(a,b)，a,b>0，0<=x<=1。
+    连分式（Lentz 算法，对标 Numerical Recipes betacf），全程对数域防溢出。"""
+    if x <= 0.0:
+        return 0.0
+    if x >= 1.0:
+        return 1.0
+    ln_pre = (math.lgamma(a+b) - math.lgamma(a) - math.lgamma(b)
+              + a*math.log(x) + b*math.log(1-x))
+    MAXIT = 200
+    EPS = 3e-14
+    FPMIN = 1e-300
+    qab = a + b
+    qap = a + 1.0
+    qam = a - 1.0
+    c = 1.0
+    d = 1.0 - qab*x/qap
+    if abs(d) < FPMIN:
+        d = FPMIN
+    d = 1.0/d
+    h = d
+    for m in range(1, MAXIT+1):
+        m2 = 2*m
+        aa = m*(b-m)*x/((qam+m2)*(a+m2))
+        d = 1.0 + aa*d
+        if abs(d) < FPMIN:
+            d = FPMIN
+        c = 1.0 + aa/c
+        if abs(c) < FPMIN:
+            c = FPMIN
+        d = 1.0/d
+        h *= d*c
+        aa = -(a+m)*(qab+m)*x/((a+m2)*(qap+m2))
+        d = 1.0 + aa*d
+        if abs(d) < FPMIN:
+            d = FPMIN
+        c = 1.0 + aa/c
+        if abs(c) < FPMIN:
+            c = FPMIN
+        d = 1.0/d
+        delta = d*c
+        h *= delta
+        if abs(delta-1.0) < EPS:
+            break
+    # Numerical Recipes betai = exp(ln_pre) * betacf / a
+    return math.exp(ln_pre)*h/a
+
+
+def _t_ppf(p, df, lo=-100.0, hi=100.0):
+    """t 分布分位数（对 _t_cdf 二分求逆），p∈(0,1)。"""
+    if not (0.0 < p < 1.0):
+        raise ValueError("p must be in (0,1)")
+    for _ in range(200):
+        mid = (lo+hi)/2
+        if _t_cdf(mid, df) < p:
+            lo = mid
+        else:
+            hi = mid
+    return (lo+hi)/2
 
 def _hyp2f1_approx(a, b, c, z, n=50):
     """Gauss hypergeometric ₂F₁(a,b;c;z) series approximation."""
@@ -3084,19 +3166,73 @@ def _cholesky(A):
                 L[i][j] = (A[i][j] - s) / L[j][j]
     return {"L": L}
 
-def _matrix_eigenvalues(A, max_iter=100):
-    """Power iteration: returns dominant eigenvalue and eigenvector."""
+def _jacobi_eigen(A, max_iter=100, tol=1e-12):
+    """Jacobi 旋转法：对称矩阵的全部特征值+特征向量。
+    返回 [(特征值, 特征向量), ...] 按特征值升序。"""
     n = len(A)
-    v = [1.0]*n
+    a = [[float(A[i][j]) for j in range(n)] for i in range(n)]
+    v = [[1.0 if i == j else 0.0 for j in range(n)] for i in range(n)]
     for _ in range(max_iter):
-        w = [sum(A[i][j]*v[j] for j in range(n)) for i in range(n)]
-        norm = math.sqrt(sum(x*x for x in w))
-        if norm < 1e-15:
+        p, q, mx = 0, 1, 0.0
+        for i in range(n):
+            for j in range(i+1, n):
+                if abs(a[i][j]) > mx:
+                    mx, p, q = abs(a[i][j]), i, j
+        if mx < tol:
             break
-        v = [x/norm for x in w]
-    Av = [sum(A[i][j]*v[j] for j in range(n)) for i in range(n)]
-    lam = sum(v[i]*Av[i] for i in range(n)) / sum(v[i]*v[i] for i in range(n))
-    return {"eigenvalue": lam, "eigenvector": v}
+        if a[p][q] == 0.0:
+            break
+        theta = (a[q][q] - a[p][p]) / (2.0*a[p][q])
+        t = 1.0/(abs(theta) + math.sqrt(theta*theta + 1.0))
+        if theta < 0:
+            t = -t
+        c = 1.0/math.sqrt(t*t + 1.0)
+        s = t*c
+        for k in range(n):
+            if k != p and k != q:
+                akp, akq = a[k][p], a[k][q]
+                a[k][p] = c*akp - s*akq
+                a[k][q] = s*akp + c*akq
+        app, aqq, apq = a[p][p], a[q][q], a[p][q]
+        a[p][p] = c*c*app - 2.0*s*c*apq + s*s*aqq
+        a[q][q] = s*s*app + 2.0*s*c*apq + c*c*aqq
+        a[p][q] = 0.0
+        a[q][p] = 0.0
+        for k in range(n):
+            vkp, vkq = v[k][p], v[k][q]
+            v[k][p] = c*vkp - s*vkq
+            v[k][q] = s*vkp + c*vkq
+    return sorted((a[i][i], [v[k][i] for k in range(n)]) for i in range(n))
+
+
+def _matrix_eigenvalues(A, max_iter=100):
+    """全部特征值（对称矩阵用 Jacobi 精确求；非对称回退幂法+消去近似）。
+    返回特征值列表，升序。"""
+    n = len(A)
+    if n == 0:
+        return []
+    if n == 1:
+        return [float(A[0][0])]
+    sym = all(abs(A[i][j] - A[j][i]) < 1e-12 for i in range(n) for j in range(n))
+    if sym:
+        return [ev for ev, _ in _jacobi_eigen(A, max_iter)]
+    residual = [row[:] for row in A]
+    vals = []
+    for _ in range(n):
+        v = [1.0]*n
+        for __ in range(max_iter):
+            w = [sum(residual[i][j]*v[j] for j in range(n)) for i in range(n)]
+            norm = math.sqrt(sum(x*x for x in w))
+            if norm < 1e-15:
+                break
+            v = [x/norm for x in w]
+        Av = [sum(residual[i][j]*v[j] for j in range(n)) for i in range(n)]
+        lam = sum(v[i]*Av[i] for i in range(n))
+        vals.append(lam)
+        for i in range(n):
+            for j in range(n):
+                residual[i][j] -= lam*v[i]*v[j]
+    return sorted(vals, key=lambda z: (z.real if isinstance(z, complex) else z))
 
 def _poly_mul(p, q):
     """Multiply two polynomials (coefficient lists, highest degree first)."""
@@ -3536,13 +3672,35 @@ _timezone_offsets = {"UTC": 0, "GMT": 0, "EST": -5, "EDT": -4, "CST": -6, "CDT":
     "NZDT": 13, "NZST": 12, "WAT": 1, "CAT": 2, "EAT": 3}
 
 def _timezone_convert(hour, from_tz, to_tz):
+    """跨时区小时换算。支持缩写(UTC/EST/CST_CHINA...)和 IANA 时区名
+    (Asia/Shanghai, America/New_York...)，IANA 按当前日期含夏令时。"""
+    import datetime as _dt
+    now = _dt.datetime.now()
     fo = _timezone_offsets.get(from_tz.upper())
+    if fo is None:
+        fo = _iana_utc_offset(from_tz, now)
     to = _timezone_offsets.get(to_tz.upper())
+    if to is None:
+        to = _iana_utc_offset(to_tz, now)
     if fo is None:
         raise ValueError("Unknown timezone: %s" % from_tz)
     if to is None:
         raise ValueError("Unknown timezone: %s" % to_tz)
     return (hour - fo + to) % 24
+
+
+def _iana_utc_offset(tz_name, dt):
+    """IANA 时区在给定时刻的 UTC 偏移(小时)。zoneinfo 优先，pytz 兜底。"""
+    try:
+        from zoneinfo import ZoneInfo
+        return ZoneInfo(tz_name).utcoffset(dt).total_seconds()/3600.0
+    except Exception:
+        pass
+    try:
+        import pytz
+        return pytz.timezone(tz_name).utcoffset(dt).total_seconds()/3600.0
+    except Exception:
+        return None
 
 def _macronutrients(weight_kg, activity="moderate"):
     factors = {"sedentary": 28, "light": 30, "moderate": 33, "active": 36, "very_active": 40}
@@ -3771,9 +3929,10 @@ def _visibility_at(distance_km, eye_height):
     return max(0, target)
 
 def _pressure_at(altitude_m):
-    """Standard atmospheric pressure (hPa) at given altitude (m).
-    Using barometric formula for ISA (International Standard Atmosphere)."""
-    P0 = 1013.25
+    """Standard atmospheric pressure (Pa) at given altitude (m).
+    Using barometric formula for ISA (International Standard Atmosphere).
+    海平面 101325 Pa；与 PHYSICAL_CONSTANTS['atm'] 同口径。"""
+    P0 = 101325.0
     T0 = 288.15
     L = 0.0065
     R = 8.3144598
@@ -3926,15 +4085,25 @@ def _timezone_at(lat, lon):
     return offset
 
 def _dst_status(lat, lon, date_str):
-    """Check if a location is likely in DST on a given date.
-    Simplified: Northern hemisphere countries typically have DST Apr-Oct,
-    Southern Oct-Mar. Returns boolean."""
+    """粗略判断某地当天是否夏令时（仅经纬度输入时使用，忽略政治边界）。
+    已排除东亚/南亚无夏令时区域（中国/日本/韩国/印度/东南亚）。
+    需要精确结果请用 dst_status_tz(tz_name, date_str)。"""
     import datetime
     try:
         d = datetime.datetime.strptime(date_str, "%Y-%m-%d")
     except:
         return False
     month = d.month
+    # 东亚/南亚无夏令时区域（粗框，含蒙古挖空）
+    if 68 <= lon <= 154 and -11 <= lat <= 54:
+        in_china = (73 <= lon <= 135 and 18 <= lat <= 54
+                    and (lat <= 42 or lon <= 87.5 or lon >= 119.9))
+        in_japan = (122 <= lon <= 154 and 24 <= lat <= 46)
+        in_korea = (124 <= lon <= 132 and 33 <= lat <= 44)
+        in_india = (68 <= lon <= 98 and 6 <= lat <= 37)
+        in_seasia = (95 <= lon <= 142 and -11 <= lat <= 21)
+        if in_china or in_japan or in_korea or in_india or in_seasia:
+            return False
     if lat > 0:  # Northern hemisphere
         # Most northern DST: Mar-Nov
         if 4 <= month <= 10:
@@ -3949,6 +4118,25 @@ def _dst_status(lat, lon, date_str):
         if 10 <= month or month <= 3:
             return True
         return False
+
+
+def _dst_status_tz(tz_name, date_str):
+    """精确夏令时判断：IANA 时区名 + 日期。zoneinfo 优先，pytz 兜底。"""
+    import datetime as _dt
+    try:
+        d = _dt.datetime.strptime(date_str, "%Y-%m-%d")
+    except Exception:
+        return False
+    try:
+        from zoneinfo import ZoneInfo
+        return bool(ZoneInfo(tz_name).dst(d))
+    except Exception:
+        pass
+    try:
+        import pytz
+        return bool(pytz.timezone(tz_name).dst(d))
+    except Exception:
+        return None
 
 # ── Great circle interpolation ──
 
@@ -4417,9 +4605,17 @@ def _erfc(x):
 
 # ── Matrix eigenvectors (power iteration with deflation) ──
 def _matrix_eigenvectors(A, max_iter=100):
-    """Return all eigenvalues and eigenvectors via power iteration + deflation.
-    Returns list of {eigenvalue, eigenvector} for an n×n matrix."""
+    """全部特征值+特征向量。
+    对称矩阵用 Jacobi（精确）；非对称回退幂法+消去（近似）。
+    返回 [{"eigenvalue":..., "eigenvector":[...]}, ...]。"""
     n = len(A)
+    if n == 0:
+        return []
+    if n == 1:
+        return [{"eigenvalue": float(A[0][0]), "eigenvector": [1.0]}]
+    sym = all(abs(A[i][j] - A[j][i]) < 1e-12 for i in range(n) for j in range(n))
+    if sym:
+        return [{"eigenvalue": ev, "eigenvector": vec} for ev, vec in _jacobi_eigen(A, max_iter)]
     residual = [row[:] for row in A]
     results = []
     for _ in range(n):
@@ -4810,7 +5006,7 @@ _MATH_NAMESPACE = {
     "bell": _bell, "multinomial": _multinomial,
 
     # ── Sequences / Series ──
-    "fib": lambda n:__fib(n), "lucas": _lucas,
+    "fib": lambda n: (__fib(n+1)[-1] if n >= 0 else 0), "fib_seq": __fib, "lucas": _lucas,
     "arithmetic_sum": _arithmetic_sum,
     "geometric_sum": _geometric_sum,
 
@@ -5074,6 +5270,7 @@ _MATH_NAMESPACE = {
     "tip": _tip, "tip_split": _tip_split,
     "discount": _discount, "tax": _tax,
     "age": _age, "heart_rate_zones": _hr_zones,
+    "time_diff": _time_diff,
     "pace": _pace, "running_pace": _run_pace,
     "calories_burned": _calories_burned,
     "fuel_economy": _fuel_economy,
@@ -5090,6 +5287,7 @@ _MATH_NAMESPACE = {
     "depreciation_declining": _depr_declining,
     "inflation_adjust": _inflation_adj,
     "annuity": _annuity, "perpetuity": _perpetuity,
+    "perpetuity_payment": _perpetuity_payment,
     "dividend_yield": _dividend_yield,
     "pe_ratio": _pe_ratio,
     "sma": _sma, "ema": _ema,
@@ -5267,6 +5465,7 @@ _MATH_NAMESPACE = {
     # ── Everyday ──
     "equal_principal_loan": _equal_principal_loan,
     "mortgage_total_interest": _mortgage_total_interest,
+    "loan": _loan,
     "password_entropy": _password_entropy,
     "cooking_convert": _cooking_convert,
     "add_days": _add_days,
@@ -5385,6 +5584,7 @@ _MATH_NAMESPACE = {
     "blue_hour": _blue_hour,
     "timezone_at": _timezone_at,
     "dst_status": _dst_status,
+    "dst_status_tz": _dst_status_tz,
     "great_circle_points": _great_circle_points,
     "crossing_antimeridian": _crossing_antimeridian,
     "moon_phase_detail": _moon_phase_detail,
@@ -5410,7 +5610,7 @@ _MATH_NAMESPACE = {
     "spearman": _spearman, "kendall_tau": _kendall_tau,
     "implied_volatility": _implied_volatility,
     "log_base": _log_base,
-    "fibonacci": lambda n:__fib(n),
+    "fibonacci": lambda n: (__fib(n+1)[-1] if n >= 0 else 0),
 }
 
 _NAMESPACE_KEYS = set(_MATH_NAMESPACE.keys())
@@ -5419,6 +5619,8 @@ _NAMESPACE_KEYS = set(_MATH_NAMESPACE.keys())
 # ── Simple eval (referenced by namespace) ──
 
 def _simple_eval(expr):
+    if "__" in expr:
+        return "Error: blocked syntax (__)"
     try: return eval(expr, {"__builtins__":{}}, _MATH_NAMESPACE)
     except Exception as e: return f"Error: {e}"
 
@@ -5534,6 +5736,10 @@ def calculate(expression, precision=10, mode="auto"):
         sanitized = expression.replace("true", "True").replace("false", "False")
         # Override ^ operator (calculator convention: ^ means power)
         sanitized = _caret_to_pow(sanitized)
+        # Sandbox hardening: 阻止 dunder 属性链(().__class__ 等 Python 沙箱逃逸)
+        if "__" in sanitized:
+            return json.dumps({"result": None, "type": "error",
+                               "error": "Error: 表达式包含受限语法(__)，已阻止"})
 
         if mode == "deg":
             ns["sin"] = lambda x:math.sin(math.radians(x))

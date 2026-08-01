@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit
 fun createCalculatorTool(context: Context): Tool = Tool(
     name = "calculator",
     description = "" +
-        "Mathematical calculator with 800+ functions. Use this tool for complex or multi-step computations that cannot be done mentally.\n" +
+        "Mathematical calculator with 700+ functions. Use this tool for complex or multi-step computations that cannot be done mentally.\n" +
         "Simple arithmetic should be answered directly without calling this tool.\n\n" +
         "Use this tool when you need to:\n" +
         "- Complex math: physics formulas, finance (NPV, IRR, Black-Scholes), statistics (ANOVA, PCA, regression)\n" +
