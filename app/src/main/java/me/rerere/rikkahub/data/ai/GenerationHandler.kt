@@ -133,7 +133,10 @@ class GenerationHandler(
                         if (assistant.tavernData != null) {
                             assistant.assembleContext(
                                 userName = settings.displaySetting.userNickname.ifBlank { "User" },
-                                personaDesc = personaDesc ?: ""
+                                personaDesc = personaDesc ?: "",
+                                personaTitle = persona?.title ?: "",
+                                personaPosition = persona?.position
+                                    ?: me.rerere.rikkahub.data.model.PersonaInjectionPosition.AFTER_SYSTEM,
                             )
                         } else if (personaDesc != null) {
                             val personaLabel = persona?.title?.ifBlank { persona?.name } ?: "User"
@@ -542,7 +545,10 @@ class GenerationHandler(
                             if (assistant.tavernData != null) {
                                 assistant.assembleContext(
                                     userName = settings.displaySetting.userNickname.ifBlank { "User" },
-                                    personaDesc = personaDesc ?: ""
+                                    personaDesc = personaDesc ?: "",
+                                    personaTitle = persona?.title ?: "",
+                                    personaPosition = persona?.position
+                                        ?: me.rerere.rikkahub.data.model.PersonaInjectionPosition.AFTER_SYSTEM,
                                 )
                             } else if (personaDesc != null) {
                                 val personaLabel = persona?.title?.ifBlank { persona?.name } ?: "User"

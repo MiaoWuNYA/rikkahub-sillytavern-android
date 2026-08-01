@@ -410,18 +410,35 @@ val DEFAULT_CONTEXT_TEMPLATE = """
  * 展开 ADF 风格宏: {{char}}, {{user}}, {{description}}, {{personality}},
  *   {{scenario}}, {{mesExamples}}, {{system}}
  */
-fun Assistant.assembleContext(userName: String, personaDesc: String): String {
+fun Assistant.assembleContext(
+    userName: String,
+    personaDesc: String,
+    personaTitle: String = "",
+    personaPosition: PersonaInjectionPosition = PersonaInjectionPosition.AFTER_SYSTEM,
+): String {
     val template = this.contextTemplate.ifBlank { DEFAULT_CONTEXT_TEMPLATE }
     val tav = this.tavernData
-    
-    return template
+    val personaBlock = if (personaDesc.isNotBlank()) {
+        "[User Persona: ${personaTitle.ifBlank { "User" }}]\n$personaDesc"
+    } else ""
+
+    var result = template
         .replace("{{char}}", this.name)
         .replace("{{user}}", userName)
-        .replace("{{persona}}", personaDesc)
+        .replace("{{persona}}", personaBlock)
         .replace("{{system}}", tav?.systemPrompt ?: this.systemPrompt.take(200))
         .replace("{{description}}", tav?.description ?: "")
         .replace("{{personality}}", tav?.personality ?: "")
         .replace("{{scenario}}", tav?.scenario ?: "")
         .replace("{{mesExamples}}", tav?.mesExample ?: "")
         .replace("{{original}}", this.systemPrompt)
+
+    // 模板未使用 {{persona}} 宏时，按人设位置自动注入（对齐酒馆 persona 注入）
+    if (personaBlock.isNotEmpty() && !template.contains("{{persona}}")) {
+        result = when (personaPosition) {
+            PersonaInjectionPosition.BEFORE_SYSTEM -> "$personaBlock\n\n$result"
+            else -> "$result\n\n$personaBlock"
+        }
+    }
+    return result
 }
