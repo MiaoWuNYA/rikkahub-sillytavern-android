@@ -289,8 +289,10 @@ def _western_astro(year,month,day,hour,tz,lat,lon,minute=0,
                 at=(partner_year, partner_month or month, partner_day or day,
                     hour if partner_hour is None else partner_hour,
                     partner_minute or 0))
-            pl=float(partner_lat) if partner_lat else lat or 0
-            pn=float(partner_lon) if partner_lon else lon or 0
+            # is not None 判断：partner 出生在赤道(0)/格林尼治(0)时
+            # 不能被 falsy 吞掉而错误回退成本人坐标
+            pl = float(partner_lat) if partner_lat is not None else (lat or 0)
+            pn = float(partner_lon) if partner_lon is not None else (lon or 0)
             jdB = compute_jd(partner_year, partner_month or month, partner_day or day,
                              hour if partner_hour is None else partner_hour,
                              partner_minute or 0, pt)

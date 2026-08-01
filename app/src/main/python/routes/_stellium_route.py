@@ -571,7 +571,9 @@ def _stellium(
                 partner_minute or 0, partner_tz or tz,
             )
             partner = _chart(
-                p_dt, partner_lat or lat, partner_lon or lon,
+                p_dt,
+                partner_lat if partner_lat is not None else lat,
+                partner_lon if partner_lon is not None else lon,
                 partner_tz or tz, house_system,
             )
             from stellium.core.multichart import MultiChartBuilder
