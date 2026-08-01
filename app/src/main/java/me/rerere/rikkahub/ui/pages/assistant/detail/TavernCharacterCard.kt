@@ -926,6 +926,7 @@ private fun EntryEditor(
     var depth by remember(entry.id) { mutableStateOf(entry.depth.toString()) }
     var caseSensitive by remember(entry.id) { mutableStateOf(entry.caseSensitive) }
     var useRegex by remember(entry.id) { mutableStateOf(entry.useRegex) }
+    var matchWholeWords by remember(entry.id) { mutableStateOf(entry.matchWholeWords) }
     var groupStr by remember(entry.id) { mutableStateOf(entry.group) }
     var groupWeight by remember(entry.id) { mutableStateOf(entry.groupWeight.toString()) }
     var groupOverride by remember(entry.id) { mutableStateOf(entry.groupOverride) }
@@ -1113,6 +1114,8 @@ private fun EntryEditor(
                         label = { Text("大小写(Case Sensitive)", style = MaterialTheme.typography.labelSmall) })
                     FilterChip(selected = useRegex, onClick = { useRegex = !useRegex },
                         label = { Text("正则(Use Regex)", style = MaterialTheme.typography.labelSmall) })
+                    FilterChip(selected = matchWholeWords, onClick = { matchWholeWords = !matchWholeWords },
+                        label = { Text("整词(Whole Words)", style = MaterialTheme.typography.labelSmall) })
                     FilterChip(selected = groupOverride, onClick = { groupOverride = !groupOverride },
                         label = { Text("覆盖同组(Group Override)", style = MaterialTheme.typography.labelSmall) })
                 }
@@ -1188,6 +1191,7 @@ private fun EntryEditor(
                     scanDepth = scanDepthStr.toIntOrNull() ?: 1000,
                     caseSensitive = caseSensitive,
                     useRegex = useRegex,
+                    matchWholeWords = matchWholeWords,
                     group = groupStr,
                     groupWeight = groupWeight.toIntOrNull() ?: 100,
                     groupOverride = groupOverride,
