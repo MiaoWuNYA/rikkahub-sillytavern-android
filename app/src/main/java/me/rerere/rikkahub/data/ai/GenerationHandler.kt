@@ -96,7 +96,6 @@ class GenerationHandler(
         name.startsWith("execute_python") -> "🔧 Python → 正在执行代码..."
         name.startsWith("execute_command") -> "🔧 Shell → 正在执行命令..."
         name == "file" -> "🔧 文件 → 正在操作..."
-        name.startsWith("data_process") -> "🔧 数据 → 正在处理..."
         name.startsWith("database_") -> "🔧 数据库 → 正在查询..."
         name.startsWith("search_web") || name.startsWith("scrape_") -> "🔧 搜索 → 正在搜索..."
         name.startsWith("convert_file") -> "🔧 转换 → 正在转换格式..."

@@ -84,10 +84,6 @@ sealed class LocalToolOption {
     data object AssetGenerator : LocalToolOption()
 
     @Serializable
-    @SerialName("data_process")
-    data object DataProcess : LocalToolOption()
-
-    @Serializable
     @SerialName("file_tools")
     data object FileTools : LocalToolOption()
 

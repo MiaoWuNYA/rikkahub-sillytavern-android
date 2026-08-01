@@ -71,7 +71,6 @@ import me.rerere.rikkahub.data.ai.tools.createSearchTools
 import me.rerere.rikkahub.data.ai.tools.createWorkspaceTools
 import me.rerere.rikkahub.data.ai.tools.createSkillTools
 import me.rerere.rikkahub.data.ai.tools.createAssetTool
-import me.rerere.rikkahub.data.ai.tools.createDataProcessTool
 import me.rerere.rikkahub.data.ai.tools.createFileTools
 import me.rerere.rikkahub.data.ai.tools.createShellTools
 import me.rerere.rikkahub.data.ai.tools.createPythonTool
@@ -621,9 +620,6 @@ class ChatService(
                     }
                     if (assistant.localTools.contains(LocalToolOption.AssetGenerator)) {
                         add(createAssetTool(context.filesDir.absolutePath))
-                    }
-                    if (assistant.localTools.contains(LocalToolOption.DataProcess)) {
-                        add(createDataProcessTool())
                     }
                     if (assistant.enableWebSearch) {
                         addAll(createSearchTools(settings))

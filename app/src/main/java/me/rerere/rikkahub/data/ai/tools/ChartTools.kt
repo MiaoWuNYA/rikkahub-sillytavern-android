@@ -26,7 +26,7 @@ fun createAssetTool(saveDir: String): Tool = Tool(
         "- timeline: SVG timeline from chronological events\n\n" +
         "When NOT to use:\n" +
         "- Editing existing files (use file tool)\n" +
-        "- Data processing (use data_process or convert_file)\n\n" +
+        "- Data processing (use convert_file)\n\n" +
         "Args:\n" +
         "- type: Asset type (required)\n" +
         "- Other params vary by type; see per-param descriptions",

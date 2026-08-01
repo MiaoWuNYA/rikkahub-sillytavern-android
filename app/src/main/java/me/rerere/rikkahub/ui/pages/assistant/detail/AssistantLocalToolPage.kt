@@ -417,16 +417,6 @@ private fun AssistantLocalToolContent(
                 }
             )
             item(
-                headlineContent = { Text("数据处理") },
-                supportingContent = { Text("允许 AI 格式化 JSON、编码解码、比较文本差异等") },
-                trailingContent = {
-                    Switch(
-                        checked = assistant.localTools.contains(LocalToolOption.DataProcess),
-                        onCheckedChange = { toggleLocalTool(LocalToolOption.DataProcess, it) }
-                    )
-                }
-            )
-            item(
                 headlineContent = { Text("文件工具") },
                 supportingContent = { Text("允许 AI 读取、写入、搜索设备文件") },
                 trailingContent = {
