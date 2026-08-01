@@ -154,7 +154,6 @@ class GenerationHandler(
                 appendLine("Web → web_search / web_fetch")
                 appendLine("GitHub → github_tool")
                 appendLine("Memory → memory_tool")
-                appendLine("Sub-agent → sub_agent (complex multi-step)")
                 appendLine("</tool_selection>")
                 appendLine()
                 appendLine("<work_ethic>")

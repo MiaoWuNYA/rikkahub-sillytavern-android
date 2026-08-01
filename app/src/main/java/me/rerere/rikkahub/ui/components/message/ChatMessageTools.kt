@@ -130,7 +130,6 @@ private object ToolNames {
     const val PRESENT_FILE = "present_file"
     const val CREATE_ASSET = "create_asset"
     const val EVAL_JS = "eval_javascript"
-    const val SUB_AGENT = "sub_agent"
 }
 
 private object MemoryActions {
@@ -170,7 +169,6 @@ private fun getToolIcon(toolName: String, action: String?) = when (toolName) {
     ToolNames.FILE_SEARCH -> HugeIcons.AiSearch02
     ToolNames.CREATE_ASSET -> HugeIcons.AiMagic
     ToolNames.EVAL_JS -> HugeIcons.Code
-    ToolNames.SUB_AGENT -> HugeIcons.Brain02
     else -> HugeIcons.Tools
 }
 
