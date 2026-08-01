@@ -413,6 +413,8 @@ jobs:
           ENTRYEOF
           fi
 
+          # Patch planetary-hour weekday: UTC天文日跨午夜时区会错一天
+          python3 ${GITHUB_WORKSPACE}/ci/patch_caelus_planetary_hour.py /tmp/caelus_build/package
           npx esbuild caelus-entry.mjs --bundle --platform=node --format=iife --global-name=Caelus --target=es2020 --tree-shaking=false --outfile=caelus-engine.js 2>&1 | tail -5
           cp caelus-engine.js ${GITHUB_WORKSPACE}/app/src/main/assets/
           echo "Caelus JS engine compiled (full-data): $(wc -c < caelus-engine.js) bytes"

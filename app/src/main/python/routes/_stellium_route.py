@@ -148,6 +148,106 @@ def _build_dt(year, month, day, hour, minute, tz_name):
     return ChartDateTime(utc, jd, aware)
 
 
+def _fix_accidental_scores(chart_dict):
+    """stellium 引擎 bug：accidental_dignities 顶层 score 初始化为 0 后
+    从未回填（实际分在 by_system/universal 里）。按引擎 getter 的加法
+    （by_system[默认宫制] + universal）回填，不改动其余结构。"""
+    acc = (chart_dict.get("metadata") or {}).get("accidental_dignities") or {}
+    default_sys = chart_dict.get("default_house_system") or "Placidus"
+    for planet_data in acc.values():
+        if not isinstance(planet_data, dict):
+            continue
+        by_sys = (planet_data.get("by_system") or {}).get(default_sys) or {}
+        uni = planet_data.get("universal") or {}
+        planet_data["score"] = (by_sys.get("score") or 0) + (uni.get("score") or 0)
+    return chart_dict
+
+
+def _serialize_antiscia(chart_dict):
+    """stellium to_dict 对 metadata.antiscia 的 conjunction 对象不做 JSON
+    序列化（引擎 bug：AntisciaConjunction 是 dataclass）。统一转成纯 dict。"""
+    ant = (chart_dict.get("metadata") or {}).get("antiscia")
+    if not isinstance(ant, dict):
+        return chart_dict
+
+    def _ser(conjs):
+        out = []
+        for c in conjs or []:
+            out.append({
+                "planet1": getattr(c, "planet1", None),
+                "planet2": getattr(c, "planet2", None),
+                "orb": getattr(c, "orb", None),
+                "is_applying": getattr(c, "is_applying", None),
+                "antiscion_longitude": getattr(c, "antiscion_longitude", None),
+                "planet2_longitude": getattr(c, "planet2_longitude", None),
+                "description": getattr(c, "description", None),
+            })
+        return out
+
+    ant["conjunctions"] = _ser(ant.get("conjunctions"))
+    ant["contra_conjunctions"] = _ser(ant.get("contra_conjunctions"))
+    return chart_dict
+
+
+def _fix_draconic_metadata(draconic_chart):
+    """stellium draconic() 只旋转 positions/house_systems，metadata 里
+    dignities/accidental_dignities/antiscia/house_placements 仍复用主盘
+    （龙首盘太阳已转到处女座，尊贵表却还写狮子入庙）。这里用 stellium
+    官方组件对旋转后数据重算，确保输出与龙首盘 positions 一致。"""
+    from stellium.components.dignity import (
+        DignityComponent,
+        AccidentalDignityComponent,
+    )
+    from stellium.components.antiscia import AntisciaCalculator
+    from stellium.utils.houses import find_house_for_longitude
+
+    positions = list(draconic_chart.positions)
+    house_systems_map = dict(draconic_chart.house_systems)
+
+    # 1. 落宫：按旋转后的 cusps 重算
+    house_placements_map = {}
+    _house_types = ("planet", "node", "asteroid", "point", "angle", "arabic_part")
+    for sys_name, hc in house_systems_map.items():
+        cusps = tuple(hc.cusps)
+        house_placements_map[sys_name] = {}
+        for pos in positions:
+            if pos.object_type.value in _house_types:
+                house_placements_map[sys_name][pos.name] = find_house_for_longitude(
+                    pos.longitude, cusps
+                )
+
+    # 2-3. 本命尊贵(essential)+互容+sect、偶然尊贵(accidental)
+    dcomp = DignityComponent()
+    dcomp.calculate(
+        draconic_chart.datetime, draconic_chart.location, positions,
+        house_systems_map, house_placements_map,
+    )
+    acomp = AccidentalDignityComponent()
+    acomp.calculate(
+        draconic_chart.datetime, draconic_chart.location, positions,
+        house_systems_map, house_placements_map,
+    )
+
+    # 4. 映点/反映点（基于旋转后经度）
+    anticomp = AntisciaCalculator()
+    anticomp.calculate(
+        draconic_chart.datetime, draconic_chart.location, positions,
+        house_systems_map, house_placements_map,
+    )
+
+    out = draconic_chart.to_dict()
+    out["house_placements"] = house_placements_map
+    out["metadata"]["dignities"] = dcomp.get_metadata()
+    out["metadata"]["accidental_dignities"] = acomp.get_metadata()
+    ant_meta = anticomp.get_metadata()
+    out["metadata"]["antiscia"] = {
+        "conjunctions": ant_meta.get("conjunctions") or [],
+        "contra_conjunctions": ant_meta.get("contra_conjunctions") or [],
+        "orb": ant_meta.get("orb", 1.5),
+    }
+    return _serialize_antiscia(_fix_accidental_scores(out))
+
+
 def _chart(chart_dt, lat, lon, tz_name, house_system):
     """Build a CalculatedChart via the component-based builder pattern."""
     from stellium.core.builder import ChartBuilder
@@ -203,7 +303,7 @@ def _stellium(
     # ── 1. Base chart (always) ──
     chart_dt = _build_dt(year, month, day, hour, minute, tz)
     chart = _chart(chart_dt, lat, lon, tz, house_system)
-    result = chart.to_dict()
+    result = _serialize_antiscia(_fix_accidental_scores(chart.to_dict()))
     result["system"] = "stellium"
     result["prompt_text"] = chart.to_prompt_text()
     result["house_system"] = house_system
@@ -298,7 +398,7 @@ def _stellium(
 
     # ── 6. Draconic chart (always) ──
     try:
-        result["draconic"] = chart.draconic().to_dict()
+        result["draconic"] = _fix_draconic_metadata(chart.draconic())
     except Exception as e:
         result["draconic_error"] = str(e)
 
@@ -418,6 +518,9 @@ def _stellium(
     # ── 10. Planetary Hour of Birth (always) ──
     try:
         from stellium.electional.planetary_hours import get_planetary_hour
+        # stellium 的 _datetime_to_jd 把入参按 UTC 解释，且 get_planetary_hour
+        # 有 today/yesterday/tomorrow 三查（日期按经度近似本地日），
+        # 所以这里必须传 UTC 时刻；传本地 aware 会被当 UTC 错 8 小时。
         ph_dt = chart.datetime.utc_datetime
         ph = get_planetary_hour(ph_dt, chart.location.latitude, chart.location.longitude)
         result["planetary_hour"] = {
