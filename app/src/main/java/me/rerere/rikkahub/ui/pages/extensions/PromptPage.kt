@@ -8,6 +8,7 @@ import me.rerere.hugeicons.stroke.FileDownload
 import me.rerere.hugeicons.stroke.FileImport
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.Tools
+import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.hugeicons.stroke.Share03
 import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.MagicWand01

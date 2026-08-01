@@ -9,6 +9,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.Lorebook
@@ -168,13 +169,13 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
                         useRegex = false, // SillyTavern 格式不支持 useRegex
                         caseSensitive = entry.caseSensitive ?: false,
                         matchWholeWords = entry.extensions
-                            ?.get("match_whole_words")?.jsonPrimitive?.booleanOrNull ?: false,
+                            ?.jsonObject?.get("match_whole_words")?.jsonPrimitive?.booleanOrNull ?: false,
                         excludeRecursion = entry.extensions
-                            ?.get("exclude_recursion")?.jsonPrimitive?.booleanOrNull ?: false,
+                            ?.jsonObject?.get("exclude_recursion")?.jsonPrimitive?.booleanOrNull ?: false,
                         preventRecursion = entry.extensions
-                            ?.get("prevent_recursion")?.jsonPrimitive?.booleanOrNull ?: false,
+                            ?.jsonObject?.get("prevent_recursion")?.jsonPrimitive?.booleanOrNull ?: false,
                         delayUntilRecursion = entry.extensions
-                            ?.get("delay_until_recursion")?.jsonPrimitive?.booleanOrNull ?: false,
+                            ?.jsonObject?.get("delay_until_recursion")?.jsonPrimitive?.booleanOrNull ?: false,
                         scanDepth = entry.scanDepth ?: 4,
                         constantActive = entry.constant,
                     )

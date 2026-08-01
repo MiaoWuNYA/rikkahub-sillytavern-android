@@ -179,7 +179,12 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
                 parts = it.parts.map { part ->
                     if (part is UIMessagePart.Text) {
                         part.copy(
-                            text = replacePlaceholders(text = part.text, ctx = ctx, settingsStore = settingsStore)
+                            text = replacePlaceholders(
+                                text = part.text,
+                                ctx = ctx,
+                                settingsStore = settingsStore,
+                                messages = messages,
+                            )
                         )
                     } else {
                         part
@@ -192,7 +197,8 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
     private fun replacePlaceholders(
         text: String,
         ctx: TransformerContext,
-        settingsStore: SettingsStore
+        settingsStore: SettingsStore,
+        messages: List<UIMessage>,
     ): String {
         var result = text
 
