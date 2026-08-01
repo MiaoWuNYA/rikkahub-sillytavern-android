@@ -155,10 +155,13 @@ fun Route.conversationRoutes(
                         // Include generation state in the list stream key so stop/start generation
                         // can invalidate sidebar list even when conversation content isn't persisted.
                         conversations.map { conversation ->
-                            Triple(
-                                conversation.id,
-                                conversation.updateAt.toEpochMilli(),
-                                generationJobs[conversation.id] != null
+                            ConversationListFingerprint(
+                                id = conversation.id,
+                                updateAtEpochMillis = conversation.updateAt.toEpochMilli(),
+                                isGenerating = generationJobs[conversation.id] != null,
+                                // 移动文件夹只改 folder_id 不更新 updateAt，
+                                // 指纹带上 folderId 才能触发网页端刷新文件夹分组
+                                folderId = conversation.folderId?.toString(),
                             )
                         }
                     }.distinctUntilChanged().collect {
@@ -383,7 +386,7 @@ fun Route.conversationRoutes(
             chatService.addConversationReference(uuid)
 
             heartbeat {
-                period = 1.seconds
+                period = 15.seconds
             }
 
             try {
@@ -467,6 +470,13 @@ private sealed interface ConversationStreamPayload {
     data class Conversation(val value: ConversationDto) : ConversationStreamPayload
     data class BatchErrors(val messages: List<String>) : ConversationStreamPayload
 }
+
+private data class ConversationListFingerprint(
+    val id: Uuid,
+    val updateAtEpochMillis: Long,
+    val isGenerating: Boolean,
+    val folderId: String?,
+)
 
 private data class ConversationInjectionIds(
     val modeInjectionIds: Set<Uuid>,
