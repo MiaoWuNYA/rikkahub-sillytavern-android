@@ -240,24 +240,16 @@ fun AuthorsNotePage() {
 
 private val authorsNotePresets = listOf(
     Pair(
-        "RP格式规范",
-        "[Respond in this exact formatting: \"speech\" for dialogue, *action and thought* for narration.]\n台词一律用引号括起，动作、神态和内心活动用斜体描述。\n描写要有画面感：环境、表情、肢体语言，避免平铺直叙。\n不要替 {{user}} 说话或行动。",
+        "沉浸式扮演",
+        "[Stay fully in character as {{char}}. Never break character, never mention AI, prompts, or rules.]\n用第一人称扮演角色，通过对话、动作和神态展现性格，而不是直接叙述人设。\n台词用引号，动作与心理用斜体。\n只叙述 {{char}} 与配角的想法、感受、行动和对话，绝不替 {{user}} 说话、行动或决定。\n角色拥有自己的目标、立场和情绪，可以不同意、拒绝、怀疑，像真实的人一样自主行动。\n每个角色只能知道亲眼见过、亲耳听过或能合理推断的信息，不能全知。\n世界的行动可以作用于 {{user}}，但选择永远留给 {{user}}。",
     ),
     Pair(
-        "保持角色",
-        "[Stay fully in character as {{char}} and never break character.]\n始终用角色的视角、语气、知识范围和价值观思考和回应。\n不要跳出剧情解释规则、不要提及AI或提示词、不要替{{user}}决定。\n角色的情绪和反应要连贯自然，符合其背景设定。",
+        "叙事笔法",
+        "[Show, don't tell. Use concrete sensory description and natural-sounding dialogue.]\n用具体的动作、神态、环境和感官细节表达情绪与氛围，避免直接贴标签。\n对话与叙述均衡：避免一整段全是台词，也避免一整段干巴巴的流水账。\n避免 AI 腔：不重复同一句式、不总结上一轮、不写空洞的感叹和说教。\n每次回复都换一种写法，保持新鲜感，避免公式化套路。\n不要过度堆砌辞藻，节奏张弛有度。",
     ),
     Pair(
-        "推进剧情",
-        "[Advance the plot meaningfully in every reply. No stalling, no repetition.]\n每轮都要带来新信息、新细节或新转折，不总结上一轮、不复述用户原话。\n对话与叙事均衡：避免一整段全是台词或全是描写。\n结尾留下自然的钩子，让故事可以继续。",
-    ),
-    Pair(
-        "长度控制",
-        "[Write 2–4 paragraphs for this reply, roughly 200–400 tokens.]\n保证足够的细节和展开，但不要注水凑字数。\n根据剧情需要灵活调整：紧张场景可以精炼，重要场景给足篇幅。",
-    ),
-    Pair(
-        "场景连续",
-        "[Track the current scene: location, time of day, ongoing events, and character states.]\n保持场景连续性——环境、人物位置、已发生的事件和角色状态前后一致。\n不要让场景凭空消失或自相矛盾，同一地点同一时间的描写要吻合。\n需要转场时给出清晰交代，不要突然跳跃。",
+        "剧情节奏",
+        "[Advance the plot meaningfully. Track scene continuity and leave hooks.]\n每轮都要有新信息、新细节或新转折，不复述已知内容，不停留在原地。\n保持场景连续：地点、时间、人物位置、已发生事件和角色状态前后一致，转场交代清楚。\n按剧情需要控制篇幅：紧张场景精炼，重要场景给足展开；一般回复约 200–400 token。\n结尾留下自然的钩子或悬念，让对话可以继续。",
     ),
     Pair(
         "严肃正式",
