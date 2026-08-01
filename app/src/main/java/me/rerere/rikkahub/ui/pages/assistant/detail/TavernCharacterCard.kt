@@ -690,7 +690,12 @@ private fun EmbeddedGroupSettingsDialog(
             // 插入位置
             Text("插入位置(Position)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                listOf("角色前(Before Char)", "角色后(After Char)", "用户前(Before User)", "用户后(After User)", "@D深度(At Depth)").forEachIndexed { i, label ->
+                listOf(
+                    "系统前(Before System)", "系统后(After System)", "对话顶(Top/AuthNote)",
+                    "最新消息前(Before Latest)", "@D深度(At Depth)",
+                    "角色卡前(Before Char)", "角色卡后(After Char)",
+                    "对抗位(Antagonize)", "AI回复后(After Dialog)",
+                ).forEachIndexed { i, label ->
                     FilterChip(selected = position == i, onClick = { position = i },
                         label = { Text(label, style = MaterialTheme.typography.labelSmall) })
                 }
@@ -1024,7 +1029,12 @@ private fun EntryEditor(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    val posOptions = listOf("角色前(Before Char)", "角色后(After Char)", "用户前(Before User)", "用户后(After User)", "@D深度(At Depth)")
+                    val posOptions = listOf(
+                        "系统前(Before System)", "系统后(After System)", "对话顶(Top/AuthNote)",
+                        "最新消息前(Before Latest)", "@D深度(At Depth)",
+                        "角色卡前(Before Char)", "角色卡后(After Char)",
+                        "对抗位(Antagonize)", "AI回复后(After Dialog)",
+                    )
                     posOptions.forEachIndexed { i, label ->
                         FilterChip(
                             selected = position == i,
