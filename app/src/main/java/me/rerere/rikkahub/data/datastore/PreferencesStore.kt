@@ -147,6 +147,8 @@ class SettingsStore(
         val LOREBOOKS = stringPreferencesKey("lorebooks")
         val WORLD_INFO_BUDGET = intPreferencesKey("world_info_budget")
         val WORLD_INFO_MIN_ACTIVATIONS = intPreferencesKey("world_info_min_activations")
+        val WORLD_INFO_RECURSIVE = booleanPreferencesKey("world_info_recursive")
+        val WORLD_INFO_MAX_RECURSION_STEPS = intPreferencesKey("world_info_max_recursion_steps")
         val QUICK_MESSAGES = stringPreferencesKey("quick_messages")
 
         // 备份提醒
@@ -254,6 +256,8 @@ class SettingsStore(
                 } ?: emptyList(),
                 worldInfoBudget = preferences[WORLD_INFO_BUDGET] ?: 25,
                 worldInfoMinActivations = preferences[WORLD_INFO_MIN_ACTIVATIONS] ?: 0,
+                worldInfoRecursive = preferences[WORLD_INFO_RECURSIVE] ?: false,
+                worldInfoMaxRecursionSteps = preferences[WORLD_INFO_MAX_RECURSION_STEPS] ?: 0,
                 quickMessages = preferences[QUICK_MESSAGES]?.let {
                     JsonInstant.decodeFromString(it)
                 } ?: emptyList(),
@@ -439,6 +443,8 @@ class SettingsStore(
             preferences[LOREBOOKS] = JsonInstant.encodeToString(settings.lorebooks)
             preferences[WORLD_INFO_BUDGET] = settings.worldInfoBudget
             preferences[WORLD_INFO_MIN_ACTIVATIONS] = settings.worldInfoMinActivations
+            preferences[WORLD_INFO_RECURSIVE] = settings.worldInfoRecursive
+            preferences[WORLD_INFO_MAX_RECURSION_STEPS] = settings.worldInfoMaxRecursionSteps
             preferences[QUICK_MESSAGES] = JsonInstant.encodeToString(settings.quickMessages)
             preferences[WEB_SERVER_ENABLED] = settings.webServerEnabled
             preferences[WEB_SERVER_PORT] = settings.webServerPort
@@ -598,6 +604,8 @@ data class Settings(
     val lorebooks: List<Lorebook> = emptyList(),
     val worldInfoBudget: Int = 25,                  // 世界书单次注入条目预算（酒馆默认25）
     val worldInfoMinActivations: Int = 0,           // 世界书最少激活数（0=关闭，酒馆 min_activations）
+    val worldInfoRecursive: Boolean = false,        // 递归扫描（酒馆 world_info_recursive）
+    val worldInfoMaxRecursionSteps: Int = 0,        // 递归最大层数（0=不限制，酒馆 max_recursion_steps）
     val quickMessages: List<QuickMessage> = emptyList(),
     val customApiConfigs: List<CustomApiConfig> = DEFAULT_CUSTOM_API_CONFIGS,
     val personas: List<Persona> = DEFAULT_PERSONAS,

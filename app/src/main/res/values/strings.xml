@@ -470,6 +470,10 @@
   <string name="placeholder_battery_level">Battery Level</string>
   <string name="placeholder_char">Assistant Name</string>
   <string name="placeholder_current_date">Date</string>
+  <string name="placeholder_char_version">Character Version</string>
+  <string name="placeholder_creator_notes">Creator Notes</string>
+  <string name="placeholder_first_message">First Message</string>
+  <string name="placeholder_group">Group Members</string>
   <string name="placeholder_device_info">Device Info</string>
   <string name="placeholder_input">Current Input</string>
   <string name="placeholder_last_message">Last Message</string>
@@ -511,6 +515,11 @@
   <string name="prompt_page_lorebook_empty">No Lorebooks</string>
   <string name="prompt_page_lorebook_tab">Lorebook</string>
   <string name="prompt_page_match_whole_words">Match Whole Words</string>
+  <string name="prompt_page_exclude_recursion">Exclude From Recursion</string>
+  <string name="prompt_page_world_info_max_recursion_desc">Maximum recursion depth when scanning injected content (0 = unlimited, capped at 10)</string>
+  <string name="prompt_page_world_info_max_recursion_title">Max Recursion Steps</string>
+  <string name="prompt_page_world_info_recursive_desc">Scan injected lorebook content for more keywords, chaining related entries</string>
+  <string name="prompt_page_world_info_recursive_title">Recursive Scanning</string>
   <string name="prompt_page_mode_injection_empty">No mode injections</string>
   <string name="prompt_page_mode_injection_tab">Mode Injection</string>
   <string name="prompt_page_name">Name</string>

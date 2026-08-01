@@ -169,6 +169,8 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
                         caseSensitive = entry.caseSensitive ?: false,
                         matchWholeWords = entry.extensions
                             ?.get("match_whole_words")?.jsonPrimitive?.booleanOrNull ?: false,
+                        excludeRecursion = entry.extensions
+                            ?.get("exclude_recursion")?.jsonPrimitive?.booleanOrNull ?: false,
                         scanDepth = entry.scanDepth ?: 4,
                         constantActive = entry.constant,
                     )

@@ -1402,5 +1402,46 @@ class PromptInjectionTransformerTest {
 
         assertTrue(result.any { getMessageText(it).contains("Ancient lore injected") })
     }
+
+    @Test
+    fun `recursive scanning should chain related entries`() {
+        // 条目A: 关键词 alpha, 内容提到 beta（条目B的关键词）
+        val entryA = createRegexInjection(
+            id = Uuid.random(),
+            keywords = listOf("alpha"),
+            content = "Alpha lore mentions beta",
+        )
+        val entryB = createRegexInjection(
+            id = Uuid.random(),
+            keywords = listOf("beta"),
+            content = "Beta lore injected",
+        )
+
+        val messages = listOf(
+            UIMessage.system("System prompt"),
+            UIMessage.user("the alpha event"),
+        )
+
+        // 关闭递归：只注入 A
+        val plain = transformMessages(
+            messages = messages,
+            assistant = createAssistant(lorebookIds = setOf(Uuid.random())),
+            modeInjections = emptyList(),
+            lorebooks = listOf(createLorebook(id = Uuid.random(), entries = listOf(entryA, entryB))),
+        )
+        assertTrue(plain.any { getMessageText(it).contains("Alpha lore") })
+        assertFalse(plain.any { getMessageText(it).contains("Beta lore injected") })
+
+        // 开启递归：A 内容含 beta → 链式带出 B
+        val recursive = transformMessages(
+            messages = messages,
+            assistant = createAssistant(lorebookIds = setOf(Uuid.random())),
+            modeInjections = emptyList(),
+            lorebooks = listOf(createLorebook(id = Uuid.random(), entries = listOf(entryA, entryB))),
+            worldInfoRecursive = true,
+        )
+        assertTrue(recursive.any { getMessageText(it).contains("Alpha lore") })
+        assertTrue(recursive.any { getMessageText(it).contains("Beta lore injected") })
+    }
     // endregion
 }

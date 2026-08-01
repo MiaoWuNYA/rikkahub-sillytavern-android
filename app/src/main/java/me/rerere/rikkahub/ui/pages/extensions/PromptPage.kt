@@ -688,6 +688,36 @@ private fun LorebookTab(
                             textStyle = MaterialTheme.typography.bodyMedium,
                         )
                     }
+                    FormItem(
+                        label = { Text(stringResource(R.string.prompt_page_world_info_recursive_title)) },
+                        description = { Text(stringResource(R.string.prompt_page_world_info_recursive_desc)) }
+                    ) {
+                        Switch(
+                            checked = settings.worldInfoRecursive,
+                            onCheckedChange = {
+                                onSettingsUpdate(settings.copy(worldInfoRecursive = it))
+                            }
+                        )
+                    }
+                    if (settings.worldInfoRecursive) {
+                        FormItem(
+                            label = { Text(stringResource(R.string.prompt_page_world_info_max_recursion_title)) },
+                            description = { Text(stringResource(R.string.prompt_page_world_info_max_recursion_desc)) }
+                        ) {
+                            OutlinedTextField(
+                                value = settings.worldInfoMaxRecursionSteps.toString(),
+                                onValueChange = { v ->
+                                    v.toIntOrNull()?.let {
+                                        onSettingsUpdate(settings.copy(worldInfoMaxRecursionSteps = it.coerceIn(0, 20)))
+                                    }
+                                },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.width(90.dp),
+                                textStyle = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
                 }
             }
             if (lorebooks.isEmpty()) {
@@ -1788,6 +1818,16 @@ private fun RegexInjectionEditDialog(
                         Switch(
                             checked = entry.matchWholeWords,
                             onCheckedChange = { onEdit(entry.copy(matchWholeWords = it)) }
+                        )
+                    }
+                )
+
+                FormItem(
+                    label = { Text(stringResource(R.string.prompt_page_exclude_recursion)) },
+                    tail = {
+                        Switch(
+                            checked = entry.excludeRecursion,
+                            onCheckedChange = { onEdit(entry.copy(excludeRecursion = it)) }
                         )
                     }
                 )

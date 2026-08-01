@@ -244,6 +244,7 @@ sealed class PromptInjection {
         val sticky: Int = 0,                         // 激活后持续保留N轮（0=不粘）
         val cooldown: Int = 0,                          // 冷却轮数（0=无冷却）
         val delay: Int = 0,                             // 延迟激活轮数（0=立即，酒馆 extensions.delay）
+        val excludeRecursion: Boolean = false,          // 内容不参与递归扫描（酒馆 extensions.exclude_recursion）
         val useProbability: Boolean = true,              // 是否启用概率过滤（false=忽略probability直接触发）
     ) : PromptInjection()
 }

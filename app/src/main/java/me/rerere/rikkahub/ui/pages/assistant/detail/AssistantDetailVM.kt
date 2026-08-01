@@ -220,6 +220,7 @@ class AssistantDetailVM(
                     useRegex = e.useRegex,
                     caseSensitive = e.caseSensitive,
                     matchWholeWords = e.matchWholeWords,
+                    excludeRecursion = e.excludeRecursion,
                     scanDepth = e.scanDepth,
                     constantActive = e.constant,
                     selective = e.selective,

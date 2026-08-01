@@ -133,6 +133,23 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
         placeholder("lastMessage", { Text(stringResource(R.string.placeholder_last_message)) }) {
             it.messages.lastOrNull()?.let(::textOf) ?: ""
         }
+        placeholder("firstMessage", { Text(stringResource(R.string.placeholder_first_message)) }) {
+            it.assistant.tavernData?.firstMessage ?: ""
+        }
+        placeholder("creatorNotes", { Text(stringResource(R.string.placeholder_creator_notes)) }) {
+            it.assistant.tavernData?.creatorNotes ?: ""
+        }
+        placeholder("charVersion", { Text(stringResource(R.string.placeholder_char_version)) }) {
+            it.assistant.tavernData?.characterVersion ?: ""
+        }
+        placeholder("group", { Text(stringResource(R.string.placeholder_group)) }) {
+            val groups = it.settingsStore.settingsFlow.value.groupChats
+            val group = groups.firstOrNull { g -> it.assistant.id in g.memberIds }
+            group?.memberIds?.mapNotNull { memberId ->
+                it.settingsStore.settingsFlow.value.assistants
+                    .firstOrNull { a -> a.id == memberId }?.name
+            }?.joinToString(", ") ?: ""
+        }
     }
 
     private fun Temporal.toDateString() = DateTimeFormatter

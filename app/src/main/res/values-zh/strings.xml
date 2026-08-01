@@ -465,6 +465,10 @@
   <string name="placeholder_battery_level">电池电量</string>
   <string name="placeholder_char">助手名称</string>
   <string name="placeholder_current_date">日期</string>
+  <string name="placeholder_char_version">角色版本</string>
+  <string name="placeholder_creator_notes">作者备注</string>
+  <string name="placeholder_first_message">开场白</string>
+  <string name="placeholder_group">群组成员</string>
   <string name="placeholder_device_info">设备信息</string>
   <string name="placeholder_input">当前输入</string>
   <string name="placeholder_last_message">最后一条消息</string>
@@ -506,6 +510,11 @@
   <string name="prompt_page_lorebook_empty">暂无世界书</string>
   <string name="prompt_page_lorebook_tab">世界书</string>
   <string name="prompt_page_match_whole_words">整词匹配</string>
+  <string name="prompt_page_exclude_recursion">排除递归扫描</string>
+  <string name="prompt_page_world_info_max_recursion_desc">递归扫描最大层数（0=不限制，上限10）</string>
+  <string name="prompt_page_world_info_max_recursion_title">最大递归层数</string>
+  <string name="prompt_page_world_info_recursive_desc">对已注入的世界书内容再次扫描关键词，链式带出关联条目</string>
+  <string name="prompt_page_world_info_recursive_title">递归扫描</string>
   <string name="prompt_page_mode_injection_empty">暂无模式注入</string>
   <string name="prompt_page_mode_injection_tab">模式注入</string>
   <string name="prompt_page_name">名称</string>

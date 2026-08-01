@@ -67,6 +67,7 @@ class PromptVM(
                     disable = !injection.enabled,
                     caseSensitive = injection.caseSensitive,
                     matchWholeWords = injection.matchWholeWords,
+                    excludeRecursion = injection.excludeRecursion,
                     useRegex = injection.useRegex,
                     probability = injection.probability,
                     sticky = injection.sticky,

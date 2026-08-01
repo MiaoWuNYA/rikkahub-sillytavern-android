@@ -45,6 +45,8 @@ object PromptInjectionTransformer : InputMessageTransformer {
             authorNoteDepth = ctx.settings.authorNoteDepth,
             worldInfoBudget = ctx.settings.worldInfoBudget,
             worldInfoMinActivations = ctx.settings.worldInfoMinActivations,
+            worldInfoRecursive = ctx.settings.worldInfoRecursive,
+            worldInfoMaxRecursionSteps = ctx.settings.worldInfoMaxRecursionSteps,
         )
 
         return result
@@ -67,6 +69,8 @@ internal fun transformMessages(
     authorNoteDepth: Int = 4,
     worldInfoBudget: Int = 25,
     worldInfoMinActivations: Int = 0,
+    worldInfoRecursive: Boolean = false,
+    worldInfoMaxRecursionSteps: Int = 0,
 ): List<UIMessage> {
     // 收集所有需要注入的内容
     val injections = collectInjections(
@@ -80,6 +84,8 @@ internal fun transformMessages(
         cooldownEntries = cooldownEntries,
         worldInfoBudget = worldInfoBudget,
         worldInfoMinActivations = worldInfoMinActivations,
+        worldInfoRecursive = worldInfoRecursive,
+        worldInfoMaxRecursionSteps = worldInfoMaxRecursionSteps,
     )
 
     if (injections.isEmpty()) {
@@ -141,6 +147,8 @@ internal fun collectInjections(
     cooldownEntries: MutableMap<Uuid, Int> = mutableMapOf(),
     worldInfoBudget: Int = 25,
     worldInfoMinActivations: Int = 0,
+    worldInfoRecursive: Boolean = false,
+    worldInfoMaxRecursionSteps: Int = 0,
 ): List<PromptInjection> {
     val injections = mutableListOf<PromptInjection>()
     val effectiveModeInjectionIds = if (assistant.allowConversationPromptInjection) {
@@ -177,7 +185,10 @@ internal fun collectInjections(
         }.trim()
 
         // 扫描函数：对每条 Lorebook 检查触发并做同组权重选择
-        fun evaluateLorebooks(scanDepthOverride: Int? = null): List<PromptInjection.RegexInjection> {
+        fun evaluateLorebooks(
+            scanDepthOverride: Int? = null,
+            extraContext: String = "",
+        ): List<PromptInjection.RegexInjection> {
             val activated = mutableListOf<PromptInjection.RegexInjection>()
             enabledLorebooks.forEach { lorebook ->
                 val newlyTriggered = mutableListOf<PromptInjection.RegexInjection>()
@@ -198,10 +209,16 @@ internal fun collectInjections(
                     // 正常触发检查（min_activations 重扫时扩大扫描深度）
                     val depth = scanDepthOverride ?: entry.scanDepth
                     val chatContext = extractContextForMatching(nonSystemMessages, depth)
-                    val context = if (charScanContext.isNotEmpty()) {
-                        "$charScanContext\n$chatContext"
-                    } else {
-                        chatContext
+                    val context = buildString {
+                        if (charScanContext.isNotEmpty()) {
+                            append(charScanContext)
+                            appendLine()
+                        }
+                        if (extraContext.isNotEmpty()) {
+                            append(extraContext)
+                            appendLine()
+                        }
+                        append(chatContext)
                     }
                     if (entry.isTriggered(context)) {
                         newlyTriggered.add(entry)
@@ -249,6 +266,28 @@ internal fun collectInjections(
             val extra = evaluateLorebooks(scanDepthOverride = Int.MAX_VALUE)
                 .filter { it.id !in knownIds }
             activatedEntries = activatedEntries + extra
+        }
+
+        // 递归扫描（酒馆 world_info_recursive）：用已注入条目的内容再扫描关联条目
+        if (worldInfoRecursive) {
+            var recursionContext = activatedEntries
+                .filter { !it.excludeRecursion }
+                .joinToString("\n") { it.content }
+            var steps = 0
+            // 0 = 不限制，但加 10 层安全上限防止极端循环
+            val maxSteps = if (worldInfoMaxRecursionSteps > 0) worldInfoMaxRecursionSteps else 10
+            while (recursionContext.isNotBlank() && steps < maxSteps) {
+                steps++
+                val knownIds = activatedEntries.map { it.id }.toSet()
+                val newOnes = evaluateLorebooks(extraContext = recursionContext)
+                    .filter { it.id !in knownIds }
+                if (newOnes.isEmpty()) break
+                activatedEntries = activatedEntries + newOnes
+                recursionContext = newOnes
+                    .filter { !it.excludeRecursion }
+                    .joinToString("\n") { it.content }
+                if (recursionContext.isBlank()) break
+            }
         }
 
         // 条目预算（酒馆 world_info_budget）：超过时按优先级取前 N 条

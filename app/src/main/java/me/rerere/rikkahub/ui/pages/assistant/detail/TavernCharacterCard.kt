@@ -927,6 +927,7 @@ private fun EntryEditor(
     var caseSensitive by remember(entry.id) { mutableStateOf(entry.caseSensitive) }
     var useRegex by remember(entry.id) { mutableStateOf(entry.useRegex) }
     var matchWholeWords by remember(entry.id) { mutableStateOf(entry.matchWholeWords) }
+    var excludeRecursion by remember(entry.id) { mutableStateOf(entry.excludeRecursion) }
     var groupStr by remember(entry.id) { mutableStateOf(entry.group) }
     var groupWeight by remember(entry.id) { mutableStateOf(entry.groupWeight.toString()) }
     var groupOverride by remember(entry.id) { mutableStateOf(entry.groupOverride) }
@@ -1116,6 +1117,8 @@ private fun EntryEditor(
                         label = { Text("正则(Use Regex)", style = MaterialTheme.typography.labelSmall) })
                     FilterChip(selected = matchWholeWords, onClick = { matchWholeWords = !matchWholeWords },
                         label = { Text("整词(Whole Words)", style = MaterialTheme.typography.labelSmall) })
+                    FilterChip(selected = excludeRecursion, onClick = { excludeRecursion = !excludeRecursion },
+                        label = { Text("排除递归(Exclude Recursion)", style = MaterialTheme.typography.labelSmall) })
                     FilterChip(selected = groupOverride, onClick = { groupOverride = !groupOverride },
                         label = { Text("覆盖同组(Group Override)", style = MaterialTheme.typography.labelSmall) })
                 }
@@ -1192,6 +1195,7 @@ private fun EntryEditor(
                     caseSensitive = caseSensitive,
                     useRegex = useRegex,
                     matchWholeWords = matchWholeWords,
+                    excludeRecursion = excludeRecursion,
                     group = groupStr,
                     groupWeight = groupWeight.toIntOrNull() ?: 100,
                     groupOverride = groupOverride,
