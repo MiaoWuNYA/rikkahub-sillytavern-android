@@ -204,7 +204,6 @@ class PythonBridge(
                 "tool_present_file" -> toggleTool(a, LocalToolOption.PresentFile, bool())
                 "tool_time_info" -> toggleTool(a, LocalToolOption.TimeInfo, bool())
                 "tool_task_tools" -> toggleTool(a, LocalToolOption.TaskTools, bool())
-                "tool_plan_mode" -> toggleTool(a, LocalToolOption.PlanMode, bool())
                 "tool_calculator" -> toggleTool(a, LocalToolOption.Calculator, bool())
                 "tool_worker_tools" -> toggleTool(a, LocalToolOption.WorkerTools, bool())
 

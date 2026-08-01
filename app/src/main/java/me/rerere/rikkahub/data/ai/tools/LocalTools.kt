@@ -24,7 +24,13 @@ import me.rerere.rikkahub.data.event.AppEvent
 import me.rerere.rikkahub.data.ai.tools.local.buildCalendarCreateTool
 import me.rerere.rikkahub.data.ai.tools.local.buildCalendarQueryTool
 import me.rerere.rikkahub.data.ai.tools.local.buildScreenTimeTool
+import me.rerere.rikkahub.data.ai.tools.local.buildAskUserTool
+import me.rerere.rikkahub.data.ai.tools.local.buildClipboardTool
+import me.rerere.rikkahub.data.ai.tools.local.buildTextToSpeechTool
+import me.rerere.rikkahub.data.ai.tools.local.buildTimeInfoTool
 import me.rerere.rikkahub.data.event.AppEventBus
+import me.rerere.rikkahub.data.datastore.SettingsStore
+import me.rerere.tts.provider.TTSManager
 import me.rerere.rikkahub.utils.readClipboardText
 import me.rerere.rikkahub.utils.writeClipboardText
 import java.io.File
@@ -106,9 +112,6 @@ sealed class LocalToolOption {
     data object TaskTools : LocalToolOption()
 
     @Serializable
-    @SerialName("plan_mode")
-    data object PlanMode : LocalToolOption()
-
     @Serializable
     @SerialName("calculator")
     data object Calculator : LocalToolOption()
@@ -134,7 +137,12 @@ sealed class LocalToolOption {
     data object Calendar : LocalToolOption()
 }
 
-class LocalTools(private val context: Context, private val eventBus: AppEventBus) {
+class LocalTools(
+    private val context: Context,
+    private val eventBus: AppEventBus,
+    private val ttsManager: TTSManager,
+    private val settingsStore: SettingsStore,
+) {
     // ── Persistent JS engine ──
     private var jsExecutor = java.util.concurrent.Executors.newSingleThreadExecutor()
     private val jsContextLock = Any()
@@ -372,211 +380,13 @@ class LocalTools(private val context: Context, private val eventBus: AppEventBus
         )
     }
 
-    val timeTool by lazy {
-        Tool(
-            name = "get_time_info",
-            description = "Get the current local date and time from the device, including timezone and UTC offset.\n\n" +
-                "Use this tool when you need the current timestamp, weekday, or ISO date strings.\n\n" +
-                "Args: (none)",
-            parameters = {
-                InputSchema.Obj(
-                    properties = buildJsonObject { }
-                )
-            },
-            execute = {
-                val now = ZonedDateTime.now()
-                val date = now.toLocalDate()
-                val time = now.toLocalTime().withNano(0)
-                val weekday = now.dayOfWeek
-                val payload = buildJsonObject {
-                    put("year", date.year)
-                    put("month", date.monthValue)
-                    put("day", date.dayOfMonth)
-                    put("weekday", weekday.getDisplayName(TextStyle.FULL, Locale.getDefault()))
-                    put("weekday_en", weekday.getDisplayName(TextStyle.FULL, Locale.ENGLISH))
-                    put("weekday_index", weekday.value)
-                    put("date", date.toString())
-                    put("time", time.toString())
-                    put("datetime", now.withNano(0).toString())
-                    put("timezone", now.zone.id)
-                    put("utc_offset", now.offset.id)
-                    put("timestamp_ms", now.toInstant().toEpochMilli())
-                }
-                listOf(UIMessagePart.Text(payload.toString()))
-            }
-        )
-    }
+    val timeTool by lazy { buildTimeInfoTool() }
 
-    val clipboardTool by lazy {
-        Tool(
-            name = "clipboard_tool",
-            description = "Read or write plain text from the device clipboard.\n\n" +
-                "Use this tool to read clipboard content for reference, or write text after the user requests it.\n" +
-                "Do NOT write to clipboard without explicit user request.\n\n" +
-                "When to use:\n" +
-                "- Read clipboard content to use in a response\n" +
-                "- Write text to clipboard after user request\n\n" +
-                "When NOT to use:\n" +
-                "- Writing to clipboard without explicit user request\n\n" +
-                "Args:\n" +
-                "- action: read or write\n" +
-                "- text: Text to write (required for write action)",
-            parameters = {
-                InputSchema.Obj(
-                    properties = buildJsonObject {
-                        put("action", buildJsonObject {
-                            put("type", "string")
-                            put(
-                                "enum",
-                                kotlinx.serialization.json.buildJsonArray {
-                                    add("read")
-                                    add("write")
-                                }
-                            )
-                            put("description", "Operation to perform: read or write")
-                        })
-                        put("text", buildJsonObject {
-                            put("type", "string")
-                            put("description", "Text to write to the clipboard (required for write)")
-                        })
-                    },
-                    required = listOf("action")
-                )
-            },
-            execute = {
-                val params = it.jsonObject
-                val action = params["action"]?.jsonPrimitive?.contentOrNull ?: error("action is required")
-                when (action) {
-                    "read" -> {
-                        val payload = buildJsonObject {
-                            put("text", context.readClipboardText())
-                        }
-                        listOf(UIMessagePart.Text(payload.toString()))
-                    }
+    val clipboardTool by lazy { buildClipboardTool(context) }
 
-                    "write" -> {
-                        val text = params["text"]?.jsonPrimitive?.contentOrNull ?: error("text is required")
-                        context.writeClipboardText(text)
-                        val payload = buildJsonObject {
-                            put("success", true)
-                            put("text", text)
-                        }
-                        listOf(UIMessagePart.Text(payload.toString()))
-                    }
+    val ttsTool by lazy { buildTextToSpeechTool(eventBus, ttsManager, settingsStore) }
 
-                    else -> error("unknown action: $action, must be one of [read, write]")
-                }
-            }
-        )
-    }
-
-    val ttsTool by lazy {
-        Tool(
-            name = "text_to_speech",
-            description = "Speak text aloud using the device's text-to-speech engine.\n\n" +
-                "Use this tool to read stories, messages, or notifications aloud.\n" +
-                "Audio plays on the device in background; tool returns immediately.\n\n" +
-                "When to use:\n" +
-                "- Read text aloud to the user (stories, messages, notifications)\n" +
-                "- Audio plays on the device in background; tool returns immediately\n\n" +
-                "Args:\n" +
-                "- text: Text to speak (natural, readable, no markdown)",
-            parameters = {
-                InputSchema.Obj(
-                    properties = buildJsonObject {
-                        put("text", buildJsonObject {
-                            put("type", "string")
-                            put("description", "The text to speak aloud")
-                        })
-                    },
-                    required = listOf("text")
-                )
-            },
-            execute = {
-                val text = it.jsonObject["text"]?.jsonPrimitive?.contentOrNull
-                    ?: error("text is required")
-                eventBus.emit(AppEvent.Speak(text))
-                val payload = buildJsonObject {
-                    put("success", true)
-                }
-                listOf(UIMessagePart.Text(payload.toString()))
-            }
-        )
-    }
-
-    val askUserTool by lazy {
-        Tool(
-            name = "ask_user",
-            description = "Ask the user one or more questions when you need clarification or a decision.\n\n" +
-                "Use this tool for ambiguous requests or when multiple valid approaches exist.\n" +
-                "Do NOT use for destructive op confirmation (tool system handles that automatically).\n\n" +
-                "When to use:\n" +
-                "- Need clarification from the user on ambiguous requests\n" +
-                "- Presenting yes/no or multiple-choice options\n\n" +
-                "When NOT to use:\n" +
-                "- Confirming destructive operations (tool handles this automatically)\n" +
-                "- Asking questions the answer is already known\n\n" +
-                "Args:\n" +
-                "- questions: List of questions, each with id, text, and optional options",
-            parameters = {
-                InputSchema.Obj(
-                    properties = buildJsonObject {
-                        put("questions", buildJsonObject {
-                            put("type", "array")
-                            put("description", "List of questions to ask the user")
-                            put("items", buildJsonObject {
-                                put("type", "object")
-                                put("properties", buildJsonObject {
-                                    put("id", buildJsonObject {
-                                        put("type", "string")
-                                        put("description", "Unique identifier for this question")
-                                    })
-                                    put("question", buildJsonObject {
-                                        put("type", "string")
-                                        put("description", "The question text to display to the user")
-                                    })
-                                    put("options", buildJsonObject {
-                                        put("type", "array")
-                                        put(
-                                            "description",
-                                            "Optional list of suggested options for the user to choose from"
-                                        )
-                                        put("items", buildJsonObject {
-                                            put("type", "string")
-                                        })
-                                    })
-                                    put("selection_type", buildJsonObject {
-                                        put("type", "string")
-                                        put(
-                                            "enum",
-                                            kotlinx.serialization.json.buildJsonArray {
-                                                add("text")
-                                                add("single")
-                                                add("multi")
-                                            }
-                                        )
-                                        put(
-                                            "description",
-                                            "Answer type: text (free text input, default), single (select exactly one option), multi (select one or more options)"
-                                        )
-                                    })
-                                })
-                                put("required", kotlinx.serialization.json.buildJsonArray {
-                                    add("id")
-                                    add("question")
-                                })
-                            })
-                        })
-                    },
-                    required = listOf("questions")
-                )
-            },
-            needsApproval = { true },
-            execute = {
-                error("ask_user tool should be handled by HITL flow")
-            }
-        )
-    }
+    val askUserTool by lazy { buildAskUserTool() }
 
     val presentFileTool by lazy {
         Tool(

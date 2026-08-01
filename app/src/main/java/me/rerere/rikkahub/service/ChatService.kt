@@ -82,6 +82,7 @@ import me.rerere.rikkahub.data.ai.tools.createCalculatorTool
 import me.rerere.rikkahub.data.ai.tools.createWebFetchTool
 import me.rerere.rikkahub.data.ai.tools.createSleepTool
 import me.rerere.rikkahub.data.ai.tools.createTaskTools
+import me.rerere.rikkahub.data.ai.tools.createConversationTools
 import me.rerere.rikkahub.data.ai.tools.local.createMingliTool
 import me.rerere.rikkahub.data.ai.tools.local.createMingliGuideTool
 import me.rerere.rikkahub.data.files.SkillManager
@@ -626,6 +627,9 @@ class ChatService(
                     }
                     if (assistant.enableWebSearch) {
                         addAll(createSearchTools(settings))
+                    }
+                    if (assistant.enableRecentChatsReference) {
+                        addAll(createConversationTools(conversationRepo, assistant.id))
                     }
                     addAll(createWorkspaceToolsIfReady(assistant.workspaceId?.toString(), conversation.workspaceCwd))
                     addAll(localTools.getTools(assistant.localTools))
