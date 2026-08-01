@@ -158,6 +158,15 @@ internal fun collectInjections(
     if (enabledLorebooks.isNotEmpty()) {
         // 提取上下文用于匹配（只取非 SYSTEM 消息）
         val nonSystemMessages = messages.filter { it.role != MessageRole.SYSTEM }
+        // 对齐酒馆：扫描上下文除了对话消息，还包含角色卡描述/性格/场景/作者备注
+        val charScanContext = buildString {
+            assistant.tavernData?.let { tav ->
+                if (tav.description.isNotBlank()) appendLine(tav.description)
+                if (tav.personality.isNotBlank()) appendLine(tav.personality)
+                if (tav.scenario.isNotBlank()) appendLine(tav.scenario)
+                if (tav.creatorNotes.isNotBlank()) appendLine(tav.creatorNotes)
+            }
+        }.trim()
 
         enabledLorebooks.forEach { lorebook ->
             // 对每条 Lorebook 条目检查触发
@@ -179,7 +188,12 @@ internal fun collectInjections(
                 if (entry.delay > 0 && nonSystemMessages.size < entry.delay) continue
 
                 // 正常触发检查
-                val context = extractContextForMatching(nonSystemMessages, entry.scanDepth)
+                val chatContext = extractContextForMatching(nonSystemMessages, entry.scanDepth)
+                val context = if (charScanContext.isNotEmpty()) {
+                    "$charScanContext\n$chatContext"
+                } else {
+                    chatContext
+                }
                 if (entry.isTriggered(context)) {
                     newlyTriggered.add(entry)
                 }
@@ -290,16 +304,27 @@ internal fun applyInjections(
     if (systemIndex >= 0) {
         val beforeContent = byPosition[InjectionPosition.BEFORE_SYSTEM_PROMPT]
             ?.joinToString("\n") { it.content } ?: ""
+        val beforeCharContent = byPosition[InjectionPosition.BEFORE_CHARACTER]
+            ?.joinToString("\n") { it.content } ?: ""
         val afterContent = byPosition[InjectionPosition.AFTER_SYSTEM_PROMPT]
             ?.joinToString("\n") { it.content } ?: ""
+        val afterCharContent = byPosition[InjectionPosition.AFTER_CHARACTER]
+            ?.joinToString("\n") { it.content } ?: ""
 
-        if (beforeContent.isNotEmpty() || afterContent.isNotEmpty()) {
+        if (beforeContent.isNotEmpty() || beforeCharContent.isNotEmpty() ||
+            afterContent.isNotEmpty() || afterCharContent.isNotEmpty()
+        ) {
             val systemMessage = result[systemIndex]
             val originalText = systemMessage.parts
                 .filterIsInstance<UIMessagePart.Text>()
                 .joinToString("") { it.text }
 
             val newText = buildString {
+                // 角色卡信息之前（酒馆 before_char）
+                if (beforeCharContent.isNotEmpty()) {
+                    append(beforeCharContent)
+                    appendLine()
+                }
                 if (beforeContent.isNotEmpty()) {
                     append(beforeContent)
                     appendLine()
@@ -308,6 +333,11 @@ internal fun applyInjections(
                 if (afterContent.isNotEmpty()) {
                     appendLine()
                     append(afterContent)
+                }
+                // 角色卡信息之后（酒馆 after_char）
+                if (afterCharContent.isNotEmpty()) {
+                    appendLine()
+                    append(afterCharContent)
                 }
             }
 
@@ -319,21 +349,45 @@ internal fun applyInjections(
         // 没有系统消息时，创建一个新的系统消息
         val beforeContent = byPosition[InjectionPosition.BEFORE_SYSTEM_PROMPT]
             ?.joinToString("\n") { it.content } ?: ""
+        val beforeCharContent = byPosition[InjectionPosition.BEFORE_CHARACTER]
+            ?.joinToString("\n") { it.content } ?: ""
         val afterContent = byPosition[InjectionPosition.AFTER_SYSTEM_PROMPT]
+            ?.joinToString("\n") { it.content } ?: ""
+        val afterCharContent = byPosition[InjectionPosition.AFTER_CHARACTER]
             ?.joinToString("\n") { it.content } ?: ""
 
         val combinedContent = buildString {
+            if (beforeCharContent.isNotEmpty()) {
+                append(beforeCharContent)
+                appendLine()
+            }
             if (beforeContent.isNotEmpty()) {
                 append(beforeContent)
+                if (afterContent.isNotEmpty() || afterCharContent.isNotEmpty()) appendLine()
             }
             if (afterContent.isNotEmpty()) {
-                if (isNotEmpty()) appendLine()
                 append(afterContent)
+            }
+            if (afterCharContent.isNotEmpty()) {
+                if (isNotEmpty()) appendLine()
+                append(afterCharContent)
             }
         }
 
         if (combinedContent.isNotEmpty()) {
             result.add(0, UIMessage.system(combinedContent))
+        }
+    }
+
+    // 处理 ANTAGONIZE：角色卡（系统消息）之后、第一条对话消息之前
+    val antagonizeInjections = byPosition[InjectionPosition.ANTAGONIZE]
+    if (!antagonizeInjections.isNullOrEmpty()) {
+        var insertIndex = result.indexOfFirst { it.role != MessageRole.SYSTEM }
+            .takeIf { it >= 0 } ?: result.size
+        insertIndex = findSafeInsertIndex(result, insertIndex)
+        createMergedInjectionMessages(antagonizeInjections).forEach { message ->
+            result.add(insertIndex, message)
+            insertIndex++
         }
     }
 
@@ -356,6 +410,18 @@ internal fun applyInjections(
         var insertIndex = (result.size - 1).coerceAtLeast(0)
         insertIndex = findSafeInsertIndex(result, insertIndex)
         createMergedInjectionMessages(bottomInjections).forEach { message ->
+            result.add(insertIndex, message)
+            insertIndex++
+        }
+    }
+
+    // 处理 AFTER_DIALOG：在最后一条 AI 回复之后插入
+    val afterDialogInjections = byPosition[InjectionPosition.AFTER_DIALOG]
+    if (!afterDialogInjections.isNullOrEmpty()) {
+        val lastAssistantIndex = result.indexOfLast { it.role == MessageRole.ASSISTANT }
+        var insertIndex = if (lastAssistantIndex >= 0) lastAssistantIndex + 1 else result.size
+        insertIndex = findSafeInsertIndex(result, insertIndex)
+        createMergedInjectionMessages(afterDialogInjections).forEach { message ->
             result.add(insertIndex, message)
             insertIndex++
         }

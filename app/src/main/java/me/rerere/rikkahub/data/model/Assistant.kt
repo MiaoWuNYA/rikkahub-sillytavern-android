@@ -156,11 +156,23 @@ enum class InjectionPosition {
     @SerialName("after_system_prompt")
     AFTER_SYSTEM_PROMPT,    // 系统提示词之后（最常用）
 
+    @SerialName("before_character")
+    BEFORE_CHARACTER,       // 角色卡信息之前（酒馆 before_char）
+
+    @SerialName("after_character")
+    AFTER_CHARACTER,        // 角色卡信息之后（酒馆 after_char）
+
+    @SerialName("antagonize")
+    ANTAGONIZE,             // 对抗位：角色卡与对话之间（酒馆 antagonize）
+
     @SerialName("top_of_chat")
     TOP_OF_CHAT,            // 对话最开头（第一条用户消息之前）
 
     @SerialName("bottom_of_chat")
     BOTTOM_OF_CHAT,         // 最新消息之前（当前用户输入之前）
+
+    @SerialName("after_dialog")
+    AFTER_DIALOG,           // 最近一条 AI 回复之后（酒馆 after_dialog）
 
     @SerialName("at_depth")
     AT_DEPTH,               // 在指定深度位置插入（从最新消息往前数）

@@ -128,12 +128,16 @@ class GenerationHandler(
                     if (assistant.allowConversationSystemPrompt && !conversationSystemPrompt.isNullOrBlank()) {
                         conversationSystemPrompt
                     } else {
+                        val persona = settings.personas.find { it.id == settings.activePersonaId }
+                        val personaDesc = persona?.description?.takeIf { it.isNotBlank() }
                         if (assistant.tavernData != null) {
-                            val persona = settings.personas.find { it.id == settings.activePersonaId }
                             assistant.assembleContext(
                                 userName = settings.displaySetting.userNickname.ifBlank { "User" },
-                                personaDesc = persona?.description ?: ""
+                                personaDesc = personaDesc ?: ""
                             )
+                        } else if (personaDesc != null) {
+                            val personaLabel = persona?.title?.ifBlank { persona?.name } ?: "User"
+                            assistant.systemPrompt + "\n\n[User Persona: $personaLabel]\n$personaDesc"
                         } else {
                             assistant.systemPrompt
                         }
@@ -533,12 +537,16 @@ class GenerationHandler(
                         if (assistant.allowConversationSystemPrompt && !conversationSystemPrompt.isNullOrBlank()) {
                             conversationSystemPrompt
                         } else {
+                            val persona = settings.personas.find { it.id == settings.activePersonaId }
+                            val personaDesc = persona?.description?.takeIf { it.isNotBlank() }
                             if (assistant.tavernData != null) {
-                                val persona = settings.personas.find { it.id == settings.activePersonaId }
                                 assistant.assembleContext(
                                     userName = settings.displaySetting.userNickname.ifBlank { "User" },
-                                    personaDesc = persona?.description ?: ""
+                                    personaDesc = personaDesc ?: ""
                                 )
+                            } else if (personaDesc != null) {
+                                val personaLabel = persona?.title?.ifBlank { persona?.name } ?: "User"
+                                assistant.systemPrompt + "\n\n[User Persona: $personaLabel]\n$personaDesc"
                             } else {
                                 assistant.systemPrompt
                             }

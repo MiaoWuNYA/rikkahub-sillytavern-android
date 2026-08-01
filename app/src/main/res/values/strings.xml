@@ -511,9 +511,13 @@
   <string name="prompt_page_name">Name</string>
   <string name="prompt_page_new_keyword">New Keyword</string>
   <string name="prompt_page_position_after_system">After System Prompt</string>
+  <string name="prompt_page_position_after_character">After Character</string>
+  <string name="prompt_page_position_after_dialog">After Latest AI Reply</string>
+  <string name="prompt_page_position_antagonize">Antagonize (Between Card and Chat)</string>
   <string name="prompt_page_position_at_depth">At Depth</string>
   <string name="prompt_page_position_author_note">Author\'s Note (Follows Global Setting)</string>
   <string name="prompt_page_position_before_system">Before System Prompt</string>
+  <string name="prompt_page_position_before_character">Before Character</string>
   <string name="prompt_page_position_bottom_of_chat">Before Latest Message</string>
   <string name="prompt_page_position_top_of_chat">Top of Chat</string>
   <string name="prompt_page_priority_format">Priority: %d</string>

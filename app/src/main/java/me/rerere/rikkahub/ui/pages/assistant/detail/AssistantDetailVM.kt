@@ -206,6 +206,10 @@ class AssistantDetailVM(
                         1 -> InjectionPosition.AFTER_SYSTEM_PROMPT
                         2 -> InjectionPosition.AUTHOR_NOTE
                         3, 4 -> InjectionPosition.AT_DEPTH
+                        5 -> InjectionPosition.BEFORE_CHARACTER
+                        6 -> InjectionPosition.AFTER_CHARACTER
+                        7 -> InjectionPosition.ANTAGONIZE
+                        8 -> InjectionPosition.AFTER_DIALOG
                         else -> InjectionPosition.AFTER_SYSTEM_PROMPT
                     },
                     injectDepth = e.depth,

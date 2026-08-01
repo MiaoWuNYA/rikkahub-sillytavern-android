@@ -552,10 +552,14 @@ private fun InjectionPositionSelector(
 
 private fun InjectionPosition.usesStandaloneMessage(): Boolean = when (this) {
     InjectionPosition.BEFORE_SYSTEM_PROMPT,
-    InjectionPosition.AFTER_SYSTEM_PROMPT -> false
+    InjectionPosition.AFTER_SYSTEM_PROMPT,
+    InjectionPosition.BEFORE_CHARACTER,
+    InjectionPosition.AFTER_CHARACTER -> false
 
+    InjectionPosition.ANTAGONIZE,
     InjectionPosition.TOP_OF_CHAT,
     InjectionPosition.BOTTOM_OF_CHAT,
+    InjectionPosition.AFTER_DIALOG,
     InjectionPosition.AT_DEPTH,
     InjectionPosition.AUTHOR_NOTE -> true
 }
@@ -564,8 +568,12 @@ private fun InjectionPosition.usesStandaloneMessage(): Boolean = when (this) {
 private fun getPositionLabel(position: InjectionPosition): String = when (position) {
     InjectionPosition.BEFORE_SYSTEM_PROMPT -> stringResource(R.string.prompt_page_position_before_system)
     InjectionPosition.AFTER_SYSTEM_PROMPT -> stringResource(R.string.prompt_page_position_after_system)
+    InjectionPosition.BEFORE_CHARACTER -> stringResource(R.string.prompt_page_position_before_character)
+    InjectionPosition.AFTER_CHARACTER -> stringResource(R.string.prompt_page_position_after_character)
+    InjectionPosition.ANTAGONIZE -> stringResource(R.string.prompt_page_position_antagonize)
     InjectionPosition.TOP_OF_CHAT -> stringResource(R.string.prompt_page_position_top_of_chat)
     InjectionPosition.BOTTOM_OF_CHAT -> stringResource(R.string.prompt_page_position_bottom_of_chat)
+    InjectionPosition.AFTER_DIALOG -> stringResource(R.string.prompt_page_position_after_dialog)
     InjectionPosition.AT_DEPTH -> stringResource(R.string.prompt_page_position_at_depth)
     InjectionPosition.AUTHOR_NOTE -> stringResource(R.string.prompt_page_position_author_note)
 }

@@ -180,6 +180,10 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
             2 -> InjectionPosition.TOP_OF_CHAT
             3 -> InjectionPosition.TOP_OF_CHAT // After Examples -> 聊天历史开头
             4 -> InjectionPosition.AT_DEPTH    // @Depth 模式
+            5 -> InjectionPosition.BEFORE_CHARACTER
+            6 -> InjectionPosition.AFTER_CHARACTER
+            7 -> InjectionPosition.ANTAGONIZE
+            8 -> InjectionPosition.AFTER_DIALOG
             else -> InjectionPosition.AFTER_SYSTEM_PROMPT
         }
     }

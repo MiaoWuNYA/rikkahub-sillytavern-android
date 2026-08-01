@@ -58,6 +58,10 @@ class PromptVM(
                         InjectionPosition.TOP_OF_CHAT, InjectionPosition.AUTHOR_NOTE -> 2
                         InjectionPosition.BOTTOM_OF_CHAT -> 3
                         InjectionPosition.AT_DEPTH -> 4
+                        InjectionPosition.BEFORE_CHARACTER -> 5
+                        InjectionPosition.AFTER_CHARACTER -> 6
+                        InjectionPosition.ANTAGONIZE -> 7
+                        InjectionPosition.AFTER_DIALOG -> 8
                     },
                     priority = injection.priority,
                     disable = !injection.enabled,
