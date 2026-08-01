@@ -7,6 +7,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import me.rerere.ai.provider.Model
+import me.rerere.ai.core.MessageRole
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.R
@@ -16,17 +17,20 @@ import me.rerere.rikkahub.data.model.Assistant
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.temporal.Temporal
 import java.util.Locale
 import java.util.TimeZone
+import kotlin.random.Random
 
 data class PlaceholderCtx(
     val context: Context,
     val settingsStore: SettingsStore,
     val model: Model,
     val assistant: Assistant,
+    val messages: List<UIMessage> = emptyList(),
 )
 
 interface PlaceholderProvider {
@@ -112,6 +116,23 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
         placeholder("scenario", { Text("角色场景") }) {
             it.assistant.tavernData?.scenario ?: ""
         }
+
+        // 对齐酒馆核心宏
+        placeholder("time", { Text(stringResource(R.string.placeholder_time)) }) {
+            LocalTime.now().format(
+                DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
+                    .withLocale(Locale.getDefault())
+            )
+        }
+        placeholder("random", { Text(stringResource(R.string.placeholder_random)) }) {
+            Random.nextInt(1, 101).toString()
+        }
+        placeholder("input", { Text(stringResource(R.string.placeholder_input)) }) {
+            it.messages.lastOrNull { msg -> msg.role == MessageRole.USER }?.let(::textOf) ?: ""
+        }
+        placeholder("lastMessage", { Text(stringResource(R.string.placeholder_last_message)) }) {
+            it.messages.lastOrNull()?.let(::textOf) ?: ""
+        }
     }
 
     private fun Temporal.toDateString() = DateTimeFormatter
@@ -123,6 +144,9 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
         val batteryManager = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
         return batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
     }
+
+    private fun textOf(message: UIMessage): String =
+        message.parts.filterIsInstance<UIMessagePart.Text>().joinToString("") { it.text }
 }
 
 object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
@@ -159,7 +183,8 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
             context = ctx.context,
             settingsStore = settingsStore,
             model = ctx.model,
-            assistant = ctx.assistant
+            assistant = ctx.assistant,
+            messages = messages,
         )
         defaultProvider.placeholders.forEach { (key, placeholderInfo) ->
             val value = placeholderInfo.resolver(ctx)

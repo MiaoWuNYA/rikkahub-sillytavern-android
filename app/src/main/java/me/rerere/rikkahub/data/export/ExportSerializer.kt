@@ -6,8 +6,10 @@ import android.provider.OpenableColumns
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonPrimitive
 import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.model.PromptInjection
@@ -165,6 +167,8 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
                         keywords = entry.key,
                         useRegex = false, // SillyTavern 格式不支持 useRegex
                         caseSensitive = entry.caseSensitive ?: false,
+                        matchWholeWords = entry.extensions
+                            ?.get("match_whole_words")?.jsonPrimitive?.booleanOrNull ?: false,
                         scanDepth = entry.scanDepth ?: 4,
                         constantActive = entry.constant,
                     )
@@ -206,4 +210,5 @@ private data class SillyTavernEntry(
     val depth: Int = 4,
     val scanDepth: Int? = null,
     val caseSensitive: Boolean? = null,
+    val extensions: JsonElement? = null,
 )

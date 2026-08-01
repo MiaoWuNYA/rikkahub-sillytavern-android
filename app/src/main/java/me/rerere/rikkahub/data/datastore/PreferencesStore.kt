@@ -145,6 +145,8 @@ class SettingsStore(
         // 提示词注入
         val MODE_INJECTIONS = stringPreferencesKey("mode_injections")
         val LOREBOOKS = stringPreferencesKey("lorebooks")
+        val WORLD_INFO_BUDGET = intPreferencesKey("world_info_budget")
+        val WORLD_INFO_MIN_ACTIVATIONS = intPreferencesKey("world_info_min_activations")
         val QUICK_MESSAGES = stringPreferencesKey("quick_messages")
 
         // 备份提醒
@@ -250,6 +252,8 @@ class SettingsStore(
                 lorebooks = preferences[LOREBOOKS]?.let {
                     JsonInstant.decodeFromString(it)
                 } ?: emptyList(),
+                worldInfoBudget = preferences[WORLD_INFO_BUDGET] ?: 25,
+                worldInfoMinActivations = preferences[WORLD_INFO_MIN_ACTIVATIONS] ?: 0,
                 quickMessages = preferences[QUICK_MESSAGES]?.let {
                     JsonInstant.decodeFromString(it)
                 } ?: emptyList(),
@@ -433,6 +437,8 @@ class SettingsStore(
             } ?: preferences.remove(SELECTED_ASR_PROVIDER)
             preferences[MODE_INJECTIONS] = JsonInstant.encodeToString(settings.modeInjections)
             preferences[LOREBOOKS] = JsonInstant.encodeToString(settings.lorebooks)
+            preferences[WORLD_INFO_BUDGET] = settings.worldInfoBudget
+            preferences[WORLD_INFO_MIN_ACTIVATIONS] = settings.worldInfoMinActivations
             preferences[QUICK_MESSAGES] = JsonInstant.encodeToString(settings.quickMessages)
             preferences[WEB_SERVER_ENABLED] = settings.webServerEnabled
             preferences[WEB_SERVER_PORT] = settings.webServerPort
@@ -590,6 +596,8 @@ data class Settings(
     val selectedASRProviderId: Uuid? = null,
     val modeInjections: List<PromptInjection.ModeInjection> = DEFAULT_MODE_INJECTIONS,
     val lorebooks: List<Lorebook> = emptyList(),
+    val worldInfoBudget: Int = 25,                  // 世界书单次注入条目预算（酒馆默认25）
+    val worldInfoMinActivations: Int = 0,           // 世界书最少激活数（0=关闭，酒馆 min_activations）
     val quickMessages: List<QuickMessage> = emptyList(),
     val customApiConfigs: List<CustomApiConfig> = DEFAULT_CUSTOM_API_CONFIGS,
     val personas: List<Persona> = DEFAULT_PERSONAS,

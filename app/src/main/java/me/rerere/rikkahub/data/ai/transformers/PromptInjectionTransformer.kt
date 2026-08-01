@@ -43,6 +43,8 @@ object PromptInjectionTransformer : InputMessageTransformer {
             cooldownEntries = cooldowns,
             authorNotePosition = ctx.settings.authorNotePosition,
             authorNoteDepth = ctx.settings.authorNoteDepth,
+            worldInfoBudget = ctx.settings.worldInfoBudget,
+            worldInfoMinActivations = ctx.settings.worldInfoMinActivations,
         )
 
         return result
@@ -63,6 +65,8 @@ internal fun transformMessages(
     cooldownEntries: MutableMap<Uuid, Int> = mutableMapOf(),
     authorNotePosition: InjectionPosition = InjectionPosition.AFTER_SYSTEM_PROMPT,
     authorNoteDepth: Int = 4,
+    worldInfoBudget: Int = 25,
+    worldInfoMinActivations: Int = 0,
 ): List<UIMessage> {
     // 收集所有需要注入的内容
     val injections = collectInjections(
@@ -74,6 +78,8 @@ internal fun transformMessages(
         conversationLorebookIds = conversationLorebookIds,
         activeStickyEntries = activeStickyEntries,
         cooldownEntries = cooldownEntries,
+        worldInfoBudget = worldInfoBudget,
+        worldInfoMinActivations = worldInfoMinActivations,
     )
 
     if (injections.isEmpty()) {
@@ -133,6 +139,8 @@ internal fun collectInjections(
     conversationLorebookIds: Set<Uuid> = emptySet(),
     activeStickyEntries: MutableMap<Uuid, Int> = mutableMapOf(),
     cooldownEntries: MutableMap<Uuid, Int> = mutableMapOf(),
+    worldInfoBudget: Int = 25,
+    worldInfoMinActivations: Int = 0,
 ): List<PromptInjection> {
     val injections = mutableListOf<PromptInjection>()
     val effectiveModeInjectionIds = if (assistant.allowConversationPromptInjection) {
@@ -168,74 +176,91 @@ internal fun collectInjections(
             }
         }.trim()
 
-        enabledLorebooks.forEach { lorebook ->
-            // 对每条 Lorebook 条目检查触发
-            val newlyTriggered = mutableListOf<PromptInjection.RegexInjection>()
+        // 扫描函数：对每条 Lorebook 检查触发并做同组权重选择
+        fun evaluateLorebooks(scanDepthOverride: Int? = null): List<PromptInjection.RegexInjection> {
+            val activated = mutableListOf<PromptInjection.RegexInjection>()
+            enabledLorebooks.forEach { lorebook ->
+                val newlyTriggered = mutableListOf<PromptInjection.RegexInjection>()
 
-            for (entry in lorebook.entries) {
-                // 冷却中的条目跳过
-                if (cooldownEntries.containsKey(entry.id)) continue
+                for (entry in lorebook.entries) {
+                    // 冷却中的条目跳过
+                    if (cooldownEntries.containsKey(entry.id)) continue
 
-                // 粘性条目：只要在 activeSticky 中就自动包含
-                val isStickyActive = activeStickyEntries.containsKey(entry.id)
+                    // 粘性条目：只要在 activeSticky 中就自动包含
+                    if (activeStickyEntries.containsKey(entry.id)) {
+                        newlyTriggered.add(entry)
+                        continue
+                    }
 
-                if (isStickyActive) {
-                    newlyTriggered.add(entry)
-                    continue
-                }
+                    // delay：消息数不够则不激活
+                    if (entry.delay > 0 && nonSystemMessages.size < entry.delay) continue
 
-                // delay：消息数不够则不激活
-                if (entry.delay > 0 && nonSystemMessages.size < entry.delay) continue
-
-                // 正常触发检查
-                val chatContext = extractContextForMatching(nonSystemMessages, entry.scanDepth)
-                val context = if (charScanContext.isNotEmpty()) {
-                    "$charScanContext\n$chatContext"
-                } else {
-                    chatContext
-                }
-                if (entry.isTriggered(context)) {
-                    newlyTriggered.add(entry)
-                }
-            }
-
-            // 同组条目权重随机选择：同一 group 的条目只选一条
-            val grouped = newlyTriggered.filter { it.group.isNotBlank() }.groupBy { it.group }
-            val ungrouped = newlyTriggered.filter { it.group.isBlank() }
-
-            // 无 group 的条目直接加入
-            for (entry in ungrouped) {
-                injections.add(entry)
-                // 粘性/冷却处理
-                handleStickyCooldown(entry, activeStickyEntries, cooldownEntries)
-            }
-
-            // 每个 group 按 weight 随机选一条
-            for ((_, entries) in grouped) {
-                val override = entries.find { it.groupOverride }
-                val selected = if (override != null) {
-                    override
-                } else {
-                    val totalWeight = entries.sumOf { it.groupWeight.toLong() }
-                    if (totalWeight <= 0) {
-                        entries.first()
+                    // 正常触发检查（min_activations 重扫时扩大扫描深度）
+                    val depth = scanDepthOverride ?: entry.scanDepth
+                    val chatContext = extractContextForMatching(nonSystemMessages, depth)
+                    val context = if (charScanContext.isNotEmpty()) {
+                        "$charScanContext\n$chatContext"
                     } else {
-                        var roll = Random.nextLong(totalWeight)
-                        var picked = entries.first()
-                        for (entry in entries) {
-                            roll -= entry.groupWeight.toLong()
-                            if (roll < 0) {
-                                picked = entry
-                                break
-                            }
-                        }
-                        picked
+                        chatContext
+                    }
+                    if (entry.isTriggered(context)) {
+                        newlyTriggered.add(entry)
                     }
                 }
-                injections.add(selected)
-                // 粘性/冷却处理
-                handleStickyCooldown(selected, activeStickyEntries, cooldownEntries)
+
+                // 同组条目权重随机选择：同一 group 的条目只选一条
+                val grouped = newlyTriggered.filter { it.group.isNotBlank() }.groupBy { it.group }
+                val ungrouped = newlyTriggered.filter { it.group.isBlank() }
+                activated.addAll(ungrouped)
+                for ((_, entries) in grouped) {
+                    val override = entries.find { it.groupOverride }
+                    val selected = if (override != null) {
+                        override
+                    } else {
+                        val totalWeight = entries.sumOf { it.groupWeight.toLong() }
+                        if (totalWeight <= 0) {
+                            entries.first()
+                        } else {
+                            var roll = Random.nextLong(totalWeight)
+                            var picked = entries.first()
+                            for (entry in entries) {
+                                roll -= entry.groupWeight.toLong()
+                                if (roll < 0) {
+                                    picked = entry
+                                    break
+                                }
+                            }
+                            picked
+                        }
+                    }
+                    activated.add(selected)
+                }
             }
+            return activated
+        }
+
+        var activatedEntries = evaluateLorebooks()
+
+        // 最少激活数（酒馆 min_activations）：激活不足时用更大扫描深度重扫补足
+        if (worldInfoMinActivations > 0 && activatedEntries.isNotEmpty() &&
+            activatedEntries.size < worldInfoMinActivations
+        ) {
+            val knownIds = activatedEntries.map { it.id }.toSet()
+            val extra = evaluateLorebooks(scanDepthOverride = Int.MAX_VALUE)
+                .filter { it.id !in knownIds }
+            activatedEntries = activatedEntries + extra
+        }
+
+        // 条目预算（酒馆 world_info_budget）：超过时按优先级取前 N 条
+        if (worldInfoBudget > 0 && activatedEntries.size > worldInfoBudget) {
+            activatedEntries = activatedEntries
+                .sortedByDescending { it.priority }
+                .take(worldInfoBudget)
+        }
+
+        for (entry in activatedEntries) {
+            injections.add(entry)
+            handleStickyCooldown(entry, activeStickyEntries, cooldownEntries)
         }
     }
 

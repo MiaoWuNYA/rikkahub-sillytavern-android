@@ -232,6 +232,7 @@ sealed class PromptInjection {
         val secondaryKeys: List<String> = emptyList(), // 二级触发关键词
         val useRegex: Boolean = false,                  // 是否使用正则匹配
         val caseSensitive: Boolean = false,             // 大小写敏感
+        val matchWholeWords: Boolean = false,           // 整词匹配（酒馆 match_whole_words）
         val scanDepth: Int = 1000,                      // 扫描最近N条消息（酒馆默认1000）
         val constantActive: Boolean = false,            // 常驻激活（无需匹配）
         val selective: Boolean = false,                 // 是否启用二级关键词逻辑
@@ -302,8 +303,8 @@ fun PromptInjection.RegexInjection.isTriggered(context: String, activeSticky: Bo
         // 选择性模式：secondaryKeys 参与逻辑判定
         if (keywords.isEmpty() && secondaryKeys.isEmpty()) return false
 
-        val primaryMatches = keywords.map { keyMatches(it, context, useRegex, caseSensitive) }
-        val secondaryMatches = secondaryKeys.map { keyMatches(it, context, useRegex, caseSensitive) }
+        val primaryMatches = keywords.map { keyMatches(it, context, useRegex, caseSensitive, matchWholeWords) }
+        val secondaryMatches = secondaryKeys.map { keyMatches(it, context, useRegex, caseSensitive, matchWholeWords) }
         val allMatches = primaryMatches + secondaryMatches
 
         val anyPrimary = primaryMatches.any { it }
@@ -323,20 +324,30 @@ fun PromptInjection.RegexInjection.isTriggered(context: String, activeSticky: Bo
     } else {
         // 非选择性模式：只检查主关键词
         if (keywords.isEmpty()) return false
-        return keywords.any { keyMatches(it, context, useRegex, caseSensitive) }
+        return keywords.any { keyMatches(it, context, useRegex, caseSensitive, matchWholeWords) }
     }
 }
 
 /** 单个关键词匹配 */
-private fun keyMatches(key: String, context: String, useRegex: Boolean, caseSensitive: Boolean): Boolean {
+private fun keyMatches(
+    key: String,
+    context: String,
+    useRegex: Boolean,
+    caseSensitive: Boolean,
+    matchWholeWords: Boolean,
+): Boolean {
     return if (useRegex) {
         try {
             val options = if (caseSensitive) emptySet() else setOf(RegexOption.IGNORE_CASE)
-            Regex(key, options).containsMatchIn(context)
+            val pattern = if (matchWholeWords) "\\b(?:${key.trim().trim('^', '$')})\\b" else key
+            Regex(pattern, options).containsMatchIn(context)
         } catch (_: Exception) { false }
     } else {
-        if (caseSensitive) context.contains(key)
-        else context.contains(key, ignoreCase = true)
+        val options = if (caseSensitive) emptySet() else setOf(RegexOption.IGNORE_CASE)
+        val pattern = if (matchWholeWords) "\\b${Regex.escape(key)}\\b" else Regex.escape(key)
+        try {
+            Regex(pattern, options).containsMatchIn(context)
+        } catch (_: Exception) { false }
     }
 }
 

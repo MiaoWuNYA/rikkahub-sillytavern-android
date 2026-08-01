@@ -68,6 +68,7 @@ data class TavernBookEntry(
     val priority: Int = 100,      // order/priority, lower = higher
     val disable: Boolean = false,
     val caseSensitive: Boolean = false,
+    val matchWholeWords: Boolean = false, // 整词匹配（酒馆 extensions.match_whole_words）
     val useRegex: Boolean = false,
     val probability: Int = 100,   // 0-100, 触发概率
     val sticky: Int = 0,          // 激活后持续保留N轮（0=不粘）

@@ -219,6 +219,7 @@ class AssistantDetailVM(
                     secondaryKeys = e.secondaryKeys,
                     useRegex = e.useRegex,
                     caseSensitive = e.caseSensitive,
+                    matchWholeWords = e.matchWholeWords,
                     scanDepth = e.scanDepth,
                     constantActive = e.constant,
                     selective = e.selective,

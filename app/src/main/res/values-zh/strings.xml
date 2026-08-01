@@ -466,11 +466,15 @@
   <string name="placeholder_char">助手名称</string>
   <string name="placeholder_current_date">日期</string>
   <string name="placeholder_device_info">设备信息</string>
+  <string name="placeholder_input">当前输入</string>
+  <string name="placeholder_last_message">最后一条消息</string>
   <string name="placeholder_locale">语言环境</string>
   <string name="placeholder_model_id">模型ID</string>
   <string name="placeholder_model_name">模型名称</string>
   <string name="placeholder_nickname">用户昵称</string>
+  <string name="placeholder_random">随机数(1-100)</string>
   <string name="placeholder_system_version">系统版本</string>
+  <string name="placeholder_time">当前时间</string>
   <string name="placeholder_timezone">时区</string>
   <string name="placeholder_user">用户</string>
   <string name="prompt_page_add">添加</string>
@@ -501,6 +505,7 @@
   <string name="prompt_page_keywords_label">关键词</string>
   <string name="prompt_page_lorebook_empty">暂无世界书</string>
   <string name="prompt_page_lorebook_tab">世界书</string>
+  <string name="prompt_page_match_whole_words">整词匹配</string>
   <string name="prompt_page_mode_injection_empty">暂无模式注入</string>
   <string name="prompt_page_mode_injection_tab">模式注入</string>
   <string name="prompt_page_name">名称</string>
@@ -515,6 +520,10 @@
   <string name="prompt_page_position_before_character">角色卡前</string>
   <string name="prompt_page_position_bottom_of_chat">最新消息前</string>
   <string name="prompt_page_position_top_of_chat">对话开头</string>
+  <string name="prompt_page_world_info_budget_desc">单轮最多注入的世界书条目数（0=不限制）</string>
+  <string name="prompt_page_world_info_budget_title">世界书条目预算</string>
+  <string name="prompt_page_world_info_min_activations_desc">激活数不足时继续往更早消息扫描，直到达到该数量（0=关闭）</string>
+  <string name="prompt_page_world_info_min_activations_title">最少激活数</string>
   <string name="prompt_page_priority_format">优先级：%d</string>
   <string name="prompt_page_priority_label">优先级</string>
   <string name="prompt_page_role_assistant">助手（预填充）</string>

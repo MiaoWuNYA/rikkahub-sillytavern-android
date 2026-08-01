@@ -172,7 +172,9 @@ fun PromptPage(vm: PromptVM = koinViewModel()) {
 
                 1 -> LorebookTab(
                     lorebooks = settings.lorebooks,
-                    onUpdate = { vm.updateSettings(settings.copy(lorebooks = it)) }
+                    onUpdate = { vm.updateSettings(settings.copy(lorebooks = it)) },
+                    settings = settings,
+                    onSettingsUpdate = { vm.updateSettings(it) }
                 )
             }
         }
@@ -604,7 +606,9 @@ private fun getRoleLabel(role: MessageRole): String = when (role) {
 @Composable
 private fun LorebookTab(
     lorebooks: List<Lorebook>,
-    onUpdate: (List<Lorebook>) -> Unit
+    onUpdate: (List<Lorebook>) -> Unit,
+    settings: Settings,
+    onSettingsUpdate: (Settings) -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(true) }
     val lazyListState = rememberLazyListState()
@@ -648,6 +652,44 @@ private fun LorebookTab(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             state = lazyListState
         ) {
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FormItem(
+                        label = { Text(stringResource(R.string.prompt_page_world_info_budget_title)) },
+                        description = { Text(stringResource(R.string.prompt_page_world_info_budget_desc)) }
+                    ) {
+                        OutlinedTextField(
+                            value = settings.worldInfoBudget.toString(),
+                            onValueChange = { v ->
+                                v.toIntOrNull()?.let {
+                                    onSettingsUpdate(settings.copy(worldInfoBudget = it.coerceIn(0, 200)))
+                                }
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.width(90.dp),
+                            textStyle = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                    FormItem(
+                        label = { Text(stringResource(R.string.prompt_page_world_info_min_activations_title)) },
+                        description = { Text(stringResource(R.string.prompt_page_world_info_min_activations_desc)) }
+                    ) {
+                        OutlinedTextField(
+                            value = settings.worldInfoMinActivations.toString(),
+                            onValueChange = { v ->
+                                v.toIntOrNull()?.let {
+                                    onSettingsUpdate(settings.copy(worldInfoMinActivations = it.coerceIn(0, 50)))
+                                }
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.width(90.dp),
+                            textStyle = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+            }
             if (lorebooks.isEmpty()) {
                 item {
                     Column(
@@ -1736,6 +1778,16 @@ private fun RegexInjectionEditDialog(
                         Switch(
                             checked = entry.caseSensitive,
                             onCheckedChange = { onEdit(entry.copy(caseSensitive = it)) }
+                        )
+                    }
+                )
+
+                FormItem(
+                    label = { Text(stringResource(R.string.prompt_page_match_whole_words)) },
+                    tail = {
+                        Switch(
+                            checked = entry.matchWholeWords,
+                            onCheckedChange = { onEdit(entry.copy(matchWholeWords = it)) }
                         )
                     }
                 )

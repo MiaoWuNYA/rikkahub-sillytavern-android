@@ -471,11 +471,15 @@
   <string name="placeholder_char">Assistant Name</string>
   <string name="placeholder_current_date">Date</string>
   <string name="placeholder_device_info">Device Info</string>
+  <string name="placeholder_input">Current Input</string>
+  <string name="placeholder_last_message">Last Message</string>
   <string name="placeholder_locale">Locale</string>
   <string name="placeholder_model_id">Model ID</string>
   <string name="placeholder_model_name">Model Name</string>
   <string name="placeholder_nickname">User Nickname</string>
+  <string name="placeholder_random">Random Number (1-100)</string>
   <string name="placeholder_system_version">System Version</string>
+  <string name="placeholder_time">Current Time</string>
   <string name="placeholder_timezone">Timezone</string>
   <string name="placeholder_user">User</string>
   <string name="prompt_page_add">Add</string>
@@ -506,6 +510,7 @@
   <string name="prompt_page_keywords_label">Keywords</string>
   <string name="prompt_page_lorebook_empty">No Lorebooks</string>
   <string name="prompt_page_lorebook_tab">Lorebook</string>
+  <string name="prompt_page_match_whole_words">Match Whole Words</string>
   <string name="prompt_page_mode_injection_empty">No mode injections</string>
   <string name="prompt_page_mode_injection_tab">Mode Injection</string>
   <string name="prompt_page_name">Name</string>
@@ -520,6 +525,10 @@
   <string name="prompt_page_position_before_character">Before Character</string>
   <string name="prompt_page_position_bottom_of_chat">Before Latest Message</string>
   <string name="prompt_page_position_top_of_chat">Top of Chat</string>
+  <string name="prompt_page_world_info_budget_desc">Maximum number of lorebook entries injected per turn (0 = unlimited)</string>
+  <string name="prompt_page_world_info_budget_title">Lorebook Entry Budget</string>
+  <string name="prompt_page_world_info_min_activations_desc">Keep scanning earlier messages until at least this many entries activate (0 = off)</string>
+  <string name="prompt_page_world_info_min_activations_title">Minimum Activations</string>
   <string name="prompt_page_priority_format">Priority: %d</string>
   <string name="prompt_page_priority_label">Priority</string>
   <string name="prompt_page_role_assistant">Assistant (prefill)</string>
