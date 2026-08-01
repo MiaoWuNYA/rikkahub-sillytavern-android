@@ -17,6 +17,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
+import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.ArrowLeft01
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.Persona
@@ -237,10 +239,10 @@ fun PersonaPage() {
     // 编辑/创建对话框
     val dialogPersona = editingPersona
     if (showCreate || dialogPersona != null) {
-        PersonaEditDialog(
+        PersonaEditPage(
             initial = dialogPersona,
             assistants = settings.assistants,
-            onDismiss = { showCreate = false; editingPersona = null },
+            onBack = { showCreate = false; editingPersona = null },
             onSave = { persona ->
                 scope.launch {
                     val s = settings
@@ -262,11 +264,12 @@ fun PersonaPage() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PersonaEditDialog(
+private fun PersonaEditPage(
     initial: Persona?,
     assistants: List<me.rerere.rikkahub.data.model.Assistant>,
-    onDismiss: () -> Unit,
+    onBack: () -> Unit,
     onSave: (Persona) -> Unit,
 ) {
     var name by remember(initial) { mutableStateOf(initial?.name ?: "") }
@@ -275,127 +278,196 @@ private fun PersonaEditDialog(
     var pos by remember(initial) { mutableStateOf(initial?.position ?: PersonaInjectionPosition.AFTER_SYSTEM) }
     var lockedIds by remember(initial) { mutableStateOf(initial?.lockedCharacterIds ?: emptyList()) }
     var showCharPicker by remember { mutableStateOf(false) }
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (initial != null) "编辑 Persona" else "新建 Persona") },
-        text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier
-                    .heightIn(max = 480.dp)
-                    .verticalScroll(rememberScrollState()),
-            ) {
-                // 预设快速选择
-                Text("快速预设", style = MaterialTheme.typography.labelSmall)
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                    personaPresets.forEach { (pName, pTitle, pDesc) ->
-                        AssistChip(
-                            onClick = {
-                                name = pName
-                                title = pTitle
-                                desc = pDesc
-                            },
-                            label = { Text(pName, style = MaterialTheme.typography.labelSmall) },
-                            leadingIcon = { Text("✨", style = MaterialTheme.typography.labelSmall) },
-                        )
+    Scaffold(
+        topBar = {
+            LargeFlexibleTopAppBar(
+                title = { Text(if (initial != null) "编辑 Persona" else "新建 Persona") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(HugeIcons.ArrowLeft01, "返回")
                     }
-                }
-                Spacer(Modifier.height(4.dp))
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("名称") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("短标题（展示用，可选）") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    supportingText = { Text("不填则使用名称") },
-                )
-                OutlinedTextField(
-                    value = desc,
-                    onValueChange = { desc = it },
-                    label = { Text("描述（外表/背景）") },
-                    minLines = 2,
-                    maxLines = 5,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Text("注入位置", style = MaterialTheme.typography.labelSmall)
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    PersonaInjectionPosition.entries.forEach { p ->
-                        FilterChip(
-                            selected = pos == p,
-                            onClick = { pos = p },
-                            label = { Text(
-                                when (p) {
-                                    PersonaInjectionPosition.BEFORE_SYSTEM -> "系统前"
-                                    PersonaInjectionPosition.AFTER_SYSTEM -> "系统后"
-                                    PersonaInjectionPosition.TOP_OF_CHAT -> "对话顶"
-                                },
-                                style = MaterialTheme.typography.labelSmall,
-                            )},
-                        )
-                    }
-                }
-                // 角色锁定
-                Text("绑定到角色（可选）", style = MaterialTheme.typography.labelSmall)
-                if (lockedIds.isNotEmpty()) {
-                    Text(
-                        "已绑定 ${lockedIds.size} 个角色",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.tertiary,
-                    )
-                }
-                TextButton(onClick = { showCharPicker = !showCharPicker }) {
-                    Text(if (showCharPicker) "收起" else "选择角色")
-                }
-                if (showCharPicker) {
-                    assistants.forEach { asst ->
-                        val isChecked = asst.id in lockedIds
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().clickable {
-                                lockedIds = if (isChecked) lockedIds - asst.id
-                                else lockedIds + asst.id
-                            }.padding(vertical = 2.dp),
-                        ) {
-                            Checkbox(checked = isChecked, onCheckedChange = {
-                                lockedIds = if (it) lockedIds + asst.id else lockedIds - asst.id
-                            })
-                            Spacer(Modifier.width(4.dp))
-                            Text(asst.name, style = MaterialTheme.typography.bodySmall)
+                },
+                actions = {
+                    TextButton(
+                        onClick = {
+                            onSave(Persona(
+                                id = initial?.id ?: Uuid.random(),
+                                name = name,
+                                title = title,
+                                description = desc,
+                                position = pos,
+                                lockedCharacterIds = lockedIds,
+                                avatar = initial?.avatar ?: Avatar.Emoji("👤"),
+                            ))
+                        },
+                        enabled = name.isNotBlank(),
+                    ) { Text("保存") }
+                },
+                scrollBehavior = scrollBehavior,
+                colors = CustomColors.topBarColors,
+            )
+        },
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            // 快速预设（仅新建时）
+            if (initial == null) {
+                item {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("快速预设", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                            Spacer(Modifier.height(8.dp))
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                            ) {
+                                personaPresets.forEach { (pName, pTitle, pDesc) ->
+                                    AssistChip(
+                                        onClick = {
+                                            name = pName
+                                            title = pTitle
+                                            desc = pDesc
+                                        },
+                                        label = { Text(pName, style = MaterialTheme.typography.labelSmall) },
+                                        leadingIcon = { Text("✨", style = MaterialTheme.typography.labelSmall) },
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    if (name.isNotBlank()) {
-                        onSave(Persona(
-                            id = initial?.id ?: Uuid.random(),
-                            name = name,
-                            title = title,
-                            description = desc,
-                            position = pos,
-                            lockedCharacterIds = lockedIds,
-                            avatar = initial?.avatar ?: Avatar.Emoji("👤"),
-                        ))
+
+            // 基本信息
+            item {
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
+                ) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("基本信息", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            label = { Text("名称") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedTextField(
+                            value = title,
+                            onValueChange = { title = it },
+                            label = { Text("短标题（展示用，可选）") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            supportingText = { Text("不填则使用名称") },
+                        )
+                        OutlinedTextField(
+                            value = desc,
+                            onValueChange = { desc = it },
+                            label = { Text("描述（外表/背景）") },
+                            minLines = 2,
+                            maxLines = 5,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
-                },
-                enabled = name.isNotBlank(),
-            ) { Text("保存") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
-        },
-    )
+                }
+            }
+
+            // 注入设置
+            item {
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("注入位置", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "人设信息注入到提示词的位置",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            PersonaInjectionPosition.entries.forEach { p ->
+                                FilterChip(
+                                    selected = pos == p,
+                                    onClick = { pos = p },
+                                    label = { Text(
+                                        when (p) {
+                                            PersonaInjectionPosition.BEFORE_SYSTEM -> "系统提示词前"
+                                            PersonaInjectionPosition.AFTER_SYSTEM -> "系统提示词后"
+                                            PersonaInjectionPosition.TOP_OF_CHAT -> "对话顶部"
+                                        },
+                                        style = MaterialTheme.typography.labelSmall,
+                                    )},
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 角色绑定
+            item {
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("绑定到角色（可选）", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "绑定后，只有这些角色会注入该人设",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        if (lockedIds.isNotEmpty()) {
+                            Text(
+                                "已绑定 ${lockedIds.size} 个角色",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.tertiary,
+                            )
+                            Spacer(Modifier.height(4.dp))
+                        }
+                        TextButton(onClick = { showCharPicker = !showCharPicker }) {
+                            Text(if (showCharPicker) "收起角色列表" else "选择角色")
+                        }
+                        if (showCharPicker) {
+                            assistants.forEach { asst ->
+                                val isChecked = asst.id in lockedIds
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth().clickable {
+                                        lockedIds = if (isChecked) lockedIds - asst.id
+                                        else lockedIds + asst.id
+                                    }.padding(vertical = 2.dp),
+                                ) {
+                                    Checkbox(checked = isChecked, onCheckedChange = {
+                                        lockedIds = if (it) lockedIds + asst.id else lockedIds - asst.id
+                                    })
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(asst.name, style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 private val personaPresets = listOf(
