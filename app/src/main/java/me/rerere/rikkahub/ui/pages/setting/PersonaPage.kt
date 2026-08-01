@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -65,7 +66,10 @@ fun PersonaPage() {
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("👤", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            (active?.avatar as? Avatar.Emoji)?.content ?: "👤",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
                         Spacer(Modifier.width(8.dp))
                         Column {
                             Text(
@@ -104,7 +108,8 @@ fun PersonaPage() {
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Text(
-                                        text = persona.name.take(1).uppercase(),
+                                        text = (persona.avatar as? Avatar.Emoji)?.content
+                                            ?: persona.name.take(1).uppercase(),
                                         style = MaterialTheme.typography.titleMedium,
                                         color = if (isActive) MaterialTheme.colorScheme.onPrimary
                                         else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -235,7 +240,12 @@ private fun PersonaEditDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (initial != null) "编辑 Persona" else "新建 Persona") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .heightIn(max = 480.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
                 // 预设快速选择
                 Text("快速预设", style = MaterialTheme.typography.labelSmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
@@ -335,6 +345,7 @@ private fun PersonaEditDialog(
                             description = desc,
                             position = pos,
                             lockedCharacterIds = lockedIds,
+                            avatar = initial?.avatar ?: Avatar.Emoji("👤"),
                         ))
                     }
                 },
