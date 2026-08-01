@@ -928,6 +928,8 @@ private fun EntryEditor(
     var useRegex by remember(entry.id) { mutableStateOf(entry.useRegex) }
     var matchWholeWords by remember(entry.id) { mutableStateOf(entry.matchWholeWords) }
     var excludeRecursion by remember(entry.id) { mutableStateOf(entry.excludeRecursion) }
+    var preventRecursion by remember(entry.id) { mutableStateOf(entry.preventRecursion) }
+    var delayUntilRecursion by remember(entry.id) { mutableStateOf(entry.delayUntilRecursion) }
     var groupStr by remember(entry.id) { mutableStateOf(entry.group) }
     var groupWeight by remember(entry.id) { mutableStateOf(entry.groupWeight.toString()) }
     var groupOverride by remember(entry.id) { mutableStateOf(entry.groupOverride) }
@@ -1119,6 +1121,10 @@ private fun EntryEditor(
                         label = { Text("整词(Whole Words)", style = MaterialTheme.typography.labelSmall) })
                     FilterChip(selected = excludeRecursion, onClick = { excludeRecursion = !excludeRecursion },
                         label = { Text("排除递归(Exclude Recursion)", style = MaterialTheme.typography.labelSmall) })
+                    FilterChip(selected = preventRecursion, onClick = { preventRecursion = !preventRecursion },
+                        label = { Text("禁止递归触发(Prevent Recursion)", style = MaterialTheme.typography.labelSmall) })
+                    FilterChip(selected = delayUntilRecursion, onClick = { delayUntilRecursion = !delayUntilRecursion },
+                        label = { Text("仅递归时检查(Delay Until Recursion)", style = MaterialTheme.typography.labelSmall) })
                     FilterChip(selected = groupOverride, onClick = { groupOverride = !groupOverride },
                         label = { Text("覆盖同组(Group Override)", style = MaterialTheme.typography.labelSmall) })
                 }
@@ -1196,6 +1202,8 @@ private fun EntryEditor(
                     useRegex = useRegex,
                     matchWholeWords = matchWholeWords,
                     excludeRecursion = excludeRecursion,
+                    preventRecursion = preventRecursion,
+                    delayUntilRecursion = delayUntilRecursion,
                     group = groupStr,
                     groupWeight = groupWeight.toIntOrNull() ?: 100,
                     groupOverride = groupOverride,

@@ -221,6 +221,8 @@ class AssistantDetailVM(
                     caseSensitive = e.caseSensitive,
                     matchWholeWords = e.matchWholeWords,
                     excludeRecursion = e.excludeRecursion,
+                    preventRecursion = e.preventRecursion,
+                    delayUntilRecursion = e.delayUntilRecursion,
                     scanDepth = e.scanDepth,
                     constantActive = e.constant,
                     selective = e.selective,

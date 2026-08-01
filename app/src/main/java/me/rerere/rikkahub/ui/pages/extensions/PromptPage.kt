@@ -1832,6 +1832,26 @@ private fun RegexInjectionEditDialog(
                     }
                 )
 
+                FormItem(
+                    label = { Text(stringResource(R.string.prompt_page_prevent_recursion)) },
+                    tail = {
+                        Switch(
+                            checked = entry.preventRecursion,
+                            onCheckedChange = { onEdit(entry.copy(preventRecursion = it)) }
+                        )
+                    }
+                )
+
+                FormItem(
+                    label = { Text(stringResource(R.string.prompt_page_delay_until_recursion)) },
+                    tail = {
+                        Switch(
+                            checked = entry.delayUntilRecursion,
+                            onCheckedChange = { onEdit(entry.copy(delayUntilRecursion = it)) }
+                        )
+                    }
+                )
+
                 // 次级关键词
                 var newSecKey by remember { mutableStateOf("") }
                 Text(stringResource(R.string.prompt_page_secondary_keys_label), style = MaterialTheme.typography.titleSmall)

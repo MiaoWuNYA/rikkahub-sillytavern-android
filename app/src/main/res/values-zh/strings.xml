@@ -511,6 +511,8 @@
   <string name="prompt_page_lorebook_tab">世界书</string>
   <string name="prompt_page_match_whole_words">整词匹配</string>
   <string name="prompt_page_exclude_recursion">排除递归扫描</string>
+  <string name="prompt_page_prevent_recursion">禁止递归触发</string>
+  <string name="prompt_page_delay_until_recursion">仅递归时检查</string>
   <string name="prompt_page_world_info_max_recursion_desc">递归扫描最大层数（0=不限制，上限10）</string>
   <string name="prompt_page_world_info_max_recursion_title">最大递归层数</string>
   <string name="prompt_page_world_info_recursive_desc">对已注入的世界书内容再次扫描关键词，链式带出关联条目</string>

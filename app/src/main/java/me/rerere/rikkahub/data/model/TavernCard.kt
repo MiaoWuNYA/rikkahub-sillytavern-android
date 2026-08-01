@@ -80,5 +80,7 @@ data class TavernBookEntry(
     val groupOverride: Boolean = false, // 是否覆盖同组其他条目
     val delay: Int = 0,          // 延迟激活轮数（0=立即，酒馆 extensions.delay）
     val excludeRecursion: Boolean = false, // 内容不参与递归扫描（酒馆 extensions.exclude_recursion）
+    val preventRecursion: Boolean = false, // 禁止被递归触发（酒馆 extensions.prevent_recursion）
+    val delayUntilRecursion: Boolean = false, // 只在递归扫描时检查（酒馆 extensions.delay_until_recursion）
     val useProbability: Boolean = false, // 是否启用概率过滤（酒馆默认false）
 )

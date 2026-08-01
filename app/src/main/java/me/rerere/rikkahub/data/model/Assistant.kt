@@ -245,6 +245,8 @@ sealed class PromptInjection {
         val cooldown: Int = 0,                          // 冷却轮数（0=无冷却）
         val delay: Int = 0,                             // 延迟激活轮数（0=立即，酒馆 extensions.delay）
         val excludeRecursion: Boolean = false,          // 内容不参与递归扫描（酒馆 extensions.exclude_recursion）
+        val preventRecursion: Boolean = false,          // 禁止被递归触发（酒馆 extensions.prevent_recursion）
+        val delayUntilRecursion: Boolean = false,       // 只在递归扫描时检查（酒馆 extensions.delay_until_recursion）
         val useProbability: Boolean = true,              // 是否启用概率过滤（false=忽略probability直接触发）
     ) : PromptInjection()
 }

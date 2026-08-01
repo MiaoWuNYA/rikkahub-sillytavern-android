@@ -516,6 +516,8 @@
   <string name="prompt_page_lorebook_tab">Lorebook</string>
   <string name="prompt_page_match_whole_words">Match Whole Words</string>
   <string name="prompt_page_exclude_recursion">Exclude From Recursion</string>
+  <string name="prompt_page_prevent_recursion">Prevent Recursion Trigger</string>
+  <string name="prompt_page_delay_until_recursion">Only Check During Recursion</string>
   <string name="prompt_page_world_info_max_recursion_desc">Maximum recursion depth when scanning injected content (0 = unlimited, capped at 10)</string>
   <string name="prompt_page_world_info_max_recursion_title">Max Recursion Steps</string>
   <string name="prompt_page_world_info_recursive_desc">Scan injected lorebook content for more keywords, chaining related entries</string>

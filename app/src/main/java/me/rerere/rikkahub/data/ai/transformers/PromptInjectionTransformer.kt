@@ -188,6 +188,7 @@ internal fun collectInjections(
         fun evaluateLorebooks(
             scanDepthOverride: Int? = null,
             extraContext: String = "",
+            isRecursion: Boolean = false,
         ): List<PromptInjection.RegexInjection> {
             val activated = mutableListOf<PromptInjection.RegexInjection>()
             enabledLorebooks.forEach { lorebook ->
@@ -196,6 +197,12 @@ internal fun collectInjections(
                 for (entry in lorebook.entries) {
                     // 冷却中的条目跳过
                     if (cooldownEntries.containsKey(entry.id)) continue
+
+                    // 延迟到递归才检查的条目：正常扫描跳过（酒馆 delay_until_recursion）
+                    if (entry.delayUntilRecursion && !isRecursion) continue
+
+                    // 禁止递归触发的条目：递归扫描跳过（酒馆 prevent_recursion）
+                    if (entry.preventRecursion && isRecursion) continue
 
                     // 粘性条目：只要在 activeSticky 中就自动包含
                     if (activeStickyEntries.containsKey(entry.id)) {
@@ -279,7 +286,7 @@ internal fun collectInjections(
             while (recursionContext.isNotBlank() && steps < maxSteps) {
                 steps++
                 val knownIds = activatedEntries.map { it.id }.toSet()
-                val newOnes = evaluateLorebooks(extraContext = recursionContext)
+                val newOnes = evaluateLorebooks(extraContext = recursionContext, isRecursion = true)
                     .filter { it.id !in knownIds }
                 if (newOnes.isEmpty()) break
                 activatedEntries = activatedEntries + newOnes
