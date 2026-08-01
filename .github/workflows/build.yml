@@ -501,11 +501,6 @@ jobs:
           cp liuren-engine.js ${GITHUB_WORKSPACE}/app/src/main/assets/
           echo "LiuRen JS engine compiled: $(wc -c < liuren-engine.js) bytes"
 
-      - name: Prepare signing keystore & google-services from secrets
-        run: |
-          # keystore 与 google-services.json 不随仓库提交，由 Secrets 在 CI 时还原
-          echo "${{ secrets.KEY_BASE64 }}" | base64 -d > app/app.key
-          echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
       - name: Write signing config
         run: |
           cat > local.properties << 'EOF'
