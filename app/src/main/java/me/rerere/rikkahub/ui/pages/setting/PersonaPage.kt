@@ -87,6 +87,37 @@ fun PersonaPage() {
             }
 
             // Persona 列表
+            if (settings.personas.isEmpty()) {
+                item {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = CustomColors.listItemColors.containerColor
+                        ),
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text("👤", style = MaterialTheme.typography.titleLarge)
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "还没有 Persona",
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "创建一个用户人设，注入到对话中让 AI 了解你的身份与风格",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
             items(settings.personas.sortedBy { it.name }, key = { it.id }) { persona ->
                 val isActive = settings.activePersonaId == persona.id
                 Card(
@@ -131,6 +162,15 @@ fun PersonaPage() {
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
+                                Text(
+                                    text = "📍 " + when (persona.position) {
+                                        PersonaInjectionPosition.BEFORE_SYSTEM -> "系统提示词前"
+                                        PersonaInjectionPosition.AFTER_SYSTEM -> "系统提示词后"
+                                        PersonaInjectionPosition.TOP_OF_CHAT -> "对话顶部"
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                )
                                 if (persona.description.isNotBlank()) {
                                     Text(
                                         text = persona.description.take(80),
