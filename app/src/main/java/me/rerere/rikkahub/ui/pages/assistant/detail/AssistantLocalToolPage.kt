@@ -407,16 +407,6 @@ private fun AssistantLocalToolContent(
                 }
             )
             item(
-                headlineContent = { Text("创作工具") },
-                supportingContent = { Text("允许 AI 生成图表、二维码、时间线、流程图等") },
-                trailingContent = {
-                    Switch(
-                        checked = assistant.localTools.contains(LocalToolOption.AssetGenerator),
-                        onCheckedChange = { toggleLocalTool(LocalToolOption.AssetGenerator, it) }
-                    )
-                }
-            )
-            item(
                 headlineContent = { Text("文件工具") },
                 supportingContent = { Text("允许 AI 读取、写入、搜索设备文件") },
                 trailingContent = {
@@ -474,16 +464,6 @@ private fun AssistantLocalToolContent(
                     }
                 )
             }
-            item(
-                headlineContent = { Text("文件转换") },
-                supportingContent = { Text("允许 AI 转换文档格式（PDF/Word/Excel/PPT/MD/HTML/CSV/JSON/图片）") },
-                trailingContent = {
-                    Switch(
-                        checked = assistant.localTools.contains(LocalToolOption.ConvertFile),
-                        onCheckedChange = { toggleLocalTool(LocalToolOption.ConvertFile, it) }
-                    )
-                }
-            )
             item(
                 headlineContent = { Text("数据库查询") },
                 supportingContent = { Text("允许 AI 查询本地数据库（对话记录/知识库/设置）") },

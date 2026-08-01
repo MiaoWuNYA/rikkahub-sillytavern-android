@@ -98,8 +98,6 @@ class GenerationHandler(
         name == "file" -> "🔧 文件 → 正在操作..."
         name.startsWith("database_") -> "🔧 数据库 → 正在查询..."
         name.startsWith("search_web") || name.startsWith("scrape_") -> "🔧 搜索 → 正在搜索..."
-        name.startsWith("convert_file") -> "🔧 转换 → 正在转换格式..."
-        name.startsWith("create_asset") -> "🔧 创作 → 正在生成..."
         name.startsWith("use_skill") -> "🔧 知识 → 正在读取..."
         name.startsWith("clipboard") -> "🔧 剪贴板 → 正在操作..."
         name.startsWith("get_time") -> "🔧 时间 → 获取中..."

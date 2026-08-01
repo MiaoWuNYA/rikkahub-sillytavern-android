@@ -128,7 +128,6 @@ private object ToolNames {
     const val FILE_SEARCH = "file_search"
     const val EXECUTE_COMMAND = "execute_command"
     const val PRESENT_FILE = "present_file"
-    const val CREATE_ASSET = "create_asset"
     const val EVAL_JS = "eval_javascript"
 }
 
@@ -167,7 +166,6 @@ private fun getToolIcon(toolName: String, action: String?) = when (toolName) {
     ToolNames.PRESENT_FILE -> HugeIcons.Share03
     ToolNames.FILE_DELETE -> HugeIcons.Delete02
     ToolNames.FILE_SEARCH -> HugeIcons.AiSearch02
-    ToolNames.CREATE_ASSET -> HugeIcons.AiMagic
     ToolNames.EVAL_JS -> HugeIcons.Code
     else -> HugeIcons.Tools
 }

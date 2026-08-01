@@ -70,12 +70,10 @@ import me.rerere.rikkahub.data.ai.tools.LocalToolOption
 import me.rerere.rikkahub.data.ai.tools.createSearchTools
 import me.rerere.rikkahub.data.ai.tools.createWorkspaceTools
 import me.rerere.rikkahub.data.ai.tools.createSkillTools
-import me.rerere.rikkahub.data.ai.tools.createAssetTool
 import me.rerere.rikkahub.data.ai.tools.createFileTools
 import me.rerere.rikkahub.data.ai.tools.createShellTools
 import me.rerere.rikkahub.data.ai.tools.createPythonTool
 import me.rerere.rikkahub.data.ai.tools.createGitHubTool
-import me.rerere.rikkahub.data.ai.tools.createConvertFileTool
 import me.rerere.rikkahub.data.ai.tools.createDatabaseQueryTool
 import me.rerere.rikkahub.data.ai.tools.createCalculatorTool
 import me.rerere.rikkahub.data.ai.tools.createWebFetchTool
@@ -618,9 +616,6 @@ class ChatService(
                     if (assistant.localTools.contains(LocalToolOption.FileTools)) {
                         addAll(createFileTools(skillDirs = skillDirs))
                     }
-                    if (assistant.localTools.contains(LocalToolOption.AssetGenerator)) {
-                        add(createAssetTool(context.filesDir.absolutePath))
-                    }
                     if (assistant.enableWebSearch) {
                         addAll(createSearchTools(settings))
                     }
@@ -640,9 +635,6 @@ class ChatService(
                     add(createMingliGuideTool(context))
                     if (assistant.localTools.contains(LocalToolOption.GitHubTools)) {
                         add(createGitHubTool(settingsStore, assistant.enableCiTimeout, assistant.enableAutoFixCi))
-                    }
-                    if (assistant.localTools.contains(LocalToolOption.ConvertFile)) {
-                        add(createConvertFileTool(context))
                     }
                     if (assistant.localTools.contains(LocalToolOption.DatabaseQuery)) {
                         add(createDatabaseQueryTool(database))
@@ -967,9 +959,6 @@ class ChatService(
                 }
                 if (assistant.localTools.contains(LocalToolOption.GitHubTools)) {
                     add(createGitHubTool(settingsStore, assistant.enableCiTimeout, assistant.enableAutoFixCi))
-                }
-                if (assistant.localTools.contains(LocalToolOption.ConvertFile)) {
-                    add(createConvertFileTool(context))
                 }
                 if (assistant.localTools.contains(LocalToolOption.DatabaseQuery)) {
                     add(createDatabaseQueryTool(database))

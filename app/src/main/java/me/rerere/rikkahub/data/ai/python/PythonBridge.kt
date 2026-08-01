@@ -195,7 +195,6 @@ class PythonBridge(
                 "tool_python_engine", "tool_python" -> toggleTool(a, LocalToolOption.PythonEngine, bool())
                 "tool_file_tools", "tool_file" -> toggleTool(a, LocalToolOption.FileTools, bool())
                 "tool_shell_tools", "tool_shell" -> toggleTool(a, LocalToolOption.ShellTools, bool())
-                "tool_asset_generator", "tool_asset" -> toggleTool(a, LocalToolOption.AssetGenerator, bool())
                 "tool_javascript" -> toggleTool(a, LocalToolOption.JavascriptEngine, bool())
                 "tool_clipboard" -> toggleTool(a, LocalToolOption.Clipboard, bool())
                 "tool_tts" -> toggleTool(a, LocalToolOption.Tts, bool())

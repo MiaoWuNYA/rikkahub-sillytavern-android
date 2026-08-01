@@ -80,10 +80,6 @@ sealed class LocalToolOption {
     data object PythonEngine : LocalToolOption()
 
     @Serializable
-    @SerialName("asset_generator")
-    data object AssetGenerator : LocalToolOption()
-
-    @Serializable
     @SerialName("file_tools")
     data object FileTools : LocalToolOption()
 
@@ -96,10 +92,6 @@ sealed class LocalToolOption {
     data object GitHubTools : LocalToolOption()
 
     @Serializable
-    @SerialName("convert_file")
-    data object ConvertFile : LocalToolOption()
-
-    @Serializable
     @SerialName("database_query")
     data object DatabaseQuery : LocalToolOption()
 
@@ -107,7 +99,6 @@ sealed class LocalToolOption {
     @SerialName("task_tools")
     data object TaskTools : LocalToolOption()
 
-    @Serializable
     @Serializable
     @SerialName("calculator")
     data object Calculator : LocalToolOption()
