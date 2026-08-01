@@ -531,6 +531,10 @@ private fun mapInjectionToPosition(pos: InjectionPosition): Int = when (pos) {
     InjectionPosition.BOTTOM_OF_CHAT -> 3
     InjectionPosition.AT_DEPTH -> 4
     InjectionPosition.AUTHOR_NOTE -> 2
+    InjectionPosition.BEFORE_CHARACTER -> 5
+    InjectionPosition.AFTER_CHARACTER -> 6
+    InjectionPosition.ANTAGONIZE -> 7
+    InjectionPosition.AFTER_DIALOG -> 8
 }
 
 /**

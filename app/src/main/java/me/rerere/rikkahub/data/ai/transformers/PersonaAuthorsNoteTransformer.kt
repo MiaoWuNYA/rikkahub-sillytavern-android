@@ -99,6 +99,21 @@ object AuthorsNoteTransformer : InputMessageTransformer {
                 val insertIdx = (messages.size - 1).coerceAtLeast(0)
                 messages.take(insertIdx) + noteMsg + messages.drop(insertIdx)
             }
+            InjectionPosition.BEFORE_CHARACTER ->
+                listOf(noteMsg) + messages
+            InjectionPosition.AFTER_CHARACTER ->
+                if (messages.isNotEmpty()) {
+                    listOf(messages.first()) + noteMsg + messages.drop(1)
+                } else listOf(noteMsg) + messages
+            InjectionPosition.ANTAGONIZE -> {
+                val userIdx = messages.indexOfFirst { it.role == MessageRole.USER }
+                val insertIdx = if (userIdx >= 0) userIdx else messages.size
+                messages.take(insertIdx) + noteMsg + messages.drop(insertIdx)
+            }
+            InjectionPosition.AFTER_DIALOG -> {
+                val insertIdx = (messages.size - 1).coerceAtLeast(0)
+                messages.take(insertIdx) + noteMsg + messages.drop(insertIdx)
+            }
             InjectionPosition.AUTHOR_NOTE -> {
                 if (messages.isNotEmpty()) {
                     listOf(messages.first()) + noteMsg + messages.drop(1)
