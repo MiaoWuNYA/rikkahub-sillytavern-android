@@ -58,6 +58,7 @@ class PromptInjectionTransformerTest {
         keywords: List<String> = listOf("trigger"),
         useRegex: Boolean = false,
         caseSensitive: Boolean = false,
+        matchWholeWords: Boolean = false,
         scanDepth: Int = 5,
         constantActive: Boolean = false
     ) = PromptInjection.RegexInjection(
@@ -72,6 +73,7 @@ class PromptInjectionTransformerTest {
         keywords = keywords,
         useRegex = useRegex,
         caseSensitive = caseSensitive,
+        matchWholeWords = matchWholeWords,
         scanDepth = scanDepth,
         constantActive = constantActive
     )
@@ -1295,6 +1297,110 @@ class PromptInjectionTransformerTest {
         val injectedIndex = result.indexOfFirst { getMessageText(it).contains("Bottom injection") }
         val lastUserIndex = result.indexOfLast { it.role == MessageRole.USER && getMessageText(it) == "Thanks!" }
         assertEquals(lastUserIndex - 1, injectedIndex)
+    }
+
+    @Test
+    fun `match whole words should not match partial words`() {
+        val injectionId = Uuid.random()
+        // 整词匹配开启：只匹配完整单词 trigger，不匹配 triggering
+        val wholeWord = createRegexInjection(
+            id = injectionId,
+            keywords = listOf("trigger"),
+            matchWholeWords = true,
+            content = "Whole word injected"
+        )
+
+        // 上下文只含 triggering（包含 trigger 但不是整词）
+        val messages = listOf(
+            UIMessage.system("System prompt"),
+            UIMessage.user("I am triggering the event"),
+        )
+
+        val result = transformMessages(
+            messages = messages,
+            assistant = createAssistant(lorebookIds = setOf(Uuid.random())),
+            modeInjections = emptyList(),
+            lorebooks = listOf(createLorebook(id = Uuid.random(), entries = listOf(wholeWord)))
+        )
+
+        // 整词不匹配 → 消息原样返回（无注入）
+        assertEquals(messages, result)
+
+        // 整词匹配：上下文含完整单词 trigger 时注入
+        val messages2 = listOf(
+            UIMessage.system("System prompt"),
+            UIMessage.user("Please trigger the event"),
+        )
+        val result2 = transformMessages(
+            messages = messages2,
+            assistant = createAssistant(lorebookIds = setOf(Uuid.random())),
+            modeInjections = emptyList(),
+            lorebooks = listOf(createLorebook(id = Uuid.random(), entries = listOf(wholeWord)))
+        )
+        assertTrue(result2.any { getMessageText(it).contains("Whole word injected") })
+    }
+
+    @Test
+    fun `world info budget should limit activated entries`() {
+        val highPriority = createRegexInjection(
+            id = Uuid.random(),
+            priority = 100,
+            keywords = listOf("alpha"),
+            content = "High priority entry"
+        )
+        val lowPriority = createRegexInjection(
+            id = Uuid.random(),
+            priority = 0,
+            keywords = listOf("beta"),
+            content = "Low priority entry"
+        )
+
+        val messages = listOf(
+            UIMessage.system("System prompt"),
+            UIMessage.user("alpha beta both trigger"),
+        )
+
+        val result = transformMessages(
+            messages = messages,
+            assistant = createAssistant(lorebookIds = setOf(Uuid.random())),
+            modeInjections = emptyList(),
+            lorebooks = listOf(createLorebook(id = Uuid.random(), entries = listOf(highPriority, lowPriority))),
+            worldInfoBudget = 1,
+        )
+
+        // 预算=1：只注入高优先级条目
+        val injected = result.filter { getMessageText(it).contains("entry") }.joinToString { getMessageText(it) }
+        assertTrue(injected.contains("High priority entry"))
+        assertFalse(injected.contains("Low priority entry"))
+    }
+
+    @Test
+    fun `min activations should rescan earlier messages`() {
+        val entry = createRegexInjection(
+            id = Uuid.random(),
+            keywords = listOf("ancient"),
+            content = "Ancient lore injected",
+            scanDepth = 1,  // 只扫最后1条
+        )
+
+        // ancient 出现在较早消息，最后一条不含
+        val messages = listOf(
+            UIMessage.system("System prompt"),
+            UIMessage.user("ancient text here"),
+            UIMessage.assistant("recent reply"),
+            UIMessage.user("latest message"),
+        )
+
+        // minActivations=1：应扩大扫描深度补足，注入 ancient
+        val result = transformMessages(
+            messages = messages,
+            assistant = createAssistant(lorebookIds = setOf(Uuid.random())),
+            modeInjections = emptyList(),
+            lorebooks = listOf(createLorebook(id = Uuid.random(), entries = listOf(entry))),
+            worldInfoMinActivations = 1,
+        )
+
+        assertTrue(result.any { getMessageText(it).contains("Ancient lore injected") })
     }
     // endregion
 }
