@@ -1187,6 +1187,24 @@ class ChatService(
         updateConversation(conversationId, update(current))
     }
 
+    /**
+     * 文件夹内是否存在正在生成回复的会话（对齐上游行为）。
+     * 仅活跃 session 可能在生成；内存态 folderId 为权威。
+     */
+    fun hasGeneratingConversationInFolder(folderId: Uuid): Boolean {
+        return sessions.values.any { it.isGenerating && it.state.value.folderId == folderId }
+    }
+
+    /**
+     * 删除文件夹前，先把内存中归属该文件夹的活跃 session folderId 置空，
+     * 避免后续整对象保存写回一个已被删除的 folder_id（对齐上游 deleteFolder 语义）。
+     */
+    fun clearFolderFromSessions(folderId: Uuid) {
+        sessions.values
+            .filter { it.state.value.folderId == folderId }
+            .forEach { updateConversationState(it.id) { c -> c.copy(folderId = null) } }
+    }
+
     private fun checkFilesDelete(newConversation: Conversation, oldConversation: Conversation) {
         val newFiles = newConversation.files
         val oldFiles = oldConversation.files
