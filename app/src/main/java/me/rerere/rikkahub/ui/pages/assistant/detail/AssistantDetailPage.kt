@@ -46,6 +46,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -509,6 +510,8 @@ private fun ExportCardDialog(
     val toaster = LocalToaster.current
     // 独立于对话框的 scope（对话框关闭后仍可执行导出）
     val exportScope = remember { CoroutineScope(Dispatchers.Main + SupervisorJob()) }
+    var downloadingAvatar by remember { mutableStateOf(false) }
+    val avatarUrl = (assistant.avatar as? Avatar.Image)?.url
 
     // 头像选取（当没有头像时手动选）
     val pngImagePicker = rememberLauncherForActivityResult(
@@ -519,10 +522,9 @@ private fun ExportCardDialog(
         doPngExportInternal(context, exportScope, toaster, assistant, pickedUri)
     }
 
-    // 已设头像的 URI（仅本地 content/file 可用于 PNG 嵌入，网络 URL 交给图片选择器）
+    // 已设头像的 URI（仅本地 content/file 可用于 PNG 嵌入；网络 URL 走自动下载）
     val avatarUri = runCatching {
-        val url = (assistant.avatar as? Avatar.Image)?.url ?: return@runCatching null
-        val uri = url.toUri()
+        val uri = avatarUrl?.toUri() ?: return@runCatching null
         val scheme = uri.scheme
         if (scheme == "content" || scheme == "file") uri else null
     }.getOrNull()
@@ -572,22 +574,49 @@ private fun ExportCardDialog(
                     )
                     item(
                         onClick = {
-                            if (avatarUri != null) {
-                                onDismiss()
-                                doPngExportInternal(context, exportScope, toaster, assistant, avatarUri)
-                            } else {
-                                pngImagePicker.launch("image/*")
+                            when {
+                                avatarUri != null -> {
+                                    onDismiss()
+                                    doPngExportInternal(context, exportScope, toaster, assistant, avatarUri)
+                                }
+                                avatarUrl != null && (avatarUrl.startsWith("http://") || avatarUrl.startsWith("https://")) -> {
+                                    // 网络头像：自动下载到缓存后合并导出，失败再落回图片选择器
+                                    downloadingAvatar = true
+                                    exportScope.launch {
+                                        val downloaded = downloadUrlAvatarToCache(context, avatarUrl)
+                                        downloadingAvatar = false
+                                        onDismiss()
+                                        if (downloaded != null) {
+                                            doPngExportInternal(context, exportScope, toaster, assistant, downloaded)
+                                        } else {
+                                            toaster.show("头像下载失败，请选择本地图片")
+                                            pngImagePicker.launch("image/*")
+                                        }
+                                    }
+                                }
+                                else -> {
+                                    pngImagePicker.launch("image/*")
+                                }
                             }
                         },
                         headlineContent = { Text("PNG 嵌入") },
                         supportingContent = {
                             Text(
-                                if (avatarUri != null) "使用当前头像合并导出角色卡"
-                                else "需选择一张头像图片合并导出"
+                                when {
+                                    downloadingAvatar -> "正在下载头像…"
+                                    avatarUri != null -> "使用当前头像合并导出角色卡"
+                                    avatarUrl != null && (avatarUrl.startsWith("http://") || avatarUrl.startsWith("https://")) ->
+                                        "头像为网络图片，将自动下载后合并导出"
+                                    else -> "需选择一张头像图片合并导出"
+                                }
                             )
                         },
                         leadingContent = {
-                            Icon(HugeIcons.Image02, contentDescription = null)
+                            if (downloadingAvatar) {
+                                CircularWavyProgressIndicator(modifier = Modifier.size(24.dp))
+                            } else {
+                                Icon(HugeIcons.Image02, contentDescription = null)
+                            }
                         },
                     )
                 }
@@ -617,6 +646,39 @@ private fun doPngExportInternal(
         } catch (e: Exception) {
             toaster.show("导出失败: ${e.message}")
         }
+    }
+}
+
+/**
+ * 下载网络头像到应用缓存目录，返回 file:// URI；下载失败返回 null
+ */
+private suspend fun downloadUrlAvatarToCache(context: Context, url: String): Uri? {
+    return withContext(Dispatchers.IO) {
+        runCatching {
+            val connection = (java.net.URL(url).openConnection() as java.net.HttpURLConnection).apply {
+                connectTimeout = 15_000
+                readTimeout = 15_000
+                instanceFollowRedirects = true
+                setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) RikkaHub")
+            }
+            try {
+                if (connection.responseCode !in 200..299) {
+                    return@runCatching null
+                }
+                val bytes = connection.inputStream.use { it.readBytes() }
+                if (bytes.isEmpty()) {
+                    return@runCatching null
+                }
+                val file = java.io.File(
+                    context.cacheDir,
+                    "avatar_download_${System.currentTimeMillis()}.img"
+                )
+                file.writeBytes(bytes)
+                Uri.fromFile(file)
+            } finally {
+                connection.disconnect()
+            }
+        }.getOrNull()
     }
 }
 
