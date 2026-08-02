@@ -111,6 +111,98 @@ private fun buildGenerationSpeaker(
     )
 }
 
+/**
+ * 群聊内重新生成某条消息：按该消息的发言人重新生成（避免串成第一个成员）
+ */
+private suspend fun regenerateGroupMessage(
+    convId: Uuid,
+    targetNodeId: Uuid,
+    speaker: Assistant,
+    gc: GroupChat,
+    members: List<Assistant>,
+    chatService: ChatService,
+    settings: me.rerere.rikkahub.data.datastore.Settings,
+    onSpeakerStart: (String) -> Unit,
+) {
+    // 1. 截断：删除目标节点及其后的消息（含 speakerMap）
+    chatService.updateConversationState(convId) { conv ->
+        val idx = conv.messageNodes.indexOfFirst { it.id == targetNodeId }
+        if (idx < 0) return@updateConversationState conv
+        val removedIds = conv.messageNodes.drop(idx).map { it.id }.toSet()
+        conv.copy(
+            messageNodes = conv.messageNodes.take(idx),
+            speakerMap = conv.speakerMap.filterKeys { it !in removedIds },
+        )
+    }
+
+    // 2. 用该发言人重新生成（历史 = 截断后的消息，prompt = 最后一条）
+    val effectiveSpeaker = buildGenerationSpeaker(gc, members, speaker)
+    val conv = chatService.getConversationFlow(convId).value
+    val history = buildHistoryWithNames(conv.messageNodes, conv.speakerMap, members)
+    if (history.isEmpty()) return
+    val prompt = history.last().toText()
+    val historyWithoutLast = history.dropLast(1)
+
+    val placeholderNode = UIMessage.assistant("").toMessageNode()
+    chatService.updateConversationState(convId) { c ->
+        c.copy(
+            messageNodes = c.messageNodes + placeholderNode,
+            speakerMap = c.speakerMap + (placeholderNode.id to speaker.id),
+        )
+    }
+    onSpeakerStart(speaker.name)
+
+    try {
+        val response = chatService.generateForAssistant(
+            assistant = effectiveSpeaker,
+            settings = settings,
+            prompt = prompt,
+            history = historyWithoutLast,
+            onChunk = { partialText, parts ->
+                chatService.updateConversationState(convId) { c ->
+                    val nodes = c.messageNodes.toMutableList()
+                    val i2 = nodes.indexOfLast { it.id == placeholderNode.id }
+                    if (i2 >= 0) {
+                        val updatedMsg = if (parts != null) {
+                            UIMessage(
+                                role = me.rerere.ai.core.MessageRole.ASSISTANT,
+                                parts = parts,
+                            )
+                        } else {
+                            UIMessage.assistant(partialText)
+                        }
+                        nodes[i2] = MessageNode(id = placeholderNode.id, messages = listOf(updatedMsg))
+                    }
+                    c.copy(messageNodes = nodes)
+                }
+            },
+        )
+        if (response.isBlank()) {
+            chatService.updateConversationState(convId) { c ->
+                c.copy(
+                    messageNodes = c.messageNodes.filter { it.id != placeholderNode.id },
+                    speakerMap = c.speakerMap - placeholderNode.id,
+                )
+            }
+        }
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        chatService.updateConversationState(convId) { c ->
+            c.copy(
+                messageNodes = c.messageNodes.filter { it.id != placeholderNode.id },
+                speakerMap = c.speakerMap - placeholderNode.id,
+            )
+        }
+        throw e
+    } catch (e: Exception) {
+        chatService.updateConversationState(convId) { c ->
+            c.copy(
+                messageNodes = c.messageNodes.filter { it.id != placeholderNode.id },
+                speakerMap = c.speakerMap - placeholderNode.id,
+            )
+        }
+    }
+}
+
 @Composable
 fun GroupChatPage(groupId: String) {
     val settingsStore: SettingsStore = koinInject()
@@ -560,7 +652,46 @@ fun GroupChatPage(groupId: String) {
                     model = null,
                     loading = isGenerating && index >= messageNodes.lastIndex - 2,
                     lastMessage = index == messageNodes.lastIndex,
-                    onRegenerate = { chatService.regenerateAtMessage(currentConvId, node.messages[node.selectIndex]) },
+                    onRegenerate = {
+                        val target = node.messages[node.selectIndex]
+                        val sid = speakerMap[node.id]
+                        val sp = sid?.let { id -> members.find { it.id == id } }
+                        if (sp == null) {
+                            chatService.regenerateAtMessage(currentConvId, target)
+                        } else {
+                            generationJob?.cancel()
+                            val myEpoch = generationEpoch + 1
+                            generationEpoch = myEpoch
+                            isGenerating = true
+                            generationJob = scope.launch {
+                                try {
+                                    regenerateGroupMessage(
+                                        convId = currentConvId,
+                                        targetNodeId = node.id,
+                                        speaker = sp,
+                                        gc = gc,
+                                        members = members,
+                                        chatService = chatService,
+                                        settings = settings,
+                                        onSpeakerStart = { name ->
+                                            queueStatus = "$name 正在重新生成..."
+                                            queueMembers = listOf(name)
+                                        },
+                                    )
+                                } finally {
+                                    if (myEpoch == generationEpoch) {
+                                        chatService.saveConversation(
+                                            currentConvId,
+                                            chatService.getConversationFlow(currentConvId).value,
+                                        )
+                                        isGenerating = false
+                                        queueStatus = ""
+                                        queueMembers = emptyList()
+                                    }
+                                }
+                            }
+                        }
+                    },
                     onEdit = {
                         val msg = node.messages[node.selectIndex]
                         inputState.setContents(msg.parts)

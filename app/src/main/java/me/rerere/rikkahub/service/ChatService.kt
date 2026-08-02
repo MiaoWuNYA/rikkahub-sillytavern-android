@@ -1443,7 +1443,11 @@ class ChatService(
             )
         }
 
-        return conversation.copy(messageNodes = updatedNodes)
+        // 同步清理群聊 speakerMap，避免残留已删除节点的发言人映射
+        return conversation.copy(
+            messageNodes = updatedNodes,
+            speakerMap = conversation.speakerMap.filterKeys { id -> updatedNodes.any { it.id == id } },
+        )
     }
 
     private fun UIMessagePart.copyWithForkedFileUrl(): UIMessagePart {
