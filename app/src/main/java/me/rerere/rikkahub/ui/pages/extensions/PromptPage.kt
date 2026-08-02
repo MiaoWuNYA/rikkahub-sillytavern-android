@@ -52,7 +52,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingToolbarDefaults.ScreenOffset
 import androidx.compose.material3.FloatingToolbarDefaults.floatingToolbarVerticalNestedScroll
 import androidx.compose.material3.HorizontalFloatingToolbar
@@ -1934,33 +1933,29 @@ private fun RegexInjectionEditDialog(
 
                 // 当 selective 启用时，显示 selectiveLogic
                 AnimatedVisibility(visible = entry.selective) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            stringResource(R.string.prompt_page_selective_logic),
-                            style = MaterialTheme.typography.titleSmall
-                        )
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            SelectiveLogic.entries.forEach { logic ->
-                                FilterChip(
-                                    selected = entry.selectiveLogic == logic,
-                                    onClick = { onEdit(entry.copy(selectiveLogic = logic)) },
-                                    label = {
-                                        Text(
-                                            when (logic) {
-                                                SelectiveLogic.AND_ANY -> "AND_ANY"
-                                                SelectiveLogic.AND_ALL -> "AND_ALL"
-                                                SelectiveLogic.OR_ANY -> "OR_ANY"
-                                                SelectiveLogic.NOT_ANY -> "NOT_ANY"
-                                                SelectiveLogic.NOT_ALL -> "NOT_ALL"
-                                            },
-                                            style = MaterialTheme.typography.labelSmall
-                                        )
-                                    }
-                                )
-                            }
+                    CardGroup(title = { Text(stringResource(R.string.prompt_page_selective_logic)) }) {
+                        SelectiveLogic.entries.forEach { logic ->
+                            item(
+                                onClick = { onEdit(entry.copy(selectiveLogic = logic)) },
+                                headlineContent = {
+                                    Text(
+                                        when (logic) {
+                                            SelectiveLogic.AND_ANY -> "任一匹配(AND_ANY)"
+                                            SelectiveLogic.AND_ALL -> "全部匹配(AND_ALL)"
+                                            SelectiveLogic.OR_ANY -> "任一匹配(OR_ANY)"
+                                            SelectiveLogic.NOT_ANY -> "均不匹配(NOT_ANY)"
+                                            SelectiveLogic.NOT_ALL -> "非全部匹配(NOT_ALL)"
+                                        },
+                                        style = MaterialTheme.typography.bodyMedium,
+                                    )
+                                },
+                                trailingContent = {
+                                    RadioButton(
+                                        selected = entry.selectiveLogic == logic,
+                                        onClick = { onEdit(entry.copy(selectiveLogic = logic)) },
+                                    )
+                                },
+                            )
                         }
                     }
                 }

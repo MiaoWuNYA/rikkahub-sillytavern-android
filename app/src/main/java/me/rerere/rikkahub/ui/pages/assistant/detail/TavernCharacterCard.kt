@@ -6,13 +6,11 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,7 +22,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -47,6 +44,7 @@ import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.TavernBookEntry
 import me.rerere.rikkahub.data.model.TavernEmbeddedBook
 import me.rerere.rikkahub.ui.components.ui.FormItem
+import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.Book01
@@ -169,19 +167,12 @@ fun TavernCharacterCard(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     // 标签
                     if (tav.tags.isNotEmpty()) {
-                        FlowRow(
+                        Text(
+                            text = "标签(Tags)：${tav.tags.joinToString(" · ")}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            tav.tags.forEach { tag ->
-                                SuggestionChip(
-                                    onClick = {},
-                                    label = { Text(tag, style = MaterialTheme.typography.labelSmall) },
-                                    shape = RoundedCornerShape(4.dp),
-                                )
-                            }
-                        }
+                        )
                     }
 
                     // 角色信息分组标题
@@ -543,7 +534,7 @@ private fun EmbeddedBookSummary(
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                             )
                             FormItem(
-                                label = { Text("预算(token/轮, 0=不限)", style = MaterialTheme.typography.labelSmall) },
+                                label = { Text("预算(Token Budget, 0=不限)", style = MaterialTheme.typography.labelSmall) },
                                 tail = {
                                     OutlinedTextField(
                                         value = settings.worldInfoBudget.toString(),
@@ -560,7 +551,7 @@ private fun EmbeddedBookSummary(
                                 },
                             )
                             FormItem(
-                                label = { Text("最少激活(0=关)", style = MaterialTheme.typography.labelSmall) },
+                                label = { Text("最少激活(Minimum Activations, 0=关)", style = MaterialTheme.typography.labelSmall) },
                                 tail = {
                                     OutlinedTextField(
                                         value = settings.worldInfoMinActivations.toString(),
@@ -577,7 +568,7 @@ private fun EmbeddedBookSummary(
                                 },
                             )
                             FormItem(
-                                label = { Text("递归扫描", style = MaterialTheme.typography.labelSmall) },
+                                label = { Text("递归扫描(Recursive Scanning)", style = MaterialTheme.typography.labelSmall) },
                                 tail = {
                                     Switch(
                                         checked = settings.worldInfoRecursive,
@@ -589,7 +580,7 @@ private fun EmbeddedBookSummary(
                             )
                             if (settings.worldInfoRecursive) {
                                 FormItem(
-                                    label = { Text("最大递归层数(0=不限)", style = MaterialTheme.typography.labelSmall) },
+                                    label = { Text("最大递归层数(Max Recursion Steps, 0=不限)", style = MaterialTheme.typography.labelSmall) },
                                     tail = {
                                         OutlinedTextField(
                                             value = settings.worldInfoMaxRecursionSteps.toString(),
@@ -750,7 +741,7 @@ private fun EmbeddedGroupSettingsDialog(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("组设置(Group): $groupName", style = MaterialTheme.typography.titleMedium)
+            Text("组设置(Group Settings)：$groupName", style = MaterialTheme.typography.titleMedium)
 
             // 组名称
             OutlinedTextField(
@@ -759,13 +750,33 @@ private fun EmbeddedGroupSettingsDialog(
             )
 
             // 状态切换
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                FilterChip(selected = enabled, onClick = { enabled = !enabled },
-                    label = { Text(if (enabled) "启用(On)" else "禁用(Off)", style = MaterialTheme.typography.labelSmall) })
-                FilterChip(selected = constant, onClick = { constant = !constant },
-                    label = { Text(if (constant) "常驻(Constant)" else "非常驻(Normal)", style = MaterialTheme.typography.labelSmall) })
-                FilterChip(selected = selective, onClick = { selective = !selective },
-                    label = { Text(if (selective) "关键词(Keyword)" else "向量(Vector)", style = MaterialTheme.typography.labelSmall) })
+            CardGroup {
+                item(
+                    headlineContent = { Text("启用(Enabled)", style = MaterialTheme.typography.bodyMedium) },
+                    trailingContent = { Switch(checked = enabled, onCheckedChange = { enabled = it }) },
+                )
+                item(
+                    headlineContent = { Text("常驻(Constant)", style = MaterialTheme.typography.bodyMedium) },
+                    supportingContent = {
+                        Text(
+                            "不依赖关键词，始终注入",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                    trailingContent = { Switch(checked = constant, onCheckedChange = { constant = it }) },
+                )
+                item(
+                    headlineContent = { Text("关键词触发(Keyword)", style = MaterialTheme.typography.bodyMedium) },
+                    supportingContent = {
+                        Text(
+                            "关闭后按向量触发",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                    trailingContent = { Switch(checked = selective, onCheckedChange = { selective = it }) },
+                )
             }
 
             // 概率
@@ -775,22 +786,31 @@ private fun EmbeddedGroupSettingsDialog(
             }
             AnimatedVisibility(visible = useProbability) {
                 Column {
-                    Text("触发概率(Probability): ${probability.toInt()}%", style = MaterialTheme.typography.labelMedium)
+                    Text("触发概率(Probability)：${probability.toInt()}%", style = MaterialTheme.typography.labelMedium)
                     Slider(value = probability, onValueChange = { probability = it }, valueRange = 0f..100f, steps = 99)
                 }
             }
 
             // 插入位置
-            Text("插入位置(Position)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            CardGroup(title = { Text("插入位置(Insertion Position)") }) {
                 listOf(
-                    "系统前(Before System)", "系统后(After System)", "对话顶(Top/AuthNote)",
-                    "最新消息前(Before Latest)", "@D深度(At Depth)",
-                    "角色卡前(Before Char)", "角色卡后(After Char)",
-                    "对抗位(Antagonize)", "AI回复后(After Dialog)",
+                    "系统提示词前(Before System)",
+                    "系统提示词后(After System)",
+                    "对话顶部(Top of Chat)",
+                    "最新消息前(Before Latest)",
+                    "指定深度(@Depth)",
+                    "角色卡前(Before Character)",
+                    "角色卡后(After Character)",
+                    "对抗位(Antagonize)",
+                    "AI 回复后(After Dialog)",
                 ).forEachIndexed { i, label ->
-                    FilterChip(selected = position == i, onClick = { position = i },
-                        label = { Text(label, style = MaterialTheme.typography.labelSmall) })
+                    item(
+                        onClick = { position = i },
+                        headlineContent = { Text(label, style = MaterialTheme.typography.bodyMedium) },
+                        trailingContent = {
+                            RadioButton(selected = position == i, onClick = { position = i })
+                        },
+                    )
                 }
             }
 
@@ -817,7 +837,7 @@ private fun EmbeddedGroupSettingsDialog(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("冷却(轮)(Cooldown)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("冷却(Cooldown)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     OutlinedTextField(value = cooldown, onValueChange = { cooldown = it },
                         textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
@@ -838,22 +858,37 @@ private fun EmbeddedGroupSettingsDialog(
                 }
             }
 
-            // 开关行
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                FilterChip(selected = caseSensitive, onClick = { caseSensitive = !caseSensitive },
-                    label = { Text("大小写(Case Sensitive)", style = MaterialTheme.typography.labelSmall) })
-                FilterChip(selected = useRegex, onClick = { useRegex = !useRegex },
-                    label = { Text("正则(Use Regex)", style = MaterialTheme.typography.labelSmall) })
-                FilterChip(selected = groupOverride, onClick = { groupOverride = !groupOverride },
-                    label = { Text("覆盖同组(Group Override)", style = MaterialTheme.typography.labelSmall) })
+            // 开关
+            CardGroup {
+                item(
+                    headlineContent = { Text("区分大小写(Case Sensitive)", style = MaterialTheme.typography.bodyMedium) },
+                    trailingContent = { Switch(checked = caseSensitive, onCheckedChange = { caseSensitive = it }) },
+                )
+                item(
+                    headlineContent = { Text("使用正则(Use Regex)", style = MaterialTheme.typography.bodyMedium) },
+                    trailingContent = { Switch(checked = useRegex, onCheckedChange = { useRegex = it }) },
+                )
+                item(
+                    headlineContent = { Text("覆盖同组(Group Override)", style = MaterialTheme.typography.bodyMedium) },
+                    trailingContent = { Switch(checked = groupOverride, onCheckedChange = { groupOverride = it }) },
+                )
             }
 
             // 选择性逻辑
-            Text("次要关键词逻辑(Selective Logic)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                listOf("AND(全匹配)", "OR(任一)", "NOT_ANY(无)", "NOT_ALL(非全)").forEachIndexed { i, label ->
-                    FilterChip(selected = selectiveLogic == i, onClick = { selectiveLogic = i },
-                        label = { Text(label, style = MaterialTheme.typography.labelSmall) })
+            CardGroup(title = { Text("次要关键词逻辑(Selective Logic)") }) {
+                listOf(
+                    "全部匹配(AND_ALL)",
+                    "任一匹配(OR_ANY)",
+                    "均不匹配(NOT_ANY)",
+                    "非全部匹配(NOT_ALL)",
+                ).forEachIndexed { i, label ->
+                    item(
+                        onClick = { selectiveLogic = i },
+                        headlineContent = { Text(label, style = MaterialTheme.typography.bodyMedium) },
+                        trailingContent = {
+                            RadioButton(selected = selectiveLogic == i, onClick = { selectiveLogic = i })
+                        },
+                    )
                 }
             }
 
@@ -863,7 +898,7 @@ private fun EmbeddedGroupSettingsDialog(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextButton(onClick = onDismiss) { Text("取消(Cancel)") }
+                TextButton(onClick = onDismiss) { Text("取消") }
                 TextButton(onClick = {
                     onConfirm(editGroupName, template.copy(
                         disable = !enabled,
@@ -885,7 +920,7 @@ private fun EmbeddedGroupSettingsDialog(
                         useRegex = useRegex,
                     ))
                 }) {
-                    Text("应用到(Apply to) ${entries.size} 条(entries)")
+                    Text("应用到 ${entries.size} 条")
                 }
             }
         }
@@ -922,26 +957,14 @@ private fun CollapsibleEntryCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
                             if (entry.keys.isNotEmpty()) {
-                                FlowRow(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                                ) {
-                                    entry.keys.take(4).forEach { key ->
-                                        SuggestionChip(
-                                            onClick = {},
-                                            label = { Text(key, style = MaterialTheme.typography.labelSmall) },
-                                            shape = RoundedCornerShape(4.dp),
-                                        )
-                                    }
-                                    if (entry.keys.size > 4) {
-                                        Text(
-                                            text = "+${entry.keys.size - 4}",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.padding(start = 2.dp, top = 2.dp),
-                                        )
-                                    }
-                                }
+                                Text(
+                                    text = "触发词(Keywords)：${entry.keys.take(4).joinToString(" · ")}" +
+                                        if (entry.keys.size > 4) " +${entry.keys.size - 4}" else "",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
                             }
                             // 状态信息行
                             Spacer(Modifier.height(4.dp))
@@ -955,7 +978,7 @@ private fun CollapsibleEntryCard(
                                     color = MaterialTheme.colorScheme.primary,
                                 )
                                 Text(
-                                    if (entry.constant) "常驻(Constant)" else "触发(Trig)",
+                                    if (entry.constant) "常驻(Constant)" else "触发(Trigger)",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                 )
@@ -1048,22 +1071,33 @@ private fun EntryEditor(
             }
         }
 
-        // 状态切换行
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            FilterChip(
-                selected = enabled,
-                onClick = { enabled = !enabled },
-                label = { Text(if (enabled) "启用(On)" else "禁用(Off)", style = MaterialTheme.typography.labelSmall) },
+        // 状态切换
+        CardGroup {
+            item(
+                headlineContent = { Text("启用(Enabled)", style = MaterialTheme.typography.bodyMedium) },
+                trailingContent = { Switch(checked = enabled, onCheckedChange = { enabled = it }) },
             )
-            FilterChip(
-                selected = constant,
-                onClick = { constant = !constant },
-                label = { Text(if (constant) "常驻(Constant)" else "非常驻(Normal)", style = MaterialTheme.typography.labelSmall) },
+            item(
+                headlineContent = { Text("常驻(Constant)", style = MaterialTheme.typography.bodyMedium) },
+                supportingContent = {
+                    Text(
+                        "不依赖关键词，始终注入",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                },
+                trailingContent = { Switch(checked = constant, onCheckedChange = { constant = it }) },
             )
-            FilterChip(
-                selected = selective,
-                onClick = { selective = !selective },
-                label = { Text(if (selective) "关键词(Keyword)" else "向量(Vector)", style = MaterialTheme.typography.labelSmall) },
+            item(
+                headlineContent = { Text("关键词触发(Keyword)", style = MaterialTheme.typography.bodyMedium) },
+                supportingContent = {
+                    Text(
+                        "关闭后按向量触发",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                },
+                trailingContent = { Switch(checked = selective, onCheckedChange = { selective = it }) },
             )
         }
 
@@ -1099,47 +1133,45 @@ private fun EntryEditor(
             )
         }
 
-        // 概率 + 位置
+        // 触发概率
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("触发概率(Probability)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
-                    Switch(
-                        checked = entry.useProbability,
-                        onCheckedChange = { onUpdate(entry.copy(useProbability = it)) },
-                    )
-                }
-                if (entry.useProbability) {
-                    Slider(
-                        value = probability,
-                        onValueChange = { probability = it },
-                        valueRange = 0f..100f,
-                        steps = 99,
-                    )
-                    Text("${probability.toInt()}%", style = MaterialTheme.typography.labelSmall)
-                }
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text("插入位置(Position)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    val posOptions = listOf(
-                        "系统前(Before System)", "系统后(After System)", "对话顶(Top/AuthNote)",
-                        "最新消息前(Before Latest)", "@D深度(At Depth)",
-                        "角色卡前(Before Char)", "角色卡后(After Char)",
-                        "对抗位(Antagonize)", "AI回复后(After Dialog)",
-                    )
-                    posOptions.forEachIndexed { i, label ->
-                        FilterChip(
-                            selected = position == i,
-                            onClick = { position = i },
-                            label = { Text(label, style = MaterialTheme.typography.labelSmall) },
-                        )
-                    }
-                }
+            Text("触发概率(Probability)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+            Switch(
+                checked = entry.useProbability,
+                onCheckedChange = { onUpdate(entry.copy(useProbability = it)) },
+            )
+        }
+        if (entry.useProbability) {
+            Slider(
+                value = probability,
+                onValueChange = { probability = it },
+                valueRange = 0f..100f,
+                steps = 99,
+            )
+            Text("${probability.toInt()}%", style = MaterialTheme.typography.labelSmall)
+        }
+
+        // 插入位置
+        CardGroup(title = { Text("插入位置(Insertion Position)") }) {
+            val posOptions = listOf(
+                "系统提示词前(Before System)",
+                "系统提示词后(After System)",
+                "对话顶部(Top of Chat)",
+                "最新消息前(Before Latest)",
+                "指定深度(@Depth)",
+                "角色卡前(Before Character)",
+                "角色卡后(After Character)",
+                "对抗位(Antagonize)",
+                "AI 回复后(After Dialog)",
+            )
+            posOptions.forEachIndexed { i, label ->
+                item(
+                    onClick = { position = i },
+                    headlineContent = { Text(label, style = MaterialTheme.typography.bodyMedium) },
+                    trailingContent = {
+                        RadioButton(selected = position == i, onClick = { position = i })
+                    },
+                )
             }
         }
 
@@ -1185,7 +1217,7 @@ private fun EntryEditor(
                             textStyle = MaterialTheme.typography.bodySmall, singleLine = true, modifier = Modifier.fillMaxWidth())
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("冷却(轮)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("冷却(Cooldown)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         OutlinedTextField(value = cooldown, onValueChange = { cooldown = it },
                             textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
@@ -1205,21 +1237,42 @@ private fun EntryEditor(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
                     }
                 }
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    FilterChip(selected = caseSensitive, onClick = { caseSensitive = !caseSensitive },
-                        label = { Text("大小写(Case Sensitive)", style = MaterialTheme.typography.labelSmall) })
-                    FilterChip(selected = useRegex, onClick = { useRegex = !useRegex },
-                        label = { Text("正则(Use Regex)", style = MaterialTheme.typography.labelSmall) })
-                    FilterChip(selected = matchWholeWords, onClick = { matchWholeWords = !matchWholeWords },
-                        label = { Text("整词(Whole Words)", style = MaterialTheme.typography.labelSmall) })
-                    FilterChip(selected = excludeRecursion, onClick = { excludeRecursion = !excludeRecursion },
-                        label = { Text("排除递归(Exclude Recursion)", style = MaterialTheme.typography.labelSmall) })
-                    FilterChip(selected = preventRecursion, onClick = { preventRecursion = !preventRecursion },
-                        label = { Text("禁止递归触发(Prevent Recursion)", style = MaterialTheme.typography.labelSmall) })
-                    FilterChip(selected = delayUntilRecursion, onClick = { delayUntilRecursion = !delayUntilRecursion },
-                        label = { Text("仅递归时检查(Delay Until Recursion)", style = MaterialTheme.typography.labelSmall) })
-                    FilterChip(selected = groupOverride, onClick = { groupOverride = !groupOverride },
-                        label = { Text("覆盖同组(Group Override)", style = MaterialTheme.typography.labelSmall) })
+                CardGroup {
+                    item(
+                        headlineContent = { Text("区分大小写(Case Sensitive)", style = MaterialTheme.typography.bodyMedium) },
+                        trailingContent = { Switch(checked = caseSensitive, onCheckedChange = { caseSensitive = it }) },
+                    )
+                    item(
+                        headlineContent = { Text("使用正则(Use Regex)", style = MaterialTheme.typography.bodyMedium) },
+                        trailingContent = { Switch(checked = useRegex, onCheckedChange = { useRegex = it }) },
+                    )
+                    item(
+                        headlineContent = { Text("整词匹配(Whole Words)", style = MaterialTheme.typography.bodyMedium) },
+                        trailingContent = { Switch(checked = matchWholeWords, onCheckedChange = { matchWholeWords = it }) },
+                    )
+                    item(
+                        headlineContent = { Text("排除递归(Exclude Recursion)", style = MaterialTheme.typography.bodyMedium) },
+                        supportingContent = {
+                            Text(
+                                "内容不参与递归扫描",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        },
+                        trailingContent = { Switch(checked = excludeRecursion, onCheckedChange = { excludeRecursion = it }) },
+                    )
+                    item(
+                        headlineContent = { Text("禁止被递归触发(Prevent Recursion)", style = MaterialTheme.typography.bodyMedium) },
+                        trailingContent = { Switch(checked = preventRecursion, onCheckedChange = { preventRecursion = it }) },
+                    )
+                    item(
+                        headlineContent = { Text("仅递归时检查(Delay Until Recursion)", style = MaterialTheme.typography.bodyMedium) },
+                        trailingContent = { Switch(checked = delayUntilRecursion, onCheckedChange = { delayUntilRecursion = it }) },
+                    )
+                    item(
+                        headlineContent = { Text("覆盖同组(Group Override)", style = MaterialTheme.typography.bodyMedium) },
+                        trailingContent = { Switch(checked = groupOverride, onCheckedChange = { groupOverride = it }) },
+                    )
                 }
 
                 // 插入控制
@@ -1228,7 +1281,7 @@ private fun EntryEditor(
                     modifier = Modifier.padding(top = 4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("分组", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("分组名称(Group)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         OutlinedTextField(value = groupStr, onValueChange = { groupStr = it },
                             textStyle = MaterialTheme.typography.bodySmall, singleLine = true, modifier = Modifier.fillMaxWidth())
                     }
@@ -1248,25 +1301,36 @@ private fun EntryEditor(
                     }
                     Spacer(Modifier.weight(1f))
                 }
-                Text("角色(Role)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    val roleLabels = listOf("system", "user", "assistant")
-                    roleLabels.forEach { label ->
-                        FilterChip(
-                            selected = role == label,
-                            onClick = { role = label },
-                            label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                CardGroup(title = { Text("注入角色(Role)") }) {
+                    val roleLabels = listOf(
+                        "system" to "系统(System)",
+                        "user" to "用户(User)",
+                        "assistant" to "助手(Assistant)",
+                    )
+                    roleLabels.forEach { (value, label) ->
+                        item(
+                            onClick = { role = value },
+                            headlineContent = { Text(label, style = MaterialTheme.typography.bodyMedium) },
+                            trailingContent = {
+                                RadioButton(selected = role == value, onClick = { role = value })
+                            },
                         )
                     }
                 }
-                Text("次要关键词逻辑(Selective Logic)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    val logicLabels = listOf("AND(全匹配)", "OR(任一)", "NOT_ANY(无)", "NOT_ALL(非全)")
+                CardGroup(title = { Text("次要关键词逻辑(Selective Logic)") }) {
+                    val logicLabels = listOf(
+                        "全部匹配(AND_ALL)",
+                        "任一匹配(OR_ANY)",
+                        "均不匹配(NOT_ANY)",
+                        "非全部匹配(NOT_ALL)",
+                    )
                     logicLabels.forEachIndexed { i, label ->
-                        FilterChip(
-                            selected = selectiveLogic == i,
+                        item(
                             onClick = { selectiveLogic = i },
-                            label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                            headlineContent = { Text(label, style = MaterialTheme.typography.bodyMedium) },
+                            trailingContent = {
+                                RadioButton(selected = selectiveLogic == i, onClick = { selectiveLogic = i })
+                            },
                         )
                     }
                 }

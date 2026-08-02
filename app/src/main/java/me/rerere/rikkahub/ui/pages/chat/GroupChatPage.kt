@@ -37,6 +37,7 @@ import me.rerere.rikkahub.ui.components.ai.ChatInput
 import me.rerere.rikkahub.ui.components.ai.ModelSelector
 import me.rerere.rikkahub.ui.components.message.ChatMessage
 import me.rerere.rikkahub.ui.components.nav.BackButton
+import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.UIAvatar
 import me.rerere.rikkahub.ui.hooks.ChatInputState
 import me.rerere.rikkahub.ui.theme.CustomColors
@@ -548,99 +549,74 @@ fun GroupChatPage(groupId: String) {
                     Divider()
 
                     // 激活策略
-                    Column {
-                        Text("激活策略", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
-                        Spacer(Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            FilterChip(
-                                selected = gc.activationStrategy == GroupActivationStrategy.NATURAL,
+                    CardGroup(title = { Text("激活策略(Activation Strategy)") }) {
+                        listOf(
+                            GroupActivationStrategy.NATURAL to "自然(Natural)",
+                            GroupActivationStrategy.LIST to "轮换(List)",
+                            GroupActivationStrategy.MANUAL to "手动(Manual)",
+                            GroupActivationStrategy.POOLED to "加权(Pooled)",
+                        ).forEach { (strategy, label) ->
+                            item(
                                 onClick = {
                                     scope.launch {
-                                    settingsStore.update { s ->
-                                        s.copy(groupChats = s.groupChats.map { if (it.id == gcId) it.copy(activationStrategy = GroupActivationStrategy.NATURAL) else it })
-                                    }
-                                    }
-                                },
-                                label = { Text("自然") },
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            FilterChip(
-                                selected = gc.activationStrategy == GroupActivationStrategy.LIST,
-                                onClick = {
-                                    scope.launch {
-                                    settingsStore.update { s ->
-                                        s.copy(groupChats = s.groupChats.map { if (it.id == gcId) it.copy(activationStrategy = GroupActivationStrategy.LIST) else it })
-                                    }
+                                        settingsStore.update { s ->
+                                            s.copy(groupChats = s.groupChats.map {
+                                                if (it.id == gcId) it.copy(activationStrategy = strategy) else it
+                                            })
+                                        }
                                     }
                                 },
-                                label = { Text("轮换") },
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            FilterChip(
-                                selected = gc.activationStrategy == GroupActivationStrategy.MANUAL,
-                                onClick = {
-                                    scope.launch {
-                                    settingsStore.update { s ->
-                                        s.copy(groupChats = s.groupChats.map { if (it.id == gcId) it.copy(activationStrategy = GroupActivationStrategy.MANUAL) else it })
-                                    }
-                                    }
+                                headlineContent = { Text(label, style = MaterialTheme.typography.bodyMedium) },
+                                trailingContent = {
+                                    RadioButton(
+                                        selected = gc.activationStrategy == strategy,
+                                        onClick = {
+                                            scope.launch {
+                                                settingsStore.update { s ->
+                                                    s.copy(groupChats = s.groupChats.map {
+                                                        if (it.id == gcId) it.copy(activationStrategy = strategy) else it
+                                                    })
+                                                }
+                                            }
+                                        },
+                                    )
                                 },
-                                label = { Text("手动") },
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            FilterChip(
-                                selected = gc.activationStrategy == GroupActivationStrategy.POOLED,
-                                onClick = {
-                                    scope.launch {
-                                    settingsStore.update { s ->
-                                        s.copy(groupChats = s.groupChats.map { if (it.id == gcId) it.copy(activationStrategy = GroupActivationStrategy.POOLED) else it })
-                                    }
-                                    }
-                                },
-                                label = { Text("加权") },
                             )
                         }
                     }
 
                     // 生成模式
-                    Column {
-                        Text("生成模式", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
-                        Spacer(Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            FilterChip(
-                                selected = gc.generationMode == GroupGenerationMode.SWAP,
+                    CardGroup(title = { Text("生成模式(Generation Mode)") }) {
+                        listOf(
+                            GroupGenerationMode.SWAP to "替换(Swap)",
+                            GroupGenerationMode.APPEND to "追加(Append)",
+                            GroupGenerationMode.APPEND_DISABLED to "追加含禁言(Append Disabled)",
+                        ).forEach { (mode, label) ->
+                            item(
                                 onClick = {
                                     scope.launch {
-                                    settingsStore.update { s ->
-                                        s.copy(groupChats = s.groupChats.map { if (it.id == gcId) it.copy(generationMode = GroupGenerationMode.SWAP) else it })
-                                    }
-                                    }
-                                },
-                                label = { Text("替换") },
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            FilterChip(
-                                selected = gc.generationMode == GroupGenerationMode.APPEND,
-                                onClick = {
-                                    scope.launch {
-                                    settingsStore.update { s ->
-                                        s.copy(groupChats = s.groupChats.map { if (it.id == gcId) it.copy(generationMode = GroupGenerationMode.APPEND) else it })
-                                    }
+                                        settingsStore.update { s ->
+                                            s.copy(groupChats = s.groupChats.map {
+                                                if (it.id == gcId) it.copy(generationMode = mode) else it
+                                            })
+                                        }
                                     }
                                 },
-                                label = { Text("追加") },
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            FilterChip(
-                                selected = gc.generationMode == GroupGenerationMode.APPEND_DISABLED,
-                                onClick = {
-                                    scope.launch {
-                                    settingsStore.update { s ->
-                                        s.copy(groupChats = s.groupChats.map { if (it.id == gcId) it.copy(generationMode = GroupGenerationMode.APPEND_DISABLED) else it })
-                                    }
-                                    }
+                                headlineContent = { Text(label, style = MaterialTheme.typography.bodyMedium) },
+                                trailingContent = {
+                                    RadioButton(
+                                        selected = gc.generationMode == mode,
+                                        onClick = {
+                                            scope.launch {
+                                                settingsStore.update { s ->
+                                                    s.copy(groupChats = s.groupChats.map {
+                                                        if (it.id == gcId) it.copy(generationMode = mode) else it
+                                                    })
+                                                }
+                                            }
+                                        },
+                                    )
                                 },
-                                label = { Text("追加(含禁言)") },
                             )
                         }
                     }
