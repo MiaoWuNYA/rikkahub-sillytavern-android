@@ -9,6 +9,7 @@ import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.model.extractContextForMatching
 import me.rerere.rikkahub.data.model.isTriggered
+import me.rerere.rikkahub.data.model.matchedKeyScore
 import kotlin.uuid.Uuid
 import kotlin.random.Random
 
@@ -193,6 +194,8 @@ internal fun collectInjections(
             val activated = mutableListOf<PromptInjection.RegexInjection>()
             enabledLorebooks.forEach { lorebook ->
                 val newlyTriggered = mutableListOf<PromptInjection.RegexInjection>()
+                // 触发时的关键词匹配分（酒馆 use_group_scoring 用）
+                val triggeredScores = mutableMapOf<Uuid, Int>()
 
                 for (entry in lorebook.entries) {
                     // 冷却中的条目跳过
@@ -229,32 +232,47 @@ internal fun collectInjections(
                     }
                     if (entry.isTriggered(context)) {
                         newlyTriggered.add(entry)
+                        triggeredScores[entry.id] = entry.matchedKeyScore(context)
                     }
                 }
 
-                // 同组条目权重随机选择：同一 group 的条目只选一条
-                val grouped = newlyTriggered.filter { it.group.isNotBlank() }.groupBy { it.group }
-                val ungrouped = newlyTriggered.filter { it.group.isBlank() }
+                // 同组条目单选：本地 group + 酒馆 inclusion_group（逗号分隔多组，同组只取一条）
+                val grouped = newlyTriggered
+                    .filter { it.group.isNotBlank() || it.inclusionGroup.isNotBlank() }
+                    .flatMap { entry ->
+                        val labels = buildList {
+                            if (entry.group.isNotBlank()) add(entry.group)
+                            entry.inclusionGroup.split(",").map { it.trim() }.filter { it.isNotEmpty() }.let { addAll(it) }
+                        }.distinct()
+                        labels.map { label -> label to entry }
+                    }
+                    .groupBy({ it.first }, { it.second })
+                val ungrouped = newlyTriggered.filter { it.group.isBlank() && it.inclusionGroup.isBlank() }
                 activated.addAll(ungrouped)
                 for ((_, entries) in grouped) {
-                    val override = entries.find { it.groupOverride }
-                    val selected = if (override != null) {
-                        override
-                    } else {
-                        val totalWeight = entries.sumOf { it.groupWeight.toLong() }
-                        if (totalWeight <= 0) {
-                            entries.first()
-                        } else {
-                            var roll = Random.nextLong(totalWeight)
-                            var picked = entries.first()
-                            for (entry in entries) {
-                                roll -= entry.groupWeight.toLong()
-                                if (roll < 0) {
-                                    picked = entry
-                                    break
+                    val override = entries.find { it.groupOverride || it.groupPriority }
+                    val selected = when {
+                        override != null -> override
+                        entries.any { it.useGroupScoring } -> {
+                            // 酒馆 use_group_scoring：按匹配关键词数选组胜者
+                            entries.maxByOrNull { triggeredScores[it.id] ?: 0 } ?: entries.first()
+                        }
+                        else -> {
+                            val totalWeight = entries.sumOf { it.groupWeight.toLong() }
+                            if (totalWeight <= 0) {
+                                entries.first()
+                            } else {
+                                var roll = Random.nextLong(totalWeight)
+                                var picked = entries.first()
+                                for (entry in entries) {
+                                    roll -= entry.groupWeight.toLong()
+                                    if (roll < 0) {
+                                        picked = entry
+                                        break
+                                    }
                                 }
+                                picked
                             }
-                            picked
                         }
                     }
                     activated.add(selected)

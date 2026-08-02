@@ -1079,6 +1079,13 @@ private fun EntryEditor(
     var keysStr by remember(entry.id) { mutableStateOf(entry.keys.joinToString(", ")) }
     var secondaryKeysStr by remember(entry.id) { mutableStateOf(entry.secondaryKeys.joinToString(", ")) }
     var commentStr by remember(entry.id) { mutableStateOf(entry.comment) }
+    var inclusionGroupStr by remember(entry.id) { mutableStateOf(entry.inclusionGroup) }
+    var useGroupScoring by remember(entry.id) { mutableStateOf(entry.useGroupScoring) }
+    var groupPriority by remember(entry.id) { mutableStateOf(entry.groupPriority) }
+    var automationIdStr by remember(entry.id) { mutableStateOf(entry.automationId) }
+    var displayIndexStr by remember(entry.id) { mutableStateOf(entry.displayIndex.toString()) }
+    var displayPositionStr by remember(entry.id) { mutableStateOf(entry.displayPosition.toString()) }
+    var triggersStr by remember(entry.id) { mutableStateOf(entry.triggers.joinToString(", ")) }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         // 顶部：标题 + 收起
@@ -1360,6 +1367,75 @@ private fun EntryEditor(
                         )
                     }
                 }
+
+                // 酒馆官方高级字段（自动化ID本App暂不执行，仅保留数据）
+                Text("官方高级字段(Official Advanced)", style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 4.dp))
+                OutlinedTextField(
+                    value = inclusionGroupStr,
+                    onValueChange = { inclusionGroupStr = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = MaterialTheme.typography.bodySmall,
+                    singleLine = true,
+                    label = { Text("包含组(Inclusion Group)") },
+                )
+                CardGroup {
+                    item(
+                        headlineContent = { Text("使用组评分(Use Group Scoring)", style = MaterialTheme.typography.bodyMedium) },
+                        supportingContent = {
+                            Text(
+                                "同组按匹配关键词数选胜者",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        },
+                        trailingContent = { Switch(checked = useGroupScoring, onCheckedChange = { useGroupScoring = it }) },
+                    )
+                    item(
+                        headlineContent = { Text("包含优先(Group Priority)", style = MaterialTheme.typography.bodyMedium) },
+                        supportingContent = {
+                            Text(
+                                "同组优先选优先级最高的条目",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        },
+                        trailingContent = { Switch(checked = groupPriority, onCheckedChange = { groupPriority = it }) },
+                    )
+                }
+                OutlinedTextField(
+                    value = automationIdStr,
+                    onValueChange = { automationIdStr = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = MaterialTheme.typography.bodySmall,
+                    singleLine = true,
+                    label = { Text("自动化ID(Automation ID)") },
+                    supportingText = { Text("仅保留数据，暂不执行") },
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("显示序号(Display Index)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        OutlinedTextField(value = displayIndexStr, onValueChange = { displayIndexStr = it },
+                            textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("显示位置(Display Position)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        OutlinedTextField(value = displayPositionStr, onValueChange = { displayPositionStr = it },
+                            textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                    }
+                }
+                OutlinedTextField(
+                    value = triggersStr,
+                    onValueChange = { triggersStr = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = MaterialTheme.typography.bodySmall,
+                    singleLine = true,
+                    label = { Text("触发类型(Triggers)") },
+                    supportingText = { Text("逗号分隔，仅保留数据") },
+                )
             }
         }
 
@@ -1390,6 +1466,13 @@ private fun EntryEditor(
                     group = groupStr,
                     groupWeight = groupWeight.toIntOrNull() ?: 100,
                     groupOverride = groupOverride,
+                    inclusionGroup = inclusionGroupStr.trim(),
+                    useGroupScoring = useGroupScoring,
+                    groupPriority = groupPriority,
+                    automationId = automationIdStr.trim(),
+                    displayIndex = displayIndexStr.toIntOrNull() ?: 0,
+                    displayPosition = displayPositionStr.toIntOrNull() ?: 0,
+                    triggers = triggersStr.split(",").map { it.trim() }.filter { it.isNotBlank() },
                     keys = keysStr.split(",").map { it.trim() }.filter { it.isNotBlank() },
                     secondaryKeys = secondaryKeysStr.split(",").map { it.trim() }.filter { it.isNotBlank() },
                     comment = commentStr,

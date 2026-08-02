@@ -81,6 +81,13 @@ class PromptVM(
                     groupWeight = injection.groupWeight,
                     groupOverride = injection.groupOverride,
                     useProbability = injection.useProbability,
+                    inclusionGroup = injection.inclusionGroup,
+                    useGroupScoring = injection.useGroupScoring,
+                    groupPriority = injection.groupPriority,
+                    automationId = injection.automationId,
+                    displayIndex = injection.displayIndex,
+                    displayPosition = injection.displayPosition,
+                    triggers = injection.triggers,
                 )
             }
             assistant.copy(tavernData = tav.copy(embeddedBook = oldBook.copy(entries = newEntries)))

@@ -230,6 +230,8 @@ private fun parseV2Card(context: Context, json: JsonObject, background: String?,
         characterVersion = data["character_version"]?.jsonPrimitiveOrNull?.contentOrNull ?: "",
         tags = parseStringArray(data["tags"]),
         postHistoryInstructions = data["post_history_instructions"]?.jsonPrimitiveOrNull?.contentOrNull ?: "",
+        extensions = parseExtensions(data["extensions"]?.jsonObject),
+        extensionsRaw = data["extensions"]?.toString() ?: "",
         embeddedBook = parseEmbeddedBook(data["character_book"]?.jsonObject),
     )
 
@@ -273,6 +275,7 @@ private fun parseV3Card(context: Context, json: JsonObject, background: String?,
         tags = parseStringArray(data["tags"]),
         postHistoryInstructions = data["post_history_instructions"]?.jsonPrimitiveOrNull?.contentOrNull ?: "",
         extensions = parseExtensions(data["extensions"]?.jsonObject),
+        extensionsRaw = data["extensions"]?.toString() ?: "",
         assets = parseAssets(data["assets"]?.jsonArray),
         groupOnlyGreetings = parseStringArray(data["group_only_greetings"]),
         embeddedBook = parseEmbeddedBook(data["character_book"]?.jsonObject),
@@ -380,7 +383,7 @@ private fun parseEntriesArray(arr: kotlinx.serialization.json.JsonArray): List<T
                 delay = e["delay"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
                 useProbability = e["useProbability"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
                     ?: e["use_probability"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
-            ), e["extensions"] as? JsonObject)
+            ), e)
         } catch (_: Exception) { null }
     }
 }
@@ -416,7 +419,7 @@ private fun parseEntriesMap(obj: JsonObject): List<TavernBookEntry> {
                 delay = e["delay"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
                 useProbability = e["useProbability"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
                     ?: e["use_probability"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
-            ), e["extensions"] as? JsonObject)
+            ), e)
         } catch (_: Exception) { null }
     }
 }
@@ -425,8 +428,9 @@ private fun parseEntriesMap(obj: JsonObject): List<TavernBookEntry> {
  * 应用酒馆条目 extensions 里的新字段（整词匹配/递归控制/概率/权重等）。
  * 旧版顶层字段优先保留，只有 extensions 显式提供时才覆盖。
  */
-private fun applyEntryExtensions(entry: TavernBookEntry, extensions: JsonObject?): TavernBookEntry {
-    if (extensions == null) return entry
+private fun applyEntryExtensions(entry: TavernBookEntry, e: JsonObject?): TavernBookEntry {
+    if (e == null) return entry
+    val extensions = e["extensions"] as? JsonObject
     return try {
         entry.copy(
             matchWholeWords = extensions["match_whole_words"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
@@ -449,8 +453,29 @@ private fun applyEntryExtensions(entry: TavernBookEntry, extensions: JsonObject?
             groupWeight = extensions["group_weight"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: entry.groupWeight,
             groupOverride = extensions["group_priority"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
                 ?: entry.groupOverride,
+            inclusionGroup = (extensions?.let { parseInclusionGroup(it["inclusion_group"]) } ?: "")
+                .ifBlank { parseInclusionGroup(e["inclusion_group"]) },
+            useGroupScoring = extensions?.get("use_group_scoring")?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
+                ?: e["use_group_scoring"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: entry.useGroupScoring,
+            groupPriority = extensions?.get("group_priority")?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
+                ?: e["group_priority"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: entry.groupPriority,
+            automationId = extensions?.get("automation_id")?.jsonPrimitive?.contentOrNull
+                ?: e["automation_id"]?.jsonPrimitive?.contentOrNull ?: entry.automationId,
+            displayIndex = extensions?.get("display_index")?.jsonPrimitive?.contentOrNull?.toIntOrNull()
+                ?: e["display_index"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: entry.displayIndex,
+            displayPosition = extensions?.get("display_position")?.jsonPrimitive?.contentOrNull?.toIntOrNull()
+                ?: e["display_position"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: entry.displayPosition,
+            triggers = (extensions?.let { parseStringArray(it["triggers"]) }.orEmpty() +
+                parseStringArray(e["triggers"])).distinct(),
         )
     } catch (_: Exception) { entry }
+}
+
+/** inclusion_group 可为逗号分隔字符串或数组，统一转逗号分隔字符串 */
+private fun parseInclusionGroup(element: JsonElement?): String = when {
+    element == null -> ""
+    element is JsonArray -> element.mapNotNull { it.jsonPrimitive.contentOrNull }.joinToString(",")
+    else -> element.jsonPrimitive?.contentOrNull ?: ""
 }
 
 /** extensions 里的递归控制可为布尔、数字（延迟层级）或 uid 数组，统一转布尔 */
@@ -532,6 +557,13 @@ private fun tavernEntryToInjection(entry: TavernBookEntry): PromptInjection.Rege
         groupWeight = entry.groupWeight,
         groupOverride = entry.groupOverride,
         useProbability = entry.useProbability,
+        inclusionGroup = entry.inclusionGroup,
+        useGroupScoring = entry.useGroupScoring,
+        groupPriority = entry.groupPriority,
+        automationId = entry.automationId,
+        displayIndex = entry.displayIndex,
+        displayPosition = entry.displayPosition,
+        triggers = entry.triggers,
     )
 }
 
@@ -601,6 +633,13 @@ private fun injectionToTavernEntry(
         groupWeight = injection.groupWeight,
         groupOverride = injection.groupOverride,
         useProbability = injection.useProbability,
+        inclusionGroup = injection.inclusionGroup,
+        useGroupScoring = injection.useGroupScoring,
+        groupPriority = injection.groupPriority,
+        automationId = injection.automationId,
+        displayIndex = injection.displayIndex,
+        displayPosition = injection.displayPosition,
+        triggers = injection.triggers,
     )
 }
 

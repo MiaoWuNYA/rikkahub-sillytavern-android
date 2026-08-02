@@ -95,7 +95,10 @@ object CardExporter {
                         }
                     }
                 }
-                if (tav?.extensions?.isNotEmpty() == true) {
+                if (!tav?.extensionsRaw.isNullOrBlank()) {
+                    // 有原始 JSON 时原样带回（无损）
+                    put("extensions", kotlinx.serialization.json.Json.parseToJsonElement(tav!!.extensionsRaw))
+                } else if (tav?.extensions?.isNotEmpty() == true) {
                     putJsonObject("extensions") {
                         tav.extensions.forEach { (k, v) -> put(k, v) }
                     }
@@ -129,6 +132,31 @@ object CardExporter {
                                     put("group_weight", entry.groupWeight)
                                     put("group_override", entry.groupOverride)
                                     put("depth", entry.depth)
+                                    put("matchWholeWords", entry.matchWholeWords)
+                                    put("excludeRecursion", entry.excludeRecursion)
+                                    put("preventRecursion", entry.preventRecursion)
+                                    put("delayUntilRecursion", entry.delayUntilRecursion)
+                                    put("useProbability", entry.useProbability)
+                                    putJsonObject("extensions") {
+                                        put("match_whole_words", entry.matchWholeWords)
+                                        put("case_sensitive", entry.caseSensitive)
+                                        put("exclude_recursion", entry.excludeRecursion)
+                                        put("prevent_recursion", entry.preventRecursion)
+                                        put("delay_until_recursion", entry.delayUntilRecursion)
+                                        put("scan_depth", entry.scanDepth)
+                                        put("group_weight", entry.groupWeight)
+                                        put("group_override", entry.groupOverride)
+                                        if (entry.inclusionGroup.isNotBlank()) put("inclusion_group", entry.inclusionGroup)
+                                        if (entry.useGroupScoring) put("use_group_scoring", true)
+                                        if (entry.groupPriority) put("group_priority", true)
+                                        if (entry.automationId.isNotBlank()) put("automation_id", entry.automationId)
+                                        if (entry.displayIndex != 0) put("display_index", entry.displayIndex)
+                                        if (entry.displayPosition != 0) put("display_position", entry.displayPosition)
+                                        if (entry.triggers.isNotEmpty()) {
+                                            putJsonArray("triggers") { entry.triggers.forEach { add(it) } }
+                                        }
+                                        if (entry.useProbability) put("probability", entry.probability)
+                                    }
                                 })
                             }
                         }

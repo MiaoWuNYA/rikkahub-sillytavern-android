@@ -1567,6 +1567,74 @@ private fun GroupSettingsDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
 
+                // 酒馆官方高级字段（自动化ID/触发类型本App暂不执行，仅保留数据）
+                OutlinedTextField(
+                    value = entry.inclusionGroup,
+                    onValueChange = { onEdit(entry.copy(inclusionGroup = it)) },
+                    label = { Text("包含组(Inclusion Group)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    supportingText = { Text("逗号分隔多组，同组只取一条") },
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FormItem(
+                        modifier = Modifier.weight(1f),
+                        label = { Text("使用组评分(Use Group Scoring)") },
+                        tail = {
+                            Switch(
+                                checked = entry.useGroupScoring,
+                                onCheckedChange = { onEdit(entry.copy(useGroupScoring = it)) }
+                            )
+                        }
+                    )
+                    FormItem(
+                        modifier = Modifier.weight(1f),
+                        label = { Text("包含优先(Group Priority)") },
+                        tail = {
+                            Switch(
+                                checked = entry.groupPriority,
+                                onCheckedChange = { onEdit(entry.copy(groupPriority = it)) }
+                            )
+                        }
+                    )
+                }
+                OutlinedTextField(
+                    value = entry.automationId,
+                    onValueChange = { onEdit(entry.copy(automationId = it)) },
+                    label = { Text("自动化ID(Automation ID)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    supportingText = { Text("仅保留数据，暂不执行") },
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = entry.displayIndex.toString(),
+                        onValueChange = { it.toIntOrNull()?.let { v -> onEdit(entry.copy(displayIndex = v)) } },
+                        label = { Text("显示序号(Display Index)") },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                    )
+                    OutlinedTextField(
+                        value = entry.displayPosition.toString(),
+                        onValueChange = { it.toIntOrNull()?.let { v -> onEdit(entry.copy(displayPosition = v)) } },
+                        label = { Text("显示位置(Display Position)") },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                    )
+                }
+                OutlinedTextField(
+                    value = entry.triggers.joinToString(", "),
+                    onValueChange = { text ->
+                        onEdit(entry.copy(triggers = text.split(",").map { it.trim() }.filter { it.isNotBlank() }))
+                    },
+                    label = { Text("触发类型(Triggers)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    supportingText = { Text("逗号分隔，仅保留数据") },
+                )
+
                 // 概率
                 FormItem(
                     label = { Text("触发概率(Probability)") },

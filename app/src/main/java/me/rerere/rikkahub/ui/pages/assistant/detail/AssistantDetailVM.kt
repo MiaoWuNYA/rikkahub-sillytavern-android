@@ -242,6 +242,13 @@ class AssistantDetailVM(
                     groupWeight = e.groupWeight,
                     groupOverride = e.groupOverride,
                     useProbability = e.useProbability,
+                    inclusionGroup = e.inclusionGroup,
+                    useGroupScoring = e.useGroupScoring,
+                    groupPriority = e.groupPriority,
+                    automationId = e.automationId,
+                    displayIndex = e.displayIndex,
+                    displayPosition = e.displayPosition,
+                    triggers = e.triggers,
                 )
             }
             lb.copy(entries = synced)

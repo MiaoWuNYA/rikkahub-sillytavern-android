@@ -24,6 +24,7 @@ data class TavernCharacterData(
     val tags: List<String> = emptyList(),            // 文本标签
     val postHistoryInstructions: String = "",        // 历史后指令
     val extensions: Map<String, String> = emptyMap(), // V3 扩展字段
+    val extensionsRaw: String = "",                  // V3 扩展字段原始 JSON（无损保留，导出时原样带回）
     val assets: List<TavernAsset> = emptyList(),     // V3 资源引用
     val groupOnlyGreetings: List<String> = emptyList(), // 群聊专用开场白
     // 内嵌世界书
@@ -85,4 +86,11 @@ data class TavernBookEntry(
     val preventRecursion: Boolean = false, // 禁止被递归触发（酒馆 extensions.prevent_recursion）
     val delayUntilRecursion: Boolean = false, // 只在递归扫描时检查（酒馆 extensions.delay_until_recursion）
     val useProbability: Boolean = false, // 是否启用概率过滤（酒馆默认false）
+    val inclusionGroup: String = "", // 酒馆 extensions.inclusion_group（逗号分隔多组）
+    val useGroupScoring: Boolean = false, // 酒馆 extensions.use_group_scoring
+    val groupPriority: Boolean = false, // 酒馆 extensions.group_priority
+    val automationId: String = "", // 酒馆 extensions.automation_id
+    val displayIndex: Int = 0, // 酒馆 display_index
+    val displayPosition: Int = 0, // 酒馆 display_position
+    val triggers: List<String> = emptyList(), // 酒馆 triggers
 )

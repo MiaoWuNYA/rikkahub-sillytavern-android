@@ -248,6 +248,13 @@ sealed class PromptInjection {
         val preventRecursion: Boolean = false,          // 禁止被递归触发（酒馆 extensions.prevent_recursion）
         val delayUntilRecursion: Boolean = false,       // 只在递归扫描时检查（酒馆 extensions.delay_until_recursion）
         val useProbability: Boolean = true,              // 是否启用概率过滤（false=忽略probability直接触发）
+        val inclusionGroup: String = "",                 // 酒馆 extensions.inclusion_group（逗号分隔多组，同组只取一条）
+        val useGroupScoring: Boolean = false,            // 酒馆 extensions.use_group_scoring（按匹配关键词数选组胜者）
+        val groupPriority: Boolean = false,              // 酒馆 extensions.group_priority（包含优先：选优先级最高）
+        val automationId: String = "",                   // 酒馆 extensions.automation_id（本App暂不执行，仅保留）
+        val displayIndex: Int = 0,                       // 酒馆 display_index（展示顺序）
+        val displayPosition: Int = 0,                    // 酒馆 display_position（展示位置）
+        val triggers: List<String> = emptyList(),        // 酒馆 triggers（生成类型过滤，本App暂不执行）
     ) : PromptInjection()
 }
 
@@ -328,6 +335,25 @@ fun PromptInjection.RegexInjection.isTriggered(context: String, activeSticky: Bo
         // 非选择性模式：只检查主关键词
         if (keywords.isEmpty()) return false
         return keywords.any { keyMatches(it, context, useRegex, caseSensitive, matchWholeWords) }
+    }
+}
+
+/** 酒馆 use_group_scoring 用：统计匹配到的关键词数（主关键词1条=1分，二级按逻辑计分） */
+fun PromptInjection.RegexInjection.matchedKeyScore(context: String): Int {
+    if (!enabled) return 0
+    if (constantActive) return 0
+    val primaryMatches = keywords.count { keyMatches(it, context, useRegex, caseSensitive, matchWholeWords) }
+    if (!selective) return primaryMatches
+    val secondaryMatches = secondaryKeys.count { keyMatches(it, context, useRegex, caseSensitive, matchWholeWords) }
+    return when (selectiveLogic) {
+        SelectiveLogic.AND_ANY -> primaryMatches + secondaryMatches
+        SelectiveLogic.AND_ALL -> if (secondaryKeys.isEmpty() || secondaryMatches == secondaryKeys.size) {
+            primaryMatches + secondaryMatches
+        } else {
+            primaryMatches
+        }
+        SelectiveLogic.OR_ANY -> primaryMatches + secondaryMatches
+        SelectiveLogic.NOT_ANY, SelectiveLogic.NOT_ALL -> primaryMatches
     }
 }
 
