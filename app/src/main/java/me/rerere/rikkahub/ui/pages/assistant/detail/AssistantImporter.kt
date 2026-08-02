@@ -512,6 +512,20 @@ private fun applyEntryExtensions(entry: TavernBookEntry, e: JsonObject?): Tavern
                 ?: e["display_position"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: entry.displayPosition,
             triggers = (extensions?.let { parseStringArray(it["triggers"]) }.orEmpty() +
                 parseStringArray(e["triggers"])).distinct(),
+            matchPersonaDescription = extensions?.get("match_persona_description")?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
+                ?: e["match_persona_description"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: entry.matchPersonaDescription,
+            matchCharacterDescription = extensions?.get("match_character_description")?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
+                ?: e["match_character_description"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: entry.matchCharacterDescription,
+            matchCharacterPersonality = extensions?.get("match_character_personality")?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
+                ?: e["match_character_personality"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: entry.matchCharacterPersonality,
+            matchCharacterDepthPrompt = extensions?.get("match_character_depth_prompt")?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
+                ?: e["match_character_depth_prompt"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: entry.matchCharacterDepthPrompt,
+            matchScenario = extensions?.get("match_scenario")?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
+                ?: e["match_scenario"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: entry.matchScenario,
+            matchCreatorNotes = extensions?.get("match_creator_notes")?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
+                ?: e["match_creator_notes"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: entry.matchCreatorNotes,
+            ignoreBudget = extensions?.get("ignore_budget")?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
+                ?: e["ignore_budget"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: entry.ignoreBudget,
         )
     } catch (_: Exception) { entry }
 }
@@ -633,6 +647,13 @@ private fun tavernEntryToInjection(entry: TavernBookEntry): PromptInjection.Rege
         displayIndex = entry.displayIndex,
         displayPosition = entry.displayPosition,
         triggers = entry.triggers,
+        matchPersonaDescription = entry.matchPersonaDescription,
+        matchCharacterDescription = entry.matchCharacterDescription,
+        matchCharacterPersonality = entry.matchCharacterPersonality,
+        matchCharacterDepthPrompt = entry.matchCharacterDepthPrompt,
+        matchScenario = entry.matchScenario,
+        matchCreatorNotes = entry.matchCreatorNotes,
+        ignoreBudget = entry.ignoreBudget,
     )
 }
 
@@ -642,6 +663,8 @@ internal fun mapTavernPosition(pos: Int): InjectionPosition = when (pos) {
     2 -> InjectionPosition.AUTHOR_NOTE        // 跟随用户 AN 位置设置
     3 -> InjectionPosition.AUTHOR_NOTE        // 官方 ANBottom（作者备注下方），本地跟随 AN 位置
     4 -> InjectionPosition.AT_DEPTH
+    5 -> InjectionPosition.EM_TOP             // 官方 EMTop：示例消息之前
+    6 -> InjectionPosition.EM_BOTTOM          // 官方 EMBottom：示例消息之后
     else -> InjectionPosition.AFTER_SYSTEM_PROMPT
 }
 
@@ -709,6 +732,13 @@ private fun injectionToTavernEntry(
         displayIndex = injection.displayIndex,
         displayPosition = injection.displayPosition,
         triggers = injection.triggers,
+        matchPersonaDescription = injection.matchPersonaDescription,
+        matchCharacterDescription = injection.matchCharacterDescription,
+        matchCharacterPersonality = injection.matchCharacterPersonality,
+        matchCharacterDepthPrompt = injection.matchCharacterDepthPrompt,
+        matchScenario = injection.matchScenario,
+        matchCreatorNotes = injection.matchCreatorNotes,
+        ignoreBudget = injection.ignoreBudget,
     )
 }
 
@@ -724,6 +754,8 @@ private fun mapInjectionToPosition(pos: InjectionPosition): Int = when (pos) {
     InjectionPosition.AFTER_CHARACTER -> 6
     InjectionPosition.ANTAGONIZE -> 7
     InjectionPosition.AFTER_DIALOG -> 8
+    InjectionPosition.EM_TOP -> 5
+    InjectionPosition.EM_BOTTOM -> 6
 }
 
 /**

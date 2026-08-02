@@ -105,4 +105,12 @@ data class TavernBookEntry(
     val displayPosition: Int = 0, // 酒馆 display_position
     val triggers: List<String> = emptyList(), // 酒馆 triggers
     val extensionsRaw: String = "", // 条目 extensions 原始 JSON（无损保留，导出优先）
+    // 酒馆 match_* 扫描开关（默认 false = 只扫聊天，与官方一致）
+    val matchPersonaDescription: Boolean = false,    // extensions.match_persona_description
+    val matchCharacterDescription: Boolean = false,  // extensions.match_character_description
+    val matchCharacterPersonality: Boolean = false,  // extensions.match_character_personality
+    val matchCharacterDepthPrompt: Boolean = false,  // extensions.match_character_depth_prompt
+    val matchScenario: Boolean = false,              // extensions.match_scenario
+    val matchCreatorNotes: Boolean = false,          // extensions.match_creator_notes
+    val ignoreBudget: Boolean = false,               // extensions.ignore_budget（跳过预算上限）
 )

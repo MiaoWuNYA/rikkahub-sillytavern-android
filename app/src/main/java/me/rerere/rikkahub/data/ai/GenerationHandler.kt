@@ -86,6 +86,7 @@ class GenerationHandler(
         conversationModeInjectionIds: Set<Uuid> = emptySet(),
         conversationLorebookIds: Set<Uuid> = emptySet(),
         workspaceCwd: String? = null,
+        generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
     ): Flow<GenerationChunk> = flow {
         val provider = model.findProvider(settings.providers) ?: error("Provider not found")
         val providerImpl = providerManager.getProviderByType(provider)
@@ -352,6 +353,7 @@ class GenerationHandler(
                     conversationLorebookIds = conversationLorebookIds,
                     prebuiltSystemPrompt = prebuiltSystemPrompt,
                     workspaceCwd = workspaceCwd,
+                    generationType = generationType,
                 )
                 messages = messages.visualTransforms(
                     transformers = outputTransformers,
@@ -531,6 +533,7 @@ class GenerationHandler(
         conversationLorebookIds: Set<Uuid> = emptySet(),
         prebuiltSystemPrompt: String = "",
         workspaceCwd: String? = null,
+        generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
     ) {
         val internalMessages = buildList {
             val fullSystem = if (prebuiltSystemPrompt.isNotBlank()) prebuiltSystemPrompt else buildString {
@@ -615,6 +618,7 @@ class GenerationHandler(
             conversationLorebookIds = conversationLorebookIds,
             processingStatus = processingStatus,
             workspaceCwd = workspaceCwd,
+            generationType = generationType,
         )
 
         var messages: List<UIMessage> = messages

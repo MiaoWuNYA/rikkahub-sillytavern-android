@@ -563,7 +563,9 @@ private fun InjectionPosition.usesStandaloneMessage(): Boolean = when (this) {
     InjectionPosition.BOTTOM_OF_CHAT,
     InjectionPosition.AFTER_DIALOG,
     InjectionPosition.AT_DEPTH,
-    InjectionPosition.AUTHOR_NOTE -> true
+    InjectionPosition.AUTHOR_NOTE,
+    InjectionPosition.EM_TOP,
+    InjectionPosition.EM_BOTTOM -> true
 }
 
 @Composable
@@ -578,6 +580,8 @@ private fun getPositionLabel(position: InjectionPosition): String = when (positi
     InjectionPosition.AFTER_DIALOG -> stringResource(R.string.prompt_page_position_after_dialog)
     InjectionPosition.AT_DEPTH -> stringResource(R.string.prompt_page_position_at_depth)
     InjectionPosition.AUTHOR_NOTE -> stringResource(R.string.prompt_page_position_author_note)
+    InjectionPosition.EM_TOP -> "示例消息前(EM Top)"
+    InjectionPosition.EM_BOTTOM -> "示例消息后(EM Bottom)"
 }
 
 @Composable

@@ -6,6 +6,8 @@ import me.rerere.ai.core.MessageRole
 import me.rerere.ai.provider.CustomBody
 import me.rerere.ai.provider.CustomHeader
 import me.rerere.ai.ui.UIMessage
+import me.rerere.ai.ui.UIMessageAnnotation
+import me.rerere.ai.ui.UIMessagePart
 import me.rerere.ai.core.ReasoningLevel
 import me.rerere.rikkahub.data.ai.tools.LocalToolOption
 import me.rerere.rikkahub.utils.SimpleCache
@@ -179,6 +181,12 @@ enum class InjectionPosition {
 
     @SerialName("author_note")
     AUTHOR_NOTE,            // Author's Note 位置（由用户设置决定，不固定）
+
+    @SerialName("em_top")
+    EM_TOP,                 // 官方 EMTop：示例消息之前
+
+    @SerialName("em_bottom")
+    EM_BOTTOM,              // 官方 EMBottom：示例消息之后
 }
 
 /**
@@ -255,6 +263,13 @@ sealed class PromptInjection {
         val displayIndex: Int = 0,                       // 酒馆 display_index（展示顺序）
         val displayPosition: Int = 0,                    // 酒馆 display_position（展示位置）
         val triggers: List<String> = emptyList(),        // 酒馆 triggers（生成类型过滤，本App暂不执行）
+        val matchPersonaDescription: Boolean = false,    // 酒馆 extensions.match_persona_description
+        val matchCharacterDescription: Boolean = false,  // 酒馆 extensions.match_character_description
+        val matchCharacterPersonality: Boolean = false,  // 酒馆 extensions.match_character_personality
+        val matchCharacterDepthPrompt: Boolean = false,  // 酒馆 extensions.match_character_depth_prompt
+        val matchScenario: Boolean = false,              // 酒馆 extensions.match_scenario
+        val matchCreatorNotes: Boolean = false,          // 酒馆 extensions.match_creator_notes
+        val ignoreBudget: Boolean = false,               // 酒馆 extensions.ignore_budget
     ) : PromptInjection()
 }
 
@@ -503,8 +518,13 @@ private fun parseExampleBlock(block: String, charName: String, userName: String)
         val role = currentRole ?: return
         val content = currentLines.joinToString("\n").trim()
         if (content.isNotBlank()) {
+            val isUser = role == MessageRole.USER
             result.add(
-                if (role == MessageRole.USER) UIMessage.user(content) else UIMessage.assistant(content)
+                UIMessage(
+                    role = if (isUser) MessageRole.USER else MessageRole.ASSISTANT,
+                    parts = listOf(UIMessagePart.Text(content)),
+                    annotations = listOf(UIMessageAnnotation.ExampleMessage),
+                )
             )
         }
         currentLines.clear()

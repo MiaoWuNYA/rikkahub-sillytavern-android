@@ -239,6 +239,13 @@ class AssistantDetailVM(
                     displayIndex = e.displayIndex,
                     displayPosition = e.displayPosition,
                     triggers = e.triggers,
+                    matchPersonaDescription = e.matchPersonaDescription,
+                    matchCharacterDescription = e.matchCharacterDescription,
+                    matchCharacterPersonality = e.matchCharacterPersonality,
+                    matchCharacterDepthPrompt = e.matchCharacterDepthPrompt,
+                    matchScenario = e.matchScenario,
+                    matchCreatorNotes = e.matchCreatorNotes,
+                    ignoreBudget = e.ignoreBudget,
                 )
             }
             lb.copy(entries = synced)

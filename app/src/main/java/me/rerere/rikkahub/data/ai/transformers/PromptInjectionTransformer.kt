@@ -3,6 +3,7 @@ package me.rerere.rikkahub.data.ai.transformers
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
+import me.rerere.ai.ui.UIMessageAnnotation
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.PromptInjection
@@ -48,6 +49,10 @@ object PromptInjectionTransformer : InputMessageTransformer {
             worldInfoMinActivations = ctx.settings.worldInfoMinActivations,
             worldInfoRecursive = ctx.settings.worldInfoRecursive,
             worldInfoMaxRecursionSteps = ctx.settings.worldInfoMaxRecursionSteps,
+            generationType = ctx.generationType,
+            personaDescription = ctx.settings.personas
+                .firstOrNull { p -> p.id == ctx.settings.activePersonaId && p.enabled }
+                ?.description ?: "",
         )
 
         return result
@@ -72,6 +77,8 @@ internal fun transformMessages(
     worldInfoMinActivations: Int = 0,
     worldInfoRecursive: Boolean = false,
     worldInfoMaxRecursionSteps: Int = 0,
+    generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
+    personaDescription: String = "",
 ): List<UIMessage> {
     // 收集所有需要注入的内容
     val injections = collectInjections(
@@ -87,6 +94,8 @@ internal fun transformMessages(
         worldInfoMinActivations = worldInfoMinActivations,
         worldInfoRecursive = worldInfoRecursive,
         worldInfoMaxRecursionSteps = worldInfoMaxRecursionSteps,
+        generationType = generationType,
+        personaDescription = personaDescription,
     )
 
     if (injections.isEmpty()) {
@@ -150,6 +159,8 @@ internal fun collectInjections(
     worldInfoMinActivations: Int = 0,
     worldInfoRecursive: Boolean = false,
     worldInfoMaxRecursionSteps: Int = 0,
+    generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
+    personaDescription: String = "",
 ): List<PromptInjection> {
     val injections = mutableListOf<PromptInjection>()
     val effectiveModeInjectionIds = if (assistant.allowConversationPromptInjection) {
@@ -175,14 +186,16 @@ internal fun collectInjections(
     if (enabledLorebooks.isNotEmpty()) {
         // 提取上下文用于匹配（只取非 SYSTEM 消息）
         val nonSystemMessages = messages.filter { it.role != MessageRole.SYSTEM }
-        // 对齐酒馆：扫描上下文除了对话消息，还包含角色卡描述/性格/场景/作者备注
-        val charScanContext = buildString {
-            assistant.tavernData?.let { tav ->
-                if (tav.description.isNotBlank()) appendLine(tav.description)
-                if (tav.personality.isNotBlank()) appendLine(tav.personality)
-                if (tav.scenario.isNotBlank()) appendLine(tav.scenario)
-                if (tav.creatorNotes.isNotBlank()) appendLine(tav.creatorNotes)
-            }
+        // 官方 match_* 开关：按条目决定哪些角色卡字段纳入扫描（默认只扫聊天）
+        val tav = assistant.tavernData
+        fun buildCharScanContext(entry: PromptInjection.RegexInjection): String = buildString {
+            if (tav == null) return@buildString
+            if (entry.matchCharacterDescription && tav.description.isNotBlank()) appendLine(tav.description)
+            if (entry.matchCharacterPersonality && tav.personality.isNotBlank()) appendLine(tav.personality)
+            if (entry.matchScenario && tav.scenario.isNotBlank()) appendLine(tav.scenario)
+            if (entry.matchCreatorNotes && tav.creatorNotes.isNotBlank()) appendLine(tav.creatorNotes)
+            if (entry.matchCharacterDepthPrompt && tav.depthPrompt.isNotBlank()) appendLine(tav.depthPrompt)
+            if (entry.matchPersonaDescription && personaDescription.isNotBlank()) appendLine(personaDescription)
         }.trim()
 
         // 扫描函数：对每条 Lorebook 检查触发并做同组权重选择
@@ -200,6 +213,14 @@ internal fun collectInjections(
                 for (entry in lorebook.entries) {
                     // 冷却中的条目跳过
                     if (cooldownEntries.containsKey(entry.id)) continue
+
+                    // 生成类型过滤（酒馆 triggers）：已激活的粘性条目不受影响
+                    if (!activeStickyEntries.containsKey(entry.id) &&
+                        entry.triggers.isNotEmpty() &&
+                        generationType.value !in entry.triggers
+                    ) {
+                        continue
+                    }
 
                     // 延迟到递归才检查的条目：正常扫描跳过（酒馆 delay_until_recursion）
                     if (entry.delayUntilRecursion && !isRecursion) continue
@@ -219,9 +240,11 @@ internal fun collectInjections(
                     // 正常触发检查（min_activations 重扫时扩大扫描深度）
                     val depth = scanDepthOverride ?: entry.scanDepth
                     val chatContext = extractContextForMatching(nonSystemMessages, depth)
+                    // 官方 match_*：只把该条目开启的角色卡字段纳入扫描
+                    val entryCharScan = buildCharScanContext(entry)
                     val context = buildString {
-                        if (charScanContext.isNotEmpty()) {
-                            append(charScanContext)
+                        if (entryCharScan.isNotEmpty()) {
+                            append(entryCharScan)
                             appendLine()
                         }
                         if (extraContext.isNotEmpty()) {
@@ -322,6 +345,11 @@ internal fun collectInjections(
             var usedTokens = 0
             for (entry in sorted) {
                 val cost = estimateTokens(entry.content)
+                // 官方 ignore_budget：豁免预算，总是注入且不计入预算
+                if (entry.ignoreBudget) {
+                    selected.add(entry)
+                    continue
+                }
                 if (selected.isNotEmpty() && usedTokens + cost > worldInfoBudget) break
                 selected.add(entry)
                 usedTokens += cost
@@ -408,6 +436,40 @@ internal fun applyInjections(
     byPosition: Map<InjectionPosition, List<PromptInjection>>
 ): List<UIMessage> {
     val result = messages.toMutableList()
+
+    // 示例消息索引（角色卡 mes_example 解析出的消息，带 ExampleMessage 标记）
+    val exampleIndices = result.indices.filter { idx ->
+        result[idx].annotations.any { it is UIMessageAnnotation.ExampleMessage }
+    }
+    // 无示例消息时退化为系统消息之后（官方 story string 之后）
+    val fallbackAfterSystem = result.indexOfFirst { it.role == MessageRole.SYSTEM }
+        .let { if (it >= 0) it + 1 else 0 }
+
+    // 处理 EM_TOP：第一条示例消息之前
+    val emTopInjections = byPosition[InjectionPosition.EM_TOP]
+    if (!emTopInjections.isNullOrEmpty()) {
+        var insertIndex = if (exampleIndices.isNotEmpty()) exampleIndices.first() else fallbackAfterSystem
+        insertIndex = findSafeInsertIndex(result, insertIndex)
+        createMergedInjectionMessages(emTopInjections).forEach { message ->
+            result.add(insertIndex, message)
+            insertIndex++
+        }
+    }
+
+    // 处理 EM_BOTTOM：最后一条示例消息之后
+    val emBottomInjections = byPosition[InjectionPosition.EM_BOTTOM]
+    if (!emBottomInjections.isNullOrEmpty()) {
+        // EM_TOP 插入后重新定位示例消息（插入内容不带标记，索引可能已变化）
+        val currentExampleIndices = result.indices.filter { idx ->
+            result[idx].annotations.any { it is UIMessageAnnotation.ExampleMessage }
+        }
+        var insertIndex = if (currentExampleIndices.isNotEmpty()) currentExampleIndices.last() + 1 else fallbackAfterSystem
+        insertIndex = findSafeInsertIndex(result, insertIndex)
+        createMergedInjectionMessages(emBottomInjections).forEach { message ->
+            result.add(insertIndex, message)
+            insertIndex++
+        }
+    }
 
     // 找到系统消息的索引（通常是第一条）
     val systemIndex = result.indexOfFirst { it.role == MessageRole.SYSTEM }

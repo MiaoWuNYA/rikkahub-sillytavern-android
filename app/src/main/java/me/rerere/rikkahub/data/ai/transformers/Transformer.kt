@@ -6,6 +6,7 @@ import me.rerere.ai.provider.Model
 import me.rerere.ai.ui.UIMessage
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.Assistant
+import me.rerere.rikkahub.data.model.GenerationType
 import kotlin.uuid.Uuid
 
 class TransformerContext(
@@ -17,6 +18,8 @@ class TransformerContext(
     val conversationLorebookIds: Set<Uuid> = emptySet(),
     val processingStatus: MutableStateFlow<String?> = MutableStateFlow(null),
     val workspaceCwd: String? = null,
+    /** 当前生成类型（官方 triggers 过滤用），默认普通发送 */
+    val generationType: GenerationType = GenerationType.NORMAL,
 )
 
 interface MessageTransformer {
@@ -71,6 +74,7 @@ suspend fun List<UIMessage>.transforms(
     conversationLorebookIds: Set<Uuid> = emptySet(),
     processingStatus: MutableStateFlow<String?> = MutableStateFlow(null),
     workspaceCwd: String? = null,
+    generationType: GenerationType = GenerationType.NORMAL,
 ): List<UIMessage> {
     val ctx = TransformerContext(
         context = context,
@@ -81,6 +85,7 @@ suspend fun List<UIMessage>.transforms(
         conversationLorebookIds = conversationLorebookIds,
         processingStatus = processingStatus,
         workspaceCwd = workspaceCwd,
+        generationType = generationType,
     )
     return transformers.fold(this) { acc, transformer ->
         transformer.transform(ctx, acc)

@@ -123,6 +123,11 @@ object AuthorsNoteTransformer : InputMessageTransformer {
                 val insertIdx = (messages.size - depth).coerceAtLeast(0)
                 messages.take(insertIdx) + noteMsg + messages.drop(insertIdx)
             }
+            // AN 位置不会配置为示例消息锚点，按官方 story string 后的近似位置处理
+            InjectionPosition.EM_TOP, InjectionPosition.EM_BOTTOM ->
+                if (messages.isNotEmpty()) {
+                    listOf(messages.first()) + noteMsg + messages.drop(1)
+                } else listOf(noteMsg) + messages
         }
     }
 }
