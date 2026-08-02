@@ -267,7 +267,9 @@ fun TavernCharacterCard(
                     }
 
                     // 元数据分组
-                    if (tav.creatorNotes.isNotBlank() || tav.creator.isNotBlank() || tav.characterVersion.isNotBlank()) {
+                    if (tav.creatorNotes.isNotBlank() || tav.creator.isNotBlank() ||
+                        tav.characterVersion.isNotBlank() || tav.extensions.isNotEmpty() || tav.assets.isNotEmpty()
+                    ) {
                         SectionTitle("元数据")
                     }
 
@@ -295,6 +297,30 @@ fun TavernCharacterCard(
                                 MetaTag("版本: v${tav.characterVersion}")
                             }
                         }
+                    }
+
+                    // 数据完整性摘要（未在界面展示的字段给个提示）
+                    if (tav.extensions.isNotEmpty() || tav.assets.isNotEmpty()) {
+                        FlowRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            if (tav.extensions.isNotEmpty()) {
+                                MetaTag("扩展字段: ${tav.extensions.size}")
+                            }
+                            if (tav.assets.isNotEmpty()) {
+                                MetaTag("资源文件: ${tav.assets.size}")
+                            }
+                        }
+                        Text(
+                            text = "该卡含扩展字段与资源文件，当前界面暂不展示（导出时原样保留）",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+                        )
                     }
                 }
             }
