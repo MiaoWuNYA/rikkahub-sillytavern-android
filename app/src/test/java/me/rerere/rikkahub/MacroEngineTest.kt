@@ -406,15 +406,6 @@ class MacroEngineTest {
     }
 
     @Test
-    fun emptyDataMacrosReturnEmpty() {
-        val e = engine()
-        assertEquals("", e.substitute("{{hasExtension::foo}}", ctx()))
-        assertEquals("", e.substitute("{{outlet::key}}", ctx()))
-        assertEquals("", e.substitute("{{banned::word}}", ctx()))
-        assertEquals("", e.substitute("{{summary}}", ctx()))
-    }
-
-    @Test
     fun nestedMacrosInArguments() {
         val e = engine()
         val c = ctx(conversationId = Uuid.random())

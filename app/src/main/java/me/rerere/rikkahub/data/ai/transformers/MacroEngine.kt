@@ -322,7 +322,6 @@ class MacroEngine(
             "notChar" -> groupNames(state.ctx, includeMuted = true, excludeSelf = true)
             "isMobile" -> "true"
             "lastGenerationType" -> state.ctx.generationType?.value ?: ""
-            "hasExtension", "outlet", "banned", "summary" -> ""
             else -> null
         }
     }
