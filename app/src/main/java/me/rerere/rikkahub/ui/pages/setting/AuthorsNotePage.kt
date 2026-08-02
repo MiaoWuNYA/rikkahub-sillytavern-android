@@ -314,6 +314,26 @@ private val authorsNotePresets = listOf(
         "[Respond as the current speaker and interact with the other participants naturally.]\n在场成员：{{groupNotMuted}}。\n{{if::{{group}}::这是群聊：只替自己发言，不要替其他角色说话或替他们决定行动。||这是单聊。}}",
     ),
     Pair(
+        "状态机（简写变量）",
+        "[Story state tracker. Keep these values consistent; update them only when the plot clearly demands it.]\n受伤：{{.受伤 || 无}} ｜ 好感度：{{.好感度 || 0}} ｜ 金币：{{.金币 || 0}} ｜ 目标：{{.目标 || 无}}\n{{if {{.受伤}}}}\n  角色描写必须体现：身上有{{.受伤}}，动作、对话都受其影响。\n{{/if}}",
+    ),
+    Pair(
+        "回合计数",
+        "[Track the story round automatically.]\n当前进行到第 {{.回合++}} 轮。\n随轮次推进，剧情应有明显进展，不要原地打转。",
+    ),
+    Pair(
+        "懒初始化（防覆盖）",
+        "[Initialize story state only when it does not exist yet; never overwrite existing values.]\n{{.主角名字 ??= {{user}}}}\n{{.与主角关系 ||= 陌生人}}\n{{.主线阶段 ||= 开端}}\n当前主角：{{.主角名字}}，关系：{{.与主角关系}}，阶段：{{.主线阶段}}。",
+    ),
+    Pair(
+        "场景时钟",
+        "[Maintain a consistent in-story clock.]\n{{if {{.场景时间}}}}\n  当前剧情时间：{{.场景时间}}\n{{/if}}\n场景时间变化必须与剧情推进一致（对话、行动需要花费合理的时间）。",
+    ),
+    Pair(
+        "动态悬念",
+        "[Create and maintain one active mystery or hook at a time.]\n{{if {{.悬念}}}}\n  当前未解悬念：{{.悬念}}——每个回复都应轻轻触碰它，不要遗忘，也不要一次性揭开。\n{{else}}\n  当前没有进行中的悬念，请在本轮自然埋下一个。\n{{/if}}",
+    ),
+    Pair(
         "沉浸式扮演",
         "[Stay fully in character as {{char}}. Never break character, never mention AI, prompts, or rules.]\n用第一人称扮演角色，通过对话、动作和神态展现性格，而不是直接叙述人设。\n台词用引号，动作与心理用斜体。\n只叙述 {{char}} 与配角的想法、感受、行动和对话，绝不替 {{user}} 说话、行动或决定。\n角色拥有自己的目标、立场和情绪，可以不同意、拒绝、怀疑，像真实的人一样自主行动。\n每个角色只能知道亲眼见过、亲耳听过或能合理推断的信息，不能全知。\n世界的行动可以作用于 {{user}}，但选择永远留给 {{user}}。",
     ),

@@ -516,6 +516,21 @@ private val personaPresets = listOf(
         "[My current state is described by story variables. Keep them consistent and reflect them naturally in the scene.]\n我的当前状态：\n受伤：{{if::{{hasvar::受伤}}::{{getvar::受伤}}{{else}}无记录}}\n好感度：{{if::{{hasvar::好感度}}::{{getvar::好感度}}{{else}}未建立}}\n当前目标：{{if::{{hasvar::目标}}::{{getvar::目标}}{{else}}随剧情发展而定}}\n{{if::{{getvar::受伤}}==true::我身上有伤，动作和语气会自然体现这一点，角色不应无视。}}",
     ),
     Triple(
+        "简写状态人设",
+        "官方简写",
+        "[My state is tracked in story variables using shorthand. Keep them consistent.]\n受伤：{{.受伤 || 无}} ｜ 心情：{{.心情 || 平静}} ｜ 目标：{{.目标 || 无}}\n{{if {{.受伤}}}}\n  我身上有{{.受伤}}，行动会自然受限。\n{{/if}}",
+    ),
+    Triple(
+        "回合感知",
+        "轮次与话题",
+        "距离我上次说话：{{idleDuration}}。\n{{if {{.上次话题}}}}\n  我们之前聊到：{{.上次话题}}，请自然地接上而不是重新开场。\n{{/if}}",
+    ),
+    Triple(
+        "随身特征（稳定随机）",
+        "pick 细节",
+        "[Keep this detail consistent once chosen.]\n我随身带着：{{pick::左耳一枚银环|手腕缠着旧绷带|一本翻旧了的书|口袋里总有几颗糖}}。\n这个细节在剧情中保持一致，不要随意更换。",
+    ),
+    Triple(
         "异乡旅行者",
         "穿越者",
         "我是一名意外来到当前世界的旅行者，对这里的规则、风俗和人物既陌生又好奇。我不熟悉本地的一切，但观察力强、适应得快，习惯先了解再行动；我会问问题、会犯错，也会从错误里学到东西。\n请角色以对待外来者的方式与我互动：可以警惕、可以好奇、可以主动介绍，但不要默认我熟知这个世界。我性格温和、反应真实，愿意配合剧情推进，但保留自己的判断和选择权，关键时刻会坚持自己的立场。",

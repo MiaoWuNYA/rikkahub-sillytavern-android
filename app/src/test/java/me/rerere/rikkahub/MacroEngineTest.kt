@@ -286,6 +286,116 @@ class MacroEngineTest {
         assertEquals("", e.substitute("{{flushglobalvar::g}}{{getglobalvar::g}}", c))
     }
 
+    // ---------- 官方变量简写（Variable Shorthands） ----------
+
+    @Test
+    fun shorthandGetSet() {
+        val e = engine()
+        val c = ctx(conversationId = Uuid.random())
+        assertEquals("", e.substitute("{{.missing}}", c))
+        assertEquals("", e.substitute("{{.name = 小明}}", c))
+        assertEquals("小明", e.substitute("{{.name}}", c))
+        assertEquals("9", e.substitute("{{$g = 9}}{{$g}}", c))
+    }
+
+    @Test
+    fun shorthandIncDecAdd() {
+        val e = engine()
+        val c = ctx(conversationId = Uuid.random())
+        assertEquals("1", e.substitute("{{.counter++}}", c))
+        assertEquals("2", e.substitute("{{.counter++}}", c))
+        assertEquals("1", e.substitute("{{.counter--}}", c))
+        assertEquals("10", e.substitute("{{.score += 10}}{{.score}}", c))
+        assertEquals("6", e.substitute("{{.health = 10}}{{.health -= 4}}{{.health}}", c))
+    }
+
+    @Test
+    fun shorthandFallbackAndCoalesce() {
+        val e = engine()
+        val c = ctx(conversationId = Uuid.random())
+        assertEquals("匿名", e.substitute("{{.name || 匿名}}", c))
+        assertEquals("默认", e.substitute("{{.name ?? 默认}}", c))
+        // 存在但为空：|| 走默认，?? 保留空
+        e.substitute("{{.name = }}", c)
+        assertEquals("匿名", e.substitute("{{.name || 匿名}}", c))
+        assertEquals("", e.substitute("{{.name ?? 默认}}", c))
+    }
+
+    @Test
+    fun shorthandCompare() {
+        val e = engine()
+        val c = ctx(conversationId = Uuid.random())
+        e.substitute("{{.status = active}}", c)
+        assertEquals("true", e.substitute("{{.status == active}}", c))
+        assertEquals("false", e.substitute("{{.status != active}}", c))
+        e.substitute("{{.score = 7}}", c)
+        assertEquals("true", e.substitute("{{.score >= 5}}", c))
+        assertEquals("false", e.substitute("{{.score > 10}}", c))
+        // 简写比较用于 if
+        assertEquals("高", e.substitute("{{if {{.score > 5}}}}高{{/if}}", c))
+    }
+
+    @Test
+    fun shorthandAssignOperators() {
+        val e = engine()
+        val c = ctx(conversationId = Uuid.random())
+        assertEquals("新人", e.substitute("{{.name ||= 新人}}", c))
+        assertEquals("新人", e.substitute("{{.name ??= 保留}}", c))
+        assertEquals("", e.substitute("{{.name = 新身份}}", c))
+        assertEquals("新身份", e.substitute("{{.name ??= 不变}}", c))
+    }
+
+    @Test
+    fun unicodeVariableNames() {
+        val e = engine()
+        val c = ctx(conversationId = Uuid.random())
+        assertEquals("", e.substitute("{{.受伤 = 刀伤}}", c))
+        assertEquals("刀伤", e.substitute("{{.受伤}}", c))
+        assertEquals("刀伤", e.substitute("{{.受伤 || 无}}", c))
+        assertEquals("无", e.substitute("{{.心情 || 无}}", c))
+        assertEquals("1", e.substitute("{{.回合++}}", c))
+        assertEquals("有伤", e.substitute("{{if {{.受伤}}}}有伤{{else}}无伤{{/if}}", c))
+    }
+
+    // ---------- 官方通用 scoped 语法 ----------
+
+    @Test
+    fun genericScopedSyntax() {
+        val e = engine()
+        assertEquals("dlroW olleH", e.substitute("{{reverse}}Hello World{{/reverse}}", ctx()))
+        assertEquals("", e.substitute("{{setvar backstory}}小村出生的学者{{/setvar}}", ctx()))
+        val c = ctx(conversationId = Uuid.random())
+        assertEquals(
+            "小村出生的学者",
+            e.substitute("{{setvar backstory}}小村出生的学者{{/setvar}}{{getvar::backstory}}", c)
+        )
+    }
+
+    @Test
+    fun scopedContentDedent() {
+        val e = engine()
+        assertEquals(
+            "# 标题\n内容",
+            e.substitute("{{if true}}\n    # 标题\n    内容\n{{/if}}", ctx())
+        )
+    }
+
+    // ---------- 转义与 falsy ----------
+
+    @Test
+    fun escapedMacrosAreLiteral() {
+        val e = engine()
+        assertEquals("{{notAMacro}}", e.substitute("\\{{notAMacro}}", ctx()))
+        assertEquals("前 \\{{char}} 后", e.substitute("前 \\{{char}} 后", ctx()))
+    }
+
+    @Test
+    fun noIsFalsy() {
+        val e = engine()
+        assertEquals("B", e.substitute("{{if::no::A{{else}}B}}", ctx()))
+        assertEquals("B", e.substitute("{{if::No::A{{else}}B}}", ctx()))
+    }
+
     // ---------- 作用域与工具宏 ----------
 
     @Test

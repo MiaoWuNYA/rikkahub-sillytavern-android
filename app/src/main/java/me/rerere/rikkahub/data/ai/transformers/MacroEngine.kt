@@ -33,9 +33,12 @@ class MacroEngine(
     fun substitute(text: String, ctx: PlaceholderCtx): String {
         if (!text.contains("{{")) return text
         return try {
-            val nodes = parse(text)
-            val seedSource = text
-            evaluate(nodes, EvalState(ctx, seedSource), 0)
+            // \{{ 转义：先换成哨兵，解析完再还原为字面 {{
+            val escaped = text.replace("\\{{", ESCAPE_SENTINEL)
+            val nodes = parse(escaped)
+            val seedSource = escaped
+            val out = evaluate(nodes, EvalState(ctx, seedSource), 0)
+            out.replace(ESCAPE_SENTINEL, "{{")
         } catch (_: Exception) {
             text
         }
@@ -117,7 +120,7 @@ class MacroEngine(
             return Node.Macro(raw = raw, name = "else", isElse = true) to close + 2
         }
 
-        // 宏名：字母数字 _ - /（注释宏为 //）
+        // 宏名：字母数字 _ - / . $（注释宏为 //，变量简写为 .var/$var）
         val nameMatch = NAME_REGEX.find(head) ?: return null
         val name = nameMatch.value.lowercase()
         var rest = head.substring(nameMatch.range.last + 1).trim()
@@ -146,22 +149,21 @@ class MacroEngine(
             if (single.isNotEmpty()) args = listOf(single)
         }
 
-        // 作用域块：if(1参) / trim(0参) / //注释(0参)
-        val supportsScoped = (name == "if" && args.size == 1) ||
-            (name in SCOPED_ZERO_ARGS && args.isEmpty())
-        if (supportsScoped) {
-            val block = findScopedBlock(text, close + 2, name)
-            if (block != null) {
-                val (content, end) = block
-                val contentNodes = parse(content, depth + 1)
-                return Node.Macro(
-                    raw = raw,
-                    name = name,
-                    args = args.map { parse(it, depth + 1) },
-                    scopedContent = contentNodes,
-                    preserveWhitespace = preserveWhitespace,
-                ) to end
-            }
+        // 作用域块：任何宏后面紧跟 {{/name}} 时，内容成为最后一个参数（官方通用 scoped 语法）
+        val block = findScopedBlock(text, close + 2, name)
+        if (block != null) {
+            val (content, end) = block
+            val processedContent = if (preserveWhitespace) content else content.dedentAndTrim()
+            val contentNodes = parse(processedContent, depth + 1)
+            // if 特例：scopedContent 单独存放（分支逻辑用），不追加到参数
+            val finalArgs = if (name == "if") args else args + processedContent
+            return Node.Macro(
+                raw = raw,
+                name = name,
+                args = finalArgs.map { parse(it, depth + 1) },
+                scopedContent = contentNodes,
+                preserveWhitespace = preserveWhitespace,
+            ) to end
         }
 
         return Node.Macro(
@@ -264,6 +266,10 @@ class MacroEngine(
 
     private fun evalMacro(node: Node.Macro, state: EvalState, depth: Int): String {
         val name = node.name
+        // 变量简写：{{.var}} {{$var}} 及运算符（= ++ -- += -= || ?? ||= ??= == != > >= < <=）
+        if (name.startsWith(".") || name.startsWith("$")) {
+            return evalVarShorthand(node, state)
+        }
         // 变量副作用优先执行（官方变量宏同语义）
         if (name in VARIABLE_MACROS) {
             return evalVariableMacro(node, state)
@@ -279,11 +285,124 @@ class MacroEngine(
             }
         }
 
-        // 参数预求值（if/变量已特殊处理，其余宏参数先解析）
-        val args = node.args.map { evaluate(it, state, depth + 1) }
+        // 参数预求值（if/变量已特殊处理，其余宏参数先解析；
+        // scoped 内容已在解析时追加为最后一个参数，这里不再重复求值）
+        val inlineArgs = node.args.map { evaluate(it, state, depth + 1) }
         val content = node.scopedContent?.let { evaluate(it, state, depth + 1) }
+        val args = inlineArgs
 
         return resolveMacroValue(name, args, content, state, depth) ?: node.raw
+    }
+
+    /** 变量简写：{{.var}} {{$var}} 及运算符（官方 Variable Shorthands 全套语义）。 */
+    private fun evalVarShorthand(node: Node.Macro, state: EvalState): String {
+        val global = node.name.startsWith("$")
+        val varName = node.name.drop(1)
+        val chatKey = if (global) null else state.ctx.conversationId?.toString()
+        val raw = node.args.map { evaluate(it, state, 1) }.firstOrNull()?.trim() ?: ""
+        if (raw.isEmpty()) return vars.get(chatKey, varName) ?: ""
+
+        for (op in VAR_SHORTHAND_OPS) {
+            if (raw == op) {
+                return when (op) {
+                    "++" -> vars.inc(chatKey, varName)
+                    "--" -> vars.dec(chatKey, varName)
+                    "=" -> {
+                        vars.set(chatKey, varName, "")
+                        ""
+                    }
+                    "+=" -> {
+                        vars.add(chatKey, varName, "")
+                        ""
+                    }
+                    "-=" -> {
+                        vars.add(chatKey, varName, "0")
+                        ""
+                    }
+                    "||" -> {
+                        val cur = vars.get(chatKey, varName)
+                        if (cur != null && !isFalseValue(cur)) cur else ""
+                    }
+                    "??" -> vars.get(chatKey, varName) ?: ""
+                    "||=" -> {
+                        val cur = vars.get(chatKey, varName)
+                        if (cur == null || isFalseValue(cur)) {
+                            vars.set(chatKey, varName, "")
+                            ""
+                        } else {
+                            cur
+                        }
+                    }
+                    "??=" -> {
+                        val cur = vars.get(chatKey, varName)
+                        if (cur == null) {
+                            vars.set(chatKey, varName, "")
+                            ""
+                        } else {
+                            cur
+                        }
+                    }
+                    "==" -> (vars.get(chatKey, varName).orEmpty() == "").toString()
+                    "!=" -> (vars.get(chatKey, varName).orEmpty() != "").toString()
+                    ">=" -> (compareValues(vars.get(chatKey, varName).orEmpty(), "") >= 0).toString()
+                    "<=" -> (compareValues(vars.get(chatKey, varName).orEmpty(), "") <= 0).toString()
+                    ">" -> (compareValues(vars.get(chatKey, varName).orEmpty(), "") > 0).toString()
+                    "<" -> (compareValues(vars.get(chatKey, varName).orEmpty(), "") < 0).toString()
+                    else -> ""
+                }
+            }
+            if (raw.startsWith(op)) {
+                val value = raw.drop(op.length).trim()
+                return when (op) {
+                    "++" -> vars.inc(chatKey, varName)
+                    "--" -> vars.dec(chatKey, varName)
+                    "=" -> {
+                        vars.set(chatKey, varName, value)
+                        ""
+                    }
+                    "+=" -> {
+                        vars.add(chatKey, varName, value)
+                        ""
+                    }
+                    "-=" -> {
+                        val delta = value.toLongOrNull()
+                        if (delta != null) vars.add(chatKey, varName, (-delta).toString())
+                        ""
+                    }
+                    "||" -> {
+                        val cur = vars.get(chatKey, varName)
+                        if (cur != null && !isFalseValue(cur)) cur else value
+                    }
+                    "??" -> vars.get(chatKey, varName) ?: value
+                    "||=" -> {
+                        val cur = vars.get(chatKey, varName)
+                        if (cur == null || isFalseValue(cur)) {
+                            vars.set(chatKey, varName, value)
+                            value
+                        } else {
+                            cur
+                        }
+                    }
+                    "??=" -> {
+                        val cur = vars.get(chatKey, varName)
+                        if (cur == null) {
+                            vars.set(chatKey, varName, value)
+                            value
+                        } else {
+                            cur
+                        }
+                    }
+                    "==" -> (vars.get(chatKey, varName).orEmpty() == value).toString()
+                    "!=" -> (vars.get(chatKey, varName).orEmpty() != value).toString()
+                    ">=" -> (compareValues(vars.get(chatKey, varName).orEmpty(), value) >= 0).toString()
+                    "<=" -> (compareValues(vars.get(chatKey, varName).orEmpty(), value) <= 0).toString()
+                    ">" -> (compareValues(vars.get(chatKey, varName).orEmpty(), value) > 0).toString()
+                    "<" -> (compareValues(vars.get(chatKey, varName).orEmpty(), value) < 0).toString()
+                    else -> ""
+                }
+            }
+        }
+        return vars.get(chatKey, varName) ?: ""
     }
 
     /** 求值已注册宏；未知宏返回 null（调用方原样保留）。 */
@@ -474,8 +593,19 @@ class MacroEngine(
         if (v.isEmpty()) return true
         if (v.equals("false", ignoreCase = true)) return true
         if (v.equals("off", ignoreCase = true)) return true
+        if (v.equals("no", ignoreCase = true)) return true
         if (v == "0") return true
         return false
+    }
+
+    /** 官方 scoped 内容处理：去首尾空白 + 移除公共缩进。 */
+    private fun String.dedentAndTrim(): String {
+        val lines = this.split("\n")
+        val indent = lines.filter { it.isNotBlank() }
+            .minOfOrNull { it.takeWhile { c -> c == ' ' || c == '\t' }.length } ?: 0
+        return lines.joinToString("\n") { line ->
+            if (line.isBlank()) "" else line.drop(minOf(indent, line.length))
+        }.trim()
     }
 
     /** 在节点列表中按顶层 {{else}} 分割。 */
@@ -674,10 +804,14 @@ class MacroEngine(
 
     companion object {
         private const val MAX_DEPTH = 32
-        private val NAME_REGEX = Regex("""[a-zA-Z0-9_\-/]+""")
-        private val VAR_SHORTHAND_REGEX = Regex("""^[.\$][a-zA-Z0-9_\-]+$""")
+        private const val ESCAPE_SENTINEL = "\u0000ESCAPED_LBRACE\u0000"
+        // 官方宏名/变量名规则：字母（含 Unicode，如中文）、数字、_、-（简写允许 . 和 $ 前缀）
+        private val NAME_REGEX = Regex("""[\p{L}\p{N}_\-/.\$]+""")
+        private val VAR_SHORTHAND_REGEX = Regex("""^[.\$][\p{L}\p{N}_\-]+$""")
         private val COMPARE_OPS = setOf("==", "!=", ">=", "<=", ">", "<")
-        private val SCOPED_ZERO_ARGS = setOf("trim", "//", "comment")
+        private val VAR_SHORTHAND_OPS = listOf(
+            "||=", "??=", "++", "--", "+=", "-=", "==", "!=", ">=", "<=", "||", "??", ">", "<", "=",
+        )
         private val VARIABLE_MACROS = setOf(
             "setvar", "getvar", "incvar", "decvar", "addvar", "hasvar", "deletevar", "varexists", "flushvar",
             "setglobalvar", "getglobalvar", "incglobalvar", "decglobalvar", "addglobalvar",
