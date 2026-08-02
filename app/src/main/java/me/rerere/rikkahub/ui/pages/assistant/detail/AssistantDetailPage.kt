@@ -117,6 +117,7 @@ fun AssistantDetailPage(id: String) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val scope = rememberCoroutineScope()
     var showGreetingPicker by remember { mutableStateOf(false) }
+    var showExport by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -131,21 +132,6 @@ fun AssistantDetailPage(id: String) {
                 },
                 navigationIcon = {
                     BackButton()
-                },
-                actions = {
-                    // 导出按钮
-                    if (assistant.tavernData != null) {
-                        var showExport by remember { mutableStateOf(false) }
-                        TextButton(onClick = { showExport = true }) {
-                            Text("导出", style = MaterialTheme.typography.labelMedium)
-                        }
-                        if (showExport) {
-                            ExportCardDialog(
-                                assistant = assistant,
-                                onDismiss = { showExport = false },
-                            )
-                        }
-                    }
                 },
                 scrollBehavior = scrollBehavior,
                 colors = CustomColors.topBarColors
@@ -175,6 +161,7 @@ fun AssistantDetailPage(id: String) {
                         onAssistantUpdate = { updated -> vm.update(updated) },
                         settings = settings,
                         onSettingsUpdate = { updated -> vm.updateSettings(updated) },
+                        onExport = { showExport = true },
                     )
                 }
 
@@ -248,6 +235,13 @@ fun AssistantDetailPage(id: String) {
                 }
             }
         }
+    }
+
+    if (showExport) {
+        ExportCardDialog(
+            assistant = assistant,
+            onDismiss = { showExport = false },
+        )
     }
 }
 

@@ -54,6 +54,7 @@ import me.rerere.hugeicons.stroke.Folder01
 import me.rerere.hugeicons.stroke.MapPin
 import me.rerere.hugeicons.stroke.Message01
 import me.rerere.hugeicons.stroke.Message02
+import me.rerere.hugeicons.stroke.Share01
 import me.rerere.hugeicons.stroke.Tools
 import me.rerere.hugeicons.stroke.UserCircle
 import me.rerere.rikkahub.ui.theme.CustomColors
@@ -71,6 +72,7 @@ fun TavernCharacterCard(
     onAssistantUpdate: ((Assistant) -> Unit)? = null,
     settings: Settings? = null,
     onSettingsUpdate: ((Settings) -> Unit)? = null,
+    onExport: (() -> Unit)? = null,
 ) {
     val tav = assistant.tavernData ?: return
     var expanded by remember { mutableStateOf(false) }
@@ -155,6 +157,21 @@ fun TavernCharacterCard(
                                 count = 1 + tav.alternateGreetings.size,
                             )
                         }
+                    }
+                }
+
+                // 导出按钮：右上角，与角色卡信息同区域，无需展开卡片即可使用
+                if (onExport != null) {
+                    IconButton(
+                        onClick = onExport,
+                        modifier = Modifier.size(36.dp),
+                    ) {
+                        Icon(
+                            HugeIcons.Share01,
+                            contentDescription = "导出角色卡",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
                     }
                 }
             }
