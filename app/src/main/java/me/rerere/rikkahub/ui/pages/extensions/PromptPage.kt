@@ -655,6 +655,11 @@ private fun LorebookTab(
         ) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = stringResource(R.string.prompt_page_world_info_global_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium,
+                    )
                     FormItem(
                         label = { Text(stringResource(R.string.prompt_page_world_info_budget_title)) },
                         description = { Text(stringResource(R.string.prompt_page_world_info_budget_desc)) }

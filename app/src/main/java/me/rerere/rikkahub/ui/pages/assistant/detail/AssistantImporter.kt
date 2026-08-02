@@ -28,6 +28,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
@@ -60,6 +62,14 @@ import kotlin.uuid.Uuid
 data class TavernImportResult(
     val assistant: Assistant,
     val newLorebooks: List<Lorebook> = emptyList(),  // 从内嵌世界书创建的新Lorebook
+    val importedBookSettings: ImportedBookSettings = ImportedBookSettings(),
+)
+
+/** 角色卡内嵌世界书自带的激活设置（酒馆旧字段），导入时同步到全局设置 */
+data class ImportedBookSettings(
+    val recursiveScanning: Boolean? = null,
+    val maxRecursionSteps: Int? = null,
+    val minActivations: Int? = null,
 )
 
 @Composable
@@ -176,7 +186,23 @@ private suspend fun importFromUri(
     }
 
     toaster.show(context.getString(R.string.app_name, assistant.name))
-    onImport(TavernImportResult(assistant, lorebooks))
+    onImport(
+        TavernImportResult(
+            assistant = assistant,
+            newLorebooks = lorebooks,
+            importedBookSettings = buildImportedBookSettings(assistant.tavernData?.embeddedBook),
+        )
+    )
+}
+
+/** 从内嵌世界书提取导入时要同步到全局设置的字段（只保留显式提供的值） */
+private fun buildImportedBookSettings(book: TavernEmbeddedBook?): ImportedBookSettings {
+    if (book == null) return ImportedBookSettings()
+    return ImportedBookSettings(
+        recursiveScanning = book.recursiveScanning,
+        maxRecursionSteps = book.maxRecursionSteps?.let { if (it <= 0) 0 else it },
+        minActivations = book.minActivations?.coerceAtLeast(0),
+    )
 }
 
 // ==================== V2 Parser ====================
@@ -314,6 +340,8 @@ private fun parseEmbeddedBook(obj: JsonObject?): TavernEmbeddedBook? {
         scanDepth = obj["scan_depth"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
         tokenBudget = obj["token_budget"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
         recursiveScanning = obj["recursive_scanning"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull(),
+        maxRecursionSteps = obj["max_recursion_steps"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
+        minActivations = obj["min_activations"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
         extensions = parseExtensions(obj["extensions"]?.jsonObject),
         entries = entries,
     )
@@ -323,7 +351,7 @@ private fun parseEntriesArray(arr: kotlinx.serialization.json.JsonArray): List<T
     return arr.mapNotNull { el ->
         try {
             val e = el.jsonObject
-            TavernBookEntry(
+            applyEntryExtensions(TavernBookEntry(
                 id = e["id"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
                 keys = parseStringArray(e["keys"]) + parseStringArray(e["key"]),
                 secondaryKeys = parseStringArray(e["secondary_keys"]),
@@ -350,7 +378,7 @@ private fun parseEntriesArray(arr: kotlinx.serialization.json.JsonArray): List<T
                 delay = e["delay"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
                 useProbability = e["useProbability"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
                     ?: e["use_probability"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
-            )
+            ), e["extensions"] as? JsonObject)
         } catch (_: Exception) { null }
     }
 }
@@ -359,7 +387,7 @@ private fun parseEntriesMap(obj: JsonObject): List<TavernBookEntry> {
     return obj.entries.mapNotNull { (idStr, el) ->
         try {
             val e = el.jsonObject
-            TavernBookEntry(
+            applyEntryExtensions(TavernBookEntry(
                 id = idStr.toIntOrNull() ?: 0,
                 keys = parseStringArray(e["keys"]) + parseStringArray(e["key"]),
                 secondaryKeys = parseStringArray(e["secondary_keys"]),
@@ -386,9 +414,52 @@ private fun parseEntriesMap(obj: JsonObject): List<TavernBookEntry> {
                 delay = e["delay"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
                 useProbability = e["useProbability"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
                     ?: e["use_probability"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
-            )
+            ), e["extensions"] as? JsonObject)
         } catch (_: Exception) { null }
     }
+}
+
+/**
+ * 应用酒馆条目 extensions 里的新字段（整词匹配/递归控制/概率/权重等）。
+ * 旧版顶层字段优先保留，只有 extensions 显式提供时才覆盖。
+ */
+private fun applyEntryExtensions(entry: TavernBookEntry, extensions: JsonObject?): TavernBookEntry {
+    if (extensions == null) return entry
+    return try {
+        entry.copy(
+            matchWholeWords = extensions["match_whole_words"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
+                ?: entry.matchWholeWords,
+            preventRecursion = extBool(extensions["prevent_recursion"]) || entry.preventRecursion,
+            delayUntilRecursion = extBool(extensions["delay_until_recursion"]) || entry.delayUntilRecursion,
+            excludeRecursion = extensions["exclude_recursion"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
+                ?: entry.excludeRecursion,
+            caseSensitive = extensions["case_sensitive"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
+                ?: entry.caseSensitive,
+            probability = extensions["probability"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: entry.probability,
+            useProbability = extensions["probability"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() != null
+                || entry.useProbability,
+            sticky = extensions["sticky"]?.let { parseStickyInt(it) }?.takeIf { it > 0 } ?: entry.sticky,
+            cooldown = extensions["cooldown"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: entry.cooldown,
+            delay = extensions["delay"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: entry.delay,
+            scanDepth = extensions["scan_depth"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: entry.scanDepth,
+            priority = extensions["order"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: entry.priority,
+            position = extensions["position"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: entry.position,
+            groupWeight = extensions["group_weight"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: entry.groupWeight,
+            groupOverride = extensions["group_priority"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
+                ?: entry.groupOverride,
+        )
+    } catch (_: Exception) { entry }
+}
+
+/** extensions 里的递归控制可为布尔、数字（延迟层级）或 uid 数组，统一转布尔 */
+private fun extBool(element: JsonElement?): Boolean = when {
+    element == null -> false
+    element is JsonArray -> element.isNotEmpty()
+    else -> try {
+        element.jsonPrimitive.contentOrNull?.let { str ->
+            str.toBooleanStrictOrNull() ?: (str.toIntOrNull()?.let { it > 0 } ?: false)
+        } ?: false
+    } catch (_: Exception) { false }
 }
 
 /**
@@ -443,6 +514,10 @@ private fun tavernEntryToInjection(entry: TavernBookEntry): PromptInjection.Rege
         secondaryKeys = entry.secondaryKeys,
         useRegex = entry.useRegex,
         caseSensitive = entry.caseSensitive,
+        matchWholeWords = entry.matchWholeWords,
+        excludeRecursion = entry.excludeRecursion,
+        preventRecursion = entry.preventRecursion,
+        delayUntilRecursion = entry.delayUntilRecursion,
         scanDepth = entry.scanDepth,
         constantActive = entry.constant,
         selective = entry.selective,
@@ -505,6 +580,10 @@ private fun injectionToTavernEntry(
         priority = injection.priority,
         disable = !injection.enabled,
         caseSensitive = injection.caseSensitive,
+        matchWholeWords = injection.matchWholeWords,
+        excludeRecursion = injection.excludeRecursion,
+        preventRecursion = injection.preventRecursion,
+        delayUntilRecursion = injection.delayUntilRecursion,
         useRegex = injection.useRegex,
         probability = injection.probability,
         sticky = injection.sticky,

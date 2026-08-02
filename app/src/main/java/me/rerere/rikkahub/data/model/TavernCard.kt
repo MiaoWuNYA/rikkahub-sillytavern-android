@@ -49,6 +49,8 @@ data class TavernEmbeddedBook(
     val scanDepth: Int? = null,
     val tokenBudget: Int? = null,
     val recursiveScanning: Boolean? = null,
+    val maxRecursionSteps: Int? = null,
+    val minActivations: Int? = null,
     val extensions: Map<String, String> = emptyMap(),
     val entries: List<TavernBookEntry> = emptyList(),
 )

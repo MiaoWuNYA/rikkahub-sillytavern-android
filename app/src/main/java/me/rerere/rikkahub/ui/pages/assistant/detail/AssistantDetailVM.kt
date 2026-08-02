@@ -184,6 +184,13 @@ class AssistantDetailVM(
         }
     }
 
+    /** 更新全局设置（内嵌世界书编辑器里的全局激活设置也走这里，与外置页同一份数据） */
+    fun updateSettings(settings: Settings) {
+        viewModelScope.launch {
+            settingsStore.update(settings)
+        }
+    }
+
     /** 内嵌世界书 → 外置 lorebook 同步 */
     private fun syncEmbeddedToExternal(
         assistant: Assistant,

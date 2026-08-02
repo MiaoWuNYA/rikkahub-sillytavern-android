@@ -553,6 +553,7 @@
   <string name="prompt_page_position_top_of_chat">Top of Chat</string>
   <string name="prompt_page_world_info_budget_desc">Maximum number of lorebook entries injected per turn (0 = unlimited)</string>
   <string name="prompt_page_world_info_budget_title">Lorebook Entry Budget</string>
+  <string name="prompt_page_world_info_global_title">Global World Info Activation Settings (applies to all world books)</string>
   <string name="prompt_page_world_info_min_activations_desc">Keep scanning earlier messages until at least this many entries activate (0 = off)</string>
   <string name="prompt_page_world_info_min_activations_title">Minimum Activations</string>
   <string name="prompt_page_priority_format">Priority: %d</string>

@@ -43,8 +43,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import me.rerere.rikkahub.data.model.Assistant
+import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.TavernBookEntry
 import me.rerere.rikkahub.data.model.TavernEmbeddedBook
+import me.rerere.rikkahub.ui.components.ui.FormItem
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.Book01
@@ -68,6 +70,8 @@ fun TavernCharacterCard(
     assistant: Assistant,
     modifier: Modifier = Modifier,
     onAssistantUpdate: ((Assistant) -> Unit)? = null,
+    settings: Settings? = null,
+    onSettingsUpdate: ((Settings) -> Unit)? = null,
 ) {
     val tav = assistant.tavernData ?: return
     var expanded by remember { mutableStateOf(false) }
@@ -256,6 +260,8 @@ fun TavernCharacterCard(
                         SectionTitle("世界书")
                         EmbeddedBookSummary(
                             book = book,
+                            settings = settings,
+                            onSettingsUpdate = onSettingsUpdate,
                             onEntryUpdate = { updated ->
                                 val tav = assistant.tavernData ?: return@EmbeddedBookSummary
                                 val oldBook = tav.embeddedBook ?: return@EmbeddedBookSummary
@@ -460,6 +466,8 @@ private fun EditableField(
 private fun EmbeddedBookSummary(
     book: TavernEmbeddedBook,
     onEntryUpdate: (TavernBookEntry) -> Unit = {},
+    settings: Settings? = null,
+    onSettingsUpdate: ((Settings) -> Unit)? = null,
 ) {
     var showEntries by remember { mutableStateOf(false) }
     val rotationAngle by animateFloatAsState(
@@ -519,6 +527,91 @@ private fun EmbeddedBookSummary(
                 modifier = Modifier.padding(top = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
+                // 全局世界书激活设置（与外置世界书页同一份全局数据，天然同步）
+                if (settings != null && onSettingsUpdate != null) {
+                    Card(
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(
+                                "全局世界书激活设置（作用于所有世界书）",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                            )
+                            FormItem(
+                                label = { Text("条目预算(0=不限)", style = MaterialTheme.typography.labelSmall) },
+                                tail = {
+                                    OutlinedTextField(
+                                        value = settings.worldInfoBudget.toString(),
+                                        onValueChange = { v ->
+                                            v.toIntOrNull()?.let {
+                                                onSettingsUpdate(settings.copy(worldInfoBudget = it.coerceIn(0, 200)))
+                                            }
+                                        },
+                                        singleLine = true,
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        modifier = Modifier.width(84.dp),
+                                        textStyle = MaterialTheme.typography.bodyMedium,
+                                    )
+                                },
+                            )
+                            FormItem(
+                                label = { Text("最少激活(0=关)", style = MaterialTheme.typography.labelSmall) },
+                                tail = {
+                                    OutlinedTextField(
+                                        value = settings.worldInfoMinActivations.toString(),
+                                        onValueChange = { v ->
+                                            v.toIntOrNull()?.let {
+                                                onSettingsUpdate(settings.copy(worldInfoMinActivations = it.coerceIn(0, 50)))
+                                            }
+                                        },
+                                        singleLine = true,
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        modifier = Modifier.width(84.dp),
+                                        textStyle = MaterialTheme.typography.bodyMedium,
+                                    )
+                                },
+                            )
+                            FormItem(
+                                label = { Text("递归扫描", style = MaterialTheme.typography.labelSmall) },
+                                tail = {
+                                    Switch(
+                                        checked = settings.worldInfoRecursive,
+                                        onCheckedChange = {
+                                            onSettingsUpdate(settings.copy(worldInfoRecursive = it))
+                                        },
+                                    )
+                                },
+                            )
+                            if (settings.worldInfoRecursive) {
+                                FormItem(
+                                    label = { Text("最大递归层数(0=不限)", style = MaterialTheme.typography.labelSmall) },
+                                    tail = {
+                                        OutlinedTextField(
+                                            value = settings.worldInfoMaxRecursionSteps.toString(),
+                                            onValueChange = { v ->
+                                                v.toIntOrNull()?.let {
+                                                    onSettingsUpdate(
+                                                        settings.copy(worldInfoMaxRecursionSteps = it.coerceIn(0, 20))
+                                                    )
+                                                }
+                                            },
+                                            singleLine = true,
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                            modifier = Modifier.width(84.dp),
+                                            textStyle = MaterialTheme.typography.bodyMedium,
+                                        )
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+
                 val grouped = book.entries.groupBy { it.group }
                 val namedGroups = grouped.filterKeys { it.isNotBlank() }
                 val ungrouped = grouped[""] ?: emptyList()

@@ -108,6 +108,7 @@ fun AssistantDetailPage(id: String) {
         }
     )
     val assistant by vm.assistant.collectAsStateWithLifecycle()
+    val settings by vm.settings.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val scope = rememberCoroutineScope()
@@ -168,6 +169,8 @@ fun AssistantDetailPage(id: String) {
                         assistant = assistant,
                         modifier = Modifier.padding(horizontal = 8.dp),
                         onAssistantUpdate = { updated -> vm.update(updated) },
+                        settings = settings,
+                        onSettingsUpdate = { updated -> vm.updateSettings(updated) },
                     )
                 }
 

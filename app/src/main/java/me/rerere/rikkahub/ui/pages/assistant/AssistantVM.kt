@@ -15,6 +15,7 @@ import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.data.repository.MemoryRepository
+import me.rerere.rikkahub.ui.pages.assistant.detail.ImportedBookSettings
 import kotlin.uuid.Uuid
 
 class AssistantVM(
@@ -29,6 +30,20 @@ class AssistantVM(
     fun updateSettings(settings: Settings) {
         viewModelScope.launch {
             settingsStore.update(settings)
+        }
+    }
+
+    /** 导入角色卡时，把内嵌世界书自带的激活设置同步到全局设置 */
+    fun applyImportedBookSettings(imported: ImportedBookSettings) {
+        viewModelScope.launch {
+            val s = settings.value
+            settingsStore.update(
+                s.copy(
+                    worldInfoRecursive = imported.recursiveScanning ?: s.worldInfoRecursive,
+                    worldInfoMaxRecursionSteps = imported.maxRecursionSteps ?: s.worldInfoMaxRecursionSteps,
+                    worldInfoMinActivations = imported.minActivations ?: s.worldInfoMinActivations,
+                )
+            )
         }
     }
 

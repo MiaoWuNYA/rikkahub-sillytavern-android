@@ -548,6 +548,7 @@
   <string name="prompt_page_position_top_of_chat">对话开头</string>
   <string name="prompt_page_world_info_budget_desc">单轮最多注入的世界书条目数（0=不限制）</string>
   <string name="prompt_page_world_info_budget_title">世界书条目预算</string>
+  <string name="prompt_page_world_info_global_title">全局世界书激活设置（作用于所有世界书）</string>
   <string name="prompt_page_world_info_min_activations_desc">激活数不足时继续往更早消息扫描，直到达到该数量（0=关闭）</string>
   <string name="prompt_page_world_info_min_activations_title">最少激活数</string>
   <string name="prompt_page_priority_format">优先级：%d</string>
