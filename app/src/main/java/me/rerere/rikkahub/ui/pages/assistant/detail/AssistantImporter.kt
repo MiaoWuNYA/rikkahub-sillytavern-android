@@ -34,8 +34,8 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonObjectOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import me.rerere.common.http.jsonObjectOrNull
 import me.rerere.ai.ui.UIMessage
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.model.Assistant
@@ -476,6 +476,7 @@ private fun parseEntriesMap(obj: JsonObject): List<TavernBookEntry> {
 private fun applyEntryExtensions(entry: TavernBookEntry, e: JsonObject?): TavernBookEntry {
     if (e == null) return entry
     val extensions = e["extensions"] as? JsonObject
+    if (extensions == null) return entry
     return try {
         entry.copy(
             matchWholeWords = extensions["match_whole_words"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()

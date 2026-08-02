@@ -7,6 +7,9 @@ import me.rerere.hugeicons.stroke.BookOpen01
 import me.rerere.hugeicons.stroke.Brain02
 import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.Code
+import me.rerere.hugeicons.stroke.File01
+import me.rerere.hugeicons.stroke.Folder01
+import me.rerere.hugeicons.stroke.Image02
 import me.rerere.hugeicons.stroke.Message02
 import me.rerere.hugeicons.stroke.Settings03
 import me.rerere.hugeicons.stroke.Puzzle

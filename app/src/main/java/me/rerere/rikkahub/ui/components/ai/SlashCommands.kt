@@ -9,7 +9,7 @@ import me.rerere.rikkahub.data.files.CommandFile
 data class SlashCommand(
     val name: String,                    // 命令名，如 "code-review"
     val description: String,             // 简短描述
-    val allowedTools: List<String>,      // 允许的工具
+    val allowedTools: List<String> = emptyList(), // 允许的工具（内置命令默认空）
     val argumentHint: String = "",       // 参数提示，如 "[project-name]"
     val disableModelInvocation: Boolean = false, // 纯脚本不调模型
     val content: String,                 // 指令正文
@@ -23,9 +23,6 @@ data class SlashCommand(
 enum class BuiltinSlashKind {
     /** 帮助：列出内置命令 */
     HELP,
-
-    /** 文本处理：处理参数后填入输入框 */
-    TEXT,
 
     /** 信息展示：Toast 显示结果 */
     INFO,
@@ -44,9 +41,6 @@ enum class BuiltinSlashKind {
 
     /** 角色操作：修改当前助手 */
     RENAME,
-
-    /** 生成操作：重新生成（需要页面回调） */
-    REGENERATE,
 
     /** 修改当前角色卡字段（字段=值） */
     UPDATE_CHAR,
@@ -98,70 +92,6 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
         builtinKind = BuiltinSlashKind.TRIGGER,
     ),
     SlashCommand(
-        name = "echo",
-        description = "原样输出参数(Echo)",
-        argumentHint = "[文本]",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.TEXT,
-    ),
-    SlashCommand(
-        name = "setinput",
-        description = "设置输入框内容(Set Input)",
-        argumentHint = "[文本]",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.TEXT,
-    ),
-    SlashCommand(
-        name = "lower",
-        description = "转小写(Lowercase)",
-        argumentHint = "[文本]",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.TEXT,
-    ),
-    SlashCommand(
-        name = "upper",
-        description = "转大写(Uppercase)",
-        argumentHint = "[文本]",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.TEXT,
-    ),
-    SlashCommand(
-        name = "trimstart",
-        description = "去掉开头空白(Trim Start)",
-        argumentHint = "[文本]",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.TEXT,
-    ),
-    SlashCommand(
-        name = "trimend",
-        description = "去掉结尾空白(Trim End)",
-        argumentHint = "[文本]",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.TEXT,
-    ),
-    SlashCommand(
-        name = "substr",
-        description = "截取子串(Substring)",
-        argumentHint = "[起始] [长度] [文本]",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.TEXT,
-    ),
-    SlashCommand(
-        name = "tokens",
-        description = "估算Token数(Tokens)",
-        argumentHint = "[文本]",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.TEXT,
-    ),
-    SlashCommand(
         name = "char-get",
         description = "查看当前角色卡(Char Get)",
         content = "",
@@ -198,13 +128,6 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.RENAME,
-    ),
-    SlashCommand(
-        name = "regenerate",
-        description = "重新生成最后一条回复(Regenerate)",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.REGENERATE,
     ),
 )
 

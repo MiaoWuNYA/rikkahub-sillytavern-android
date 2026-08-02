@@ -142,7 +142,6 @@ fun ChatInput(
     onUpdateConversation: (Conversation) -> Unit = {},
     onCompressContext: (String, String, String) -> Unit = { _, _, _ -> },
     onLongSendClick: () -> Unit,
-    onSlashRegenerate: (() -> Unit)? = null,
     onSlashDuplicate: (() -> Unit)? = null,
     onSlashInsert: ((MessageRole, String) -> Unit)? = null,
     onSlashPersona: ((String) -> Unit)? = null,
@@ -254,7 +253,6 @@ fun ChatInput(
                         onSendMessage = { sendMessage() },
                         toaster = toaster,
                         onUpdateAssistant = onUpdateAssistant,
-                        onSlashRegenerate = onSlashRegenerate,
                         onSlashDuplicate = onSlashDuplicate,
                         onSlashInsert = onSlashInsert,
                         onSlashPersona = onSlashPersona,
@@ -445,7 +443,6 @@ private fun TextInputRow(
     onSendMessage: () -> Unit,
     toaster: com.dokar.sonner.ToasterState,
     onUpdateAssistant: (Assistant) -> Unit,
-    onSlashRegenerate: (() -> Unit)?,
     onSlashDuplicate: (() -> Unit)?,
     onSlashInsert: ((MessageRole, String) -> Unit)?,
     onSlashPersona: ((String) -> Unit)?,
@@ -626,7 +623,6 @@ private fun TextInputRow(
                                             settings = settings,
                                             assistant = assistant,
                                             onUpdateAssistant = onUpdateAssistant,
-                                            onSlashRegenerate = onSlashRegenerate,
                                             onSlashDuplicate = onSlashDuplicate,
                                             onSlashInsert = onSlashInsert,
                                             onSlashPersona = onSlashPersona,
@@ -841,7 +837,6 @@ private fun handleBuiltinSlash(
     settings: Settings,
     assistant: Assistant,
     onUpdateAssistant: (Assistant) -> Unit,
-    onSlashRegenerate: (() -> Unit)?,
     onSlashDuplicate: (() -> Unit)?,
     onSlashInsert: ((MessageRole, String) -> Unit)?,
     onSlashPersona: ((String) -> Unit)?,
@@ -852,28 +847,6 @@ private fun handleBuiltinSlash(
             val names = builtinSlashCommands().joinToString("  ") { "/${it.name}" }
             toaster.show("内置命令: $names")
             state.clearInput()
-        }
-
-        BuiltinSlashKind.TEXT -> {
-            val result = when (cmd.name) {
-                "lower" -> args.lowercase()
-                "upper" -> args.uppercase()
-                "trimstart" -> args.trimStart()
-                "trimend" -> args.trimEnd()
-                "substr" -> {
-                    val parts = args.split(" ", limit = 3)
-                    val start = parts.getOrNull(0)?.toIntOrNull() ?: 0
-                    val length = parts.getOrNull(1)?.toIntOrNull() ?: Int.MAX_VALUE
-                    val text = parts.getOrNull(2) ?: ""
-                    text.substring(start.coerceIn(0, text.length)).take(length)
-                }
-                "tokens" -> {
-                    toaster.show("估算 Tokens: ${me.rerere.rikkahub.data.ai.transformers.estimateTokens(args)}")
-                    return
-                }
-                else -> args // echo / setinput：原样输出
-            }
-            state.setMessageText(result)
         }
 
         BuiltinSlashKind.SYS -> {
@@ -969,14 +942,6 @@ private fun handleBuiltinSlash(
                     )
                 )
                 toaster.show("已重命名为: $newName")
-            }
-        }
-
-        BuiltinSlashKind.REGENERATE -> {
-            if (onSlashRegenerate != null) {
-                onSlashRegenerate()
-            } else {
-                toaster.show("当前页面不支持该命令")
             }
         }
 

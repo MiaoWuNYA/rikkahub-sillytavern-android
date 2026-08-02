@@ -53,13 +53,13 @@ class PromptVM(
                     },
                     group = injection.group,
                     position = when (injection.position) {
-                        InjectionPosition.BEFORE_SYSTEM_PROMPT -> 0
-                        InjectionPosition.AFTER_SYSTEM_PROMPT -> 1
+                        InjectionPosition.BEFORE_SYSTEM_PROMPT, InjectionPosition.BEFORE_CHARACTER -> 0
+                        InjectionPosition.AFTER_SYSTEM_PROMPT, InjectionPosition.AFTER_CHARACTER -> 1
                         InjectionPosition.TOP_OF_CHAT, InjectionPosition.AUTHOR_NOTE -> 2
                         InjectionPosition.BOTTOM_OF_CHAT -> 3
                         InjectionPosition.AT_DEPTH -> 4
-                        InjectionPosition.BEFORE_CHARACTER -> 5
-                        InjectionPosition.AFTER_CHARACTER -> 6
+                        InjectionPosition.EM_TOP -> 5
+                        InjectionPosition.EM_BOTTOM -> 6
                         InjectionPosition.ANTAGONIZE -> 7
                         InjectionPosition.AFTER_DIALOG -> 8
                     },

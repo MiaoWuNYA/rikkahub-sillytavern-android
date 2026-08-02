@@ -626,6 +626,9 @@ private fun MessagePartsBlock(
                                         )
                                     }
                                 }
+
+                                is UIMessageAnnotation.CharacterCardData -> Unit
+                                is UIMessageAnnotation.ExampleMessage -> Unit
                             }
                         }
                     }

@@ -441,11 +441,6 @@ private fun ChatPageContent(
                         }
                         inputState.clearInput()
                     },
-                    onSlashRegenerate = {
-                        vm.conversation.value.currentMessages
-                            .lastOrNull { it.role == me.rerere.ai.core.MessageRole.ASSISTANT }
-                            ?.let { vm.regenerateAtMessage(it) }
-                    },
                     onSlashDuplicate = {
                         val src = setting.getCurrentAssistant()
                         val dup = src.copy(
