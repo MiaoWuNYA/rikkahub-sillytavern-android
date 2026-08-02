@@ -4,7 +4,7 @@ import me.rerere.rikkahub.data.datastore.Settings
 
 /**
  * 变量斜杠命令操作（对齐酒馆官方 variables.js 的变量家族语义）。
- * chat 级以 conversationId 为作用域，global 级跨对话持久。
+ * 仅本对话级：以 conversationId 为作用域，跨对话隔离。
  */
 enum class SlashVarOp {
     SET,
@@ -26,23 +26,21 @@ enum class SlashVarOp {
  *  - add：数值相加，非数值拼接（与宏引擎 SettingsMacroVars.add 一致）
  *  - inc/dec：数值 +1/-1，非数值按 0 起算
  *  - flush：删除变量
- *  - list：列出本对话变量与全局变量
+ *  - list：列出本对话变量
  */
 fun applyMacroVarSlash(
     settings: Settings,
     op: SlashVarOp,
     name: String,
     value: String,
-    global: Boolean,
     chatKey: String,
 ): Pair<Settings, String> {
-    val newGlobal = settings.macroGlobalVariables.toMutableMap()
     val chatVars = settings.macroChatVariables.toMutableMap()
     val chat = chatVars[chatKey]?.toMutableMap() ?: mutableMapOf()
 
-    fun current(): String? = if (global) newGlobal[name] else chat[name]
+    fun current(): String? = chat[name]
 
-    fun store(): MutableMap<String, String> = if (global) newGlobal else chat
+    fun store(): MutableMap<String, String> = chat
 
     val result = when (op) {
         SlashVarOp.SET -> {
@@ -82,20 +80,11 @@ fun applyMacroVarSlash(
         }
 
         SlashVarOp.LIST -> {
-            val lines = buildList {
-                if (chat.isNotEmpty()) {
-                    append("本对话: " + chat.entries.joinToString("、") { "${it.key}=${it.value}" })
-                }
-                if (newGlobal.isNotEmpty()) {
-                    append("全局: " + newGlobal.entries.joinToString("、") { "${it.key}=${it.value}" })
-                }
-            }
-            if (lines.isEmpty()) "（暂无变量）" else lines.joinToString("\n")
+            if (chat.isEmpty()) "（暂无变量）" else "本对话: " + chat.entries.joinToString("、") { "${it.key}=${it.value}" }
         }
     }
 
     val newSettings = when {
-        global -> settings.copy(macroGlobalVariables = newGlobal)
         op == SlashVarOp.LIST -> settings
         else -> settings.copy(macroChatVariables = chatVars.apply { put(chatKey, chat) })
     }

@@ -149,8 +149,7 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
 ) + varSlashCommands()
 
 /**
- * 官方变量命令家族（对齐 SillyTavern variables.js）：
- * chat 级 7 个 + global 级 6 个。
+ * 官方变量命令家族（对齐 SillyTavern variables.js，仅保留本对话级 7 个）。
  */
 fun varSlashCommands(): List<SlashCommand> = listOf(
     SlashCommand(
@@ -203,54 +202,6 @@ fun varSlashCommands(): List<SlashCommand> = listOf(
     SlashCommand(
         name = "flushvar",
         description = "删除本对话变量(Flush Var)",
-        argumentHint = "[key]",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.VAR,
-    ),
-    SlashCommand(
-        name = "setglobalvar",
-        description = "设置全局变量(Set Global Var)",
-        argumentHint = "[key] [值]",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.VAR,
-    ),
-    SlashCommand(
-        name = "getglobalvar",
-        description = "读取全局变量(Get Global Var)",
-        argumentHint = "[key]",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.VAR,
-    ),
-    SlashCommand(
-        name = "addglobalvar",
-        description = "全局变量加值(Add Global Var)",
-        argumentHint = "[key] [值]",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.VAR,
-    ),
-    SlashCommand(
-        name = "incglobalvar",
-        description = "全局变量+1(Inc Global Var)",
-        argumentHint = "[key]",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.VAR,
-    ),
-    SlashCommand(
-        name = "decglobalvar",
-        description = "全局变量-1(Dec Global Var)",
-        argumentHint = "[key]",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.VAR,
-    ),
-    SlashCommand(
-        name = "flushglobalvar",
-        description = "删除全局变量(Flush Global Var)",
         argumentHint = "[key]",
         content = "",
         filePath = "builtin",

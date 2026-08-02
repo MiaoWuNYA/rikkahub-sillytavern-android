@@ -149,7 +149,7 @@ fun ChatInput(
     onSlashTrigger: (() -> Unit)? = null,
     onSlashSysgen: ((String) -> Unit)? = null,
     onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)? = null,
-    onSlashVar: ((SlashVarOp, String, String, Boolean) -> String?)? = null,
+    onSlashVar: ((SlashVarOp, String, String) -> String?)? = null,
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
@@ -503,7 +503,7 @@ private fun TextInputRow(
     onSlashTrigger: (() -> Unit)?,
     onSlashSysgen: ((String) -> Unit)?,
     onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)?,
-    onSlashVar: ((SlashVarOp, String, String, Boolean) -> String?)?,
+    onSlashVar: ((SlashVarOp, String, String) -> String?)?,
 ) {
     val settings = LocalSettings.current
     val filesManager: FilesManager = koinInject()
@@ -903,7 +903,7 @@ private fun handleBuiltinSlash(
     onSlashTrigger: (() -> Unit)?,
     onSlashSysgen: ((String) -> Unit)?,
     onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)?,
-    onSlashVar: ((SlashVarOp, String, String, Boolean) -> String?)?,
+    onSlashVar: ((SlashVarOp, String, String) -> String?)?,
 ) {
     when (cmd.builtinKind) {
         BuiltinSlashKind.HELP -> {
@@ -1004,19 +1004,18 @@ private fun handleBuiltinSlash(
 
         BuiltinSlashKind.VAR -> {
             val op = when (cmd.name) {
-                "setvar", "setglobalvar" -> SlashVarOp.SET
-                "getvar", "getglobalvar" -> SlashVarOp.GET
-                "addvar", "addglobalvar" -> SlashVarOp.ADD
-                "incvar", "incglobalvar" -> SlashVarOp.INC
-                "decvar", "decglobalvar" -> SlashVarOp.DEC
-                "flushvar", "flushglobalvar" -> SlashVarOp.FLUSH
+                "setvar" -> SlashVarOp.SET
+                "getvar" -> SlashVarOp.GET
+                "addvar" -> SlashVarOp.ADD
+                "incvar" -> SlashVarOp.INC
+                "decvar" -> SlashVarOp.DEC
+                "flushvar" -> SlashVarOp.FLUSH
                 "listvar" -> SlashVarOp.LIST
                 else -> null
             } ?: return
-            val global = cmd.name.contains("global")
 
             if (op == SlashVarOp.LIST) {
-                val result = onSlashVar?.invoke(op, "", "", global)
+                val result = onSlashVar?.invoke(op, "", "")
                 if (result == null) {
                     toaster.show("当前页面不支持该命令")
                 } else {
@@ -1038,7 +1037,7 @@ private fun handleBuiltinSlash(
                 return
             }
 
-            val result = onSlashVar?.invoke(op, key, value, global)
+            val result = onSlashVar?.invoke(op, key, value)
             if (result == null) {
                 toaster.show("当前页面不支持该命令")
             } else {

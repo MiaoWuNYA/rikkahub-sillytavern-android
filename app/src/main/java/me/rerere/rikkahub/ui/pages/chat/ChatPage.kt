@@ -512,13 +512,12 @@ private fun ChatPageContent(
                         vm.handleInjectPrompt(content, position, depth, role)
                         toaster.show("已注入提示词，下次回复生效")
                     },
-                    onSlashVar = { op, name, value, global ->
+                    onSlashVar = { op, name, value ->
                         val (newSettings, result) = applyMacroVarSlash(
                             settings = setting,
                             op = op,
                             name = name,
                             value = value,
-                            global = global,
                             chatKey = conversation.id.toString(),
                         )
                         if (newSettings !== setting) {
