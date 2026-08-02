@@ -95,15 +95,16 @@ object GroupSpeakerSelector {
         lastSpeakerId: Uuid?,
         speakerHistory: List<Uuid>,
         allowSelfResponses: Boolean,
+        isUserInput: Boolean = true,
     ): List<Uuid> {
         if (members.isEmpty()) return emptyList()
 
-        // 未发言者优先
-        val haveNotSpoken = members.filter { it.id !in speakerHistory }
+        // 对齐酒馆 activatePooledOrder：用户输入时立即停止统计，未发言者=全体成员
+        val haveNotSpoken = if (isUserInput) members else members.filter { it.id !in speakerHistory }
         val picked = if (haveNotSpoken.isNotEmpty()) {
             haveNotSpoken.random()
         } else {
-            val pool = if (members.size > 1 && lastSpeakerId != null && !allowSelfResponses) {
+            val pool = if (!isUserInput && members.size > 1 && lastSpeakerId != null && !allowSelfResponses) {
                 members.filter { it.id != lastSpeakerId }
             } else members
             pool.randomOrNull() ?: return emptyList()
@@ -131,7 +132,7 @@ object GroupSpeakerSelector {
             )
             GroupActivationStrategy.LIST -> pickList(enabledMembers)
             GroupActivationStrategy.POOLED -> pickPooled(
-                enabledMembers, lastSpeakerId, speakerHistory, allowSelfResponses,
+                enabledMembers, lastSpeakerId, speakerHistory, allowSelfResponses, isUserInput,
             )
             GroupActivationStrategy.MANUAL -> {
                 val sid = manualSpeakerId

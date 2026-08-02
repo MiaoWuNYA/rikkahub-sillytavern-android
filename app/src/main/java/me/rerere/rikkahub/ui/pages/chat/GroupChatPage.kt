@@ -134,10 +134,20 @@ fun GroupChatPage(groupId: String) {
     LaunchedEffect(Unit) {
         val existingId = gc.conversationId ?: Uuid.random()
         if (gc.conversationId == null) {
+            // 对齐酒馆：新群聊先加入每个成员的开场白（first_mes 或随机备选开场白）
+            val greetingPairs = members.mapNotNull { m ->
+                val tav = m.tavernData ?: return@mapNotNull null
+                val texts = listOfNotNull(tav.firstMessage.takeIf { it.isNotBlank() }) +
+                    tav.alternateGreetings.filter { it.isNotBlank() }
+                val chosen = texts.randomOrNull() ?: return@mapNotNull null
+                val node = UIMessage.assistant(chosen).toMessageNode()
+                node to m.id
+            }
             val conv = Conversation(
                 id = existingId,
                 assistantId = gc.memberIds.firstOrNull() ?: Uuid.random(),
-                messageNodes = emptyList(),
+                messageNodes = greetingPairs.map { it.first },
+                speakerMap = greetingPairs.associate { it.first.id to it.second },
             )
             chatService.initializeConversation(existingId)
             chatService.updateConversationState(existingId) { conv }
