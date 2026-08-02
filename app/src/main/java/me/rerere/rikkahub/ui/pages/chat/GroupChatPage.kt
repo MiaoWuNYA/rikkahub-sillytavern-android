@@ -481,10 +481,10 @@ fun GroupChatPage(groupId: String) {
                                 )
 
                                 queueMembers = allPicked.mapNotNull { id -> members.find { it.id == id }?.name }
-                                queueStatus = if (allPicked.isEmpty()) {
-                                    "已发送（未选择发言人）"
-                                } else {
-                                    "等待 ${queueMembers.joinToString("、")} 回复..."
+                                queueStatus = when {
+                                    enabledMembers.isEmpty() -> "全部成员已禁言，仅发送消息"
+                                    allPicked.isEmpty() -> "已发送（未选择发言人）"
+                                    else -> "等待 ${queueMembers.joinToString("、")} 回复..."
                                 }
 
                                 inputState.clearInput()
@@ -571,6 +571,8 @@ fun GroupChatPage(groupId: String) {
                                                             speakerMap = conv.speakerMap - placeholderNode.id,
                                                         )
                                                     }
+                                                    queueStatus = "${speaker.name} 回复为空"
+                                                    delay(1200)
                                                 }
                                             } catch (e: kotlinx.coroutines.CancellationException) {
                                                 // 用户打断：清理占位消息后向上抛出
@@ -627,6 +629,9 @@ fun GroupChatPage(groupId: String) {
                                                         onWaiting = {
                                                             queueStatus = "等待自动接话（${gc.autoModeDelay}秒）..."
                                                             queueMembers = emptyList()
+                                                        },
+                                                        onEmptyReply = { name ->
+                                                            queueStatus = "$name 回复为空"
                                                         },
                                                     )
                                                 }
@@ -1039,6 +1044,7 @@ private suspend fun runAutoChat(
     isCurrent: () -> Boolean,
     onSpeakerStart: (name: String, round: Int, total: Int) -> Unit,
     onWaiting: () -> Unit,
+    onEmptyReply: (name: String) -> Unit,
 ) {
     val autoDelay = gc.autoModeDelay
     if (autoDelay <= 0) return
@@ -1092,7 +1098,7 @@ private suspend fun runAutoChat(
             val historyWithoutLast = history.dropLast(1)
 
             try {
-                chatService.generateForAssistant(
+                val response = chatService.generateForAssistant(
                     assistant = effectiveSpeaker,
                     settings = settings,
                     prompt = prompt,
@@ -1116,7 +1122,19 @@ private suspend fun runAutoChat(
                         }
                     },
                 )
-                generatedCount++
+                if (response.isBlank()) {
+                    // 空回复：删除占位并提示，不计入已生成
+                    chatService.updateConversationState(convId) { c ->
+                        c.copy(
+                            messageNodes = c.messageNodes.filter { it.id != placeholderNode.id },
+                            speakerMap = c.speakerMap - placeholderNode.id,
+                        )
+                    }
+                    onEmptyReply(speaker.name)
+                    kotlinx.coroutines.delay(1200)
+                } else {
+                    generatedCount++
+                }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 // 用户打断：清理占位消息后向上抛出
                 chatService.updateConversationState(convId) { c ->
