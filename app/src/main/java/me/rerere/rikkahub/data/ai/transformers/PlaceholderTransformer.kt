@@ -23,7 +23,13 @@ import java.time.format.FormatStyle
 import java.time.temporal.Temporal
 import java.util.Locale
 import java.util.TimeZone
+import kotlinx.datetime.TimeZone as KtzTimeZone
+import kotlinx.datetime.toInstant
 import kotlin.random.Random
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 data class PlaceholderCtx(
     val context: Context,
@@ -143,13 +149,121 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
             it.assistant.tavernData?.characterVersion ?: ""
         }
         placeholder("group", { Text(stringResource(R.string.placeholder_group)) }) {
-            val groups = it.settingsStore.settingsFlow.value.groupChats
-            val group = groups.firstOrNull { g -> it.assistant.id in g.memberIds }
-            group?.memberIds?.mapNotNull { memberId ->
-                it.settingsStore.settingsFlow.value.assistants
-                    .firstOrNull { a -> a.id == memberId }?.name
-            }?.joinToString(", ") ?: ""
+            it.groupMembers()
         }
+
+        // ── 对齐酒馆官方实用宏（第二批）──
+        placeholder("persona", { Text(stringResource(R.string.placeholder_persona)) }) {
+            val s = it.settingsStore.settingsFlow.value
+            s.personas.firstOrNull { p -> p.id == s.activePersonaId && p.enabled }?.description ?: ""
+        }
+
+        placeholder("date", { Text(stringResource(R.string.placeholder_date)) }) {
+            LocalDate.now().toDateString()
+        }
+
+        placeholder("lastUserMessage", { Text(stringResource(R.string.placeholder_last_user_message)) }) {
+            it.lastRealMessage(MessageRole.USER)?.let(::textOf) ?: ""
+        }
+
+        placeholder("lastCharMessage", { Text(stringResource(R.string.placeholder_last_char_message)) }) {
+            it.lastRealMessage(MessageRole.ASSISTANT)?.let(::textOf) ?: ""
+        }
+
+        placeholder("idleDuration", { Text(stringResource(R.string.placeholder_idle_duration)) }) {
+            val lastUser = it.lastRealMessage(MessageRole.USER) ?: return@placeholder ""
+            val instant = lastUser.createdAt.toInstant(KtzTimeZone.currentSystemDefault())
+            val diff = Clock.System.now() - instant
+            when {
+                diff < 1.minutes -> "刚刚"
+                diff < 60.minutes -> "${diff.inWholeMinutes} 分钟前"
+                diff < 24.hours -> "${diff.inWholeHours} 小时前"
+                else -> "${diff.inWholeDays} 天前"
+            }
+        }
+
+        placeholder("mesExamples", { Text(stringResource(R.string.placeholder_mes_examples)) }) {
+            it.assistant.tavernData?.mesExample ?: ""
+        }
+
+        placeholder("creator", { Text(stringResource(R.string.placeholder_creator)) }) {
+            it.assistant.tavernData?.creator ?: ""
+        }
+
+        placeholder("charPrompt", { Text(stringResource(R.string.placeholder_char_prompt)) }) {
+            it.assistant.tavernData?.systemPrompt ?: ""
+        }
+
+        placeholder("charInstruction", { Text(stringResource(R.string.placeholder_char_instruction)) }) {
+            it.assistant.tavernData?.postHistoryInstructions ?: ""
+        }
+
+        placeholder("original", { Text(stringResource(R.string.placeholder_original)) }) {
+            it.assistant.systemPrompt
+        }
+
+        placeholder("authorNote", { Text(stringResource(R.string.placeholder_author_note)) }) {
+            it.settingsStore.settingsFlow.value.authorNote
+        }
+
+        placeholder("groupMembers", { Text(stringResource(R.string.placeholder_group_members)) }) {
+            it.groupMembers()
+        }
+
+        placeholder("pipe", { Text(stringResource(R.string.placeholder_pipe)) }) {
+            "|"
+        }
+
+        placeholder("newline", { Text(stringResource(R.string.placeholder_newline)) }) {
+            "\n"
+        }
+
+        placeholder("trim", { Text(stringResource(R.string.placeholder_trim)) }) {
+            ""
+        }
+    }
+
+    private fun PlaceholderCtx.groupMembers(): String {
+        val groups = settingsStore.settingsFlow.value.groupChats
+        val group = groups.firstOrNull { g -> assistant.id in g.memberIds }
+        return group?.memberIds?.mapNotNull { memberId ->
+            settingsStore.settingsFlow.value.assistants
+                .firstOrNull { a -> a.id == memberId }?.name
+        }?.joinToString(", ") ?: ""
+    }
+
+    /** 从消息列表末尾找真正的用户/角色消息，跳过注入块（作者注释、人设） */
+    private fun PlaceholderCtx.lastRealMessage(role: MessageRole): UIMessage? =
+        messages.lastOrNull { m ->
+            if (m.role != role) return@lastOrNull false
+            val t = textOf(m)
+            !t.startsWith("[Author's Note]") && !t.startsWith("[User Persona:")
+        }
+
+    /** 骰子表达式：支持 NdM±K，例如 1d20 / 2d6+3 / 3d6+1d4-2 */
+    internal fun rollDice(expr: String): String? {
+        val text = expr.trim().replace(" ", "")
+        if (text.isEmpty()) return null
+        val tokens = Regex("([+-]?\\d*d\\d+|[+-]?\\d+)", RegexOption.IGNORE_CASE).findAll(text).toList()
+        if (tokens.isEmpty() || tokens.joinToString("") { it.value } != text) return null
+
+        var total = 0
+        for (token in tokens) {
+            val raw = token.value
+            val sign = if (raw.startsWith("-")) -1 else 1
+            val body = raw.drop(1).takeIf { raw.startsWith("+") || raw.startsWith("-") } ?: raw
+            if ('d' in body.lowercase()) {
+                val parts = body.split(Regex("[dD]"))
+                val count = parts.getOrNull(0)?.toIntOrNull() ?: 1
+                val sides = parts.getOrNull(1)?.toIntOrNull() ?: return null
+                if (count <= 0 || sides <= 0 || count > 1000 || sides > 100000) return null
+                repeat(count) { total += sign * (Random.nextInt(sides) + 1) }
+            } else {
+                val num = body.toIntOrNull() ?: return null
+                total += sign * num
+            }
+        }
+        return total.toString()
     }
 
     private fun Temporal.toDateString() = DateTimeFormatter
@@ -168,6 +282,11 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
 
 object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
     private val defaultProvider = DefaultPlaceholderProvider
+
+    private val trimRegex = Regex("""(?:\r?\n)?\s*\{\{?trim\}\}?\s*(?:\r?\n)?""", RegexOption.IGNORE_CASE)
+    private val randomArgsRegex = Regex("""\{\{?random::([^}]+)\}\}?""", RegexOption.IGNORE_CASE)
+    private val randomLegacyRegex = Regex("""\{\{?random:([^|}]+(?:\|[^|}]+)+)\}\}?""", RegexOption.IGNORE_CASE)
+    private val rollRegex = Regex("""\{\{?roll(?:::|:|\s)([^}]+)\}\}?""", RegexOption.IGNORE_CASE)
 
     override suspend fun transform(
         ctx: TransformerContext,
@@ -201,6 +320,22 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
         messages: List<UIMessage>,
     ): String {
         var result = text
+
+        // 对齐酒馆格式宏：{{trim}} 去除周围的换行
+        result = result.replace(trimRegex) { "" }
+
+        // 带参数宏：{{random::a::b}} / {{random:a|b|c}} / {{roll 1d20}} / {{roll::2d6+3}}
+        result = result.replace(randomArgsRegex) { m ->
+            val opts = m.groupValues[1].split("::").map { it.trim() }.filter { it.isNotEmpty() }
+            if (opts.isEmpty()) "" else opts[Random.nextInt(opts.size)]
+        }
+        result = result.replace(randomLegacyRegex) { m ->
+            val opts = m.groupValues[1].split("|").map { it.trim() }.filter { it.isNotEmpty() }
+            if (opts.isEmpty()) "" else opts[Random.nextInt(opts.size)]
+        }
+        result = result.replace(rollRegex) { m ->
+            DefaultPlaceholderProvider.rollDice(m.groupValues[1]) ?: ""
+        }
 
         val ctx = PlaceholderCtx(
             context = ctx.context,
