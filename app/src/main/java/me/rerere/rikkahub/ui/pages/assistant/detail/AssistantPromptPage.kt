@@ -409,85 +409,29 @@ private fun AssistantPromptContent(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("💬 开场白", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                Text("发给 AI 的第一条消息，定义对话起点",
+                Text("开场白(Greeting)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text("发给 AI 的第一条消息，定义对话起点；也可在角色卡详情页从卡片开场白中挑选",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-                // 酒馆卡导入的开场白选择
-                val tavernGreetings = listOfNotNull(
-                    assistant.tavernData?.firstMessage,
-                    *assistant.tavernData?.alternateGreetings?.toTypedArray() ?: emptyArray()
-                ).filter { it.isNotBlank() }
-
-                if (tavernGreetings.isNotEmpty()) {
-                    var selectedGreeting by remember { mutableStateOf(-1) }
-                    Text("从角色卡选择:", style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary)
-                    tavernGreetings.forEachIndexed { i, greeting ->
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { selectedGreeting = i },
-                            shape = RoundedCornerShape(
-                                topStart = 4.dp, topEnd = 4.dp,
-                                bottomStart = 4.dp, bottomEnd = 4.dp,
-                            ),
-                            color = if (selectedGreeting == i)
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                            tonalElevation = if (selectedGreeting == i) 2.dp else 0.dp,
-                        ) {
-                            Row(modifier = Modifier.padding(10.dp)) {
-                                Text(
-                                    text = "${if (i == 0) "⭐ " else ""}${greeting.take(120)}${if (greeting.length > 120) "…" else ""}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    maxLines = 3,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                if (selectedGreeting == i) {
-                                    TextButton(onClick = {
-                                        onUpdate(assistant.copy(
-                                            presetMessages = listOf(UIMessage.assistant(greeting))
-                                        ))
-                                    }) { Text("使用") }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 现有开场白列表（气泡式）
+                // 现有开场白列表
                 assistant.presetMessages.fastForEachIndexed { index, msg ->
                     val isAssistant = msg.role == MessageRole.ASSISTANT
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        horizontalArrangement = if (isAssistant) Arrangement.Start else Arrangement.End,
+                    Card(
+                        shape = RoundedCornerShape(4.dp),
+                        colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
                     ) {
-                        Surface(
-                            shape = RoundedCornerShape(
-                                topStart = 4.dp, topEnd = 4.dp,
-                                bottomStart = 4.dp, bottomEnd = 4.dp,
-                            ),
-                            color = if (isAssistant)
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                            else MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f),
-                            modifier = Modifier.widthIn(max = 300.dp),
+                        Column(
+                            modifier = Modifier.padding(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
-                            Column(modifier = Modifier.padding(10.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        if (isAssistant) "🤖" else "👤",
-                                        style = MaterialTheme.typography.labelSmall,
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        if (isAssistant) "角色" else "你",
+                                        if (isAssistant) "角色(Assistant)" else "用户(User)",
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Medium,
+                                        modifier = Modifier.weight(1f),
                                     )
-                                    Spacer(Modifier.weight(1f))
                                     IconButton(
                                         onClick = {
                                             onUpdate(assistant.copy(
@@ -514,7 +458,6 @@ private fun AssistantPromptContent(
                                     minLines = 2,
                                     maxLines = 5,
                                 )
-                            }
                         }
                     }
                 }
