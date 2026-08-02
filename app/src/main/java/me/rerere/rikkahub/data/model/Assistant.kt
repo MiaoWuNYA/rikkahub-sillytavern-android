@@ -279,15 +279,15 @@ sealed class PromptInjection {
 @Serializable
 enum class SelectiveLogic {
     @SerialName("and_any")
-    AND_ANY,      // 所有主触发词 AND 匹配（默认）
+    AND_ANY,      // 官方 0：主关键词命中 + 任一二级关键词命中（默认）
     @SerialName("and_all")
-    AND_ALL,      // 全部主+二级触发词都匹配
+    AND_ALL,      // 官方 3：主关键词命中 + 全部二级关键词命中
     @SerialName("or_any")
-    OR_ANY,       // 任一触发词匹配
+    OR_ANY,       // 本地遗留扩展（官方无此模式）
     @SerialName("not_any")
-    NOT_ANY,      // 没有匹配任何触发词时触发
+    NOT_ANY,      // 官方 2：主关键词命中 + 没有任何二级关键词命中
     @SerialName("not_all")
-    NOT_ALL,      // 没有匹配全部触发词时触发
+    NOT_ALL,      // 官方 1：主关键词命中 + 二级关键词非全部命中
 }
 
 /**
