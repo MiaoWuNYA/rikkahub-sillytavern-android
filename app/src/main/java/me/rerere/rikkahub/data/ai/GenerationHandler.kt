@@ -137,7 +137,11 @@ class GenerationHandler(
                 me.rerere.rikkahub.data.model.PersonaInjectionPosition.AFTER_SYSTEM
 
         // 官方 Chat Completion 结构：默认模板的角色卡拆成独立消息（主提示 + 角色卡字段）
-        val useOfficialSplit = assistant.tavernData != null && assistant.contextTemplate.isBlank()
+        // 默认模板（空 或 与内置默认完全一致）才按官方拆分；contextTemplate 无 UI 入口，
+        // 默认值就是内置模板文本，因此绝大多数角色卡都走官方拆分
+        val useOfficialSplit = assistant.tavernData != null &&
+            (assistant.contextTemplate.isBlank() ||
+                assistant.contextTemplate.trim() == me.rerere.rikkahub.data.model.DEFAULT_CONTEXT_TEMPLATE)
         val conversationOverride = assistant.allowConversationSystemPrompt && !conversationSystemPrompt.isNullOrBlank()
 
         val mainIdentity = if (conversationOverride) {
