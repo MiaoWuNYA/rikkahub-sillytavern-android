@@ -164,13 +164,13 @@ fun TavernCharacterCard(
                 if (onExport != null) {
                     IconButton(
                         onClick = onExport,
-                        modifier = Modifier.size(36.dp),
+                        modifier = Modifier.size(28.dp),
                     ) {
                         Icon(
                             HugeIcons.Share01,
                             contentDescription = "导出角色卡",
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
