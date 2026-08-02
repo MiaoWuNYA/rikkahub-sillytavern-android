@@ -172,6 +172,7 @@ fun GroupChatPage(groupId: String) {
     val inputState = remember { ChatInputState() }
     val hazeState = rememberHazeState()
     var generationJob by remember { mutableStateOf<Job?>(null) }
+    var generationEpoch by remember { mutableStateOf(0) }
 
     // 退出页面时取消生成
     DisposableEffect(Unit) {
@@ -213,7 +214,7 @@ fun GroupChatPage(groupId: String) {
             ) {
                 Column {
                     // 排队状态
-                    AnimatedVisibility(visible = isGenerating && queueMembers.isNotEmpty()) {
+                    AnimatedVisibility(visible = queueMembers.isNotEmpty()) {
                         Surface(
                             color = MaterialTheme.colorScheme.primaryContainer,
                             modifier = Modifier.fillMaxWidth(),
@@ -308,6 +309,8 @@ fun GroupChatPage(groupId: String) {
                                 if ((text.isBlank() && inputContents.all { it is UIMessagePart.Text }) || isGenerating) return@ChatInput
 
                                 generationJob?.cancel()
+                                val myEpoch = generationEpoch + 1
+                                generationEpoch = myEpoch
                                 isGenerating = true
 
                                 // 编辑模式：直接更新消息，不走选人+生成
@@ -438,6 +441,15 @@ fun GroupChatPage(groupId: String) {
                                                         )
                                                     }
                                                 }
+                                            } catch (e: kotlinx.coroutines.CancellationException) {
+                                                // 用户打断：清理占位消息后向上抛出
+                                                chatService.updateConversationState(currentConvId) { conv ->
+                                                    conv.copy(
+                                                        messageNodes = conv.messageNodes.filter { it.id != placeholderNode.id },
+                                                        speakerMap = conv.speakerMap - placeholderNode.id,
+                                                    )
+                                                }
+                                                throw e
                                             } catch (e: Exception) {
                                                 queueStatus = "${speaker.name} 生成失败: ${e.message?.take(40) ?: "未知错误"}"
                                                 // 删除占位消息
@@ -456,25 +468,49 @@ fun GroupChatPage(groupId: String) {
                                             queueStatus = "等待自动接话（${gc.autoModeDelay}秒）..."
                                             delay(gc.autoModeDelay * 1000L)
                                             if (isActive) {
+                                                // 解锁输入：用户发消息即打断自动接话（对齐酒馆打字即停）
+                                                isGenerating = false
                                                 // 用最后一条 AI 回复作为输入触发下一轮
                                                 val freshConv = chatService.getConversationFlow(currentConvId).value
                                                 val lastAsstMsg = freshConv.messageNodes.lastOrNull { it.role == MessageRole.ASSISTANT }
                                                 val autoText = lastAsstMsg?.let { messageText(it) } ?: ""
                                                 if (autoText.isNotBlank()) {
                                                     // 自动触发下一轮
-                                                    runAutoChat(currentConvId, gc, members, enabledMembers, chatService, settingsStore, settings, scope)
+                                                    runAutoChat(
+                                                        convId = currentConvId,
+                                                        gc = gc,
+                                                        members = members,
+                                                        enabledMembers = enabledMembers,
+                                                        chatService = chatService,
+                                                        settingsStore = settingsStore,
+                                                        settings = settings,
+                                                        isCurrent = { myEpoch == generationEpoch },
+                                                        onSpeakerStart = { name, round, total ->
+                                                            queueStatus = "$name 正在输入...（自动 $round/$total）"
+                                                            queueMembers = listOf(name)
+                                                        },
+                                                        onWaiting = {
+                                                            queueStatus = "等待自动接话（${gc.autoModeDelay}秒）..."
+                                                            queueMembers = emptyList()
+                                                        },
+                                                    )
                                                 }
                                             }
                                         }
+                                    } catch (e: kotlinx.coroutines.CancellationException) {
+                                        throw e
                                     } catch (e: Exception) {
                                         e.printStackTrace()
                                     } finally {
-                                        // 持久化群聊会话
-                                        val finalConv = chatService.getConversationFlow(currentConvId).value
-                                        chatService.saveConversation(currentConvId, finalConv)
-                                        isGenerating = false
-                                        queueStatus = ""
-                                        queueMembers = emptyList()
+                                        // 只有当前代次才负责收尾，旧任务被新消息打断时不碰状态
+                                        if (myEpoch == generationEpoch) {
+                                            // 持久化群聊会话
+                                            val finalConv = chatService.getConversationFlow(currentConvId).value
+                                            chatService.saveConversation(currentConvId, finalConv)
+                                            isGenerating = false
+                                            queueStatus = ""
+                                            queueMembers = emptyList()
+                                        }
                                     }
                                 }
                             },
@@ -792,15 +828,17 @@ private suspend fun runAutoChat(
     chatService: ChatService,
     settingsStore: SettingsStore,
     settings: me.rerere.rikkahub.data.datastore.Settings,
-    scope: kotlinx.coroutines.CoroutineScope,
+    isCurrent: () -> Boolean,
+    onSpeakerStart: (name: String, round: Int, total: Int) -> Unit,
+    onWaiting: () -> Unit,
 ) {
     val autoDelay = gc.autoModeDelay
     if (autoDelay <= 0) return
 
-    // 对齐酒馆：每轮一批；本地没有"打字即停"的间隔 worker，用固定轮数上限防止无限接话
+    // 对齐酒馆：每轮一批；用户发消息（代次变化）即打断，另有固定轮数上限防止无限接话
     val maxAutoRounds = 3
     var round = 0
-    while (scope.isActive && round < maxAutoRounds) {
+    while (isCurrent() && round < maxAutoRounds) {
         round++
         val conv = chatService.getConversationFlow(convId).value
         val lastSpeakerId = conv.messageNodes.lastOrNull()?.let { conv.speakerMap[it.id] }
@@ -824,8 +862,9 @@ private suspend fun runAutoChat(
 
         var generatedCount = 0
         for ((idx, sid) in picked.withIndex()) {
-            if (!scope.isActive) return
+            if (!isCurrent()) return
             val speaker = members.find { it.id == sid } ?: continue
+            onSpeakerStart(speaker.name, round, maxAutoRounds)
 
             val placeholderNode = UIMessage.assistant("").toMessageNode()
             chatService.updateConversationState(convId) { c ->
@@ -870,6 +909,15 @@ private suspend fun runAutoChat(
                     },
                 )
                 generatedCount++
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // 用户打断：清理占位消息后向上抛出
+                chatService.updateConversationState(convId) { c ->
+                    c.copy(
+                        messageNodes = c.messageNodes.filter { it.id != placeholderNode.id },
+                        speakerMap = c.speakerMap - placeholderNode.id,
+                    )
+                }
+                throw e
             } catch (e: Exception) {
                 chatService.updateConversationState(convId) { c ->
                     c.copy(
@@ -883,6 +931,7 @@ private suspend fun runAutoChat(
         if (generatedCount == 0) break
 
         if (round < maxAutoRounds) {
+            onWaiting()
             kotlinx.coroutines.delay(autoDelay * 1000L)
         }
     }
