@@ -758,10 +758,30 @@ private fun EmbeddedBookSummary(
                         selectiveLogic = template.selectiveLogic,
                         sticky = template.sticky,
                         cooldown = template.cooldown,
+                        delay = template.delay,
                         depth = template.depth,
                         scanDepth = template.scanDepth,
                         caseSensitive = template.caseSensitive,
                         useRegex = template.useRegex,
+                        matchWholeWords = template.matchWholeWords,
+                        excludeRecursion = template.excludeRecursion,
+                        preventRecursion = template.preventRecursion,
+                        delayUntilRecursion = template.delayUntilRecursion,
+                        useProbability = template.useProbability,
+                        inclusionGroup = template.inclusionGroup,
+                        useGroupScoring = template.useGroupScoring,
+                        groupPriority = template.groupPriority,
+                        automationId = template.automationId,
+                        displayIndex = template.displayIndex,
+                        displayPosition = template.displayPosition,
+                        triggers = template.triggers,
+                        matchPersonaDescription = template.matchPersonaDescription,
+                        matchCharacterDescription = template.matchCharacterDescription,
+                        matchCharacterPersonality = template.matchCharacterPersonality,
+                        matchCharacterDepthPrompt = template.matchCharacterDepthPrompt,
+                        matchScenario = template.matchScenario,
+                        matchCreatorNotes = template.matchCreatorNotes,
+                        ignoreBudget = template.ignoreBudget,
                         groupWeight = template.groupWeight,
                         groupOverride = template.groupOverride,
                     ))
@@ -802,6 +822,24 @@ private fun EmbeddedGroupSettingsDialog(
     var selectiveLogic by remember { mutableStateOf(template.selectiveLogic) }
     var caseSensitive by remember { mutableStateOf(template.caseSensitive) }
     var useRegex by remember { mutableStateOf(template.useRegex) }
+    var matchWholeWords by remember { mutableStateOf(template.matchWholeWords) }
+    var excludeRecursion by remember { mutableStateOf(template.excludeRecursion) }
+    var preventRecursion by remember { mutableStateOf(template.preventRecursion) }
+    var delayUntilRecursion by remember { mutableStateOf(template.delayUntilRecursion) }
+    var inclusionGroupStr by remember { mutableStateOf(template.inclusionGroup) }
+    var useGroupScoring by remember { mutableStateOf(template.useGroupScoring) }
+    var groupPriority by remember { mutableStateOf(template.groupPriority) }
+    var automationIdStr by remember { mutableStateOf(template.automationId) }
+    var displayIndexStr by remember { mutableStateOf(template.displayIndex.toString()) }
+    var displayPositionStr by remember { mutableStateOf(template.displayPosition.toString()) }
+    var triggersStr by remember { mutableStateOf(template.triggers.joinToString(", ")) }
+    var matchPersonaDescription by remember { mutableStateOf(template.matchPersonaDescription) }
+    var matchCharacterDescription by remember { mutableStateOf(template.matchCharacterDescription) }
+    var matchCharacterPersonality by remember { mutableStateOf(template.matchCharacterPersonality) }
+    var matchCharacterDepthPrompt by remember { mutableStateOf(template.matchCharacterDepthPrompt) }
+    var matchScenario by remember { mutableStateOf(template.matchScenario) }
+    var matchCreatorNotes by remember { mutableStateOf(template.matchCreatorNotes) }
+    var ignoreBudget by remember { mutableStateOf(template.ignoreBudget) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -864,15 +902,14 @@ private fun EmbeddedGroupSettingsDialog(
             // 插入位置
             CardGroup(title = { Text("插入位置(Insertion Position)") }) {
                 listOf(
-                    "系统提示词前(Before System)",
-                    "系统提示词后(After System)",
-                    "对话顶部(Top of Chat)",
-                    "最新消息前(Before Latest)",
+                    "角色卡前(Before Char)",
+                    "角色卡后(After Char)",
+                    "作者备注前(AN Top)",
+                    "作者备注后(AN Bottom)",
                     "指定深度(@Depth)",
-                    "角色卡前(Before Character)",
-                    "角色卡后(After Character)",
-                    "对抗位(Antagonize)",
-                    "AI 回复后(After Dialog)",
+                    "示例消息前(EM Top)",
+                    "示例消息后(EM Bottom)",
+                    "出口(Outlet, 暂不支持)",
                 ).forEachIndexed { i, label ->
                     item(
                         onClick = { position = i },
@@ -962,6 +999,128 @@ private fun EmbeddedGroupSettingsDialog(
                 }
             }
 
+            // 匹配与递归控制
+            CardGroup(title = { Text("匹配与递归(Match & Recursion)") }) {
+                item(
+                    headlineContent = { Text("整词匹配(Whole Words)", style = MaterialTheme.typography.bodyMedium) },
+                    trailingContent = { Switch(checked = matchWholeWords, onCheckedChange = { matchWholeWords = it }) },
+                )
+                item(
+                    headlineContent = { Text("排除递归(Exclude Recursion)", style = MaterialTheme.typography.bodyMedium) },
+                    trailingContent = { Switch(checked = excludeRecursion, onCheckedChange = { excludeRecursion = it }) },
+                )
+                item(
+                    headlineContent = { Text("禁止被递归触发(Prevent Recursion)", style = MaterialTheme.typography.bodyMedium) },
+                    trailingContent = { Switch(checked = preventRecursion, onCheckedChange = { preventRecursion = it }) },
+                )
+                item(
+                    headlineContent = { Text("仅递归时检查(Delay Until Recursion)", style = MaterialTheme.typography.bodyMedium) },
+                    trailingContent = { Switch(checked = delayUntilRecursion, onCheckedChange = { delayUntilRecursion = it }) },
+                )
+                item(
+                    headlineContent = { Text("忽略预算(Ignore Budget)", style = MaterialTheme.typography.bodyMedium) },
+                    supportingContent = {
+                        Text(
+                            "该条目不受世界书 token 预算限制，总是注入",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                    trailingContent = { Switch(checked = ignoreBudget, onCheckedChange = { ignoreBudget = it }) },
+                )
+            }
+
+            // 官方高级字段
+            Text(
+                "官方高级字段(Official Advanced)",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            OutlinedTextField(
+                value = inclusionGroupStr,
+                onValueChange = { inclusionGroupStr = it },
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = MaterialTheme.typography.bodySmall,
+                singleLine = true,
+                label = { Text("包含组(Inclusion Group)") },
+            )
+            CardGroup {
+                item(
+                    headlineContent = { Text("使用组评分(Use Group Scoring)", style = MaterialTheme.typography.bodyMedium) },
+                    trailingContent = { Switch(checked = useGroupScoring, onCheckedChange = { useGroupScoring = it }) },
+                )
+                item(
+                    headlineContent = { Text("包含优先(Group Priority)", style = MaterialTheme.typography.bodyMedium) },
+                    trailingContent = { Switch(checked = groupPriority, onCheckedChange = { groupPriority = it }) },
+                )
+            }
+            OutlinedTextField(
+                value = automationIdStr,
+                onValueChange = { automationIdStr = it },
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = MaterialTheme.typography.bodySmall,
+                singleLine = true,
+                label = { Text("自动化ID(Automation ID)") },
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("显示序号(Display Index)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedTextField(value = displayIndexStr, onValueChange = { displayIndexStr = it },
+                        textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("显示位置(Display Position)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedTextField(value = displayPositionStr, onValueChange = { displayPositionStr = it },
+                        textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                }
+            }
+            OutlinedTextField(
+                value = triggersStr,
+                onValueChange = { triggersStr = it },
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = MaterialTheme.typography.bodySmall,
+                singleLine = true,
+                label = { Text("触发类型(Triggers)") },
+                supportingText = { Text("逗号分隔；不选 = 所有生成类型都触发") },
+            )
+
+            // 扫描范围（官方 match_*）
+            Text(
+                "扫描范围(Match)",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            CardGroup {
+                item(
+                    headlineContent = { Text("角色描述(Char Description)", style = MaterialTheme.typography.bodyMedium) },
+                    trailingContent = { Switch(checked = matchCharacterDescription, onCheckedChange = { matchCharacterDescription = it }) },
+                )
+                item(
+                    headlineContent = { Text("角色性格(Char Personality)", style = MaterialTheme.typography.bodyMedium) },
+                    trailingContent = { Switch(checked = matchCharacterPersonality, onCheckedChange = { matchCharacterPersonality = it }) },
+                )
+                item(
+                    headlineContent = { Text("角色深度提示(Char Depth Prompt)", style = MaterialTheme.typography.bodyMedium) },
+                    trailingContent = { Switch(checked = matchCharacterDepthPrompt, onCheckedChange = { matchCharacterDepthPrompt = it }) },
+                )
+                item(
+                    headlineContent = { Text("角色场景(Scenario)", style = MaterialTheme.typography.bodyMedium) },
+                    trailingContent = { Switch(checked = matchScenario, onCheckedChange = { matchScenario = it }) },
+                )
+                item(
+                    headlineContent = { Text("作者备注(Creator Notes)", style = MaterialTheme.typography.bodyMedium) },
+                    trailingContent = { Switch(checked = matchCreatorNotes, onCheckedChange = { matchCreatorNotes = it }) },
+                )
+                item(
+                    headlineContent = { Text("用户人设(Persona)", style = MaterialTheme.typography.bodyMedium) },
+                    trailingContent = { Switch(checked = matchPersonaDescription, onCheckedChange = { matchPersonaDescription = it }) },
+                )
+            }
+
             // 按钮行
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -988,6 +1147,24 @@ private fun EmbeddedGroupSettingsDialog(
                         selectiveLogic = selectiveLogic,
                         caseSensitive = caseSensitive,
                         useRegex = useRegex,
+                        matchWholeWords = matchWholeWords,
+                        excludeRecursion = excludeRecursion,
+                        preventRecursion = preventRecursion,
+                        delayUntilRecursion = delayUntilRecursion,
+                        inclusionGroup = inclusionGroupStr.trim(),
+                        useGroupScoring = useGroupScoring,
+                        groupPriority = groupPriority,
+                        automationId = automationIdStr.trim(),
+                        displayIndex = displayIndexStr.toIntOrNull() ?: 0,
+                        displayPosition = displayPositionStr.toIntOrNull() ?: 0,
+                        triggers = triggersStr.split(",").map { it.trim() }.filter { it.isNotBlank() },
+                        matchPersonaDescription = matchPersonaDescription,
+                        matchCharacterDescription = matchCharacterDescription,
+                        matchCharacterPersonality = matchCharacterPersonality,
+                        matchCharacterDepthPrompt = matchCharacterDepthPrompt,
+                        matchScenario = matchScenario,
+                        matchCreatorNotes = matchCreatorNotes,
+                        ignoreBudget = ignoreBudget,
                     ))
                 }) {
                     Text("应用到 ${entries.size} 条")
@@ -1238,15 +1415,14 @@ private fun EntryEditor(
         // 插入位置
         CardGroup(title = { Text("插入位置(Insertion Position)") }) {
             val posOptions = listOf(
-                "系统提示词前(Before System)",
-                "系统提示词后(After System)",
-                "对话顶部(Top of Chat)",
-                "最新消息前(Before Latest)",
+                "角色卡前(Before Char)",
+                "角色卡后(After Char)",
+                "作者备注前(AN Top)",
+                "作者备注后(AN Bottom)",
                 "指定深度(@Depth)",
-                "角色卡前(Before Character)",
-                "角色卡后(After Character)",
-                "对抗位(Antagonize)",
-                "AI 回复后(After Dialog)",
+                "示例消息前(EM Top)",
+                "示例消息后(EM Bottom)",
+                "出口(Outlet, 暂不支持)",
             )
             posOptions.forEachIndexed { i, label ->
                 item(
