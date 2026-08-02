@@ -441,6 +441,11 @@ private fun ChatPageContent(
                         }
                         inputState.clearInput()
                     },
+                    onSlashRegenerate = {
+                        vm.conversation.value.currentMessages
+                            .lastOrNull { it.role == me.rerere.ai.core.MessageRole.ASSISTANT }
+                            ?.let { vm.regenerateAtMessage(it) }
+                    },
                     onUpdateChatModel = {
                         vm.setChatModel(assistant = setting.getCurrentAssistant(), model = it)
                     },

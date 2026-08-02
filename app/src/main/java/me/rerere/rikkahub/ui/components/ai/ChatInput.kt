@@ -94,6 +94,7 @@ import me.rerere.hugeicons.stroke.FullScreen
 import me.rerere.hugeicons.stroke.Zap
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
+import me.rerere.rikkahub.data.datastore.findModelById
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.datastore.getCurrentChatModel
 import me.rerere.rikkahub.data.datastore.getQuickMessagesOfAssistant
@@ -140,6 +141,7 @@ fun ChatInput(
     onUpdateConversation: (Conversation) -> Unit = {},
     onCompressContext: (String, String, String) -> Unit = { _, _, _ -> },
     onLongSendClick: () -> Unit,
+    onSlashRegenerate: (() -> Unit)? = null,
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
@@ -596,16 +598,29 @@ private fun TextInputRow(
                         filtered.take(5).forEach { cmd ->
                             Surface(
                                 onClick = {
-                                    val argsList = slashArgs.split(" ", limit = 10)
-                                    var text = cmd.content
-                                        .replace("\$ARGUMENTS", slashArgs)
-                                        .replace("\$ARGS", slashArgs)
-                                    // $ARGS.0, $ARGS.1 ... 按位置替换
-                                    for (i in 0..9) {
-                                        val value = argsList.getOrElse(i) { "" }
-                                        text = text.replace("\$ARGS.$i", value)
+                                    if (cmd.builtinKind != null) {
+                                        handleBuiltinSlash(
+                                            cmd = cmd,
+                                            args = slashArgs,
+                                            state = state,
+                                            toaster = toaster,
+                                            settings = settings,
+                                            assistant = assistant,
+                                            onUpdateAssistant = onUpdateAssistant,
+                                            onSlashRegenerate = onSlashRegenerate,
+                                        )
+                                    } else {
+                                        val argsList = slashArgs.split(" ", limit = 10)
+                                        var text = cmd.content
+                                            .replace("\$ARGUMENTS", slashArgs)
+                                            .replace("\$ARGS", slashArgs)
+                                        // $ARGS.0, $ARGS.1 ... 按位置替换
+                                        for (i in 0..9) {
+                                            val value = argsList.getOrElse(i) { "" }
+                                            text = text.replace("\$ARGS.$i", value)
+                                        }
+                                        state.setMessageText(text)
                                     }
-                                    state.setMessageText(text)
                                     showSlashPopup = false
                                 },
                                 color = Color.Transparent,
@@ -789,6 +804,93 @@ private fun ChatInputState.applyCompletion(
     textContent.edit {
         replace(start, end, item.insertText)
         selection = TextRange(start + item.insertText.length)
+    }
+}
+
+/**
+ * 执行内置斜杠命令（官方常用命令的实用子集）
+ */
+private fun handleBuiltinSlash(
+    cmd: SlashCommand,
+    args: String,
+    state: ChatInputState,
+    toaster: com.dokar.sonner.ToasterState,
+    settings: Settings,
+    assistant: Assistant,
+    onUpdateAssistant: (Assistant) -> Unit,
+    onSlashRegenerate: (() -> Unit)?,
+) {
+    when (cmd.builtinKind) {
+        BuiltinSlashKind.TEXT -> {
+            val result = when (cmd.name) {
+                "lower" -> args.lowercase()
+                "upper" -> args.uppercase()
+                "trimstart" -> args.trimStart()
+                "trimend" -> args.trimEnd()
+                "substr" -> {
+                    val parts = args.split(" ", limit = 3)
+                    val start = parts.getOrNull(0)?.toIntOrNull() ?: 0
+                    val length = parts.getOrNull(1)?.toIntOrNull() ?: Int.MAX_VALUE
+                    val text = parts.getOrNull(2) ?: ""
+                    text.substring(start.coerceIn(0, text.length)).take(length)
+                }
+                "tokens" -> {
+                    toaster.show("估算 Tokens: ${me.rerere.rikkahub.data.ai.transformers.estimateTokens(args)}")
+                    return
+                }
+                else -> args // echo / setinput：原样输出
+            }
+            state.setMessageText(result)
+        }
+
+        BuiltinSlashKind.INFO -> {
+            when (cmd.name) {
+                "model" -> {
+                    val model = settings.findModelById(assistant.chatModelId ?: settings.chatModelId)
+                    toaster.show("当前模型: ${model?.displayName ?: "未设置"}")
+                }
+                "char-get" -> {
+                    val tav = assistant.tavernData
+                    if (tav == null) {
+                        toaster.show("当前助手没有角色卡")
+                    } else {
+                        val summary = buildString {
+                            append("角色卡: ${tav.name.ifBlank { assistant.name }}")
+                            if (tav.description.isNotBlank()) append("\n描述: ${tav.description.take(80)}")
+                            if (tav.personality.isNotBlank()) append("\n性格: ${tav.personality.take(80)}")
+                            if (tav.systemPrompt.isNotBlank()) append("\n系统提示词: ${tav.systemPrompt.take(80)}")
+                            if (tav.embeddedBook != null) append("\n内嵌世界书: ${tav.embeddedBook.entries.size} 条")
+                        }
+                        toaster.show(summary)
+                    }
+                }
+            }
+        }
+
+        BuiltinSlashKind.RENAME -> {
+            val newName = args.trim()
+            if (newName.isBlank()) {
+                toaster.show("用法: /rename-char 新名字")
+            } else {
+                onUpdateAssistant(
+                    assistant.copy(
+                        name = newName,
+                        tavernData = assistant.tavernData?.copy(name = newName),
+                    )
+                )
+                toaster.show("已重命名为: $newName")
+            }
+        }
+
+        BuiltinSlashKind.REGENERATE -> {
+            if (onSlashRegenerate != null) {
+                onSlashRegenerate()
+            } else {
+                toaster.show("当前页面不支持该命令")
+            }
+        }
+
+        null -> Unit
     }
 }
 
