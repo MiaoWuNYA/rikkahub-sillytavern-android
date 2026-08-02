@@ -57,7 +57,7 @@ object AuthorsNoteTransformer : InputMessageTransformer {
         messages: List<UIMessage>,
     ): List<UIMessage> {
         val note = ctx.settings.authorNote
-        if (note.isBlank()) return messages
+        if (!ctx.settings.authorNoteEnabled || note.isBlank()) return messages
 
         // 间隔检查
         messageCounter++

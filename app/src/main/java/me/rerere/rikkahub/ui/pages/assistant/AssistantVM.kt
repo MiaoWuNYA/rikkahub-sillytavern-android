@@ -42,6 +42,7 @@ class AssistantVM(
                     worldInfoRecursive = imported.recursiveScanning ?: s.worldInfoRecursive,
                     worldInfoMaxRecursionSteps = imported.maxRecursionSteps ?: s.worldInfoMaxRecursionSteps,
                     worldInfoMinActivations = imported.minActivations ?: s.worldInfoMinActivations,
+                    worldInfoBudget = imported.tokenBudget ?: s.worldInfoBudget,
                 )
             )
         }

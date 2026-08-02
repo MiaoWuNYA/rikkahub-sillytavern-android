@@ -297,11 +297,19 @@ internal fun collectInjections(
             }
         }
 
-        // 条目预算（酒馆 world_info_budget）：超过时按优先级取前 N 条
-        if (worldInfoBudget > 0 && activatedEntries.size > worldInfoBudget) {
-            activatedEntries = activatedEntries
-                .sortedByDescending { it.priority }
-                .take(worldInfoBudget)
+        // token 预算（酒馆 world_info_budget_cap）：按优先级注入，直到估计 token 数达到上限
+        if (worldInfoBudget > 0) {
+            val sorted = activatedEntries.sortedByDescending { it.priority }
+            val selected = mutableListOf<PromptInjection.RegexInjection>()
+            var usedTokens = 0
+            for (entry in sorted) {
+                val cost = estimateTokens(entry.content)
+                if (selected.isNotEmpty() && usedTokens + cost > worldInfoBudget) break
+                selected.add(entry)
+                usedTokens += cost
+            }
+            // 预算再小也至少注入最高优先级的一条，避免世界书整体失效
+            activatedEntries = selected.ifEmpty { sorted.take(1) }
         }
 
         for (entry in activatedEntries) {
@@ -311,6 +319,21 @@ internal fun collectInjections(
     }
 
     return injections
+}
+
+/** 估算文本 token 数：中日韩字符按 1 token，其余字符按 4 字符 1 token（近似） */
+internal fun estimateTokens(text: String): Int {
+    if (text.isEmpty()) return 0
+    var cjk = 0
+    var other = 0
+    for (ch in text) {
+        if (ch.code in 0x4E00..0x9FFF || ch.code in 0x3040..0x30FF || ch.code in 0xAC00..0xD7AF) {
+            cjk++
+        } else {
+            other++
+        }
+    }
+    return cjk + (other + 3) / 4
 }
 
 /** 处理粘性和冷却状态 */

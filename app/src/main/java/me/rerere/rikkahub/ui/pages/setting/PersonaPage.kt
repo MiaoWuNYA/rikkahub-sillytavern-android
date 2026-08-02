@@ -42,7 +42,7 @@ fun PersonaPage() {
     Scaffold(
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text("Persona · 用户人设") },
+                title = { Text("用户人设") },
                 navigationIcon = { BackButton() },
                 scrollBehavior = scrollBehavior,
                 colors = CustomColors.topBarColors,
@@ -75,11 +75,11 @@ fun PersonaPage() {
                         Spacer(Modifier.width(8.dp))
                         Column {
                             Text(
-                                text = if (active != null) "当前: ${active.name}" else "未激活 Persona",
+                                text = if (active != null) "当前：${active.name}" else "未激活人设",
                                 style = MaterialTheme.typography.titleSmall,
                             )
                             Text(
-                                text = if (active != null) "已注入到提示词中" else "选择一个 Persona 激活",
+                                text = if (active != null) "已注入到提示词中" else "选择一个用户人设激活",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -107,7 +107,7 @@ fun PersonaPage() {
                             Text("👤", style = MaterialTheme.typography.titleLarge)
                             Spacer(Modifier.height(8.dp))
                             Text(
-                                "还没有 Persona",
+                                "还没有用户人设",
                                 style = MaterialTheme.typography.titleSmall,
                             )
                             Spacer(Modifier.height(4.dp))
@@ -165,7 +165,7 @@ fun PersonaPage() {
                                     )
                                 }
                                 Text(
-                                    text = "📍 " + when (persona.position) {
+                                    text = "注入位置：" + when (persona.position) {
                                         PersonaInjectionPosition.BEFORE_SYSTEM -> "系统提示词前"
                                         PersonaInjectionPosition.AFTER_SYSTEM -> "系统提示词后"
                                         PersonaInjectionPosition.TOP_OF_CHAT -> "对话顶部"
@@ -231,7 +231,7 @@ fun PersonaPage() {
                 OutlinedButton(
                     onClick = { showCreate = true },
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text("+ 创建 Persona") }
+                ) { Text("+ 创建用户人设") }
             }
         }
     }
@@ -283,7 +283,7 @@ private fun PersonaEditPage(
     Scaffold(
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text(if (initial != null) "编辑 Persona" else "新建 Persona") },
+                title = { Text(if (initial != null) "编辑人设" else "新建用户人设") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(HugeIcons.ArrowLeft01, "返回")

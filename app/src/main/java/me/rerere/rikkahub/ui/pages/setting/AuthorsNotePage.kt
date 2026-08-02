@@ -49,6 +49,36 @@ fun AuthorsNotePage() {
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // 总开关
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("启用导演备注", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                        Text(
+                            "关闭后备注内容不会注入到对话中",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = settings.authorNoteEnabled,
+                        onCheckedChange = { enabled ->
+                            scope.launch {
+                                settingsStore.update(settings.copy(authorNoteEnabled = enabled))
+                            }
+                        },
+                    )
+                }
+            }
+
             // 内容输入
             // 快速预设
             Card(

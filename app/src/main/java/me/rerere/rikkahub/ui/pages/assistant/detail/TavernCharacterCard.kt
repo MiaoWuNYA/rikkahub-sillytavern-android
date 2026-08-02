@@ -543,18 +543,18 @@ private fun EmbeddedBookSummary(
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                             )
                             FormItem(
-                                label = { Text("条目预算(0=不限)", style = MaterialTheme.typography.labelSmall) },
+                                label = { Text("预算(token/轮, 0=不限)", style = MaterialTheme.typography.labelSmall) },
                                 tail = {
                                     OutlinedTextField(
                                         value = settings.worldInfoBudget.toString(),
                                         onValueChange = { v ->
                                             v.toIntOrNull()?.let {
-                                                onSettingsUpdate(settings.copy(worldInfoBudget = it.coerceIn(0, 200)))
+                                                onSettingsUpdate(settings.copy(worldInfoBudget = it.coerceIn(0, 100000)))
                                             }
                                         },
                                         singleLine = true,
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        modifier = Modifier.width(84.dp),
+                                        modifier = Modifier.width(110.dp),
                                         textStyle = MaterialTheme.typography.bodyMedium,
                                     )
                                 },

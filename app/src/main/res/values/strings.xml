@@ -551,8 +551,9 @@
   <string name="prompt_page_position_before_character">Before Character</string>
   <string name="prompt_page_position_bottom_of_chat">Before Latest Message</string>
   <string name="prompt_page_position_top_of_chat">Top of Chat</string>
-  <string name="prompt_page_world_info_budget_desc">Maximum number of lorebook entries injected per turn (0 = unlimited)</string>
-  <string name="prompt_page_world_info_budget_title">Lorebook Entry Budget</string>
+  <string name="prompt_page_world_info_budget_desc">Maximum tokens injected from world info per turn (0 = unlimited)</string>
+  <string name="prompt_page_world_info_budget_title">Token Budget</string>
+  <string name="prompt_page_world_info_global_desc">Recursive scanning, token budget and minimum activations apply to every world book (including embedded ones)</string>
   <string name="prompt_page_world_info_global_title">Global World Info Activation Settings (applies to all world books)</string>
   <string name="prompt_page_world_info_min_activations_desc">Keep scanning earlier messages until at least this many entries activate (0 = off)</string>
   <string name="prompt_page_world_info_min_activations_title">Minimum Activations</string>

@@ -170,6 +170,7 @@ class SettingsStore(
         val PERSONAS = stringPreferencesKey("personas")
         val ACTIVE_PERSONA_ID = stringPreferencesKey("active_persona_id")
         val AUTHOR_NOTE = stringPreferencesKey("author_note")
+        val AUTHOR_NOTE_ENABLED = booleanPreferencesKey("author_note_enabled")
         val AUTHOR_NOTE_POSITION = stringPreferencesKey("author_note_position")
         val AUTHOR_NOTE_DEPTH = intPreferencesKey("author_note_depth")
         val AUTHOR_NOTE_FREQUENCY = stringPreferencesKey("author_note_frequency")
@@ -254,7 +255,10 @@ class SettingsStore(
                 lorebooks = preferences[LOREBOOKS]?.let {
                     JsonInstant.decodeFromString(it)
                 } ?: emptyList(),
-                worldInfoBudget = preferences[WORLD_INFO_BUDGET] ?: 25,
+                worldInfoBudget = (preferences[WORLD_INFO_BUDGET] ?: 1024).let {
+                    // 旧版 worldInfoBudget 是条目数（0~200），新版是 token 预算；旧条目数按默认 1024 迁移
+                    if (it in 1..200) 1024 else it
+                },
                 worldInfoMinActivations = preferences[WORLD_INFO_MIN_ACTIVATIONS] ?: 0,
                 worldInfoRecursive = preferences[WORLD_INFO_RECURSIVE] ?: false,
                 worldInfoMaxRecursionSteps = preferences[WORLD_INFO_MAX_RECURSION_STEPS] ?: 0,
@@ -278,6 +282,7 @@ class SettingsStore(
                 personas = preferences[PERSONAS]?.let { JsonInstant.decodeFromString(it) } ?: DEFAULT_PERSONAS,
                 activePersonaId = preferences[ACTIVE_PERSONA_ID]?.let { Uuid.parse(it) },
                 authorNote = preferences[AUTHOR_NOTE] ?: "",
+                authorNoteEnabled = preferences[AUTHOR_NOTE_ENABLED] ?: true,
                 authorNotePosition = preferences[AUTHOR_NOTE_POSITION]?.let { InjectionPosition.valueOf(it) } ?: InjectionPosition.AFTER_SYSTEM_PROMPT,
                 authorNoteDepth = preferences[AUTHOR_NOTE_DEPTH] ?: 4,
                 authorNoteFrequency = preferences[AUTHOR_NOTE_FREQUENCY]?.toFloatOrNull() ?: 1.0f,
@@ -460,6 +465,7 @@ class SettingsStore(
             settings.activePersonaId?.let { preferences[ACTIVE_PERSONA_ID] = it.toString() }
                 ?: preferences.remove(ACTIVE_PERSONA_ID)
             preferences[AUTHOR_NOTE] = settings.authorNote
+            preferences[AUTHOR_NOTE_ENABLED] = settings.authorNoteEnabled
             preferences[AUTHOR_NOTE_POSITION] = settings.authorNotePosition.name
             preferences[AUTHOR_NOTE_DEPTH] = settings.authorNoteDepth
             preferences[AUTHOR_NOTE_FREQUENCY] = settings.authorNoteFrequency.toString()
@@ -602,7 +608,7 @@ data class Settings(
     val selectedASRProviderId: Uuid? = null,
     val modeInjections: List<PromptInjection.ModeInjection> = DEFAULT_MODE_INJECTIONS,
     val lorebooks: List<Lorebook> = emptyList(),
-    val worldInfoBudget: Int = 25,                  // 世界书单次注入条目预算（酒馆默认25）
+    val worldInfoBudget: Int = 1024,                // 世界书单轮注入 token 预算上限（0=不限，对齐酒馆 world_info_budget_cap）
     val worldInfoMinActivations: Int = 0,           // 世界书最少激活数（0=关闭，酒馆 min_activations）
     val worldInfoRecursive: Boolean = false,        // 递归扫描（酒馆 world_info_recursive）
     val worldInfoMaxRecursionSteps: Int = 0,        // 递归最大层数（0=不限制，酒馆 max_recursion_steps）
@@ -611,6 +617,7 @@ data class Settings(
     val personas: List<Persona> = DEFAULT_PERSONAS,
     val activePersonaId: Uuid? = null,             // 当前激活的 Persona
     val authorNote: String = "",                    // Author's Note 内容
+    val authorNoteEnabled: Boolean = true,          // Author's Note 总开关
     val authorNotePosition: InjectionPosition = InjectionPosition.AFTER_SYSTEM_PROMPT,
     val authorNoteDepth: Int = 4,                   // Author's Note 插入深度
     val authorNoteFrequency: Float = 1.0f,          // Author's Note 插入频率 (0-1)

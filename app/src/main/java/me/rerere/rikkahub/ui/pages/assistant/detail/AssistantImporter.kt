@@ -70,6 +70,7 @@ data class ImportedBookSettings(
     val recursiveScanning: Boolean? = null,
     val maxRecursionSteps: Int? = null,
     val minActivations: Int? = null,
+    val tokenBudget: Int? = null,
 )
 
 @Composable
@@ -202,6 +203,7 @@ private fun buildImportedBookSettings(book: TavernEmbeddedBook?): ImportedBookSe
         recursiveScanning = book.recursiveScanning,
         maxRecursionSteps = book.maxRecursionSteps?.let { if (it <= 0) 0 else it },
         minActivations = book.minActivations?.coerceAtLeast(0),
+        tokenBudget = book.tokenBudget?.takeIf { it > 0 },
     )
 }
 
