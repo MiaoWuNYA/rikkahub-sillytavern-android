@@ -45,6 +45,9 @@ enum class BuiltinSlashKind {
     /** 注入提示词：把文本注入当前对话的 LLM 提示词 */
     INJECT,
 
+    /** 变量命令：设置/读取/增删宏变量（官方变量家族） */
+    VAR,
+
     /** 角色操作：修改当前助手 */
     RENAME,
 
@@ -142,6 +145,116 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.RENAME,
+    ),
+) + varSlashCommands()
+
+/**
+ * 官方变量命令家族（对齐 SillyTavern variables.js）：
+ * chat 级 7 个 + global 级 6 个。
+ */
+fun varSlashCommands(): List<SlashCommand> = listOf(
+    SlashCommand(
+        name = "listvar",
+        description = "列出变量(List Var)",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.VAR,
+    ),
+    SlashCommand(
+        name = "setvar",
+        description = "设置本对话变量(Set Var)",
+        argumentHint = "[key] [值]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.VAR,
+    ),
+    SlashCommand(
+        name = "getvar",
+        description = "读取本对话变量(Get Var)",
+        argumentHint = "[key]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.VAR,
+    ),
+    SlashCommand(
+        name = "addvar",
+        description = "本对话变量加值(Add Var)",
+        argumentHint = "[key] [值]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.VAR,
+    ),
+    SlashCommand(
+        name = "incvar",
+        description = "本对话变量+1(Inc Var)",
+        argumentHint = "[key]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.VAR,
+    ),
+    SlashCommand(
+        name = "decvar",
+        description = "本对话变量-1(Dec Var)",
+        argumentHint = "[key]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.VAR,
+    ),
+    SlashCommand(
+        name = "flushvar",
+        description = "删除本对话变量(Flush Var)",
+        argumentHint = "[key]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.VAR,
+    ),
+    SlashCommand(
+        name = "setglobalvar",
+        description = "设置全局变量(Set Global Var)",
+        argumentHint = "[key] [值]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.VAR,
+    ),
+    SlashCommand(
+        name = "getglobalvar",
+        description = "读取全局变量(Get Global Var)",
+        argumentHint = "[key]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.VAR,
+    ),
+    SlashCommand(
+        name = "addglobalvar",
+        description = "全局变量加值(Add Global Var)",
+        argumentHint = "[key] [值]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.VAR,
+    ),
+    SlashCommand(
+        name = "incglobalvar",
+        description = "全局变量+1(Inc Global Var)",
+        argumentHint = "[key]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.VAR,
+    ),
+    SlashCommand(
+        name = "decglobalvar",
+        description = "全局变量-1(Dec Global Var)",
+        argumentHint = "[key]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.VAR,
+    ),
+    SlashCommand(
+        name = "flushglobalvar",
+        description = "删除全局变量(Flush Global Var)",
+        argumentHint = "[key]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.VAR,
     ),
 )
 

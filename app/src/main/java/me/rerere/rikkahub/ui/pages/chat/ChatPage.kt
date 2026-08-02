@@ -95,6 +95,7 @@ import me.rerere.rikkahub.data.repository.WorkspaceRepository
 import me.rerere.rikkahub.service.ChatError
 import me.rerere.rikkahub.ui.components.ai.ChatInput
 import me.rerere.rikkahub.ui.components.ai.FilesPicker
+import me.rerere.rikkahub.ui.components.ai.applyMacroVarSlash
 import me.rerere.rikkahub.ui.components.ai.completion.WorkspaceCompletionProvider
 import me.rerere.rikkahub.ui.components.ai.useCropLauncher
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionCamera
@@ -510,6 +511,20 @@ private fun ChatPageContent(
                     onSlashInject = { content, position, depth, role ->
                         vm.handleInjectPrompt(content, position, depth, role)
                         toaster.show("已注入提示词，下次回复生效")
+                    },
+                    onSlashVar = { op, name, value, global ->
+                        val (newSettings, result) = applyMacroVarSlash(
+                            settings = setting,
+                            op = op,
+                            name = name,
+                            value = value,
+                            global = global,
+                            chatKey = conversation.id.toString(),
+                        )
+                        if (newSettings !== setting) {
+                            vm.updateSettings(newSettings)
+                        }
+                        result
                     },
                     onUpdateChatModel = {
                         vm.setChatModel(assistant = setting.getCurrentAssistant(), model = it)

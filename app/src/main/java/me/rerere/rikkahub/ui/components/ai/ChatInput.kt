@@ -149,6 +149,7 @@ fun ChatInput(
     onSlashTrigger: (() -> Unit)? = null,
     onSlashSysgen: ((String) -> Unit)? = null,
     onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)? = null,
+    onSlashVar: ((SlashVarOp, String, String, Boolean) -> String?)? = null,
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
@@ -262,6 +263,7 @@ fun ChatInput(
                         onSlashTrigger = onSlashTrigger,
                         onSlashSysgen = onSlashSysgen,
                         onSlashInject = onSlashInject,
+                        onSlashVar = onSlashVar,
                     )
 
                     Row(
@@ -454,6 +456,7 @@ private fun TextInputRow(
     onSlashTrigger: (() -> Unit)?,
     onSlashSysgen: ((String) -> Unit)?,
     onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)?,
+    onSlashVar: ((SlashVarOp, String, String, Boolean) -> String?)?,
 ) {
     val settings = LocalSettings.current
     val filesManager: FilesManager = koinInject()
@@ -636,6 +639,7 @@ private fun TextInputRow(
                                             onSlashTrigger = onSlashTrigger,
                                             onSlashSysgen = onSlashSysgen,
                                             onSlashInject = onSlashInject,
+                                            onSlashVar = onSlashVar,
                                         )
                                     } else {
                                         val argsList = slashArgs.split(" ", limit = 10)
@@ -852,6 +856,7 @@ private fun handleBuiltinSlash(
     onSlashTrigger: (() -> Unit)?,
     onSlashSysgen: ((String) -> Unit)?,
     onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)?,
+    onSlashVar: ((SlashVarOp, String, String, Boolean) -> String?)?,
 ) {
     when (cmd.builtinKind) {
         BuiltinSlashKind.HELP -> {
@@ -948,6 +953,51 @@ private fun handleBuiltinSlash(
                 onSlashInject(content, position, depth, role)
                 state.clearInput()
             }
+        }
+
+        BuiltinSlashKind.VAR -> {
+            val op = when (cmd.name) {
+                "setvar", "setglobalvar" -> SlashVarOp.SET
+                "getvar", "getglobalvar" -> SlashVarOp.GET
+                "addvar", "addglobalvar" -> SlashVarOp.ADD
+                "incvar", "incglobalvar" -> SlashVarOp.INC
+                "decvar", "decglobalvar" -> SlashVarOp.DEC
+                "flushvar", "flushglobalvar" -> SlashVarOp.FLUSH
+                "listvar" -> SlashVarOp.LIST
+                else -> null
+            } ?: return
+            val global = cmd.name.contains("global")
+
+            if (op == SlashVarOp.LIST) {
+                val result = onSlashVar?.invoke(op, "", "", global)
+                if (result == null) {
+                    toaster.show("当前页面不支持该命令")
+                } else {
+                    toaster.show(result)
+                }
+                state.clearInput()
+                return
+            }
+
+            val trimmed = args.trim()
+            val keyToken = trimmed.substringBefore(" ").trim()
+            val key = keyToken.removePrefix("key=").ifBlank { keyToken }
+            val value = trimmed.substringAfter(" ", "").trim()
+            val needsValue = op == SlashVarOp.SET || op == SlashVarOp.ADD
+            if (key.isBlank() || (needsValue && value.isBlank())) {
+                toaster.show(
+                    if (needsValue) "用法: /${cmd.name} key 值（也支持 key=名称 写法）" else "用法: /${cmd.name} key"
+                )
+                return
+            }
+
+            val result = onSlashVar?.invoke(op, key, value, global)
+            if (result == null) {
+                toaster.show("当前页面不支持该命令")
+            } else {
+                toaster.show(result)
+            }
+            state.clearInput()
         }
 
         BuiltinSlashKind.INFO -> {
