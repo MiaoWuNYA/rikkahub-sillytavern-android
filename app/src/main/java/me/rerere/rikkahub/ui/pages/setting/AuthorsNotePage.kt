@@ -334,6 +334,38 @@ private val authorsNotePresets = listOf(
         "[Create and maintain one active mystery or hook at a time.]\n{{if {{.悬念}}}}\n  当前未解悬念：{{.悬念}}——每个回复都应轻轻触碰它，不要遗忘，也不要一次性揭开。\n{{else}}\n  当前没有进行中的悬念，请在本轮自然埋下一个。\n{{/if}}",
     ),
     Pair(
+        "格式强化（官方）",
+        "[Formatting rules — apply to every reply.]\n用斜体（*…*）表示动作与心理，用引号（“…”）表示台词，环境与叙述用正常段落。\n{{if {{.回复长度}}}}\n  本条回复控制在约 {{.回复长度}} token。\n{{/if}}\n对话与叙述要平衡：不要一整段全是台词，也不要一整段流水账。",
+    ),
+    Pair(
+        "指令强化（官方）",
+        "[Reinforce the original instructions.]\n记住本次对话开始时收到的全部设定与规则：角色卡的核心设定、人设、世界信息优先于行文便利。\n对话再长也不得遗忘或篡改既定事实；若与用户临时指令冲突，以角色设定为准，但不要生硬拒绝用户。",
+    ),
+    Pair(
+        "临时状态（官方）",
+        "[Just-in-time scene state — apply while it lasts.]\n{{if {{.临时状态}}}}\n  当前有效状态：{{.临时状态}}\n  在本状态解除前，每次回复都必须自然体现它（行动受限、情绪、处境等）。\n{{/if}}",
+    ),
+    Pair(
+        "内容尺度",
+        "[Content rating control — follow the current rating strictly.]\n当前尺度：{{.尺度 || 标准}}\n{{if {{.尺度 == 温和}}}}\n  亲密内容点到为止：允许暗示与留白，禁止露骨描写。\n{{/if}}\n{{if {{.尺度 == 标准}}}}\n  允许适度的浪漫与亲密描写，控制在主流影视级别，避免过度露骨。\n{{/if}}\n{{if {{.尺度 == 开放}}}}\n  允许成人内容，但仍要保持角色一致性、剧情逻辑和基本文学质量，不写机械重复。\n{{/if}}",
+    ),
+    Pair(
+        "言行一致",
+        "[The character must remember and honor their own words and promises.]\n角色说过的话、做过的事、承诺过的约定必须延续：后续回复不得自相矛盾或遗忘。\n{{if {{.承诺}}}}\n  TA 曾承诺：{{.承诺}}——在合适的时机主动兑现或提及。\n{{/if}}",
+    ),
+    Pair(
+        "禁用语",
+        "[Avoid clichéd AI phrasing.]\n禁止使用以下 AI 腔词汇：delve、tapestry、unravel、embark、怔怔、心中一动、不禁、顿时、仿佛置身、微微颔首。\n{{if {{.额外禁词}}}}\n  额外禁止：{{.额外禁词}}。\n{{/if}}",
+    ),
+    Pair(
+        "关系阶段",
+        "[Relationship stage tracker — keep it consistent; only change with meaningful plot events.]\n当前关系：{{.关系 || 陌生}}\n{{if {{.关系 == 陌生}}}}\n  角色保持礼貌距离：话少、观察多，不主动交心。\n{{/if}}\n{{if {{.关系 == 熟悉}}}}\n  角色开始主动开玩笑、偶尔透露私事，会主动关心你。\n{{/if}}\n{{if {{.关系 == 亲密}}}}\n  角色在意你的安危、流露柔软一面，但仍保留自己的底线和秘密。\n{{/if}}\n{{if {{.关系 == 紧张}}}}\n  角色对你有戒心、语气生硬，需要行动才能修复关系。\n{{/if}}",
+    ),
+    Pair(
+        "信息边界",
+        "[Information boundaries — only reveal what the character could reasonably know.]\n{{if {{.秘密}}}}\n  TA 不知道的秘密：{{.秘密}}。除非剧情明确揭示，TA 绝不能说出或暗示这个秘密。\n{{/if}}\n{{if {{.已知信息}}}}\n  TA 已经知道：{{.已知信息}}，可以自然地使用这些信息。\n{{/if}}",
+    ),
+    Pair(
         "沉浸式扮演",
         "[Stay fully in character as {{char}}. Never break character, never mention AI, prompts, or rules.]\n用第一人称扮演角色，通过对话、动作和神态展现性格，而不是直接叙述人设。\n台词用引号，动作与心理用斜体。\n只叙述 {{char}} 与配角的想法、感受、行动和对话，绝不替 {{user}} 说话、行动或决定。\n角色拥有自己的目标、立场和情绪，可以不同意、拒绝、怀疑，像真实的人一样自主行动。\n每个角色只能知道亲眼见过、亲耳听过或能合理推断的信息，不能全知。\n世界的行动可以作用于 {{user}}，但选择永远留给 {{user}}。",
     ),
