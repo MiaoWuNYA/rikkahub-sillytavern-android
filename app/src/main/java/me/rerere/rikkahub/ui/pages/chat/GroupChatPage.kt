@@ -787,16 +787,17 @@ private suspend fun runAutoChat(
     val autoDelay = gc.autoModeDelay
     if (autoDelay <= 0) return
 
-    var consecutiveEmpty = 0
-    val maxRounds = 5
-
-    while (scope.isActive && consecutiveEmpty < 3) {
+    // 对齐酒馆：每轮一批；本地没有"打字即停"的间隔 worker，用固定轮数上限防止无限接话
+    val maxAutoRounds = 3
+    var round = 0
+    while (scope.isActive && round < maxAutoRounds) {
+        round++
         val conv = chatService.getConversationFlow(convId).value
         val lastSpeakerId = conv.messageNodes.lastOrNull()?.let { conv.speakerMap[it.id] }
 
         // 以最后一条AI回复作为triggerText供选人匹配
         val lastText = conv.messageNodes.lastOrNull()?.let { messageText(it) } ?: ""
-        if (lastText.isBlank()) { consecutiveEmpty++; kotlinx.coroutines.delay(autoDelay * 1000L); continue }
+        if (lastText.isBlank()) break
 
         // 选人
         val picked = GroupSpeakerSelector.pick(
@@ -809,13 +810,12 @@ private suspend fun runAutoChat(
             allowSelfResponses = gc.allowSelfResponses,
             isUserInput = false,
         )
-        if (picked.isEmpty()) { consecutiveEmpty++; kotlinx.coroutines.delay(autoDelay * 1000L); continue }
+        if (picked.isEmpty()) break
 
         var generatedCount = 0
         for ((idx, sid) in picked.withIndex()) {
             if (!scope.isActive) return
             val speaker = members.find { it.id == sid } ?: continue
-            if (generatedCount >= maxRounds) break
 
             val placeholderNode = UIMessage.assistant("").toMessageNode()
             chatService.updateConversationState(convId) { c ->
@@ -870,9 +870,10 @@ private suspend fun runAutoChat(
             }
         }
 
-        if (generatedCount == 0) consecutiveEmpty++
-        else consecutiveEmpty = 0
+        if (generatedCount == 0) break
 
-        kotlinx.coroutines.delay(autoDelay * 1000L)
+        if (round < maxAutoRounds) {
+            kotlinx.coroutines.delay(autoDelay * 1000L)
+        }
     }
 }
