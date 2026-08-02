@@ -103,6 +103,7 @@ import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.files.SkillManager
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Conversation
+import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.QuickMessage
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionContext
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionItem
@@ -147,6 +148,7 @@ fun ChatInput(
     onSlashPersona: ((String) -> Unit)? = null,
     onSlashTrigger: (() -> Unit)? = null,
     onSlashSysgen: ((String) -> Unit)? = null,
+    onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)? = null,
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
@@ -259,6 +261,7 @@ fun ChatInput(
                         onSlashPersona = onSlashPersona,
                         onSlashTrigger = onSlashTrigger,
                         onSlashSysgen = onSlashSysgen,
+                        onSlashInject = onSlashInject,
                     )
 
                     Row(
@@ -450,6 +453,7 @@ private fun TextInputRow(
     onSlashPersona: ((String) -> Unit)?,
     onSlashTrigger: (() -> Unit)?,
     onSlashSysgen: ((String) -> Unit)?,
+    onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)?,
 ) {
     val settings = LocalSettings.current
     val filesManager: FilesManager = koinInject()
@@ -631,6 +635,7 @@ private fun TextInputRow(
                                             onSlashPersona = onSlashPersona,
                                             onSlashTrigger = onSlashTrigger,
                                             onSlashSysgen = onSlashSysgen,
+                                            onSlashInject = onSlashInject,
                                         )
                                     } else {
                                         val argsList = slashArgs.split(" ", limit = 10)
@@ -846,6 +851,7 @@ private fun handleBuiltinSlash(
     onSlashPersona: ((String) -> Unit)?,
     onSlashTrigger: (() -> Unit)?,
     onSlashSysgen: ((String) -> Unit)?,
+    onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)?,
 ) {
     when (cmd.builtinKind) {
         BuiltinSlashKind.HELP -> {
@@ -904,6 +910,42 @@ private fun handleBuiltinSlash(
                 toaster.show("当前页面不支持该命令")
             } else {
                 onSlashSysgen(text)
+                state.clearInput()
+            }
+        }
+
+        BuiltinSlashKind.INJECT -> {
+            val tokens = args.trim().split(" ")
+            if (tokens.any { it.equals("position=none", ignoreCase = true) }) {
+                toaster.show("本地暂不支持隐藏注入(none)，请用 position=before / position=chat 或默认(主提示后)")
+                return
+            }
+            val position = when {
+                tokens.any { it.equals("position=before", ignoreCase = true) } -> InjectionPosition.BEFORE_SYSTEM_PROMPT
+                tokens.any { it.equals("position=chat", ignoreCase = true) } -> InjectionPosition.AT_DEPTH
+                else -> InjectionPosition.AFTER_SYSTEM_PROMPT
+            }
+            val depth = tokens.firstOrNull { it.startsWith("depth=", ignoreCase = true) }
+                ?.substringAfter("=")?.toIntOrNull()?.coerceIn(1, 100) ?: 4
+            val role = when {
+                tokens.any { it.equals("role=user", ignoreCase = true) } -> MessageRole.USER
+                tokens.any { it.equals("role=assistant", ignoreCase = true) } -> MessageRole.ASSISTANT
+                else -> MessageRole.SYSTEM
+            }
+            val content = tokens
+                .filterNot {
+                    it.startsWith("position=", ignoreCase = true) ||
+                        it.startsWith("depth=", ignoreCase = true) ||
+                        it.startsWith("role=", ignoreCase = true)
+                }
+                .joinToString(" ")
+                .trim()
+            if (content.isBlank()) {
+                toaster.show("用法: /inject 注入内容 [position=before|chat] [depth=数字] [role=user|assistant]")
+            } else if (onSlashInject == null) {
+                toaster.show("当前页面不支持该命令")
+            } else {
+                onSlashInject(content, position, depth, role)
                 state.clearInput()
             }
         }

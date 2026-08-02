@@ -507,6 +507,10 @@ private fun ChatPageContent(
                             vm.handleGenerateSystemNarration(prompt)
                         }
                     },
+                    onSlashInject = { content, position, depth, role ->
+                        vm.handleInjectPrompt(content, position, depth, role)
+                        toaster.show("已注入提示词，下次回复生效")
+                    },
                     onUpdateChatModel = {
                         vm.setChatModel(assistant = setting.getCurrentAssistant(), model = it)
                     },

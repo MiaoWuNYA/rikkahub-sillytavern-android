@@ -33,6 +33,7 @@ import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.Conversation
+import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.MessageNode
 import me.rerere.rikkahub.data.model.NodeFavoriteTarget
 import me.rerere.rikkahub.data.repository.ConversationRepository
@@ -217,6 +218,28 @@ class ChatVM(
     fun handleGenerateSystemNarration(prompt: String) {
         if (prompt.isBlank()) return
         chatService.generateSystemNarration(_conversationId, prompt)
+    }
+
+    /**
+     * 注入提示词到当前对话（/inject）
+     */
+    fun handleInjectPrompt(
+        content: String,
+        position: InjectionPosition,
+        depth: Int,
+        role: MessageRole,
+    ): Job {
+        return viewModelScope.launch {
+            runCatching {
+                chatService.injectPrompt(_conversationId, content, position, depth, role)
+            }.onFailure {
+                chatService.addError(
+                    it,
+                    _conversationId,
+                    title = context.getString(R.string.error_title_send_message),
+                )
+            }
+        }
     }
 
     fun handleCompressContext(additionalPrompt: String, targetTokens: Int, keepRecentMessages: Int): Job {

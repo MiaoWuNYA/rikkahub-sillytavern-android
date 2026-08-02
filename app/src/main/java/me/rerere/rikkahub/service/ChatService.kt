@@ -107,6 +107,8 @@ import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantAffectScope
+import me.rerere.rikkahub.data.model.InjectionPosition
+import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.replaceRegexes
 import me.rerere.rikkahub.data.model.toMessageNode
 import me.rerere.rikkahub.data.repository.ConversationRepository
@@ -542,6 +544,51 @@ class ChatService(
             }
         }
         session.setJob(job)
+    }
+
+    /**
+     * 注入提示词到当前对话（/inject，参考官方）
+     *
+     * 创建一条模式注入并挂到当前对话，下次生成时由 PromptInjectionTransformer 注入：
+     * - position: before/after = 主提示词前/后，chat = 对话中指定深度
+     * - depth: 对话中注入时从最新消息往前数的位置
+     * - role: 注入消息的角色（默认 system）
+     */
+    suspend fun injectPrompt(
+        conversationId: Uuid,
+        content: String,
+        position: InjectionPosition,
+        depth: Int,
+        role: MessageRole,
+    ) {
+        if (content.isBlank()) return
+
+        val conversation = getConversationFlow(conversationId).value
+        val injection = PromptInjection.ModeInjection(
+            name = "斜杠注入 ${java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))}",
+            position = position,
+            content = content,
+            injectDepth = depth,
+            role = role,
+        )
+
+        // 注入条目存到设置，ID 挂到当前对话；对话级注入需允许开关，使用命令即视为主动开启
+        settingsStore.update { s ->
+            val assistant = s.getAssistantById(conversation.assistantId) ?: s.getCurrentAssistant()
+            s.copy(
+                modeInjections = s.modeInjections + injection,
+                assistants = s.assistants.map { a ->
+                    if (a.id == assistant.id) a.copy(allowConversationPromptInjection = true) else a
+                },
+            )
+        }
+
+        saveConversation(
+            conversationId,
+            conversation.copy(
+                modeInjectionIds = conversation.modeInjectionIds + injection.id,
+            ),
+        )
     }
 
     private fun preprocessUserInputParts(parts: List<UIMessagePart>, assistant: Assistant): List<UIMessagePart> {

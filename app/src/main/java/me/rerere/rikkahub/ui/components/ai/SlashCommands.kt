@@ -42,6 +42,9 @@ enum class BuiltinSlashKind {
     /** 生成系统旁白：按提示词让 AI 写一条系统消息并插入 */
     SYSGEN,
 
+    /** 注入提示词：把文本注入当前对话的 LLM 提示词 */
+    INJECT,
+
     /** 角色操作：修改当前助手 */
     RENAME,
 
@@ -101,6 +104,14 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.SYSGEN,
+    ),
+    SlashCommand(
+        name = "inject",
+        description = "注入提示词到当前对话(Inject)",
+        argumentHint = "[文本] [position=before|chat] [depth=数字] [role=user|assistant]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.INJECT,
     ),
     SlashCommand(
         name = "char-get",
