@@ -159,6 +159,7 @@ private suspend fun regenerateGroupMessage(
             settings = settings,
             prompt = prompt,
             history = historyWithoutLast,
+            conversationId = convId,
             onChunk = { partialText, parts ->
                 chatService.updateConversationState(convId) { c ->
                     val nodes = c.messageNodes.toMutableList()
@@ -539,6 +540,7 @@ fun GroupChatPage(groupId: String) {
                                                     settings = settings,
                                                     prompt = text,
                                                     history = historyWithoutLastUser,
+                                                    conversationId = currentConvId,
                                                     onChunk = { partialText, parts ->
                                                         // 实时更新占位消息的内容
                                                         chatService.updateConversationState(currentConvId) { conv ->
@@ -1103,6 +1105,7 @@ private suspend fun runAutoChat(
                     settings = settings,
                     prompt = prompt,
                     history = historyWithoutLast,
+                    conversationId = convId,
                     onChunk = { partialText, parts ->
                         chatService.updateConversationState(convId) { c ->
                             val nodes = c.messageNodes.toMutableList()

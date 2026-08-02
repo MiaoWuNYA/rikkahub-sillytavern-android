@@ -88,6 +88,7 @@ class GenerationHandler(
         conversationModeInjectionIds: Set<Uuid> = emptySet(),
         conversationLorebookIds: Set<Uuid> = emptySet(),
         workspaceCwd: String? = null,
+        conversationId: Uuid? = null,
         generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
     ): Flow<GenerationChunk> = flow {
         val provider = model.findProvider(settings.providers) ?: error("Provider not found")
@@ -362,6 +363,7 @@ class GenerationHandler(
                             model = model,
                             assistant = assistant,
                             settings = settings,
+                            conversationId = conversationId,
                             workspaceCwd = workspaceCwd,
                         )
                         emit(
@@ -372,6 +374,7 @@ class GenerationHandler(
                                     model = model,
                                     assistant = assistant,
                                     settings = settings,
+                                    conversationId = conversationId,
                                     workspaceCwd = workspaceCwd,
                                 ).filter { it.role != MessageRole.SYSTEM }
                             )
@@ -390,6 +393,7 @@ class GenerationHandler(
                     conversationLorebookIds = conversationLorebookIds,
                     prebuiltSystemMessages = prebuiltSystemMessages,
                     workspaceCwd = workspaceCwd,
+                    conversationId = conversationId,
                     generationType = generationType,
                 )
                 messages = messages.visualTransforms(
@@ -398,6 +402,7 @@ class GenerationHandler(
                     model = model,
                     assistant = assistant,
                     settings = settings,
+                    conversationId = conversationId,
                     workspaceCwd = workspaceCwd,
                 )
                 messages = messages.onGenerationFinish(
@@ -406,6 +411,7 @@ class GenerationHandler(
                     model = model,
                     assistant = assistant,
                     settings = settings,
+                    conversationId = conversationId,
                     workspaceCwd = workspaceCwd,
                 )
                 messages = messages.slice(0 until messages.lastIndex) + messages.last().copy(
@@ -544,6 +550,7 @@ class GenerationHandler(
                         model = model,
                         assistant = assistant,
                         settings = settings,
+                        conversationId = conversationId,
                         workspaceCwd = workspaceCwd,
                     ).filter { it.role != MessageRole.SYSTEM }
                 )
@@ -570,6 +577,7 @@ class GenerationHandler(
         conversationLorebookIds: Set<Uuid> = emptySet(),
         prebuiltSystemMessages: List<UIMessage> = emptyList(),
         workspaceCwd: String? = null,
+        conversationId: Uuid? = null,
         generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
     ) {
         val internalMessages = buildList {
@@ -661,6 +669,7 @@ class GenerationHandler(
             conversationLorebookIds = conversationLorebookIds,
             processingStatus = processingStatus,
             workspaceCwd = workspaceCwd,
+            conversationId = conversationId,
             generationType = generationType,
         )
 

@@ -150,6 +150,9 @@ class SettingsStore(
         val WORLD_INFO_RECURSIVE = booleanPreferencesKey("world_info_recursive")
         val WORLD_INFO_MAX_RECURSION_STEPS = intPreferencesKey("world_info_max_recursion_steps")
         val QUICK_MESSAGES = stringPreferencesKey("quick_messages")
+        // 宏引擎变量（酒馆 Macro 2.0 变量持久化）
+        val MACRO_GLOBAL_VARIABLES = stringPreferencesKey("macro_global_variables")
+        val MACRO_CHAT_VARIABLES = stringPreferencesKey("macro_chat_variables")
 
         // 备份提醒
         val BACKUP_REMINDER_CONFIG = stringPreferencesKey("backup_reminder_config")
@@ -287,6 +290,12 @@ class SettingsStore(
                 authorNoteDepth = preferences[AUTHOR_NOTE_DEPTH] ?: 4,
                 authorNoteFrequency = preferences[AUTHOR_NOTE_FREQUENCY]?.toFloatOrNull() ?: 1.0f,
                 groupChats = preferences[GROUP_CHATS]?.let { JsonInstant.decodeFromString(it) } ?: emptyList(),
+                macroGlobalVariables = preferences[MACRO_GLOBAL_VARIABLES]?.let {
+                    JsonInstant.decodeFromString(it)
+                } ?: emptyMap(),
+                macroChatVariables = preferences[MACRO_CHAT_VARIABLES]?.let {
+                    JsonInstant.decodeFromString(it)
+                } ?: emptyMap(),
             )
         }
         .map {
@@ -470,6 +479,8 @@ class SettingsStore(
             preferences[AUTHOR_NOTE_DEPTH] = settings.authorNoteDepth
             preferences[AUTHOR_NOTE_FREQUENCY] = settings.authorNoteFrequency.toString()
             preferences[GROUP_CHATS] = JsonInstant.encodeToString(settings.groupChats)
+            preferences[MACRO_GLOBAL_VARIABLES] = JsonInstant.encodeToString(settings.macroGlobalVariables)
+            preferences[MACRO_CHAT_VARIABLES] = JsonInstant.encodeToString(settings.macroChatVariables)
         }
     }
 
@@ -624,6 +635,8 @@ data class Settings(
     val authorNoteRole: MessageRole = MessageRole.USER, // 注入角色
     val authorNoteInterval: Int = 0,                // 每N条注入一次（0=每次都注入）
     val groupChats: List<GroupChat> = emptyList(),   // 群聊列表
+    val macroGlobalVariables: Map<String, String> = emptyMap(),        // 宏引擎全局变量（跨对话持久）
+    val macroChatVariables: Map<String, Map<String, String>> = emptyMap(), // 宏引擎会话变量（conversationId → 变量）
     val webServerEnabled: Boolean = false,
     val webServerPort: Int = 8080,
     val webServerJwtEnabled: Boolean = false,

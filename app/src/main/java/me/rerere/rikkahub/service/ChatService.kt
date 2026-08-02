@@ -790,6 +790,7 @@ class ChatService(
                 conversationModeInjectionIds = conversation.modeInjectionIds,
                 conversationLorebookIds = conversation.lorebookIds,
                 workspaceCwd = conversation.workspaceCwd,
+                conversationId = conversation.id,
                 memories = if (assistant.useGlobalMemory) {
                     memoryRepository.getGlobalMemories()
                 } else {
@@ -1117,6 +1118,7 @@ class ChatService(
         settings: Settings,
         prompt: String,
         history: List<UIMessage>,
+        conversationId: Uuid? = null,
         onChunk: ((String, List<UIMessagePart>?) -> Unit)? = null,
     ): String {
         val model = settings.findModelById(assistant.chatModelId ?: settings.chatModelId)
@@ -1132,6 +1134,7 @@ class ChatService(
             model = model,
             messages = messages,
             assistant = assistant,
+            conversationId = conversationId,
             memories = if (assistant.useGlobalMemory) {
                 memoryRepository.getGlobalMemories()
             } else {

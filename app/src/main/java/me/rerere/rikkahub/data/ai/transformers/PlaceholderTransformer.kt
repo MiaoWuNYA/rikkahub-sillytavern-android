@@ -11,9 +11,11 @@ import me.rerere.ai.core.MessageRole
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.model.Assistant
+import me.rerere.rikkahub.data.model.GenerationType
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import java.time.LocalDate
@@ -30,13 +32,17 @@ import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
+import kotlin.uuid.Uuid
 
 data class PlaceholderCtx(
     val context: Context,
     val settingsStore: SettingsStore,
+    val settings: Settings = Settings(),
     val model: Model,
     val assistant: Assistant,
     val messages: List<UIMessage> = emptyList(),
+    val conversationId: Uuid? = null,
+    val generationType: GenerationType? = null,
 )
 
 interface PlaceholderProvider {
@@ -328,18 +334,15 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
     private val defaultProvider = DefaultPlaceholderProvider
 
     private val trimRegex = Regex("""(?:\r?\n)?\s*\{\{?trim\}\}?\s*(?:\r?\n)?""", RegexOption.IGNORE_CASE)
-    private val randomArgsRegex = Regex("""\{\{?random::([^}]+)\}\}?""", RegexOption.IGNORE_CASE)
-    private val randomLegacyRegex = Regex("""\{\{?random:([^|}]+(?:\|[^|}]+)+)\}\}?""", RegexOption.IGNORE_CASE)
-    private val rollRegex = Regex("""\{\{?roll(?:::|:|\s)([^}]+)\}\}?""", RegexOption.IGNORE_CASE)
-    private val pickRegex = Regex("""\{\{?pick(?:::|:)([^}]+)\}\}?""", RegexOption.IGNORE_CASE)
-    private val datetimeformatRegex = Regex("""\{\{?datetimeformat(?:::|:)([^}]+)\}\}?""", RegexOption.IGNORE_CASE)
 
     override suspend fun transform(
         ctx: TransformerContext,
         messages: List<UIMessage>,
     ): List<UIMessage> {
         val settingsStore = get<SettingsStore>()
-        return messages.map {
+        val vars = SettingsMacroVars(settingsStore, ctx.settings)
+        val engine = MacroEngine(defaultProvider.placeholders, vars)
+        val result = messages.map {
             it.copy(
                 parts = it.parts.map { part ->
                     if (part is UIMessagePart.Text) {
@@ -347,6 +350,7 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
                             text = replacePlaceholders(
                                 text = part.text,
                                 ctx = ctx,
+                                engine = engine,
                                 settingsStore = settingsStore,
                                 messages = messages,
                             )
@@ -357,58 +361,146 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
                 }
             )
         }
+        vars.flush()
+        return result
     }
 
     private fun replacePlaceholders(
         text: String,
         ctx: TransformerContext,
+        engine: MacroEngine,
         settingsStore: SettingsStore,
         messages: List<UIMessage>,
     ): String {
         var result = text
 
-        // 对齐酒馆格式宏：{{trim}} 去除周围的换行
-        result = result.replace(trimRegex) { "" }
-
-        // 带参数宏：{{random::a::b}} / {{random:a|b|c}} / {{roll 1d20}} / {{roll::2d6+3}}
-        result = result.replace(randomArgsRegex) { m ->
-            val opts = m.groupValues[1].split("::").map { it.trim() }.filter { it.isNotEmpty() }
-            if (opts.isEmpty()) "" else opts[Random.nextInt(opts.size)]
-        }
-        result = result.replace(randomLegacyRegex) { m ->
-            val opts = m.groupValues[1].split("|").map { it.trim() }.filter { it.isNotEmpty() }
-            if (opts.isEmpty()) "" else opts[Random.nextInt(opts.size)]
-        }
-        result = result.replace(rollRegex) { m ->
-            DefaultPlaceholderProvider.rollDice(m.groupValues[1]) ?: ""
-        }
-        // {{pick::A|B|C}} / {{pick:A|B|C}}：从列表随机选一个（官方 pick）
-        result = result.replace(pickRegex) { m ->
-            val opts = m.groupValues[1].split("|").map { it.trim() }.filter { it.isNotEmpty() }
-            if (opts.isEmpty()) "" else opts[Random.nextInt(opts.size)]
-        }
-        // {{datetimeformat::yyyy-MM-dd}}：自定义时间格式（官方 datetimeformat）
-        result = result.replace(datetimeformatRegex) { m ->
-            try {
-                DateTimeFormatter.ofPattern(m.groupValues[1].trim())
-                    .format(java.time.LocalDateTime.now())
-            } catch (_: Exception) { m.value }
-        }
-
-        val ctx = PlaceholderCtx(
+        val placeholderCtx = PlaceholderCtx(
             context = ctx.context,
             settingsStore = settingsStore,
+            settings = ctx.settings,
             model = ctx.model,
             assistant = ctx.assistant,
             messages = messages,
+            conversationId = ctx.conversationId,
+            generationType = ctx.generationType,
         )
+        result = engine.substitute(result, placeholderCtx)
+
+        // 非作用域 {{trim}} 后处理：去除周围的换行（对齐酒馆格式宏）
+        result = result.replace(trimRegex) { "" }
+
+        // 旧单花括号兼容：{cur_date} {char} 等
         defaultProvider.placeholders.forEach { (key, placeholderInfo) ->
-            val value = placeholderInfo.resolver(ctx)
+            val value = try {
+                placeholderInfo.resolver(placeholderCtx)
+            } catch (_: Exception) {
+                ""
+            }
             result = result
                 .replace(oldValue = "{{$key}}", newValue = value, ignoreCase = true)
                 .replace(oldValue = "{$key}", newValue = value, ignoreCase = true)
         }
 
         return result
+    }
+
+    /**
+     * 变量存储：会话变量（chatKey=conversationId）与全局变量，写入 DataStore 持久化。
+     * 所有修改先落在内存 dirty 表，flush() 时一次性合并写回，避免频繁磁盘写入。
+     */
+    private class SettingsMacroVars(
+        private val settingsStore: SettingsStore,
+        private val snapshot: Settings,
+    ) : MacroVars {
+        private val globalDirty = mutableMapOf<String, String>()
+        private val chatDirty = mutableMapOf<String, MutableMap<String, String>>()
+        private val globalDeleted = mutableSetOf<String>()
+        private val chatDeleted = mutableMapOf<String, MutableSet<String>>()
+
+        override fun get(chatKey: String?, name: String): String? {
+            if (chatKey == null) {
+                if (name in globalDeleted) return null
+                return globalDirty[name] ?: snapshot.macroGlobalVariables[name]
+            }
+            if (chatKey in chatDeleted && name in chatDeleted.getValue(chatKey)) return null
+            return chatDirty[chatKey]?.get(name)
+                ?: snapshot.macroChatVariables[chatKey]?.get(name)
+        }
+
+        override fun set(chatKey: String?, name: String, value: String) {
+            if (chatKey == null) {
+                globalDirty[name] = value
+                globalDeleted.remove(name)
+            } else {
+                chatDirty.getOrPut(chatKey) { mutableMapOf() }[name] = value
+                chatDeleted[chatKey]?.remove(name)
+            }
+        }
+
+        override fun inc(chatKey: String?, name: String): String {
+            val current = get(chatKey, name)?.toLongOrNull() ?: 0L
+            val next = current + 1
+            set(chatKey, name, next.toString())
+            return next.toString()
+        }
+
+        override fun dec(chatKey: String?, name: String): String {
+            val current = get(chatKey, name)?.toLongOrNull() ?: 0L
+            val next = current - 1
+            set(chatKey, name, next.toString())
+            return next.toString()
+        }
+
+        override fun add(chatKey: String?, name: String, value: String) {
+            val current = get(chatKey, name)
+            val left = current?.toLongOrNull()
+            val right = value.toLongOrNull()
+            val next = when {
+                left != null && right != null -> (left + right).toString()
+                current == null -> value
+                else -> current + value
+            }
+            set(chatKey, name, next)
+        }
+
+        override fun has(chatKey: String?, name: String): Boolean = get(chatKey, name) != null
+
+        override fun delete(chatKey: String?, name: String) {
+            if (chatKey == null) {
+                globalDirty.remove(name)
+                globalDeleted.add(name)
+            } else {
+                chatDirty[chatKey]?.remove(name)
+                chatDeleted.getOrPut(chatKey) { mutableSetOf() }.add(name)
+            }
+        }
+
+        suspend fun flush() {
+            if (globalDirty.isEmpty() && chatDirty.isEmpty() && globalDeleted.isEmpty() && chatDeleted.isEmpty()) {
+                return
+            }
+            val latest = settingsStore.settingsFlow.value
+            val newGlobal = latest.macroGlobalVariables.toMutableMap()
+            globalDeleted.forEach { newGlobal.remove(it) }
+            newGlobal.putAll(globalDirty)
+
+            val newChat = latest.macroChatVariables.toMutableMap()
+            chatDeleted.forEach { (chat, names) ->
+                val m = newChat[chat]?.toMutableMap() ?: mutableMapOf()
+                names.forEach { m.remove(it) }
+                newChat[chat] = m
+            }
+            chatDirty.forEach { (chat, map) ->
+                val m = newChat[chat]?.toMutableMap() ?: mutableMapOf()
+                m.putAll(map)
+                newChat[chat] = m
+            }
+            settingsStore.update(
+                latest.copy(
+                    macroGlobalVariables = newGlobal,
+                    macroChatVariables = newChat,
+                )
+            )
+        }
     }
 }

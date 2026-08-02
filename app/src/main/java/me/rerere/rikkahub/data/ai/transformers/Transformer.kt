@@ -14,6 +14,7 @@ class TransformerContext(
     val model: Model,
     val assistant: Assistant,
     val settings: Settings,
+    val conversationId: Uuid? = null,
     val conversationModeInjectionIds: Set<Uuid> = emptySet(),
     val conversationLorebookIds: Set<Uuid> = emptySet(),
     val processingStatus: MutableStateFlow<String?> = MutableStateFlow(null),
@@ -70,6 +71,7 @@ suspend fun List<UIMessage>.transforms(
     model: Model,
     assistant: Assistant,
     settings: Settings,
+    conversationId: Uuid? = null,
     conversationModeInjectionIds: Set<Uuid> = emptySet(),
     conversationLorebookIds: Set<Uuid> = emptySet(),
     processingStatus: MutableStateFlow<String?> = MutableStateFlow(null),
@@ -81,6 +83,7 @@ suspend fun List<UIMessage>.transforms(
         model = model,
         assistant = assistant,
         settings = settings,
+        conversationId = conversationId,
         conversationModeInjectionIds = conversationModeInjectionIds,
         conversationLorebookIds = conversationLorebookIds,
         processingStatus = processingStatus,
@@ -98,6 +101,7 @@ suspend fun List<UIMessage>.visualTransforms(
     model: Model,
     assistant: Assistant,
     settings: Settings,
+    conversationId: Uuid? = null,
     workspaceCwd: String? = null,
 ): List<UIMessage> {
     val ctx = TransformerContext(
@@ -105,6 +109,7 @@ suspend fun List<UIMessage>.visualTransforms(
         model = model,
         assistant = assistant,
         settings = settings,
+        conversationId = conversationId,
         workspaceCwd = workspaceCwd,
     )
     return transformers.fold(this) { acc, transformer ->
@@ -122,6 +127,7 @@ suspend fun List<UIMessage>.onGenerationFinish(
     model: Model,
     assistant: Assistant,
     settings: Settings,
+    conversationId: Uuid? = null,
     workspaceCwd: String? = null,
 ): List<UIMessage> {
     val ctx = TransformerContext(
@@ -129,6 +135,7 @@ suspend fun List<UIMessage>.onGenerationFinish(
         model = model,
         assistant = assistant,
         settings = settings,
+        conversationId = conversationId,
         workspaceCwd = workspaceCwd,
     )
     return transformers.fold(this) { acc, transformer ->
