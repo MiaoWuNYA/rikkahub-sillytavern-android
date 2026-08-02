@@ -14,11 +14,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowLeft01
+import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.Persona
@@ -57,34 +59,36 @@ fun PersonaPage() {
             // 当前激活状态
             item {
                 val active = settings.personas.find { it.id == settings.activePersonaId }
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            (active?.avatar as? Avatar.Emoji)?.content ?: "👤",
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Column {
+                CardGroup {
+                    item(
+                        leadingContent = {
+                            Surface(
+                                modifier = Modifier.size(40.dp),
+                                shape = RoundedCornerShape(4.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = (active?.avatar as? Avatar.Emoji)?.content ?: "👤",
+                                        style = MaterialTheme.typography.titleMedium,
+                                    )
+                                }
+                            }
+                        },
+                        headlineContent = {
                             Text(
                                 text = if (active != null) "当前：${active.name}" else "未激活人设",
                                 style = MaterialTheme.typography.titleSmall,
                             )
+                        },
+                        supportingContent = {
                             Text(
                                 text = if (active != null) "已注入到提示词中" else "选择一个用户人设激活",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                        }
-                    }
+                        },
+                    )
                 }
             }
 
@@ -120,108 +124,112 @@ fun PersonaPage() {
                     }
                 }
             }
-            items(settings.personas.sortedBy { it.name }, key = { it.id }) { persona ->
-                val isActive = settings.activePersonaId == persona.id
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
-                        else MaterialTheme.colorScheme.surface
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            // 头像
-                            Surface(
-                                modifier = Modifier.size(40.dp),
-                                shape = RoundedCornerShape(4.dp),
-                                color = if (isActive) MaterialTheme.colorScheme.primary
-                                else CustomColors.listItemColors.containerColor,
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = (persona.avatar as? Avatar.Emoji)?.content
-                                            ?: persona.name.take(1).uppercase(),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = if (isActive) MaterialTheme.colorScheme.onPrimary
-                                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontWeight = FontWeight.Bold,
-                                    )
+            item {
+                CardGroup {
+                    settings.personas.sortedBy { it.name }.forEach { persona ->
+                        val isActive = settings.activePersonaId == persona.id
+                        item(
+                            onClick = { editingPersona = persona },
+                            leadingContent = {
+                                Surface(
+                                    modifier = Modifier.size(40.dp),
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = if (isActive) MaterialTheme.colorScheme.primary
+                                    else CustomColors.listItemColors.containerColor,
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(
+                                            text = (persona.avatar as? Avatar.Emoji)?.content
+                                                ?: persona.name.take(1).uppercase(),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = if (isActive) MaterialTheme.colorScheme.onPrimary
+                                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontWeight = FontWeight.Bold,
+                                        )
+                                    }
                                 }
-                            }
-                            Spacer(Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
+                            },
+                            headlineContent = {
                                 Text(
                                     text = persona.name.ifBlank { "未命名" },
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Medium,
                                 )
-                                if (persona.title.isNotBlank()) {
+                            },
+                            supportingContent = {
+                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    if (persona.title.isNotBlank()) {
+                                        Text(
+                                            text = persona.title,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
                                     Text(
-                                        text = persona.title,
+                                        text = "注入位置：" + when (persona.position) {
+                                            PersonaInjectionPosition.BEFORE_SYSTEM -> "系统提示词前"
+                                            PersonaInjectionPosition.AFTER_SYSTEM -> "系统提示词后"
+                                            PersonaInjectionPosition.TOP_OF_CHAT -> "对话顶部"
+                                        },
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                     )
+                                    if (persona.description.isNotBlank()) {
+                                        Text(
+                                            text = persona.description.take(80),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                        )
+                                    }
+                                    if (persona.lockedCharacterIds.isNotEmpty()) {
+                                        Text(
+                                            text = "已绑定 ${persona.lockedCharacterIds.size} 个角色",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.tertiary,
+                                        )
+                                    }
                                 }
-                                Text(
-                                    text = "注入位置：" + when (persona.position) {
-                                        PersonaInjectionPosition.BEFORE_SYSTEM -> "系统提示词前"
-                                        PersonaInjectionPosition.AFTER_SYSTEM -> "系统提示词后"
-                                        PersonaInjectionPosition.TOP_OF_CHAT -> "对话顶部"
-                                    },
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                )
-                                if (persona.description.isNotBlank()) {
-                                    Text(
-                                        text = persona.description.take(80),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
+                            },
+                            trailingContent = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                                ) {
+                                    Switch(
+                                        checked = isActive,
+                                        onCheckedChange = { enable ->
+                                            val s = settings
+                                            scope.launch {
+                                                settingsStore.update(
+                                                    if (enable) s.copy(activePersonaId = persona.id)
+                                                    else s.copy(activePersonaId = null)
+                                                )
+                                            }
+                                        },
                                     )
+                                    IconButton(
+                                        onClick = {
+                                            scope.launch {
+                                                val s = settings
+                                                settingsStore.update(s.copy(
+                                                    personas = s.personas.filter { it.id != persona.id },
+                                                    activePersonaId = if (isActive) null else s.activePersonaId,
+                                                ))
+                                            }
+                                        },
+                                        modifier = Modifier.size(36.dp),
+                                    ) {
+                                        Icon(
+                                            HugeIcons.Delete01,
+                                            contentDescription = "删除人设",
+                                            modifier = Modifier.size(18.dp),
+                                            tint = MaterialTheme.colorScheme.error,
+                                        )
+                                    }
                                 }
-                                // 锁定角色标识
-                                if (persona.lockedCharacterIds.isNotEmpty()) {
-                                    Text(
-                                        text = "🔒 已绑定 ${persona.lockedCharacterIds.size} 个角色",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.tertiary,
-                                    )
-                                }
-                            }
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        // 操作栏
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            TextButton(onClick = {
-                                val s = settings
-                                scope.launch {
-                                    settingsStore.update(if (isActive) s.copy(activePersonaId = null)
-                                    else s.copy(activePersonaId = persona.id))
-                                }
-                            }) {
-                                Text(
-                                    if (isActive) "停用" else "激活",
-                                    color = if (isActive) MaterialTheme.colorScheme.error
-                                    else MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                            TextButton(onClick = { editingPersona = persona }) {
-                                Text("编辑", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            TextButton(onClick = {
-                                scope.launch {
-                                    val s = settings
-                                    settingsStore.update(s.copy(
-                                        personas = s.personas.filter { it.id != persona.id },
-                                        activePersonaId = if (isActive) null else s.activePersonaId,
-                                    ))
-                                }
-                            }) {
-                                Text("删除", color = MaterialTheme.colorScheme.error)
-                            }
-                        }
+                            },
+                        )
                     }
                 }
             }
@@ -321,29 +329,32 @@ private fun PersonaEditPage(
             // 快速预设（仅新建时）
             if (initial == null) {
                 item {
-                    Card(
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("快速预设", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
-                            Spacer(Modifier.height(8.dp))
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                modifier = Modifier.horizontalScroll(rememberScrollState()),
-                            ) {
-                                personaPresets.forEach { (pName, pTitle, pDesc) ->
-                                    AssistChip(
-                                        onClick = {
-                                            name = pName
-                                            title = pTitle
-                                            desc = pDesc
-                                        },
-                                        label = { Text(pName, style = MaterialTheme.typography.labelSmall) },
-                                        leadingIcon = { Text("✨", style = MaterialTheme.typography.labelSmall) },
-                                    )
-                                }
-                            }
+                    CardGroup(title = { Text("快速预设") }) {
+                        personaPresets.forEach { (pName, pTitle, pDesc) ->
+                            item(
+                                onClick = {
+                                    name = pName
+                                    title = pTitle
+                                    desc = pDesc
+                                },
+                                headlineContent = { Text(pName, style = MaterialTheme.typography.titleSmall) },
+                                supportingContent = {
+                                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        Text(
+                                            text = pTitle,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                        Text(
+                                            text = pDesc,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
+                                },
+                            )
                         }
                     }
                 }
@@ -386,37 +397,35 @@ private fun PersonaEditPage(
 
             // 注入设置
             item {
-                Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("注入位置", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "人设信息注入到提示词的位置",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            PersonaInjectionPosition.entries.forEach { p ->
-                                FilterChip(
+                CardGroup(title = { Text("注入位置") }) {
+                    PersonaInjectionPosition.entries.forEach { p ->
+                        item(
+                            onClick = { pos = p },
+                            headlineContent = {
+                                Text(
+                                    when (p) {
+                                        PersonaInjectionPosition.BEFORE_SYSTEM -> "系统提示词前"
+                                        PersonaInjectionPosition.AFTER_SYSTEM -> "系统提示词后"
+                                        PersonaInjectionPosition.TOP_OF_CHAT -> "对话顶部"
+                                    },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            },
+                            trailingContent = {
+                                RadioButton(
                                     selected = pos == p,
                                     onClick = { pos = p },
-                                    label = { Text(
-                                        when (p) {
-                                            PersonaInjectionPosition.BEFORE_SYSTEM -> "系统提示词前"
-                                            PersonaInjectionPosition.AFTER_SYSTEM -> "系统提示词后"
-                                            PersonaInjectionPosition.TOP_OF_CHAT -> "对话顶部"
-                                        },
-                                        style = MaterialTheme.typography.labelSmall,
-                                    )},
                                 )
-                            }
-                        }
+                            },
+                        )
                     }
                 }
+                Text(
+                    text = "人设信息注入到提示词的位置",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+                )
             }
 
             // 角色绑定

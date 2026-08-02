@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
@@ -50,60 +51,55 @@ fun AuthorsNotePage() {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // 总开关
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("启用导演备注", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+            CardGroup {
+                item(
+                    headlineContent = {
+                        Text("启用导演备注", style = MaterialTheme.typography.titleSmall)
+                    },
+                    supportingContent = {
                         Text(
                             "关闭后备注内容不会注入到对话中",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                    }
-                    Switch(
-                        checked = settings.authorNoteEnabled,
-                        onCheckedChange = { enabled ->
-                            scope.launch {
-                                settingsStore.update(settings.copy(authorNoteEnabled = enabled))
-                            }
-                        },
-                    )
-                }
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = settings.authorNoteEnabled,
+                            onCheckedChange = { enabled ->
+                                scope.launch {
+                                    settingsStore.update(settings.copy(authorNoteEnabled = enabled))
+                                }
+                            },
+                        )
+                    },
+                )
             }
 
             // 内容输入
             // 快速预设
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("快速预设", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
-                    Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                        authorsNotePresets.forEach { (label, content) ->
-                            AssistChip(
-                                onClick = {
-                                    scope.launch {
-                                        settingsStore.update(settings.copy(authorNote = content))
-                                    }
-                                },
-                                label = { Text(label, style = MaterialTheme.typography.labelSmall) },
-                                leadingIcon = { Text("✨", style = MaterialTheme.typography.labelSmall) },
+            CardGroup(title = { Text("快速预设") }) {
+                authorsNotePresets.forEach { (label, content) ->
+                    item(
+                        onClick = {
+                            scope.launch {
+                                settingsStore.update(settings.copy(authorNote = content))
+                            }
+                        },
+                        headlineContent = { Text(label, style = MaterialTheme.typography.titleSmall) },
+                        supportingContent = {
+                            Text(
+                                text = content.replace("\n", " "),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                             )
                         }
-                    }
+                    )
                 }
             }
-            Spacer(Modifier.height(8.dp))
+
             // 内容输入
             Card(
                 shape = RoundedCornerShape(20.dp),
@@ -128,31 +124,39 @@ fun AuthorsNotePage() {
             }
 
             // 注入位置
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("注入位置", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
-                    Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        listOf(
-                            InjectionPosition.AFTER_SYSTEM_PROMPT to "系统后",
-                            InjectionPosition.TOP_OF_CHAT to "对话顶",
-                            InjectionPosition.BOTTOM_OF_CHAT to "最新前",
-                            InjectionPosition.AT_DEPTH to "指定深度",
-                        ).forEach { (pos, label) ->
-                            FilterChip(
+            CardGroup(title = { Text("注入位置") }) {
+                listOf(
+                    InjectionPosition.AFTER_SYSTEM_PROMPT to ("系统提示词后" to "紧跟系统提示词，对全局影响稳定"),
+                    InjectionPosition.TOP_OF_CHAT to ("对话顶部" to "位于对话历史最前面"),
+                    InjectionPosition.BOTTOM_OF_CHAT to ("最新消息前" to "靠近上下文底部，影响下一次回复"),
+                    InjectionPosition.AT_DEPTH to ("指定深度" to "按下方设置的深度插入对话中"),
+                ).forEach { (pos, pair) ->
+                    val (label, desc) = pair
+                    item(
+                        onClick = {
+                            scope.launch {
+                                settingsStore.update(settings.copy(authorNotePosition = pos))
+                            }
+                        },
+                        headlineContent = { Text(label, style = MaterialTheme.typography.bodyMedium) },
+                        supportingContent = {
+                            Text(
+                                text = desc,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        },
+                        trailingContent = {
+                            RadioButton(
                                 selected = settings.authorNotePosition == pos,
                                 onClick = {
                                     scope.launch {
                                         settingsStore.update(settings.copy(authorNotePosition = pos))
                                     }
                                 },
-                                label = { Text(label, style = MaterialTheme.typography.labelSmall) },
                             )
-                        }
-                    }
+                        },
+                    )
                 }
             }
 
@@ -163,7 +167,7 @@ fun AuthorsNotePage() {
                     colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("📏 插入深度: ${settings.authorNoteDepth}", style = MaterialTheme.typography.titleSmall)
+                        Text("插入深度：${settings.authorNoteDepth}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                         Spacer(Modifier.height(8.dp))
                         var localDepth by remember { mutableFloatStateOf(settings.authorNoteDepth.toFloat()) }
                         Slider(
@@ -177,40 +181,48 @@ fun AuthorsNotePage() {
                             valueRange = 1f..30f,
                             steps = 28,
                         )
-                        Text("从最新消息往前数 ${localDepth.toInt()} 条的位置插入", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            "从最新消息往前数 ${localDepth.toInt()} 条的位置插入",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }
 
             // 注入角色
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("注入角色", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
-                    Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        mapOf(
-                            MessageRole.SYSTEM to "系统",
-                            MessageRole.USER to "用户",
-                            MessageRole.ASSISTANT to "助手",
-                        ).forEach { (role, label) ->
-                            FilterChip(
+            CardGroup(title = { Text("注入角色") }) {
+                listOf(
+                    MessageRole.SYSTEM to "系统",
+                    MessageRole.USER to "用户",
+                    MessageRole.ASSISTANT to "助手",
+                ).forEach { (role, label) ->
+                    item(
+                        onClick = {
+                            scope.launch {
+                                settingsStore.update(settings.copy(authorNoteRole = role))
+                            }
+                        },
+                        headlineContent = { Text(label, style = MaterialTheme.typography.bodyMedium) },
+                        trailingContent = {
+                            RadioButton(
                                 selected = settings.authorNoteRole == role,
                                 onClick = {
                                     scope.launch {
                                         settingsStore.update(settings.copy(authorNoteRole = role))
                                     }
                                 },
-                                label = { Text(label, style = MaterialTheme.typography.labelSmall) },
                             )
-                        }
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    Text("以什么角色注入备注内容", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        },
+                    )
                 }
             }
+            Text(
+                text = "以什么角色注入备注内容",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+            )
 
             // 频率
             Card(
@@ -218,7 +230,7 @@ fun AuthorsNotePage() {
                 colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("🎲 插入频率: ${(settings.authorNoteFrequency * 100).toInt()}%", style = MaterialTheme.typography.titleSmall)
+                    Text("插入频率：${(settings.authorNoteFrequency * 100).toInt()}%", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                     Spacer(Modifier.height(8.dp))
                     var localFreq by remember { mutableFloatStateOf(settings.authorNoteFrequency) }
                     Slider(
@@ -241,7 +253,11 @@ fun AuthorsNotePage() {
                 colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("📝 间隔注入: ${if (settings.authorNoteInterval == 0) "每次都注入" else "每${settings.authorNoteInterval}条注入一次"}", style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        "间隔注入：${if (settings.authorNoteInterval == 0) "每次都注入" else "每${settings.authorNoteInterval}条注入一次"}",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium,
+                    )
                     Spacer(Modifier.height(8.dp))
                     var localInterval by remember { mutableIntStateOf(settings.authorNoteInterval) }
                     Slider(
