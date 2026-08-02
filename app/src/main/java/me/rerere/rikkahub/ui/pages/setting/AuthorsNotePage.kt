@@ -386,12 +386,12 @@ private val authorsNotePresets = listOf(
         "[Write your next reply like a casual chat between friends.]\n使用自然口语化的语言，句子可以松散，但要真实。\n可以开玩笑、可以跑题，但必须回应我实际说的内容。\n不要过度热情或刻意讨好，保持自然的朋友感。",
     ),
     Pair(
-        "角色扮演沉浸",
-        "[Stay fully in character. Never break character.]\n用第一人称表达，通过对话和行为展现角色性格，而非直接叙述。\n说话方式、知识范围和举止始终符合角色背景设定。\n细致描写场景与反应，但不要替我做决定或控制我的行动。",
+        "冲突制造",
+        "[Create and escalate meaningful conflict.]\n每轮回复至少埋入或推进一个冲突源：目标分歧、信息差、情绪摩擦、外部威胁皆可。\n冲突要符合人物动机，不要为了戏剧性强行降智或无故发火。\n给冲突留出升级空间，不要在一轮内彻底解决；解决后立刻给出新的张力。",
     ),
     Pair(
-        "故事推进",
-        "[Move the story forward in this reply.]\n每轮至少引入一个新信息、一个冲突或一个转折，不重复已知内容。\n控制节奏：平缓段落让情绪呼吸，高潮段落给足篇幅展开。\n结尾留下钩子或悬念，不要把一切一次解决。",
+        "行动驱动",
+        "[Action drives the scene. Prioritize deeds over talk.]\n每轮回复至少包含一个可见的行动或环境变化，不要只靠对话推进。\n动作用动作段或斜体呈现，对话保持自然；心理描写一句带过即可，主要篇幅给到发生了什么。\n能动手就不解释，能展示就不说明。",
     ),
     Pair(
         "教学引导",
