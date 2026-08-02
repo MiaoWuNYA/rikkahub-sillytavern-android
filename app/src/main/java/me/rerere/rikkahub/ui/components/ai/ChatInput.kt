@@ -153,6 +153,12 @@ fun ChatInput(
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
+    val skillManager: SkillManager = koinInject()
+    val slashCommands = remember(assistant.enabledSkills) {
+        val allSkills = skillManager.listSkills()
+        val enabledSkills = allSkills.filter { it.name in assistant.enabledSkills }
+        collectSlashCommands(enabledSkills)
+    }
     val hazeTintColor = MaterialTheme.colorScheme.surfaceContainerLow
     val inputHazeStyle = HazeMaterials.thin(containerColor = hazeTintColor)
 
@@ -173,7 +179,48 @@ fun ChatInput(
     fun sendMessage() {
         focusManager.clearFocus(force = true)
         keyboardController?.hide()
-        if (loading) onCancelClick() else onSendClick()
+        if (loading) {
+            onCancelClick()
+            return
+        }
+        val text = state.textContent.text.toString().trimStart()
+        if (text.startsWith("/")) {
+            val cmd = matchSlashCommand(text, slashCommands)
+            if (cmd != null) {
+                val args = text.substringAfter(" ", "").trim()
+                if (cmd.builtinKind != null) {
+                    handleBuiltinSlash(
+                        cmd = cmd,
+                        args = args,
+                        state = state,
+                        toaster = toaster,
+                        settings = settings,
+                        assistant = assistant,
+                        onUpdateAssistant = onUpdateAssistant,
+                        onSlashDuplicate = onSlashDuplicate,
+                        onSlashInsert = onSlashInsert,
+                        onSlashPersona = onSlashPersona,
+                        onSlashTrigger = onSlashTrigger,
+                        onSlashSysgen = onSlashSysgen,
+                        onSlashInject = onSlashInject,
+                        onSlashVar = onSlashVar,
+                    )
+                } else {
+                    // 技能命令：与弹窗点击一致，把替换后的内容填回输入框
+                    val argsList = args.split(" ", limit = 10)
+                    var content = cmd.content
+                        .replace("\$ARGUMENTS", args)
+                        .replace("\$ARGS", args)
+                    for (i in 0..9) {
+                        val value = argsList.getOrElse(i) { "" }
+                        content = content.replace("\$ARGS.$i", value)
+                    }
+                    state.setMessageText(content)
+                }
+                return
+            }
+        }
+        onSendClick()
     }
 
     fun sendMessageWithoutAnswer() {

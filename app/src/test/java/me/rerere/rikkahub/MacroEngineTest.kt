@@ -443,6 +443,44 @@ class MacroEngineTest {
     }
 
     @Test
+    fun `random and time with args are not shadowed by legacy macros`() {
+        // 生产环境 legacy 表里也有 random/time，必须保证带参数的官方宏优先
+        val legacy = mapOf(
+            "random" to me.rerere.rikkahub.data.ai.transformers.PlaceholderInfo(
+                displayName = {},
+                resolver = { "LEGACY_RANDOM" },
+            ),
+            "time" to me.rerere.rikkahub.data.ai.transformers.PlaceholderInfo(
+                displayName = {},
+                resolver = { "LEGACY_TIME" },
+            ),
+        )
+        val e = engine(legacy = legacy)
+        val out = e.substitute("{{random::A::B::C}}", ctx())
+        assertTrue("带参数 random 被旧宏遮蔽: $out", out in listOf("A", "B", "C"))
+        assertTrue(
+            "带参数 time 被旧宏遮蔽",
+            e.substitute("{{time::UTC+8}}", ctx()).matches(Regex("\\d{2}:\\d{2}"))
+        )
+        // 无参数时旧宏语义保留
+        assertEquals("LEGACY_RANDOM", e.substitute("{{random}}", ctx()))
+        assertEquals("LEGACY_TIME", e.substitute("{{time}}", ctx()))
+    }
+
+    @Test
+    fun `inline if supports pipe pipe else separator`() {
+        val e = engine()
+        assertEquals("A", e.substitute("{{if::1::A||B}}", ctx()))
+        assertEquals("B", e.substitute("{{if::0::A||B}}", ctx()))
+        assertEquals("无", e.substitute("{{if::{{hasvar::x}}::有||无}}", ctx()))
+        val c = ctx(conversationId = Uuid.random())
+        e.substitute("{{.x = 1}}", c)
+        assertEquals("有", e.substitute("{{if::{{hasvar::x}}::有||无}}", c))
+        // 嵌套宏内部的 || 不应被当作分隔符
+        assertEquals("默认值", e.substitute("{{if::1::{{.missing || 默认值}}}}", c))
+    }
+
+    @Test
     fun pickIsStable() {
         val e = engine()
         val c = ctx(conversationId = Uuid.random())

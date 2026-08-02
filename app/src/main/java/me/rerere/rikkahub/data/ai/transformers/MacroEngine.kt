@@ -316,8 +316,8 @@ class MacroEngine(
                         ""
                     }
                     "-=" -> {
-                        vars.add(chatKey, varName, "0")
-                        ""
+                        // 无值时保持变量不变（不能把缺失变量错误写成 0）
+                        vars.get(chatKey, varName) ?: ""
                     }
                     "||" -> {
                         val cur = vars.get(chatKey, varName)
@@ -413,6 +413,15 @@ class MacroEngine(
         state: EvalState,
         depth: Int,
     ): String? {
+        // 新官方宏带参数时优先：旧宏忽略参数，避免 {{random::A::B}} / {{time::UTC}} /
+        // {{charFirstMessage::n}} 被同名旧宏遮蔽后永远取不到参数语义
+        if (args.isNotEmpty()) {
+            when (name) {
+                "random" -> return randomPick(parseListArg(args))
+                "time" -> return timeMacro(args[0])
+                "charFirstMessage" -> return greetingMacro(args[0], state.ctx)
+            }
+        }
         // 旧宏（35 个现有宏，大小写不敏感，与官方引擎一致）
         legacy.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.let { (_, info) ->
             return try {
@@ -480,7 +489,7 @@ class MacroEngine(
             val contentNodes = node.args.getOrNull(1)
             if (contentNodes == null) null
             else {
-                val split = splitTopLevelElse(contentNodes)
+                val split = splitInlineElse(contentNodes)
                 if (result) split.first else split.second
             }
         }
@@ -617,6 +626,40 @@ class MacroEngine(
             }
         }
         return nodes to emptyList()
+    }
+
+    /**
+     * 行内 if 分支分割：支持官方行内语法 {{if::条件::A||B}}。
+     * 只处理顶层文本节点中的 ||（嵌套宏内部的 || 属于变量默认值/逻辑或，不分割）。
+     */
+    private fun splitInlineElse(nodes: List<Node>): Pair<List<Node>, List<Node>> {
+        val first = mutableListOf<Node>()
+        val second = mutableListOf<Node>()
+        var found = false
+        for (node in nodes) {
+            if (found) {
+                second.add(node)
+                continue
+            }
+            when (node) {
+                is Node.Macro -> {
+                    if (node.isElse) found = true else first.add(node)
+                }
+                is Node.Text -> {
+                    val idx = node.text.indexOf("||")
+                    if (idx >= 0) {
+                        val before = node.text.substring(0, idx)
+                        val after = node.text.substring(idx + 2)
+                        if (before.isNotEmpty()) first.add(Node.Text(before))
+                        if (after.isNotEmpty()) second.add(Node.Text(after))
+                        found = true
+                    } else {
+                        first.add(node)
+                    }
+                }
+            }
+        }
+        return first to second
     }
 
     // ---------- 变量宏 ----------
