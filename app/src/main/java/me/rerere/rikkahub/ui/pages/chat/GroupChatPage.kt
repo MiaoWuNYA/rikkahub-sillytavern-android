@@ -836,7 +836,7 @@ private suspend fun runAutoChat(
     if (autoDelay <= 0) return
 
     // 对齐酒馆：每轮一批；用户发消息（代次变化）即打断，另有固定轮数上限防止无限接话
-    val maxAutoRounds = 3
+    val maxAutoRounds = 5
     var round = 0
     while (isCurrent() && round < maxAutoRounds) {
         round++
