@@ -673,6 +673,30 @@ internal fun mapTavernRole(role: String): me.rerere.ai.core.MessageRole = when (
     "assistant" -> me.rerere.ai.core.MessageRole.ASSISTANT
     else -> me.rerere.ai.core.MessageRole.SYSTEM   // 官方世界书/深度提示默认 system
 }
+
+/**
+ * 外置世界书 → 内嵌世界书同步：
+ * 编辑外置世界书后，把绑定该世界书的角色卡内嵌世界书条目一并更新（最后修改生效）
+ */
+internal fun syncExternalToEmbedded(
+    assistants: List<me.rerere.rikkahub.data.model.Assistant>,
+    lorebooks: List<me.rerere.rikkahub.data.model.Lorebook>,
+): List<me.rerere.rikkahub.data.model.Assistant> {
+    return assistants.map { assistant ->
+        val tav = assistant.tavernData ?: return@map assistant
+        val book = tav.embeddedBook ?: return@map assistant
+        val boundBook = lorebooks.firstOrNull { lb -> lb.id in assistant.lorebookIds }
+            ?: return@map assistant
+        val newEntries = boundBook.entries.mapIndexed { index, injection ->
+            val template = book.entries.getOrNull(index)
+                ?: book.entries.firstOrNull()
+                ?: TavernBookEntry()
+            injectionToTavernEntry(injection, template)
+        }
+        assistant.copy(tavernData = tav.copy(embeddedBook = book.copy(entries = newEntries)))
+    }
+}
+
 /** 映射酒馆 selectiveLogic Int 到 SelectiveLogic 枚举 */
 private fun mapSelectiveLogic(logic: Int): SelectiveLogic = when (logic) {
     0 -> SelectiveLogic.AND_ANY
@@ -683,7 +707,7 @@ private fun mapSelectiveLogic(logic: Int): SelectiveLogic = when (logic) {
 }
 
 /** 反向转换：RegexInjection → TavernBookEntry（用于外置世界书→内嵌同步） */
-private fun injectionToTavernEntry(
+internal fun injectionToTavernEntry(
     injection: PromptInjection.RegexInjection,
     template: TavernBookEntry,
 ): TavernBookEntry {

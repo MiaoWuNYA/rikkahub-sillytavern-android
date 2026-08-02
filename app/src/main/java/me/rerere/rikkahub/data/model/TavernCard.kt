@@ -79,7 +79,7 @@ data class TavernBookEntry(
     val selectiveLogic: Int = 0,  // 0=AND, 1=OR, 2=NOT_ANY, 3=NOT_ALL
     val group: String = "",
     val position: Int = 1,        // 官方枚举: 0=before_char 1=after_char 2=ANTop 3=ANBottom 4=atDepth 5=EMTop 6=EMBottom 7=outlet
-    val priority: Int = 100,      // order/priority, lower = higher
+    val priority: Int = 100,      // order/priority，官方降序注入（order 大的先）
     val disable: Boolean = false,
     val caseSensitive: Boolean = false,
     val matchWholeWords: Boolean = false, // 整词匹配（酒馆 extensions.match_whole_words）

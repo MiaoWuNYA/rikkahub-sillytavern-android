@@ -104,6 +104,7 @@ import me.rerere.rikkahub.data.export.rememberExporter
 import me.rerere.rikkahub.data.export.rememberImporter
 import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.Lorebook
+import me.rerere.rikkahub.ui.pages.assistant.detail.syncExternalToEmbedded
 import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.SelectiveLogic
 import me.rerere.rikkahub.ui.components.nav.BackButton
@@ -173,7 +174,15 @@ fun PromptPage(vm: PromptVM = koinViewModel()) {
 
                 1 -> LorebookTab(
                     lorebooks = settings.lorebooks,
-                    onUpdate = { vm.updateSettings(settings.copy(lorebooks = it)) },
+                    onUpdate = { newLorebooks ->
+                        // 外置世界书更新时，同步回写绑定它的角色卡内嵌世界书
+                        vm.updateSettings(
+                            settings.copy(
+                                lorebooks = newLorebooks,
+                                assistants = syncExternalToEmbedded(settings.assistants, newLorebooks),
+                            )
+                        )
+                    },
                     settings = settings,
                     onSettingsUpdate = { vm.updateSettings(it) }
                 )
