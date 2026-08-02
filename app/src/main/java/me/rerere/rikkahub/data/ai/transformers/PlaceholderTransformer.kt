@@ -201,6 +201,46 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
         placeholder("charInstruction", { Text(stringResource(R.string.placeholder_char_instruction)) }) {
             it.assistant.tavernData?.postHistoryInstructions ?: ""
         }
+        // 官方新宏名（别名，与上面旧名同值，不替换现有宏）
+        placeholder("charDescription", { Text("角色描述(官方别名)") }) {
+            it.assistant.tavernData?.description ?: ""
+        }
+        placeholder("charPersonality", { Text("角色性格(官方别名)") }) {
+            it.assistant.tavernData?.personality ?: ""
+        }
+        placeholder("charScenario", { Text("角色场景(官方别名)") }) {
+            it.assistant.tavernData?.scenario ?: ""
+        }
+        placeholder("charFirstMessage", { Text("开场白(官方别名)") }) {
+            it.assistant.tavernData?.firstMessage ?: ""
+        }
+        placeholder("charCreatorNotes", { Text("作者备注(官方别名)") }) {
+            it.assistant.tavernData?.creatorNotes ?: ""
+        }
+        placeholder("systemPrompt", { Text("系统提示词(官方别名)") }) {
+            it.assistant.tavernData?.systemPrompt ?: ""
+        }
+        placeholder("jailbreak", { Text("历史后指令(官方别名)") }) {
+            it.assistant.tavernData?.postHistoryInstructions ?: ""
+        }
+        placeholder("charDepthPrompt", { Text("角色深度提示") }) {
+            it.assistant.tavernData?.depthPrompt ?: ""
+        }
+        placeholder("mesExamplesRaw", { Text("示例对话原文") }) {
+            it.assistant.tavernData?.mesExample ?: ""
+        }
+        placeholder("model", { Text("当前模型") }) {
+            it.model.displayName
+        }
+        placeholder("weekday", { Text("星期几") }) {
+            DateTimeFormatter.ofPattern("EEEE").withLocale(Locale.CHINA).format(LocalDate.now())
+        }
+        placeholder("isodate", { Text("ISO日期") }) {
+            LocalDate.now().toString()
+        }
+        placeholder("isotime", { Text("ISO时间") }) {
+            LocalTime.now().withNano(0).toString()
+        }
 
         placeholder("original", { Text(stringResource(R.string.placeholder_original)) }) {
             it.assistant.systemPrompt
@@ -291,6 +331,8 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
     private val randomArgsRegex = Regex("""\{\{?random::([^}]+)\}\}?""", RegexOption.IGNORE_CASE)
     private val randomLegacyRegex = Regex("""\{\{?random:([^|}]+(?:\|[^|}]+)+)\}\}?""", RegexOption.IGNORE_CASE)
     private val rollRegex = Regex("""\{\{?roll(?:::|:|\s)([^}]+)\}\}?""", RegexOption.IGNORE_CASE)
+    private val pickRegex = Regex("""\{\{?pick(?:::|:)([^}]+)\}\}?""", RegexOption.IGNORE_CASE)
+    private val datetimeformatRegex = Regex("""\{\{?datetimeformat(?:::|:)([^}]+)\}\}?""", RegexOption.IGNORE_CASE)
 
     override suspend fun transform(
         ctx: TransformerContext,
@@ -339,6 +381,18 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
         }
         result = result.replace(rollRegex) { m ->
             DefaultPlaceholderProvider.rollDice(m.groupValues[1]) ?: ""
+        }
+        // {{pick::A|B|C}} / {{pick:A|B|C}}：从列表随机选一个（官方 pick）
+        result = result.replace(pickRegex) { m ->
+            val opts = m.groupValues[1].split("|").map { it.trim() }.filter { it.isNotEmpty() }
+            if (opts.isEmpty()) "" else opts[Random.nextInt(opts.size)]
+        }
+        // {{datetimeformat::yyyy-MM-dd}}：自定义时间格式（官方 datetimeformat）
+        result = result.replace(datetimeformatRegex) { m ->
+            try {
+                DateTimeFormatter.ofPattern(m.groupValues[1].trim())
+                    .format(java.time.LocalDateTime.now())
+            } catch (_: Exception) { m.value }
         }
 
         val ctx = PlaceholderCtx(
