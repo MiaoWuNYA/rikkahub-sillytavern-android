@@ -925,25 +925,6 @@ private fun handleBuiltinSlash(
                         toaster.show(summary)
                     }
                 }
-                "char-find" -> {
-                    val keyword = args.trim()
-                    if (keyword.isBlank()) {
-                        toaster.show("用法: /char-find 关键词")
-                    } else {
-                        val matches = settings.assistants.filter { a ->
-                            a.name.contains(keyword, ignoreCase = true) ||
-                                a.tavernData?.description?.contains(keyword, ignoreCase = true) == true
-                        }
-                        if (matches.isEmpty()) {
-                            toaster.show("未找到包含「$keyword」的角色卡")
-                        } else {
-                            toaster.show(
-                                "找到 ${matches.size} 张: " +
-                                    matches.take(5).joinToString("、") { it.name.ifBlank { "未命名" } }
-                            )
-                        }
-                    }
-                }
             }
         }
 

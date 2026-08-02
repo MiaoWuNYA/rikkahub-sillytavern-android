@@ -110,14 +110,6 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
         builtinKind = BuiltinSlashKind.INFO,
     ),
     SlashCommand(
-        name = "char-find",
-        description = "搜索角色卡(Char Find)",
-        argumentHint = "[关键词]",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.INFO,
-    ),
-    SlashCommand(
         name = "char-update",
         description = "修改角色卡字段(Char Update)",
         argumentHint = "[字段=值] 如 description=新描述",
