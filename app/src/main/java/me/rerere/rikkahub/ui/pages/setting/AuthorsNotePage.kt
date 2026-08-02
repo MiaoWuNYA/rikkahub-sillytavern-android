@@ -286,6 +286,34 @@ fun AuthorsNotePage() {
 
 private val authorsNotePresets = listOf(
     Pair(
+        "防复读（动态）",
+        "[Never repeat the previous reply. Vary wording, sentence structure and imagery.]\n{{if::{{lastCharMessage}}::你上一条回复是：{{lastCharMessage}}\n请换一种完全不同的表达方式，不要复述其中的句式、比喻或结论。}}",
+    ),
+    Pair(
+        "状态面板（变量）",
+        "[Track the story state variables below and keep them consistent. Only change them when the plot clearly demands it.]\n主角状态：受伤={{if::{{hasvar::受伤}}::{{getvar::受伤}}{{else}}无}} ｜ 好感度={{if::{{hasvar::好感度}}::{{getvar::好感度}}{{else}}未建立}} ｜ 当前目标={{if::{{hasvar::目标}}::{{getvar::目标}}{{else}}无}}\n涉及以上状态时严格保持一致，状态变化必须由剧情明确推动。",
+    ),
+    Pair(
+        "动态推进（感知最新）",
+        "[Advance the plot based on the latest user message. Do not repeat or summarize it.]\n{{if::{{lastUserMessage}}::用户最新说的是：{{lastUserMessage}}\n围绕它推进：先回应，再补充新信息、制造新冲突或留下钩子。}}",
+    ),
+    Pair(
+        "开场引导（自动识别）",
+        "[Determine whether this is the opening scene or an ongoing conversation and act accordingly.]\n{{if::{{lastCharMessage}}::对话已经进行中：延续当前场景，不要重新自我介绍或从头解释。||这是开场：按照 {{char}} 的开场白展开场景，自然地开始互动，不要跳出角色。}}",
+    ),
+    Pair(
+        "时间流逝（动态）",
+        "[Reflect the time that has passed since the last interaction.]\n距离上次互动已过去：{{idleDuration}}。\n如果间隔明显，请让场景自然体现这段空白（角色等待、离去又回来、氛围变化等），但不要机械地提及具体分钟数。",
+    ),
+    Pair(
+        "随机氛围（稳定）",
+        "[Keep the chosen atmosphere consistent throughout this scene.]\n本场景氛围基调：{{pick::阴雨连绵|黄昏将至|雪夜寂静|晴空微风}}。\n场景描写围绕这个基调展开，不要频繁切换。",
+    ),
+    Pair(
+        "群聊感知（动态）",
+        "[Respond as the current speaker and interact with the other participants naturally.]\n在场成员：{{groupNotMuted}}。\n{{if::{{group}}::这是群聊：只替自己发言，不要替其他角色说话或替他们决定行动。||这是单聊。}}",
+    ),
+    Pair(
         "沉浸式扮演",
         "[Stay fully in character as {{char}}. Never break character, never mention AI, prompts, or rules.]\n用第一人称扮演角色，通过对话、动作和神态展现性格，而不是直接叙述人设。\n台词用引号，动作与心理用斜体。\n只叙述 {{char}} 与配角的想法、感受、行动和对话，绝不替 {{user}} 说话、行动或决定。\n角色拥有自己的目标、立场和情绪，可以不同意、拒绝、怀疑，像真实的人一样自主行动。\n每个角色只能知道亲眼见过、亲耳听过或能合理推断的信息，不能全知。\n世界的行动可以作用于 {{user}}，但选择永远留给 {{user}}。",
     ),
