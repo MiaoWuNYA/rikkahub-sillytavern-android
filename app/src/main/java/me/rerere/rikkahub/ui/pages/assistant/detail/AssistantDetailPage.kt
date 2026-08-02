@@ -519,10 +519,12 @@ private fun ExportCardDialog(
         doPngExportInternal(context, exportScope, toaster, assistant, pickedUri)
     }
 
-    // 已设头像的 URI
+    // 已设头像的 URI（仅本地 content/file 可用于 PNG 嵌入，网络 URL 交给图片选择器）
     val avatarUri = runCatching {
         val url = (assistant.avatar as? Avatar.Image)?.url ?: return@runCatching null
-        url.toUri()
+        val uri = url.toUri()
+        val scheme = uri.scheme
+        if (scheme == "content" || scheme == "file") uri else null
     }.getOrNull()
 
     AlertDialog(
@@ -530,39 +532,64 @@ private fun ExportCardDialog(
         title = { Text("导出角色卡") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("导出到「下载」文件夹：", style = MaterialTheme.typography.bodyMedium)
-                TextButton(
-                    onClick = {
-                        onDismiss()
-                        exportScope.launch {
-                            try {
-                                val json = CardExporter.buildV3CardJson(assistant)
-                                val fileName = "RikkaHub_${assistant.name.replace(" ", "_")}_${System.currentTimeMillis()}.json"
-                                saveToDownloads(context, fileName, "application/json", json.toByteArray())
-                                toaster.show("已导出 JSON: $fileName")
-                            } catch (e: Exception) {
-                                toaster.show("导出失败: ${e.message}")
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(horizontal = 4.dp)
                 ) {
-                    Text("📄 JSON 文件")
+                    Icon(
+                        HugeIcons.Folder01,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        "导出到「下载」文件夹（Download）",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
-                TextButton(
-                    onClick = {
-                        if (avatarUri != null) {
+                CardGroup {
+                    item(
+                        onClick = {
                             onDismiss()
-                            doPngExportInternal(context, exportScope, toaster, assistant, avatarUri)
-                        } else {
-                            pngImagePicker.launch("image/*")
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    val label = if (avatarUri != null) "🖼️ PNG 嵌入（使用当前头像）"
-                                 else "🖼️ PNG 嵌入（需选择头像图片）"
-                    Text(label)
+                            exportScope.launch {
+                                try {
+                                    val json = CardExporter.buildV3CardJson(assistant)
+                                    val fileName = "RikkaHub_${assistant.name.replace(" ", "_")}_${System.currentTimeMillis()}.json"
+                                    saveToDownloads(context, fileName, "application/json", json.toByteArray())
+                                    toaster.show("已导出 JSON: Download/$fileName")
+                                } catch (e: Exception) {
+                                    toaster.show("导出失败: ${e.message}")
+                                }
+                            }
+                        },
+                        headlineContent = { Text("JSON 文件") },
+                        supportingContent = { Text("导出 V3 角色卡 JSON，不包含图片") },
+                        leadingContent = {
+                            Icon(HugeIcons.File01, contentDescription = null)
+                        },
+                    )
+                    item(
+                        onClick = {
+                            if (avatarUri != null) {
+                                onDismiss()
+                                doPngExportInternal(context, exportScope, toaster, assistant, avatarUri)
+                            } else {
+                                pngImagePicker.launch("image/*")
+                            }
+                        },
+                        headlineContent = { Text("PNG 嵌入") },
+                        supportingContent = {
+                            Text(
+                                if (avatarUri != null) "使用当前头像合并导出角色卡"
+                                else "需选择一张头像图片合并导出"
+                            )
+                        },
+                        leadingContent = {
+                            Icon(HugeIcons.Image02, contentDescription = null)
+                        },
+                    )
                 }
             }
         },
@@ -586,7 +613,7 @@ private fun doPngExportInternal(
                 ?: error("嵌入PNG失败，请确认选择的图片是PNG格式")
             val fileName = "RikkaHub_${assistant.name.replace(" ", "_")}_${System.currentTimeMillis()}.png"
             saveToDownloads(context, fileName, "image/png", pngBytes)
-            toaster.show("已导出 PNG: $fileName")
+            toaster.show("已导出 PNG: Download/$fileName")
         } catch (e: Exception) {
             toaster.show("导出失败: ${e.message}")
         }

@@ -43,19 +43,23 @@ object CardExporter {
             stream.toByteArray()
         }
 
-        // 注入 chara chunk (V2 兼容) + ccv3 chunk (V3)
-        val charaB64 = Base64.encodeToString(cardJson.toByteArray(), Base64.NO_WRAP)
+        // 官方双 chunk 写法：chara=V2 兼容格式，ccv3=V3 格式（导入时 ccv3 优先）
+        val parsed = try {
+            Json.parseToJsonElement(cardJson).jsonObject
+        } catch (_: Exception) { null } ?: return null
+
+        val v2Json = JsonObject(parsed.toMap() + mapOf(
+            "spec" to JsonPrimitive("chara_card_v2"),
+            "spec_version" to JsonPrimitive("2.0")
+        )).toString()
+        val charaB64 = Base64.encodeToString(v2Json.toByteArray(), Base64.NO_WRAP)
         val result = injectTextChunk(pngBytes, "chara", charaB64)
 
-        // 写 ccv3 chunk：修改 spec 和 spec_version
-        val v3Json = try {
-            val parsed = Json.parseToJsonElement(cardJson).jsonObject
-            JsonObject(parsed.toMap() + mapOf(
-                "spec" to JsonPrimitive("chara_card_v3"),
-                "spec_version" to JsonPrimitive("3.0")
-            )).toString()
-        } catch (_: Exception) { null } ?: return result
-
+        // ccv3 chunk：与官方一致，强制 spec=chara_card_v3 / spec_version=3.0
+        val v3Json = JsonObject(parsed.toMap() + mapOf(
+            "spec" to JsonPrimitive("chara_card_v3"),
+            "spec_version" to JsonPrimitive("3.0")
+        )).toString()
         val ccv3B64 = Base64.encodeToString(v3Json.toByteArray(), Base64.NO_WRAP)
         return injectTextChunk(result, "ccv3", ccv3B64)
     }
@@ -67,7 +71,8 @@ object CardExporter {
         val tav = assistant.tavernData
         return buildJsonObject {
             put("spec", "chara_card_v3")
-            put("spec_version", tav?.specVersion?.ifEmpty { "2.0" } ?: "2.0")
+            // 官方 ccv3 与 V3 JSON 导出均强制 3.0，不沿用导入时的旧版本号
+            put("spec_version", "3.0")
             putJsonObject("data") {
                 put("name", tav?.name ?: assistant.name)
                 put("description", tav?.description ?: "")
