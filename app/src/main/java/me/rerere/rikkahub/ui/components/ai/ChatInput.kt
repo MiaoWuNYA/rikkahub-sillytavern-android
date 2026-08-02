@@ -146,6 +146,7 @@ fun ChatInput(
     onSlashDuplicate: (() -> Unit)? = null,
     onSlashInsert: ((MessageRole, String) -> Unit)? = null,
     onSlashPersona: ((String) -> Unit)? = null,
+    onSlashTrigger: (() -> Unit)? = null,
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
@@ -257,6 +258,7 @@ fun ChatInput(
                         onSlashDuplicate = onSlashDuplicate,
                         onSlashInsert = onSlashInsert,
                         onSlashPersona = onSlashPersona,
+                        onSlashTrigger = onSlashTrigger,
                     )
 
                     Row(
@@ -447,6 +449,7 @@ private fun TextInputRow(
     onSlashDuplicate: (() -> Unit)?,
     onSlashInsert: ((MessageRole, String) -> Unit)?,
     onSlashPersona: ((String) -> Unit)?,
+    onSlashTrigger: (() -> Unit)?,
 ) {
     val settings = LocalSettings.current
     val filesManager: FilesManager = koinInject()
@@ -627,6 +630,7 @@ private fun TextInputRow(
                                             onSlashDuplicate = onSlashDuplicate,
                                             onSlashInsert = onSlashInsert,
                                             onSlashPersona = onSlashPersona,
+                                            onSlashTrigger = onSlashTrigger,
                                         )
                                     } else {
                                         val argsList = slashArgs.split(" ", limit = 10)
@@ -841,6 +845,7 @@ private fun handleBuiltinSlash(
     onSlashDuplicate: (() -> Unit)?,
     onSlashInsert: ((MessageRole, String) -> Unit)?,
     onSlashPersona: ((String) -> Unit)?,
+    onSlashTrigger: (() -> Unit)?,
 ) {
     when (cmd.builtinKind) {
         BuiltinSlashKind.HELP -> {
@@ -898,6 +903,15 @@ private fun handleBuiltinSlash(
         BuiltinSlashKind.PERSONA -> {
             if (onSlashPersona != null) {
                 onSlashPersona(args.trim())
+                state.clearInput()
+            } else {
+                toaster.show("当前页面不支持该命令")
+            }
+        }
+
+        BuiltinSlashKind.TRIGGER -> {
+            if (onSlashTrigger != null) {
+                onSlashTrigger()
                 state.clearInput()
             } else {
                 toaster.show("当前页面不支持该命令")

@@ -496,6 +496,15 @@ private fun ChatPageContent(
                             }
                         }
                     },
+                    onSlashTrigger = {
+                        if (currentChatModel == null) {
+                            toaster.show("请先选择模型", type = ToastType.Error)
+                        } else if (vm.conversation.value.currentMessages.isEmpty()) {
+                            toaster.show("当前对话还没有消息，无法触发回复", type = ToastType.Warning)
+                        } else {
+                            vm.handleTriggerGeneration()
+                        }
+                    },
                     onUpdateChatModel = {
                         vm.setChatModel(assistant = setting.getCurrentAssistant(), model = it)
                     },

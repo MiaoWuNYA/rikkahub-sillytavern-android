@@ -204,6 +204,13 @@ class ChatVM(
         chatService.insertMessage(_conversationId, role, listOf(UIMessagePart.Text(text)))
     }
 
+    /**
+     * 触发一次 AI 回复（/trigger，不添加新消息）
+     */
+    fun handleTriggerGeneration() {
+        chatService.triggerGeneration(_conversationId)
+    }
+
     fun handleCompressContext(additionalPrompt: String, targetTokens: Int, keepRecentMessages: Int): Job {
         return viewModelScope.launch {
             chatService.compressConversation(

@@ -39,6 +39,9 @@ enum class BuiltinSlashKind {
     /** 切换用户人设 */
     PERSONA,
 
+    /** 触发生成：不添加新消息，直接让 AI 回复一次 */
+    TRIGGER,
+
     /** 角色操作：修改当前助手 */
     RENAME,
 
@@ -86,6 +89,13 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.PERSONA,
+    ),
+    SlashCommand(
+        name = "trigger",
+        description = "无消息直接触发AI回复(Trigger)",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.TRIGGER,
     ),
     SlashCommand(
         name = "echo",
