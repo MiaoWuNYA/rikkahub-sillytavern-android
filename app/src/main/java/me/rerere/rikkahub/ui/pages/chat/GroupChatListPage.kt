@@ -107,6 +107,7 @@ fun GroupChatListPage() {
         var selectedMode by remember { mutableStateOf(GroupActivationStrategy.NATURAL) }
         var selectedGenMode by remember { mutableStateOf(GroupGenerationMode.APPEND) }
         var autoDelay by remember { mutableIntStateOf(5) }
+        var autoRounds by remember { mutableIntStateOf(5) }
         var allowSelf by remember { mutableStateOf(false) }
 
         AlertDialog(
@@ -164,6 +165,14 @@ fun GroupChatListPage() {
                         steps = 29,
                     )
 
+                    Text("自动接话轮数: ${autoRounds}", style = MaterialTheme.typography.labelMedium)
+                    Slider(
+                        value = autoRounds.toFloat(),
+                        onValueChange = { autoRounds = it.toInt() },
+                        valueRange = 1f..10f,
+                        steps = 8,
+                    )
+
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("允许自接话", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                         Switch(checked = allowSelf, onCheckedChange = { allowSelf = it })
@@ -196,6 +205,7 @@ fun GroupChatListPage() {
                                 activationStrategy = selectedMode,
                                 generationMode = selectedGenMode,
                                 autoModeDelay = autoDelay,
+                                autoChatRounds = autoRounds,
                                 allowSelfResponses = allowSelf,
                             )
                             scope.launch {

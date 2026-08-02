@@ -741,6 +741,32 @@ fun GroupChatPage(groupId: String) {
                         )
                     }
 
+                    // 自动接话轮数
+                    Column {
+                        Text("自动接话轮数: ${gc.autoChatRounds}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
+                        Text("每轮全体已选成员各发言一次，发消息即打断", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.height(4.dp))
+                        Slider(
+                            value = gc.autoChatRounds.toFloat(),
+                            onValueChange = { v ->
+                                scope.launch {
+                                    settingsStore.update { s ->
+                                        s.copy(groupChats = s.groupChats.map { if (it.id == gcId) it.copy(autoChatRounds = v.toInt()) else it })
+                                    }
+                                }
+                            },
+                            valueRange = 1f..10f,
+                            steps = 8,
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text("1", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("10", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+
                     Divider()
 
                     // 成员列表
@@ -836,7 +862,7 @@ private suspend fun runAutoChat(
     if (autoDelay <= 0) return
 
     // 对齐酒馆：每轮一批；用户发消息（代次变化）即打断，另有固定轮数上限防止无限接话
-    val maxAutoRounds = 5
+    val maxAutoRounds = gc.autoChatRounds.coerceAtLeast(1)
     var round = 0
     while (isCurrent() && round < maxAutoRounds) {
         round++

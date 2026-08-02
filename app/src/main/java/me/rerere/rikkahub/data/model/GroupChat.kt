@@ -18,6 +18,7 @@ data class GroupChat(
     val conversationId: Uuid? = null,  // 关联的 Conversation ID
     val allowSelfResponses: Boolean = false,
     val autoModeDelay: Int = 5,  // 自动接话延迟（秒）
+    val autoChatRounds: Int = 5, // 自动接话轮数上限（每轮全体已选成员各发言一次）
     val enabled: Boolean = true,
     val chatModelId: Uuid? = null,  // 群聊级模型覆盖（不选则用各成员自己的模型）
 )
