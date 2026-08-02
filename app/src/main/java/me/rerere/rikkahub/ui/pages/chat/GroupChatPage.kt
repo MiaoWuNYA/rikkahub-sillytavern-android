@@ -306,7 +306,8 @@ fun GroupChatPage(groupId: String) {
             ) {
                 Column {
                     // 排队状态
-                    AnimatedVisibility(visible = queueMembers.isNotEmpty()) {
+                    // 只要有状态提示就显示（含"等待自动接话""未选择发言人"等无成员名的情况）
+                    AnimatedVisibility(visible = queueStatus.isNotEmpty()) {
                         Surface(
                             color = MaterialTheme.colorScheme.primaryContainer,
                             modifier = Modifier.fillMaxWidth(),
