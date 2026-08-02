@@ -105,7 +105,7 @@ fun GroupChatListPage() {
         var name by remember { mutableStateOf("") }
         var selectedIds by remember { mutableStateOf(setOf<Uuid>()) }
         var selectedMode by remember { mutableStateOf(GroupActivationStrategy.NATURAL) }
-        var selectedGenMode by remember { mutableStateOf(GroupGenerationMode.APPEND) }
+        var selectedGenMode by remember { mutableStateOf(GroupGenerationMode.SWAP) }
         var autoDelay by remember { mutableIntStateOf(5) }
         var autoRounds by remember { mutableIntStateOf(5) }
         var allowSelf by remember { mutableStateOf(false) }
