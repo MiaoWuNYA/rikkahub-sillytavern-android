@@ -165,12 +165,12 @@ fun GroupChatListPage() {
                         steps = 29,
                     )
 
-                    Text("自动接话轮数: ${autoRounds}", style = MaterialTheme.typography.labelMedium)
+                    Text("自动接话轮数: ${if (autoRounds <= 0) "无上限" else autoRounds}（0=无上限）", style = MaterialTheme.typography.labelMedium)
                     Slider(
                         value = autoRounds.toFloat(),
                         onValueChange = { autoRounds = it.toInt() },
-                        valueRange = 1f..10f,
-                        steps = 8,
+                        valueRange = 0f..30f,
+                        steps = 29,
                     )
 
                     Row(verticalAlignment = Alignment.CenterVertically) {

@@ -486,7 +486,11 @@ fun GroupChatPage(groupId: String) {
                                                         settings = settings,
                                                         isCurrent = { myEpoch == generationEpoch },
                                                         onSpeakerStart = { name, round, total ->
-                                                            queueStatus = "$name 正在输入...（自动 $round/$total）"
+                                                            queueStatus = if (total <= 0) {
+                                                                "$name 正在输入...（自动第 $round 轮）"
+                                                            } else {
+                                                                "$name 正在输入...（自动 $round/$total）"
+                                                            }
                                                             queueMembers = listOf(name)
                                                         },
                                                         onWaiting = {
@@ -743,8 +747,16 @@ fun GroupChatPage(groupId: String) {
 
                     // 自动接话轮数
                     Column {
-                        Text("自动接话轮数: ${gc.autoChatRounds}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
-                        Text("每轮全体已选成员各发言一次，发消息即打断", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            "自动接话轮数: ${if (gc.autoChatRounds <= 0) "无上限" else gc.autoChatRounds}",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Medium,
+                        )
+                        Text(
+                            "0=无上限；每轮全体已选成员各发言一次，发消息即打断",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                         Spacer(Modifier.height(4.dp))
                         Slider(
                             value = gc.autoChatRounds.toFloat(),
@@ -755,15 +767,15 @@ fun GroupChatPage(groupId: String) {
                                     }
                                 }
                             },
-                            valueRange = 1f..10f,
-                            steps = 8,
+                            valueRange = 0f..30f,
+                            steps = 29,
                         )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
-                            Text("1", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("10", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("0=无上限", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("30", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
 
@@ -862,7 +874,7 @@ private suspend fun runAutoChat(
     if (autoDelay <= 0) return
 
     // 对齐酒馆：每轮一批；用户发消息（代次变化）即打断，另有固定轮数上限防止无限接话
-    val maxAutoRounds = gc.autoChatRounds.coerceAtLeast(1)
+    val maxAutoRounds = if (gc.autoChatRounds <= 0) Int.MAX_VALUE else gc.autoChatRounds.coerceAtLeast(1)
     var round = 0
     while (isCurrent() && round < maxAutoRounds) {
         round++
