@@ -106,7 +106,7 @@ fun AuthorsNotePage() {
                 colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("备注内容", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                    Text("备注内容（Author's Note）", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = settings.authorNote,
@@ -124,12 +124,12 @@ fun AuthorsNotePage() {
             }
 
             // 注入位置
-            CardGroup(title = { Text("注入位置") }) {
+            CardGroup(title = { Text("注入位置（Position）") }) {
                 listOf(
-                    InjectionPosition.AFTER_SYSTEM_PROMPT to ("系统提示词后" to "紧跟系统提示词，对全局影响稳定"),
-                    InjectionPosition.TOP_OF_CHAT to ("对话顶部" to "位于对话历史最前面"),
-                    InjectionPosition.BOTTOM_OF_CHAT to ("最新消息前" to "靠近上下文底部，影响下一次回复"),
-                    InjectionPosition.AT_DEPTH to ("指定深度" to "按下方设置的深度插入对话中"),
+                    InjectionPosition.AFTER_SYSTEM_PROMPT to ("系统提示词后（After System Prompt）" to "紧跟系统提示词，对全局影响稳定"),
+                    InjectionPosition.TOP_OF_CHAT to ("对话顶部（Top of Chat）" to "位于对话历史最前面"),
+                    InjectionPosition.BOTTOM_OF_CHAT to ("对话底部（Bottom of Chat）" to "靠近上下文底部，影响下一次回复"),
+                    InjectionPosition.AT_DEPTH to ("指定深度（At Depth）" to "按下方设置的深度插入对话中"),
                 ).forEach { (pos, pair) ->
                     val (label, desc) = pair
                     item(
@@ -167,7 +167,7 @@ fun AuthorsNotePage() {
                     colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("插入深度：${settings.authorNoteDepth}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                        Text("插入深度（Depth）：${settings.authorNoteDepth}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                         Spacer(Modifier.height(8.dp))
                         var localDepth by remember { mutableFloatStateOf(settings.authorNoteDepth.toFloat()) }
                         Slider(
@@ -191,7 +191,7 @@ fun AuthorsNotePage() {
             }
 
             // 注入角色
-            CardGroup(title = { Text("注入角色") }) {
+            CardGroup(title = { Text("注入角色（Role）") }) {
                 listOf(
                     MessageRole.SYSTEM to "系统",
                     MessageRole.USER to "用户",
@@ -231,7 +231,7 @@ fun AuthorsNotePage() {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        "间隔注入（对齐酒馆官方）：" + when (settings.authorNoteInterval) {
+                        "间隔（Interval）：" + when (settings.authorNoteInterval) {
                             0 -> "关闭（不注入）"
                             1 -> "每次注入"
                             else -> "每${settings.authorNoteInterval}条用户消息注入一次"

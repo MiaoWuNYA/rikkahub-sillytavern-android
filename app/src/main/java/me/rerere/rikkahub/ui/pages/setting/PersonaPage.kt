@@ -168,11 +168,11 @@ fun PersonaPage() {
                                     }
                                     Text(
                                         text = "注入位置：" + when (persona.position) {
-                                            PersonaInjectionPosition.IN_PROMPT -> "系统提示词内（官方默认）"
-                                            PersonaInjectionPosition.TOP_OF_CHAT -> "对话顶部"
-                                            PersonaInjectionPosition.BOTTOM_OF_CHAT -> "对话底部"
-                                            PersonaInjectionPosition.AT_DEPTH -> "指定深度插入（深度${persona.depth}）"
-                                            PersonaInjectionPosition.NONE -> "不注入"
+                                            PersonaInjectionPosition.IN_PROMPT -> "系统提示词内（In Prompt）"
+                                            PersonaInjectionPosition.TOP_OF_CHAT -> "导演备注上方（Top of Author's Note）"
+                                            PersonaInjectionPosition.BOTTOM_OF_CHAT -> "导演备注下方（Bottom of Author's Note）"
+                                            PersonaInjectionPosition.AT_DEPTH -> "指定深度（At Depth，深度${persona.depth}）"
+                                            PersonaInjectionPosition.NONE -> "不注入（None）"
                                         },
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
@@ -404,7 +404,7 @@ private fun PersonaEditPage(
 
             // 注入设置
             item {
-                CardGroup(title = { Text("注入位置") }) {
+                CardGroup(title = { Text("注入位置（Position）") }) {
                     PersonaInjectionPosition.entries.forEach { p ->
                         item(
                             onClick = { pos = p },
@@ -420,8 +420,8 @@ private fun PersonaEditPage(
                         )
                     }
                 }
-                Text(
-                    text = "注入位置对齐酒馆官方：系统提示词内 / 对话顶部 / 对话底部 / 指定深度 / 不注入",
+                    Text(
+                        text = "导演备注上/下方选项会与导演备注内容合并注入，并跟随其间隔节奏",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
@@ -430,7 +430,7 @@ private fun PersonaEditPage(
                     Spacer(Modifier.height(8.dp))
                     Column(modifier = Modifier.padding(horizontal = 8.dp)) {
                         Text(
-                            "插入深度：$depth（从最新消息往前数）",
+                            "插入深度（Depth）：$depth（从最新消息往前数）",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -442,12 +442,9 @@ private fun PersonaEditPage(
                         )
                     }
                 }
-                if (pos == PersonaInjectionPosition.TOP_OF_CHAT ||
-                    pos == PersonaInjectionPosition.BOTTOM_OF_CHAT ||
-                    pos == PersonaInjectionPosition.AT_DEPTH
-                ) {
+                if (pos == PersonaInjectionPosition.AT_DEPTH) {
                     Spacer(Modifier.height(12.dp))
-                    CardGroup(title = { Text("注入角色") }) {
+                    CardGroup(title = { Text("注入角色（Role）") }) {
                         listOf(
                             MessageRole.SYSTEM to "系统",
                             MessageRole.USER to "用户",
@@ -475,7 +472,7 @@ private fun PersonaEditPage(
                     colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("绑定到角色（可选）", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                        Text("绑定到角色（Locked Characters）", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                         Spacer(Modifier.height(4.dp))
                         Text(
                             "绑定后，只有这些角色会注入该人设",
@@ -665,10 +662,10 @@ private val personaPresets = listOf(
 /** 人设注入位置的中文名称（对齐酒馆官方位置）。 */
 private fun personaPositionLabel(position: PersonaInjectionPosition): String {
     return when (position) {
-        PersonaInjectionPosition.IN_PROMPT -> "系统提示词内（官方默认）"
-        PersonaInjectionPosition.TOP_OF_CHAT -> "对话顶部"
-        PersonaInjectionPosition.BOTTOM_OF_CHAT -> "对话底部"
-        PersonaInjectionPosition.AT_DEPTH -> "指定深度插入"
-        PersonaInjectionPosition.NONE -> "不注入"
+        PersonaInjectionPosition.IN_PROMPT -> "系统提示词内（In Prompt）"
+        PersonaInjectionPosition.TOP_OF_CHAT -> "导演备注上方（Top of Author's Note）"
+        PersonaInjectionPosition.BOTTOM_OF_CHAT -> "导演备注下方（Bottom of Author's Note）"
+        PersonaInjectionPosition.AT_DEPTH -> "指定深度（At Depth）"
+        PersonaInjectionPosition.NONE -> "不注入（None）"
     }
 }

@@ -287,8 +287,12 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
         messages.lastOrNull { m ->
             if (m.role != role) return@lastOrNull false
             val t = textOf(m)
-            !t.startsWith("[Author's Note]") && !t.startsWith("[User Persona:")
+            !t.startsWith("[Author's Note]") && !t.startsWith("[User Persona]")
         }
+
+    /** 注入块使用内部标记避免被当作真实消息，发给模型前移除标记。 */
+    private fun stripInjectedMarker(text: String): String =
+        text.removePrefix("[Author's Note]\n").removePrefix("[User Persona]\n")
 
     /** 骰子表达式：支持 NdM±K，例如 1d20 / 2d6+3 / 3d6+1d4-2 */
     internal fun rollDice(expr: String): String? {
@@ -347,12 +351,14 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
                 parts = it.parts.map { part ->
                     if (part is UIMessagePart.Text) {
                         part.copy(
-                            text = replacePlaceholders(
-                                text = part.text,
-                                ctx = ctx,
-                                engine = engine,
-                                settingsStore = settingsStore,
-                                messages = messages,
+                            text = stripInjectedMarker(
+                                replacePlaceholders(
+                                    text = part.text,
+                                    ctx = ctx,
+                                    engine = engine,
+                                    settingsStore = settingsStore,
+                                    messages = messages,
+                                )
                             )
                         )
                     } else {

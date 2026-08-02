@@ -453,35 +453,19 @@ Scenario: {{scenario}}
 fun Assistant.assembleContext(
     userName: String,
     personaDesc: String,
-    personaTitle: String = "",
-    personaPosition: PersonaInjectionPosition = PersonaInjectionPosition.IN_PROMPT,
 ): String {
     val template = this.contextTemplate.ifBlank { DEFAULT_CONTEXT_TEMPLATE }
     val tav = this.tavernData
-    val personaBlock = if (personaDesc.isNotBlank()) {
-        "[User Persona: ${personaTitle.ifBlank { "User" }}]\n$personaDesc"
-    } else ""
-
-    var result = template
+    return template
         .replace("{{char}}", this.name)
         .replace("{{user}}", userName)
-        .replace("{{persona}}", personaBlock)
+        .replace("{{persona}}", personaDesc)
         .replace("{{system}}", tav?.systemPrompt ?: this.systemPrompt.take(200))
         .replace("{{description}}", tav?.description ?: "")
         .replace("{{personality}}", tav?.personality ?: "")
         .replace("{{scenario}}", tav?.scenario ?: "")
         .replace("{{mesExamples}}", tav?.mesExample ?: "")
         .replace("{{original}}", this.systemPrompt)
-
-    // 模板未使用 {{persona}} 宏时，按人设位置自动注入（对齐酒馆 persona 注入）
-    if (personaBlock.isNotEmpty() && !template.contains("{{persona}}")) {
-        result = when (personaPosition) {
-            PersonaInjectionPosition.IN_PROMPT -> "$personaBlock\n\n$result"
-            // 其余位置：人设作为独立消息注入，不嵌入系统提示词
-            else -> result
-        }
-    }
-    return result
 }
 
 /**
@@ -496,22 +480,14 @@ fun Assistant.assembleMainPrompt(): String {
  * 内部顺序对齐官方 OpenAI 模式：人设(按位置设置) → 描述 → 性格 → 场景
  */
 fun Assistant.assembleCharacterCardBlock(
-    userName: String,
-    personaDesc: String,
-    personaTitle: String = "",
-    personaPosition: PersonaInjectionPosition = PersonaInjectionPosition.IN_PROMPT,
 ): String {
     val tav = this.tavernData ?: return ""
-    val personaBlock = if (personaDesc.isNotBlank()) {
-        "[User Persona: ${personaTitle.ifBlank { "User" }}]\n$personaDesc"
-    } else ""
-
     val description = tav.description.takeIf { it.isNotBlank() }
     val personality = tav.personality.takeIf { it.isNotBlank() }
     val scenario = tav.scenario.takeIf { it.isNotBlank() }
-    if (personaBlock.isBlank() && description == null && personality == null && scenario == null) return ""
+    if (description == null && personality == null && scenario == null) return ""
 
-    val core = buildString {
+    return buildString {
         description?.let {
             if (isNotEmpty()) appendLine()
             append(it)
@@ -524,18 +500,6 @@ fun Assistant.assembleCharacterCardBlock(
             if (isNotEmpty()) appendLine()
             append("Scenario: $it")
         }
-    }
-
-    return when (personaPosition) {
-        PersonaInjectionPosition.IN_PROMPT -> buildString {
-            if (personaBlock.isNotBlank()) append(personaBlock)
-            if (core.isNotEmpty()) {
-                if (isNotEmpty()) appendLine()
-                append(core)
-            }
-        }
-        // 其余位置：人设作为独立消息注入，角色卡块不嵌入
-        else -> core
     }
 }
 
