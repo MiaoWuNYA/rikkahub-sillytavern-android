@@ -1324,12 +1324,13 @@ class PromptInjectionTransformerTest {
             UIMessage.system("System prompt"),
             UIMessage.user("I am triggering the event"),
         )
+        val lorebookId = Uuid.random()
 
         val result = transformMessages(
             messages = messages,
-            assistant = createAssistant(lorebookIds = setOf(Uuid.random())),
+            assistant = createAssistant(lorebookIds = setOf(lorebookId)),
             modeInjections = emptyList(),
-            lorebooks = listOf(createLorebook(id = Uuid.random(), entries = listOf(wholeWord)))
+            lorebooks = listOf(createLorebook(id = lorebookId, entries = listOf(wholeWord)))
         )
 
         // 整词不匹配 → 消息原样返回（无注入）
@@ -1342,9 +1343,9 @@ class PromptInjectionTransformerTest {
         )
         val result2 = transformMessages(
             messages = messages2,
-            assistant = createAssistant(lorebookIds = setOf(Uuid.random())),
+            assistant = createAssistant(lorebookIds = setOf(lorebookId)),
             modeInjections = emptyList(),
-            lorebooks = listOf(createLorebook(id = Uuid.random(), entries = listOf(wholeWord)))
+            lorebooks = listOf(createLorebook(id = lorebookId, entries = listOf(wholeWord)))
         )
         assertTrue(result2.any { getMessageText(it).contains("Whole word injected") })
     }
@@ -1368,12 +1369,13 @@ class PromptInjectionTransformerTest {
             UIMessage.system("System prompt"),
             UIMessage.user("alpha beta both trigger"),
         )
+        val lorebookId = Uuid.random()
 
         val result = transformMessages(
             messages = messages,
-            assistant = createAssistant(lorebookIds = setOf(Uuid.random())),
+            assistant = createAssistant(lorebookIds = setOf(lorebookId)),
             modeInjections = emptyList(),
-            lorebooks = listOf(createLorebook(id = Uuid.random(), entries = listOf(highPriority, lowPriority))),
+            lorebooks = listOf(createLorebook(id = lorebookId, entries = listOf(highPriority, lowPriority))),
             worldInfoBudget = 1,
         )
 
@@ -1399,13 +1401,14 @@ class PromptInjectionTransformerTest {
             UIMessage.assistant("recent reply"),
             UIMessage.user("latest message"),
         )
+        val lorebookId = Uuid.random()
 
         // minActivations=1：应扩大扫描深度补足，注入 ancient
         val result = transformMessages(
             messages = messages,
-            assistant = createAssistant(lorebookIds = setOf(Uuid.random())),
+            assistant = createAssistant(lorebookIds = setOf(lorebookId)),
             modeInjections = emptyList(),
-            lorebooks = listOf(createLorebook(id = Uuid.random(), entries = listOf(entry))),
+            lorebooks = listOf(createLorebook(id = lorebookId, entries = listOf(entry))),
             worldInfoMinActivations = 1,
         )
 
@@ -1430,13 +1433,14 @@ class PromptInjectionTransformerTest {
             UIMessage.system("System prompt"),
             UIMessage.user("the alpha event"),
         )
+        val lorebookId = Uuid.random()
 
         // 关闭递归：只注入 A
         val plain = transformMessages(
             messages = messages,
-            assistant = createAssistant(lorebookIds = setOf(Uuid.random())),
+            assistant = createAssistant(lorebookIds = setOf(lorebookId)),
             modeInjections = emptyList(),
-            lorebooks = listOf(createLorebook(id = Uuid.random(), entries = listOf(entryA, entryB))),
+            lorebooks = listOf(createLorebook(id = lorebookId, entries = listOf(entryA, entryB))),
         )
         assertTrue(plain.any { getMessageText(it).contains("Alpha lore") })
         assertFalse(plain.any { getMessageText(it).contains("Beta lore injected") })
@@ -1444,9 +1448,9 @@ class PromptInjectionTransformerTest {
         // 开启递归：A 内容含 beta → 链式带出 B
         val recursive = transformMessages(
             messages = messages,
-            assistant = createAssistant(lorebookIds = setOf(Uuid.random())),
+            assistant = createAssistant(lorebookIds = setOf(lorebookId)),
             modeInjections = emptyList(),
-            lorebooks = listOf(createLorebook(id = Uuid.random(), entries = listOf(entryA, entryB))),
+            lorebooks = listOf(createLorebook(id = lorebookId, entries = listOf(entryA, entryB))),
             worldInfoRecursive = true,
         )
         assertTrue(recursive.any { getMessageText(it).contains("Alpha lore") })
