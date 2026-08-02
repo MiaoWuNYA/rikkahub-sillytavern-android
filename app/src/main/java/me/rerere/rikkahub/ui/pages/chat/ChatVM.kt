@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import me.rerere.ai.core.MessageRole
 import me.rerere.ai.provider.Model
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
@@ -193,6 +194,14 @@ class ChatVM(
         viewModelScope.launch {
             chatService.editMessage(_conversationId, messageId, parts)
         }
+    }
+
+    /**
+     * 插入指定角色消息（/sys、/sendas，不触发生成）
+     */
+    fun handleInsertMessage(role: MessageRole, text: String) {
+        if (text.isBlank()) return
+        chatService.insertMessage(_conversationId, role, listOf(UIMessagePart.Text(text)))
     }
 
     fun handleCompressContext(additionalPrompt: String, targetTokens: Int, keepRecentMessages: Int): Job {

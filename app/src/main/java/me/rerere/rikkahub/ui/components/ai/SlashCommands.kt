@@ -21,11 +21,23 @@ data class SlashCommand(
  * 内置斜杠命令类型（对齐酒馆官方常用命令，全局可用）
  */
 enum class BuiltinSlashKind {
+    /** 帮助：列出内置命令 */
+    HELP,
+
     /** 文本处理：处理参数后填入输入框 */
     TEXT,
 
     /** 信息展示：Toast 显示结果 */
     INFO,
+
+    /** 系统消息：插入 SYSTEM 角色消息，不触发生成 */
+    SYS,
+
+    /** 以助手身份发言（官方 sendas 的本地简化），不触发生成 */
+    SENDAS,
+
+    /** 切换用户人设 */
+    PERSONA,
 
     /** 角色操作：修改当前助手 */
     RENAME,
@@ -44,6 +56,37 @@ enum class BuiltinSlashKind {
  * 内置命令 — 官方 SillyTavern 常用命令的实用子集，全局可用
  */
 fun builtinSlashCommands(): List<SlashCommand> = listOf(
+    SlashCommand(
+        name = "help",
+        description = "显示可用命令(Help)",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.HELP,
+    ),
+    SlashCommand(
+        name = "sys",
+        description = "插入系统消息(Sys)",
+        argumentHint = "[文本]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.SYS,
+    ),
+    SlashCommand(
+        name = "sendas",
+        description = "以助手身份发言(Send As)",
+        argumentHint = "[文本]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.SENDAS,
+    ),
+    SlashCommand(
+        name = "persona",
+        description = "切换用户人设(Persona)",
+        argumentHint = "[人设名]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.PERSONA,
+    ),
     SlashCommand(
         name = "echo",
         description = "原样输出参数(Echo)",

@@ -457,6 +457,45 @@ private fun ChatPageContent(
                         )
                         toaster.show("已复制角色卡: ${dup.name}")
                     },
+                    onSlashInsert = { role, text ->
+                        vm.handleInsertMessage(role, text)
+                    },
+                    onSlashPersona = { query ->
+                        val personas = setting.personas
+                        val current = personas.find { it.id == setting.activePersonaId }
+                        when {
+                            query.isBlank() -> {
+                                toaster.show(
+                                    if (current != null) {
+                                        "当前人设: ${current.name}（输入 /persona 人设名 可切换）"
+                                    } else {
+                                        "当前无激活人设（可用: ${personas.joinToString("、") { it.name }}）"
+                                    }
+                                )
+                            }
+
+                            query.equals("off", ignoreCase = true) || query.equals("none", ignoreCase = true) -> {
+                                if (setting.activePersonaId != null) {
+                                    vm.updateSettings(setting.copy(activePersonaId = null))
+                                    toaster.show("已关闭人设")
+                                } else {
+                                    toaster.show("当前已无激活人设")
+                                }
+                            }
+
+                            else -> {
+                                val target = personas.firstOrNull {
+                                    it.name.equals(query, ignoreCase = true) || it.title.equals(query, ignoreCase = true)
+                                }
+                                if (target == null) {
+                                    toaster.show("未找到人设「$query」（可用: ${personas.joinToString("、") { it.name }}）")
+                                } else {
+                                    vm.updateSettings(setting.copy(activePersonaId = target.id))
+                                    toaster.show("已切换人设: ${target.name}")
+                                }
+                            }
+                        }
+                    },
                     onUpdateChatModel = {
                         vm.setChatModel(assistant = setting.getCurrentAssistant(), model = it)
                     },

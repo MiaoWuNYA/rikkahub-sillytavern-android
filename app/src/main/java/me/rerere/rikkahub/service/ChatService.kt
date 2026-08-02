@@ -400,6 +400,40 @@ class ChatService(
         session.setJob(job)
     }
 
+    /**
+     * 插入指定角色消息（不触发生成）
+     *
+     * 用于 /sys（系统消息）和 /sendas（以助手身份发言）等官方斜杠命令
+     */
+    fun insertMessage(conversationId: Uuid, role: MessageRole, content: List<UIMessagePart>) {
+        if (content.isEmptyInputMessage()) return
+
+        val session = getOrCreateSession(conversationId)
+        val previousJob = session.getJob()
+        previousJob?.cancel()
+
+        val job = appScope.launch {
+            try {
+                runCatching { previousJob?.join() }
+                finishInterruptedPendingTools(conversationId)
+
+                val currentConversation = session.state.value
+                val newConversation = currentConversation.copy(
+                    messageNodes = currentConversation.messageNodes + UIMessage(
+                        role = role,
+                        parts = content,
+                    ).toMessageNode(),
+                )
+                saveConversation(conversationId, newConversation)
+                _generationDoneFlow.emit(conversationId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                addError(e, conversationId, title = context.getString(R.string.error_title_send_message))
+            }
+        }
+        session.setJob(job)
+    }
+
     private fun preprocessUserInputParts(parts: List<UIMessagePart>, assistant: Assistant): List<UIMessagePart> {
         return parts.map { part ->
             when (part) {

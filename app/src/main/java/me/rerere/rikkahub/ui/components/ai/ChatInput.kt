@@ -82,6 +82,7 @@ import dev.chrisbanes.haze.blur.materials.HazeMaterials
 import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
+import me.rerere.ai.core.MessageRole
 import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.ModelAbility
 import me.rerere.ai.provider.ModelType
@@ -143,6 +144,8 @@ fun ChatInput(
     onLongSendClick: () -> Unit,
     onSlashRegenerate: (() -> Unit)? = null,
     onSlashDuplicate: (() -> Unit)? = null,
+    onSlashInsert: ((MessageRole, String) -> Unit)? = null,
+    onSlashPersona: ((String) -> Unit)? = null,
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
@@ -247,7 +250,13 @@ fun ChatInput(
                     TextInputRow(
                         state = state,
                         completionProviders = completionProviders,
-                        onSendMessage = { sendMessage() }
+                        onSendMessage = { sendMessage() },
+                        toaster = toaster,
+                        onUpdateAssistant = onUpdateAssistant,
+                        onSlashRegenerate = onSlashRegenerate,
+                        onSlashDuplicate = onSlashDuplicate,
+                        onSlashInsert = onSlashInsert,
+                        onSlashPersona = onSlashPersona,
                     )
 
                     Row(
@@ -432,6 +441,12 @@ private fun TextInputRow(
     state: ChatInputState,
     completionProviders: List<ChatCompletionProvider>,
     onSendMessage: () -> Unit,
+    toaster: com.dokar.sonner.ToasterState,
+    onUpdateAssistant: (Assistant) -> Unit,
+    onSlashRegenerate: (() -> Unit)?,
+    onSlashDuplicate: (() -> Unit)?,
+    onSlashInsert: ((MessageRole, String) -> Unit)?,
+    onSlashPersona: ((String) -> Unit)?,
 ) {
     val settings = LocalSettings.current
     val filesManager: FilesManager = koinInject()
@@ -610,6 +625,8 @@ private fun TextInputRow(
                                             onUpdateAssistant = onUpdateAssistant,
                                             onSlashRegenerate = onSlashRegenerate,
                                             onSlashDuplicate = onSlashDuplicate,
+                                            onSlashInsert = onSlashInsert,
+                                            onSlashPersona = onSlashPersona,
                                         )
                                     } else {
                                         val argsList = slashArgs.split(" ", limit = 10)
@@ -822,8 +839,16 @@ private fun handleBuiltinSlash(
     onUpdateAssistant: (Assistant) -> Unit,
     onSlashRegenerate: (() -> Unit)?,
     onSlashDuplicate: (() -> Unit)?,
+    onSlashInsert: ((MessageRole, String) -> Unit)?,
+    onSlashPersona: ((String) -> Unit)?,
 ) {
     when (cmd.builtinKind) {
+        BuiltinSlashKind.HELP -> {
+            val names = builtinSlashCommands().joinToString("  ") { "/${it.name}" }
+            toaster.show("内置命令: $names")
+            state.clearInput()
+        }
+
         BuiltinSlashKind.TEXT -> {
             val result = when (cmd.name) {
                 "lower" -> args.lowercase()
@@ -844,6 +869,39 @@ private fun handleBuiltinSlash(
                 else -> args // echo / setinput：原样输出
             }
             state.setMessageText(result)
+        }
+
+        BuiltinSlashKind.SYS -> {
+            val text = args.trim()
+            if (text.isBlank()) {
+                toaster.show("用法: /sys 系统消息内容")
+            } else if (onSlashInsert == null) {
+                toaster.show("当前页面不支持该命令")
+            } else {
+                onSlashInsert(MessageRole.SYSTEM, text)
+                state.clearInput()
+            }
+        }
+
+        BuiltinSlashKind.SENDAS -> {
+            val text = args.trim()
+            if (text.isBlank()) {
+                toaster.show("用法: /sendas 文本（以当前助手身份发言）")
+            } else if (onSlashInsert == null) {
+                toaster.show("当前页面不支持该命令")
+            } else {
+                onSlashInsert(MessageRole.ASSISTANT, text)
+                state.clearInput()
+            }
+        }
+
+        BuiltinSlashKind.PERSONA -> {
+            if (onSlashPersona != null) {
+                onSlashPersona(args.trim())
+                state.clearInput()
+            } else {
+                toaster.show("当前页面不支持该命令")
+            }
         }
 
         BuiltinSlashKind.INFO -> {
