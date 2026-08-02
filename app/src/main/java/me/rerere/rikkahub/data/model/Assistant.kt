@@ -498,7 +498,7 @@ fun Assistant.assembleCharacterCardBlock(
     userName: String,
     personaDesc: String,
     personaTitle: String = "",
-    personaPosition: PersonaInjectionPosition = PersonaInjectionPosition.AFTER_SYSTEM,
+    personaPosition: PersonaInjectionPosition = PersonaInjectionPosition.BEFORE_SYSTEM,
 ): String {
     val tav = this.tavernData ?: return ""
     val personaBlock = if (personaDesc.isNotBlank()) {

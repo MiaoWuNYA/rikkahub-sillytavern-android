@@ -129,8 +129,12 @@ class GenerationHandler(
         val persona = settings.personas.find { it.id == settings.activePersonaId }
         val personaDesc = persona?.description?.takeIf { it.isNotBlank() }
         val userName = settings.displaySetting.userNickname.ifBlank { "User" }
+        // 官方 Chat Completion 默认：人设在角色描述之前；无角色卡时保持系统提示后
         val personaPosition = persona?.position
-            ?: me.rerere.rikkahub.data.model.PersonaInjectionPosition.AFTER_SYSTEM
+            ?: if (assistant.tavernData != null)
+                me.rerere.rikkahub.data.model.PersonaInjectionPosition.BEFORE_SYSTEM
+            else
+                me.rerere.rikkahub.data.model.PersonaInjectionPosition.AFTER_SYSTEM
 
         // 官方 Chat Completion 结构：默认模板的角色卡拆成独立消息（主提示 + 角色卡字段）
         val useOfficialSplit = assistant.tavernData != null && assistant.contextTemplate.isBlank()
@@ -581,7 +585,10 @@ class GenerationHandler(
                                     personaDesc = personaDesc ?: "",
                                     personaTitle = persona?.title ?: "",
                                     personaPosition = persona?.position
-                                        ?: me.rerere.rikkahub.data.model.PersonaInjectionPosition.AFTER_SYSTEM,
+                                        ?: if (assistant.tavernData != null)
+                                            me.rerere.rikkahub.data.model.PersonaInjectionPosition.BEFORE_SYSTEM
+                                        else
+                                            me.rerere.rikkahub.data.model.PersonaInjectionPosition.AFTER_SYSTEM,
                                 )
                             } else if (personaDesc != null) {
                                 val personaLabel = persona?.title?.ifBlank { persona?.name } ?: "User"
