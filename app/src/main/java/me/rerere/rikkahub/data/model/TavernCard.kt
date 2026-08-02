@@ -76,7 +76,7 @@ data class TavernBookEntry(
     val content: String = "",
     val constant: Boolean = false,
     val selective: Boolean = false,
-    val selectiveLogic: Int = 0,  // 0=AND, 1=OR, 2=NOT_ANY, 3=NOT_ALL
+    val selectiveLogic: Int = 0,  // 官方 world_info_logic: 0=AND_ANY 1=NOT_ALL 2=NOT_ANY 3=AND_ALL
     val group: String = "",
     val position: Int = 1,        // 官方枚举: 0=before_char 1=after_char 2=ANTop 3=ANBottom 4=atDepth 5=EMTop 6=EMBottom 7=outlet
     val priority: Int = 100,      // order/priority，官方降序注入（order 大的先）
@@ -97,9 +97,9 @@ data class TavernBookEntry(
     val preventRecursion: Boolean = false, // 禁止被递归触发（酒馆 extensions.prevent_recursion）
     val delayUntilRecursion: Boolean = false, // 只在递归扫描时检查（酒馆 extensions.delay_until_recursion）
     val useProbability: Boolean = false, // 是否启用概率过滤（酒馆默认false）
-    val inclusionGroup: String = "", // 酒馆 extensions.inclusion_group（逗号分隔多组）
+    val inclusionGroup: String = "", // 本地遗留字段（官方无此字段；官方分组用顶层 group 逗号分隔）
     val useGroupScoring: Boolean = false, // 酒馆 extensions.use_group_scoring
-    val groupPriority: Boolean = false, // 酒馆 extensions.group_priority
+    val groupPriority: Boolean = false, // 本地遗留字段（官方无此字段；官方优先用 group_override）
     val automationId: String = "", // 酒馆 extensions.automation_id
     val displayIndex: Int = 0, // 酒馆 display_index
     val displayPosition: Int = 0, // 酒馆 display_position

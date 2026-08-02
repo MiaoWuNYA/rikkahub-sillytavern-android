@@ -1604,37 +1604,15 @@ private fun GroupSettingsDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
 
-                // 酒馆官方高级字段（自动化ID/触发类型本App暂不执行，仅保留数据）
-                OutlinedTextField(
-                    value = edited.inclusionGroup,
-                    onValueChange = { edited = edited.copy(inclusionGroup = it) },
-                    label = { Text("包含组(Inclusion Group)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    supportingText = { Text("逗号分隔多组，同组只取一条") },
+                FormItem(
+                    label = { Text("使用组评分(Use Group Scoring)") },
+                    tail = {
+                        Switch(
+                            checked = edited.useGroupScoring,
+                            onCheckedChange = { edited = edited.copy(useGroupScoring = it) }
+                        )
+                    }
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FormItem(
-                        modifier = Modifier.weight(1f),
-                        label = { Text("使用组评分(Use Group Scoring)") },
-                        tail = {
-                            Switch(
-                                checked = edited.useGroupScoring,
-                                onCheckedChange = { edited = edited.copy(useGroupScoring = it) }
-                            )
-                        }
-                    )
-                    FormItem(
-                        modifier = Modifier.weight(1f),
-                        label = { Text("包含优先(Group Priority)") },
-                        tail = {
-                            Switch(
-                                checked = edited.groupPriority,
-                                onCheckedChange = { edited = edited.copy(groupPriority = it) }
-                            )
-                        }
-                    )
-                }
                 OutlinedTextField(
                     value = edited.automationId,
                     onValueChange = { edited = edited.copy(automationId = it) },
@@ -2127,17 +2105,23 @@ private fun RegexInjectionEditDialog(
                 // 当 selective 启用时，显示 selectiveLogic
                 AnimatedVisibility(visible = entry.selective) {
                     CardGroup(title = { Text(stringResource(R.string.prompt_page_selective_logic)) }) {
-                        SelectiveLogic.entries.forEach { logic ->
+                        // 官方 world-info.js 仅 4 档：AND_ANY / AND_ALL / NOT_ALL / NOT_ANY（主键必须先命中）
+                        listOf(
+                            SelectiveLogic.AND_ANY,
+                            SelectiveLogic.AND_ALL,
+                            SelectiveLogic.NOT_ALL,
+                            SelectiveLogic.NOT_ANY,
+                        ).forEach { logic ->
                             item(
                                 onClick = { onEdit(entry.copy(selectiveLogic = logic)) },
                                 headlineContent = {
                                     Text(
                                         when (logic) {
-                                            SelectiveLogic.AND_ANY -> "任一匹配(AND_ANY)"
-                                            SelectiveLogic.AND_ALL -> "全部匹配(AND_ALL)"
+                                            SelectiveLogic.AND_ANY -> "任一副键匹配(AND_ANY)"
+                                            SelectiveLogic.AND_ALL -> "全部副键匹配(AND_ALL)"
+                                            SelectiveLogic.NOT_ALL -> "副键非全部匹配(NOT_ALL)"
+                                            SelectiveLogic.NOT_ANY -> "副键均不匹配(NOT_ANY)"
                                             SelectiveLogic.OR_ANY -> "任一匹配(OR_ANY)"
-                                            SelectiveLogic.NOT_ANY -> "均不匹配(NOT_ANY)"
-                                            SelectiveLogic.NOT_ALL -> "非全部匹配(NOT_ALL)"
                                         },
                                         style = MaterialTheme.typography.bodyMedium,
                                     )

@@ -223,7 +223,13 @@ class AssistantDetailVM(
                     scanDepth = e.scanDepth,
                     constantActive = e.constant,
                     selective = e.selective,
-                    selectiveLogic = when (e.selectiveLogic) { 1 -> SelectiveLogic.OR_ANY; 2 -> SelectiveLogic.NOT_ANY; 3 -> SelectiveLogic.NOT_ALL; else -> SelectiveLogic.AND_ANY },
+                    // 官方 world_info_logic：0=AND_ANY 1=NOT_ALL 2=NOT_ANY 3=AND_ALL
+                    selectiveLogic = when (e.selectiveLogic) {
+                        1 -> SelectiveLogic.NOT_ALL
+                        2 -> SelectiveLogic.NOT_ANY
+                        3 -> SelectiveLogic.AND_ALL
+                        else -> SelectiveLogic.AND_ANY
+                    },
                     group = e.group,
                     probability = e.probability,
                     sticky = e.sticky,

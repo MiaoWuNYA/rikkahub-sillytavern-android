@@ -256,9 +256,9 @@ sealed class PromptInjection {
         val preventRecursion: Boolean = false,          // 禁止被递归触发（酒馆 extensions.prevent_recursion）
         val delayUntilRecursion: Boolean = false,       // 只在递归扫描时检查（酒馆 extensions.delay_until_recursion）
         val useProbability: Boolean = true,              // 是否启用概率过滤（false=忽略probability直接触发）
-        val inclusionGroup: String = "",                 // 酒馆 extensions.inclusion_group（逗号分隔多组，同组只取一条）
+        val inclusionGroup: String = "",                 // 本地遗留字段（官方无此字段；官方分组用顶层 group 逗号分隔）
         val useGroupScoring: Boolean = false,            // 酒馆 extensions.use_group_scoring（按匹配关键词数选组胜者）
-        val groupPriority: Boolean = false,              // 酒馆 extensions.group_priority（包含优先：选优先级最高）
+        val groupPriority: Boolean = false,              // 本地遗留字段（官方无此字段；官方优先用 group_override）
         val automationId: String = "",                   // 酒馆 extensions.automation_id（本App暂不执行，仅保留）
         val displayIndex: Int = 0,                       // 酒馆 display_index（展示顺序）
         val displayPosition: Int = 0,                    // 酒馆 display_position（展示位置）
@@ -308,43 +308,52 @@ data class Lorebook(
  * @param context 要扫描的上下文文本
  * @return 是否触发
  */
-fun PromptInjection.RegexInjection.isTriggered(context: String, activeSticky: Boolean = false): Boolean {
+fun PromptInjection.RegexInjection.isTriggered(
+    context: String,
+    activeSticky: Boolean = false,
+    rollProbability: Boolean = true,
+): Boolean {
     if (!enabled) return false
-
-    // 常驻条目无条件触发（无视概率）
-    if (constantActive) return true
 
     // 粘性条目在激活后持续生效
     if (sticky > 0 && activeSticky) return true
 
+    // 概率过滤（useProbability=false 时跳过；官方对 constant 条目同样掷概率）
+    if (rollProbability) {
+        val effectiveProb = if (useProbability) probability else 100
+        if (effectiveProb < 100 && kotlin.random.Random.nextInt(100) >= effectiveProb) return false
+    }
+
+    // 官方：constant 条目无需关键词即可激活（概率已参与）
+    if (constantActive) return true
+
     // 没有关键词 → 不触发
     if (keywords.isEmpty() && secondaryKeys.isEmpty()) return false
 
-    // 概率过滤（useProbability=false 时跳过）
-    val effectiveProb = if (useProbability) probability else 100
-    if (effectiveProb < 100 && kotlin.random.Random.nextInt(100) >= effectiveProb) return false
-
     if (selective) {
-        // 选择性模式：secondaryKeys 参与逻辑判定
-        if (keywords.isEmpty() && secondaryKeys.isEmpty()) return false
+        // 官方 checkWorldInfo：必须先命中任意主关键词，否则直接跳过
+        // （NOT_ANY / NOT_ALL 也必须以主关键词命中为前提，不能因“都没匹配”而触发）
+        if (keywords.isEmpty()) return false
+        val anyPrimary = keywords.any { keyMatches(it, context, useRegex, caseSensitive, matchWholeWords) }
+        if (!anyPrimary) return false
 
-        val primaryMatches = keywords.map { keyMatches(it, context, useRegex, caseSensitive, matchWholeWords) }
-        val secondaryMatches = secondaryKeys.map { keyMatches(it, context, useRegex, caseSensitive, matchWholeWords) }
-        val allMatches = primaryMatches + secondaryMatches
+        // 官方：无二级关键词时，命中主关键词即激活（selectiveLogic 不再参与）
+        if (secondaryKeys.isEmpty()) return true
 
-        val anyPrimary = primaryMatches.any { it }
-        val anySecondary = secondaryMatches.any { it }
-        val allPrimary = primaryMatches.all { it }
-        val allSecondary = secondaryMatches.all { it }
-        val anyAll = allMatches.any { it }
-        val allAll = allMatches.all { it }
+        val anySecondary = secondaryKeys.any { keyMatches(it, context, useRegex, caseSensitive, matchWholeWords) }
+        val allSecondary = secondaryKeys.all { keyMatches(it, context, useRegex, caseSensitive, matchWholeWords) }
 
         return when (selectiveLogic) {
-            SelectiveLogic.AND_ANY -> anyPrimary && anySecondary
-            SelectiveLogic.AND_ALL -> allPrimary && allSecondary
-            SelectiveLogic.OR_ANY -> anyAll
-            SelectiveLogic.NOT_ANY -> !anyAll
-            SelectiveLogic.NOT_ALL -> !allAll
+            // 官方 AND_ANY：主关键词命中 + 任一二级关键词命中
+            SelectiveLogic.AND_ANY -> anySecondary
+            // 官方 AND_ALL：主关键词命中 + 全部二级关键词命中
+            SelectiveLogic.AND_ALL -> allSecondary
+            // 官方 NOT_ANY：主关键词命中 + 没有任何二级关键词命中
+            SelectiveLogic.NOT_ANY -> !anySecondary
+            // 官方 NOT_ALL：主关键词命中 + 二级关键词非全部命中
+            SelectiveLogic.NOT_ALL -> !allSecondary
+            // 本地遗留扩展（官方无此模式）：主关键词已命中即可
+            SelectiveLogic.OR_ANY -> true
         }
     } else {
         // 非选择性模式：只检查主关键词
@@ -356,7 +365,6 @@ fun PromptInjection.RegexInjection.isTriggered(context: String, activeSticky: Bo
 /** 酒馆 use_group_scoring 用：统计匹配到的关键词数（主关键词1条=1分，二级按逻辑计分） */
 fun PromptInjection.RegexInjection.matchedKeyScore(context: String): Int {
     if (!enabled) return 0
-    if (constantActive) return 0
     val primaryMatches = keywords.count { keyMatches(it, context, useRegex, caseSensitive, matchWholeWords) }
     if (!selective) return primaryMatches
     val secondaryMatches = secondaryKeys.count { keyMatches(it, context, useRegex, caseSensitive, matchWholeWords) }
@@ -367,8 +375,8 @@ fun PromptInjection.RegexInjection.matchedKeyScore(context: String): Int {
         } else {
             primaryMatches
         }
-        SelectiveLogic.OR_ANY -> primaryMatches + secondaryMatches
         SelectiveLogic.NOT_ANY, SelectiveLogic.NOT_ALL -> primaryMatches
+        SelectiveLogic.OR_ANY -> primaryMatches + secondaryMatches
     }
 }
 
@@ -380,6 +388,12 @@ private fun keyMatches(
     caseSensitive: Boolean,
     matchWholeWords: Boolean,
 ): Boolean {
+    // 官方 matchKeys：先按 parseRegexFromString 识别 /pattern/flags 形式（覆盖所有其他开关）
+    val officialRegex = parseRegexFromString(key)
+    if (officialRegex != null) {
+        return officialRegex.containsMatchIn(context)
+    }
+
     return if (useRegex) {
         try {
             val options = if (caseSensitive) emptySet() else setOf(RegexOption.IGNORE_CASE)
@@ -392,6 +406,30 @@ private fun keyMatches(
         try {
             Regex(pattern, options).containsMatchIn(context)
         } catch (_: Exception) { false }
+    }
+}
+
+/**
+ * 官方 parseRegexFromString 的 Kotlin 版本：
+ * 形如 /pattern/flags（flags ∈ gimsuy）且模式内没有未转义斜杠时按正则处理。
+ * Kotlin Regex 无 g/u/y 标志，忽略（containsMatchIn 天然全局；u=unicode 默认；y=sticky 不适用）。
+ */
+private fun parseRegexFromString(input: String): Regex? {
+    val match = Regex("^/([\\w\\W]+?)/([gimsuy]*)$").find(input) ?: return null
+    val pattern = match.groupValues[1]
+    val flags = match.groupValues[2]
+    // 模式里出现未转义斜杠 → 官方视为非法正则，按普通文本处理
+    if (Regex("(^|[^\\\\])/").containsMatchIn(pattern)) return null
+    val unescaped = pattern.replace("\\/", "/")
+    return try {
+        val options = buildSet {
+            if ('i' in flags) add(RegexOption.IGNORE_CASE)
+            if ('m' in flags) add(RegexOption.MULTILINE)
+            if ('s' in flags) add(RegexOption.DOT_MATCHES_ALL)
+        }
+        Regex(unescaped, options)
+    } catch (_: Exception) {
+        null
     }
 }
 

@@ -45,10 +45,11 @@ class PromptVM(
                     constant = injection.constantActive,
                     selective = injection.selective,
                     selectiveLogic = when (injection.selectiveLogic) {
-                        me.rerere.rikkahub.data.model.SelectiveLogic.AND_ALL -> 1
-                        me.rerere.rikkahub.data.model.SelectiveLogic.OR_ANY -> 2
-                        me.rerere.rikkahub.data.model.SelectiveLogic.NOT_ANY -> 3
-                        me.rerere.rikkahub.data.model.SelectiveLogic.NOT_ALL -> 4
+                        me.rerere.rikkahub.data.model.SelectiveLogic.NOT_ALL -> 1
+                        me.rerere.rikkahub.data.model.SelectiveLogic.NOT_ANY -> 2
+                        me.rerere.rikkahub.data.model.SelectiveLogic.AND_ALL -> 3
+                        // 官方无 OR_ANY；本地遗留条目按最接近的 AND_ANY 处理
+                        me.rerere.rikkahub.data.model.SelectiveLogic.OR_ANY -> 0
                         else -> 0
                     },
                     group = injection.group,
@@ -60,8 +61,8 @@ class PromptVM(
                         InjectionPosition.AT_DEPTH -> 4
                         InjectionPosition.EM_TOP -> 5
                         InjectionPosition.EM_BOTTOM -> 6
-                        InjectionPosition.ANTAGONIZE -> 7
-                        InjectionPosition.AFTER_DIALOG -> 8
+                        // 本地扩展位置写入官方枚举时落到最接近的出口（outlet=7），避免产生官方不存在的 8
+                        InjectionPosition.ANTAGONIZE, InjectionPosition.AFTER_DIALOG -> 7
                     },
                     priority = injection.priority,
                     disable = !injection.enabled,

@@ -1002,16 +1002,17 @@ private fun EmbeddedGroupSettingsDialog(
             // 选择性逻辑
             CardGroup(title = { Text("次要关键词逻辑(Selective Logic)") }) {
                 listOf(
-                    "全部匹配(AND_ALL)",
-                    "任一匹配(OR_ANY)",
-                    "均不匹配(NOT_ANY)",
-                    "非全部匹配(NOT_ALL)",
-                ).forEachIndexed { i, label ->
+                    // 官方 world-info.js：0=AND_ANY 1=NOT_ALL 2=NOT_ANY 3=AND_ALL
+                    "任一副键匹配(AND_ANY)" to 0,
+                    "全部副键匹配(AND_ALL)" to 3,
+                    "副键非全部匹配(NOT_ALL)" to 1,
+                    "副键均不匹配(NOT_ANY)" to 2,
+                ).forEach { (label, value) ->
                     item(
-                        onClick = { selectiveLogic = i },
+                        onClick = { selectiveLogic = value },
                         headlineContent = { Text(label, style = MaterialTheme.typography.bodyMedium) },
                         trailingContent = {
-                            RadioButton(selected = selectiveLogic == i, onClick = { selectiveLogic = i })
+                            RadioButton(selected = selectiveLogic == value, onClick = { selectiveLogic = value })
                         },
                     )
                 }
@@ -1055,22 +1056,10 @@ private fun EmbeddedGroupSettingsDialog(
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(top = 4.dp),
             )
-            OutlinedTextField(
-                value = inclusionGroupStr,
-                onValueChange = { inclusionGroupStr = it },
-                modifier = Modifier.fillMaxWidth(),
-                textStyle = MaterialTheme.typography.bodySmall,
-                singleLine = true,
-                label = { Text("包含组(Inclusion Group)") },
-            )
             CardGroup {
                 item(
                     headlineContent = { Text("使用组评分(Use Group Scoring)", style = MaterialTheme.typography.bodyMedium) },
                     trailingContent = { Switch(checked = useGroupScoring, onCheckedChange = { useGroupScoring = it }) },
-                )
-                item(
-                    headlineContent = { Text("包含优先(Group Priority)", style = MaterialTheme.typography.bodyMedium) },
-                    trailingContent = { Switch(checked = groupPriority, onCheckedChange = { groupPriority = it }) },
                 )
             }
             OutlinedTextField(
@@ -1597,17 +1586,18 @@ private fun EntryEditor(
                 }
                 CardGroup(title = { Text("次要关键词逻辑(Selective Logic)") }) {
                     val logicLabels = listOf(
-                        "全部匹配(AND_ALL)",
-                        "任一匹配(OR_ANY)",
-                        "均不匹配(NOT_ANY)",
-                        "非全部匹配(NOT_ALL)",
+                        // 官方 world-info.js：0=AND_ANY 1=NOT_ALL 2=NOT_ANY 3=AND_ALL
+                        "任一副键匹配(AND_ANY)" to 0,
+                        "全部副键匹配(AND_ALL)" to 3,
+                        "副键非全部匹配(NOT_ALL)" to 1,
+                        "副键均不匹配(NOT_ANY)" to 2,
                     )
-                    logicLabels.forEachIndexed { i, label ->
+                    logicLabels.forEach { (label, value) ->
                         item(
-                            onClick = { selectiveLogic = i },
+                            onClick = { selectiveLogic = value },
                             headlineContent = { Text(label, style = MaterialTheme.typography.bodyMedium) },
                             trailingContent = {
-                                RadioButton(selected = selectiveLogic == i, onClick = { selectiveLogic = i })
+                                RadioButton(selected = selectiveLogic == value, onClick = { selectiveLogic = value })
                             },
                         )
                     }
@@ -1617,14 +1607,6 @@ private fun EntryEditor(
                 Text("官方高级字段(Official Advanced)", style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 4.dp))
-                OutlinedTextField(
-                    value = inclusionGroupStr,
-                    onValueChange = { inclusionGroupStr = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    textStyle = MaterialTheme.typography.bodySmall,
-                    singleLine = true,
-                    label = { Text("包含组(Inclusion Group)") },
-                )
                 CardGroup {
                     item(
                         headlineContent = { Text("使用组评分(Use Group Scoring)", style = MaterialTheme.typography.bodyMedium) },
@@ -1636,17 +1618,6 @@ private fun EntryEditor(
                             )
                         },
                         trailingContent = { Switch(checked = useGroupScoring, onCheckedChange = { useGroupScoring = it }) },
-                    )
-                    item(
-                        headlineContent = { Text("包含优先(Group Priority)", style = MaterialTheme.typography.bodyMedium) },
-                        supportingContent = {
-                            Text(
-                                "同组优先选优先级最高的条目",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        },
-                        trailingContent = { Switch(checked = groupPriority, onCheckedChange = { groupPriority = it }) },
                     )
                 }
                 OutlinedTextField(

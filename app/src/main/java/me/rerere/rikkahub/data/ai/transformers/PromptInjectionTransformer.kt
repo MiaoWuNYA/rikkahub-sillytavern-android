@@ -22,16 +22,18 @@ import kotlin.random.Random
  */
 object PromptInjectionTransformer : InputMessageTransformer {
 
-    // 粘性追踪：assistantId → (injectionId → 剩余轮数)
+    // 粘性追踪：assistantId:conversationId → (injectionId → 剩余轮数)
     private val stickyTracker = mutableMapOf<String, MutableMap<Uuid, Int>>()
-    // 冷却追踪：assistantId → (injectionId → 剩余冷却轮数)
+    // 冷却追踪：assistantId:conversationId → (injectionId → 剩余冷却轮数)
     private val cooldownTracker = mutableMapOf<String, MutableMap<Uuid, Int>>()
 
     override suspend fun transform(
         ctx: TransformerContext,
         messages: List<UIMessage>,
     ): List<UIMessage> {
-        val key = ctx.assistant.id.toString()
+        // 官方把 sticky/cooldown 存在 chat_metadata（按对话），这里也必须按对话隔离，
+        // 避免 A 对话的粘性/冷却泄漏到同一助手的 B 对话
+        val key = "${ctx.assistant.id}:${ctx.conversationId ?: "no-conversation"}"
         val activeSticky = stickyTracker.getOrPut(key) { mutableMapOf() }
         val cooldowns = cooldownTracker.getOrPut(key) { mutableMapOf() }
 
@@ -193,6 +195,8 @@ internal fun collectInjections(
     if (enabledLorebooks.isNotEmpty()) {
         // 提取上下文用于匹配（只取非 SYSTEM 消息）
         val nonSystemMessages = messages.filter { it.role != MessageRole.SYSTEM }
+        // 官方 failedProbabilityChecks：本次扫描中概率未通过的条目，后续递归/补扫不再重新掷
+        val failedProbabilityIds = mutableSetOf<Uuid>()
         // 官方 match_* 开关：按条目决定哪些角色卡字段纳入扫描（默认只扫聊天）
         val tav = assistant.tavernData
         fun buildCharScanContext(entry: PromptInjection.RegexInjection): String = buildString {
@@ -205,18 +209,18 @@ internal fun collectInjections(
             if (entry.matchPersonaDescription && personaDescription.isNotBlank()) appendLine(personaDescription)
         }.trim()
 
-        // 扫描函数：对每条 Lorebook 检查触发并做同组权重选择
+        // 扫描函数：跨全部 Lorebook 检查触发，再按官方 filterByInclusionGroups 做同组选择
         fun evaluateLorebooks(
             scanDepthOverride: Int? = null,
             extraContext: String = "",
             isRecursion: Boolean = false,
+            alreadyActivated: List<PromptInjection.RegexInjection> = emptyList(),
         ): List<PromptInjection.RegexInjection> {
-            val activated = mutableListOf<PromptInjection.RegexInjection>()
-            enabledLorebooks.forEach { lorebook ->
-                val newlyTriggered = mutableListOf<PromptInjection.RegexInjection>()
-                // 触发时的关键词匹配分（酒馆 use_group_scoring 用）
-                val triggeredScores = mutableMapOf<Uuid, Int>()
+            val newlyTriggered = mutableListOf<PromptInjection.RegexInjection>()
+            // 触发时的关键词匹配分（酒馆 use_group_scoring 用）
+            val triggeredScores = mutableMapOf<Uuid, Int>()
 
+            enabledLorebooks.forEach { lorebook ->
                 for (entry in lorebook.entries) {
                     // 冷却中的条目跳过
                     if (cooldownEntries.containsKey(entry.id)) continue
@@ -232,8 +236,8 @@ internal fun collectInjections(
                     // 延迟到递归才检查的条目：正常扫描跳过（酒馆 delay_until_recursion）
                     if (entry.delayUntilRecursion && !isRecursion) continue
 
-                    // 禁止递归触发的条目：递归扫描跳过（酒馆 prevent_recursion）
-                    if (entry.preventRecursion && isRecursion) continue
+                    // 官方：exclude_recursion 条目在递归扫描中被跳过（内容是否进递归缓冲另算）
+                    if (entry.excludeRecursion && isRecursion) continue
 
                     // 粘性条目：只要在 activeSticky 中就自动包含
                     if (activeStickyEntries.containsKey(entry.id)) {
@@ -260,87 +264,72 @@ internal fun collectInjections(
                         }
                         append(chatContext)
                     }
-                    if (entry.isTriggered(context)) {
+                    // 官方顺序：先关键词激活，再 verifyProbability（粘性免掷；失败后本次扫描不再参与）
+                    if (failedProbabilityIds.contains(entry.id)) continue
+                    if (entry.isTriggered(context, rollProbability = false)) {
+                        val effectiveProb = if (entry.useProbability) entry.probability else 100
+                        if (effectiveProb < 100 && Random.nextInt(100) >= effectiveProb) {
+                            failedProbabilityIds.add(entry.id)
+                            continue
+                        }
                         newlyTriggered.add(entry)
                         triggeredScores[entry.id] = entry.matchedKeyScore(context)
                     }
                 }
-
-                // 同组条目单选：本地 group + 酒馆 inclusion_group（逗号分隔多组，同组只取一条）
-                val grouped = newlyTriggered
-                    .filter { it.group.isNotBlank() || it.inclusionGroup.isNotBlank() }
-                    .flatMap { entry ->
-                        val labels = buildList {
-                            if (entry.group.isNotBlank()) add(entry.group)
-                            entry.inclusionGroup.split(",").map { it.trim() }.filter { it.isNotEmpty() }.let { addAll(it) }
-                        }.distinct()
-                        labels.map { label -> label to entry }
-                    }
-                    .groupBy({ it.first }, { it.second })
-                val ungrouped = newlyTriggered.filter { it.group.isBlank() && it.inclusionGroup.isBlank() }
-                activated.addAll(ungrouped)
-                for ((_, entries) in grouped) {
-                    val override = entries.find { it.groupOverride || it.groupPriority }
-                    val selected = when {
-                        override != null -> override
-                        entries.any { it.useGroupScoring } -> {
-                            // 酒馆 use_group_scoring：按匹配关键词数选组胜者
-                            entries.maxByOrNull { triggeredScores[it.id] ?: 0 } ?: entries.first()
-                        }
-                        else -> {
-                            val totalWeight = entries.sumOf { it.groupWeight.toLong() }
-                            if (totalWeight <= 0) {
-                                entries.first()
-                            } else {
-                                var roll = Random.nextLong(totalWeight)
-                                var picked = entries.first()
-                                for (entry in entries) {
-                                    roll -= entry.groupWeight.toLong()
-                                    if (roll < 0) {
-                                        picked = entry
-                                        break
-                                    }
-                                }
-                                picked
-                            }
-                        }
-                    }
-                    activated.add(selected)
-                }
             }
-            return activated
+
+            return selectGroupWinners(
+                newlyTriggered = newlyTriggered,
+                triggeredScores = triggeredScores,
+                activeStickyEntries = activeStickyEntries,
+                alreadyActivated = alreadyActivated,
+            )
         }
 
         var activatedEntries = evaluateLorebooks()
 
         // 最少激活数（酒馆 min_activations）：激活不足时用更大扫描深度重扫补足
-        if (worldInfoMinActivations > 0 && activatedEntries.isNotEmpty() &&
-            activatedEntries.size < worldInfoMinActivations
-        ) {
-            val knownIds = activatedEntries.map { it.id }.toSet()
-            val extra = evaluateLorebooks(scanDepthOverride = Int.MAX_VALUE)
-                .filter { it.id !in knownIds }
+        if (worldInfoMinActivations > 0 && activatedEntries.size < worldInfoMinActivations) {
+            val extra = evaluateLorebooks(
+                scanDepthOverride = Int.MAX_VALUE,
+                alreadyActivated = activatedEntries,
+            )
+                .filter { it.id !in activatedEntries.map { e -> e.id } }
             activatedEntries = activatedEntries + extra
         }
 
         // 递归扫描（酒馆 world_info_recursive）：用已注入条目的内容再扫描关联条目
         if (worldInfoRecursive) {
+            // 官方 successfulNewEntriesForRecursion：prevent_recursion 条目的内容不进递归缓冲
             var recursionContext = activatedEntries
-                .filter { !it.excludeRecursion }
+                .filter { !it.preventRecursion }
                 .joinToString("\n") { it.content }
             var steps = 0
+            // 官方 max_recursion_steps 统计的是总扫描循环数（含首轮），递归轮数 = 值 - 1；
             // 0 = 不限制，但加 10 层安全上限防止极端循环
-            val maxSteps = if (worldInfoMaxRecursionSteps > 0) worldInfoMaxRecursionSteps else 10
+            val maxSteps = when {
+                worldInfoMaxRecursionSteps > 1 -> worldInfoMaxRecursionSteps - 1
+                worldInfoMaxRecursionSteps == 1 -> 0
+                else -> 10
+            }
             while (recursionContext.isNotBlank() && steps < maxSteps) {
                 steps++
                 val knownIds = activatedEntries.map { it.id }.toSet()
-                val newOnes = evaluateLorebooks(extraContext = recursionContext, isRecursion = true)
+                val newOnes = evaluateLorebooks(
+                    extraContext = recursionContext,
+                    isRecursion = true,
+                    alreadyActivated = activatedEntries,
+                )
                     .filter { it.id !in knownIds }
                 if (newOnes.isEmpty()) break
                 activatedEntries = activatedEntries + newOnes
-                recursionContext = newOnes
-                    .filter { !it.excludeRecursion }
+                val newRecursionText = newOnes
+                    .filter { !it.preventRecursion }
                     .joinToString("\n") { it.content }
+                // 官方递归缓冲是逐轮累积的：下一轮可命中跨多轮内容组合的关键词
+                recursionContext = listOf(recursionContext, newRecursionText)
+                    .filter { it.isNotBlank() }
+                    .joinToString("\n")
                 if (recursionContext.isBlank()) break
             }
         }
@@ -374,6 +363,101 @@ internal fun collectInjections(
     return injections
 }
 
+/**
+ * 官方 filterByInclusionGroups 的本地实现：
+ * 1. 同组内有粘性条目 → 只保留粘性条目（官方 filterGroupsByTimedEffects）
+ * 2. 本次运行已有同组条目被激活 → 整组跳过（官方 allActivatedEntries 检查）
+ * 3. group_override 条目 → 取优先级（order）最高的
+ * 4. use_group_scoring 生效 → 移除分数低于组内最高分的条目（官方仅移除非最高分，未开启评分的条目保留）
+ * 5. 剩余条目按 group_weight 加权随机选 1 条
+ *
+ * 分组跨全部 Lorebook（官方 global/character/chat/persona 世界书共同参与分组）。
+ */
+private fun selectGroupWinners(
+    newlyTriggered: List<PromptInjection.RegexInjection>,
+    triggeredScores: Map<Uuid, Int>,
+    activeStickyEntries: Map<Uuid, Int>,
+    alreadyActivated: List<PromptInjection.RegexInjection>,
+): List<PromptInjection.RegexInjection> {
+    if (newlyTriggered.isEmpty()) return emptyList()
+
+    val grouped = newlyTriggered
+        .filter { it.group.isNotBlank() || it.inclusionGroup.isNotBlank() }
+        .flatMap { entry ->
+            val labels = buildList {
+                if (entry.group.isNotBlank()) add(entry.group)
+                entry.inclusionGroup.split(",").map { it.trim() }.filter { it.isNotEmpty() }.let { addAll(it) }
+            }.distinct()
+            labels.map { label -> label to entry }
+        }
+        .groupBy({ it.first }, { it.second })
+    val ungrouped = newlyTriggered.filter { it.group.isBlank() && it.inclusionGroup.isBlank() }
+    val activated = mutableListOf<PromptInjection.RegexInjection>()
+    activated.addAll(ungrouped)
+
+    for ((_, entries) in grouped) {
+        // 官方 filterGroupsByTimedEffects：组内粘性条目胜出，非粘性全部移除
+        val stickyEntries = entries.filter { activeStickyEntries.containsKey(it.id) }
+        if (stickyEntries.isNotEmpty()) {
+            activated.addAll(stickyEntries)
+            continue
+        }
+
+        // 官方：该组标签在本次扫描中已激活过任何条目 → 其余条目全部移除
+        // （官方按 group 标签比对 allActivatedEntries，即使上轮的胜者本轮不再命中也要拦下）
+        val alreadyActivatedLabels = alreadyActivated.flatMap { entry ->
+            buildList {
+                if (entry.group.isNotBlank()) add(entry.group)
+                entry.inclusionGroup.split(",").map { it.trim() }.filter { it.isNotEmpty() }.let { addAll(it) }
+            }.distinct()
+        }.toSet()
+        if (entries.any { entry ->
+                buildList {
+                    if (entry.group.isNotBlank()) add(entry.group)
+                    entry.inclusionGroup.split(",").map { it.trim() }.filter { it.isNotEmpty() }.let { addAll(it) }
+                }.any { it in alreadyActivatedLabels }
+            }
+        ) continue
+
+        // 官方 filterGroupsByScoring：先移除“参与评分且分数低于组内最高”的条目
+        // （未开启评分的条目保留，随后仍参与 override/加权随机）
+        val scored = entries.filter { it.useGroupScoring }
+        val survivors = if (scored.isNotEmpty()) {
+            val maxScore = scored.maxOf { triggeredScores[it.id] ?: 0 }
+            entries.filter { !it.useGroupScoring || (triggeredScores[it.id] ?: 0) == maxScore }
+        } else {
+            entries
+        }
+
+        // 官方 groupOverride：在评分幸存者中取 order（优先级）最高的覆盖条目
+        val overrides = survivors.filter { it.groupOverride || it.groupPriority }
+        val finalCandidates = if (overrides.isNotEmpty()) {
+            listOf(overrides.maxByOrNull { it.priority } ?: overrides.first())
+        } else {
+            survivors
+        }
+
+        // 官方：加权随机选 1 条
+        val totalWeight = finalCandidates.sumOf { it.groupWeight.toLong() }
+        val selected = if (totalWeight <= 0) {
+            finalCandidates.firstOrNull()
+        } else {
+            var roll = Random.nextLong(totalWeight)
+            var picked: PromptInjection.RegexInjection? = null
+            for (entry in finalCandidates) {
+                roll -= entry.groupWeight.toLong()
+                if (roll < 0) {
+                    picked = entry
+                    break
+                }
+            }
+            picked ?: finalCandidates.first()
+        }
+        selected?.let { activated.add(it) }
+    }
+    return activated
+}
+
 /** 估算文本 token 数：中日韩字符按 1 token，其余字符按 4 字符 1 token（近似） */
 internal fun estimateTokens(text: String): Int {
     if (text.isEmpty()) return 0
@@ -395,10 +479,11 @@ private fun handleStickyCooldown(
     activeStickyEntries: MutableMap<Uuid, Int>,
     cooldownEntries: MutableMap<Uuid, Int>,
 ) {
-    if (entry.sticky > 0) {
+    // 官方 setTimedEffectOfType：效果已存在时不重置计数（重复激活不延长粘性）
+    if (entry.sticky > 0 && !activeStickyEntries.containsKey(entry.id)) {
         activeStickyEntries[entry.id] = entry.sticky
     }
-    if (entry.cooldown > 0) {
+    if (entry.cooldown > 0 && !cooldownEntries.containsKey(entry.id)) {
         cooldownEntries[entry.id] = entry.cooldown
     }
 }

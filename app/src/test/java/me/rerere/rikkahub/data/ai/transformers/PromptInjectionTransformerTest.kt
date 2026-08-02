@@ -7,6 +7,7 @@ import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.Lorebook
+import me.rerere.rikkahub.data.model.SelectiveLogic
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -56,11 +57,15 @@ class PromptInjectionTransformerTest {
         injectDepth: Int = 4,
         role: MessageRole = MessageRole.USER,
         keywords: List<String> = listOf("trigger"),
+        secondaryKeys: List<String> = emptyList(),
         useRegex: Boolean = false,
         caseSensitive: Boolean = false,
         matchWholeWords: Boolean = false,
         scanDepth: Int = 5,
-        constantActive: Boolean = false
+        constantActive: Boolean = false,
+        selective: Boolean = false,
+        selectiveLogic: SelectiveLogic = SelectiveLogic.AND_ANY,
+        group: String = "",
     ) = PromptInjection.RegexInjection(
         id = id,
         name = name,
@@ -71,11 +76,15 @@ class PromptInjectionTransformerTest {
         injectDepth = injectDepth,
         role = role,
         keywords = keywords,
+        secondaryKeys = secondaryKeys,
         useRegex = useRegex,
         caseSensitive = caseSensitive,
         matchWholeWords = matchWholeWords,
         scanDepth = scanDepth,
-        constantActive = constantActive
+        constantActive = constantActive,
+        selective = selective,
+        selectiveLogic = selectiveLogic,
+        group = group,
     )
 
     private fun createLorebook(
@@ -1442,6 +1451,148 @@ class PromptInjectionTransformerTest {
         )
         assertTrue(recursive.any { getMessageText(it).contains("Alpha lore") })
         assertTrue(recursive.any { getMessageText(it).contains("Beta lore injected") })
+    }
+    // endregion
+
+    // region 官方选择性逻辑语义（world-info.js checkWorldInfo：主键先行）
+    @Test
+    fun `official AND ALL requires any primary and all secondary keys`() {
+        val entry = createRegexInjection(
+            keywords = listOf("alpha", "zeta"),
+            secondaryKeys = listOf("beta", "gamma"),
+            selective = true,
+            selectiveLogic = SelectiveLogic.AND_ALL,
+        )
+        // 任一主键命中 + 全部二级键命中 → 触发
+        assertTrue(entry.isTriggered("alpha beta gamma"))
+        assertTrue(entry.isTriggered("zeta beta gamma"))
+        // 主键命中但二级键未全命中 → 不触发
+        assertFalse(entry.isTriggered("alpha beta"))
+        // 主键未命中 → 不触发
+        assertFalse(entry.isTriggered("beta gamma"))
+    }
+
+    @Test
+    fun `official NOT ANY requires primary match and no secondary match`() {
+        val entry = createRegexInjection(
+            keywords = listOf("alpha"),
+            secondaryKeys = listOf("beta"),
+            selective = true,
+            selectiveLogic = SelectiveLogic.NOT_ANY,
+        )
+        assertTrue(entry.isTriggered("alpha"))
+        assertTrue(entry.isTriggered("alpha gamma"))
+        assertFalse(entry.isTriggered("alpha beta"))
+        // 主键没命中时不能靠“全都不匹配”触发
+        assertFalse(entry.isTriggered("gamma"))
+    }
+
+    @Test
+    fun `official NOT ALL requires primary match and not all secondary match`() {
+        val entry = createRegexInjection(
+            keywords = listOf("alpha"),
+            secondaryKeys = listOf("beta", "gamma"),
+            selective = true,
+            selectiveLogic = SelectiveLogic.NOT_ALL,
+        )
+        assertTrue(entry.isTriggered("alpha beta"))
+        assertTrue(entry.isTriggered("alpha"))
+        assertFalse(entry.isTriggered("alpha beta gamma"))
+        assertFalse(entry.isTriggered("beta gamma"))
+    }
+
+    @Test
+    fun `official AND ANY with empty secondary keys activates on primary match`() {
+        val entry = createRegexInjection(
+            keywords = listOf("alpha"),
+            secondaryKeys = emptyList(),
+            selective = true,
+            selectiveLogic = SelectiveLogic.AND_ANY,
+        )
+        assertTrue(entry.isTriggered("alpha"))
+    }
+
+    @Test
+    fun `constant entry activates without keywords`() {
+        val entry = createRegexInjection(keywords = emptyList(), constantActive = true)
+        assertTrue(entry.isTriggered("anything at all"))
+    }
+
+    @Test
+    fun `official slash wrapped regex key matches regardless of useRegex flag`() {
+        val entry = createRegexInjection(keywords = listOf("/alpha/i"))
+        assertTrue(entry.isTriggered("ALPHA here"))
+        assertFalse(entry.isTriggered("beta"))
+    }
+    // endregion
+
+    // region 官方 inclusion group 语义（filterByInclusionGroups）
+    @Test
+    fun `inclusion group picks one winner across lorebooks`() {
+        val entryA = createRegexInjection(
+            id = Uuid.random(),
+            keywords = listOf("alpha"),
+            group = "g1",
+            content = "A content",
+        )
+        val entryB = createRegexInjection(
+            id = Uuid.random(),
+            keywords = listOf("alpha"),
+            group = "g1",
+            content = "B content",
+        )
+        val lb1Id = Uuid.random()
+        val lb2Id = Uuid.random()
+        val assistant = createAssistant(lorebookIds = setOf(lb1Id, lb2Id))
+        val lorebooks = listOf(
+            createLorebook(id = lb1Id, entries = listOf(entryA)),
+            createLorebook(id = lb2Id, entries = listOf(entryB)),
+        )
+        val messages = listOf(UIMessage.user("alpha"))
+
+        val result = transformMessages(messages, assistant, emptyList(), lorebooks)
+        val allText = result.joinToString("\n") { getMessageText(it) }
+        assertTrue(allText.contains("A content") xor allText.contains("B content"))
+    }
+
+    @Test
+    fun `recursion does not activate second entry of already activated group`() {
+        val entryA = createRegexInjection(
+            id = Uuid.random(),
+            keywords = listOf("alpha"),
+            group = "g1",
+            content = "A mentions beta",
+        )
+        val entryB = createRegexInjection(
+            id = Uuid.random(),
+            keywords = listOf("beta"),
+            group = "g1",
+            content = "B content",
+        )
+        val entryC = createRegexInjection(
+            id = Uuid.random(),
+            keywords = listOf("beta"),
+            group = "g2",
+            content = "C content",
+        )
+        val lbId = Uuid.random()
+        val assistant = createAssistant(lorebookIds = setOf(lbId))
+        val lorebooks = listOf(
+            createLorebook(id = lbId, entries = listOf(entryA, entryB, entryC)),
+        )
+        val messages = listOf(UIMessage.user("alpha"))
+
+        val result = transformMessages(
+            messages,
+            assistant,
+            emptyList(),
+            lorebooks,
+            worldInfoRecursive = true,
+        )
+        val allText = result.joinToString("\n") { getMessageText(it) }
+        assertTrue(allText.contains("A mentions beta"))
+        assertTrue(allText.contains("C content"))
+        assertFalse(allText.contains("B content"))
     }
     // endregion
 }

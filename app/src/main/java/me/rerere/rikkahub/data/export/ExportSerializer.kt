@@ -14,6 +14,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.model.PromptInjection
+import me.rerere.rikkahub.ui.pages.assistant.detail.mapSelectiveLogic
+import me.rerere.rikkahub.ui.pages.assistant.detail.mapTavernRole
 import me.rerere.rikkahub.utils.toLocalString
 import java.time.LocalDateTime
 import kotlin.uuid.Uuid
@@ -166,36 +168,74 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
                         injectDepth = entry.depth,
                         content = entry.content,
                         keywords = entry.key,
-                        useRegex = false, // SillyTavern 格式不支持 useRegex
+                        secondaryKeys = entry.keysecondary,
+                        useRegex = false, // 官方键始终支持 /regex/ 语法，keyMatches 会自动识别
                         caseSensitive = entry.caseSensitive ?: false,
-                        matchWholeWords = entry.extensions
-                            ?.jsonObject?.get("match_whole_words")?.jsonPrimitive?.booleanOrNull ?: false,
-                        excludeRecursion = entry.extensions
-                            ?.jsonObject?.get("exclude_recursion")?.jsonPrimitive?.booleanOrNull ?: false,
-                        preventRecursion = entry.extensions
-                            ?.jsonObject?.get("prevent_recursion")?.jsonPrimitive?.booleanOrNull ?: false,
-                        delayUntilRecursion = entry.extensions
-                            ?.jsonObject?.get("delay_until_recursion")?.jsonPrimitive?.booleanOrNull ?: false,
-                        scanDepth = entry.scanDepth ?: 4,
+                        matchWholeWords = entry.matchWholeWords ?: extBool(entry.extensions, "match_whole_words"),
+                        excludeRecursion = entry.excludeRecursion ?: extBool(entry.extensions, "exclude_recursion"),
+                        preventRecursion = entry.preventRecursion ?: extBool(entry.extensions, "prevent_recursion"),
+                        delayUntilRecursion = entry.delayUntilRecursion ?: extBool(entry.extensions, "delay_until_recursion"),
+                        scanDepth = entry.scanDepth ?: 1000,
                         constantActive = entry.constant,
+                        selective = entry.selective,
+                        selectiveLogic = mapSelectiveLogic(entry.selectiveLogic),
+                        probability = entry.probability ?: 100,
+                        useProbability = entry.useProbability ?: true,
+                        group = entry.group.orEmpty(),
+                        groupWeight = entry.groupWeight ?: 100,
+                        groupOverride = entry.groupOverride ?: false,
+                        role = mapTavernRole((entry.role as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull ?: "0"),
+                        sticky = entry.sticky ?: 0,
+                        cooldown = entry.cooldown ?: 0,
+                        delay = entry.delay ?: 0,
+                        automationId = extString(entry.extensions, "automation_id"),
+                        displayIndex = extInt(entry.extensions, "display_index"),
+                        displayPosition = extInt(entry.extensions, "display_position"),
+                        useGroupScoring = extBool(entry.extensions, "use_group_scoring"),
+                        ignoreBudget = extBool(entry.extensions, "ignore_budget"),
+                        triggers = extStringArray(entry.extensions, "triggers"),
+                        matchPersonaDescription = extBool(entry.extensions, "match_persona_description"),
+                        matchCharacterDescription = extBool(entry.extensions, "match_character_description"),
+                        matchCharacterPersonality = extBool(entry.extensions, "match_character_personality"),
+                        matchCharacterDepthPrompt = extBool(entry.extensions, "match_character_depth_prompt"),
+                        matchScenario = extBool(entry.extensions, "match_scenario"),
+                        matchCreatorNotes = extBool(entry.extensions, "match_creator_notes"),
                     )
                 }
             )
         }.getOrNull()
     }
 
+    /** 官方 world_info_position：0=before 1=after 2=ANTop 3=ANBottom 4=atDepth 5=EMTop 6=EMBottom 7=outlet */
     private fun mapSillyTavernPosition(position: Int): InjectionPosition {
         return when (position) {
-            0 -> InjectionPosition.BEFORE_SYSTEM_PROMPT
-            1 -> InjectionPosition.AFTER_SYSTEM_PROMPT
-            2 -> InjectionPosition.TOP_OF_CHAT
-            3 -> InjectionPosition.TOP_OF_CHAT // After Examples -> 聊天历史开头
-            4 -> InjectionPosition.AT_DEPTH    // @Depth 模式
-            5 -> InjectionPosition.BEFORE_CHARACTER
-            6 -> InjectionPosition.AFTER_CHARACTER
-            7 -> InjectionPosition.ANTAGONIZE
-            8 -> InjectionPosition.AFTER_DIALOG
-            else -> InjectionPosition.AFTER_SYSTEM_PROMPT
+            0 -> InjectionPosition.BEFORE_CHARACTER
+            1 -> InjectionPosition.AFTER_CHARACTER
+            2 -> InjectionPosition.AUTHOR_NOTE   // ANTop
+            3 -> InjectionPosition.AUTHOR_NOTE   // ANBottom
+            4 -> InjectionPosition.AT_DEPTH
+            5 -> InjectionPosition.EM_TOP
+            6 -> InjectionPosition.EM_BOTTOM
+            else -> InjectionPosition.AFTER_CHARACTER // outlet 暂不支持，落回角色卡后
+        }
+    }
+
+    private fun extBool(extensions: JsonElement?, key: String): Boolean =
+        extensions?.jsonObject?.get(key)?.jsonPrimitive?.booleanOrNull ?: false
+
+    private fun extInt(extensions: JsonElement?, key: String): Int =
+        extensions?.jsonObject?.get(key)?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0
+
+    private fun extString(extensions: JsonElement?, key: String): String =
+        extensions?.jsonObject?.get(key)?.jsonPrimitive?.contentOrNull ?: ""
+
+    private fun extStringArray(extensions: JsonElement?, key: String): List<String> {
+        val element = extensions?.jsonObject?.get(key) ?: return emptyList()
+        return if (element is kotlinx.serialization.json.JsonArray) {
+            element.mapNotNull { (it as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull }
+        } else {
+            (element as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull
+                ?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() }.orEmpty()
         }
     }
 }
@@ -208,6 +248,7 @@ private data class SillyTavernLorebook(
 @Serializable
 private data class SillyTavernEntry(
     val key: List<String> = emptyList(),
+    val keysecondary: List<String> = emptyList(),
     val content: String = "",
     val comment: String? = null,
     val constant: Boolean = false,
@@ -217,5 +258,20 @@ private data class SillyTavernEntry(
     val depth: Int = 4,
     val scanDepth: Int? = null,
     val caseSensitive: Boolean? = null,
+    val selective: Boolean = false,
+    val selectiveLogic: Int = 0,
+    val probability: Int? = 100,
+    val useProbability: Boolean? = true,
+    val group: String? = null,
+    val groupWeight: Int? = 100,
+    val groupOverride: Boolean? = null,
+    val role: JsonElement? = null,
+    val sticky: Int? = null,
+    val cooldown: Int? = null,
+    val delay: Int? = null,
+    val excludeRecursion: Boolean? = null,
+    val preventRecursion: Boolean? = null,
+    val delayUntilRecursion: Boolean? = null,
+    val matchWholeWords: Boolean? = null,
     val extensions: JsonElement? = null,
 )

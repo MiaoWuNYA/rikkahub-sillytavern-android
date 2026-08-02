@@ -411,10 +411,12 @@ private fun parseEntriesArray(arr: kotlinx.serialization.json.JsonArray): List<T
                 group = e["group"]?.jsonPrimitive?.contentOrNull ?: "",
                 position = parseEntryPosition(e),
                 priority = e["order"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
+                    ?: e["insertion_order"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
                     ?: e["priority"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 100,
                 disable = e["disable"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
                 caseSensitive = e["caseSensitive"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
-                useRegex = e["useRegex"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
+                useRegex = e["useRegex"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
+                    ?: e["use_regex"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
                 probability = e["probability"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 100,
                 sticky = parseStickyInt(e["sticky"]),
                 cooldown = e["cooldown"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
@@ -448,10 +450,12 @@ private fun parseEntriesMap(obj: JsonObject): List<TavernBookEntry> {
                 group = e["group"]?.jsonPrimitive?.contentOrNull ?: "",
                 position = parseEntryPosition(e),
                 priority = e["order"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
+                    ?: e["insertion_order"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
                     ?: e["priority"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 100,
                 disable = e["disable"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
                 caseSensitive = e["caseSensitive"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
-                useRegex = e["useRegex"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
+                useRegex = e["useRegex"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
+                    ?: e["use_regex"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
                 probability = e["probability"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 100,
                 sticky = parseStickyInt(e["sticky"]),
                 cooldown = e["cooldown"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
@@ -487,15 +491,21 @@ private fun applyEntryExtensions(entry: TavernBookEntry, e: JsonObject?): Tavern
                 ?: entry.excludeRecursion,
             caseSensitive = extensions["case_sensitive"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
                 ?: entry.caseSensitive,
+            selectiveLogic = extensions["selectiveLogic"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
+                ?: entry.selectiveLogic,
             probability = extensions["probability"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: entry.probability,
-            useProbability = extensions["probability"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() != null
-                || entry.useProbability,
+            useProbability = extensions["useProbability"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
+                ?: extensions["use_probability"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
+                // 旧卡只写 probability 没写开关时，按“有概率值即启用”兜底
+                ?: (extensions["probability"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() != null || entry.useProbability),
             sticky = extensions["sticky"]?.let { parseStickyInt(it) }?.takeIf { it > 0 } ?: entry.sticky,
             cooldown = extensions["cooldown"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: entry.cooldown,
             delay = extensions["delay"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: entry.delay,
             scanDepth = extensions["scan_depth"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: entry.scanDepth,
             priority = extensions["order"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: entry.priority,
             position = extensions["position"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: entry.position,
+            depth = extensions["depth"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: entry.depth,
+            group = extensions["group"]?.jsonPrimitive?.contentOrNull ?: entry.group,
             groupWeight = extensions["group_weight"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: entry.groupWeight,
             groupOverride = extensions["group_priority"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
                 ?: entry.groupOverride,
@@ -670,8 +680,8 @@ internal fun mapTavernPosition(pos: Int): InjectionPosition = when (pos) {
 }
 
 internal fun mapTavernRole(role: String): me.rerere.ai.core.MessageRole = when (role.lowercase()) {
-    "user" -> me.rerere.ai.core.MessageRole.USER
-    "assistant" -> me.rerere.ai.core.MessageRole.ASSISTANT
+    "user", "1" -> me.rerere.ai.core.MessageRole.USER
+    "assistant", "2" -> me.rerere.ai.core.MessageRole.ASSISTANT
     else -> me.rerere.ai.core.MessageRole.SYSTEM   // 官方世界书/深度提示默认 system
 }
 
@@ -698,12 +708,12 @@ internal fun syncExternalToEmbedded(
     }
 }
 
-/** 映射酒馆 selectiveLogic Int 到 SelectiveLogic 枚举 */
-private fun mapSelectiveLogic(logic: Int): SelectiveLogic = when (logic) {
+/** 映射酒馆 selectiveLogic Int 到 SelectiveLogic 枚举（官方 world_info_logic：0=AND_ANY 1=NOT_ALL 2=NOT_ANY 3=AND_ALL） */
+internal fun mapSelectiveLogic(logic: Int): SelectiveLogic = when (logic) {
     0 -> SelectiveLogic.AND_ANY
-    1 -> SelectiveLogic.OR_ANY
+    1 -> SelectiveLogic.NOT_ALL
     2 -> SelectiveLogic.NOT_ANY
-    3 -> SelectiveLogic.NOT_ALL
+    3 -> SelectiveLogic.AND_ALL
     else -> SelectiveLogic.AND_ANY
 }
 
@@ -721,10 +731,11 @@ internal fun injectionToTavernEntry(
         selective = injection.selective,
         selectiveLogic = when (injection.selectiveLogic) {
             SelectiveLogic.AND_ANY -> 0
-            SelectiveLogic.AND_ALL -> 1
-            SelectiveLogic.OR_ANY -> 2
-            SelectiveLogic.NOT_ANY -> 3
-            SelectiveLogic.NOT_ALL -> 4
+            SelectiveLogic.NOT_ALL -> 1
+            SelectiveLogic.NOT_ANY -> 2
+            SelectiveLogic.AND_ALL -> 3
+            // 官方无 OR_ANY；本地遗留条目导出时按最接近的 AND_ANY 处理
+            SelectiveLogic.OR_ANY -> 0
         },
         group = injection.group,
         position = mapInjectionToPosition(injection.position),
@@ -777,8 +788,8 @@ private fun mapInjectionToPosition(pos: InjectionPosition): Int = when (pos) {
     InjectionPosition.BOTTOM_OF_CHAT -> 3
     InjectionPosition.AT_DEPTH -> 4
     InjectionPosition.AUTHOR_NOTE -> 2
-    InjectionPosition.ANTAGONIZE -> 7
-    InjectionPosition.AFTER_DIALOG -> 8
+    // 本地扩展位置写入官方枚举时落到最接近的出口（outlet=7），避免产生官方不存在的 8
+    InjectionPosition.ANTAGONIZE, InjectionPosition.AFTER_DIALOG -> 7
     InjectionPosition.EM_TOP -> 5
     InjectionPosition.EM_BOTTOM -> 6
 }

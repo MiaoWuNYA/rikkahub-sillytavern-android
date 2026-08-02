@@ -149,11 +149,17 @@ object CardExporter {
                                     put("constant", entry.constant)
                                     put("selective", entry.selective)
                                     put("selectiveLogic", entry.selectiveLogic)
-                                    put("position", entry.position)
+                                    // 官方 convertWorldInfoToCharacterBook：顶层 position 只写 before_char/after_char 字符串，
+                                    // 具体数字位置（@Depth/EM/AN/outlet）一律走 extensions.position
+                                    put("position", if (entry.position == 0) "before_char" else "after_char")
                                     put("order", entry.priority)
+                                    // 官方 V2/V3 character_book 规范字段是 insertion_order（world-info.js: order: entry.insertion_order）
+                                    put("insertion_order", entry.priority)
                                     put("disable", entry.disable)
                                     put("caseSensitive", entry.caseSensitive)
                                     put("useRegex", entry.useRegex)
+                                    // 官方 V2 规范字段名（convertCharacterBook 不读，但 spec 与第三方工具按此识别）
+                                    put("use_regex", true)
                                     put("probability", entry.probability)
                                     put("sticky", entry.sticky)
                                     put("cooldown", entry.cooldown)
@@ -178,6 +184,15 @@ object CardExporter {
                                     } else {
                                         mutableMapOf()
                                     }
+                                    // 官方 convertCharacterBook 只从 extensions 读取这些字段（顶层写了也会被忽略）
+                                    extMap["position"] = JsonPrimitive(entry.position)
+                                    extMap["depth"] = JsonPrimitive(entry.depth)
+                                    extMap["selectiveLogic"] = JsonPrimitive(entry.selectiveLogic)
+                                    extMap["role"] = JsonPrimitive(entry.role)
+                                    extMap["group"] = JsonPrimitive(entry.group)
+                                    extMap["sticky"] = JsonPrimitive(entry.sticky)
+                                    extMap["cooldown"] = JsonPrimitive(entry.cooldown)
+                                    extMap["delay"] = JsonPrimitive(entry.delay)
                                     extMap["match_whole_words"] = JsonPrimitive(entry.matchWholeWords)
                                     extMap["case_sensitive"] = JsonPrimitive(entry.caseSensitive)
                                     extMap["exclude_recursion"] = JsonPrimitive(entry.excludeRecursion)
@@ -208,8 +223,9 @@ object CardExporter {
                                     } else {
                                         extMap.remove("triggers")
                                     }
-                                    if (entry.useProbability) extMap["probability"] = JsonPrimitive(entry.probability)
-                                    else extMap.remove("probability")
+                                    // 官方 convertWorldInfoToCharacterBook：probability 与 useProbability 都写进 extensions
+                                    extMap["probability"] = JsonPrimitive(entry.probability)
+                                    extMap["useProbability"] = JsonPrimitive(entry.useProbability)
                                     put("extensions", JsonObject(extMap))
                                 })
                             }
