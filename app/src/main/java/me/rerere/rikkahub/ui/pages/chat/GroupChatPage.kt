@@ -79,6 +79,38 @@ private fun getSpeakerHistory(
     return result
 }
 
+/**
+ * 按生成模式构造本次生成使用的助手（对齐酒馆）：
+ * SWAP = 只用当前发言成员自己的角色卡；
+ * APPEND / APPEND_DISABLED = 合并全体成员角色卡（禁言成员仅 APPEND_DISABLED 时包含）。
+ */
+private fun buildGenerationSpeaker(
+    gc: GroupChat,
+    members: List<Assistant>,
+    speaker: Assistant,
+): Assistant {
+    val base = if (gc.chatModelId != null) speaker.copy(chatModelId = gc.chatModelId) else speaker
+    if (gc.generationMode == GroupGenerationMode.SWAP) return base
+    val tav = base.tavernData ?: return base
+    val includeDisabled = gc.generationMode == GroupGenerationMode.APPEND_DISABLED
+    val pool = members.filter { includeDisabled || it.id !in gc.disabledMemberIds }
+    if (pool.size <= 1) return base
+
+    fun join(getter: (TavernCharacterData) -> String): String =
+        pool.mapNotNull { m -> m.tavernData?.let(getter) }
+            .filter { it.isNotBlank() }
+            .joinToString("\n")
+
+    return base.copy(
+        tavernData = tav.copy(
+            description = join { it.description },
+            personality = join { it.personality },
+            scenario = join { it.scenario },
+            mesExample = join { it.mesExample },
+        )
+    )
+}
+
 @Composable
 fun GroupChatPage(groupId: String) {
     val settingsStore: SettingsStore = koinInject()
@@ -301,24 +333,31 @@ fun GroupChatPage(groupId: String) {
                                     speakerHistory = getSpeakerHistory(messageNodes, speakerMap),
                                     allowSelfResponses = gc.allowSelfResponses,
                                     manualSpeakerId = selectedSpeakerId,
-                                    speakerWeights = gc.speakerWeights,
+                                    isUserInput = true,
                                 )
-                                if (allPicked.isEmpty()) { isGenerating = false; return@ChatInput }
 
                                 queueMembers = allPicked.mapNotNull { id -> members.find { it.id == id }?.name }
-                                queueStatus = "等待 ${queueMembers.joinToString("、")} 回复..."
+                                queueStatus = if (allPicked.isEmpty()) {
+                                    "已发送（未选择发言人）"
+                                } else {
+                                    "等待 ${queueMembers.joinToString("、")} 回复..."
+                                }
 
                                 inputState.clearInput()
 
                                 generationJob = scope.launch {
                                     try {
-                                        // ====== 1. 添加用户消息 ======
+                                        // ====== 1. 添加用户消息（无论是否生成，消息都要上屏） ======
                                         chatService.updateConversationState(currentConvId) { conv ->
                                             val userNode = UIMessage(
                                                 role = MessageRole.USER,
                                                 parts = inputContents,
                                             ).toMessageNode()
                                             conv.copy(messageNodes = conv.messageNodes + userNode)
+                                        }
+                                        if (allPicked.isEmpty()) {
+                                            isGenerating = false
+                                            return@launch
                                         }
 
                                         // ====== 2. 逐个生成 ======
@@ -336,9 +375,7 @@ fun GroupChatPage(groupId: String) {
                                                 )
                                             }
 
-                                            val effectiveSpeaker = if (gc.chatModelId != null) {
-                                                speaker.copy(chatModelId = gc.chatModelId)
-                                            } else speaker
+                                            val effectiveSpeaker = buildGenerationSpeaker(gc, members, speaker)
 
                                             // 构建历史（不含最新的user消息+占位消息，但包含之前的群聊消息）
                                             val currentConv = chatService.getConversationFlow(currentConvId).value
@@ -552,9 +589,9 @@ fun GroupChatPage(groupId: String) {
                     CardGroup(title = { Text("激活策略(Activation Strategy)") }) {
                         listOf(
                             GroupActivationStrategy.NATURAL to "自然(Natural)",
-                            GroupActivationStrategy.LIST to "轮换(List)",
+                            GroupActivationStrategy.LIST to "列表(List)",
                             GroupActivationStrategy.MANUAL to "手动(Manual)",
-                            GroupActivationStrategy.POOLED to "加权(Pooled)",
+                            GroupActivationStrategy.POOLED to "随机(Pooled)",
                         ).forEach { (strategy, label) ->
                             item(
                                 onClick = {
@@ -692,7 +729,7 @@ fun GroupChatPage(groupId: String) {
                                         }
                                     )
                                 }
-                                if (isEnabled && gc.activationStrategy == GroupActivationStrategy.NATURAL) {
+                                if (isEnabled) {
                                     Spacer(Modifier.height(4.dp))
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text("话多程度", style = MaterialTheme.typography.labelSmall, modifier = Modifier.width(56.dp))
@@ -710,27 +747,6 @@ fun GroupChatPage(groupId: String) {
                                             modifier = Modifier.weight(1f),
                                         )
                                         Text("%.1f".format(m.talkativeness), style = MaterialTheme.typography.labelSmall, modifier = Modifier.width(24.dp))
-                                    }
-                                }
-                                if (isEnabled && gc.activationStrategy == GroupActivationStrategy.POOLED) {
-                                    Spacer(Modifier.height(4.dp))
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text("权重", style = MaterialTheme.typography.labelSmall, modifier = Modifier.width(56.dp))
-                                        Slider(
-                                            value = (gc.speakerWeights[m.id] ?: 5).toFloat(),
-                                            onValueChange = { v ->
-                                                scope.launch {
-                                                    val newWeights = gc.speakerWeights + (m.id to v.toInt())
-                                                    settingsStore.update { s ->
-                                                        s.copy(groupChats = s.groupChats.map { if (it.id == gcId) it.copy(speakerWeights = newWeights) else it })
-                                                    }
-                                                }
-                                            },
-                                            valueRange = 1f..10f,
-                                            steps = 8,
-                                            modifier = Modifier.weight(1f),
-                                        )
-                                        Text("${gc.speakerWeights[m.id] ?: 5}", style = MaterialTheme.typography.labelSmall, modifier = Modifier.width(24.dp))
                                     }
                                 }
                             }
@@ -791,7 +807,7 @@ private suspend fun runAutoChat(
             lastSpeakerId = lastSpeakerId,
             speakerHistory = getSpeakerHistory(conv.messageNodes, conv.speakerMap),
             allowSelfResponses = gc.allowSelfResponses,
-            speakerWeights = gc.speakerWeights,
+            isUserInput = false,
         )
         if (picked.isEmpty()) { consecutiveEmpty++; kotlinx.coroutines.delay(autoDelay * 1000L); continue }
 
@@ -809,9 +825,7 @@ private suspend fun runAutoChat(
                 )
             }
 
-            val effectiveSpeaker = if (gc.chatModelId != null) {
-                speaker.copy(chatModelId = gc.chatModelId)
-            } else speaker
+            val effectiveSpeaker = buildGenerationSpeaker(gc, members, speaker)
 
             val currentConv = chatService.getConversationFlow(convId).value
             val historyNodes = currentConv.messageNodes.dropLast(1)

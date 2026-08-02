@@ -18,6 +18,7 @@ import me.rerere.rikkahub.data.model.GroupChat
 import me.rerere.rikkahub.data.model.GroupActivationStrategy
 import me.rerere.rikkahub.data.model.GroupGenerationMode
 import me.rerere.rikkahub.ui.components.nav.BackButton
+import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.UIAvatar
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.theme.CustomColors
@@ -119,13 +120,17 @@ fun GroupChatListPage() {
                         modifier = Modifier.fillMaxWidth(),
                     )
 
-                    Text("激活策略:", style = MaterialTheme.typography.labelMedium)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    CardGroup(title = { Text("激活策略(Activation Strategy)") }) {
                         GroupActivationStrategy.entries.forEach { mode ->
-                            FilterChip(
-                                selected = selectedMode == mode,
+                            item(
                                 onClick = { selectedMode = mode },
-                                label = { Text(modeLabel(mode), style = MaterialTheme.typography.labelSmall) },
+                                headlineContent = { Text(modeLabel(mode), style = MaterialTheme.typography.bodyMedium) },
+                                trailingContent = {
+                                    RadioButton(
+                                        selected = selectedMode == mode,
+                                        onClick = { selectedMode = mode },
+                                    )
+                                },
                             )
                         }
                     }
@@ -136,13 +141,17 @@ fun GroupChatListPage() {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
 
-                    Text("回复模式:", style = MaterialTheme.typography.labelMedium)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    CardGroup(title = { Text("生成模式(Generation Mode)") }) {
                         GroupGenerationMode.entries.forEach { mode ->
-                            FilterChip(
-                                selected = selectedGenMode == mode,
+                            item(
                                 onClick = { selectedGenMode = mode },
-                                label = { Text(genModeLabel(mode), style = MaterialTheme.typography.labelSmall) },
+                                headlineContent = { Text(genModeLabel(mode), style = MaterialTheme.typography.bodyMedium) },
+                                trailingContent = {
+                                    RadioButton(
+                                        selected = selectedGenMode == mode,
+                                        onClick = { selectedGenMode = mode },
+                                    )
+                                },
                             )
                         }
                     }
@@ -203,21 +212,21 @@ fun GroupChatListPage() {
 }
 
 private fun modeLabel(mode: GroupActivationStrategy): String = when (mode) {
-    GroupActivationStrategy.NATURAL -> "AI智能 (NATURAL)"
-    GroupActivationStrategy.LIST -> "名单轮 (LIST)"
-    GroupActivationStrategy.MANUAL -> "手动 (MANUAL)"
-    GroupActivationStrategy.POOLED -> "加权随机 (POOLED)"
+    GroupActivationStrategy.NATURAL -> "自然(Natural)"
+    GroupActivationStrategy.LIST -> "列表(List)"
+    GroupActivationStrategy.MANUAL -> "手动(Manual)"
+    GroupActivationStrategy.POOLED -> "随机(Pooled)"
 }
 
 private fun modeDesc(mode: GroupActivationStrategy): String = when (mode) {
     GroupActivationStrategy.NATURAL -> "检测你输入中提到的名字 + 掷骰子选人回复"
-    GroupActivationStrategy.LIST -> "按成员名单顺序轮流发言"
-    GroupActivationStrategy.MANUAL -> "每次发言前手动选择谁说话"
-    GroupActivationStrategy.POOLED -> "按权重随机抽取，权重高的出场更多"
+    GroupActivationStrategy.LIST -> "全部启用成员依次发言"
+    GroupActivationStrategy.MANUAL -> "每次发言前手动选择谁说话（未选择时只发送消息不回复）"
+    GroupActivationStrategy.POOLED -> "用户消息后未发言的成员优先，随机选 1 人"
 }
 
 private fun genModeLabel(mode: GroupGenerationMode): String = when (mode) {
-    GroupGenerationMode.SWAP -> "替换 (SWAP)"
-    GroupGenerationMode.APPEND -> "追加 (APPEND)"
-    GroupGenerationMode.APPEND_DISABLED -> "追加含禁言 (APPEND_DISABLED)"
+    GroupGenerationMode.SWAP -> "替换(Swap)"
+    GroupGenerationMode.APPEND -> "追加(Append)"
+    GroupGenerationMode.APPEND_DISABLED -> "追加含禁言(Append Disabled)"
 }
