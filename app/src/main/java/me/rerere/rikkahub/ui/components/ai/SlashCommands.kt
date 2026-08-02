@@ -32,6 +32,12 @@ enum class BuiltinSlashKind {
 
     /** 生成操作：重新生成（需要页面回调） */
     REGENERATE,
+
+    /** 修改当前角色卡字段（字段=值） */
+    UPDATE_CHAR,
+
+    /** 复制当前角色卡（需要页面回调） */
+    DUPLICATE,
 }
 
 /**
@@ -103,18 +109,34 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
         builtinKind = BuiltinSlashKind.TEXT,
     ),
     SlashCommand(
-        name = "model",
-        description = "查看当前模型(Model)",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.INFO,
-    ),
-    SlashCommand(
         name = "char-get",
         description = "查看当前角色卡(Char Get)",
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.INFO,
+    ),
+    SlashCommand(
+        name = "char-find",
+        description = "搜索角色卡(Char Find)",
+        argumentHint = "[关键词]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.INFO,
+    ),
+    SlashCommand(
+        name = "char-update",
+        description = "修改角色卡字段(Char Update)",
+        argumentHint = "[字段=值] 如 description=新描述",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.UPDATE_CHAR,
+    ),
+    SlashCommand(
+        name = "char-duplicate",
+        description = "复制当前角色卡(Char Duplicate)",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.DUPLICATE,
     ),
     SlashCommand(
         name = "rename-char",

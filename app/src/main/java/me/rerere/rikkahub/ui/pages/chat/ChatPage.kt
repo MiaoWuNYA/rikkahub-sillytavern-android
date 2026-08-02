@@ -446,6 +446,17 @@ private fun ChatPageContent(
                             .lastOrNull { it.role == me.rerere.ai.core.MessageRole.ASSISTANT }
                             ?.let { vm.regenerateAtMessage(it) }
                     },
+                    onSlashDuplicate = {
+                        val src = setting.getCurrentAssistant()
+                        val dup = src.copy(
+                            id = kotlin.uuid.Uuid.random(),
+                            name = src.name.ifBlank { "未命名" } + " (副本)",
+                        )
+                        vm.updateSettings(
+                            setting.copy(assistants = setting.assistants + dup)
+                        )
+                        toaster.show("已复制角色卡: ${dup.name}")
+                    },
                     onUpdateChatModel = {
                         vm.setChatModel(assistant = setting.getCurrentAssistant(), model = it)
                     },

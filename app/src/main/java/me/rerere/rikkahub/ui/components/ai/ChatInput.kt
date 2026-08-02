@@ -142,6 +142,7 @@ fun ChatInput(
     onCompressContext: (String, String, String) -> Unit = { _, _, _ -> },
     onLongSendClick: () -> Unit,
     onSlashRegenerate: (() -> Unit)? = null,
+    onSlashDuplicate: (() -> Unit)? = null,
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
@@ -608,6 +609,7 @@ private fun TextInputRow(
                                             assistant = assistant,
                                             onUpdateAssistant = onUpdateAssistant,
                                             onSlashRegenerate = onSlashRegenerate,
+                                            onSlashDuplicate = onSlashDuplicate,
                                         )
                                     } else {
                                         val argsList = slashArgs.split(" ", limit = 10)
@@ -819,6 +821,7 @@ private fun handleBuiltinSlash(
     assistant: Assistant,
     onUpdateAssistant: (Assistant) -> Unit,
     onSlashRegenerate: (() -> Unit)?,
+    onSlashDuplicate: (() -> Unit)?,
 ) {
     when (cmd.builtinKind) {
         BuiltinSlashKind.TEXT -> {
@@ -845,10 +848,6 @@ private fun handleBuiltinSlash(
 
         BuiltinSlashKind.INFO -> {
             when (cmd.name) {
-                "model" -> {
-                    val model = settings.findModelById(assistant.chatModelId ?: settings.chatModelId)
-                    toaster.show("当前模型: ${model?.displayName ?: "未设置"}")
-                }
                 "char-get" -> {
                     val tav = assistant.tavernData
                     if (tav == null) {
@@ -862,6 +861,25 @@ private fun handleBuiltinSlash(
                             if (tav.embeddedBook != null) append("\n内嵌世界书: ${tav.embeddedBook.entries.size} 条")
                         }
                         toaster.show(summary)
+                    }
+                }
+                "char-find" -> {
+                    val keyword = args.trim()
+                    if (keyword.isBlank()) {
+                        toaster.show("用法: /char-find 关键词")
+                    } else {
+                        val matches = settings.assistants.filter { a ->
+                            a.name.contains(keyword, ignoreCase = true) ||
+                                a.tavernData?.description?.contains(keyword, ignoreCase = true) == true
+                        }
+                        if (matches.isEmpty()) {
+                            toaster.show("未找到包含「$keyword」的角色卡")
+                        } else {
+                            toaster.show(
+                                "找到 ${matches.size} 张: " +
+                                    matches.take(5).joinToString("、") { it.name.ifBlank { "未命名" } }
+                            )
+                        }
                     }
                 }
             }
@@ -885,6 +903,50 @@ private fun handleBuiltinSlash(
         BuiltinSlashKind.REGENERATE -> {
             if (onSlashRegenerate != null) {
                 onSlashRegenerate()
+            } else {
+                toaster.show("当前页面不支持该命令")
+            }
+        }
+
+        BuiltinSlashKind.UPDATE_CHAR -> {
+            val eqIndex = args.indexOf('=')
+            if (eqIndex <= 0) {
+                toaster.show("用法: /char-update 字段=值")
+                return
+            }
+            val field = args.substring(0, eqIndex).trim()
+            val value = args.substring(eqIndex + 1).trim()
+            val tav = assistant.tavernData
+            if (tav == null) {
+                toaster.show("当前助手没有角色卡")
+                return
+            }
+            val updated = when (field.lowercase()) {
+                "name" -> {
+                    onUpdateAssistant(assistant.copy(name = value, tavernData = tav.copy(name = value)))
+                    "名称"
+                }
+                "description" -> { onUpdateAssistant(assistant.copy(tavernData = tav.copy(description = value))); "描述" }
+                "personality" -> { onUpdateAssistant(assistant.copy(tavernData = tav.copy(personality = value))); "性格" }
+                "scenario" -> { onUpdateAssistant(assistant.copy(tavernData = tav.copy(scenario = value))); "场景" }
+                "system_prompt", "systemprompt" -> { onUpdateAssistant(assistant.copy(tavernData = tav.copy(systemPrompt = value))); "系统提示词" }
+                "first_mes", "firstmes" -> { onUpdateAssistant(assistant.copy(tavernData = tav.copy(firstMessage = value))); "开场白" }
+                "mes_example", "mesexample" -> { onUpdateAssistant(assistant.copy(tavernData = tav.copy(mesExample = value))); "示例对话" }
+                "post_history_instructions", "phi" -> { onUpdateAssistant(assistant.copy(tavernData = tav.copy(postHistoryInstructions = value))); "历史后指令" }
+                "creator_notes", "creatornotes" -> { onUpdateAssistant(assistant.copy(tavernData = tav.copy(creatorNotes = value))); "作者备注" }
+                "character_version", "characterversion" -> { onUpdateAssistant(assistant.copy(tavernData = tav.copy(characterVersion = value))); "角色版本" }
+                else -> null
+            }
+            if (updated == null) {
+                toaster.show("未知字段: $field（可用 name/description/personality/scenario/system_prompt/first_mes/mes_example/phi/creator_notes）")
+            } else {
+                toaster.show("已更新$updated")
+            }
+        }
+
+        BuiltinSlashKind.DUPLICATE -> {
+            if (onSlashDuplicate != null) {
+                onSlashDuplicate()
             } else {
                 toaster.show("当前页面不支持该命令")
             }
