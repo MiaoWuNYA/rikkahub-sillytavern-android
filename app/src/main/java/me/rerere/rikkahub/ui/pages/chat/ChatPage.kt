@@ -500,6 +500,13 @@ private fun ChatPageContent(
                             vm.handleTriggerGeneration()
                         }
                     },
+                    onSlashSysgen = { prompt ->
+                        if (currentChatModel == null) {
+                            toaster.show("请先选择模型", type = ToastType.Error)
+                        } else {
+                            vm.handleGenerateSystemNarration(prompt)
+                        }
+                    },
                     onUpdateChatModel = {
                         vm.setChatModel(assistant = setting.getCurrentAssistant(), model = it)
                     },

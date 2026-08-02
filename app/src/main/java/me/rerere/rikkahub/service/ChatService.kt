@@ -456,6 +456,94 @@ class ChatService(
         session.setJob(job)
     }
 
+    /**
+     * 生成系统旁白并插入聊天（/sysgen，不触发普通回复）
+     *
+     * 参考官方 /sysgen：按提示词让模型写一条系统叙述消息，
+     * 生成结果以 SYSTEM 角色插入对话历史（AI 下次回复可见）。
+     */
+    fun generateSystemNarration(conversationId: Uuid, prompt: String) {
+        if (prompt.isBlank()) return
+
+        val session = getOrCreateSession(conversationId)
+        val previousJob = session.getJob()
+        previousJob?.cancel()
+
+        val job = appScope.launch {
+            try {
+                runCatching { previousJob?.join() }
+                finishInterruptedPendingTools(conversationId)
+
+                val currentConversation = session.state.value
+                if (currentConversation.currentMessages.isEmpty()) {
+                    addError(
+                        IllegalStateException("当前对话还没有消息，无法生成旁白"),
+                        conversationId,
+                        title = context.getString(R.string.error_title_send_message),
+                    )
+                    return@launch
+                }
+
+                session.processingStatus.value = "正在生成系统旁白…"
+
+                val settings = settingsStore.settingsFlow.first()
+                val assistant = settings.getAssistantById(currentConversation.assistantId)
+                    ?: settings.getCurrentAssistant()
+                val model = settings.findModelById(assistant.chatModelId ?: settings.chatModelId)
+                val provider = model?.findProvider(settings.providers)
+                if (model == null || provider == null) {
+                    addError(
+                        IllegalStateException("请先选择模型"),
+                        conversationId,
+                        title = context.getString(R.string.error_title_send_message),
+                    )
+                    return@launch
+                }
+
+                val providerHandler = providerManager.getProviderByType(provider)
+                val history = currentConversation.currentMessages.takeLast(12)
+                val narratorSystem = UIMessage.system(
+                    "You are the system narrator of a roleplay story. " +
+                        "Read the chat history, then write a short narration according to the user's instruction. " +
+                        "Output ONLY the narration text itself, without quotes, prefixes, or explanations."
+                )
+                val result = providerHandler.generateText(
+                    providerSetting = provider,
+                    messages = listOf(narratorSystem) + history + UIMessage.user(prompt),
+                    params = backgroundTextGenerationParams(model),
+                )
+                val narration = result.choices[0].message?.toText()?.trim().orEmpty()
+                if (narration.isBlank()) {
+                    addError(
+                        IllegalStateException("生成的旁白为空"),
+                        conversationId,
+                        title = context.getString(R.string.error_title_send_message),
+                    )
+                    return@launch
+                }
+
+                // 以 SYSTEM 角色插入对话历史（不触发回复）
+                val latest = getConversationFlow(conversationId).value
+                saveConversation(
+                    conversationId,
+                    latest.copy(
+                        messageNodes = latest.messageNodes + UIMessage(
+                            role = MessageRole.SYSTEM,
+                            parts = listOf(UIMessagePart.Text(narration)),
+                        ).toMessageNode(),
+                    ),
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+                addError(e, conversationId, title = context.getString(R.string.error_title_send_message))
+            } finally {
+                session.processingStatus.value = null
+                _generationDoneFlow.emit(conversationId)
+            }
+        }
+        session.setJob(job)
+    }
+
     private fun preprocessUserInputParts(parts: List<UIMessagePart>, assistant: Assistant): List<UIMessagePart> {
         return parts.map { part ->
             when (part) {

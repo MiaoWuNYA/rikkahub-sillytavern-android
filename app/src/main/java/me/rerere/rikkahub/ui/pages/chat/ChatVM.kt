@@ -211,6 +211,14 @@ class ChatVM(
         chatService.triggerGeneration(_conversationId)
     }
 
+    /**
+     * 生成系统旁白并插入聊天（/sysgen）
+     */
+    fun handleGenerateSystemNarration(prompt: String) {
+        if (prompt.isBlank()) return
+        chatService.generateSystemNarration(_conversationId, prompt)
+    }
+
     fun handleCompressContext(additionalPrompt: String, targetTokens: Int, keepRecentMessages: Int): Job {
         return viewModelScope.launch {
             chatService.compressConversation(

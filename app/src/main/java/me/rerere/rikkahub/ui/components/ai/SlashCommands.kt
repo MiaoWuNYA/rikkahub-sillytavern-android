@@ -39,6 +39,9 @@ enum class BuiltinSlashKind {
     /** 触发生成：不添加新消息，直接让 AI 回复一次 */
     TRIGGER,
 
+    /** 生成系统旁白：按提示词让 AI 写一条系统消息并插入 */
+    SYSGEN,
+
     /** 角色操作：修改当前助手 */
     RENAME,
 
@@ -90,6 +93,14 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.TRIGGER,
+    ),
+    SlashCommand(
+        name = "sysgen",
+        description = "AI生成系统旁白并插入(Sysgen)",
+        argumentHint = "[提示词] 如 描写雨夜街道",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.SYSGEN,
     ),
     SlashCommand(
         name = "char-get",

@@ -146,6 +146,7 @@ fun ChatInput(
     onSlashInsert: ((MessageRole, String) -> Unit)? = null,
     onSlashPersona: ((String) -> Unit)? = null,
     onSlashTrigger: (() -> Unit)? = null,
+    onSlashSysgen: ((String) -> Unit)? = null,
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
@@ -257,6 +258,7 @@ fun ChatInput(
                         onSlashInsert = onSlashInsert,
                         onSlashPersona = onSlashPersona,
                         onSlashTrigger = onSlashTrigger,
+                        onSlashSysgen = onSlashSysgen,
                     )
 
                     Row(
@@ -447,6 +449,7 @@ private fun TextInputRow(
     onSlashInsert: ((MessageRole, String) -> Unit)?,
     onSlashPersona: ((String) -> Unit)?,
     onSlashTrigger: (() -> Unit)?,
+    onSlashSysgen: ((String) -> Unit)?,
 ) {
     val settings = LocalSettings.current
     val filesManager: FilesManager = koinInject()
@@ -627,6 +630,7 @@ private fun TextInputRow(
                                             onSlashInsert = onSlashInsert,
                                             onSlashPersona = onSlashPersona,
                                             onSlashTrigger = onSlashTrigger,
+                                            onSlashSysgen = onSlashSysgen,
                                         )
                                     } else {
                                         val argsList = slashArgs.split(" ", limit = 10)
@@ -841,6 +845,7 @@ private fun handleBuiltinSlash(
     onSlashInsert: ((MessageRole, String) -> Unit)?,
     onSlashPersona: ((String) -> Unit)?,
     onSlashTrigger: (() -> Unit)?,
+    onSlashSysgen: ((String) -> Unit)?,
 ) {
     when (cmd.builtinKind) {
         BuiltinSlashKind.HELP -> {
@@ -888,6 +893,18 @@ private fun handleBuiltinSlash(
                 state.clearInput()
             } else {
                 toaster.show("当前页面不支持该命令")
+            }
+        }
+
+        BuiltinSlashKind.SYSGEN -> {
+            val text = args.trim()
+            if (text.isBlank()) {
+                toaster.show("用法: /sysgen 提示词，如 描写雨夜街道")
+            } else if (onSlashSysgen == null) {
+                toaster.show("当前页面不支持该命令")
+            } else {
+                onSlashSysgen(text)
+                state.clearInput()
             }
         }
 
