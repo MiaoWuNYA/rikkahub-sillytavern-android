@@ -154,7 +154,9 @@ internal fun AssistantBasicContent(
                     onValueChange = {
                         onUpdate(
                             assistant.copy(
-                                name = it
+                                name = it,
+                                // 同步角色卡名称，保证改名后导出仍是修改后的名字
+                                tavernData = assistant.tavernData?.copy(name = it),
                             )
                         )
                     },

@@ -34,6 +34,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonObjectOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import me.rerere.ai.ui.UIMessage
 import me.rerere.rikkahub.R
@@ -214,6 +215,15 @@ private fun parseV2Card(context: Context, json: JsonObject, background: String?,
     val name = data["name"]?.jsonPrimitiveOrNull?.contentOrNull
         ?: error(context.getString(R.string.assistant_importer_missing_name_field))
 
+    // 官方兼容：V2 顶层 talkativeness/fav 归入 data.extensions（官方导入同样处理），
+    // 原始 extensions 结构保持无损
+    val extensionsObj = data["extensions"]?.jsonObjectOrNull?.let { JsonObject(it.toMap()) }
+        ?: JsonObject(emptyMap())
+    val mergedExtensions = extensionsObj.toMutableMap()
+    (json["talkativeness"]?.jsonPrimitiveOrNull)?.let { mergedExtensions.putIfAbsent("talkativeness", it) }
+    (json["fav"]?.jsonPrimitiveOrNull)?.let { mergedExtensions.putIfAbsent("fav", it) }
+    val mergedExtensionsRaw = if (mergedExtensions.isEmpty()) "" else JsonObject(mergedExtensions).toString()
+
     val tavData = TavernCharacterData(
         spec = "chara_card_v2",
         specVersion = json["spec_version"]?.jsonPrimitive?.contentOrNull ?: "",
@@ -230,8 +240,8 @@ private fun parseV2Card(context: Context, json: JsonObject, background: String?,
         characterVersion = data["character_version"]?.jsonPrimitiveOrNull?.contentOrNull ?: "",
         tags = parseStringArray(data["tags"]),
         postHistoryInstructions = data["post_history_instructions"]?.jsonPrimitiveOrNull?.contentOrNull ?: "",
-        extensions = parseExtensions(data["extensions"]?.jsonObject),
-        extensionsRaw = data["extensions"]?.toString() ?: "",
+        extensions = parseExtensions(if (mergedExtensions.isEmpty()) null else JsonObject(mergedExtensions)),
+        extensionsRaw = mergedExtensionsRaw,
         embeddedBook = parseEmbeddedBook(data["character_book"]?.jsonObject),
     )
 
@@ -278,6 +288,11 @@ private fun parseV3Card(context: Context, json: JsonObject, background: String?,
         extensionsRaw = data["extensions"]?.toString() ?: "",
         assets = parseAssets(data["assets"]?.jsonArray),
         groupOnlyGreetings = parseStringArray(data["group_only_greetings"]),
+        nickname = data["nickname"]?.jsonPrimitiveOrNull?.contentOrNull ?: "",
+        creatorNotesMultilingual = data["creator_notes_multilingual"]?.toString() ?: "",
+        source = parseStringArray(data["source"]),
+        creationDate = data["creation_date"]?.toString() ?: "",
+        modificationDate = data["modification_date"]?.toString() ?: "",
         embeddedBook = parseEmbeddedBook(data["character_book"]?.jsonObject),
     )
 
@@ -348,6 +363,7 @@ private fun parseEmbeddedBook(obj: JsonObject?): TavernEmbeddedBook? {
         maxRecursionSteps = obj["max_recursion_steps"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
         minActivations = obj["min_activations"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
         extensions = parseExtensions(obj["extensions"]?.jsonObject),
+        extensionsRaw = obj["extensions"]?.toString() ?: "",
         entries = entries,
     )
 }
@@ -383,6 +399,7 @@ private fun parseEntriesArray(arr: kotlinx.serialization.json.JsonArray): List<T
                 delay = e["delay"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
                 useProbability = e["useProbability"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
                     ?: e["use_probability"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
+                extensionsRaw = e["extensions"]?.toString() ?: "",
             ), e)
         } catch (_: Exception) { null }
     }
@@ -419,6 +436,7 @@ private fun parseEntriesMap(obj: JsonObject): List<TavernBookEntry> {
                 delay = e["delay"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
                 useProbability = e["useProbability"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
                     ?: e["use_probability"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
+                extensionsRaw = e["extensions"]?.toString() ?: "",
             ), e)
         } catch (_: Exception) { null }
     }

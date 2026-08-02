@@ -100,6 +100,21 @@ object CardExporter {
                         }
                     }
                 }
+                if (tav?.nickname?.isNotBlank() == true) {
+                    put("nickname", tav.nickname)
+                }
+                if (!tav?.creatorNotesMultilingual.isNullOrBlank()) {
+                    put("creator_notes_multilingual", kotlinx.serialization.json.Json.parseToJsonElement(tav!!.creatorNotesMultilingual))
+                }
+                if (tav?.source?.isNotEmpty() == true) {
+                    putJsonArray("source") { tav.source.forEach { add(it) } }
+                }
+                if (!tav?.creationDate.isNullOrBlank()) {
+                    put("creation_date", kotlinx.serialization.json.Json.parseToJsonElement(tav!!.creationDate))
+                }
+                if (!tav?.modificationDate.isNullOrBlank()) {
+                    put("modification_date", kotlinx.serialization.json.Json.parseToJsonElement(tav!!.modificationDate))
+                }
                 if (!tav?.extensionsRaw.isNullOrBlank()) {
                     // 有原始 JSON 时原样带回（无损）
                     put("extensions", kotlinx.serialization.json.Json.parseToJsonElement(tav!!.extensionsRaw))
@@ -112,6 +127,18 @@ object CardExporter {
                     putJsonObject("character_book") {
                         put("name", tav.embeddedBook.name)
                         put("description", tav.embeddedBook.description)
+                        if (tav.embeddedBook.scanDepth != null) put("scan_depth", tav.embeddedBook.scanDepth)
+                        if (tav.embeddedBook.tokenBudget != null) put("token_budget", tav.embeddedBook.tokenBudget)
+                        if (tav.embeddedBook.recursiveScanning != null) put("recursive_scanning", tav.embeddedBook.recursiveScanning)
+                        if (tav.embeddedBook.maxRecursionSteps != null) put("max_recursion_steps", tav.embeddedBook.maxRecursionSteps)
+                        if (tav.embeddedBook.minActivations != null) put("min_activations", tav.embeddedBook.minActivations)
+                        if (!tav.embeddedBook.extensionsRaw.isNullOrBlank()) {
+                            put("extensions", kotlinx.serialization.json.Json.parseToJsonElement(tav.embeddedBook.extensionsRaw))
+                        } else if (tav.embeddedBook.extensions.isNotEmpty()) {
+                            putJsonObject("extensions") {
+                                tav.embeddedBook.extensions.forEach { (k, v) -> put(k, v) }
+                            }
+                        }
                         putJsonObject("entries") {
                             tav.embeddedBook.entries.forEach { entry ->
                                 put(entry.id.toString(), buildJsonObject {
@@ -142,26 +169,41 @@ object CardExporter {
                                     put("preventRecursion", entry.preventRecursion)
                                     put("delayUntilRecursion", entry.delayUntilRecursion)
                                     put("useProbability", entry.useProbability)
-                                    putJsonObject("extensions") {
-                                        put("match_whole_words", entry.matchWholeWords)
-                                        put("case_sensitive", entry.caseSensitive)
-                                        put("exclude_recursion", entry.excludeRecursion)
-                                        put("prevent_recursion", entry.preventRecursion)
-                                        put("delay_until_recursion", entry.delayUntilRecursion)
-                                        put("scan_depth", entry.scanDepth)
-                                        put("group_weight", entry.groupWeight)
-                                        put("group_override", entry.groupOverride)
-                                        if (entry.inclusionGroup.isNotBlank()) put("inclusion_group", entry.inclusionGroup)
-                                        if (entry.useGroupScoring) put("use_group_scoring", true)
-                                        if (entry.groupPriority) put("group_priority", true)
-                                        if (entry.automationId.isNotBlank()) put("automation_id", entry.automationId)
-                                        if (entry.displayIndex != 0) put("display_index", entry.displayIndex)
-                                        if (entry.displayPosition != 0) put("display_position", entry.displayPosition)
-                                        if (entry.triggers.isNotEmpty()) {
-                                            putJsonArray("triggers") { entry.triggers.forEach { add(it) } }
-                                        }
-                                        if (entry.useProbability) put("probability", entry.probability)
+                                    // 原始 extensions 未知字段无损保留，官方字段用当前值覆盖（用户修改不丢）
+                                    val extMap = if (!entry.extensionsRaw.isNullOrBlank()) {
+                                        try {
+                                            kotlinx.serialization.json.Json.parseToJsonElement(entry.extensionsRaw)
+                                                .jsonObject.toMutableMap()
+                                        } catch (_: Exception) { mutableMapOf() }
+                                    } else {
+                                        mutableMapOf()
                                     }
+                                    extMap["match_whole_words"] = JsonPrimitive(entry.matchWholeWords)
+                                    extMap["case_sensitive"] = JsonPrimitive(entry.caseSensitive)
+                                    extMap["exclude_recursion"] = JsonPrimitive(entry.excludeRecursion)
+                                    extMap["prevent_recursion"] = JsonPrimitive(entry.preventRecursion)
+                                    extMap["delay_until_recursion"] = JsonPrimitive(entry.delayUntilRecursion)
+                                    extMap["scan_depth"] = JsonPrimitive(entry.scanDepth)
+                                    extMap["group_weight"] = JsonPrimitive(entry.groupWeight)
+                                    extMap["group_override"] = JsonPrimitive(entry.groupOverride)
+                                    extMap["use_group_scoring"] = JsonPrimitive(entry.useGroupScoring)
+                                    extMap["group_priority"] = JsonPrimitive(entry.groupPriority)
+                                    if (entry.inclusionGroup.isBlank()) extMap.remove("inclusion_group")
+                                    else extMap["inclusion_group"] = JsonPrimitive(entry.inclusionGroup)
+                                    if (entry.automationId.isBlank()) extMap.remove("automation_id")
+                                    else extMap["automation_id"] = JsonPrimitive(entry.automationId)
+                                    if (entry.displayIndex != 0) extMap["display_index"] = JsonPrimitive(entry.displayIndex)
+                                    else extMap.remove("display_index")
+                                    if (entry.displayPosition != 0) extMap["display_position"] = JsonPrimitive(entry.displayPosition)
+                                    else extMap.remove("display_position")
+                                    if (entry.triggers.isNotEmpty()) {
+                                        extMap["triggers"] = JsonArray(entry.triggers.map { JsonPrimitive(it) })
+                                    } else {
+                                        extMap.remove("triggers")
+                                    }
+                                    if (entry.useProbability) extMap["probability"] = JsonPrimitive(entry.probability)
+                                    else extMap.remove("probability")
+                                    put("extensions", JsonObject(extMap))
                                 })
                             }
                         }

@@ -27,6 +27,12 @@ data class TavernCharacterData(
     val extensionsRaw: String = "",                  // V3 扩展字段原始 JSON（无损保留，导出时原样带回）
     val assets: List<TavernAsset> = emptyList(),     // V3 资源引用
     val groupOnlyGreetings: List<String> = emptyList(), // 群聊专用开场白
+    // V3 高级字段（官方 spec，导入解析、导出原样写回）
+    val nickname: String = "",                       // 角色别名（{{char}} 占位符替换用）
+    val creatorNotesMultilingual: String = "",       // 多语言作者备注原始 JSON（无损保留）
+    val source: List<String> = emptyList(),          // 来源引用 URL/ID 列表
+    val creationDate: String = "",                   // 创建时间戳原始 JSON 文本（数字/字符串原样带回）
+    val modificationDate: String = "",               // 修改时间戳原始 JSON 文本
     // 内嵌世界书
     val embeddedBook: TavernEmbeddedBook? = null,
 )
@@ -53,6 +59,7 @@ data class TavernEmbeddedBook(
     val maxRecursionSteps: Int? = null,
     val minActivations: Int? = null,
     val extensions: Map<String, String> = emptyMap(),
+    val extensionsRaw: String = "",              // 顶层 extensions 原始 JSON（无损保留，导出优先）
     val entries: List<TavernBookEntry> = emptyList(),
 )
 
@@ -93,4 +100,5 @@ data class TavernBookEntry(
     val displayIndex: Int = 0, // 酒馆 display_index
     val displayPosition: Int = 0, // 酒馆 display_position
     val triggers: List<String> = emptyList(), // 酒馆 triggers
+    val extensionsRaw: String = "", // 条目 extensions 原始 JSON（无损保留，导出优先）
 )
