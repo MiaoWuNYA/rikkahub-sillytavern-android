@@ -658,14 +658,14 @@ private fun tavernEntryToInjection(entry: TavernBookEntry): PromptInjection.Rege
 }
 
 internal fun mapTavernPosition(pos: Int): InjectionPosition = when (pos) {
-    0 -> InjectionPosition.BEFORE_SYSTEM_PROMPT
-    1 -> InjectionPosition.AFTER_SYSTEM_PROMPT
+    0 -> InjectionPosition.BEFORE_CHARACTER    // 官方 before_char：主提示之后、角色卡之前
+    1 -> InjectionPosition.AFTER_CHARACTER     // 官方 after_char：角色卡之后
     2 -> InjectionPosition.AUTHOR_NOTE        // 跟随用户 AN 位置设置
     3 -> InjectionPosition.AUTHOR_NOTE        // 官方 ANBottom（作者备注下方），本地跟随 AN 位置
     4 -> InjectionPosition.AT_DEPTH
     5 -> InjectionPosition.EM_TOP             // 官方 EMTop：示例消息之前
     6 -> InjectionPosition.EM_BOTTOM          // 官方 EMBottom：示例消息之后
-    else -> InjectionPosition.AFTER_SYSTEM_PROMPT
+    else -> InjectionPosition.AFTER_CHARACTER // 官方 outlet 等暂不支持，落到角色卡后
 }
 
 internal fun mapTavernRole(role: String): me.rerere.ai.core.MessageRole = when (role.lowercase()) {
@@ -768,14 +768,14 @@ internal fun injectionToTavernEntry(
 
 /** 反向映射 InjectionPosition → 酒馆 position 数字 */
 private fun mapInjectionToPosition(pos: InjectionPosition): Int = when (pos) {
+    InjectionPosition.BEFORE_CHARACTER -> 0
+    InjectionPosition.AFTER_CHARACTER -> 1
     InjectionPosition.BEFORE_SYSTEM_PROMPT -> 0
     InjectionPosition.AFTER_SYSTEM_PROMPT -> 1
     InjectionPosition.TOP_OF_CHAT -> 2
     InjectionPosition.BOTTOM_OF_CHAT -> 3
     InjectionPosition.AT_DEPTH -> 4
     InjectionPosition.AUTHOR_NOTE -> 2
-    InjectionPosition.BEFORE_CHARACTER -> 5
-    InjectionPosition.AFTER_CHARACTER -> 6
     InjectionPosition.ANTAGONIZE -> 7
     InjectionPosition.AFTER_DIALOG -> 8
     InjectionPosition.EM_TOP -> 5

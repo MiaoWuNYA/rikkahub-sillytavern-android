@@ -484,6 +484,67 @@ fun Assistant.assembleContext(
 }
 
 /**
+ * 官方 Chat Completion 结构拆分 — 主提示消息（对应官方 main prompt / system_prompt）
+ */
+fun Assistant.assembleMainPrompt(): String {
+    return tavernData?.systemPrompt?.takeIf { it.isNotBlank() } ?: systemPrompt
+}
+
+/**
+ * 官方 Chat Completion 结构拆分 — 角色卡字段消息（对应官方 persona/description/personality/scenario 独立消息）。
+ * 内部顺序对齐官方 OpenAI 模式：人设(按位置设置) → 描述 → 性格 → 场景
+ */
+fun Assistant.assembleCharacterCardBlock(
+    userName: String,
+    personaDesc: String,
+    personaTitle: String = "",
+    personaPosition: PersonaInjectionPosition = PersonaInjectionPosition.AFTER_SYSTEM,
+): String {
+    val tav = this.tavernData ?: return ""
+    val personaBlock = if (personaDesc.isNotBlank()) {
+        "[User Persona: ${personaTitle.ifBlank { "User" }}]\n$personaDesc"
+    } else ""
+
+    val description = tav.description.takeIf { it.isNotBlank() }
+    val personality = tav.personality.takeIf { it.isNotBlank() }
+    val scenario = tav.scenario.takeIf { it.isNotBlank() }
+    if (personaBlock.isBlank() && description == null && personality == null && scenario == null) return ""
+
+    val core = buildString {
+        description?.let {
+            if (isNotEmpty()) appendLine()
+            append(it)
+        }
+        personality?.let {
+            if (isNotEmpty()) appendLine()
+            append("${this@assembleCharacterCardBlock.name}'s personality: $it")
+        }
+        scenario?.let {
+            if (isNotEmpty()) appendLine()
+            append("Scenario: $it")
+        }
+    }
+
+    return if (personaPosition == PersonaInjectionPosition.BEFORE_SYSTEM) {
+        buildString {
+            if (personaBlock.isNotBlank()) append(personaBlock)
+            if (core.isNotEmpty()) {
+                if (isNotEmpty()) appendLine()
+                append(core)
+            }
+        }
+    } else {
+        buildString {
+            if (core.isNotEmpty()) append(core)
+            if (personaBlock.isNotBlank()) {
+                if (isNotEmpty()) appendLine()
+                append(personaBlock)
+            }
+        }
+    }
+}
+
+/**
  * 解析角色卡 mes_example 为示例消息（对齐官方 parseMesExamples + parseExampleIntoIndividual）：
  * - 按 <START> 分块
  * - 块内按 "{{user}}:" / "{{char}}:" 前缀行切分 user/assistant 消息

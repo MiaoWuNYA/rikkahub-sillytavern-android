@@ -816,6 +816,11 @@ sealed class UIMessageAnnotation {
     @Serializable
     @SerialName("example_message")
     data object ExampleMessage : UIMessageAnnotation()
+
+    /** 角色卡字段消息标记（官方独立 system 消息，世界书 before/after char 锚点用） */
+    @Serializable
+    @SerialName("character_card")
+    data object CharacterCardData : UIMessageAnnotation()
 }
 
 @Serializable

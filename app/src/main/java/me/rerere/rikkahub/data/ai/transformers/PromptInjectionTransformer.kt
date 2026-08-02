@@ -445,6 +445,37 @@ internal fun applyInjections(
     val fallbackAfterSystem = result.indexOfFirst { it.role == MessageRole.SYSTEM }
         .let { if (it >= 0) it + 1 else 0 }
 
+    // 角色卡消息锚点（官方独立消息，CharacterCardData 标记）
+    val cardIndices = result.indices.filter { idx ->
+        result[idx].annotations.any { it is UIMessageAnnotation.CharacterCardData }
+    }
+
+    // 处理 BEFORE_CHARACTER：主提示之后、角色卡消息之前（官方 ↑Char）
+    val beforeCharInjections = byPosition[InjectionPosition.BEFORE_CHARACTER]
+    if (!beforeCharInjections.isNullOrEmpty()) {
+        var insertIndex = if (cardIndices.isNotEmpty()) cardIndices.first()
+        else (result.indexOfFirst { it.role == MessageRole.SYSTEM }.let { if (it >= 0) it + 1 else 0 })
+        insertIndex = findSafeInsertIndex(result, insertIndex)
+        createMergedInjectionMessages(beforeCharInjections).forEach { message ->
+            result.add(insertIndex, message)
+            insertIndex++
+        }
+    }
+
+    // 处理 AFTER_CHARACTER：角色卡消息之后（官方 ↓Char）
+    val afterCharInjections = byPosition[InjectionPosition.AFTER_CHARACTER]
+    if (!afterCharInjections.isNullOrEmpty()) {
+        val currentCardIndices = result.indices.filter { idx ->
+            result[idx].annotations.any { it is UIMessageAnnotation.CharacterCardData }
+        }
+        var insertIndex = if (currentCardIndices.isNotEmpty()) currentCardIndices.last() + 1 else fallbackAfterSystem
+        insertIndex = findSafeInsertIndex(result, insertIndex)
+        createMergedInjectionMessages(afterCharInjections).forEach { message ->
+            result.add(insertIndex, message)
+            insertIndex++
+        }
+    }
+
     // 处理 EM_TOP：第一条示例消息之前
     val emTopInjections = byPosition[InjectionPosition.EM_TOP]
     if (!emTopInjections.isNullOrEmpty()) {
@@ -478,27 +509,16 @@ internal fun applyInjections(
     if (systemIndex >= 0) {
         val beforeContent = byPosition[InjectionPosition.BEFORE_SYSTEM_PROMPT]
             ?.joinToString("\n") { it.content } ?: ""
-        val beforeCharContent = byPosition[InjectionPosition.BEFORE_CHARACTER]
-            ?.joinToString("\n") { it.content } ?: ""
         val afterContent = byPosition[InjectionPosition.AFTER_SYSTEM_PROMPT]
             ?.joinToString("\n") { it.content } ?: ""
-        val afterCharContent = byPosition[InjectionPosition.AFTER_CHARACTER]
-            ?.joinToString("\n") { it.content } ?: ""
 
-        if (beforeContent.isNotEmpty() || beforeCharContent.isNotEmpty() ||
-            afterContent.isNotEmpty() || afterCharContent.isNotEmpty()
-        ) {
+        if (beforeContent.isNotEmpty() || afterContent.isNotEmpty()) {
             val systemMessage = result[systemIndex]
             val originalText = systemMessage.parts
                 .filterIsInstance<UIMessagePart.Text>()
                 .joinToString("") { it.text }
 
             val newText = buildString {
-                // 角色卡信息之前（酒馆 before_char）
-                if (beforeCharContent.isNotEmpty()) {
-                    append(beforeCharContent)
-                    appendLine()
-                }
                 if (beforeContent.isNotEmpty()) {
                     append(beforeContent)
                     appendLine()
@@ -507,11 +527,6 @@ internal fun applyInjections(
                 if (afterContent.isNotEmpty()) {
                     appendLine()
                     append(afterContent)
-                }
-                // 角色卡信息之后（酒馆 after_char）
-                if (afterCharContent.isNotEmpty()) {
-                    appendLine()
-                    append(afterCharContent)
                 }
             }
 
@@ -523,28 +538,16 @@ internal fun applyInjections(
         // 没有系统消息时，创建一个新的系统消息
         val beforeContent = byPosition[InjectionPosition.BEFORE_SYSTEM_PROMPT]
             ?.joinToString("\n") { it.content } ?: ""
-        val beforeCharContent = byPosition[InjectionPosition.BEFORE_CHARACTER]
-            ?.joinToString("\n") { it.content } ?: ""
         val afterContent = byPosition[InjectionPosition.AFTER_SYSTEM_PROMPT]
-            ?.joinToString("\n") { it.content } ?: ""
-        val afterCharContent = byPosition[InjectionPosition.AFTER_CHARACTER]
             ?.joinToString("\n") { it.content } ?: ""
 
         val combinedContent = buildString {
-            if (beforeCharContent.isNotEmpty()) {
-                append(beforeCharContent)
-                appendLine()
-            }
             if (beforeContent.isNotEmpty()) {
                 append(beforeContent)
-                if (afterContent.isNotEmpty() || afterCharContent.isNotEmpty()) appendLine()
+                if (afterContent.isNotEmpty()) appendLine()
             }
             if (afterContent.isNotEmpty()) {
                 append(afterContent)
-            }
-            if (afterCharContent.isNotEmpty()) {
-                if (isNotEmpty()) appendLine()
-                append(afterCharContent)
             }
         }
 

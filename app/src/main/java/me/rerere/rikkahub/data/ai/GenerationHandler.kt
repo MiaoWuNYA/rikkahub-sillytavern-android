@@ -46,6 +46,8 @@ import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantMemory
 import me.rerere.rikkahub.data.model.assembleContext
+import me.rerere.rikkahub.data.model.assembleCharacterCardBlock
+import me.rerere.rikkahub.data.model.assembleMainPrompt
 import me.rerere.rikkahub.data.model.buildExampleMessages
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.data.repository.MemoryRepository
@@ -123,32 +125,37 @@ class GenerationHandler(
         model: Model,
         context: android.content.Context,
         conversationRepo: me.rerere.rikkahub.data.repository.ConversationRepository,
-    ): String {
+    ): List<UIMessage> {
+        val persona = settings.personas.find { it.id == settings.activePersonaId }
+        val personaDesc = persona?.description?.takeIf { it.isNotBlank() }
+        val userName = settings.displaySetting.userNickname.ifBlank { "User" }
+        val personaPosition = persona?.position
+            ?: me.rerere.rikkahub.data.model.PersonaInjectionPosition.AFTER_SYSTEM
+
+        // 官方 Chat Completion 结构：默认模板的角色卡拆成独立消息（主提示 + 角色卡字段）
+        val useOfficialSplit = assistant.tavernData != null && assistant.contextTemplate.isBlank()
+        val conversationOverride = assistant.allowConversationSystemPrompt && !conversationSystemPrompt.isNullOrBlank()
+
+        val mainIdentity = if (conversationOverride) {
+            conversationSystemPrompt
+        } else if (useOfficialSplit) {
+            assistant.assembleMainPrompt()
+        } else if (assistant.tavernData != null) {
+            assistant.assembleContext(
+                userName = userName,
+                personaDesc = personaDesc ?: "",
+                personaTitle = persona?.title ?: "",
+                personaPosition = personaPosition,
+            )
+        } else if (personaDesc != null) {
+            val personaLabel = persona?.title?.ifBlank { persona?.name } ?: "User"
+            assistant.systemPrompt + "\n\n[User Persona: $personaLabel]\n$personaDesc"
+        } else {
+            assistant.systemPrompt
+        }
+
         val assemblerContext = me.rerere.rikkahub.data.ai.prompts.PromptContext(
-            identitySection = buildString {
-                val effectiveSystemPrompt =
-                    if (assistant.allowConversationSystemPrompt && !conversationSystemPrompt.isNullOrBlank()) {
-                        conversationSystemPrompt
-                    } else {
-                        val persona = settings.personas.find { it.id == settings.activePersonaId }
-                        val personaDesc = persona?.description?.takeIf { it.isNotBlank() }
-                        if (assistant.tavernData != null) {
-                            assistant.assembleContext(
-                                userName = settings.displaySetting.userNickname.ifBlank { "User" },
-                                personaDesc = personaDesc ?: "",
-                                personaTitle = persona?.title ?: "",
-                                personaPosition = persona?.position
-                                    ?: me.rerere.rikkahub.data.model.PersonaInjectionPosition.AFTER_SYSTEM,
-                            )
-                        } else if (personaDesc != null) {
-                            val personaLabel = persona?.title?.ifBlank { persona?.name } ?: "User"
-                            assistant.systemPrompt + "\n\n[User Persona: $personaLabel]\n$personaDesc"
-                        } else {
-                            assistant.systemPrompt
-                        }
-                    }
-                append(effectiveSystemPrompt)
-            },
+            identitySection = mainIdentity,
             leadInInstructions = buildString {
                 appendLine("<tool_selection>")
                 appendLine("Workspace files → workspace_read/write/edit (/workspace/...)")
@@ -241,11 +248,34 @@ class GenerationHandler(
             constraints = emptyList(),
         )
         val system = me.rerere.rikkahub.data.ai.prompts.SystemPromptAssembler.assemble(assemblerContext)
-        return buildString {
+        val mainText = buildString {
             append(system)
             tools.forEach { tool ->
                 appendLine()
                 append(tool.systemPrompt(model, messages))
+            }
+        }
+        return buildList {
+            if (mainText.isNotBlank()) {
+                add(UIMessage.system(prompt = mainText))
+            }
+            // 官方拆分：角色卡字段独立消息（世界书 before/after char 锚点）
+            if (useOfficialSplit && !conversationOverride) {
+                val cardText = assistant.assembleCharacterCardBlock(
+                    userName = userName,
+                    personaDesc = personaDesc ?: "",
+                    personaTitle = persona?.title ?: "",
+                    personaPosition = personaPosition,
+                )
+                if (cardText.isNotBlank()) {
+                    add(
+                        UIMessage(
+                            role = MessageRole.SYSTEM,
+                            parts = listOf(UIMessagePart.Text(cardText)),
+                            annotations = listOf(me.rerere.ai.ui.UIMessageAnnotation.CharacterCardData),
+                        )
+                    )
+                }
             }
         }
     }
@@ -298,9 +328,8 @@ class GenerationHandler(
             }
         )
     }
-    // ── 预构建：system prompt 全文（循环不变，移到外面）──
-    // buildString 不是 suspend 上下文，直接调用即可
-    val prebuiltSystemPrompt = buildCachedSystemPrompt(assistant, settings, messages, memories ?: emptyList(), conversationSystemPrompt, tools, model, context, conversationRepo)
+    // ── 预构建：system 消息列表（循环不变，移到外面）──
+    val prebuiltSystemMessages = buildCachedSystemPrompt(assistant, settings, messages, memories ?: emptyList(), conversationSystemPrompt, tools, model, context, conversationRepo)
 
     for (stepIndex in 0 until maxSteps) {
             Log.i(TAG, "streamText: start step #$stepIndex (${model.id})")
@@ -351,7 +380,7 @@ class GenerationHandler(
                     conversationSystemPrompt = conversationSystemPrompt,
                     conversationModeInjectionIds = conversationModeInjectionIds,
                     conversationLorebookIds = conversationLorebookIds,
-                    prebuiltSystemPrompt = prebuiltSystemPrompt,
+                    prebuiltSystemMessages = prebuiltSystemMessages,
                     workspaceCwd = workspaceCwd,
                     generationType = generationType,
                 )
@@ -531,12 +560,12 @@ class GenerationHandler(
         conversationSystemPrompt: String? = null,
         conversationModeInjectionIds: Set<Uuid> = emptySet(),
         conversationLorebookIds: Set<Uuid> = emptySet(),
-        prebuiltSystemPrompt: String = "",
+        prebuiltSystemMessages: List<UIMessage> = emptyList(),
         workspaceCwd: String? = null,
         generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
     ) {
         val internalMessages = buildList {
-            val fullSystem = if (prebuiltSystemPrompt.isNotBlank()) prebuiltSystemPrompt else buildString {
+            val fallbackSystem = buildString {
                 // ── s10: 使用 SystemPromptAssembler 替代硬编码 ──
                 val assemblerContext = me.rerere.rikkahub.data.ai.prompts.PromptContext(
                 identitySection = buildString {
@@ -587,8 +616,11 @@ class GenerationHandler(
                 append(tool.systemPrompt(model, messages))
             }
             }
-            val systemMsg = fullSystem.ifBlank { null }
-            if (systemMsg != null) add(UIMessage.system(prompt = systemMsg))
+            if (prebuiltSystemMessages.isNotEmpty()) {
+                addAll(prebuiltSystemMessages)
+            } else if (fallbackSystem.isNotBlank()) {
+                add(UIMessage.system(prompt = fallbackSystem))
+            }
 
             // ── 官方 mes_example：作为示例消息注入（story string 之后、聊天历史之前）──
             if (assistant.tavernData != null) {
