@@ -1,7 +1,4 @@
 package me.rerere.rikkahub.ui.pages.assistant.detail
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowDown01
@@ -12,7 +9,6 @@ import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Refresh03
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -25,7 +21,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
@@ -62,7 +57,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -401,78 +395,104 @@ private fun AssistantPromptContent(
             }
         }
 
-        // 开场白
         Card(
             colors = CustomColors.cardColorsOnSurfaceContainer
         ) {
+            FormItem(
+                modifier = Modifier.padding(8.dp),
+                label = {
+                    Text(stringResource(R.string.assistant_page_preset_messages))
+                },
+                description = {
+                    Text(stringResource(R.string.assistant_page_preset_messages_desc))
+                }
+            )
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.padding(16.dp)
             ) {
-                Text("开场白(Greeting)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                Text("发给 AI 的第一条消息，定义对话起点；也可在角色卡详情页从卡片开场白中挑选",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-                // 现有开场白列表
-                assistant.presetMessages.fastForEachIndexed { index, msg ->
-                    val isAssistant = msg.role == MessageRole.ASSISTANT
-                    Card(
-                        shape = RoundedCornerShape(4.dp),
-                        colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
+                assistant.presetMessages.fastForEachIndexed { index, presetMessage ->
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(10.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        if (isAssistant) "角色(Assistant)" else "用户(User)",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Medium,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                    IconButton(
-                                        onClick = {
-                                            onUpdate(assistant.copy(
-                                                presetMessages = assistant.presetMessages.filterIndexed { i, _ -> i != index }
-                                            ))
-                                        },
-                                        modifier = Modifier.size(24.dp),
-                                    ) {
-                                        Icon(HugeIcons.Cancel01, null, modifier = Modifier.size(14.dp))
-                                    }
-                                }
-                                OutlinedTextField(
-                                    value = msg.toText(),
-                                    onValueChange = { text ->
-                                        onUpdate(assistant.copy(
-                                            presetMessages = assistant.presetMessages.mapIndexed { i, m ->
-                                                if (i == index) m.copy(parts = listOf(UIMessagePart.Text(text)))
-                                                else m
+                            Select(
+                                options = listOf(MessageRole.USER, MessageRole.ASSISTANT),
+                                selectedOption = presetMessage.role,
+                                onOptionSelected = { role ->
+                                    onUpdate(
+                                        assistant.copy(
+                                            presetMessages = assistant.presetMessages.mapIndexed { i, msg ->
+                                                if (i == index) {
+                                                    msg.copy(role = role)
+                                                } else {
+                                                    msg
+                                                }
                                             }
-                                        ))
-                                    },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    textStyle = MaterialTheme.typography.bodySmall,
-                                    minLines = 2,
-                                    maxLines = 5,
-                                )
+                                        )
+                                    )
+                                },
+                                modifier = Modifier.width(160.dp)
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
+                            IconButton(
+                                onClick = {
+                                    onUpdate(
+                                        assistant.copy(
+                                            presetMessages = assistant.presetMessages.filterIndexed { i, _ ->
+                                                i != index
+                                            }
+                                        )
+                                    )
+                                }
+                            ) {
+                                Icon(HugeIcons.Cancel01, null)
+                            }
                         }
+                        OutlinedTextField(
+                            value = presetMessage.toText(),
+                            onValueChange = { text ->
+                                onUpdate(
+                                    assistant.copy(
+                                        presetMessages = assistant.presetMessages.mapIndexed { i, msg ->
+                                            if (i == index) {
+                                                msg.copy(parts = listOf(UIMessagePart.Text(text)))
+                                            } else {
+                                                msg
+                                            }
+                                        }
+                                    )
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            maxLines = 6
+                        )
                     }
                 }
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = {
-                        onUpdate(assistant.copy(
-                            presetMessages = assistant.presetMessages + UIMessage.assistant("")
-                        ))
-                    }) { Text("+ 角色") }
-                    OutlinedButton(onClick = {
-                        onUpdate(assistant.copy(
-                            presetMessages = assistant.presetMessages + UIMessage.user("")
-                        ))
-                    }) { Text("+ 用户") }
+                Button(
+                    onClick = {
+                        val lastRole = assistant.presetMessages.lastOrNull()?.role ?: MessageRole.ASSISTANT
+                        val nextRole = when (lastRole) {
+                            MessageRole.USER -> MessageRole.ASSISTANT
+                            MessageRole.ASSISTANT -> MessageRole.USER
+                            else -> MessageRole.USER
+                        }
+                        onUpdate(
+                            assistant.copy(
+                                presetMessages = assistant.presetMessages + UIMessage(
+                                    role = nextRole,
+                                    parts = listOf(UIMessagePart.Text(""))
+                                )
+                            )
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(HugeIcons.Add01, null)
                 }
             }
         }
@@ -535,7 +555,7 @@ private fun AssistantRegexCard(
     ) {
         Column(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(12.dp)
                 .animateContentSize(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
