@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -14,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -420,8 +422,8 @@ private fun PersonaEditPage(
                         )
                     }
                 }
-                    Text(
-                        text = "导演备注上/下方选项会与导演备注内容合并注入，并跟随其间隔节奏",
+                Text(
+                    text = "导演备注上/下方选项会与导演备注内容合并注入，并跟随其间隔节奏",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
@@ -429,16 +431,23 @@ private fun PersonaEditPage(
                 if (pos == PersonaInjectionPosition.AT_DEPTH) {
                     Spacer(Modifier.height(8.dp))
                     Column(modifier = Modifier.padding(horizontal = 8.dp)) {
-                        Text(
-                            "插入深度（Depth）：$depth（从最新消息往前数）",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Slider(
-                            value = depth.toFloat(),
-                            onValueChange = { depth = it.toInt() },
-                            valueRange = 1f..10f,
-                            steps = 8,
+                        var depthText by remember(initial) { mutableStateOf(depth.toString()) }
+                        val depthNum = depthText.toIntOrNull()
+                        OutlinedTextField(
+                            value = depthText,
+                            onValueChange = { value ->
+                                depthText = value.filter { it.isDigit() }
+                                val num = depthText.toIntOrNull()
+                                if (num != null && num in 0..9999) {
+                                    depth = num
+                                }
+                            },
+                            label = { Text("插入深度（Depth）") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            isError = depthText.isNotEmpty() && (depthNum == null || depthNum !in 0..9999),
+                            supportingText = { Text("官方范围 0–9999；0 = 对话最末尾") },
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }

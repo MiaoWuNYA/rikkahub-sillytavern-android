@@ -1,23 +1,23 @@
 package me.rerere.rikkahub.ui.pages.setting
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import me.rerere.ai.core.MessageRole
 import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.model.InjectionPosition
+import me.rerere.rikkahub.data.model.AuthorNotePosition
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.theme.CustomColors
@@ -126,10 +126,9 @@ fun AuthorsNotePage() {
             // 注入位置
             CardGroup(title = { Text("注入位置（Position）") }) {
                 listOf(
-                    InjectionPosition.AFTER_SYSTEM_PROMPT to ("系统提示词后（After System Prompt）" to "紧跟系统提示词，对全局影响稳定"),
-                    InjectionPosition.TOP_OF_CHAT to ("对话顶部（Top of Chat）" to "位于对话历史最前面"),
-                    InjectionPosition.BOTTOM_OF_CHAT to ("对话底部（Bottom of Chat）" to "靠近上下文底部，影响下一次回复"),
-                    InjectionPosition.AT_DEPTH to ("指定深度（At Depth）" to "按下方设置的深度插入对话中"),
+                    AuthorNotePosition.BEFORE_PROMPT to ("主提示词/场景之前（Before Main Prompt / Story String）" to "位于角色设定之前，影响整段上下文"),
+                    AuthorNotePosition.IN_PROMPT to ("主提示词/场景之后（After Main Prompt / Story String）" to "紧跟角色设定，位于示例消息之前"),
+                    AuthorNotePosition.IN_CHAT to ("聊天内指定深度（In-chat @ Depth）" to "按下方深度插入对话历史（官方默认）"),
                 ).forEach { (pos, pair) ->
                     val (label, desc) = pair
                     item(
@@ -160,37 +159,41 @@ fun AuthorsNotePage() {
                 }
             }
 
-            // 深度（仅 AT_DEPTH 时）
-            if (settings.authorNotePosition == InjectionPosition.AT_DEPTH) {
+            // 深度（仅 In-chat 时）
+            if (settings.authorNotePosition == AuthorNotePosition.IN_CHAT) {
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("插入深度（Depth）：${settings.authorNoteDepth}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                        Text("插入深度（Depth）", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                         Spacer(Modifier.height(8.dp))
-                        var localDepth by remember { mutableFloatStateOf(settings.authorNoteDepth.toFloat()) }
-                        Slider(
-                            value = localDepth,
-                            onValueChange = { localDepth = it },
-                            onValueChangeFinished = {
-                                scope.launch {
-                                    settingsStore.update(settings.copy(authorNoteDepth = localDepth.toInt()))
+                        var depthText by remember { mutableStateOf(settings.authorNoteDepth.toString()) }
+                        val depthNum = depthText.toIntOrNull()
+                        OutlinedTextField(
+                            value = depthText,
+                            onValueChange = { value ->
+                                depthText = value.filter { it.isDigit() }
+                                val num = depthText.toIntOrNull()
+                                if (num != null && num in 0..9999) {
+                                    scope.launch {
+                                        settingsStore.update(settings.copy(authorNoteDepth = num))
+                                    }
                                 }
                             },
-                            valueRange = 1f..30f,
-                            steps = 28,
-                        )
-                        Text(
-                            "从最新消息往前数 ${localDepth.toInt()} 条的位置插入",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            isError = depthText.isNotEmpty() && (depthNum == null || depthNum !in 0..9999),
+                            supportingText = {
+                                Text("官方范围 0–9999；0 = 对话最末尾")
+                            },
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
             }
 
-            // 注入角色
+            // 注入角色（官方三个位置均使用该角色）
             CardGroup(title = { Text("注入角色（Role）") }) {
                 listOf(
                     MessageRole.SYSTEM to "系统",
@@ -218,7 +221,7 @@ fun AuthorsNotePage() {
                 }
             }
             Text(
-                text = "以什么角色注入备注内容",
+                text = "以什么角色注入备注内容（三个位置均生效）",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
@@ -231,39 +234,43 @@ fun AuthorsNotePage() {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        "间隔（Interval）：" + when (settings.authorNoteInterval) {
-                            0 -> "关闭（不注入）"
-                            1 -> "每次注入"
-                            else -> "每${settings.authorNoteInterval}条用户消息注入一次"
-                        },
+                        "间隔（Interval）",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Medium,
                     )
                     Text(
-                        "按当前对话的用户消息条数计数，跨对话互不影响",
+                        "按当前对话的用户消息条数计数（0 = 关闭，1 = 每次注入）",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(8.dp))
-                    var localInterval by remember { mutableIntStateOf(settings.authorNoteInterval) }
-                    Slider(
-                        value = localInterval.toFloat(),
-                        onValueChange = { localInterval = it.toInt() },
-                        onValueChangeFinished = {
-                            scope.launch {
-                                settingsStore.update(settings.copy(authorNoteInterval = localInterval))
+                    var intervalText by remember { mutableStateOf(settings.authorNoteInterval.toString()) }
+                    val intervalNum = intervalText.toIntOrNull()
+                    OutlinedTextField(
+                        value = intervalText,
+                        onValueChange = { value ->
+                            intervalText = value.filter { it.isDigit() }
+                            val num = intervalText.toIntOrNull()
+                            if (num != null && num in 0..9999) {
+                                scope.launch {
+                                    settingsStore.update(settings.copy(authorNoteInterval = num))
+                                }
                             }
                         },
-                        valueRange = 0f..20f,
-                        steps = 19,
-                    )
-                    Row(
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        isError = intervalText.isNotEmpty() && (intervalNum == null || intervalNum !in 0..9999),
+                        supportingText = {
+                            Text(
+                                when (val interval = intervalNum ?: settings.authorNoteInterval) {
+                                    0 -> "关闭（不注入）"
+                                    1 -> "每次注入"
+                                    else -> "每 $interval 条用户消息注入一次"
+                                }
+                            )
+                        },
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text("关闭", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("每20条", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    )
                 }
             }
         }

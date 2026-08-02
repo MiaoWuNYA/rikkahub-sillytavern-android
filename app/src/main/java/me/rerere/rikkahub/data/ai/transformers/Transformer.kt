@@ -21,6 +21,10 @@ class TransformerContext(
     val workspaceCwd: String? = null,
     /** 当前生成类型（官方 triggers 过滤用），默认普通发送 */
     val generationType: GenerationType = GenerationType.NORMAL,
+    /** 当前对话真实用户消息数（完整对话，未截断、不含注入与示例），导演备注间隔计数用 */
+    val chatUserMessageCount: Int? = null,
+    /** 送入上下文的消息条数（截断后），导演备注 In-chat 深度计算用 */
+    val chatMessageCount: Int? = null,
 )
 
 interface MessageTransformer {
@@ -77,6 +81,8 @@ suspend fun List<UIMessage>.transforms(
     processingStatus: MutableStateFlow<String?> = MutableStateFlow(null),
     workspaceCwd: String? = null,
     generationType: GenerationType = GenerationType.NORMAL,
+    chatUserMessageCount: Int? = null,
+    chatMessageCount: Int? = null,
 ): List<UIMessage> {
     val ctx = TransformerContext(
         context = context,
@@ -89,6 +95,8 @@ suspend fun List<UIMessage>.transforms(
         processingStatus = processingStatus,
         workspaceCwd = workspaceCwd,
         generationType = generationType,
+        chatUserMessageCount = chatUserMessageCount,
+        chatMessageCount = chatMessageCount,
     )
     return transformers.fold(this) { acc, transformer ->
         transformer.transform(ctx, acc)

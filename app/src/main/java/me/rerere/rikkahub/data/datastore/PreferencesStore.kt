@@ -38,6 +38,7 @@ import me.rerere.rikkahub.data.datastore.migration.PreferenceStoreV1Migration
 import me.rerere.rikkahub.data.datastore.migration.PreferenceStoreV2Migration
 import me.rerere.rikkahub.data.datastore.migration.PreferenceStoreV3Migration
 import me.rerere.rikkahub.data.model.Assistant
+import me.rerere.rikkahub.data.model.AuthorNotePosition
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.GroupChat
 import me.rerere.rikkahub.data.model.InjectionPosition
@@ -46,6 +47,7 @@ import me.rerere.rikkahub.data.model.Persona
 import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.QuickMessage
 import me.rerere.rikkahub.data.model.Tag
+import me.rerere.rikkahub.data.model.parseAuthorNotePosition
 import me.rerere.rikkahub.data.sync.s3.S3Config
 import me.rerere.rikkahub.ui.theme.CustomTheme
 import me.rerere.rikkahub.ui.theme.PresetThemes
@@ -260,7 +262,7 @@ class SettingsStore(
                     JsonInstant.decodeFromString(it)
                 } ?: emptyList(),
                 worldInfoBudget = (preferences[WORLD_INFO_BUDGET] ?: 1024).let {
-                    // 旧版 worldInfoBudget 是条目数（0~200），新版是 token 预算；旧条目数按默认 1024 迁移
+                    // worldInfoBudget 为 token 预算；1–200 区间的值按默认 1024 处理
                     if (it in 1..200) 1024 else it
                 },
                 worldInfoMinActivations = preferences[WORLD_INFO_MIN_ACTIVATIONS] ?: 0,
@@ -287,7 +289,7 @@ class SettingsStore(
                 activePersonaId = preferences[ACTIVE_PERSONA_ID]?.let { Uuid.parse(it) },
                 authorNote = preferences[AUTHOR_NOTE] ?: "",
                 authorNoteEnabled = preferences[AUTHOR_NOTE_ENABLED] ?: true,
-                authorNotePosition = preferences[AUTHOR_NOTE_POSITION]?.let { InjectionPosition.valueOf(it) } ?: InjectionPosition.AFTER_SYSTEM_PROMPT,
+                authorNotePosition = parseAuthorNotePosition(preferences[AUTHOR_NOTE_POSITION]),
                 authorNoteDepth = preferences[AUTHOR_NOTE_DEPTH] ?: 4,
                 authorNoteRole = preferences[AUTHOR_NOTE_ROLE]?.let { MessageRole.valueOf(it) } ?: MessageRole.SYSTEM,
                 authorNoteInterval = preferences[AUTHOR_NOTE_INTERVAL] ?: 1,
@@ -632,7 +634,7 @@ data class Settings(
     val activePersonaId: Uuid? = null,             // 当前激活的 Persona
     val authorNote: String = "",                    // Author's Note 内容
     val authorNoteEnabled: Boolean = true,          // Author's Note 总开关
-    val authorNotePosition: InjectionPosition = InjectionPosition.AFTER_SYSTEM_PROMPT,
+    val authorNotePosition: AuthorNotePosition = AuthorNotePosition.IN_CHAT,
     val authorNoteDepth: Int = 4,                   // Author's Note 插入深度
     val authorNoteRole: MessageRole = MessageRole.SYSTEM, // 注入角色（官方默认 SYSTEM）
     val authorNoteInterval: Int = 1,                // 官方语义：1=每次注入，0=关闭，N=每N条用户消息注入一次

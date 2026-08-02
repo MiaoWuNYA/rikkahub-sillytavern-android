@@ -9,6 +9,7 @@ import androidx.compose.ui.res.stringResource
 import me.rerere.ai.provider.Model
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.ui.UIMessage
+import me.rerere.ai.ui.UIMessageAnnotation
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
@@ -140,10 +141,11 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
             Random.nextInt(1, 101).toString()
         }
         placeholder("input", { Text(stringResource(R.string.placeholder_input)) }) {
-            it.messages.lastOrNull { msg -> msg.role == MessageRole.USER }?.let(::textOf) ?: ""
+            it.lastRealMessage(MessageRole.USER)?.let(::textOf) ?: ""
         }
         placeholder("lastMessage", { Text(stringResource(R.string.placeholder_last_message)) }) {
-            it.messages.lastOrNull()?.let(::textOf) ?: ""
+            it.messages.lastOrNull { msg -> !msg.isInjectedBlock() && msg.annotations.none { a -> a is UIMessageAnnotation.ExampleMessage } }
+                ?.let(::textOf) ?: ""
         }
         placeholder("firstMessage", { Text(stringResource(R.string.placeholder_first_message)) }) {
             it.assistant.tavernData?.firstMessage ?: ""
@@ -286,8 +288,8 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
     private fun PlaceholderCtx.lastRealMessage(role: MessageRole): UIMessage? =
         messages.lastOrNull { m ->
             if (m.role != role) return@lastOrNull false
-            val t = textOf(m)
-            !t.startsWith("[Author's Note]") && !t.startsWith("[User Persona]")
+            !m.isInjectedBlock() &&
+                m.annotations.none { a -> a is UIMessageAnnotation.ExampleMessage }
         }
 
     /** 注入块使用内部标记避免被当作真实消息，发给模型前移除标记。 */

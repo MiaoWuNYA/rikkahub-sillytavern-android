@@ -35,6 +35,7 @@ import me.rerere.ai.ui.limitContext
 import me.rerere.rikkahub.data.ai.transformers.InputMessageTransformer
 import me.rerere.rikkahub.data.ai.transformers.MessageTransformer
 import me.rerere.rikkahub.data.ai.transformers.OutputMessageTransformer
+import me.rerere.rikkahub.data.ai.transformers.findSafeInsertIndex
 import me.rerere.rikkahub.data.ai.transformers.onGenerationFinish
 import me.rerere.rikkahub.data.ai.transformers.transforms
 import me.rerere.rikkahub.data.ai.transformers.visualTransforms
@@ -127,12 +128,16 @@ class GenerationHandler(
         context: android.content.Context,
         conversationRepo: me.rerere.rikkahub.data.repository.ConversationRepository,
     ): List<UIMessage> {
-        val personaDesc = settings.personas
+        val activePersona = settings.personas
             .find { it.id == settings.activePersonaId }
             ?.takeIf { it.enabled && (it.lockedCharacterIds.isEmpty() || assistant.id in it.lockedCharacterIds) }
-            ?.description
-            ?.takeIf { it.isNotBlank() }
-            ?: ""
+        val personaDesc = activePersona?.description?.takeIf { it.isNotBlank() } ?: ""
+        // 官方：人设只在 IN_PROMPT 位置通过 {{persona}} 嵌入系统提示词，其余位置由独立消息注入
+        val personaDescForPrompt = if (activePersona?.position == me.rerere.rikkahub.data.model.PersonaInjectionPosition.IN_PROMPT) {
+            personaDesc
+        } else {
+            ""
+        }
         val userName = settings.displaySetting.userNickname.ifBlank { "User" }
 
         // 官方 Chat Completion 结构：默认模板的角色卡拆成独立消息（主提示 + 角色卡字段）
@@ -148,7 +153,7 @@ class GenerationHandler(
         } else if (useOfficialSplit) {
             assistant.assembleMainPrompt()
         } else if (assistant.tavernData != null) {
-            assistant.assembleContext(userName = userName, personaDesc = personaDesc)
+            assistant.assembleContext(userName = userName, personaDesc = personaDescForPrompt)
         } else {
             assistant.systemPrompt
         }
@@ -565,6 +570,7 @@ class GenerationHandler(
         conversationId: Uuid? = null,
         generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
     ) {
+        val limitedChat = messages.limitContext(assistant.contextMessageLimit)
         val internalMessages = buildList {
             val fallbackSystem = buildString {
                 // ── s10: 使用 SystemPromptAssembler 替代硬编码 ──
@@ -574,16 +580,20 @@ class GenerationHandler(
                         if (assistant.allowConversationSystemPrompt && !conversationSystemPrompt.isNullOrBlank()) {
                             conversationSystemPrompt
                         } else {
-                            val personaDesc = settings.personas
+                            val fallbackPersona = settings.personas
                                 .find { it.id == settings.activePersonaId }
                                 ?.takeIf { it.enabled && (it.lockedCharacterIds.isEmpty() || assistant.id in it.lockedCharacterIds) }
-                                ?.description
-                                ?.takeIf { it.isNotBlank() }
-                                ?: ""
+                            val fallbackPersonaDesc = fallbackPersona?.description?.takeIf { it.isNotBlank() } ?: ""
+                            val fallbackPersonaForPrompt =
+                                if (fallbackPersona?.position == me.rerere.rikkahub.data.model.PersonaInjectionPosition.IN_PROMPT) {
+                                    fallbackPersonaDesc
+                                } else {
+                                    ""
+                                }
                             if (assistant.tavernData != null) {
                                 assistant.assembleContext(
                                     userName = settings.displaySetting.userNickname.ifBlank { "User" },
-                                    personaDesc = personaDesc,
+                                    personaDesc = fallbackPersonaForPrompt,
                                 )
                             } else {
                                 assistant.systemPrompt
@@ -638,7 +648,7 @@ class GenerationHandler(
                 add(UIMessage.user(prompt = userContext))
             }
 
-            addAll(messages.limitContext(assistant.contextMessageLimit))
+            addAll(limitedChat)
         }.let { base ->
             val persona = settings.personas.find { it.id == settings.activePersonaId }
             if (persona != null && persona.enabled && persona.description.isNotBlank() &&
@@ -647,13 +657,32 @@ class GenerationHandler(
                 val personaText = "[User Persona]\n${persona.description}"
                 when (persona.position) {
                     me.rerere.rikkahub.data.model.PersonaInjectionPosition.IN_PROMPT -> {
-                        val idx = (base.indexOfLast { it.role == MessageRole.SYSTEM } + 1).coerceAtLeast(0)
-                        base.take(idx) + UIMessage.system(personaText) + base.drop(idx)
+                        // 官方拆分路径（主提示词不含人设）才注入独立 SYSTEM 消息；
+                        // 自定义上下文模板已通过 {{persona}} 嵌入时不重复注入
+                        val template = assistant.contextTemplate.ifBlank { me.rerere.rikkahub.data.model.DEFAULT_CONTEXT_TEMPLATE }
+                        val useOfficialSplit = assistant.tavernData != null &&
+                            (assistant.contextTemplate.isBlank() ||
+                                assistant.contextTemplate.trim() == me.rerere.rikkahub.data.model.DEFAULT_CONTEXT_TEMPLATE)
+                        val conversationOverride =
+                            assistant.allowConversationSystemPrompt && !conversationSystemPrompt.isNullOrBlank()
+                        val embedded = assistant.tavernData != null && !useOfficialSplit && !conversationOverride &&
+                            template.contains("{{persona}}")
+                        if (!embedded) {
+                            // 官方顺序（populateChatCompletion）：人设位于场景/角色卡字段之后
+                            val idx = (base.indexOfLast { it.role == MessageRole.SYSTEM } + 1).coerceAtLeast(0)
+                            base.take(idx) + UIMessage.system(personaText) + base.drop(idx)
+                        } else {
+                            base
+                        }
                     }
 
                     me.rerere.rikkahub.data.model.PersonaInjectionPosition.AT_DEPTH -> {
-                        val depth = persona.depth.coerceAtLeast(1)
-                        val idx = (base.size - depth).coerceAtLeast(0)
+                        val depth = persona.depth.coerceAtLeast(0)
+                        val idx = findSafeInsertIndex(
+                            base,
+                            (base.size - minOf(depth, limitedChat.size))
+                                .coerceIn(base.size - limitedChat.size, base.size),
+                        )
                         val personaMsg = when (persona.role) {
                             MessageRole.ASSISTANT -> UIMessage.assistant(personaText)
                             MessageRole.USER -> UIMessage.user(personaText)
@@ -679,6 +708,8 @@ class GenerationHandler(
             workspaceCwd = workspaceCwd,
             conversationId = conversationId,
             generationType = generationType,
+            chatUserMessageCount = messages.count { it.role == MessageRole.USER },
+            chatMessageCount = limitedChat.size,
         )
 
         var messages: List<UIMessage> = messages

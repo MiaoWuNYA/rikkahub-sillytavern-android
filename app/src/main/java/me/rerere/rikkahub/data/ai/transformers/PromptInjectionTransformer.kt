@@ -5,6 +5,7 @@ import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.ai.ui.UIMessageAnnotation
 import me.rerere.rikkahub.data.model.Assistant
+import me.rerere.rikkahub.data.model.AuthorNotePosition
 import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.Lorebook
@@ -71,7 +72,7 @@ internal fun transformMessages(
     conversationLorebookIds: Set<Uuid> = emptySet(),
     activeStickyEntries: MutableMap<Uuid, Int> = mutableMapOf(),
     cooldownEntries: MutableMap<Uuid, Int> = mutableMapOf(),
-    authorNotePosition: InjectionPosition = InjectionPosition.AFTER_SYSTEM_PROMPT,
+    authorNotePosition: AuthorNotePosition = AuthorNotePosition.IN_CHAT,
     authorNoteDepth: Int = 4,
     worldInfoBudget: Int = 25,
     worldInfoMinActivations: Int = 0,
@@ -109,7 +110,7 @@ internal fun transformMessages(
     val resolvedInjections = injections.map { injection ->
         if (injection.position == InjectionPosition.AUTHOR_NOTE) {
             when (authorNotePosition) {
-                InjectionPosition.AT_DEPTH -> when (injection) {
+                AuthorNotePosition.IN_CHAT -> when (injection) {
                     is PromptInjection.RegexInjection -> injection.copy(
                         position = InjectionPosition.AT_DEPTH,
                         injectDepth = authorNoteDepth,
@@ -118,9 +119,15 @@ internal fun transformMessages(
                         position = InjectionPosition.AT_DEPTH,
                     )
                 }
-                else -> when (injection) {
-                    is PromptInjection.RegexInjection -> injection.copy(position = authorNotePosition)
-                    is PromptInjection.ModeInjection -> injection.copy(position = authorNotePosition)
+                // After Main Prompt / Story String：角色卡之后、对话之前
+                AuthorNotePosition.IN_PROMPT -> when (injection) {
+                    is PromptInjection.RegexInjection -> injection.copy(position = InjectionPosition.ANTAGONIZE)
+                    is PromptInjection.ModeInjection -> injection.copy(position = InjectionPosition.ANTAGONIZE)
+                }
+                // Before Main Prompt / Story String：提示词最前面
+                AuthorNotePosition.BEFORE_PROMPT -> when (injection) {
+                    is PromptInjection.RegexInjection -> injection.copy(position = InjectionPosition.BEFORE_SYSTEM_PROMPT)
+                    is PromptInjection.ModeInjection -> injection.copy(position = InjectionPosition.BEFORE_SYSTEM_PROMPT)
                 }
             }
         } else {
