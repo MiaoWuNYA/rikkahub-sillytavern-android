@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowLeft01
 import me.rerere.hugeicons.stroke.Delete01
+import me.rerere.ai.core.MessageRole
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.Persona
@@ -167,9 +168,11 @@ fun PersonaPage() {
                                     }
                                     Text(
                                         text = "注入位置：" + when (persona.position) {
-                                            PersonaInjectionPosition.BEFORE_SYSTEM -> "系统提示词前"
-                                            PersonaInjectionPosition.AFTER_SYSTEM -> "系统提示词后"
+                                            PersonaInjectionPosition.IN_PROMPT -> "系统提示词内（官方默认）"
                                             PersonaInjectionPosition.TOP_OF_CHAT -> "对话顶部"
+                                            PersonaInjectionPosition.BOTTOM_OF_CHAT -> "对话底部"
+                                            PersonaInjectionPosition.AT_DEPTH -> "指定深度插入（深度${persona.depth}）"
+                                            PersonaInjectionPosition.NONE -> "不注入"
                                         },
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
@@ -283,7 +286,9 @@ private fun PersonaEditPage(
     var name by remember(initial) { mutableStateOf(initial?.name ?: "") }
     var title by remember(initial) { mutableStateOf(initial?.title ?: "") }
     var desc by remember(initial) { mutableStateOf(initial?.description ?: "") }
-    var pos by remember(initial) { mutableStateOf(initial?.position ?: PersonaInjectionPosition.AFTER_SYSTEM) }
+    var pos by remember(initial) { mutableStateOf(initial?.position ?: PersonaInjectionPosition.IN_PROMPT) }
+    var depth by remember(initial) { mutableIntStateOf(initial?.depth ?: 2) }
+    var role by remember(initial) { mutableStateOf(initial?.role ?: MessageRole.SYSTEM) }
     var lockedIds by remember(initial) { mutableStateOf(initial?.lockedCharacterIds ?: emptyList()) }
     var showCharPicker by remember { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -306,6 +311,8 @@ private fun PersonaEditPage(
                                 title = title,
                                 description = desc,
                                 position = pos,
+                                depth = depth,
+                                role = role,
                                 lockedCharacterIds = lockedIds,
                                 avatar = initial?.avatar ?: Avatar.Emoji("👤"),
                             ))
@@ -402,14 +409,7 @@ private fun PersonaEditPage(
                         item(
                             onClick = { pos = p },
                             headlineContent = {
-                                Text(
-                                    when (p) {
-                                        PersonaInjectionPosition.BEFORE_SYSTEM -> "系统提示词前"
-                                        PersonaInjectionPosition.AFTER_SYSTEM -> "系统提示词后"
-                                        PersonaInjectionPosition.TOP_OF_CHAT -> "对话顶部"
-                                    },
-                                    style = MaterialTheme.typography.bodyMedium,
-                                )
+                                Text(personaPositionLabel(p), style = MaterialTheme.typography.bodyMedium)
                             },
                             trailingContent = {
                                 RadioButton(
@@ -421,11 +421,51 @@ private fun PersonaEditPage(
                     }
                 }
                 Text(
-                    text = "人设信息注入到提示词的位置",
+                    text = "注入位置对齐酒馆官方：系统提示词内 / 对话顶部 / 对话底部 / 指定深度 / 不注入",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
                 )
+                if (pos == PersonaInjectionPosition.AT_DEPTH) {
+                    Spacer(Modifier.height(8.dp))
+                    Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+                        Text(
+                            "插入深度：$depth（从最新消息往前数）",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Slider(
+                            value = depth.toFloat(),
+                            onValueChange = { depth = it.toInt() },
+                            valueRange = 1f..10f,
+                            steps = 8,
+                        )
+                    }
+                }
+                if (pos == PersonaInjectionPosition.TOP_OF_CHAT ||
+                    pos == PersonaInjectionPosition.BOTTOM_OF_CHAT ||
+                    pos == PersonaInjectionPosition.AT_DEPTH
+                ) {
+                    Spacer(Modifier.height(12.dp))
+                    CardGroup(title = { Text("注入角色") }) {
+                        listOf(
+                            MessageRole.SYSTEM to "系统",
+                            MessageRole.USER to "用户",
+                            MessageRole.ASSISTANT to "助手",
+                        ).forEach { (r, label) ->
+                            item(
+                                onClick = { role = r },
+                                headlineContent = { Text(label, style = MaterialTheme.typography.bodyMedium) },
+                                trailingContent = {
+                                    RadioButton(
+                                        selected = role == r,
+                                        onClick = { role = r },
+                                    )
+                                },
+                            )
+                        }
+                    }
+                }
             }
 
             // 角色绑定
@@ -621,3 +661,14 @@ private val personaPresets = listOf(
         "我是小说创作者，正在构思故事。请用文学化的语言与我讨论：注重细节、氛围和情感张力，对话要贴合人物性格，叙述要有画面感和呼吸感。情节设计要逻辑自洽、动机合理，转折要有铺垫。帮我梳理世界观、人物弧光和节奏时请具体、可操作，最好给出示例段落让我直观感受效果。",
     ),
 )
+
+/** 人设注入位置的中文名称（对齐酒馆官方位置）。 */
+private fun personaPositionLabel(position: PersonaInjectionPosition): String {
+    return when (position) {
+        PersonaInjectionPosition.IN_PROMPT -> "系统提示词内（官方默认）"
+        PersonaInjectionPosition.TOP_OF_CHAT -> "对话顶部"
+        PersonaInjectionPosition.BOTTOM_OF_CHAT -> "对话底部"
+        PersonaInjectionPosition.AT_DEPTH -> "指定深度插入"
+        PersonaInjectionPosition.NONE -> "不注入"
+    }
+}

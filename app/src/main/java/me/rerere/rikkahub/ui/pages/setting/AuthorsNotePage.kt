@@ -224,29 +224,6 @@ fun AuthorsNotePage() {
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
             )
 
-            // 频率
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("插入频率：${(settings.authorNoteFrequency * 100).toInt()}%", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
-                    Spacer(Modifier.height(8.dp))
-                    var localFreq by remember { mutableFloatStateOf(settings.authorNoteFrequency) }
-                    Slider(
-                        value = localFreq,
-                        onValueChange = { localFreq = it },
-                        onValueChangeFinished = {
-                            scope.launch {
-                                settingsStore.update(settings.copy(authorNoteFrequency = localFreq))
-                            }
-                        },
-                        valueRange = 0.0f..1.0f,
-                        steps = 19,
-                    )
-                }
-            }
-
             // 间隔
             Card(
                 shape = RoundedCornerShape(20.dp),
@@ -254,9 +231,18 @@ fun AuthorsNotePage() {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        "间隔注入：${if (settings.authorNoteInterval == 0) "每次都注入" else "每${settings.authorNoteInterval}条注入一次"}",
+                        "间隔注入（对齐酒馆官方）：" + when (settings.authorNoteInterval) {
+                            0 -> "关闭（不注入）"
+                            1 -> "每次注入"
+                            else -> "每${settings.authorNoteInterval}条用户消息注入一次"
+                        },
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Medium,
+                    )
+                    Text(
+                        "按当前对话的用户消息条数计数，跨对话互不影响",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(8.dp))
                     var localInterval by remember { mutableIntStateOf(settings.authorNoteInterval) }
@@ -275,7 +261,7 @@ fun AuthorsNotePage() {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text("每次", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("关闭", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("每20条", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }

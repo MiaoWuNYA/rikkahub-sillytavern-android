@@ -27,17 +27,31 @@ object PersonaTransformer : InputMessageTransformer {
         }
 
         val displayName = persona.title.ifBlank { persona.name }
-        val personaMsg = UIMessage.user("[User Persona: $displayName]\n${persona.description}")
+        val personaText = "[User Persona: $displayName]\n${persona.description}"
+        val personaMsg = when (persona.role) {
+            MessageRole.SYSTEM -> UIMessage.system(personaText)
+            MessageRole.ASSISTANT -> UIMessage.assistant(personaText)
+            else -> UIMessage.user(personaText)
+        }
 
         return when (persona.position) {
-            me.rerere.rikkahub.data.model.PersonaInjectionPosition.BEFORE_SYSTEM ->
-                listOf(personaMsg) + messages
-            me.rerere.rikkahub.data.model.PersonaInjectionPosition.AFTER_SYSTEM ->
+            // IN_PROMPT 已由系统提示词组装嵌入；NONE 不注入
+            me.rerere.rikkahub.data.model.PersonaInjectionPosition.IN_PROMPT,
+            me.rerere.rikkahub.data.model.PersonaInjectionPosition.NONE -> messages
+
+            me.rerere.rikkahub.data.model.PersonaInjectionPosition.TOP_OF_CHAT ->
                 if (messages.isNotEmpty()) {
                     listOf(messages.first()) + personaMsg + messages.drop(1)
                 } else listOf(personaMsg) + messages
-            me.rerere.rikkahub.data.model.PersonaInjectionPosition.TOP_OF_CHAT ->
+
+            me.rerere.rikkahub.data.model.PersonaInjectionPosition.BOTTOM_OF_CHAT ->
                 messages + personaMsg
+
+            me.rerere.rikkahub.data.model.PersonaInjectionPosition.AT_DEPTH -> {
+                val depth = persona.depth.coerceAtLeast(1)
+                val insertIdx = (messages.size - depth).coerceAtLeast(0)
+                messages.take(insertIdx) + personaMsg + messages.drop(insertIdx)
+            }
         }
     }
 }
@@ -50,8 +64,6 @@ object PersonaTransformer : InputMessageTransformer {
  * - 间隔注入（每N条消息注入一次）
  */
 object AuthorsNoteTransformer : InputMessageTransformer {
-    private var messageCounter = 0
-
     override suspend fun transform(
         ctx: TransformerContext,
         messages: List<UIMessage>,
@@ -59,19 +71,19 @@ object AuthorsNoteTransformer : InputMessageTransformer {
         val note = ctx.settings.authorNote
         if (!ctx.settings.authorNoteEnabled || note.isBlank()) return messages
 
-        // 间隔检查
-        messageCounter++
-        if (ctx.settings.authorNoteInterval > 0) {
-            if (messageCounter % ctx.settings.authorNoteInterval != 0) return messages
+        // 官方计数语义（对齐 SillyTavern authors-note.js）：
+        // - 按当前对话的用户消息条数计数，不跨对话、不按生成次数
+        // - interval == 1：每次都注入（有用户消息即可）
+        // - interval <= 0：禁用
+        // - 其他：用户消息条数恰好是 interval 的整数倍时注入
+        val interval = ctx.settings.authorNoteInterval
+        val userCount = messages.count { it.role == MessageRole.USER }
+        val shouldInject = when {
+            interval == 1 -> userCount > 0
+            interval <= 0 -> false
+            else -> userCount >= interval && userCount % interval == 0
         }
-
-        // 频率检查
-        if (ctx.settings.authorNoteFrequency < 1.0f) {
-            if (kotlin.random.Random.nextFloat() > ctx.settings.authorNoteFrequency) {
-                messageCounter-- // 不计入本次
-                return messages
-            }
-        }
+        if (!shouldInject) return messages
 
         val role = ctx.settings.authorNoteRole
         val noteMsg = when (role) {

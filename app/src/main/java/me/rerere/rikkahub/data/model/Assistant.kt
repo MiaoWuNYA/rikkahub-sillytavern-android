@@ -454,7 +454,7 @@ fun Assistant.assembleContext(
     userName: String,
     personaDesc: String,
     personaTitle: String = "",
-    personaPosition: PersonaInjectionPosition = PersonaInjectionPosition.AFTER_SYSTEM,
+    personaPosition: PersonaInjectionPosition = PersonaInjectionPosition.IN_PROMPT,
 ): String {
     val template = this.contextTemplate.ifBlank { DEFAULT_CONTEXT_TEMPLATE }
     val tav = this.tavernData
@@ -476,8 +476,9 @@ fun Assistant.assembleContext(
     // 模板未使用 {{persona}} 宏时，按人设位置自动注入（对齐酒馆 persona 注入）
     if (personaBlock.isNotEmpty() && !template.contains("{{persona}}")) {
         result = when (personaPosition) {
-            PersonaInjectionPosition.BEFORE_SYSTEM -> "$personaBlock\n\n$result"
-            else -> "$result\n\n$personaBlock"
+            PersonaInjectionPosition.IN_PROMPT -> "$personaBlock\n\n$result"
+            // 其余位置：人设作为独立消息注入，不嵌入系统提示词
+            else -> result
         }
     }
     return result
@@ -498,7 +499,7 @@ fun Assistant.assembleCharacterCardBlock(
     userName: String,
     personaDesc: String,
     personaTitle: String = "",
-    personaPosition: PersonaInjectionPosition = PersonaInjectionPosition.BEFORE_SYSTEM,
+    personaPosition: PersonaInjectionPosition = PersonaInjectionPosition.IN_PROMPT,
 ): String {
     val tav = this.tavernData ?: return ""
     val personaBlock = if (personaDesc.isNotBlank()) {
@@ -525,22 +526,16 @@ fun Assistant.assembleCharacterCardBlock(
         }
     }
 
-    return if (personaPosition == PersonaInjectionPosition.BEFORE_SYSTEM) {
-        buildString {
+    return when (personaPosition) {
+        PersonaInjectionPosition.IN_PROMPT -> buildString {
             if (personaBlock.isNotBlank()) append(personaBlock)
             if (core.isNotEmpty()) {
                 if (isNotEmpty()) appendLine()
                 append(core)
             }
         }
-    } else {
-        buildString {
-            if (core.isNotEmpty()) append(core)
-            if (personaBlock.isNotBlank()) {
-                if (isNotEmpty()) appendLine()
-                append(personaBlock)
-            }
-        }
+        // 其余位置：人设作为独立消息注入，角色卡块不嵌入
+        else -> core
     }
 }
 

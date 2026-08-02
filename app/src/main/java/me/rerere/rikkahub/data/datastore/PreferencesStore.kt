@@ -176,7 +176,8 @@ class SettingsStore(
         val AUTHOR_NOTE_ENABLED = booleanPreferencesKey("author_note_enabled")
         val AUTHOR_NOTE_POSITION = stringPreferencesKey("author_note_position")
         val AUTHOR_NOTE_DEPTH = intPreferencesKey("author_note_depth")
-        val AUTHOR_NOTE_FREQUENCY = stringPreferencesKey("author_note_frequency")
+        val AUTHOR_NOTE_ROLE = stringPreferencesKey("author_note_role")
+        val AUTHOR_NOTE_INTERVAL = intPreferencesKey("author_note_interval")
         val GROUP_CHATS = stringPreferencesKey("group_chats")
     }
 
@@ -288,7 +289,8 @@ class SettingsStore(
                 authorNoteEnabled = preferences[AUTHOR_NOTE_ENABLED] ?: true,
                 authorNotePosition = preferences[AUTHOR_NOTE_POSITION]?.let { InjectionPosition.valueOf(it) } ?: InjectionPosition.AFTER_SYSTEM_PROMPT,
                 authorNoteDepth = preferences[AUTHOR_NOTE_DEPTH] ?: 4,
-                authorNoteFrequency = preferences[AUTHOR_NOTE_FREQUENCY]?.toFloatOrNull() ?: 1.0f,
+                authorNoteRole = preferences[AUTHOR_NOTE_ROLE]?.let { MessageRole.valueOf(it) } ?: MessageRole.SYSTEM,
+                authorNoteInterval = preferences[AUTHOR_NOTE_INTERVAL] ?: 1,
                 groupChats = preferences[GROUP_CHATS]?.let { JsonInstant.decodeFromString(it) } ?: emptyList(),
                 macroGlobalVariables = preferences[MACRO_GLOBAL_VARIABLES]?.let {
                     JsonInstant.decodeFromString(it)
@@ -477,7 +479,8 @@ class SettingsStore(
             preferences[AUTHOR_NOTE_ENABLED] = settings.authorNoteEnabled
             preferences[AUTHOR_NOTE_POSITION] = settings.authorNotePosition.name
             preferences[AUTHOR_NOTE_DEPTH] = settings.authorNoteDepth
-            preferences[AUTHOR_NOTE_FREQUENCY] = settings.authorNoteFrequency.toString()
+            preferences[AUTHOR_NOTE_ROLE] = settings.authorNoteRole.name
+            preferences[AUTHOR_NOTE_INTERVAL] = settings.authorNoteInterval
             preferences[GROUP_CHATS] = JsonInstant.encodeToString(settings.groupChats)
             preferences[MACRO_GLOBAL_VARIABLES] = JsonInstant.encodeToString(settings.macroGlobalVariables)
             preferences[MACRO_CHAT_VARIABLES] = JsonInstant.encodeToString(settings.macroChatVariables)
@@ -631,9 +634,8 @@ data class Settings(
     val authorNoteEnabled: Boolean = true,          // Author's Note 总开关
     val authorNotePosition: InjectionPosition = InjectionPosition.AFTER_SYSTEM_PROMPT,
     val authorNoteDepth: Int = 4,                   // Author's Note 插入深度
-    val authorNoteFrequency: Float = 1.0f,          // Author's Note 插入频率 (0-1)
-    val authorNoteRole: MessageRole = MessageRole.USER, // 注入角色
-    val authorNoteInterval: Int = 0,                // 每N条注入一次（0=每次都注入）
+    val authorNoteRole: MessageRole = MessageRole.SYSTEM, // 注入角色（官方默认 SYSTEM）
+    val authorNoteInterval: Int = 1,                // 官方语义：1=每次注入，0=关闭，N=每N条用户消息注入一次
     val groupChats: List<GroupChat> = emptyList(),   // 群聊列表
     val macroGlobalVariables: Map<String, String> = emptyMap(),        // 宏引擎全局变量（跨对话持久）
     val macroChatVariables: Map<String, Map<String, String>> = emptyMap(), // 宏引擎会话变量（conversationId → 变量）

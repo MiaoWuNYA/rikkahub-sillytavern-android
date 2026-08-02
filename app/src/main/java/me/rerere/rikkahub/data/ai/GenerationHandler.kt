@@ -127,15 +127,19 @@ class GenerationHandler(
         context: android.content.Context,
         conversationRepo: me.rerere.rikkahub.data.repository.ConversationRepository,
     ): List<UIMessage> {
-        val persona = settings.personas.find { it.id == settings.activePersonaId }
+        val persona = settings.personas.find { it.id == settings.activePersonaId }?.takeIf { it.enabled }
         val personaDesc = persona?.description?.takeIf { it.isNotBlank() }
         val userName = settings.displaySetting.userNickname.ifBlank { "User" }
-        // 官方 Chat Completion 默认：人设在角色描述之前；无角色卡时保持系统提示后
-        val personaPosition = persona?.position
-            ?: if (assistant.tavernData != null)
-                me.rerere.rikkahub.data.model.PersonaInjectionPosition.BEFORE_SYSTEM
-            else
-                me.rerere.rikkahub.data.model.PersonaInjectionPosition.AFTER_SYSTEM
+        // 官方默认：人设嵌入系统提示词（IN_PROMPT）
+        val personaPosition = persona?.position ?: me.rerere.rikkahub.data.model.PersonaInjectionPosition.IN_PROMPT
+        // 官方非 IN_PROMPT 位置：人设不作为系统提示词文本嵌入（独立消息注入或 NONE 不注入）
+        val personaNotInPrompt = persona?.position in setOf(
+            me.rerere.rikkahub.data.model.PersonaInjectionPosition.TOP_OF_CHAT,
+            me.rerere.rikkahub.data.model.PersonaInjectionPosition.BOTTOM_OF_CHAT,
+            me.rerere.rikkahub.data.model.PersonaInjectionPosition.AT_DEPTH,
+            me.rerere.rikkahub.data.model.PersonaInjectionPosition.NONE,
+        )
+        val systemPersonaDesc = if (personaNotInPrompt) "" else (personaDesc ?: "")
 
         // 官方 Chat Completion 结构：默认模板的角色卡拆成独立消息（主提示 + 角色卡字段）
         // 默认模板（空 或 与内置默认完全一致）才按官方拆分；contextTemplate 无 UI 入口，
@@ -152,11 +156,11 @@ class GenerationHandler(
         } else if (assistant.tavernData != null) {
             assistant.assembleContext(
                 userName = userName,
-                personaDesc = personaDesc ?: "",
+                personaDesc = systemPersonaDesc,
                 personaTitle = persona?.title ?: "",
                 personaPosition = personaPosition,
             )
-        } else if (personaDesc != null) {
+        } else if (personaDesc != null && !personaNotInPrompt) {
             val personaLabel = persona?.title?.ifBlank { persona?.name } ?: "User"
             assistant.systemPrompt + "\n\n[User Persona: $personaLabel]\n$personaDesc"
         } else {
@@ -272,7 +276,7 @@ class GenerationHandler(
             if (useOfficialSplit && !conversationOverride) {
                 val cardText = assistant.assembleCharacterCardBlock(
                     userName = userName,
-                    personaDesc = personaDesc ?: "",
+                    personaDesc = systemPersonaDesc,
                     personaTitle = persona?.title ?: "",
                     personaPosition = personaPosition,
                 )
@@ -589,20 +593,25 @@ class GenerationHandler(
                         if (assistant.allowConversationSystemPrompt && !conversationSystemPrompt.isNullOrBlank()) {
                             conversationSystemPrompt
                         } else {
-                            val persona = settings.personas.find { it.id == settings.activePersonaId }
+                            val persona = settings.personas.find { it.id == settings.activePersonaId }?.takeIf { it.enabled }
                             val personaDesc = persona?.description?.takeIf { it.isNotBlank() }
+                            val personaPosition = persona?.position
+                                ?: me.rerere.rikkahub.data.model.PersonaInjectionPosition.IN_PROMPT
+                            val personaNotInPrompt = persona?.position in setOf(
+                                me.rerere.rikkahub.data.model.PersonaInjectionPosition.TOP_OF_CHAT,
+                                me.rerere.rikkahub.data.model.PersonaInjectionPosition.BOTTOM_OF_CHAT,
+                                me.rerere.rikkahub.data.model.PersonaInjectionPosition.AT_DEPTH,
+                                me.rerere.rikkahub.data.model.PersonaInjectionPosition.NONE,
+                            )
+                            val systemPersonaDesc = if (personaNotInPrompt) "" else (personaDesc ?: "")
                             if (assistant.tavernData != null) {
                                 assistant.assembleContext(
                                     userName = settings.displaySetting.userNickname.ifBlank { "User" },
-                                    personaDesc = personaDesc ?: "",
+                                    personaDesc = systemPersonaDesc,
                                     personaTitle = persona?.title ?: "",
-                                    personaPosition = persona?.position
-                                        ?: if (assistant.tavernData != null)
-                                            me.rerere.rikkahub.data.model.PersonaInjectionPosition.BEFORE_SYSTEM
-                                        else
-                                            me.rerere.rikkahub.data.model.PersonaInjectionPosition.AFTER_SYSTEM,
+                                    personaPosition = personaPosition,
                                 )
-                            } else if (personaDesc != null) {
+                            } else if (personaDesc != null && !personaNotInPrompt) {
                                 val personaLabel = persona?.title?.ifBlank { persona?.name } ?: "User"
                                 assistant.systemPrompt + "\n\n[User Persona: $personaLabel]\n$personaDesc"
                             } else {
@@ -659,6 +668,42 @@ class GenerationHandler(
             }
 
             addAll(messages.limitContext(assistant.contextMessageLimit))
+        }.let { base ->
+            // 官方 persona 注入：IN_PROMPT 已嵌入系统提示词；其余非 NONE 位置作为独立消息注入
+            val persona = settings.personas.find { it.id == settings.activePersonaId }
+            if (persona != null && persona.enabled && persona.description.isNotBlank() &&
+                persona.position in setOf(
+                    me.rerere.rikkahub.data.model.PersonaInjectionPosition.TOP_OF_CHAT,
+                    me.rerere.rikkahub.data.model.PersonaInjectionPosition.BOTTOM_OF_CHAT,
+                    me.rerere.rikkahub.data.model.PersonaInjectionPosition.AT_DEPTH,
+                ) &&
+                (persona.lockedCharacterIds.isEmpty() || assistant.id in persona.lockedCharacterIds)
+            ) {
+                val personaText = "[User Persona: ${persona.title.ifBlank { persona.name }}]\n${persona.description}"
+                val personaMsg = when (persona.role) {
+                    MessageRole.SYSTEM -> UIMessage.system(personaText)
+                    MessageRole.ASSISTANT -> UIMessage.assistant(personaText)
+                    else -> UIMessage.user(personaText)
+                }
+                when (persona.position) {
+                    me.rerere.rikkahub.data.model.PersonaInjectionPosition.TOP_OF_CHAT -> {
+                        val idx = (base.indexOfFirst { it.role == MessageRole.SYSTEM } + 1).coerceAtLeast(0)
+                        base.take(idx) + personaMsg + base.drop(idx)
+                    }
+
+                    me.rerere.rikkahub.data.model.PersonaInjectionPosition.BOTTOM_OF_CHAT -> base + personaMsg
+
+                    me.rerere.rikkahub.data.model.PersonaInjectionPosition.AT_DEPTH -> {
+                        val depth = persona.depth.coerceAtLeast(1)
+                        val idx = (base.size - depth).coerceAtLeast(0)
+                        base.take(idx) + personaMsg + base.drop(idx)
+                    }
+
+                    else -> base
+                }
+            } else {
+                base
+            }
         }.transforms(
             transformers = transformers,
             context = context,
