@@ -48,6 +48,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -590,7 +591,7 @@ private fun InjectionRoleSelector(
     onSelect: (MessageRole) -> Unit
 ) {
     Select(
-        options = listOf(MessageRole.USER, MessageRole.ASSISTANT),
+        options = listOf(MessageRole.SYSTEM, MessageRole.USER, MessageRole.ASSISTANT),
         selectedOption = role,
         onOptionSelected = onSelect,
         optionToString = { getRoleLabel(it) },
@@ -600,6 +601,7 @@ private fun InjectionRoleSelector(
 
 @Composable
 private fun getRoleLabel(role: MessageRole): String = when (role) {
+    MessageRole.SYSTEM -> "系统(System)"
     MessageRole.USER -> stringResource(R.string.prompt_page_role_user)
     MessageRole.ASSISTANT -> stringResource(R.string.prompt_page_role_assistant)
     else -> role.name
@@ -1173,8 +1175,28 @@ private fun LorebookEditSheet(
                         probability = template.probability,
                         sticky = template.sticky,
                         cooldown = template.cooldown,
+                        delay = template.delay,
                         groupWeight = template.groupWeight,
                         groupOverride = template.groupOverride,
+                        matchWholeWords = template.matchWholeWords,
+                        excludeRecursion = template.excludeRecursion,
+                        preventRecursion = template.preventRecursion,
+                        delayUntilRecursion = template.delayUntilRecursion,
+                        useProbability = template.useProbability,
+                        inclusionGroup = template.inclusionGroup,
+                        useGroupScoring = template.useGroupScoring,
+                        groupPriority = template.groupPriority,
+                        automationId = template.automationId,
+                        displayIndex = template.displayIndex,
+                        displayPosition = template.displayPosition,
+                        triggers = template.triggers,
+                        matchPersonaDescription = template.matchPersonaDescription,
+                        matchCharacterDescription = template.matchCharacterDescription,
+                        matchCharacterPersonality = template.matchCharacterPersonality,
+                        matchCharacterDepthPrompt = template.matchCharacterDepthPrompt,
+                        matchScenario = template.matchScenario,
+                        matchCreatorNotes = template.matchCreatorNotes,
+                        ignoreBudget = template.ignoreBudget,
                     ) })
                     groupEditState.confirm()
                 },
@@ -1573,8 +1595,8 @@ private fun GroupSettingsDialog(
 
                 // 酒馆官方高级字段（自动化ID/触发类型本App暂不执行，仅保留数据）
                 OutlinedTextField(
-                    value = entry.inclusionGroup,
-                    onValueChange = { onEdit(entry.copy(inclusionGroup = it)) },
+                    value = edited.inclusionGroup,
+                    onValueChange = { edited = edited.copy(inclusionGroup = it) },
                     label = { Text("包含组(Inclusion Group)") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
@@ -1586,8 +1608,8 @@ private fun GroupSettingsDialog(
                         label = { Text("使用组评分(Use Group Scoring)") },
                         tail = {
                             Switch(
-                                checked = entry.useGroupScoring,
-                                onCheckedChange = { onEdit(entry.copy(useGroupScoring = it)) }
+                                checked = edited.useGroupScoring,
+                                onCheckedChange = { edited = edited.copy(useGroupScoring = it) }
                             )
                         }
                     )
@@ -1596,15 +1618,15 @@ private fun GroupSettingsDialog(
                         label = { Text("包含优先(Group Priority)") },
                         tail = {
                             Switch(
-                                checked = entry.groupPriority,
-                                onCheckedChange = { onEdit(entry.copy(groupPriority = it)) }
+                                checked = edited.groupPriority,
+                                onCheckedChange = { edited = edited.copy(groupPriority = it) }
                             )
                         }
                     )
                 }
                 OutlinedTextField(
-                    value = entry.automationId,
-                    onValueChange = { onEdit(entry.copy(automationId = it)) },
+                    value = edited.automationId,
+                    onValueChange = { edited = edited.copy(automationId = it) },
                     label = { Text("自动化ID(Automation ID)") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
@@ -1612,16 +1634,16 @@ private fun GroupSettingsDialog(
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
-                        value = entry.displayIndex.toString(),
-                        onValueChange = { it.toIntOrNull()?.let { v -> onEdit(entry.copy(displayIndex = v)) } },
+                        value = edited.displayIndex.toString(),
+                        onValueChange = { it.toIntOrNull()?.let { v -> edited = edited.copy(displayIndex = v) } },
                         label = { Text("显示序号(Display Index)") },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                     )
                     OutlinedTextField(
-                        value = entry.displayPosition.toString(),
-                        onValueChange = { it.toIntOrNull()?.let { v -> onEdit(entry.copy(displayPosition = v)) } },
+                        value = edited.displayPosition.toString(),
+                        onValueChange = { it.toIntOrNull()?.let { v -> edited = edited.copy(displayPosition = v) } },
                         label = { Text("显示位置(Display Position)") },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -1629,15 +1651,103 @@ private fun GroupSettingsDialog(
                     )
                 }
                 OutlinedTextField(
-                    value = entry.triggers.joinToString(", "),
+                    value = edited.triggers.joinToString(", "),
                     onValueChange = { text ->
-                        onEdit(entry.copy(triggers = text.split(",").map { it.trim() }.filter { it.isNotBlank() }))
+                        edited = edited.copy(triggers = text.split(",").map { it.trim() }.filter { it.isNotBlank() })
                     },
                     label = { Text("触发类型(Triggers)") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    supportingText = { Text("逗号分隔，仅保留数据") },
+                    supportingText = { Text("逗号分隔；不选 = 所有生成类型都触发") },
                 )
+                // 官方生成类型快捷多选
+                val triggerOptions = listOf(
+                    "normal" to "普通(Normal)",
+                    "continue" to "继续(Continue)",
+                    "impersonate" to "伪角色(Impersonate)",
+                    "swipe" to "重掷(Swipe)",
+                    "regenerate" to "重新生成(Regenerate)",
+                    "quiet" to "安静(Quiet)",
+                )
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    triggerOptions.forEach { (value, label) ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            Checkbox(
+                                checked = value in edited.triggers,
+                                onCheckedChange = { checked ->
+                                    val newTriggers = edited.triggers.toMutableSet().apply {
+                                        if (checked) add(value) else remove(value)
+                                    }
+                                    edited = edited.copy(triggers = newTriggers.toList())
+                                },
+                            )
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+                }
+
+                // 预算豁免（官方 ignore_budget）
+                FormItem(
+                    label = { Text("忽略预算(Ignore Budget)") },
+                    description = { Text("该条目不受世界书 token 预算限制，总是注入") },
+                    tail = {
+                        Switch(
+                            checked = edited.ignoreBudget,
+                            onCheckedChange = { edited = edited.copy(ignoreBudget = it) }
+                        )
+                    }
+                )
+
+                // 官方 match_*：关键词扫描范围（默认只扫聊天）
+                Text(
+                    "扫描范围(Match)",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                val matchOptions = listOf(
+                    "matchCharacterDescription" to "角色描述(Char Description)",
+                    "matchCharacterPersonality" to "角色性格(Char Personality)",
+                    "matchCharacterDepthPrompt" to "角色深度提示(Char Depth Prompt)",
+                    "matchScenario" to "角色场景(Scenario)",
+                    "matchCreatorNotes" to "作者备注(Creator Notes)",
+                    "matchPersonaDescription" to "用户人设(Persona)",
+                )
+                matchOptions.forEach { (field, label) ->
+                    val checked = when (field) {
+                        "matchCharacterDescription" -> edited.matchCharacterDescription
+                        "matchCharacterPersonality" -> edited.matchCharacterPersonality
+                        "matchCharacterDepthPrompt" -> edited.matchCharacterDepthPrompt
+                        "matchScenario" -> edited.matchScenario
+                        "matchCreatorNotes" -> edited.matchCreatorNotes
+                        else -> edited.matchPersonaDescription
+                    }
+                    FormItem(
+                        label = { Text(label) },
+                        tail = {
+                            Switch(
+                                checked = checked,
+                                onCheckedChange = {
+                                    edited = edited.copy(
+                                        matchCharacterDescription = if (field == "matchCharacterDescription") it else edited.matchCharacterDescription,
+                                        matchCharacterPersonality = if (field == "matchCharacterPersonality") it else edited.matchCharacterPersonality,
+                                        matchCharacterDepthPrompt = if (field == "matchCharacterDepthPrompt") it else edited.matchCharacterDepthPrompt,
+                                        matchScenario = if (field == "matchScenario") it else edited.matchScenario,
+                                        matchCreatorNotes = if (field == "matchCreatorNotes") it else edited.matchCreatorNotes,
+                                        matchPersonaDescription = if (field == "matchPersonaDescription") it else edited.matchPersonaDescription,
+                                    )
+                                }
+                            )
+                        }
+                    )
+                }
 
                 // 概率
                 FormItem(

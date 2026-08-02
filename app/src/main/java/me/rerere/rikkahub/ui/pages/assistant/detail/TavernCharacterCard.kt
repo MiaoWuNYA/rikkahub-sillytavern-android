@@ -1130,6 +1130,13 @@ private fun EntryEditor(
     var displayIndexStr by remember(entry.id) { mutableStateOf(entry.displayIndex.toString()) }
     var displayPositionStr by remember(entry.id) { mutableStateOf(entry.displayPosition.toString()) }
     var triggersStr by remember(entry.id) { mutableStateOf(entry.triggers.joinToString(", ")) }
+    var matchPersonaDescription by remember(entry.id) { mutableStateOf(entry.matchPersonaDescription) }
+    var matchCharacterDescription by remember(entry.id) { mutableStateOf(entry.matchCharacterDescription) }
+    var matchCharacterPersonality by remember(entry.id) { mutableStateOf(entry.matchCharacterPersonality) }
+    var matchCharacterDepthPrompt by remember(entry.id) { mutableStateOf(entry.matchCharacterDepthPrompt) }
+    var matchScenario by remember(entry.id) { mutableStateOf(entry.matchScenario) }
+    var matchCreatorNotes by remember(entry.id) { mutableStateOf(entry.matchCreatorNotes) }
+    var ignoreBudget by remember(entry.id) { mutableStateOf(entry.ignoreBudget) }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         // 顶部：标题 + 收起
@@ -1478,8 +1485,53 @@ private fun EntryEditor(
                     textStyle = MaterialTheme.typography.bodySmall,
                     singleLine = true,
                     label = { Text("触发类型(Triggers)") },
-                    supportingText = { Text("逗号分隔，仅保留数据") },
+                    supportingText = { Text("逗号分隔；不选 = 所有生成类型都触发") },
                 )
+                CardGroup {
+                    item(
+                        headlineContent = { Text("忽略预算(Ignore Budget)", style = MaterialTheme.typography.bodyMedium) },
+                        supportingContent = {
+                            Text(
+                                "该条目不受世界书 token 预算限制，总是注入",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        },
+                        trailingContent = { Switch(checked = ignoreBudget, onCheckedChange = { ignoreBudget = it }) },
+                    )
+                }
+                Text(
+                    "扫描范围(Match)",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+                CardGroup {
+                    item(
+                        headlineContent = { Text("角色描述(Char Description)", style = MaterialTheme.typography.bodyMedium) },
+                        trailingContent = { Switch(checked = matchCharacterDescription, onCheckedChange = { matchCharacterDescription = it }) },
+                    )
+                    item(
+                        headlineContent = { Text("角色性格(Char Personality)", style = MaterialTheme.typography.bodyMedium) },
+                        trailingContent = { Switch(checked = matchCharacterPersonality, onCheckedChange = { matchCharacterPersonality = it }) },
+                    )
+                    item(
+                        headlineContent = { Text("角色深度提示(Char Depth Prompt)", style = MaterialTheme.typography.bodyMedium) },
+                        trailingContent = { Switch(checked = matchCharacterDepthPrompt, onCheckedChange = { matchCharacterDepthPrompt = it }) },
+                    )
+                    item(
+                        headlineContent = { Text("角色场景(Scenario)", style = MaterialTheme.typography.bodyMedium) },
+                        trailingContent = { Switch(checked = matchScenario, onCheckedChange = { matchScenario = it }) },
+                    )
+                    item(
+                        headlineContent = { Text("作者备注(Creator Notes)", style = MaterialTheme.typography.bodyMedium) },
+                        trailingContent = { Switch(checked = matchCreatorNotes, onCheckedChange = { matchCreatorNotes = it }) },
+                    )
+                    item(
+                        headlineContent = { Text("用户人设(Persona)", style = MaterialTheme.typography.bodyMedium) },
+                        trailingContent = { Switch(checked = matchPersonaDescription, onCheckedChange = { matchPersonaDescription = it }) },
+                    )
+                }
             }
         }
 
@@ -1517,6 +1569,13 @@ private fun EntryEditor(
                     displayIndex = displayIndexStr.toIntOrNull() ?: 0,
                     displayPosition = displayPositionStr.toIntOrNull() ?: 0,
                     triggers = triggersStr.split(",").map { it.trim() }.filter { it.isNotBlank() },
+                    matchPersonaDescription = matchPersonaDescription,
+                    matchCharacterDescription = matchCharacterDescription,
+                    matchCharacterPersonality = matchCharacterPersonality,
+                    matchCharacterDepthPrompt = matchCharacterDepthPrompt,
+                    matchScenario = matchScenario,
+                    matchCreatorNotes = matchCreatorNotes,
+                    ignoreBudget = ignoreBudget,
                     keys = keysStr.split(",").map { it.trim() }.filter { it.isNotBlank() },
                     secondaryKeys = secondaryKeysStr.split(",").map { it.trim() }.filter { it.isNotBlank() },
                     comment = commentStr,
