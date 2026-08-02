@@ -299,7 +299,7 @@ fun TavernCharacterCard(
                         }
                     }
 
-                    // 数据完整性摘要（未在界面展示的字段给个提示）
+                    // 数据完整性摘要
                     if (tav.extensions.isNotEmpty() || tav.assets.isNotEmpty()) {
                         FlowRow(
                             modifier = Modifier
@@ -315,12 +315,56 @@ fun TavernCharacterCard(
                                 MetaTag("资源文件: ${tav.assets.size}")
                             }
                         }
+                    }
+                    if (tav.extensions.isNotEmpty()) {
                         Text(
-                            text = "该卡含扩展字段与资源文件，当前界面暂不展示（导出时原样保留）",
+                            text = "扩展字段为原始数据，当前界面不展开（导出时原样保留）",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
                         )
+                    }
+
+                    // 资源文件列表
+                    if (tav.assets.isNotEmpty()) {
+                        Text(
+                            text = "资源文件(Assets)",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        )
+                        CardGroup {
+                            tav.assets.forEach { asset ->
+                                item(
+                                    headlineContent = {
+                                        Text(
+                                            text = asset.name.ifBlank { asset.type.ifBlank { "未命名资源" } },
+                                            style = MaterialTheme.typography.titleSmall,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    },
+                                    supportingContent = {
+                                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                            Text(
+                                                text = "类型(Type): ${asset.type.ifBlank { "-" }} · 扩展(Ext): ${asset.ext.ifBlank { "-" }}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                            if (asset.uri.isNotBlank()) {
+                                                Text(
+                                                    text = "URI: ${asset.uri}",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                )
+                                            }
+                                        }
+                                    },
+                                )
+                            }
+                        }
                     }
                 }
             }
