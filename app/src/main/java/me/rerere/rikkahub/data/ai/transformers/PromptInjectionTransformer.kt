@@ -571,6 +571,7 @@ private fun createMergedInjectionMessages(injections: List<PromptInjection>): Li
             val mergedContent = grouped.joinToString("\n") { it.content }
             when (role) {
                 MessageRole.ASSISTANT -> UIMessage.assistant(mergedContent)
+                MessageRole.SYSTEM -> UIMessage.system(mergedContent)
                 else -> UIMessage.user(mergedContent)
             }
         }

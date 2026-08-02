@@ -46,6 +46,7 @@ import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantMemory
 import me.rerere.rikkahub.data.model.assembleContext
+import me.rerere.rikkahub.data.model.buildExampleMessages
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.data.repository.MemoryRepository
 import me.rerere.rikkahub.utils.applyPlaceholders
@@ -585,6 +586,15 @@ class GenerationHandler(
             }
             val systemMsg = fullSystem.ifBlank { null }
             if (systemMsg != null) add(UIMessage.system(prompt = systemMsg))
+
+            // ── 官方 mes_example：作为示例消息注入（story string 之后、聊天历史之前）──
+            if (assistant.tavernData != null) {
+                addAll(
+                    assistant.buildExampleMessages(
+                        userName = settings.displaySetting.userNickname.ifBlank { "User" }
+                    )
+                )
+            }
 
             // ── s10: getUserContext — 用户上下文通过 <system-reminder> UserMessage 注入 ──
             // 对标 Claude Code context.ts → prependUserContext()

@@ -148,6 +148,10 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
         placeholder("charVersion", { Text(stringResource(R.string.placeholder_char_version)) }) {
             it.assistant.tavernData?.characterVersion ?: ""
         }
+        // 官方宏名 {{version}}
+        placeholder("version", { Text(stringResource(R.string.placeholder_char_version)) }) {
+            it.assistant.tavernData?.characterVersion ?: ""
+        }
         placeholder("group", { Text(stringResource(R.string.placeholder_group)) }) {
             it.groupMembers()
         }

@@ -416,19 +416,18 @@ fun getTriggeredInjections(
  * 默认上下文模板 — ADF 风格宏
  * 可用宏: {{system}}, {{description}}, {{personality}}, {{scenario}},
  *          {{mesExamples}}, {{char}}, {{user}}, {{persona}}
+ * 结构与官方 SillyTavern 默认 Story String 对齐（mes_example 独立作为示例消息注入）
  */
 val DEFAULT_CONTEXT_TEMPLATE = """
 {{system}}
 
-[Character: {{char}}]
-
 {{description}}
 
-{{personality}}
+{{char}}'s personality: {{personality}}
 
-{{scenario}}
+Scenario: {{scenario}}
 
-{{mesExamples}}
+{{persona}}
 """.trim()
 
 /**
@@ -466,5 +465,63 @@ fun Assistant.assembleContext(
             else -> "$result\n\n$personaBlock"
         }
     }
+    return result
+}
+
+/**
+ * 解析角色卡 mes_example 为示例消息（对齐官方 parseMesExamples + parseExampleIntoIndividual）：
+ * - 按 <START> 分块
+ * - 块内按 "{{user}}:" / "{{char}}:" 前缀行切分 user/assistant 消息
+ * - 官方跳过块首的 "This is how X should talk" 说明行
+ */
+fun Assistant.buildExampleMessages(userName: String): List<UIMessage> {
+    val raw = this.tavernData?.mesExample ?: return emptyList()
+    if (raw.isBlank() || raw.trim().equals("<START>", ignoreCase = true)) return emptyList()
+
+    val text = if (!raw.trimStart().startsWith("<START>", ignoreCase = true)) {
+        "<START>\n" + raw.trim()
+    } else {
+        raw
+    }
+    val blocks = Regex("<START>", RegexOption.IGNORE_CASE).split(text).drop(1)
+
+    return blocks.flatMap { block ->
+        parseExampleBlock(block, charName = this.name, userName = userName)
+    }
+}
+
+private fun parseExampleBlock(block: String, charName: String, userName: String): List<UIMessage> {
+    val lines = block.trim().lines()
+    // 官方跳过第一行（如 "This is how {bot name} should talk"）
+    val startIndex = if (lines.firstOrNull()?.contains("should talk", ignoreCase = true) == true) 1 else 0
+
+    val result = mutableListOf<UIMessage>()
+    val currentLines = mutableListOf<String>()
+    var currentRole: MessageRole? = null
+
+    fun flush() {
+        val role = currentRole ?: return
+        val content = currentLines.joinToString("\n").trim()
+        if (content.isNotBlank()) {
+            result.add(
+                if (role == MessageRole.USER) UIMessage.user(content) else UIMessage.assistant(content)
+            )
+        }
+        currentLines.clear()
+    }
+
+    for (i in startIndex until lines.size) {
+        val line = lines[i]
+        val isUserLine = line.startsWith("$userName:")
+        val isCharLine = line.startsWith("$charName:")
+        if (isUserLine || isCharLine) {
+            flush()
+            currentRole = if (isUserLine) MessageRole.USER else MessageRole.ASSISTANT
+            currentLines.add(line.substringAfter(':'))
+        } else {
+            currentLines.add(line)
+        }
+    }
+    flush()
     return result
 }

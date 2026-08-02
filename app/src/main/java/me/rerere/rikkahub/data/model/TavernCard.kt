@@ -33,6 +33,10 @@ data class TavernCharacterData(
     val source: List<String> = emptyList(),          // 来源引用 URL/ID 列表
     val creationDate: String = "",                   // 创建时间戳原始 JSON 文本（数字/字符串原样带回）
     val modificationDate: String = "",               // 修改时间戳原始 JSON 文本
+    // 官方深度提示（extensions.depth_prompt）：按指定深度/角色注入对话
+    val depthPrompt: String = "",                    // depth_prompt.prompt 文本
+    val depthPromptDepth: Int = 4,                   // depth_prompt.depth（官方默认 4）
+    val depthPromptRole: String = "system",          // depth_prompt.role（官方默认 system）
     // 内嵌世界书
     val embeddedBook: TavernEmbeddedBook? = null,
 )
@@ -74,7 +78,7 @@ data class TavernBookEntry(
     val selective: Boolean = false,
     val selectiveLogic: Int = 0,  // 0=AND, 1=OR, 2=NOT_ANY, 3=NOT_ALL
     val group: String = "",
-    val position: Int = 1,        // 0=before_char, 1=after_char, 2=before_user, 3=after_user, 4=@D
+    val position: Int = 1,        // 官方枚举: 0=before_char 1=after_char 2=ANTop 3=ANBottom 4=atDepth 5=EMTop 6=EMBottom 7=outlet
     val priority: Int = 100,      // order/priority, lower = higher
     val disable: Boolean = false,
     val caseSensitive: Boolean = false,

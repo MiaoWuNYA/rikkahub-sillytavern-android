@@ -208,20 +208,10 @@ class AssistantDetailVM(
                     name = e.comment.ifEmpty { e.keys.firstOrNull() ?: "Entry ${e.id}" },
                     enabled = !e.disable,
                     priority = e.priority,
-                    position = when (e.position) {
-                        0 -> InjectionPosition.BEFORE_SYSTEM_PROMPT
-                        1 -> InjectionPosition.AFTER_SYSTEM_PROMPT
-                        2 -> InjectionPosition.AUTHOR_NOTE
-                        3, 4 -> InjectionPosition.AT_DEPTH
-                        5 -> InjectionPosition.BEFORE_CHARACTER
-                        6 -> InjectionPosition.AFTER_CHARACTER
-                        7 -> InjectionPosition.ANTAGONIZE
-                        8 -> InjectionPosition.AFTER_DIALOG
-                        else -> InjectionPosition.AFTER_SYSTEM_PROMPT
-                    },
+                    position = mapTavernPosition(e.position),
                     injectDepth = e.depth,
                     content = e.content,
-                    role = when (e.role) { "assistant" -> me.rerere.ai.core.MessageRole.ASSISTANT; else -> me.rerere.ai.core.MessageRole.USER },
+                    role = mapTavernRole(e.role),
                     keywords = e.keys,
                     secondaryKeys = e.secondaryKeys,
                     useRegex = e.useRegex,

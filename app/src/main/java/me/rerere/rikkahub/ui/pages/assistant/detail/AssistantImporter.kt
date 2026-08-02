@@ -242,6 +242,9 @@ private fun parseV2Card(context: Context, json: JsonObject, background: String?,
         postHistoryInstructions = data["post_history_instructions"]?.jsonPrimitiveOrNull?.contentOrNull ?: "",
         extensions = parseExtensions(if (mergedExtensions.isEmpty()) null else JsonObject(mergedExtensions)),
         extensionsRaw = mergedExtensionsRaw,
+        depthPrompt = parseDepthPromptText(data["extensions"]?.jsonObject),
+        depthPromptDepth = parseDepthPromptDepth(data["extensions"]?.jsonObject),
+        depthPromptRole = parseDepthPromptRole(data["extensions"]?.jsonObject),
         embeddedBook = parseEmbeddedBook(data["character_book"]?.jsonObject),
     )
 
@@ -293,6 +296,9 @@ private fun parseV3Card(context: Context, json: JsonObject, background: String?,
         source = parseStringArray(data["source"]),
         creationDate = data["creation_date"]?.toString() ?: "",
         modificationDate = data["modification_date"]?.toString() ?: "",
+        depthPrompt = parseDepthPromptText(data["extensions"]?.jsonObject),
+        depthPromptDepth = parseDepthPromptDepth(data["extensions"]?.jsonObject),
+        depthPromptRole = parseDepthPromptRole(data["extensions"]?.jsonObject),
         embeddedBook = parseEmbeddedBook(data["character_book"]?.jsonObject),
     )
 
@@ -325,6 +331,27 @@ private fun parseExtensions(obj: JsonObject?): Map<String, String> {
     if (obj == null) return emptyMap()
     return obj.entries.associate { (k, v) -> k to (v.jsonPrimitiveOrNull?.contentOrNull ?: v.toString()) }
 }
+
+/** 官方深度提示（extensions.depth_prompt）解析 */
+private fun parseDepthPrompt(obj: JsonObject?): JsonObject? {
+    if (obj == null) return null
+    return try {
+        (obj["depth_prompt"] as? JsonObject) ?: runCatching {
+            (obj["depth_prompt"]?.jsonPrimitiveOrNull?.contentOrNull?.let {
+                kotlinx.serialization.json.Json.parseToJsonElement(it)
+            } as? JsonObject)
+        }.getOrNull()
+    } catch (_: Exception) { null }
+}
+
+private fun parseDepthPromptText(obj: JsonObject?): String =
+    parseDepthPrompt(obj)?.get("prompt")?.jsonPrimitiveOrNull?.contentOrNull ?: ""
+
+private fun parseDepthPromptDepth(obj: JsonObject?): Int =
+    parseDepthPrompt(obj)?.get("depth")?.jsonPrimitiveOrNull?.contentOrNull?.toIntOrNull() ?: 4
+
+private fun parseDepthPromptRole(obj: JsonObject?): String =
+    parseDepthPrompt(obj)?.get("role")?.jsonPrimitiveOrNull?.contentOrNull?.lowercase() ?: "system"
 
 private fun parseAssets(arr: kotlinx.serialization.json.JsonArray?): List<TavernAsset> {
     if (arr == null) return emptyList()
@@ -382,7 +409,7 @@ private fun parseEntriesArray(arr: kotlinx.serialization.json.JsonArray): List<T
                 selective = e["selective"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
                 selectiveLogic = e["selectiveLogic"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
                 group = e["group"]?.jsonPrimitive?.contentOrNull ?: "",
-                position = e["position"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 1,
+                position = parseEntryPosition(e),
                 priority = e["order"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
                     ?: e["priority"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 100,
                 disable = e["disable"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
@@ -393,7 +420,7 @@ private fun parseEntriesArray(arr: kotlinx.serialization.json.JsonArray): List<T
                 cooldown = e["cooldown"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
                 depth = e["depth"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 4,
                 scanDepth = e["scan_depth"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 1000,
-                role = parseRoleString(e["role"]),
+                role = parseEntryRole(e),
                 groupWeight = e["group_weight"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 100,
                 groupOverride = e["group_override"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
                 delay = e["delay"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
@@ -419,7 +446,7 @@ private fun parseEntriesMap(obj: JsonObject): List<TavernBookEntry> {
                 selective = e["selective"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
                 selectiveLogic = e["selectiveLogic"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
                 group = e["group"]?.jsonPrimitive?.contentOrNull ?: "",
-                position = e["position"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 1,
+                position = parseEntryPosition(e),
                 priority = e["order"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
                     ?: e["priority"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 100,
                 disable = e["disable"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
@@ -430,7 +457,7 @@ private fun parseEntriesMap(obj: JsonObject): List<TavernBookEntry> {
                 cooldown = e["cooldown"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
                 depth = e["depth"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 4,
                 scanDepth = e["scan_depth"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 1000,
-                role = parseRoleString(e["role"]),
+                role = parseEntryRole(e),
                 groupWeight = e["group_weight"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 100,
                 groupOverride = e["group_override"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
                 delay = e["delay"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
@@ -532,6 +559,30 @@ private fun parseRoleString(element: kotlinx.serialization.json.JsonElement?): S
     } catch (_: Exception) { "system" }
 }
 
+/**
+ * 解析世界书条目 position（官方 V2 spec 字符串 + 新版 extensions.position 数字优先）：
+ * 0=before_char 1=after_char 2=ANTop 3=ANBottom 4=atDepth 5=EMTop 6=EMBottom 7=outlet
+ */
+private fun parseEntryPosition(e: JsonObject): Int {
+    val base = e["position"]?.jsonPrimitiveOrNull?.contentOrNull?.let { raw ->
+        when (raw.trim().lowercase()) {
+            "before_char", "before" -> 0
+            "after_char", "after" -> 1
+            else -> raw.trim().toIntOrNull()
+        }
+    } ?: 1
+    // 官方新版 UI：扩展位置数字存 extensions.position，优先于旧字段
+    return e["extensions"]?.jsonObjectOrNull
+        ?.get("position")?.jsonPrimitiveOrNull?.contentOrNull?.trim()?.toIntOrNull()
+        ?: base
+}
+
+/** 解析世界书条目 role（官方 extensions.role 数字/字符串优先） */
+private fun parseEntryRole(e: JsonObject): String {
+    val fromExtensions = e["extensions"]?.jsonObjectOrNull?.get("role")
+    return parseRoleString(fromExtensions ?: e["role"])
+}
+
 /** 解析 sticky：兼容数字和布尔值（酒馆旧格式） */
 private fun parseStickyInt(element: kotlinx.serialization.json.JsonElement?): Int {
     if (element == null) return 0
@@ -585,19 +636,19 @@ private fun tavernEntryToInjection(entry: TavernBookEntry): PromptInjection.Rege
     )
 }
 
-private fun mapTavernPosition(pos: Int): InjectionPosition = when (pos) {
+internal fun mapTavernPosition(pos: Int): InjectionPosition = when (pos) {
     0 -> InjectionPosition.BEFORE_SYSTEM_PROMPT
     1 -> InjectionPosition.AFTER_SYSTEM_PROMPT
     2 -> InjectionPosition.AUTHOR_NOTE        // 跟随用户 AN 位置设置
-    3 -> InjectionPosition.AT_DEPTH           // @D 深度
+    3 -> InjectionPosition.AUTHOR_NOTE        // 官方 ANBottom（作者备注下方），本地跟随 AN 位置
     4 -> InjectionPosition.AT_DEPTH
     else -> InjectionPosition.AFTER_SYSTEM_PROMPT
 }
 
-private fun mapTavernRole(role: String): me.rerere.ai.core.MessageRole = when (role.lowercase()) {
+internal fun mapTavernRole(role: String): me.rerere.ai.core.MessageRole = when (role.lowercase()) {
     "user" -> me.rerere.ai.core.MessageRole.USER
     "assistant" -> me.rerere.ai.core.MessageRole.ASSISTANT
-    else -> me.rerere.ai.core.MessageRole.USER
+    else -> me.rerere.ai.core.MessageRole.SYSTEM   // 官方世界书/深度提示默认 system
 }
 /** 映射酒馆 selectiveLogic Int 到 SelectiveLogic 枚举 */
 private fun mapSelectiveLogic(logic: Int): SelectiveLogic = when (logic) {
@@ -686,29 +737,31 @@ private fun buildEmbeddedLorebooks(tavData: TavernCharacterData): List<Lorebook>
         entries.addAll(book.entries.map { tavernEntryToInjection(it) })
     }
 
-    // PHI（post_history_instructions）→ 常驻底部注入
+    // PHI（post_history_instructions）→ 官方行为：聊天历史末尾之后追加（user 消息）
     if (tavData.postHistoryInstructions.isNotBlank()) {
         entries.add(PromptInjection.RegexInjection(
             id = Uuid.random(),
             name = "历史后续指令",
             enabled = true,
             priority = 0,
-            position = InjectionPosition.BOTTOM_OF_CHAT,
+            position = InjectionPosition.AFTER_DIALOG,
             content = tavData.postHistoryInstructions,
             constantActive = true,
         ))
     }
 
-    // creator_notes → 常驻底部注入
-    if (tavData.creatorNotes.isNotBlank()) {
+    // 官方深度提示（extensions.depth_prompt）→ 按深度/角色注入对话（默认深度4、system）
+    if (tavData.depthPrompt.isNotBlank()) {
         entries.add(PromptInjection.RegexInjection(
             id = Uuid.random(),
-            name = "作者备注",
+            name = "深度提示",
             enabled = true,
             priority = 0,
-            position = InjectionPosition.BOTTOM_OF_CHAT,
-            content = tavData.creatorNotes,
+            position = InjectionPosition.AT_DEPTH,
+            injectDepth = tavData.depthPromptDepth,
+            content = tavData.depthPrompt,
             constantActive = true,
+            role = mapTavernRole(tavData.depthPromptRole),
         ))
     }
 
