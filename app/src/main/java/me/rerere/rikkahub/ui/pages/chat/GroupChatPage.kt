@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.rememberHazeState
@@ -203,6 +204,56 @@ private suspend fun regenerateGroupMessage(
     }
 }
 
+/** 群聊状态提示条：生成中/等待/失败统一样式 */
+@Composable
+private fun GroupChatStatusBar(
+    status: String,
+    modifier: Modifier = Modifier,
+) {
+    val isError = status.contains("失败") || status.contains("错误")
+    val isBusy = status.contains("正在") || status.contains("等待")
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isError) {
+                MaterialTheme.colorScheme.errorContainer
+            } else {
+                CustomColors.listItemColors.containerColor
+            },
+        ),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (isBusy) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = if (isError) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                )
+                Spacer(Modifier.width(10.dp))
+            }
+            Text(
+                text = status,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (isError) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
 @Composable
 fun GroupChatPage(groupId: String) {
     val settingsStore: SettingsStore = koinInject()
@@ -308,23 +359,10 @@ fun GroupChatPage(groupId: String) {
                     // 排队状态
                     // 只要有状态提示就显示（含"等待自动接话""未选择发言人"等无成员名的情况）
                     AnimatedVisibility(visible = queueStatus.isNotEmpty()) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 2.dp)
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    queueStatus,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                )
-                            }
-                        }
+                        GroupChatStatusBar(
+                            status = queueStatus,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        )
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -544,7 +582,7 @@ fun GroupChatPage(groupId: String) {
                                                 }
                                                 throw e
                                             } catch (e: Exception) {
-                                                queueStatus = "${speaker.name} 生成失败: ${e.message?.take(40) ?: "未知错误"}"
+                                                queueStatus = "${speaker.name} 生成失败：${e.message?.take(40) ?: "未知错误"}"
                                                 // 删除占位消息
                                                 chatService.updateConversationState(currentConvId) { conv ->
                                                     conv.copy(
@@ -651,7 +689,7 @@ fun GroupChatPage(groupId: String) {
                     node = node,
                     assistant = speaker ?: members.firstOrNull(),
                     model = null,
-                    loading = isGenerating && index >= messageNodes.lastIndex - 2,
+                    loading = (isGenerating || queueStatus.contains("正在")) && index >= messageNodes.lastIndex - 2,
                     lastMessage = index == messageNodes.lastIndex,
                     onRegenerate = {
                         val target = node.messages[node.selectIndex]
