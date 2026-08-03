@@ -15,6 +15,7 @@ import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.ui.pages.assistant.detail.mapSelectiveLogic
+import me.rerere.rikkahub.ui.pages.assistant.detail.parseDelayUntilRecursionInt
 import me.rerere.rikkahub.ui.pages.assistant.detail.mapTavernRole
 import me.rerere.rikkahub.utils.toLocalString
 import java.time.LocalDateTime
@@ -174,7 +175,10 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
                         matchWholeWords = entry.matchWholeWords ?: extBool(entry.extensions, "match_whole_words"),
                         excludeRecursion = entry.excludeRecursion ?: extBool(entry.extensions, "exclude_recursion"),
                         preventRecursion = entry.preventRecursion ?: extBool(entry.extensions, "prevent_recursion"),
-                        delayUntilRecursion = entry.delayUntilRecursion ?: extBool(entry.extensions, "delay_until_recursion"),
+                        delayUntilRecursion = parseDelayUntilRecursionInt(entry.delayUntilRecursion)
+                            ?: parseDelayUntilRecursionInt(
+                                entry.extensions?.jsonObject?.get("delay_until_recursion")
+                            ) ?: 0,
                         scanDepth = entry.scanDepth ?: 1000,
                         constantActive = entry.constant,
                         selective = entry.selective,
@@ -271,7 +275,7 @@ private data class SillyTavernEntry(
     val delay: Int? = null,
     val excludeRecursion: Boolean? = null,
     val preventRecursion: Boolean? = null,
-    val delayUntilRecursion: Boolean? = null,
+    val delayUntilRecursion: JsonElement? = null,
     val matchWholeWords: Boolean? = null,
     val extensions: JsonElement? = null,
 )

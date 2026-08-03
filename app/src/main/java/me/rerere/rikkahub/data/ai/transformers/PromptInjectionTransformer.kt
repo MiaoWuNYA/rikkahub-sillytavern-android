@@ -214,6 +214,7 @@ internal fun collectInjections(
             scanDepthOverride: Int? = null,
             extraContext: String = "",
             isRecursion: Boolean = false,
+            currentRecursionDelayLevel: Int = 0,
             alreadyActivated: List<PromptInjection.RegexInjection> = emptyList(),
         ): List<PromptInjection.RegexInjection> {
             val newlyTriggered = mutableListOf<PromptInjection.RegexInjection>()
@@ -233,8 +234,21 @@ internal fun collectInjections(
                         continue
                     }
 
-                    // 延迟到递归才检查的条目：正常扫描跳过（酒馆 delay_until_recursion）
-                    if (entry.delayUntilRecursion && !isRecursion) continue
+                    // 官方：普通扫描跳过所有 delay_until_recursion 条目（粘性豁免）
+                    if (entry.delayUntilRecursion > 0 &&
+                        !isRecursion &&
+                        !activeStickyEntries.containsKey(entry.id)
+                    ) {
+                        continue
+                    }
+
+                    // 官方：递归扫描只放行层级 <= 当前开放层级的条目（粘性豁免）
+                    if (isRecursion &&
+                        entry.delayUntilRecursion > currentRecursionDelayLevel &&
+                        !activeStickyEntries.containsKey(entry.id)
+                    ) {
+                        continue
+                    }
 
                     // 官方：exclude_recursion 条目在递归扫描中被跳过（内容是否进递归缓冲另算）
                     if (entry.excludeRecursion && isRecursion) continue
@@ -300,6 +314,16 @@ internal fun collectInjections(
 
         // 递归扫描（酒馆 world_info_recursive）：用已注入条目的内容再扫描关联条目
         if (worldInfoRecursive) {
+            // 官方：可用延迟层级 = 全部条目 delay_until_recursion 去重升序，逐级开放
+            val availableLevels = enabledLorebooks
+                .flatMap { it.entries.map { e -> e.delayUntilRecursion } }
+                .filter { it > 0 }
+                .distinct()
+                .sorted()
+                .toMutableList()
+            var currentLevel = availableLevels.firstOrNull() ?: 0
+            if (availableLevels.isNotEmpty()) availableLevels.removeAt(0)
+
             // 官方 successfulNewEntriesForRecursion：prevent_recursion 条目的内容不进递归缓冲
             var recursionContext = activatedEntries
                 .filter { !it.preventRecursion }
@@ -312,16 +336,26 @@ internal fun collectInjections(
                 worldInfoMaxRecursionSteps == 1 -> 0
                 else -> 10
             }
-            while (recursionContext.isNotBlank() && steps < maxSteps) {
+            // 官方：即使首轮没有新条目，只要还有未开放的层级，也会继续递归扫描
+            // （聊天内容本身可能命中更高级别的延迟条目）
+            while ((recursionContext.isNotBlank() || availableLevels.isNotEmpty()) && steps < maxSteps) {
                 steps++
                 val knownIds = activatedEntries.map { it.id }.toSet()
                 val newOnes = evaluateLorebooks(
                     extraContext = recursionContext,
                     isRecursion = true,
                     alreadyActivated = activatedEntries,
+                    currentRecursionDelayLevel = currentLevel,
                 )
                     .filter { it.id !in knownIds }
-                if (newOnes.isEmpty()) break
+                if (newOnes.isEmpty()) {
+                    // 官方：本轮无新条目 → 开放下一延迟层级继续扫描；层级耗尽才停
+                    if (availableLevels.isNotEmpty()) {
+                        currentLevel = availableLevels.removeAt(0)
+                        continue
+                    }
+                    break
+                }
                 activatedEntries = activatedEntries + newOnes
                 val newRecursionText = newOnes
                     .filter { !it.preventRecursion }
@@ -330,7 +364,7 @@ internal fun collectInjections(
                 recursionContext = listOf(recursionContext, newRecursionText)
                     .filter { it.isNotBlank() }
                     .joinToString("\n")
-                if (recursionContext.isBlank()) break
+                if (recursionContext.isBlank() && availableLevels.isEmpty()) break
             }
         }
 

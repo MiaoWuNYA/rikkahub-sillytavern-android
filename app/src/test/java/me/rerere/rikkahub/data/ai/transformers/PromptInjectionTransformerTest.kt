@@ -66,6 +66,7 @@ class PromptInjectionTransformerTest {
         selective: Boolean = false,
         selectiveLogic: SelectiveLogic = SelectiveLogic.AND_ANY,
         group: String = "",
+        delayUntilRecursion: Int = 0,
     ) = PromptInjection.RegexInjection(
         id = id,
         name = name,
@@ -85,6 +86,7 @@ class PromptInjectionTransformerTest {
         selective = selective,
         selectiveLogic = selectiveLogic,
         group = group,
+        delayUntilRecursion = delayUntilRecursion,
     )
 
     private fun createLorebook(
@@ -1597,6 +1599,51 @@ class PromptInjectionTransformerTest {
         assertTrue(allText.contains("A mentions beta"))
         assertTrue(allText.contains("C content"))
         assertFalse(allText.contains("B content"))
+    }
+
+    @Test
+    fun `delay until recursion levels open level by level`() {
+        val entryA = createRegexInjection(
+            id = Uuid.random(),
+            keywords = listOf("alpha"),
+            content = "A mentions beta",
+        )
+        val entryB = createRegexInjection(
+            id = Uuid.random(),
+            keywords = listOf("beta"),
+            content = "B mentions gamma",
+            delayUntilRecursion = 2,
+        )
+        val entryC = createRegexInjection(
+            id = Uuid.random(),
+            keywords = listOf("gamma"),
+            content = "C content",
+            delayUntilRecursion = 3,
+        )
+        val lbId = Uuid.random()
+        val assistant = createAssistant(lorebookIds = setOf(lbId))
+        val lorebooks = listOf(createLorebook(id = lbId, entries = listOf(entryA, entryB, entryC)))
+        val messages = listOf(UIMessage.user("alpha"))
+
+        // 关闭递归：延迟条目一律不参与（只注入 A）
+        val plain = transformMessages(messages, assistant, emptyList(), lorebooks)
+        val plainText = plain.joinToString("\n") { getMessageText(it) }
+        assertTrue(plainText.contains("A mentions beta"))
+        assertFalse(plainText.contains("B mentions gamma"))
+        assertFalse(plainText.contains("C content"))
+
+        // 开启递归：层级 2 → 3 逐级开放，B、C 依次被链式带出
+        val recursive = transformMessages(
+            messages,
+            assistant,
+            emptyList(),
+            lorebooks,
+            worldInfoRecursive = true,
+        )
+        val recursiveText = recursive.joinToString("\n") { getMessageText(it) }
+        assertTrue(recursiveText.contains("A mentions beta"))
+        assertTrue(recursiveText.contains("B mentions gamma"))
+        assertTrue(recursiveText.contains("C content"))
     }
     // endregion
 }

@@ -486,7 +486,10 @@ private fun applyEntryExtensions(entry: TavernBookEntry, e: JsonObject?): Tavern
             matchWholeWords = extensions["match_whole_words"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
                 ?: entry.matchWholeWords,
             preventRecursion = extBool(extensions["prevent_recursion"]) || entry.preventRecursion,
-            delayUntilRecursion = extBool(extensions["delay_until_recursion"]) || entry.delayUntilRecursion,
+            // 官方 delay_until_recursion 可为 true 或数字层级（1/2/3…），extensions 优先，顶层兜底
+            delayUntilRecursion = parseDelayUntilRecursionInt(extensions["delay_until_recursion"])
+                ?: parseDelayUntilRecursionInt(e["delayUntilRecursion"])
+                ?: entry.delayUntilRecursion,
             excludeRecursion = extensions["exclude_recursion"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
                 ?: entry.excludeRecursion,
             caseSensitive = extensions["case_sensitive"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
@@ -557,6 +560,21 @@ private fun extBool(element: JsonElement?): Boolean = when {
             str.toBooleanStrictOrNull() ?: (str.toIntOrNull()?.let { it > 0 } ?: false)
         } ?: false
     } catch (_: Exception) { false }
+}
+
+/**
+ * 官方 delay_until_recursion：true=层级1，数字=层级 N，字符串同理解析。
+ * 返回 null 表示字段不存在/无法解析。
+ */
+internal fun parseDelayUntilRecursionInt(element: JsonElement?): Int? {
+    if (element == null) return null
+    val content = try {
+        element.jsonPrimitive.contentOrNull
+    } catch (_: Exception) {
+        return null
+    } ?: return null
+    content.toBooleanStrictOrNull()?.let { return if (it) 1 else 0 }
+    return content.toIntOrNull()
 }
 
 /**

@@ -2035,11 +2035,27 @@ private fun RegexInjectionEditDialog(
                     label = { Text(stringResource(R.string.prompt_page_delay_until_recursion)) },
                     tail = {
                         Switch(
-                            checked = entry.delayUntilRecursion,
-                            onCheckedChange = { onEdit(entry.copy(delayUntilRecursion = it)) }
+                            checked = entry.delayUntilRecursion > 0,
+                            onCheckedChange = { onEdit(entry.copy(delayUntilRecursion = if (it) 1 else 0)) }
                         )
                     }
                 )
+                AnimatedVisibility(visible = entry.delayUntilRecursion > 0) {
+                    OutlinedTextField(
+                        value = entry.delayUntilRecursion.toString(),
+                        onValueChange = { v ->
+                            val level = v.toIntOrNull()
+                            if (level != null && level > 0) {
+                                onEdit(entry.copy(delayUntilRecursion = level))
+                            }
+                        },
+                        label = { Text(stringResource(R.string.prompt_page_delay_until_recursion_level)) },
+                        supportingText = { Text(stringResource(R.string.prompt_page_delay_until_recursion_level_desc)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                    )
+                }
 
                 // 次级关键词
                 var newSecKey by remember { mutableStateOf("") }

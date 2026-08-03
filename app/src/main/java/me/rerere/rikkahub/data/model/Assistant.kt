@@ -2,6 +2,8 @@ package me.rerere.rikkahub.data.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.provider.CustomBody
 import me.rerere.ai.provider.CustomHeader
@@ -254,7 +256,9 @@ sealed class PromptInjection {
         val delay: Int = 0,                             // 延迟激活轮数（0=立即，酒馆 extensions.delay）
         val excludeRecursion: Boolean = false,          // 内容不参与递归扫描（酒馆 extensions.exclude_recursion）
         val preventRecursion: Boolean = false,          // 禁止被递归触发（酒馆 extensions.prevent_recursion）
-        val delayUntilRecursion: Boolean = false,       // 只在递归扫描时检查（酒馆 extensions.delay_until_recursion）
+        // 官方 extensions.delay_until_recursion：true 或数字层级（1/2/3…）；0=关闭
+        @Serializable(with = DelayUntilRecursionSerializer::class)
+        val delayUntilRecursion: Int = 0,
         val useProbability: Boolean = true,              // 是否启用概率过滤（false=忽略probability直接触发）
         val inclusionGroup: String = "",                 // 本地遗留字段（官方无此字段；官方分组用顶层 group 逗号分隔）
         val useGroupScoring: Boolean = false,            // 酒馆 extensions.use_group_scoring（按匹配关键词数选组胜者）
@@ -288,6 +292,30 @@ enum class SelectiveLogic {
     NOT_ANY,      // 官方 2：主关键词命中 + 没有任何二级关键词命中
     @SerialName("not_all")
     NOT_ALL,      // 官方 1：主关键词命中 + 二级关键词非全部命中
+}
+
+/**
+ * 官方 extensions.delay_until_recursion 序列化：接受 true/false、数字层级（1/2/3…）与字符串，
+ * 统一存成 Int（0=关闭，N=第 N 级）。
+ */
+object DelayUntilRecursionSerializer : kotlinx.serialization.KSerializer<Int> {
+    override val descriptor = kotlinx.serialization.descriptors.PrimitiveSerialDescriptor(
+        "DelayUntilRecursion",
+        kotlinx.serialization.descriptors.PrimitiveKind.INT,
+    )
+
+    override fun serialize(encoder: kotlinx.serialization.encoding.Encoder, value: Int) {
+        encoder.encodeInt(value)
+    }
+
+    override fun deserialize(decoder: kotlinx.serialization.encoding.Decoder): Int {
+        val element = (decoder as? kotlinx.serialization.json.JsonDecoder)
+            ?.decodeJsonElement()
+            ?: return decoder.decodeInt()
+        val content = element.jsonPrimitive.contentOrNull ?: return 0
+        content.toBooleanStrictOrNull()?.let { return if (it) 1 else 0 }
+        return content.toIntOrNull() ?: 0
+    }
 }
 
 /**

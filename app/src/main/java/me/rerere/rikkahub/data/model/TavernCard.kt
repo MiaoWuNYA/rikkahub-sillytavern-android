@@ -95,7 +95,9 @@ data class TavernBookEntry(
     val delay: Int = 0,          // 延迟激活轮数（0=立即，酒馆 extensions.delay）
     val excludeRecursion: Boolean = false, // 内容不参与递归扫描（酒馆 extensions.exclude_recursion）
     val preventRecursion: Boolean = false, // 禁止被递归触发（酒馆 extensions.prevent_recursion）
-    val delayUntilRecursion: Boolean = false, // 只在递归扫描时检查（酒馆 extensions.delay_until_recursion）
+    // 官方 extensions.delay_until_recursion：true 或数字层级（1/2/3…）；0=关闭
+    @Serializable(with = DelayUntilRecursionSerializer::class)
+    val delayUntilRecursion: Int = 0,
     val useProbability: Boolean = false, // 是否启用概率过滤（酒馆默认false）
     val inclusionGroup: String = "", // 本地遗留字段（官方无此字段；官方分组用顶层 group 逗号分隔）
     val useGroupScoring: Boolean = false, // 酒馆 extensions.use_group_scoring

@@ -1034,8 +1034,21 @@ private fun EmbeddedGroupSettingsDialog(
                 )
                 item(
                     headlineContent = { Text("仅递归时检查(Delay Until Recursion)", style = MaterialTheme.typography.bodyMedium) },
-                    trailingContent = { Switch(checked = delayUntilRecursion, onCheckedChange = { delayUntilRecursion = it }) },
+                    trailingContent = { Switch(checked = delayUntilRecursion > 0, onCheckedChange = { delayUntilRecursion = if (it) 1 else 0 }) },
                 )
+                if (delayUntilRecursion > 0) {
+                    OutlinedTextField(
+                        value = delayUntilRecursion.toString(),
+                        onValueChange = { v ->
+                            val level = v.toIntOrNull()
+                            if (level != null && level > 0) delayUntilRecursion = level
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = MaterialTheme.typography.bodySmall,
+                        singleLine = true,
+                        label = { Text("递归层级(Recursion Level)") },
+                    )
+                }
                 item(
                     headlineContent = { Text("忽略预算(Ignore Budget)", style = MaterialTheme.typography.bodyMedium) },
                     supportingContent = {
@@ -1534,8 +1547,21 @@ private fun EntryEditor(
                     )
                     item(
                         headlineContent = { Text("仅递归时检查(Delay Until Recursion)", style = MaterialTheme.typography.bodyMedium) },
-                        trailingContent = { Switch(checked = delayUntilRecursion, onCheckedChange = { delayUntilRecursion = it }) },
+                        trailingContent = { Switch(checked = delayUntilRecursion > 0, onCheckedChange = { delayUntilRecursion = if (it) 1 else 0 }) },
                     )
+                    if (delayUntilRecursion > 0) {
+                        OutlinedTextField(
+                            value = delayUntilRecursion.toString(),
+                            onValueChange = { v ->
+                                val level = v.toIntOrNull()
+                                if (level != null && level > 0) delayUntilRecursion = level
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            textStyle = MaterialTheme.typography.bodySmall,
+                            singleLine = true,
+                            label = { Text("递归层级(Recursion Level)") },
+                        )
+                    }
                     item(
                         headlineContent = { Text("覆盖同组(Group Override)", style = MaterialTheme.typography.bodyMedium) },
                         trailingContent = { Switch(checked = groupOverride, onCheckedChange = { groupOverride = it }) },
