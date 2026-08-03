@@ -163,6 +163,10 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
         placeholder("group", { Text(stringResource(R.string.placeholder_group)) }) {
             it.groupMembers()
         }
+        // 官方 macro-env-macros.js：charIfNotGroup 是 group 的别名（单聊=角色名，群聊=成员列表）
+        placeholder("charIfNotGroup", { Text("角色名或群成员(官方别名)") }) {
+            it.groupMembers()
+        }
 
         // ── 对齐酒馆官方实用宏（第二批）──
         placeholder("persona", { Text(stringResource(R.string.placeholder_persona)) }) {
@@ -241,17 +245,20 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
             it.model.displayName
         }
         placeholder("weekday", { Text("星期几") }) {
-            DateTimeFormatter.ofPattern("EEEE").withLocale(Locale.CHINA).format(LocalDate.now())
+            // 官方 macro-time-macros.js：{{weekday}} = moment 'dddd'，跟随应用语言
+            DateTimeFormatter.ofPattern("EEEE").withLocale(Locale.getDefault()).format(LocalDate.now())
         }
         placeholder("isodate", { Text("ISO日期") }) {
             LocalDate.now().toString()
         }
         placeholder("isotime", { Text("ISO时间") }) {
-            LocalTime.now().withNano(0).toString()
+            // 官方 macro-time-macros.js：{{isotime}} = HH:mm
+            LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
         }
 
         placeholder("original", { Text(stringResource(R.string.placeholder_original)) }) {
-            it.assistant.systemPrompt
+            // 官方 macro-env-macros.js：{{original}} = 当前消息的原文（供角色提示词覆盖里引用，避免替换循环）
+            it.lastRealMessage(MessageRole.USER)?.let(::textOf) ?: ""
         }
 
         placeholder("authorNote", { Text(stringResource(R.string.placeholder_author_note)) }) {
@@ -278,10 +285,12 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
     private fun PlaceholderCtx.groupMembers(): String {
         val groups = settingsStore.settingsFlow.value.groupChats
         val group = groups.firstOrNull { g -> assistant.id in g.memberIds }
-        return group?.memberIds?.mapNotNull { memberId ->
+        val members = group?.memberIds?.mapNotNull { memberId ->
             settingsStore.settingsFlow.value.assistants
                 .firstOrNull { a -> a.id == memberId }?.name
-        }?.joinToString(", ") ?: ""
+        }?.joinToString(", ")
+        // 官方：单聊时 {{group}} / {{charIfNotGroup}} 返回角色名本身
+        return members?.takeIf { it.isNotBlank() } ?: assistant.name.ifBlank { "assistant" }
     }
 
     /** 从消息列表末尾找真正的用户/角色消息，跳过注入块（作者注释、人设） */
