@@ -183,18 +183,34 @@ fun GroupChatListPage() {
                         Switch(checked = allowSelf, onCheckedChange = { allowSelf = it })
                     }
 
-                    Text("选择成员:", style = MaterialTheme.typography.labelMedium)
-                    settings.assistants.forEach { a ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(
-                                checked = a.id in selectedIds,
-                                onCheckedChange = { checked ->
-                                    selectedIds = if (checked) selectedIds + a.id
-                                    else selectedIds - a.id
-                                },
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(a.name.ifBlank { "(未命名)" }, style = MaterialTheme.typography.bodyMedium)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "选择成员:（已选 ${selectedIds.size}/${settings.assistants.size}）",
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                    // 成员列表独立有界滚动块：保证所有助手可见、不与上方设置重叠
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 260.dp)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        settings.assistants.forEach { a ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Checkbox(
+                                    checked = a.id in selectedIds,
+                                    onCheckedChange = { checked ->
+                                        selectedIds = if (checked) selectedIds + a.id
+                                        else selectedIds - a.id
+                                    },
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(a.name.ifBlank { "(未命名)" }, style = MaterialTheme.typography.bodyMedium)
+                            }
                         }
                     }
                 }
