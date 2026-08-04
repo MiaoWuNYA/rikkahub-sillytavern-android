@@ -1258,6 +1258,19 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="prompt_page_save_changes">保存(Save)</string>
   <string name="prompt_page_triggers_desc">逗号分隔；不选 = 所有生成类型都触发</string>
   <string name="prompt_page_apply_to_entries">应用到 %d 条</string>
+  <string name="tavern_export_title">导出角色卡(Export Character Card)</string>
+  <string name="tavern_export_download_dir">导出到「下载」文件夹（Download）</string>
+  <string name="tavern_export_json">JSON 文件(JSON File)</string>
+  <string name="tavern_export_json_desc">导出 V3 角色卡 JSON，不包含图片</string>
+  <string name="tavern_export_png">PNG 嵌入(PNG Embed)</string>
+  <string name="tavern_export_png_desc_avatar">使用当前头像合并导出角色卡</string>
+  <string name="tavern_export_png_desc_network">头像为网络图片，将自动下载后合并导出</string>
+  <string name="tavern_export_png_desc_pick">需选择一张头像图片合并导出</string>
+  <string name="tavern_export_png_downloading">正在下载头像…</string>
+  <string name="tavern_export_png_download_failed">头像下载失败，请选择本地图片</string>
+  <string name="tavern_export_json_success">已导出 JSON: %1$s</string>
+  <string name="tavern_export_failed">导出失败: %1$s</string>
+  <string name="tavern_export_close">关闭(Close)</string>
   <string name="prompt_page_sticky_desc">0 = 关闭, N = 持续N轮</string>
 <string name="skills_page_import_from_file">从文件导入</string>
   <string name="skills_page_add_manually">手动添加</string>

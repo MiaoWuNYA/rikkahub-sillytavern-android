@@ -528,7 +528,7 @@ private fun ExportCardDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("导出角色卡") },
+        title = { Text(stringResource(R.string.tavern_export_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(
@@ -543,7 +543,7 @@ private fun ExportCardDialog(
                         tint = MaterialTheme.colorScheme.primary,
                     )
                     Text(
-                        "导出到「下载」文件夹（Download）",
+                        stringResource(R.string.tavern_export_download_dir),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -557,14 +557,14 @@ private fun ExportCardDialog(
                                     val json = CardExporter.buildV3CardJson(assistant)
                                     val fileName = "RikkaHub_${assistant.name.replace(" ", "_")}_${System.currentTimeMillis()}.json"
                                     saveToDownloads(context, fileName, "application/json", json.toByteArray())
-                                    toaster.show("已导出 JSON: Download/$fileName")
+                                    toaster.show(context.getString(R.string.tavern_export_json_success, "Download/$fileName"))
                                 } catch (e: Exception) {
-                                    toaster.show("导出失败: ${e.message}")
+                                    toaster.show(context.getString(R.string.tavern_export_failed, e.message.orEmpty()))
                                 }
                             }
                         },
-                        headlineContent = { Text("JSON 文件") },
-                        supportingContent = { Text("导出 V3 角色卡 JSON，不包含图片") },
+                        headlineContent = { Text(stringResource(R.string.tavern_export_json)) },
+                        supportingContent = { Text(stringResource(R.string.tavern_export_json_desc)) },
                         leadingContent = {
                             Icon(HugeIcons.File01, contentDescription = null)
                         },
@@ -586,7 +586,7 @@ private fun ExportCardDialog(
                                         if (downloaded != null) {
                                             doPngExportInternal(context, exportScope, toaster, assistant, downloaded)
                                         } else {
-                                            toaster.show("头像下载失败，请选择本地图片")
+                                            toaster.show(context.getString(R.string.tavern_export_png_download_failed))
                                             pngImagePicker.launch("image/*")
                                         }
                                     }
@@ -596,15 +596,15 @@ private fun ExportCardDialog(
                                 }
                             }
                         },
-                        headlineContent = { Text("PNG 嵌入") },
+                        headlineContent = { Text(stringResource(R.string.tavern_export_png)) },
                         supportingContent = {
                             Text(
                                 when {
-                                    downloadingAvatar -> "正在下载头像…"
-                                    avatarUri != null -> "使用当前头像合并导出角色卡"
+                                    downloadingAvatar -> context.getString(R.string.tavern_export_png_downloading)
+                                    avatarUri != null -> context.getString(R.string.tavern_export_png_desc_avatar)
                                     avatarUrl != null && (avatarUrl.startsWith("http://") || avatarUrl.startsWith("https://")) ->
-                                        "头像为网络图片，将自动下载后合并导出"
-                                    else -> "需选择一张头像图片合并导出"
+                                        context.getString(R.string.tavern_export_png_desc_network)
+                                    else -> context.getString(R.string.tavern_export_png_desc_pick)
                                 }
                             )
                         },
@@ -620,7 +620,7 @@ private fun ExportCardDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("关闭") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.tavern_export_close)) }
         }
     )
 }
@@ -641,7 +641,7 @@ private fun doPngExportInternal(
             saveToDownloads(context, fileName, "image/png", pngBytes)
             toaster.show("已导出 PNG: Download/$fileName")
         } catch (e: Exception) {
-            toaster.show("导出失败: ${e.message}")
+            toaster.show(context.getString(R.string.tavern_export_failed, e.message.orEmpty()))
         }
     }
 }

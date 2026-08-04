@@ -1267,6 +1267,19 @@
   <string name="prompt_page_save_changes">Save</string>
   <string name="prompt_page_triggers_desc">Comma separated; empty = all generation types</string>
   <string name="prompt_page_apply_to_entries">Apply to %d entries</string>
+  <string name="tavern_export_title">Export Character Card</string>
+  <string name="tavern_export_download_dir">Export to the Downloads folder</string>
+  <string name="tavern_export_json">JSON File</string>
+  <string name="tavern_export_json_desc">Export V3 character card JSON without images</string>
+  <string name="tavern_export_png">PNG Embed</string>
+  <string name="tavern_export_png_desc_avatar">Merge with the current avatar and export</string>
+  <string name="tavern_export_png_desc_network">Avatar is a network image, will download and merge</string>
+  <string name="tavern_export_png_desc_pick">Pick an avatar image to merge and export</string>
+  <string name="tavern_export_png_downloading">Downloading avatar…</string>
+  <string name="tavern_export_png_download_failed">Avatar download failed, pick a local image</string>
+  <string name="tavern_export_json_success">Exported JSON: %1$s</string>
+  <string name="tavern_export_failed">Export failed: %1$s</string>
+  <string name="tavern_export_close">Close</string>
   <string name="prompt_page_sticky_desc">0 = off, N = persist for N turns</string>
   <string name="prompt_page_no_group">Ungrouped</string>
   <string name="prompt_page_no_entries">No entries yet. Tap + to add one.</string>

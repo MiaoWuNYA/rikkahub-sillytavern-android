@@ -315,26 +315,26 @@ fun TavernCharacterCard(
                         CardGroup {
                             if (tav.creator.isNotBlank()) {
                                 item(
-                                    headlineContent = { Text("作者") },
+                                    headlineContent = { Text(stringResource(R.string.tavern_card_author)) },
                                     supportingContent = { Text(tav.creator) },
                                 )
                             }
                             if (tav.characterVersion.isNotBlank()) {
                                 item(
-                                    headlineContent = { Text("版本") },
+                                    headlineContent = { Text(stringResource(R.string.tavern_card_version)) },
                                     supportingContent = { Text("v${tav.characterVersion}") },
                                 )
                             }
                             if (tav.extensions.isNotEmpty()) {
                                 item(
-                                    headlineContent = { Text("扩展字段") },
-                                    supportingContent = { Text("${tav.extensions.size} 个，导出时原样保留") },
+                                    headlineContent = { Text(stringResource(R.string.tavern_card_extensions)) },
+                                    supportingContent = { Text(stringResource(R.string.tavern_card_extensions_count, tav.extensions.size)) },
                                 )
                             }
                             if (tav.assets.isNotEmpty()) {
                                 item(
-                                    headlineContent = { Text("资源文件") },
-                                    supportingContent = { Text("${tav.assets.size} 个") },
+                                    headlineContent = { Text(stringResource(R.string.tavern_card_assets)) },
+                                    supportingContent = { Text(stringResource(R.string.tavern_card_assets_count, tav.assets.size)) },
                                 )
                             }
                         }
@@ -1736,7 +1736,7 @@ private fun EntryEditor(
                     textStyle = MaterialTheme.typography.bodySmall,
                     singleLine = true,
                     label = { Text(stringResource(R.string.prompt_page_automation_id)) },
-                    supportingText = { Text("仅保留数据，暂不执行") },
+                    supportingText = { Text(stringResource(R.string.tavern_card_automation_id_desc)) },
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Column(modifier = Modifier.weight(1f)) {
