@@ -151,6 +151,9 @@ fun ChatInput(
     onSlashSysgen: ((String) -> Unit)? = null,
     onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)? = null,
     onSlashVar: ((SlashVarOp, String, String) -> String?)? = null,
+    onSlashContinue: ((String) -> Unit)? = null,
+    onSlashImpersonate: ((String) -> Unit)? = null,
+    onSlashPrompt: (() -> Unit)? = null,
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
@@ -168,6 +171,8 @@ fun ChatInput(
 
     // 键盘弹出时让底部两角变直角，贴合 IME
     val imeVisible = WindowInsets.isImeVisible
+    // /help 弹窗状态：手动输入 /help 和点命令建议共用同一状态
+    var showHelpDialog by remember { mutableStateOf(false) }
     val containerShape = if (imeVisible) {
         MaterialTheme.shapes.largeIncreased.copy(
             bottomStart = CornerSize(0.dp),
@@ -206,6 +211,9 @@ fun ChatInput(
                         onSlashSysgen = onSlashSysgen,
                         onSlashInject = onSlashInject,
                         onSlashVar = onSlashVar,
+                        onSlashContinue = onSlashContinue,
+                        onSlashImpersonate = onSlashImpersonate,
+                        onSlashPrompt = onSlashPrompt,
                     )
                 } else {
                     // 技能命令：与弹窗点击一致，把替换后的内容填回输入框
@@ -313,6 +321,12 @@ fun ChatInput(
                         onSlashSysgen = onSlashSysgen,
                         onSlashInject = onSlashInject,
                         onSlashVar = onSlashVar,
+                        onSlashContinue = onSlashContinue,
+                        onSlashImpersonate = onSlashImpersonate,
+                        onSlashPrompt = onSlashPrompt,
+                        helpDialogVisible = showHelpDialog,
+                        onDismissHelpDialog = { showHelpDialog = false },
+                        onShowHelp = { showHelpDialog = true },
                     )
 
                     Row(
@@ -506,6 +520,12 @@ private fun TextInputRow(
     onSlashSysgen: ((String) -> Unit)?,
     onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)?,
     onSlashVar: ((SlashVarOp, String, String) -> String?)?,
+    onSlashContinue: ((String) -> Unit)? = null,
+    onSlashImpersonate: ((String) -> Unit)? = null,
+    onSlashPrompt: (() -> Unit)? = null,
+    helpDialogVisible: Boolean,
+    onDismissHelpDialog: () -> Unit,
+    onShowHelp: () -> Unit,
 ) {
     val settings = LocalSettings.current
     val filesManager: FilesManager = koinInject()
@@ -523,7 +543,6 @@ private fun TextInputRow(
     var showSlashPopup by remember { mutableStateOf(false) }
     var slashFilter by remember { mutableStateOf("") }
     var slashArgs by remember { mutableStateOf("") }
-    var showHelpDialog by remember { mutableStateOf(false) }
 
     // 监听文本变化，检测斜杠命令
     val currentText = state.textContent.text
@@ -659,9 +678,9 @@ private fun TextInputRow(
         }
 
         // /help 命令列表对话框
-        if (showHelpDialog) {
+        if (helpDialogVisible) {
             BasicAlertDialog(
-                onDismissRequest = { showHelpDialog = false },
+                onDismissRequest = onDismissHelpDialog,
                 content = {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
@@ -734,7 +753,10 @@ private fun TextInputRow(
                                                 onSlashSysgen = onSlashSysgen,
                                                 onSlashInject = onSlashInject,
                                                 onSlashVar = onSlashVar,
-                                                onShowHelp = { showHelpDialog = true },
+                                                onShowHelp = onShowHelp,
+                                                onSlashContinue = onSlashContinue,
+                                                onSlashImpersonate = onSlashImpersonate,
+                                                onSlashPrompt = onSlashPrompt,
                                             )
                                         } else {
                                             // 需要参数的命令：填入输入框，补参数后按发送执行（官方 AutoComplete 行为）
@@ -957,11 +979,40 @@ private fun handleBuiltinSlash(
     onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)?,
     onSlashVar: ((SlashVarOp, String, String) -> String?)?,
     onShowHelp: () -> Unit = {},
+    onSlashContinue: ((String) -> Unit)? = null,
+    onSlashImpersonate: ((String) -> Unit)? = null,
+    onSlashPrompt: (() -> Unit)? = null,
 ) {
     when (cmd.builtinKind) {
         BuiltinSlashKind.HELP -> {
             // 在 UI 里列出全部可用命令，不再弹 toast
             onShowHelp()
+        }
+
+        BuiltinSlashKind.CONTINUE -> {
+            if (onSlashContinue == null) {
+                toaster.show("当前页面不支持该命令")
+            } else {
+                onSlashContinue(args.trim())
+                state.clearInput()
+            }
+        }
+
+        BuiltinSlashKind.IMPERSONATE -> {
+            if (onSlashImpersonate == null) {
+                toaster.show("当前页面不支持该命令")
+            } else {
+                onSlashImpersonate(args.trim())
+                state.clearInput()
+            }
+        }
+
+        BuiltinSlashKind.PROMPT -> {
+            if (onSlashPrompt == null) {
+                toaster.show("当前页面不支持该命令")
+            } else {
+                onSlashPrompt()
+            }
         }
 
         BuiltinSlashKind.SYS -> {

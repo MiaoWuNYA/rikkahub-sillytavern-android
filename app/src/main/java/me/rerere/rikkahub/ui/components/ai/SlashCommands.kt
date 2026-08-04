@@ -53,6 +53,15 @@ enum class BuiltinSlashKind {
     /** 角色操作：修改当前助手 */
     RENAME,
 
+    /** 续写上一条助手回复（官方 /continue） */
+    CONTINUE,
+
+    /** 以角色身份生成一条回复（官方 /impersonate） */
+    IMPERSONATE,
+
+    /** 查看当前发送给 AI 的提示词上下文 */
+    PROMPT,
+
     /** 修改当前角色卡字段（字段=值） */
     UPDATE_CHAR,
 
@@ -81,7 +90,7 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
     ),
     SlashCommand(
         name = "sendas",
-        description = "以助手身份发言(Send As)",
+        description = "插入助手消息(Send As)：直接写入，不触发生成",
         argumentHint = "[文本]",
         content = "",
         filePath = "builtin",
@@ -147,6 +156,28 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.RENAME,
+    ),
+    SlashCommand(
+        name = "continue",
+        description = "续写最后一条助手回复(Continue)：在原回复末尾继续生成，可加补充文本",
+        argumentHint = "[补充指令，可选]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.CONTINUE,
+    ),
+    SlashCommand(
+        name = "impersonate",
+        description = "以角色身份生成回复(Impersonate)：AI 以角色身份新写一条，可加开头文本由 AI 接写",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.IMPERSONATE,
+    ),
+    SlashCommand(
+        name = "prompt",
+        description = "查看发送给AI的提示词(Prompt)：弹窗预览实际发送的提示词",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.PROMPT,
     ),
 ) + varSlashCommands()
 

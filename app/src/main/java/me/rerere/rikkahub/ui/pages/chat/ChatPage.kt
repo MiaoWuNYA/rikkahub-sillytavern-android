@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,6 +19,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -354,6 +357,33 @@ private fun ChatPageContent(
     val hazeState = rememberHazeState()
     val assistant = setting.getCurrentAssistant()
     var showFilesSheet by remember { mutableStateOf(false) }
+    // /prompt 命令：预览发送给 AI 的提示词
+    var promptPreview by remember { mutableStateOf<String?>(null) }
+
+    promptPreview?.let { preview ->
+        AlertDialog(
+            onDismissRequest = { promptPreview = null },
+            title = { Text("发送给 AI 的提示词") },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .heightIn(max = 480.dp)
+                        .padding(vertical = 4.dp),
+                ) {
+                    Text(
+                        text = preview,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { promptPreview = null }) {
+                    Text("关闭")
+                }
+            },
+        )
+    }
 
     val completionProviders = remember(assistant.workspaceId, conversation.workspaceCwd, workspaceRepository) {
         assistant.workspaceId?.let { workspaceId ->
@@ -500,6 +530,23 @@ private fun ChatPageContent(
                         } else {
                             vm.handleTriggerGeneration()
                         }
+                    },
+                    onSlashContinue = { prompt ->
+                        if (currentChatModel == null) {
+                            toaster.show("请先选择模型", type = ToastType.Error)
+                        } else {
+                            vm.continueGeneration(prompt)
+                        }
+                    },
+                    onSlashImpersonate = { prefill ->
+                        if (currentChatModel == null) {
+                            toaster.show("请先选择模型", type = ToastType.Error)
+                        } else {
+                            vm.impersonateGeneration(prefill)
+                        }
+                    },
+                    onSlashPrompt = {
+                        promptPreview = vm.buildPromptPreview()
                     },
                     onSlashSysgen = { prompt ->
                         if (currentChatModel == null) {

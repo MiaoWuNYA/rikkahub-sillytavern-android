@@ -40,6 +40,7 @@ import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.data.repository.FavoriteRepository
 import me.rerere.rikkahub.service.ChatError
 import me.rerere.rikkahub.service.ChatService
+import me.rerere.rikkahub.data.datastore.getAssistantById
 import me.rerere.rikkahub.ui.hooks.writeStringPreference
 import me.rerere.rikkahub.ui.hooks.ChatInputState
 import me.rerere.rikkahub.utils.UiState
@@ -304,6 +305,39 @@ class ChatVM(
             chatService.stopGeneration(_conversationId)
         }
     }
+    /** 官方 /continue：续写最后一条助手回复 */
+    fun continueGeneration(prompt: String) {
+        chatService.continueGeneration(_conversationId, prompt.ifBlank { null })
+    }
+
+    /** 官方 /impersonate：以角色身份生成一条回复；prefill 为回复开头文本（可空） */
+    fun impersonateGeneration(prefill: String = "") {
+        chatService.impersonateGeneration(_conversationId, prefill.ifBlank { null })
+    }
+
+    /** /prompt：当前发送给 AI 的上下文预览（系统提示词 + 消息列表） */
+    fun buildPromptPreview(): String {
+        val conv = conversation.value ?: return "（无对话）"
+        val settingsValue = settings.value
+        val assistant = settingsValue.getAssistantById(conv.assistantId)
+            ?: settingsValue.getCurrentAssistant()
+        return buildString {
+            appendLine("===== 系统提示词 =====")
+            appendLine(assistant.systemPrompt.ifBlank { "（无）" })
+            val tav = assistant.tavernData
+            if (tav != null) {
+                if (tav.description.isNotBlank()) { appendLine(); appendLine("描述：${tav.description}") }
+                if (tav.personality.isNotBlank()) { appendLine(); appendLine("性格：${tav.personality}") }
+                if (tav.scenario.isNotBlank()) { appendLine(); appendLine("场景：${tav.scenario}") }
+            }
+            appendLine()
+            appendLine("===== 消息（按发送顺序） =====")
+            conv.currentMessages.forEachIndexed { index, m ->
+                appendLine("[${index + 1}] ${m.role}: ${m.toText()}")
+            }
+        }
+    }
+
 
     fun saveConversationAsync() {
         viewModelScope.launch {

@@ -108,6 +108,7 @@ import me.rerere.rikkahub.data.model.AssistantAffectScope
 import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.replaceRegexes
+import me.rerere.rikkahub.data.model.GenerationType
 import me.rerere.rikkahub.data.model.toMessageNode
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.data.repository.MemoryRepository
@@ -436,7 +437,7 @@ class ChatService(
     /**
      * 触发一次 AI 回复（/trigger，不添加新消息）
      */
-    fun triggerGeneration(conversationId: Uuid) {
+    fun triggerGeneration(conversationId: Uuid, generationType: GenerationType = GenerationType.NORMAL) {
         val session = getOrCreateSession(conversationId)
         val previousJob = session.getJob()
         previousJob?.cancel()
@@ -445,7 +446,7 @@ class ChatService(
             try {
                 runCatching { previousJob?.join() }
                 finishInterruptedPendingTools(conversationId)
-                handleMessageComplete(conversationId)
+                handleMessageComplete(conversationId, generationType = generationType)
                 _generationDoneFlow.emit(conversationId)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -711,11 +712,162 @@ class ChatService(
         session.setJob(job)
     }
 
+    // ---- 继续上一条回复（官方 /continue） ----
+
+    /**
+     * 官方 /continue：续写最后一条助手消息（追加到原消息，不新开一条）
+     */
+    fun continueGeneration(conversationId: Uuid, extraPrompt: String? = null) {
+        val session = getOrCreateSession(conversationId)
+        val previousJob = session.getJob()
+        previousJob?.cancel()
+
+        val job = appScope.launch {
+            try {
+                runCatching { previousJob?.join() }
+                finishInterruptedPendingTools(conversationId)
+
+                val settings = settingsStore.settingsFlow.first()
+                val conversation = getConversationFlow(conversationId).value
+                val nodes = conversation.messageNodes
+                val lastAssistantIndex = nodes.indexOfLast { it.role == MessageRole.ASSISTANT }
+                if (lastAssistantIndex < 0) {
+                    addError(
+                        IllegalStateException("没有可继续的助手消息"),
+                        conversationId,
+                        title = context.getString(R.string.error_title_generation),
+                    )
+                    return@launch
+                }
+                val assistant = settings.getAssistantById(conversation.assistantId)
+                    ?: settings.getCurrentAssistant()
+                val targetNode = nodes[lastAssistantIndex]
+                val lastText = targetNode.messages.getOrNull(targetNode.selectIndex)?.toText().orEmpty()
+                // 官方语义：把最后一条助手消息作为“预填”，模型接着它继续写。
+                // 可选参数作为预填的追加文本（quiet_prompt），由模型继续接写，而不是当作指令。
+                val prompt = buildString {
+                    append(lastText)
+                    extraPrompt?.trim()?.takeIf { it.isNotBlank() }?.let {
+                        appendLine()
+                        append(it)
+                    }
+                }
+                val continuation = generateForAssistant(
+                    assistant = assistant,
+                    settings = settings,
+                    prompt = prompt,
+                    promptRole = MessageRole.ASSISTANT,
+                    history = nodes.take(lastAssistantIndex).map { node ->
+                        UIMessage(
+                            role = node.role,
+                            parts = listOf(UIMessagePart.Text(
+                                node.messages.getOrNull(node.selectIndex)?.toText().orEmpty()
+                            )),
+                        )
+                    },
+                    conversationId = conversationId,
+                    generationType = GenerationType.CONTINUE,
+                )
+                if (continuation.isBlank()) return@launch
+
+                updateConversationState(conversationId) { conv ->
+                    val idx = conv.messageNodes.indexOfLast { it.role == MessageRole.ASSISTANT }
+                    if (idx < 0) return@updateConversationState conv
+                    val node = conv.messageNodes[idx]
+                    conv.copy(
+                        messageNodes = conv.messageNodes.mapIndexed { i, n ->
+                            if (i != idx) n else node.copy(
+                                messages = node.messages.mapIndexed { mi, m ->
+                                    if (mi == node.selectIndex) {
+                                        m.copy(parts = m.parts + UIMessagePart.Text("\n\n" + continuation))
+                                    } else m
+                                }
+                            )
+                        }
+                    )
+                }
+                _generationDoneFlow.emit(conversationId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                addError(e, conversationId, title = context.getString(R.string.error_title_send_message))
+            }
+        }
+        session.setJob(job)
+    }
+
+    // ---- 以角色身份生成回复（官方 /impersonate） ----
+
+    /**
+     * 官方 /impersonate：以当前角色身份生成一条回复。
+     * prefill 非空时，把该文本作为角色回复的开头（quiet_prompt，官方 quietToLoud 语义），
+     * 模型从它后面继续写，最终合并为一条助手消息；prefill 为空时直接生成一条新回复。
+     */
+    fun impersonateGeneration(conversationId: Uuid, prefill: String?) {
+        val trimmed = prefill?.trim().orEmpty()
+        if (trimmed.isBlank()) {
+            triggerGeneration(conversationId, GenerationType.IMPERSONATE)
+            return
+        }
+
+        val session = getOrCreateSession(conversationId)
+        val previousJob = session.getJob()
+        previousJob?.cancel()
+
+        val job = appScope.launch {
+            try {
+                runCatching { previousJob?.join() }
+                finishInterruptedPendingTools(conversationId)
+
+                val settings = settingsStore.settingsFlow.first()
+                val conversation = getConversationFlow(conversationId).value
+                val assistant = settings.getAssistantById(conversation.assistantId)
+                    ?: settings.getCurrentAssistant()
+                val nodes = conversation.messageNodes
+                val history = nodes.map { node ->
+                    UIMessage(
+                        role = node.role,
+                        parts = listOf(UIMessagePart.Text(
+                            node.messages.getOrNull(node.selectIndex)?.toText().orEmpty()
+                        )),
+                    )
+                }
+                val continuation = generateForAssistant(
+                    assistant = assistant,
+                    settings = settings,
+                    prompt = trimmed,
+                    promptRole = MessageRole.ASSISTANT,
+                    history = history,
+                    conversationId = conversationId,
+                    generationType = GenerationType.IMPERSONATE,
+                )
+                if (continuation.isBlank()) return@launch
+
+                // 合并为一条助手消息：预填文本 + 模型续写（官方 quietToLoud 行为）
+                updateConversationState(conversationId) { conv ->
+                    conv.copy(
+                        messageNodes = conv.messageNodes + UIMessage(
+                            role = MessageRole.ASSISTANT,
+                            parts = listOf(UIMessagePart.Text(
+                                trimmed.trimEnd() + "\n\n" + continuation
+                            )),
+                        ).toMessageNode(),
+                    )
+                }
+                _generationDoneFlow.emit(conversationId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                addError(e, conversationId, title = context.getString(R.string.error_title_send_message))
+            }
+        }
+        session.setJob(job)
+    }
+
     // ---- 处理消息补全 ----
 
     private suspend fun handleMessageComplete(
         conversationId: Uuid,
-        messageRange: ClosedRange<Int>? = null
+        messageRange: ClosedRange<Int>? = null,
+        generationType: GenerationType = GenerationType.NORMAL,
     ) {
         val settings = settingsStore.settingsFlow.first()
         val initialConversation = getConversationFlow(conversationId).value
@@ -776,6 +928,7 @@ class ChatService(
             generationHandler.generateText(
                 settings = settings,
                 model = model,
+                generationType = generationType,
                 processingStatus = session.processingStatus,
                 messages = conversation.currentMessages.let {
                     if (messageRange != null) {
@@ -1133,12 +1286,17 @@ class ChatService(
         prompt: String,
         history: List<UIMessage>,
         conversationId: Uuid? = null,
+        generationType: GenerationType = GenerationType.NORMAL,
+        promptRole: MessageRole = MessageRole.USER,
         onChunk: ((String, List<UIMessagePart>?) -> Unit)? = null,
     ): String {
         val model = settings.findModelById(assistant.chatModelId ?: settings.chatModelId)
             ?: error("No model configured for assistant '${assistant.name}'")
 
-        val messages = history + UIMessage.user(prompt)
+        val messages = history + UIMessage(
+            role = promptRole,
+            parts = listOf(UIMessagePart.Text(prompt)),
+        )
         var result = ""
 
         // MCP 工具：对齐上游校验服务器名（仅字母数字），非法名直接报错返回
@@ -1165,6 +1323,7 @@ class ChatService(
             model = model,
             messages = messages,
             assistant = assistant,
+            generationType = generationType,
             conversationId = conversationId,
             memories = if (assistant.useGlobalMemory) {
                 memoryRepository.getGlobalMemories()

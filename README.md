@@ -43,7 +43,13 @@
 
 ### 4. 斜杠命令
 
-**上游没有**。本地新增：`/sys`（系统消息）、`/sendas`（角色发言）、`/persona`（切换人设）、`/trigger`（直接触发）、`/sysgen`（AI 写旁白）、`/inject`（注入提示词）、`/char-update`、`/char-duplicate`、`/rename-char`、7 个变量命令。输入框直接输入即执行。
+**上游没有**。本地新增（输入框直接输入即执行，`/help` 可查看全部命令）：
+- `/sys` 系统消息、`/sendas` 插入助手消息（直接写入，不触发生成）
+- `/continue` 续写最后一条助手回复（可加补充文本，AI 在原回复末尾继续写）
+- `/impersonate` 以角色身份生成一条新回复（可加开头文本，AI 从该文本后面接写）
+- `/prompt` 弹窗预览发送给 AI 的完整提示词
+- `/persona` 切换人设、`/trigger` 无消息直接触发、`/sysgen` AI 写旁白、`/inject` 注入提示词
+- `/char-update`、`/char-duplicate`、`/rename-char`、7 个变量命令
 
 ### 5. 人设（Persona）
 
