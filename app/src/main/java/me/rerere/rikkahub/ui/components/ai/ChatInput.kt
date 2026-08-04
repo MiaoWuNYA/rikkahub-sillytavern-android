@@ -717,8 +717,29 @@ private fun TextInputRow(
                             Surface(
                                 onClick = {
                                     if (cmd.builtinKind != null) {
-                                        // 官方行为：点选只把命令填入输入框，不执行；补参数后按发送执行
-                                        state.setMessageText("/${cmd.name} ${slashArgs}".trimEnd())
+                                        if (cmd.argumentHint.isBlank()) {
+                                            // 无参数命令：点击直接执行（如 /trigger /help），不污染聊天
+                                            handleBuiltinSlash(
+                                                cmd = cmd,
+                                                args = slashArgs,
+                                                state = state,
+                                                toaster = toaster,
+                                                settings = settings,
+                                                assistant = assistant,
+                                                onUpdateAssistant = onUpdateAssistant,
+                                                onSlashDuplicate = onSlashDuplicate,
+                                                onSlashInsert = onSlashInsert,
+                                                onSlashPersona = onSlashPersona,
+                                                onSlashTrigger = onSlashTrigger,
+                                                onSlashSysgen = onSlashSysgen,
+                                                onSlashInject = onSlashInject,
+                                                onSlashVar = onSlashVar,
+                                                onShowHelp = { showHelpDialog = true },
+                                            )
+                                        } else {
+                                            // 需要参数的命令：填入输入框，补参数后按发送执行（官方 AutoComplete 行为）
+                                            state.setMessageText("/${cmd.name} ${slashArgs}".trimEnd())
+                                        }
                                     } else {
                                         val argsList = slashArgs.split(" ", limit = 10)
                                         var text = cmd.content
