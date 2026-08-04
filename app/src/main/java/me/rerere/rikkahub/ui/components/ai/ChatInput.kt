@@ -43,6 +43,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -684,6 +685,7 @@ private fun TextInputRow(
                 shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 shadowElevation = 8.dp,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
             ) {
                 Column(
                     modifier = Modifier
@@ -706,7 +708,7 @@ private fun TextInputRow(
                             Text("关闭")
                         }
                     }
-                    slashCommands.forEach { cmd ->
+                    slashCommands.forEachIndexed { index, cmd ->
                         SlashCommandItem(
                             cmd = cmd,
                             fullDescription = true,
@@ -751,6 +753,13 @@ private fun TextInputRow(
                                 onDismissHelpDialog()
                             },
                         )
+                        if (index < slashCommands.size - 1) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 10.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                                thickness = 0.5.dp,
+                            )
+                        }
                     }
                 }
             }
@@ -766,10 +775,16 @@ private fun TextInputRow(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    shadowElevation = 8.dp
+                    shadowElevation = 8.dp,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                 ) {
-                    Column(modifier = Modifier.padding(4.dp)) {
-                        filtered.take(5).forEach { cmd ->
+                    Column(
+                        modifier = Modifier
+                            .padding(4.dp)
+                            .heightIn(max = 320.dp)
+                            .verticalScroll(rememberScrollState()),
+                    ) {
+                        filtered.forEachIndexed { index, cmd ->
                             SlashCommandItem(
                                 cmd = cmd,
                                 onClick = {
@@ -815,6 +830,13 @@ private fun TextInputRow(
                                     showSlashPopup = false
                                 },
                             )
+                            if (index < filtered.size - 1) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = 10.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                                    thickness = 0.5.dp,
+                                )
+                            }
                         }
                     }
                 }
