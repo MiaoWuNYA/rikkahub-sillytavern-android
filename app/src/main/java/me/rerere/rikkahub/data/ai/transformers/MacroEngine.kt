@@ -24,6 +24,13 @@ import kotlin.random.Random
  *   /isMobile/lastGenerationType/time::UTC±N
  * - 未知宏一律原样保留（保护 Pebble 模板 {{ message }} 等）
  */
+/** 宏目录条目：syntax=插入模板，description=中文说明，group=界面分组 */
+data class MacroEntry(
+    val syntax: String,
+    val description: String,
+    val group: String,
+)
+
 class MacroEngine(
     private val legacy: Map<String, PlaceholderInfo>,
     private val vars: MacroVars,
@@ -850,6 +857,40 @@ class MacroEngine(
     }
 
     companion object {
+        /** 引擎 2.0 宏目录：界面宏列表与本实现共用，新增/删除宏时在此登记即可自动显示 */
+        val macroCatalog: List<MacroEntry> = listOf(
+            MacroEntry("setvar::变量名::值", "设置本对话变量", "变量"),
+            MacroEntry("getvar::变量名", "读取本对话变量", "变量"),
+            MacroEntry("incvar::变量名", "变量+1", "变量"),
+            MacroEntry("decvar::变量名", "变量-1", "变量"),
+            MacroEntry("addvar::变量名::值", "变量加值", "变量"),
+            MacroEntry("hasvar::变量名", "判断变量是否存在", "变量"),
+            MacroEntry("flushvar::变量名", "删除变量", "变量"),
+            MacroEntry("setglobalvar::变量名::值", "设置全局变量", "变量"),
+            MacroEntry("getglobalvar::变量名", "读取全局变量", "变量"),
+            MacroEntry(".变量名", "变量简写读取", "变量"),
+            MacroEntry(".变量名++", "变量简写自增", "变量"),
+            MacroEntry("if::条件::内容", "条件分支（可用{{else}}）", "条件"),
+            MacroEntry("// 注释", "注释（不发送）", "条件"),
+            MacroEntry("pick::A::B::C", "稳定随机选一", "随机与工具"),
+            MacroEntry("roll::2d6+1", "掷骰子", "随机与工具"),
+            MacroEntry("random::A::B::C", "随机选一（每次不同）", "随机与工具"),
+            MacroEntry("space::N", "N个空格", "随机与工具"),
+            MacroEntry("newline::N", "N个换行", "随机与工具"),
+            MacroEntry("noop", "空", "随机与工具"),
+            MacroEntry("reverse::文本", "反转文本", "随机与工具"),
+            MacroEntry("allChatRange", "消息范围", "随机与工具"),
+            MacroEntry("groupNotMuted", "群聊未禁言成员", "随机与工具"),
+            MacroEntry("notChar", "除自己外成员", "随机与工具"),
+            MacroEntry("isMobile", "是否手机端", "随机与工具"),
+            MacroEntry("lastGenerationType", "上次生成类型", "随机与工具"),
+            MacroEntry("maxResponse", "最大回复token", "随机与工具"),
+            MacroEntry("greeting::N", "第N条开场白", "随机与工具"),
+            MacroEntry("time::UTC+8", "指定时区时间", "时间"),
+            MacroEntry("datetimeformat::yyyy-MM-dd HH:mm", "自定义时间格式", "时间"),
+            MacroEntry("timeDiff::时间A::时间B", "时间差", "时间"),
+        )
+
         private const val MAX_DEPTH = 32
         private const val ESCAPE_SENTINEL = "\u0000ESCAPED_LBRACE\u0000"
         // 官方宏名/变量名规则：字母（含 Unicode，如中文）、数字、_、-（简写允许 . 和 $ 前缀）
