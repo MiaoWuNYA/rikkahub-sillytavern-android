@@ -718,10 +718,12 @@ internal fun syncExternalToEmbedded(
         val book = tav.embeddedBook ?: return@map assistant
         val boundBook = lorebooks.firstOrNull { lb -> lb.id in assistant.lorebookIds }
             ?: return@map assistant
-        val newEntries = boundBook.entries.mapIndexed { index, injection ->
-            val template = book.entries.getOrNull(index)
-                ?: book.entries.firstOrNull()
-                ?: TavernBookEntry()
+        val newEntries = boundBook.entries.map { injection ->
+            // 按内容+触发词匹配已有内嵌条目作为模板，避免条目增删/排序后按位置错位；
+            // 匹配不到（新增条目）用全新模板，保留各自独立 id
+            val template = book.entries.firstOrNull { e ->
+                e.content == injection.content && e.keys == injection.keywords
+            } ?: TavernBookEntry()
             injectionToTavernEntry(injection, template)
         }
         assistant.copy(tavernData = tav.copy(embeddedBook = book.copy(entries = newEntries)))

@@ -201,8 +201,11 @@ class AssistantDetailVM(
         if (assistant.lorebookIds.isEmpty() || book.entries.isEmpty()) return lorebooks
         return lorebooks.map { lb ->
             if (lb.id !in assistant.lorebookIds) return@map lb
-            val synced = book.entries.mapIndexed { i, e ->
-                val existing = lb.entries.getOrNull(i)
+            val synced = book.entries.map { e ->
+                // 按内容+触发词匹配已有外置条目保留 id，避免条目增删/排序后按位置错位
+                val existing = lb.entries.firstOrNull { inj ->
+                    inj.content == e.content && inj.keywords == e.keys
+                }
                 PromptInjection.RegexInjection(
                     id = existing?.id ?: Uuid.random(),
                     name = e.comment.ifEmpty { e.keys.firstOrNull() ?: "Entry ${e.id}" },
