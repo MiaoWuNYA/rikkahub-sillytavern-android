@@ -1241,6 +1241,32 @@
   <string name="prompt_page_probability">Probability: %d%%</string>
   <string name="prompt_page_sticky">Sticky</string>
   <string name="prompt_page_cooldown">Cooldown (turns)</string>
+  <string name="prompt_page_delay">Delay</string>
+  <string name="prompt_page_triggers">Triggers</string>
+  <string name="prompt_page_ignore_budget">Ignore Budget</string>
+  <string name="prompt_page_match_scope">Match</string>
+  <string name="prompt_page_use_group_scoring">Use Group Scoring</string>
+  <string name="prompt_page_automation_id">Automation ID</string>
+  <string name="prompt_page_display_index">Display Index</string>
+  <string name="prompt_page_display_position">Display Position</string>
+  <string name="prompt_page_insertion_position">Insertion Position</string>
+  <string name="prompt_page_probability_label">Probability</string>
+  <string name="prompt_page_trigger_control">Trigger</string>
+  <string name="prompt_page_insert_control">Insert</string>
+  <string name="prompt_page_official_advanced">Official Advanced</string>
+  <string name="prompt_page_keyword_trigger">Keyword</string>
+  <string name="prompt_page_match_char_description">Char Description</string>
+  <string name="prompt_page_match_char_personality">Char Personality</string>
+  <string name="prompt_page_match_char_depth_prompt">Char Depth Prompt</string>
+  <string name="prompt_page_match_scenario">Scenario</string>
+  <string name="prompt_page_match_creator_notes">Creator Notes</string>
+  <string name="prompt_page_match_persona">Persona</string>
+  <string name="prompt_page_embedded_lorebook">Embedded Lorebook</string>
+  <string name="prompt_page_ungrouped">Ungrouped</string>
+  <string name="prompt_page_match_recursion">Match &amp; Recursion</string>
+  <string name="prompt_page_save_changes">Save Changes</string>
+  <string name="prompt_page_triggers_desc">Comma separated; empty = all generation types</string>
+  <string name="prompt_page_apply_to_entries">Apply to %d entries</string>
   <string name="prompt_page_sticky_desc">0 = off, N = persist for N turns</string>
   <string name="prompt_page_no_group">Ungrouped</string>
   <string name="prompt_page_no_entries">No entries yet. Tap + to add one.</string>

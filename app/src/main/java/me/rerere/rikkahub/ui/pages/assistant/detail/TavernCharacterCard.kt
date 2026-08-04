@@ -573,7 +573,7 @@ private fun EmbeddedBookSummary(
                 tint = MaterialTheme.colorScheme.primary,
             )
             Spacer(Modifier.width(6.dp))
-            Text("内嵌世界书(Embedded Lorebook)", style = MaterialTheme.typography.labelMedium)
+            Text(stringResource(R.string.prompt_page_embedded_lorebook), style = MaterialTheme.typography.labelMedium)
             Spacer(Modifier.width(6.dp))
             Surface(
                 shape = RoundedCornerShape(4.dp),
@@ -834,7 +834,7 @@ private fun EmbeddedBookSummary(
                 }
 
                 if (ungrouped.isNotEmpty()) {
-                    Text("未分组(Ungrouped)", style = MaterialTheme.typography.labelSmall,
+                    Text(stringResource(R.string.prompt_page_ungrouped), style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 2.dp))
                     ungrouped.forEach { entry ->
@@ -956,22 +956,22 @@ private fun EmbeddedGroupSettingsDialog(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("组设置(Group Settings)：$groupName", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.prompt_page_group_settings, groupName), style = MaterialTheme.typography.titleMedium)
 
             // 组名称
             OutlinedTextField(
                 value = editGroupName, onValueChange = { editGroupName = it },
-                label = { Text("分组名称(Group Name)") }, modifier = Modifier.fillMaxWidth(), singleLine = true,
+                label = { Text(stringResource(R.string.prompt_page_group)) }, modifier = Modifier.fillMaxWidth(), singleLine = true,
             )
 
             // 状态切换
             CardGroup {
                 item(
-                    headlineContent = { Text("启用(Enabled)", style = MaterialTheme.typography.bodyMedium) },
+                    headlineContent = { Text(stringResource(R.string.prompt_page_enabled), style = MaterialTheme.typography.bodyMedium) },
                     trailingContent = { Switch(checked = enabled, onCheckedChange = { enabled = it }) },
                 )
                 item(
-                    headlineContent = { Text("常驻(Constant)", style = MaterialTheme.typography.bodyMedium) },
+                    headlineContent = { Text(stringResource(R.string.prompt_page_constant_active), style = MaterialTheme.typography.bodyMedium) },
                     supportingContent = {
                         Text(
                             "不依赖关键词，始终注入",
@@ -982,7 +982,7 @@ private fun EmbeddedGroupSettingsDialog(
                     trailingContent = { Switch(checked = constant, onCheckedChange = { constant = it }) },
                 )
                 item(
-                    headlineContent = { Text("关键词触发(Keyword)", style = MaterialTheme.typography.bodyMedium) },
+                    headlineContent = { Text(stringResource(R.string.prompt_page_keyword_trigger), style = MaterialTheme.typography.bodyMedium) },
                     supportingContent = {
                         Text(
                             "关闭后按向量触发",
@@ -996,18 +996,18 @@ private fun EmbeddedGroupSettingsDialog(
 
             // 概率
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("触发概率(Probability)", style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.prompt_page_probability_label), style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
                 Switch(checked = useProbability, onCheckedChange = { useProbability = !useProbability })
             }
             AnimatedVisibility(visible = useProbability) {
                 Column {
-                    Text("触发概率(Probability)：${probability.toInt()}%", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.prompt_page_probability, probability.toInt()), style = MaterialTheme.typography.labelMedium)
                     Slider(value = probability, onValueChange = { probability = it }, valueRange = 0f..100f, steps = 99)
                 }
             }
 
             // 插入位置
-            CardGroup(title = { Text("插入位置(Insertion Position)") }) {
+            CardGroup(title = { Text(stringResource(R.string.prompt_page_insertion_position)) }) {
                 listOf(
                     "角色卡前(Before Char)",
                     "角色卡后(After Char)",
@@ -1031,13 +1031,13 @@ private fun EmbeddedGroupSettingsDialog(
             // 数值字段 — 分两行，每行两列
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("优先级(Priority)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.prompt_page_priority_label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     OutlinedTextField(value = priority, onValueChange = { priority = it },
                         textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("深度(Depth)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.prompt_page_inject_depth), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     OutlinedTextField(value = depth, onValueChange = { depth = it },
                         textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
@@ -1045,13 +1045,13 @@ private fun EmbeddedGroupSettingsDialog(
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("粘性(Sticky)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.prompt_page_sticky), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     OutlinedTextField(value = sticky, onValueChange = { sticky = it },
                         textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("冷却(Cooldown)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.prompt_page_cooldown), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     OutlinedTextField(value = cooldown, onValueChange = { cooldown = it },
                         textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
@@ -1059,13 +1059,13 @@ private fun EmbeddedGroupSettingsDialog(
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("扫描深度(Scan Depth)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.prompt_page_scan_depth), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     OutlinedTextField(value = scanDepth, onValueChange = { scanDepth = it },
                         textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("组权重(Group Weight)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.prompt_page_group_weight), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     OutlinedTextField(value = groupWeight, onValueChange = { groupWeight = it },
                         textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
@@ -1075,21 +1075,21 @@ private fun EmbeddedGroupSettingsDialog(
             // 开关
             CardGroup {
                 item(
-                    headlineContent = { Text("区分大小写(Case Sensitive)", style = MaterialTheme.typography.bodyMedium) },
+                    headlineContent = { Text(stringResource(R.string.prompt_page_case_sensitive), style = MaterialTheme.typography.bodyMedium) },
                     trailingContent = { Switch(checked = caseSensitive, onCheckedChange = { caseSensitive = it }) },
                 )
                 item(
-                    headlineContent = { Text("使用正则(Use Regex)", style = MaterialTheme.typography.bodyMedium) },
+                    headlineContent = { Text(stringResource(R.string.prompt_page_use_regex), style = MaterialTheme.typography.bodyMedium) },
                     trailingContent = { Switch(checked = useRegex, onCheckedChange = { useRegex = it }) },
                 )
                 item(
-                    headlineContent = { Text("覆盖同组(Group Override)", style = MaterialTheme.typography.bodyMedium) },
+                    headlineContent = { Text(stringResource(R.string.prompt_page_group_override), style = MaterialTheme.typography.bodyMedium) },
                     trailingContent = { Switch(checked = groupOverride, onCheckedChange = { groupOverride = it }) },
                 )
             }
 
             // 选择性逻辑
-            CardGroup(title = { Text("次要关键词逻辑(Selective Logic)") }) {
+            CardGroup(title = { Text(stringResource(R.string.prompt_page_selective_logic)) }) {
                 listOf(
                     // 官方 world-info.js：0=AND_ANY 1=NOT_ALL 2=NOT_ANY 3=AND_ALL
                     "任一副键匹配(AND_ANY)" to 0,
@@ -1108,25 +1108,25 @@ private fun EmbeddedGroupSettingsDialog(
             }
 
             // 匹配与递归控制
-            CardGroup(title = { Text("匹配与递归(Match & Recursion)") }) {
+            CardGroup(title = { Text(stringResource(R.string.prompt_page_match_recursion)) }) {
                 item(
-                    headlineContent = { Text("整词匹配(Whole Words)", style = MaterialTheme.typography.bodyMedium) },
+                    headlineContent = { Text(stringResource(R.string.prompt_page_match_whole_words), style = MaterialTheme.typography.bodyMedium) },
                     trailingContent = { Switch(checked = matchWholeWords, onCheckedChange = { matchWholeWords = it }) },
                 )
                 item(
-                    headlineContent = { Text("排除递归(Exclude Recursion)", style = MaterialTheme.typography.bodyMedium) },
+                    headlineContent = { Text(stringResource(R.string.prompt_page_exclude_recursion), style = MaterialTheme.typography.bodyMedium) },
                     trailingContent = { Switch(checked = excludeRecursion, onCheckedChange = { excludeRecursion = it }) },
                 )
                 item(
-                    headlineContent = { Text("禁止被递归触发(Prevent Recursion)", style = MaterialTheme.typography.bodyMedium) },
+                    headlineContent = { Text(stringResource(R.string.prompt_page_prevent_recursion), style = MaterialTheme.typography.bodyMedium) },
                     trailingContent = { Switch(checked = preventRecursion, onCheckedChange = { preventRecursion = it }) },
                 )
                 item(
-                    headlineContent = { Text("仅递归时检查(Delay Until Recursion)", style = MaterialTheme.typography.bodyMedium) },
+                    headlineContent = { Text(stringResource(R.string.prompt_page_delay_until_recursion), style = MaterialTheme.typography.bodyMedium) },
                     trailingContent = { Switch(checked = delayUntilRecursion > 0, onCheckedChange = { delayUntilRecursion = if (it) 1 else 0 }) },
                 )
                 item(
-                    headlineContent = { Text("忽略预算(Ignore Budget)", style = MaterialTheme.typography.bodyMedium) },
+                    headlineContent = { Text(stringResource(R.string.prompt_page_ignore_budget), style = MaterialTheme.typography.bodyMedium) },
                     supportingContent = {
                         Text(
                             "该条目不受世界书 token 预算限制，总是注入",
@@ -1144,20 +1144,20 @@ private fun EmbeddedGroupSettingsDialog(
                     validate = { it > 0 },
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = MaterialTheme.typography.bodySmall,
-                    label = { Text("递归层级(Recursion Level)") },
+                    label = { Text(stringResource(R.string.prompt_page_delay_until_recursion_level)) },
                 )
             }
 
             // 官方高级字段
             Text(
-                "官方高级字段(Official Advanced)",
+                stringResource(R.string.prompt_page_official_advanced),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(top = 4.dp),
             )
             CardGroup {
                 item(
-                    headlineContent = { Text("使用组评分(Use Group Scoring)", style = MaterialTheme.typography.bodyMedium) },
+                    headlineContent = { Text(stringResource(R.string.prompt_page_use_group_scoring), style = MaterialTheme.typography.bodyMedium) },
                     trailingContent = { Switch(checked = useGroupScoring, onCheckedChange = { useGroupScoring = it }) },
                 )
             }
@@ -1167,17 +1167,17 @@ private fun EmbeddedGroupSettingsDialog(
                 modifier = Modifier.fillMaxWidth(),
                 textStyle = MaterialTheme.typography.bodySmall,
                 singleLine = true,
-                label = { Text("自动化ID(Automation ID)") },
+                label = { Text(stringResource(R.string.prompt_page_automation_id)) },
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("显示序号(Display Index)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.prompt_page_display_index), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     OutlinedTextField(value = displayIndexStr, onValueChange = { displayIndexStr = it },
                         textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("显示位置(Display Position)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.prompt_page_display_position), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     OutlinedTextField(value = displayPositionStr, onValueChange = { displayPositionStr = it },
                         textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
@@ -1189,40 +1189,40 @@ private fun EmbeddedGroupSettingsDialog(
                 modifier = Modifier.fillMaxWidth(),
                 textStyle = MaterialTheme.typography.bodySmall,
                 singleLine = true,
-                label = { Text("触发类型(Triggers)") },
-                supportingText = { Text("逗号分隔；不选 = 所有生成类型都触发") },
+                label = { Text(stringResource(R.string.prompt_page_triggers)) },
+                supportingText = { Text(stringResource(R.string.prompt_page_triggers_desc)) },
             )
 
             // 扫描范围（官方 match_*）
             Text(
-                "扫描范围(Match)",
+                stringResource(R.string.prompt_page_match_scope),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(top = 4.dp),
             )
             CardGroup {
                 item(
-                    headlineContent = { Text("角色描述(Char Description)", style = MaterialTheme.typography.bodyMedium) },
+                    headlineContent = { Text(stringResource(R.string.prompt_page_match_char_description), style = MaterialTheme.typography.bodyMedium) },
                     trailingContent = { Switch(checked = matchCharacterDescription, onCheckedChange = { matchCharacterDescription = it }) },
                 )
                 item(
-                    headlineContent = { Text("角色性格(Char Personality)", style = MaterialTheme.typography.bodyMedium) },
+                    headlineContent = { Text(stringResource(R.string.prompt_page_match_char_personality), style = MaterialTheme.typography.bodyMedium) },
                     trailingContent = { Switch(checked = matchCharacterPersonality, onCheckedChange = { matchCharacterPersonality = it }) },
                 )
                 item(
-                    headlineContent = { Text("角色深度提示(Char Depth Prompt)", style = MaterialTheme.typography.bodyMedium) },
+                    headlineContent = { Text(stringResource(R.string.prompt_page_match_char_depth_prompt), style = MaterialTheme.typography.bodyMedium) },
                     trailingContent = { Switch(checked = matchCharacterDepthPrompt, onCheckedChange = { matchCharacterDepthPrompt = it }) },
                 )
                 item(
-                    headlineContent = { Text("角色场景(Scenario)", style = MaterialTheme.typography.bodyMedium) },
+                    headlineContent = { Text(stringResource(R.string.prompt_page_match_scenario), style = MaterialTheme.typography.bodyMedium) },
                     trailingContent = { Switch(checked = matchScenario, onCheckedChange = { matchScenario = it }) },
                 )
                 item(
-                    headlineContent = { Text("作者备注(Creator Notes)", style = MaterialTheme.typography.bodyMedium) },
+                    headlineContent = { Text(stringResource(R.string.prompt_page_match_creator_notes), style = MaterialTheme.typography.bodyMedium) },
                     trailingContent = { Switch(checked = matchCreatorNotes, onCheckedChange = { matchCreatorNotes = it }) },
                 )
                 item(
-                    headlineContent = { Text("用户人设(Persona)", style = MaterialTheme.typography.bodyMedium) },
+                    headlineContent = { Text(stringResource(R.string.prompt_page_match_persona), style = MaterialTheme.typography.bodyMedium) },
                     trailingContent = { Switch(checked = matchPersonaDescription, onCheckedChange = { matchPersonaDescription = it }) },
                 )
             }
@@ -1233,7 +1233,7 @@ private fun EmbeddedGroupSettingsDialog(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextButton(onClick = onDismiss) { Text("取消") }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
                 TextButton(onClick = {
                     onConfirm(editGroupName, template.copy(
                         disable = !enabled,
@@ -1273,7 +1273,7 @@ private fun EmbeddedGroupSettingsDialog(
                         ignoreBudget = ignoreBudget,
                     ))
                 }) {
-                    Text("应用到 ${entries.size} 条")
+                    Text(stringResource(R.string.prompt_page_apply_to_entries, entries.size))
                 }
             }
         }
@@ -1331,7 +1331,7 @@ private fun CollapsibleEntryCard(
                                     color = MaterialTheme.colorScheme.primary,
                                 )
                                 Text(
-                                    if (entry.constant) "常驻(Constant)" else "触发(Trigger)",
+                                    if (entry.constant) stringResource(R.string.prompt_page_constant_active) else "触发(Trigger)",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                 )
@@ -1441,11 +1441,11 @@ private fun EntryEditor(
         // 状态切换
         CardGroup {
             item(
-                headlineContent = { Text("启用(Enabled)", style = MaterialTheme.typography.bodyMedium) },
+                headlineContent = { Text(stringResource(R.string.prompt_page_enabled), style = MaterialTheme.typography.bodyMedium) },
                 trailingContent = { Switch(checked = enabled, onCheckedChange = { enabled = it }) },
             )
             item(
-                headlineContent = { Text("常驻(Constant)", style = MaterialTheme.typography.bodyMedium) },
+                headlineContent = { Text(stringResource(R.string.prompt_page_constant_active), style = MaterialTheme.typography.bodyMedium) },
                 supportingContent = {
                     Text(
                         "不依赖关键词，始终注入",
@@ -1456,7 +1456,7 @@ private fun EntryEditor(
                 trailingContent = { Switch(checked = constant, onCheckedChange = { constant = it }) },
             )
             item(
-                headlineContent = { Text("关键词触发(Keyword)", style = MaterialTheme.typography.bodyMedium) },
+                headlineContent = { Text(stringResource(R.string.prompt_page_keyword_trigger), style = MaterialTheme.typography.bodyMedium) },
                 supportingContent = {
                     Text(
                         "关闭后按向量触发",
@@ -1475,7 +1475,7 @@ private fun EntryEditor(
             modifier = Modifier.fillMaxWidth(),
             textStyle = MaterialTheme.typography.bodySmall,
             singleLine = true,
-            label = { Text("名称(Name)") },
+            label = { Text(stringResource(R.string.prompt_page_name)) },
         )
 
         // 触发词
@@ -1485,7 +1485,7 @@ private fun EntryEditor(
             modifier = Modifier.fillMaxWidth(),
             textStyle = MaterialTheme.typography.bodySmall,
             singleLine = true,
-            label = { Text("触发词(Keywords)") },
+            label = { Text(stringResource(R.string.prompt_page_keywords_label)) },
         )
 
         // 次级触发词
@@ -1496,13 +1496,13 @@ private fun EntryEditor(
                 modifier = Modifier.fillMaxWidth(),
                 textStyle = MaterialTheme.typography.bodySmall,
                 singleLine = true,
-                label = { Text("次级触发词(Secondary Keywords)") },
+                label = { Text(stringResource(R.string.prompt_page_secondary_keys_label)) },
             )
         }
 
         // 触发概率
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("触发概率(Probability)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.prompt_page_probability_label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
             Switch(
                 checked = entry.useProbability,
                 onCheckedChange = { onUpdate(entry.copy(useProbability = it)) },
@@ -1519,7 +1519,7 @@ private fun EntryEditor(
         }
 
         // 插入位置
-        CardGroup(title = { Text("插入位置(Insertion Position)") }) {
+        CardGroup(title = { Text(stringResource(R.string.prompt_page_insertion_position)) }) {
             val posOptions = listOf(
                 "角色卡前(Before Char)",
                 "角色卡后(After Char)",
@@ -1547,7 +1547,7 @@ private fun EntryEditor(
             onValueChange = { content = it },
             modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp, max = 200.dp),
             textStyle = MaterialTheme.typography.bodySmall,
-            label = { Text("内容(Content)") },
+            label = { Text(stringResource(R.string.prompt_page_injection_content)) },
         )
 
         // 高级设置
@@ -1568,22 +1568,22 @@ private fun EntryEditor(
         if (showAdvanced) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 // 触发控制
-                Text("触发控制(Trigger)", style = MaterialTheme.typography.labelMedium,
+                Text(stringResource(R.string.prompt_page_trigger_control), style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("优先级(Priority)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.prompt_page_priority_label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         OutlinedTextField(value = priority, onValueChange = { priority = it },
                             textStyle = MaterialTheme.typography.bodySmall, singleLine = true, modifier = Modifier.fillMaxWidth())
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("深度(Depth)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.prompt_page_inject_depth), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         OutlinedTextField(value = depth, onValueChange = { depth = it },
                             textStyle = MaterialTheme.typography.bodySmall, singleLine = true, modifier = Modifier.fillMaxWidth())
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("冷却(Cooldown)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.prompt_page_cooldown), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         OutlinedTextField(value = cooldown, onValueChange = { cooldown = it },
                             textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
@@ -1591,13 +1591,13 @@ private fun EntryEditor(
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("粘性(Sticky)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.prompt_page_sticky), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         OutlinedTextField(value = sticky, onValueChange = { sticky = it },
                             textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("延迟(Delay)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.prompt_page_delay), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         OutlinedTextField(value = delay, onValueChange = { delay = it },
                             textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
@@ -1605,19 +1605,19 @@ private fun EntryEditor(
                 }
                 CardGroup {
                     item(
-                        headlineContent = { Text("区分大小写(Case Sensitive)", style = MaterialTheme.typography.bodyMedium) },
+                        headlineContent = { Text(stringResource(R.string.prompt_page_case_sensitive), style = MaterialTheme.typography.bodyMedium) },
                         trailingContent = { Switch(checked = caseSensitive, onCheckedChange = { caseSensitive = it }) },
                     )
                     item(
-                        headlineContent = { Text("使用正则(Use Regex)", style = MaterialTheme.typography.bodyMedium) },
+                        headlineContent = { Text(stringResource(R.string.prompt_page_use_regex), style = MaterialTheme.typography.bodyMedium) },
                         trailingContent = { Switch(checked = useRegex, onCheckedChange = { useRegex = it }) },
                     )
                     item(
-                        headlineContent = { Text("整词匹配(Whole Words)", style = MaterialTheme.typography.bodyMedium) },
+                        headlineContent = { Text(stringResource(R.string.prompt_page_match_whole_words), style = MaterialTheme.typography.bodyMedium) },
                         trailingContent = { Switch(checked = matchWholeWords, onCheckedChange = { matchWholeWords = it }) },
                     )
                     item(
-                        headlineContent = { Text("排除递归(Exclude Recursion)", style = MaterialTheme.typography.bodyMedium) },
+                        headlineContent = { Text(stringResource(R.string.prompt_page_exclude_recursion), style = MaterialTheme.typography.bodyMedium) },
                         supportingContent = {
                             Text(
                                 "内容不参与递归扫描",
@@ -1628,15 +1628,15 @@ private fun EntryEditor(
                         trailingContent = { Switch(checked = excludeRecursion, onCheckedChange = { excludeRecursion = it }) },
                     )
                     item(
-                        headlineContent = { Text("禁止被递归触发(Prevent Recursion)", style = MaterialTheme.typography.bodyMedium) },
+                        headlineContent = { Text(stringResource(R.string.prompt_page_prevent_recursion), style = MaterialTheme.typography.bodyMedium) },
                         trailingContent = { Switch(checked = preventRecursion, onCheckedChange = { preventRecursion = it }) },
                     )
                     item(
-                        headlineContent = { Text("仅递归时检查(Delay Until Recursion)", style = MaterialTheme.typography.bodyMedium) },
+                        headlineContent = { Text(stringResource(R.string.prompt_page_delay_until_recursion), style = MaterialTheme.typography.bodyMedium) },
                         trailingContent = { Switch(checked = delayUntilRecursion > 0, onCheckedChange = { delayUntilRecursion = if (it) 1 else 0 }) },
                     )
                     item(
-                        headlineContent = { Text("覆盖同组(Group Override)", style = MaterialTheme.typography.bodyMedium) },
+                        headlineContent = { Text(stringResource(R.string.prompt_page_group_override), style = MaterialTheme.typography.bodyMedium) },
                         trailingContent = { Switch(checked = groupOverride, onCheckedChange = { groupOverride = it }) },
                     )
                 }
@@ -1647,22 +1647,22 @@ private fun EntryEditor(
                         validate = { it > 0 },
                         modifier = Modifier.fillMaxWidth(),
                         textStyle = MaterialTheme.typography.bodySmall,
-                        label = { Text("递归层级(Recursion Level)") },
+                        label = { Text(stringResource(R.string.prompt_page_delay_until_recursion_level)) },
                     )
                 }
 
                 // 插入控制
-                Text("插入控制(Insert)", style = MaterialTheme.typography.labelMedium,
+                Text(stringResource(R.string.prompt_page_insert_control), style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("分组名称(Group)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.prompt_page_group), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         OutlinedTextField(value = groupStr, onValueChange = { groupStr = it },
                             textStyle = MaterialTheme.typography.bodySmall, singleLine = true, modifier = Modifier.fillMaxWidth())
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("组权重(Group Weight)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.prompt_page_group_weight), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         OutlinedTextField(value = groupWeight, onValueChange = { groupWeight = it },
                             textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
@@ -1670,14 +1670,14 @@ private fun EntryEditor(
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("扫描深度(Scan Depth)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.prompt_page_scan_depth), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         OutlinedTextField(value = scanDepthStr, onValueChange = { scanDepthStr = it },
                             textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
                     }
                     Spacer(Modifier.weight(1f))
                 }
-                CardGroup(title = { Text("注入角色(Role)") }) {
+                CardGroup(title = { Text(stringResource(R.string.prompt_page_injection_role)) }) {
                     val roleLabels = listOf(
                         "system" to "系统(System)",
                         "user" to "用户(User)",
@@ -1693,7 +1693,7 @@ private fun EntryEditor(
                         )
                     }
                 }
-                CardGroup(title = { Text("次要关键词逻辑(Selective Logic)") }) {
+                CardGroup(title = { Text(stringResource(R.string.prompt_page_selective_logic)) }) {
                     val logicLabels = listOf(
                         // 官方 world-info.js：0=AND_ANY 1=NOT_ALL 2=NOT_ANY 3=AND_ALL
                         "任一副键匹配(AND_ANY)" to 0,
@@ -1713,12 +1713,12 @@ private fun EntryEditor(
                 }
 
                 // 酒馆官方高级字段（自动化ID本App暂不执行，仅保留数据）
-                Text("官方高级字段(Official Advanced)", style = MaterialTheme.typography.labelMedium,
+                Text(stringResource(R.string.prompt_page_official_advanced), style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 4.dp))
                 CardGroup {
                     item(
-                        headlineContent = { Text("使用组评分(Use Group Scoring)", style = MaterialTheme.typography.bodyMedium) },
+                        headlineContent = { Text(stringResource(R.string.prompt_page_use_group_scoring), style = MaterialTheme.typography.bodyMedium) },
                         supportingContent = {
                             Text(
                                 "同组按匹配关键词数选胜者",
@@ -1735,18 +1735,18 @@ private fun EntryEditor(
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = MaterialTheme.typography.bodySmall,
                     singleLine = true,
-                    label = { Text("自动化ID(Automation ID)") },
+                    label = { Text(stringResource(R.string.prompt_page_automation_id)) },
                     supportingText = { Text("仅保留数据，暂不执行") },
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("显示序号(Display Index)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.prompt_page_display_index), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         OutlinedTextField(value = displayIndexStr, onValueChange = { displayIndexStr = it },
                             textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("显示位置(Display Position)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.prompt_page_display_position), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         OutlinedTextField(value = displayPositionStr, onValueChange = { displayPositionStr = it },
                             textStyle = MaterialTheme.typography.bodySmall, singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
@@ -1758,12 +1758,12 @@ private fun EntryEditor(
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = MaterialTheme.typography.bodySmall,
                     singleLine = true,
-                    label = { Text("触发类型(Triggers)") },
-                    supportingText = { Text("逗号分隔；不选 = 所有生成类型都触发") },
+                    label = { Text(stringResource(R.string.prompt_page_triggers)) },
+                    supportingText = { Text(stringResource(R.string.prompt_page_triggers_desc)) },
                 )
                 CardGroup {
                     item(
-                        headlineContent = { Text("忽略预算(Ignore Budget)", style = MaterialTheme.typography.bodyMedium) },
+                        headlineContent = { Text(stringResource(R.string.prompt_page_ignore_budget), style = MaterialTheme.typography.bodyMedium) },
                         supportingContent = {
                             Text(
                                 "该条目不受世界书 token 预算限制，总是注入",
@@ -1775,34 +1775,34 @@ private fun EntryEditor(
                     )
                 }
                 Text(
-                    "扫描范围(Match)",
+                    stringResource(R.string.prompt_page_match_scope),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 4.dp),
                 )
                 CardGroup {
                     item(
-                        headlineContent = { Text("角色描述(Char Description)", style = MaterialTheme.typography.bodyMedium) },
+                        headlineContent = { Text(stringResource(R.string.prompt_page_match_char_description), style = MaterialTheme.typography.bodyMedium) },
                         trailingContent = { Switch(checked = matchCharacterDescription, onCheckedChange = { matchCharacterDescription = it }) },
                     )
                     item(
-                        headlineContent = { Text("角色性格(Char Personality)", style = MaterialTheme.typography.bodyMedium) },
+                        headlineContent = { Text(stringResource(R.string.prompt_page_match_char_personality), style = MaterialTheme.typography.bodyMedium) },
                         trailingContent = { Switch(checked = matchCharacterPersonality, onCheckedChange = { matchCharacterPersonality = it }) },
                     )
                     item(
-                        headlineContent = { Text("角色深度提示(Char Depth Prompt)", style = MaterialTheme.typography.bodyMedium) },
+                        headlineContent = { Text(stringResource(R.string.prompt_page_match_char_depth_prompt), style = MaterialTheme.typography.bodyMedium) },
                         trailingContent = { Switch(checked = matchCharacterDepthPrompt, onCheckedChange = { matchCharacterDepthPrompt = it }) },
                     )
                     item(
-                        headlineContent = { Text("角色场景(Scenario)", style = MaterialTheme.typography.bodyMedium) },
+                        headlineContent = { Text(stringResource(R.string.prompt_page_match_scenario), style = MaterialTheme.typography.bodyMedium) },
                         trailingContent = { Switch(checked = matchScenario, onCheckedChange = { matchScenario = it }) },
                     )
                     item(
-                        headlineContent = { Text("作者备注(Creator Notes)", style = MaterialTheme.typography.bodyMedium) },
+                        headlineContent = { Text(stringResource(R.string.prompt_page_match_creator_notes), style = MaterialTheme.typography.bodyMedium) },
                         trailingContent = { Switch(checked = matchCreatorNotes, onCheckedChange = { matchCreatorNotes = it }) },
                     )
                     item(
-                        headlineContent = { Text("用户人设(Persona)", style = MaterialTheme.typography.bodyMedium) },
+                        headlineContent = { Text(stringResource(R.string.prompt_page_match_persona), style = MaterialTheme.typography.bodyMedium) },
                         trailingContent = { Switch(checked = matchPersonaDescription, onCheckedChange = { matchPersonaDescription = it }) },
                     )
                 }
@@ -1858,7 +1858,7 @@ private fun EntryEditor(
             },
             modifier = Modifier.fillMaxWidth(),
         ) {
-Text("保存修改(Save)")
+Text(stringResource(R.string.prompt_page_save_changes))
         }
     }
 }

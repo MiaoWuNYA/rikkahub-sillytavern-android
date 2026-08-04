@@ -1726,13 +1726,13 @@ private fun GroupSettingsDialog(
                 IntTextField(
                     value = edited.injectDepth,
                     onValueChange = { edited = edited.copy(injectDepth = it) },
-                    label = { Text("深度 (depth)") },
+                    label = { Text(stringResource(R.string.prompt_page_inject_depth)) },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
 
                 FormItem(
-                    label = { Text("使用组评分(Use Group Scoring)") },
+                    label = { Text(stringResource(R.string.prompt_page_use_group_scoring)) },
                     tail = {
                         Switch(
                             checked = edited.useGroupScoring,
@@ -1743,7 +1743,7 @@ private fun GroupSettingsDialog(
                 OutlinedTextField(
                     value = edited.automationId,
                     onValueChange = { edited = edited.copy(automationId = it) },
-                    label = { Text("自动化ID(Automation ID)") },
+                    label = { Text(stringResource(R.string.prompt_page_automation_id)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     supportingText = { Text("仅保留数据，暂不执行") },
@@ -1752,7 +1752,7 @@ private fun GroupSettingsDialog(
                     IntTextField(
                         value = edited.displayIndex,
                         onValueChange = { edited = edited.copy(displayIndex = it) },
-                        label = { Text("显示序号(Display Index)") },
+                        label = { Text(stringResource(R.string.prompt_page_display_index)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
@@ -1760,7 +1760,7 @@ private fun GroupSettingsDialog(
                     IntTextField(
                         value = edited.displayPosition,
                         onValueChange = { edited = edited.copy(displayPosition = it) },
-                        label = { Text("显示位置(Display Position)") },
+                        label = { Text(stringResource(R.string.prompt_page_display_position)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
@@ -1771,7 +1771,7 @@ private fun GroupSettingsDialog(
                     onValueChange = { text ->
                         edited = edited.copy(triggers = text.split(",").map { it.trim() }.filter { it.isNotBlank() })
                     },
-                    label = { Text("触发类型(Triggers)") },
+                    label = { Text(stringResource(R.string.prompt_page_triggers)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     supportingText = { Text("逗号分隔；不选 = 所有生成类型都触发") },
@@ -1813,7 +1813,7 @@ private fun GroupSettingsDialog(
 
                 // 预算豁免（官方 ignore_budget）
                 FormItem(
-                    label = { Text("忽略预算(Ignore Budget)") },
+                    label = { Text(stringResource(R.string.prompt_page_ignore_budget)) },
                     description = { Text("该条目不受世界书 token 预算限制，总是注入") },
                     tail = {
                         Switch(
@@ -1825,16 +1825,16 @@ private fun GroupSettingsDialog(
 
                 // 官方 match_*：关键词扫描范围（默认只扫聊天）
                 Text(
-                    "扫描范围(Match)",
+                    stringResource(R.string.prompt_page_match_scope),
                     style = MaterialTheme.typography.titleSmall,
                 )
                 val matchOptions = listOf(
-                    "matchCharacterDescription" to "角色描述(Char Description)",
-                    "matchCharacterPersonality" to "角色性格(Char Personality)",
-                    "matchCharacterDepthPrompt" to "角色深度提示(Char Depth Prompt)",
-                    "matchScenario" to "角色场景(Scenario)",
-                    "matchCreatorNotes" to "作者备注(Creator Notes)",
-                    "matchPersonaDescription" to "用户人设(Persona)",
+                    "matchCharacterDescription" to stringResource(R.string.prompt_page_match_char_description),
+                    "matchCharacterPersonality" to stringResource(R.string.prompt_page_match_char_personality),
+                    "matchCharacterDepthPrompt" to stringResource(R.string.prompt_page_match_char_depth_prompt),
+                    "matchScenario" to stringResource(R.string.prompt_page_match_scenario),
+                    "matchCreatorNotes" to stringResource(R.string.prompt_page_match_creator_notes),
+                    "matchPersonaDescription" to stringResource(R.string.prompt_page_match_persona),
                 )
                 matchOptions.forEach { (field, label) ->
                     val checked = when (field) {
@@ -1867,7 +1867,7 @@ private fun GroupSettingsDialog(
 
                 // 概率
                 FormItem(
-                    label = { Text("触发概率(Probability)") },
+                    label = { Text(stringResource(R.string.prompt_page_probability_label)) },
                     tail = {
                         Switch(
                             checked = edited.useProbability,
@@ -2051,7 +2051,7 @@ private fun RegexInjectionEditDialog(
                 IntTextField(
                     value = entry.injectDepth,
                     onValueChange = { onEdit(entry.copy(injectDepth = it)) },
-                    label = { Text("深度 (depth)") },
+                    label = { Text(stringResource(R.string.prompt_page_inject_depth)) },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
@@ -2302,7 +2302,7 @@ private fun RegexInjectionEditDialog(
 
                 // 概率
                 FormItem(
-                    label = { Text("触发概率(Probability)") },
+                    label = { Text(stringResource(R.string.prompt_page_probability_label)) },
                     tail = {
                         Switch(
                             checked = entry.useProbability,
@@ -2353,7 +2353,7 @@ private fun RegexInjectionEditDialog(
                     IntTextField(
                         value = entry.delay,
                         onValueChange = { onEdit(entry.copy(delay = it)) },
-                        label = { Text("延迟(Delay)") },
+                        label = { Text(stringResource(R.string.prompt_page_delay)) },
                         supportingText = { Text("N轮后才开始检测触发") },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
