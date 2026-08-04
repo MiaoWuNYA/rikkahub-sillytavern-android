@@ -292,10 +292,6 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
                 m.annotations.none { a -> a is UIMessageAnnotation.ExampleMessage }
         }
 
-    /** 注入块使用内部标记避免被当作真实消息，发给模型前移除标记。 */
-    internal fun stripInjectedMarker(text: String): String =
-        text.removePrefix("[Author's Note]\n").removePrefix("[User Persona]\n")
-
     /** 骰子表达式：支持 NdM±K，例如 1d20 / 2d6+3 / 3d6+1d4-2 */
     internal fun rollDice(expr: String): String? {
         val text = expr.trim().replace(" ", "")
@@ -335,6 +331,10 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
     private fun textOf(message: UIMessage): String =
         message.parts.filterIsInstance<UIMessagePart.Text>().joinToString("") { it.text }
 }
+
+/** 注入块使用内部标记避免被当作真实消息，发给模型前移除标记（顶层函数，供两个对象共用） */
+private fun stripInjectedMarker(text: String): String =
+    text.removePrefix("[Author's Note]\n").removePrefix("[User Persona]\n")
 
 object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
     private val defaultProvider = DefaultPlaceholderProvider
