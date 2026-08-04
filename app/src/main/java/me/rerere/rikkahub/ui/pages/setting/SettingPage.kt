@@ -106,8 +106,6 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
     val navController = LocalNavController.current
     val settings by vm.settings.collectAsStateWithLifecycle()
     val filesManager: FilesManager = koinInject()
-    var showGithubDialog by androidx.compose.runtime.remember { mutableStateOf(false) }
-    var githubTokenInput by androidx.compose.runtime.remember(settings) { mutableStateOf(settings.githubToken) }
     var showApiUrlDialog by androidx.compose.runtime.remember { mutableStateOf(false) }
     val context = LocalContext.current
 
@@ -271,12 +269,6 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         headlineContent = { Text(stringResource(R.string.setting_page_tts_service)) },
                     )
                     item(
-                        onClick = { showGithubDialog = true },
-                        leadingContent = { Icon(HugeIcons.BookmarkAdd01, null) },
-                        supportingContent = { Text("搜索仓库、管理PR、查CI状态") },
-                        headlineContent = { Text("GitHub") },
-                    )
-                    item(
                         onClick = { showApiUrlDialog = true },
                         leadingContent = { Icon(HugeIcons.GlobalSearch, null) },
                         supportingContent = { Text("${settings.customApiConfigs.size} 个已配置") },
@@ -423,37 +415,6 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                 }
             }
         }
-    }
-
-    if (showGithubDialog) {
-        AlertDialog(
-            onDismissRequest = { showGithubDialog = false },
-            icon = { Icon(HugeIcons.BookmarkAdd01, null) },
-            title = { Text("GitHub 配置") },
-            text = {
-                Column {
-                    Text("输入 Token 以启用搜索仓库、CI 查看、PR 管理。", style = MaterialTheme.typography.bodySmall)
-                    Spacer(Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = githubTokenInput,
-                        onValueChange = { githubTokenInput = it },
-                        label = { Text("GitHub Token") },
-                        placeholder = { Text("ghp_...") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    vm.updateSettings(settings.copy(githubToken = githubTokenInput))
-                    showGithubDialog = false
-                }) { Text("保存") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showGithubDialog = false }) { Text("取消") }
-            },
-        )
     }
 
     if (showApiUrlDialog) {
