@@ -206,30 +206,6 @@ class ChatVM(
         chatService.insertMessage(_conversationId, role, listOf(UIMessagePart.Text(text)), name, at)
     }
 
-    /** 官方 /message-name：读取指定位置消息的名字 */
-    fun handleGetMessageName(at: Int?, onResult: (String) -> Unit) {
-        viewModelScope.launch {
-            val name = chatService.getMessageNameAt(_conversationId, at)
-            onResult(name?.takeIf { it.isNotBlank() } ?: "（该消息没有名字）")
-        }
-    }
-
-    /** 官方 /message-name：修改指定位置消息的名字 */
-    fun handleRenameMessage(at: Int?, newName: String, onResult: (String) -> Unit) {
-        viewModelScope.launch {
-            val ok = chatService.renameMessageAt(_conversationId, at, newName)
-            onResult(if (ok) "已修改该消息的名字: $newName" else "找不到指定位置的消息")
-        }
-    }
-
-    /** 官方 /delname：删除所有指定名字的消息 */
-    fun handleDeleteMessagesByName(name: String, onResult: (String) -> Unit) {
-        viewModelScope.launch {
-            val removed = chatService.deleteMessagesByName(_conversationId, name)
-            onResult(if (removed > 0) "已删除 $removed 条「$name」的消息" else "没有找到名字为「$name」的消息")
-        }
-    }
-
     /**
      * 触发一次 AI 回复（/trigger，不添加新消息）
      */

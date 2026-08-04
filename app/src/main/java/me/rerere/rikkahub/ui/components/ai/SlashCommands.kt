@@ -59,12 +59,6 @@ enum class BuiltinSlashKind {
     /** 续写上一条助手回复（官方 /continue） */
     CONTINUE,
 
-    /** 查看/修改消息名字（官方 /message-name） */
-    MESSAGE_NAME,
-
-    /** 按名字删除消息（官方 /delname） */
-    DELNAME,
-
     /** 以角色身份生成一条回复（官方 /impersonate） */
     IMPERSONATE,
 
@@ -189,22 +183,6 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.IMPERSONATE,
-    ),
-    SlashCommand(
-        name = "message-name",
-        description = "查看/修改消息名字(Message Name)：at=定位，默认最后一条；不带新名字时显示当前名字",
-        argumentHint = "[at=位置] [新名字]",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.MESSAGE_NAME,
-    ),
-    SlashCommand(
-        name = "delname",
-        description = "按名字删除消息(Delete by Name)：删除聊天中所有该名字的消息",
-        argumentHint = "[名字]",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.DELNAME,
     ),
     SlashCommand(
         name = "reroll-pick",

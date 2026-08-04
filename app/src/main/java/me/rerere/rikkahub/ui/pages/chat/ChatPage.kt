@@ -528,16 +528,6 @@ private fun ChatPageContent(
                             vm.continueGeneration(prompt)
                         }
                     },
-                    onSlashMessageName = { at, name ->
-                        if (name.isNullOrBlank()) {
-                            vm.handleGetMessageName(at) { toaster.show(it) }
-                        } else {
-                            vm.handleRenameMessage(at, name) { toaster.show(it) }
-                        }
-                    },
-                    onSlashDeleteByName = { name ->
-                        vm.handleDeleteMessagesByName(name) { toaster.show(it) }
-                    },
                     onSlashImpersonate = { prefill ->
                         if (currentChatModel == null) {
                             toaster.show("请先选择模型", type = ToastType.Error)

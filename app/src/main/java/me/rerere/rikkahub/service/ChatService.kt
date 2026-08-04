@@ -1818,63 +1818,6 @@ class ChatService(
         deleteMessage(conversationId, message.id, failIfMissing = false)
     }
 
-    /**
-     * 官方 /message-name：按索引定位消息，读取当前显示消息的名字（不修改）。
-     * at 支持负数（-1 = 最后一条），默认最后一条。
-     */
-    suspend fun getMessageNameAt(conversationId: Uuid, at: Int? = null): String? {
-        val currentConversation = getConversationFlow(conversationId).value
-        val index = resolveMessageIndex(currentConversation.messageNodes.size, at) ?: return null
-        val node = currentConversation.messageNodes.getOrNull(index) ?: return null
-        return node.messages.getOrNull(node.selectIndex)?.name
-    }
-
-    /**
-     * 官方 /message-name 名字：按索引定位消息，修改当前显示消息的名字。
-     * at 支持负数（-1 = 最后一条），默认最后一条。
-     */
-    suspend fun renameMessageAt(conversationId: Uuid, at: Int?, newName: String): Boolean {
-        val currentConversation = getConversationFlow(conversationId).value
-        val index = resolveMessageIndex(currentConversation.messageNodes.size, at) ?: return false
-        val node = currentConversation.messageNodes.getOrNull(index) ?: return false
-        val updatedNodes = currentConversation.messageNodes.toMutableList().apply {
-            this[index] = node.copy(
-                messages = node.messages.mapIndexed { i, message ->
-                    if (i == node.selectIndex) message.copy(name = newName) else message
-                }
-            )
-        }
-        saveConversation(conversationId, currentConversation.copy(messageNodes = updatedNodes))
-        return true
-    }
-
-    /**
-     * 官方 /delname：删除聊天中所有指定名字的消息，返回删除数量。
-     */
-    suspend fun deleteMessagesByName(conversationId: Uuid, name: String): Int {
-        val currentConversation = getConversationFlow(conversationId).value
-        val remaining = currentConversation.messageNodes.filterNot { node ->
-            node.messages.getOrNull(node.selectIndex)?.name?.equals(name, ignoreCase = true) == true
-        }
-        val removed = currentConversation.messageNodes.size - remaining.size
-        if (removed > 0) {
-            saveConversation(conversationId, currentConversation.copy(messageNodes = remaining))
-        }
-        return removed
-    }
-
-    /**
-     * 官方 at 语义：非负按索引，负数从末尾往前（-1 = 最后一条），越界返回 null。
-     */
-    private fun resolveMessageIndex(size: Int, at: Int?): Int? {
-        if (at == null) return (size - 1).takeIf { it >= 0 }
-        return when {
-            at < 0 -> (size + at).takeIf { it >= 0 }
-            else -> at.takeIf { it < size }
-        }
-    }
-
-
     private fun buildConversationAfterMessageDelete(
         conversation: Conversation,
         messageId: Uuid,

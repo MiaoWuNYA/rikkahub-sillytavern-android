@@ -153,8 +153,6 @@ fun ChatInput(
     onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)? = null,
     onSlashVar: ((SlashVarOp, String, String) -> String?)? = null,
     onSlashContinue: ((String) -> Unit)? = null,
-    onSlashMessageName: ((Int?, String?) -> Unit)? = null,
-    onSlashDeleteByName: ((String) -> Unit)? = null,
     onSlashImpersonate: ((String) -> Unit)? = null,
     onSlashRerollPick: ((String) -> Unit)? = null,
 ) {
@@ -215,8 +213,6 @@ fun ChatInput(
                         onSlashInject = onSlashInject,
                         onSlashVar = onSlashVar,
                         onSlashContinue = onSlashContinue,
-                        onSlashMessageName = onSlashMessageName,
-                        onSlashDeleteByName = onSlashDeleteByName,
                         onSlashImpersonate = onSlashImpersonate,
                         onSlashRerollPick = onSlashRerollPick,
                     )
@@ -327,8 +323,6 @@ fun ChatInput(
                         onSlashInject = onSlashInject,
                         onSlashVar = onSlashVar,
                         onSlashContinue = onSlashContinue,
-                        onSlashMessageName = onSlashMessageName,
-                        onSlashDeleteByName = onSlashDeleteByName,
                         onSlashImpersonate = onSlashImpersonate,
                         onSlashRerollPick = onSlashRerollPick,
                         helpDialogVisible = showHelpDialog,
@@ -528,8 +522,6 @@ private fun TextInputRow(
     onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)?,
     onSlashVar: ((SlashVarOp, String, String) -> String?)?,
     onSlashContinue: ((String) -> Unit)? = null,
-    onSlashMessageName: ((Int?, String?) -> Unit)? = null,
-    onSlashDeleteByName: ((String) -> Unit)? = null,
     onSlashImpersonate: ((String) -> Unit)? = null,
     onSlashRerollPick: ((String) -> Unit)? = null,
     helpDialogVisible: Boolean,
@@ -768,8 +760,6 @@ private fun TextInputRow(
                                                 onSlashVar = onSlashVar,
                                                 onShowHelp = onShowHelp,
                                                 onSlashContinue = onSlashContinue,
-                                                onSlashMessageName = onSlashMessageName,
-                                                onSlashDeleteByName = onSlashDeleteByName,
                                                 onSlashImpersonate = onSlashImpersonate,
                                                 onSlashRerollPick = onSlashRerollPick,
                                             )
@@ -846,8 +836,6 @@ private fun TextInputRow(
                                                 onSlashVar = onSlashVar,
                                                 onShowHelp = onShowHelp,
                                                 onSlashContinue = onSlashContinue,
-                                                onSlashMessageName = onSlashMessageName,
-                                                onSlashDeleteByName = onSlashDeleteByName,
                                                 onSlashImpersonate = onSlashImpersonate,
                                                 onSlashRerollPick = onSlashRerollPick,
                                             )
@@ -1095,8 +1083,6 @@ private fun handleBuiltinSlash(
     onSlashVar: ((SlashVarOp, String, String) -> String?)?,
     onShowHelp: () -> Unit = {},
     onSlashContinue: ((String) -> Unit)? = null,
-    onSlashMessageName: ((Int?, String?) -> Unit)? = null,
-    onSlashDeleteByName: ((String) -> Unit)? = null,
     onSlashImpersonate: ((String) -> Unit)? = null,
     onSlashRerollPick: ((String) -> Unit)? = null,
 ) {
@@ -1111,29 +1097,6 @@ private fun handleBuiltinSlash(
                 toaster.show("当前页面不支持该命令")
             } else {
                 onSlashContinue(args.trim())
-                state.clearInput()
-            }
-        }
-
-        BuiltinSlashKind.MESSAGE_NAME -> {
-            val parsed = parseInsertArgs(args)
-            if (onSlashMessageName == null) {
-                toaster.show("当前页面不支持该命令")
-            } else {
-                // 官方语义：at= 定位（负数从末尾往前），不带新名字时返回当前消息名字
-                onSlashMessageName(parsed.at, parsed.text.ifBlank { null })
-                state.clearInput()
-            }
-        }
-
-        BuiltinSlashKind.DELNAME -> {
-            val name = args.trim()
-            if (name.isBlank()) {
-                toaster.show("用法: /delname 名字")
-            } else if (onSlashDeleteByName == null) {
-                toaster.show("当前页面不支持该命令")
-            } else {
-                onSlashDeleteByName(name)
                 state.clearInput()
             }
         }
