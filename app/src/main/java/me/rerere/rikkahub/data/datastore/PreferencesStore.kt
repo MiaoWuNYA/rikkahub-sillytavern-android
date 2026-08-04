@@ -294,7 +294,7 @@ class SettingsStore(
                 personas = preferences[PERSONAS]?.let { JsonInstant.decodeFromString(it) } ?: DEFAULT_PERSONAS,
                 activePersonaId = preferences[ACTIVE_PERSONA_ID]?.let { Uuid.parse(it) },
                 authorNote = preferences[AUTHOR_NOTE] ?: "",
-                authorNoteEnabled = preferences[AUTHOR_NOTE_ENABLED] ?: true,
+                authorNoteEnabled = preferences[AUTHOR_NOTE_ENABLED] ?: false,
                 authorNotePosition = parseAuthorNotePosition(preferences[AUTHOR_NOTE_POSITION]),
                 authorNoteDepth = preferences[AUTHOR_NOTE_DEPTH] ?: 4,
                 authorNoteRole = preferences[AUTHOR_NOTE_ROLE]?.let { MessageRole.valueOf(it) } ?: MessageRole.SYSTEM,
@@ -645,7 +645,7 @@ data class Settings(
     val personas: List<Persona> = DEFAULT_PERSONAS,
     val activePersonaId: Uuid? = null,             // 当前激活的 Persona
     val authorNote: String = "",                    // Author's Note 内容
-    val authorNoteEnabled: Boolean = true,          // Author's Note 总开关
+    val authorNoteEnabled: Boolean = false,         // Author's Note 总开关
     val authorNotePosition: AuthorNotePosition = AuthorNotePosition.IN_CHAT,
     val authorNoteDepth: Int = 4,                   // Author's Note 插入深度
     val authorNoteRole: MessageRole = MessageRole.SYSTEM, // 注入角色（官方默认 SYSTEM）
