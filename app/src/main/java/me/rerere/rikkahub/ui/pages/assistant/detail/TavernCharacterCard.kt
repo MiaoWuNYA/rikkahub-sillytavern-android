@@ -120,6 +120,12 @@ fun TavernCharacterCard(
                         .graphicsLayer { rotationZ = rotationAngle },
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                Icon(
+                    HugeIcons.Book01,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
                 Column(modifier = Modifier.weight(1f)) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -127,7 +133,7 @@ fun TavernCharacterCard(
                     ) {
                         Text(
                             text = displayName,
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f, fill = false),
