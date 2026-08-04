@@ -685,57 +685,111 @@ private fun LorebookTab(
                         }
                     },
                 ) {
-                    item(
-                        headlineContent = { Text(stringResource(R.string.prompt_page_world_info_depth_title)) },
-                        supportingContent = { Text(stringResource(R.string.prompt_page_world_info_depth_desc)) },
-                        trailingContent = {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.prompt_page_world_info_depth_title), style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    stringResource(R.string.prompt_page_world_info_depth_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                             IntTextField(
                                 value = settings.worldInfoDepth,
                                 onValueChange = { onSettingsUpdate(settings.copy(worldInfoDepth = it.coerceIn(0, 1000))) },
+                                modifier = Modifier.width(84.dp),
                             )
-                        },
-                    )
-                    item(
-                        headlineContent = { Text(stringResource(R.string.prompt_page_world_info_budget_title)) },
-                        supportingContent = { Text(stringResource(R.string.prompt_page_world_info_budget_desc)) },
-                        trailingContent = {
+                        }
+                    }
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.prompt_page_world_info_budget_title), style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    stringResource(R.string.prompt_page_world_info_budget_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                             IntTextField(
                                 value = settings.worldInfoBudget,
                                 onValueChange = { onSettingsUpdate(settings.copy(worldInfoBudget = it.coerceIn(0, 100000))) },
+                                modifier = Modifier.width(84.dp),
                             )
-                        },
-                    )
-                    item(
-                        headlineContent = { Text(stringResource(R.string.prompt_page_world_info_min_activations_title)) },
-                        supportingContent = { Text(stringResource(R.string.prompt_page_world_info_min_activations_desc)) },
-                        trailingContent = {
+                        }
+                    }
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.prompt_page_world_info_min_activations_title), style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    stringResource(R.string.prompt_page_world_info_min_activations_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                             IntTextField(
                                 value = settings.worldInfoMinActivations,
                                 onValueChange = { onSettingsUpdate(settings.copy(worldInfoMinActivations = it.coerceIn(0, 50))) },
+                                modifier = Modifier.width(84.dp),
                             )
-                        },
-                    )
-                    item(
-                        headlineContent = { Text(stringResource(R.string.prompt_page_world_info_recursive_title)) },
-                        supportingContent = { Text(stringResource(R.string.prompt_page_world_info_recursive_desc)) },
-                        trailingContent = {
+                        }
+                    }
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.prompt_page_world_info_recursive_title), style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    stringResource(R.string.prompt_page_world_info_recursive_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                             Switch(
                                 checked = settings.worldInfoRecursive,
                                 onCheckedChange = { onSettingsUpdate(settings.copy(worldInfoRecursive = it)) },
                             )
-                        },
-                    )
+                        }
+                    }
                     if (settings.worldInfoRecursive) {
-                        item(
-                            headlineContent = { Text(stringResource(R.string.prompt_page_world_info_max_recursion_title)) },
-                            supportingContent = { Text(stringResource(R.string.prompt_page_world_info_max_recursion_desc)) },
-                            trailingContent = {
+                        item {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(stringResource(R.string.prompt_page_world_info_max_recursion_title), style = MaterialTheme.typography.bodyLarge)
+                                    Text(
+                                        stringResource(R.string.prompt_page_world_info_max_recursion_desc),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                                 IntTextField(
                                     value = settings.worldInfoMaxRecursionSteps,
                                     onValueChange = { onSettingsUpdate(settings.copy(worldInfoMaxRecursionSteps = it.coerceIn(0, 20))) },
+                                    modifier = Modifier.width(84.dp),
                                 )
-                            },
-                        )
+                            }
+                        }
                     }
                     item {
                         // 插入策略选项较多，放到整行选择区，避免在行尾被挤压换行
@@ -759,26 +813,46 @@ private fun LorebookTab(
                             )
                         }
                     }
-                    item(
-                        headlineContent = { Text(stringResource(R.string.prompt_page_world_info_overflow_title)) },
-                        supportingContent = { Text(stringResource(R.string.prompt_page_world_info_overflow_desc)) },
-                        trailingContent = {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.prompt_page_world_info_overflow_title), style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    stringResource(R.string.prompt_page_world_info_overflow_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                             Switch(
                                 checked = settings.worldInfoOverflowAlert,
                                 onCheckedChange = { onSettingsUpdate(settings.copy(worldInfoOverflowAlert = it)) },
                             )
-                        },
-                    )
-                    item(
-                        headlineContent = { Text(stringResource(R.string.prompt_page_world_info_group_scoring_title)) },
-                        supportingContent = { Text(stringResource(R.string.prompt_page_world_info_group_scoring_desc)) },
-                        trailingContent = {
+                        }
+                    }
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.prompt_page_world_info_group_scoring_title), style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    stringResource(R.string.prompt_page_world_info_group_scoring_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                             Switch(
                                 checked = settings.worldInfoUseGroupScoring,
                                 onCheckedChange = { onSettingsUpdate(settings.copy(worldInfoUseGroupScoring = it)) },
                             )
-                        },
-                    )
+                        }
+                    }
                 }
             }
             if (lorebooks.isEmpty()) {
