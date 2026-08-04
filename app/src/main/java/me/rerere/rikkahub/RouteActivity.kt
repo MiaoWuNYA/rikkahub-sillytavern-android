@@ -91,7 +91,6 @@ import me.rerere.rikkahub.ui.pages.knowledge.KnowledgeBasePage
 import me.rerere.rikkahub.ui.pages.setting.PersonaPage
 import me.rerere.rikkahub.ui.pages.setting.AuthorsNotePage
 import me.rerere.rikkahub.ui.pages.debug.DebugPage
-import me.rerere.rikkahub.ui.pages.developer.DeveloperPage
 import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspacePage
 import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspaceDetailPage
 import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspaceFileEditorPage
@@ -485,9 +484,6 @@ class RouteActivity : ComponentActivity() {
                                 SettingWebPage()
                             }
 
-                            entry<Screen.Developer> {
-                                DeveloperPage()
-                            }
 
                             entry<Screen.Debug> {
                                 DebugPage()
@@ -726,7 +722,6 @@ sealed interface Screen : NavKey {
     data object SettingWeb : Screen
 
     @Serializable
-    data object Developer : Screen
 
     @Serializable
     data object Debug : Screen

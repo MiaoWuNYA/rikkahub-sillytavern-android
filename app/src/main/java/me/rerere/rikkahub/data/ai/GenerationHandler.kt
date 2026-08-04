@@ -72,7 +72,6 @@ class GenerationHandler(
     private val json: Json,
     private val memoryRepo: MemoryRepository,
     private val conversationRepo: ConversationRepository,
-    private val aiLoggingManager: AILoggingManager,
 ) {
     fun generateText(
         settings: Settings,
@@ -719,14 +718,6 @@ class GenerationHandler(
             }
         )
         if (stream) {
-            aiLoggingManager.addLog(
-                AILogging.Generation(
-                    params = params,
-                    messages = messages,
-                    providerSetting = provider,
-                    stream = true
-                )
-            )
             // Streaming: retry once on transient error (429/5xx/timeout)
             try {
                 providerImpl.streamText(
@@ -772,14 +763,6 @@ class GenerationHandler(
                 }
             }
         } else {
-            aiLoggingManager.addLog(
-                AILogging.Generation(
-                    params = params,
-                    messages = messages,
-                    providerSetting = provider,
-                    stream = false
-                )
-            )
             val chunk = try {
                 providerImpl.generateText(
                     providerSetting = provider,
