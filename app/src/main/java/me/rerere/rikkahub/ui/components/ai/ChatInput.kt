@@ -708,6 +708,12 @@ private fun TextInputRow(
                             Text("关闭")
                         }
                     }
+                    Text(
+                        text = "无参数命令点击直接执行；带参数命令点击填入输入框，补参数后发送",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
+                    )
                     slashCommands.forEachIndexed { index, cmd ->
                         SlashCommandItem(
                             cmd = cmd,

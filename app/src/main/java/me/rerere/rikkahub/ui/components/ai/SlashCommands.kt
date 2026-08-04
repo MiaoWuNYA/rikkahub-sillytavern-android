@@ -99,7 +99,7 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
     SlashCommand(
         name = "persona",
         description = "切换用户人设(Persona)",
-        argumentHint = "[人设名]",
+        argumentHint = "[人设名，可选]",
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.PERSONA,
@@ -168,6 +168,7 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
     SlashCommand(
         name = "impersonate",
         description = "以角色身份生成回复(Impersonate)：AI 以角色身份新写一条，可加开头文本由 AI 接写",
+        argumentHint = "[开头文本，可选]",
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.IMPERSONATE,
