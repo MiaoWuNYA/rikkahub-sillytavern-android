@@ -265,17 +265,8 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
             it.settingsStore.settingsFlow.value.authorNote
         }
 
-        placeholder("groupMembers", { Text(stringResource(R.string.placeholder_group_members)) }) {
-            it.groupMembers()
-        }
-
-        placeholder("pipe", { Text(stringResource(R.string.placeholder_pipe)) }) {
-            "|"
-        }
-
-        placeholder("newline", { Text(stringResource(R.string.placeholder_newline)) }) {
-            "\n"
-        }
+        // 注意：{{newline}} 由 MacroEngine 处理（支持 {{newline::N}} 重复 N 次）；
+        // 这里不再注册旧占位符，避免遮蔽参数语义。
 
         placeholder("trim", { Text(stringResource(R.string.placeholder_trim)) }) {
             ""

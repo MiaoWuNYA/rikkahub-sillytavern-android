@@ -20,7 +20,7 @@ import kotlin.random.Random
  *   # 保留空白标志、延迟解析（只求值选中的分支）
  * - 变量家族：setvar/getvar/incvar/decvar/addvar/hasvar/deletevar + global 版 + 别名
  * - 官方实用宏：space/newline/noop/reverse/comment/trim/random/pick/roll/datetimeformat/timeDiff
- *   /greeting/charFirstMessage/maxContextTokens/maxResponseTokens/allChatRange/groupNotMuted/notChar
+ *   /greeting/charFirstMessage/maxResponseTokens/allChatRange/groupNotMuted/notChar
  *   /isMobile/lastGenerationType/time::UTC±N
  * - 未知宏一律原样保留（保护 Pebble 模板 {{ message }} 等）
  */
@@ -442,10 +442,7 @@ class MacroEngine(
             "time" -> timeMacro(args.firstOrNull())
             "timeDiff" -> timeDiff(args.getOrNull(0), args.getOrNull(1))
             "greeting", "charFirstMessage" -> greetingMacro(args.firstOrNull(), state.ctx)
-            // 官方语义是上下文 token 上限；本地没有 token 概念，返回空避免把消息条数误当 token 误导模型
-            "maxContext", "maxContextTokens" -> ""
             "maxResponse", "maxResponseTokens" -> state.ctx.assistant.maxTokens?.toString() ?: ""
-            "maxPrompt", "maxPromptTokens" -> ""
             "allChatRange" -> if (state.ctx.messages.isEmpty()) "" else "0-${state.ctx.messages.lastIndex}"
             "groupNotMuted" -> groupNames(state.ctx, includeMuted = false)
             "notChar" -> groupNames(state.ctx, includeMuted = true, excludeSelf = true)

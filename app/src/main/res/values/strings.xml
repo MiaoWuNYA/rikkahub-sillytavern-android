@@ -497,9 +497,6 @@
   <string name="placeholder_char_instruction">Character Post-History Instructions</string>
   <string name="placeholder_original">Original Default Prompt</string>
   <string name="placeholder_author_note">Author\'s Note Content</string>
-  <string name="placeholder_group_members">Group Members</string>
-  <string name="placeholder_pipe">Pipe Symbol (|)</string>
-  <string name="placeholder_newline">Newline</string>
   <string name="placeholder_trim">Trim Surrounding Newlines</string>
   <string name="prompt_page_add">Add</string>
   <string name="prompt_page_add_entry">Add Entry</string>

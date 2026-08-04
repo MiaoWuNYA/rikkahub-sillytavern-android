@@ -492,9 +492,6 @@
   <string name="placeholder_char_instruction">角色历史后指令</string>
   <string name="placeholder_original">原始默认提示词</string>
   <string name="placeholder_author_note">作者注释内容</string>
-  <string name="placeholder_group_members">群组成员</string>
-  <string name="placeholder_pipe">管道符号(|)</string>
-  <string name="placeholder_newline">换行</string>
   <string name="placeholder_trim">去除周围换行</string>
   <string name="prompt_page_add">添加</string>
   <string name="prompt_page_add_entry">添加条目</string>

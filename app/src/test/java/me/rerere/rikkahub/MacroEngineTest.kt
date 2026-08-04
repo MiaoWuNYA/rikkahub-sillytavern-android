@@ -509,9 +509,8 @@ class MacroEngineTest {
     fun stateMacros() {
         val e = engine()
         assertEquals("100", e.substitute("{{maxResponseTokens}}", ctx(assistant = Assistant(maxTokens = 100))))
-        // 本地没有上下文 token 上限概念：maxContext/maxPrompt 返回空，避免把消息条数误当 token
-        assertEquals("", e.substitute("{{maxContextTokens}}", ctx(assistant = Assistant(contextMessageLimit = 50))))
-        assertEquals("", e.substitute("{{maxPrompt}}", ctx(assistant = Assistant(maxTokens = 100))))
+        // maxContext/maxPrompt 已删除（本地无上下文 token 上限概念）
+        assertEquals("{{maxContextTokens}}", e.substitute("{{maxContextTokens}}", ctx(assistant = Assistant(contextMessageLimit = 50))))
         assertEquals("0-1", e.substitute("{{allChatRange}}", ctx(messages = listOf(UIMessage.user("a"), UIMessage.assistant("b")))))
         assertEquals("swipe", e.substitute("{{lastGenerationType}}", ctx(generationType = GenerationType.SWIPE)))
         assertEquals("true", e.substitute("{{isMobile}}", ctx()))
