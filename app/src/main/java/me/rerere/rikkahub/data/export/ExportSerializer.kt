@@ -180,7 +180,7 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
                             ?: parseDelayUntilRecursionInt(
                                 entry.extensions?.jsonObject?.get("delay_until_recursion")
                             ) ?: 0,
-                        scanDepth = entry.scanDepth ?: 1000,
+                        scanDepth = entry.scanDepth,
                         constantActive = entry.constant,
                         selective = entry.selective,
                         selectiveLogic = mapSelectiveLogic(entry.selectiveLogic),

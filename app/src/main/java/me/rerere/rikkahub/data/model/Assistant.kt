@@ -241,7 +241,7 @@ sealed class PromptInjection {
         val useRegex: Boolean = false,                  // 是否使用正则匹配
         val caseSensitive: Boolean = false,             // 大小写敏感
         val matchWholeWords: Boolean = false,           // 整词匹配（酒馆 match_whole_words）
-        val scanDepth: Int = 1000,                      // 扫描最近N条消息（酒馆默认1000）
+        val scanDepth: Int? = null,                     // 扫描最近N条消息；null = 用全局默认（官方 world_info_depth=2）
         val constantActive: Boolean = false,            // 常驻激活（无需匹配）
         val selective: Boolean = false,                 // 是否启用二级关键词逻辑
         val selectiveLogic: SelectiveLogic = SelectiveLogic.AND_ANY, // 触发逻辑
@@ -326,6 +326,8 @@ data class Lorebook(
     val description: String = "",
     val enabled: Boolean = true,
     val entries: List<PromptInjection.RegexInjection> = emptyList(),
+    // 是否来自角色卡内嵌世界书（官方 world_info_character_strategy 排序用）
+    val isCharacterBook: Boolean = false,
 )
 
 /**

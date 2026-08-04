@@ -47,6 +47,7 @@ import me.rerere.rikkahub.data.model.TavernEmbeddedBook
 import me.rerere.rikkahub.ui.components.ui.FormItem
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.IntTextField
+import me.rerere.rikkahub.ui.components.ui.InsertionStrategySelector
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.Book01
@@ -613,6 +614,17 @@ private fun EmbeddedBookSummary(
                         title = { Text("全局世界书激活设置（作用于所有世界书）") },
                     ) {
                         item(
+                            headlineContent = { Text("默认扫描深度(Default Scan Depth)") },
+                            supportingContent = { Text("条目未设置时使用，官方默认 2") },
+                            trailingContent = {
+                                IntTextField(
+                                    value = settings.worldInfoDepth,
+                                    onValueChange = { onSettingsUpdate(settings.copy(worldInfoDepth = it.coerceIn(0, 1000))) },
+                                    modifier = Modifier.width(90.dp),
+                                )
+                            },
+                        )
+                        item(
                             headlineContent = { Text("预算(Token Budget)") },
                             supportingContent = { Text("0=不限") },
                             trailingContent = {
@@ -656,6 +668,34 @@ private fun EmbeddedBookSummary(
                                 },
                             )
                         }
+                        item(
+                            headlineContent = { Text("插入策略(Insertion Strategy)") },
+                            supportingContent = { Text("角色卡/全局世界书注入顺序") },
+                            trailingContent = {
+                                InsertionStrategySelector(
+                                    selected = settings.worldInfoCharacterStrategy,
+                                    onSelect = { onSettingsUpdate(settings.copy(worldInfoCharacterStrategy = it)) },
+                                )
+                            },
+                        )
+                        item(
+                            headlineContent = { Text("预算溢出提醒(Overflow Alert)") },
+                            trailingContent = {
+                                Switch(
+                                    checked = settings.worldInfoOverflowAlert,
+                                    onCheckedChange = { onSettingsUpdate(settings.copy(worldInfoOverflowAlert = it)) },
+                                )
+                            },
+                        )
+                        item(
+                            headlineContent = { Text("组评分全局默认(Global Group Scoring)") },
+                            trailingContent = {
+                                Switch(
+                                    checked = settings.worldInfoUseGroupScoring,
+                                    onCheckedChange = { onSettingsUpdate(settings.copy(worldInfoUseGroupScoring = it)) },
+                                )
+                            },
+                        )
                     }
                 }
 
@@ -799,7 +839,7 @@ private fun EmbeddedGroupSettingsDialog(
     var cooldown by remember { mutableStateOf(template.cooldown.toString()) }
     var delay by remember { mutableStateOf(template.delay.toString()) }
     var depth by remember { mutableStateOf(template.depth.toString()) }
-    var scanDepth by remember { mutableStateOf(template.scanDepth.toString()) }
+    var scanDepth by remember { mutableStateOf(template.scanDepth?.toString() ?: "") }
     var groupWeight by remember { mutableStateOf(template.groupWeight.toString()) }
     var groupOverride by remember { mutableStateOf(template.groupOverride) }
     var constant by remember { mutableStateOf(template.constant) }
@@ -1123,7 +1163,7 @@ private fun EmbeddedGroupSettingsDialog(
                         cooldown = cooldown.toIntOrNull() ?: 0,
                         delay = delay.toIntOrNull() ?: 0,
                         depth = depth.toIntOrNull() ?: 4,
-                        scanDepth = scanDepth.toIntOrNull() ?: 1000,
+                        scanDepth = scanDepth.toIntOrNull(),
                         groupWeight = groupWeight.toIntOrNull() ?: 100,
                         groupOverride = groupOverride,
                         constant = constant,
@@ -1281,7 +1321,7 @@ private fun EntryEditor(
     var groupStr by remember(entry.id) { mutableStateOf(entry.group) }
     var groupWeight by remember(entry.id) { mutableStateOf(entry.groupWeight.toString()) }
     var groupOverride by remember(entry.id) { mutableStateOf(entry.groupOverride) }
-    var scanDepthStr by remember(entry.id) { mutableStateOf(entry.scanDepth.toString()) }
+    var scanDepthStr by remember(entry.id) { mutableStateOf(entry.scanDepth?.toString() ?: "") }
     var keysStr by remember(entry.id) { mutableStateOf(entry.keys.joinToString(", ")) }
     var secondaryKeysStr by remember(entry.id) { mutableStateOf(entry.secondaryKeys.joinToString(", ")) }
     var commentStr by remember(entry.id) { mutableStateOf(entry.comment) }
@@ -1705,7 +1745,7 @@ private fun EntryEditor(
                     cooldown = cooldown.toIntOrNull() ?: 0,
                     delay = delay.toIntOrNull() ?: 0,
                     depth = depth.toIntOrNull() ?: 4,
-                    scanDepth = scanDepthStr.toIntOrNull() ?: 1000,
+                    scanDepth = scanDepthStr.toIntOrNull(),
                     caseSensitive = caseSensitive,
                     useRegex = useRegex,
                     matchWholeWords = matchWholeWords,

@@ -112,6 +112,7 @@ import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.ExportDialog
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.IntTextField
+import me.rerere.rikkahub.ui.components.ui.InsertionStrategySelector
 import me.rerere.rikkahub.ui.components.ui.FormItem
 import me.rerere.rikkahub.ui.components.ui.Select
 import me.rerere.rikkahub.ui.components.ui.Tag
@@ -684,12 +685,22 @@ private fun LorebookTab(
                     },
                 ) {
                     item(
+                        headlineContent = { Text(stringResource(R.string.prompt_page_world_info_depth_title)) },
+                        supportingContent = { Text(stringResource(R.string.prompt_page_world_info_depth_desc)) },
+                        trailingContent = {
+                            IntTextField(
+                                value = settings.worldInfoDepth,
+                                onValueChange = { onSettingsUpdate(settings.copy(worldInfoDepth = it.coerceIn(0, 1000))) },
+                            )
+                        },
+                    )
+                    item(
                         headlineContent = { Text(stringResource(R.string.prompt_page_world_info_budget_title)) },
                         supportingContent = { Text(stringResource(R.string.prompt_page_world_info_budget_desc)) },
                         trailingContent = {
                             IntTextField(
                                 value = settings.worldInfoBudget,
-                                onCommit = { onSettingsUpdate(settings.copy(worldInfoBudget = it.coerceIn(0, 100000))) },
+                                onValueChange = { onSettingsUpdate(settings.copy(worldInfoBudget = it.coerceIn(0, 100000))) },
                             )
                         },
                     )
@@ -699,7 +710,7 @@ private fun LorebookTab(
                         trailingContent = {
                             IntTextField(
                                 value = settings.worldInfoMinActivations,
-                                onCommit = { onSettingsUpdate(settings.copy(worldInfoMinActivations = it.coerceIn(0, 50))) },
+                                onValueChange = { onSettingsUpdate(settings.copy(worldInfoMinActivations = it.coerceIn(0, 50))) },
                             )
                         },
                     )
@@ -720,11 +731,41 @@ private fun LorebookTab(
                             trailingContent = {
                                 IntTextField(
                                     value = settings.worldInfoMaxRecursionSteps,
-                                    onCommit = { onSettingsUpdate(settings.copy(worldInfoMaxRecursionSteps = it.coerceIn(0, 20))) },
+                                    onValueChange = { onSettingsUpdate(settings.copy(worldInfoMaxRecursionSteps = it.coerceIn(0, 20))) },
                                 )
                             },
                         )
                     }
+                    item(
+                        headlineContent = { Text(stringResource(R.string.prompt_page_world_info_strategy_title)) },
+                        supportingContent = { Text(stringResource(R.string.prompt_page_world_info_strategy_desc)) },
+                        trailingContent = {
+                            InsertionStrategySelector(
+                                selected = settings.worldInfoCharacterStrategy,
+                                onSelect = { onSettingsUpdate(settings.copy(worldInfoCharacterStrategy = it)) },
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.prompt_page_world_info_overflow_title)) },
+                        supportingContent = { Text(stringResource(R.string.prompt_page_world_info_overflow_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = settings.worldInfoOverflowAlert,
+                                onCheckedChange = { onSettingsUpdate(settings.copy(worldInfoOverflowAlert = it)) },
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.prompt_page_world_info_group_scoring_title)) },
+                        supportingContent = { Text(stringResource(R.string.prompt_page_world_info_group_scoring_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = settings.worldInfoUseGroupScoring,
+                                onCheckedChange = { onSettingsUpdate(settings.copy(worldInfoUseGroupScoring = it)) },
+                            )
+                        },
+                    )
                 }
             }
             if (lorebooks.isEmpty()) {
@@ -1814,13 +1855,13 @@ private fun GroupSettingsDialog(
                     }
                 )
 
-                // 扫描深度
-                IntTextField(
+                // 扫描深度（留空 = 用全局默认，官方 world_info_depth=2）
+                NullableIntTextField(
                     value = edited.scanDepth,
                     onValueChange = { edited = edited.copy(scanDepth = it) },
                     label = { Text(stringResource(R.string.prompt_page_scan_depth)) },
+                    placeholder = { Text("默认(全局)") },
                     modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
             }
         },
@@ -2218,12 +2259,12 @@ private fun RegexInjectionEditDialog(
                     }
                 )
 
-                IntTextField(
+                NullableIntTextField(
                     value = entry.scanDepth,
                     onValueChange = { onEdit(entry.copy(scanDepth = it)) },
                     label = { Text(stringResource(R.string.prompt_page_scan_depth)) },
+                    placeholder = { Text("默认(全局)") },
                     modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
 
                 AnimatedVisibility(visible = entry.position.usesStandaloneMessage()) {

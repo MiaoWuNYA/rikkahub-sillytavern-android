@@ -551,6 +551,14 @@
   <string name="prompt_page_position_bottom_of_chat">Before Latest Message</string>
   <string name="prompt_page_position_top_of_chat">Top of Chat</string>
   <string name="prompt_page_world_info_budget_desc">Maximum tokens injected from world info per turn (0 = unlimited)</string>
+  <string name="prompt_page_world_info_depth_title">Default Scan Depth</string>
+  <string name="prompt_page_world_info_depth_desc">Used when an entry has no scan depth set (official default 2, scans last N messages)</string>
+  <string name="prompt_page_world_info_strategy_title">Insertion Strategy</string>
+  <string name="prompt_page_world_info_strategy_desc">Order between character lore and global lore (official default: character first)</string>
+  <string name="prompt_page_world_info_overflow_title">Budget Overflow Alert</string>
+  <string name="prompt_page_world_info_overflow_desc">Show a hint when world info is cut by the budget</string>
+  <string name="prompt_page_world_info_group_scoring_title">Global Group Scoring</string>
+  <string name="prompt_page_world_info_group_scoring_desc">Pick group winners by matched key count when entries have no per-entry setting</string>
   <string name="prompt_page_world_info_budget_title">Token Budget</string>
   <string name="prompt_page_world_info_global_desc">Recursive scanning, token budget and minimum activations apply to every world book (including embedded ones)</string>
   <string name="prompt_page_world_info_global_title">Global World Info Activation Settings (applies to all world books)</string>

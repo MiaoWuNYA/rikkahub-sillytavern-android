@@ -546,6 +546,14 @@
   <string name="prompt_page_position_bottom_of_chat">最新消息前</string>
   <string name="prompt_page_position_top_of_chat">对话开头</string>
   <string name="prompt_page_world_info_budget_desc">每轮从世界书注入的最大 token 数（0=不限制）</string>
+  <string name="prompt_page_world_info_depth_title">默认扫描深度(Default Scan Depth)</string>
+  <string name="prompt_page_world_info_depth_desc">条目未设置扫描深度时使用（官方默认2，只扫最近N条消息）</string>
+  <string name="prompt_page_world_info_strategy_title">插入策略(Insertion Strategy)</string>
+  <string name="prompt_page_world_info_strategy_desc">角色卡世界书与全局世界书的注入顺序（官方默认角色卡优先）</string>
+  <string name="prompt_page_world_info_overflow_title">预算溢出提醒(Overflow Alert)</string>
+  <string name="prompt_page_world_info_overflow_desc">世界书被预算截断时提示</string>
+  <string name="prompt_page_world_info_group_scoring_title">组评分全局默认(Global Group Scoring)</string>
+  <string name="prompt_page_world_info_group_scoring_desc">组内按匹配关键词数选胜者（条目未单独设置时生效）</string>
   <string name="prompt_page_world_info_budget_title">预算（token）</string>
   <string name="prompt_page_world_info_global_desc">递归扫描、预算和最少激活作用于所有世界书（含内嵌世界书）</string>
   <string name="prompt_page_world_info_global_title">全局世界书激活设置（作用于所有世界书）</string>

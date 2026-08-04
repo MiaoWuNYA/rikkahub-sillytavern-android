@@ -151,6 +151,10 @@ class SettingsStore(
         val WORLD_INFO_MIN_ACTIVATIONS = intPreferencesKey("world_info_min_activations")
         val WORLD_INFO_RECURSIVE = booleanPreferencesKey("world_info_recursive")
         val WORLD_INFO_MAX_RECURSION_STEPS = intPreferencesKey("world_info_max_recursion_steps")
+        val WORLD_INFO_DEPTH = intPreferencesKey("world_info_depth")
+        val WORLD_INFO_CHARACTER_STRATEGY = intPreferencesKey("world_info_character_strategy")
+        val WORLD_INFO_OVERFLOW_ALERT = booleanPreferencesKey("world_info_overflow_alert")
+        val WORLD_INFO_USE_GROUP_SCORING = booleanPreferencesKey("world_info_use_group_scoring")
         val QUICK_MESSAGES = stringPreferencesKey("quick_messages")
         // 宏引擎变量（酒馆 Macro 2.0 变量持久化）
         val MACRO_GLOBAL_VARIABLES = stringPreferencesKey("macro_global_variables")
@@ -268,6 +272,10 @@ class SettingsStore(
                 worldInfoMinActivations = preferences[WORLD_INFO_MIN_ACTIVATIONS] ?: 0,
                 worldInfoRecursive = preferences[WORLD_INFO_RECURSIVE] ?: false,
                 worldInfoMaxRecursionSteps = preferences[WORLD_INFO_MAX_RECURSION_STEPS] ?: 0,
+                worldInfoDepth = preferences[WORLD_INFO_DEPTH] ?: 2,
+                worldInfoCharacterStrategy = preferences[WORLD_INFO_CHARACTER_STRATEGY] ?: 1,
+                worldInfoOverflowAlert = preferences[WORLD_INFO_OVERFLOW_ALERT] ?: false,
+                worldInfoUseGroupScoring = preferences[WORLD_INFO_USE_GROUP_SCORING] ?: false,
                 quickMessages = preferences[QUICK_MESSAGES]?.let {
                     JsonInstant.decodeFromString(it)
                 } ?: emptyList(),
@@ -463,6 +471,10 @@ class SettingsStore(
             preferences[WORLD_INFO_MIN_ACTIVATIONS] = settings.worldInfoMinActivations
             preferences[WORLD_INFO_RECURSIVE] = settings.worldInfoRecursive
             preferences[WORLD_INFO_MAX_RECURSION_STEPS] = settings.worldInfoMaxRecursionSteps
+            preferences[WORLD_INFO_DEPTH] = settings.worldInfoDepth
+            preferences[WORLD_INFO_CHARACTER_STRATEGY] = settings.worldInfoCharacterStrategy
+            preferences[WORLD_INFO_OVERFLOW_ALERT] = settings.worldInfoOverflowAlert
+            preferences[WORLD_INFO_USE_GROUP_SCORING] = settings.worldInfoUseGroupScoring
             preferences[QUICK_MESSAGES] = JsonInstant.encodeToString(settings.quickMessages)
             preferences[WEB_SERVER_ENABLED] = settings.webServerEnabled
             preferences[WEB_SERVER_PORT] = settings.webServerPort
@@ -625,7 +637,11 @@ data class Settings(
     val worldInfoBudget: Int = 1024,                // 世界书单轮注入 token 预算上限（0=不限，对齐酒馆 world_info_budget_cap）
     val worldInfoMinActivations: Int = 0,           // 世界书最少激活数（0=关闭，酒馆 min_activations）
     val worldInfoRecursive: Boolean = false,        // 递归扫描（酒馆 world_info_recursive）
-    val worldInfoMaxRecursionSteps: Int = 0,        // 递归最大层数（0=不限制，酒馆 max_recursion_steps）
+    val worldInfoMaxRecursionSteps: Int = 0,
+    val worldInfoDepth: Int = 2,                    // 官方 world_info_depth：条目未设置扫描深度时的默认值（官方默认2）
+    val worldInfoCharacterStrategy: Int = 1,        // 官方 world_info_character_strategy：0=均匀 1=角色卡优先 2=全局优先
+    val worldInfoOverflowAlert: Boolean = false,    // 官方 world_info_overflow_alert：预算溢出时提示
+    val worldInfoUseGroupScoring: Boolean = false,  // 官方 world_info_use_group_scoring：组评分全局默认        // 递归最大层数（0=不限制，酒馆 max_recursion_steps）
     val quickMessages: List<QuickMessage> = emptyList(),
     val customApiConfigs: List<CustomApiConfig> = DEFAULT_CUSTOM_API_CONFIGS,
     val personas: List<Persona> = DEFAULT_PERSONAS,

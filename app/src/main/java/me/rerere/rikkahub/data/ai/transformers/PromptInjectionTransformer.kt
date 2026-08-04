@@ -52,7 +52,12 @@ object PromptInjectionTransformer : InputMessageTransformer {
             worldInfoMinActivations = ctx.settings.worldInfoMinActivations,
             worldInfoRecursive = ctx.settings.worldInfoRecursive,
             worldInfoMaxRecursionSteps = ctx.settings.worldInfoMaxRecursionSteps,
+            worldInfoDepth = ctx.settings.worldInfoDepth,
+            worldInfoCharacterStrategy = ctx.settings.worldInfoCharacterStrategy,
+            worldInfoOverflowAlert = ctx.settings.worldInfoOverflowAlert,
+            worldInfoUseGroupScoring = ctx.settings.worldInfoUseGroupScoring,
             generationType = ctx.generationType,
+            onOverflow = { ctx.processingStatus?.value = "世界书预算已满，部分条目未注入" },
             personaDescription = ctx.settings.personas
                 .firstOrNull { p -> p.id == ctx.settings.activePersonaId && p.enabled }
                 ?.description ?: "",
@@ -80,8 +85,13 @@ internal fun transformMessages(
     worldInfoMinActivations: Int = 0,
     worldInfoRecursive: Boolean = false,
     worldInfoMaxRecursionSteps: Int = 0,
+    worldInfoDepth: Int = 2,
+    worldInfoCharacterStrategy: Int = 1,
+    worldInfoOverflowAlert: Boolean = false,
+    worldInfoUseGroupScoring: Boolean = false,
     generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
     personaDescription: String = "",
+    onOverflow: () -> Unit = {},
 ): List<UIMessage> {
     // 收集所有需要注入的内容
     val injections = collectInjections(
@@ -97,8 +107,13 @@ internal fun transformMessages(
         worldInfoMinActivations = worldInfoMinActivations,
         worldInfoRecursive = worldInfoRecursive,
         worldInfoMaxRecursionSteps = worldInfoMaxRecursionSteps,
+        worldInfoDepth = worldInfoDepth,
+        worldInfoCharacterStrategy = worldInfoCharacterStrategy,
+        worldInfoOverflowAlert = worldInfoOverflowAlert,
+        worldInfoUseGroupScoring = worldInfoUseGroupScoring,
         generationType = generationType,
         personaDescription = personaDescription,
+        onOverflow = onOverflow,
     )
 
     if (injections.isEmpty()) {
@@ -168,8 +183,13 @@ internal fun collectInjections(
     worldInfoMinActivations: Int = 0,
     worldInfoRecursive: Boolean = false,
     worldInfoMaxRecursionSteps: Int = 0,
+    worldInfoDepth: Int = 2,
+    worldInfoCharacterStrategy: Int = 1,
+    worldInfoOverflowAlert: Boolean = false,
+    worldInfoUseGroupScoring: Boolean = false,
     generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
     personaDescription: String = "",
+    onOverflow: () -> Unit = {},
 ): List<PromptInjection> {
     val injections = mutableListOf<PromptInjection>()
     val effectiveModeInjectionIds = if (assistant.allowConversationPromptInjection) {
@@ -191,6 +211,13 @@ internal fun collectInjections(
     // 2. 获取关联的 Lorebook 中被触发的 RegexInjection
     val enabledLorebooks = lorebooks.filter {
         it.enabled && effectiveLorebookIds.contains(it.id)
+    }.let { books ->
+        // 官方 world_info_character_strategy：1=角色卡世界书优先 2=全局优先 0=均匀（保持列表顺序）
+        when (worldInfoCharacterStrategy) {
+            1 -> books.sortedByDescending { it.isCharacterBook }
+            2 -> books.sortedBy { it.isCharacterBook }
+            else -> books
+        }
     }
     if (enabledLorebooks.isNotEmpty()) {
         // 提取上下文用于匹配（只取非 SYSTEM 消息）
@@ -263,7 +290,7 @@ internal fun collectInjections(
                     if (entry.delay > 0 && nonSystemMessages.size < entry.delay) continue
 
                     // 正常触发检查（min_activations 重扫时扩大扫描深度）
-                    val depth = scanDepthOverride ?: entry.scanDepth
+                    val depth = scanDepthOverride ?: entry.scanDepth ?: worldInfoDepth
                     val chatContext = extractContextForMatching(nonSystemMessages, depth)
                     // 官方 match_*：只把该条目开启的角色卡字段纳入扫描
                     val entryCharScan = buildCharScanContext(entry)
@@ -297,6 +324,7 @@ internal fun collectInjections(
                 triggeredScores = triggeredScores,
                 activeStickyEntries = activeStickyEntries,
                 alreadyActivated = alreadyActivated,
+                globalUseGroupScoring = worldInfoUseGroupScoring,
             )
         }
 
@@ -380,7 +408,10 @@ internal fun collectInjections(
                     selected.add(entry)
                     continue
                 }
-                if (selected.isNotEmpty() && usedTokens + cost > worldInfoBudget) break
+                if (selected.isNotEmpty() && usedTokens + cost > worldInfoBudget) {
+                    if (worldInfoOverflowAlert) onOverflow()
+                    break
+                }
                 selected.add(entry)
                 usedTokens += cost
             }
@@ -412,6 +443,7 @@ private fun selectGroupWinners(
     triggeredScores: Map<Uuid, Int>,
     activeStickyEntries: Map<Uuid, Int>,
     alreadyActivated: List<PromptInjection.RegexInjection>,
+    globalUseGroupScoring: Boolean = false,
 ): List<PromptInjection.RegexInjection> {
     if (newlyTriggered.isEmpty()) return emptyList()
 
@@ -453,12 +485,13 @@ private fun selectGroupWinners(
             }
         ) continue
 
-        // 官方 filterGroupsByScoring：先移除“参与评分且分数低于组内最高”的条目
-        // （未开启评分的条目保留，随后仍参与 override/加权随机）
-        val scored = entries.filter { it.useGroupScoring }
+        // 官方 filterGroupsByScoring：全局 use_group_scoring 与条目开关取或
+        // 先移除“参与评分且分数低于组内最高”的条目（未参与评分的条目保留，随后仍参与 override/加权随机）
+        val isScored = { entry: PromptInjection.RegexInjection -> entry.useGroupScoring || globalUseGroupScoring }
+        val scored = entries.filter(isScored)
         val survivors = if (scored.isNotEmpty()) {
             val maxScore = scored.maxOf { triggeredScores[it.id] ?: 0 }
-            entries.filter { !it.useGroupScoring || (triggeredScores[it.id] ?: 0) == maxScore }
+            entries.filter { !isScored(it) || (triggeredScores[it.id] ?: 0) == maxScore }
         } else {
             entries
         }
