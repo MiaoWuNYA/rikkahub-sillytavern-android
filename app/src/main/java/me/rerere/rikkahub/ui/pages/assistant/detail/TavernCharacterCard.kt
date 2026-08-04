@@ -222,75 +222,64 @@ fun TavernCharacterCard(
                         }
                     }
 
-                    // 角色信息分组标题
-                    SectionTitle("角色信息")
-
-                    // 可编辑字段
-                    if (tav.systemPrompt.isNotBlank()) {
-                        EditableField("系统提示词(System Prompt)", tav.systemPrompt) { v ->
-                            val newTav = tav.copy(systemPrompt = v)
-                            onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
-                        }
-                    }
-                    EditableField("描述(Description)", tav.description) { v ->
-                        val newTav = tav.copy(description = v)
-                        onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
-                    }
-                    EditableField("性格(Personality)", tav.personality) { v ->
-                        val newTav = tav.copy(personality = v)
-                        onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
-                    }
-                    EditableField("场景(Scenario)", tav.scenario) { v ->
-                        val newTav = tav.copy(scenario = v)
-                        onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
-                    }
-                    EditableField("示例消息(Examples)", tav.mesExample) { v ->
-                        val newTav = tav.copy(mesExample = v)
-                        onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
-                    }
-                    if (tav.postHistoryInstructions.isNotBlank()) {
-                        EditableField("历史后续指令(PHI)", tav.postHistoryInstructions) { v ->
-                            val newTav = tav.copy(postHistoryInstructions = v)
-                            onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
-                        }
-                    }
-                    if (tav.firstMessage.isNotBlank()) {
-                        EditableField("开场白(First Message)", tav.firstMessage, previewLines = 1) { v ->
-                            val newTav = tav.copy(firstMessage = v)
-                            onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
-                        }
-                    }
-
-                    // 备选开场白
-                    if (tav.alternateGreetings.isNotEmpty()) {
-                        SectionTitle("开场白")
-                        tav.alternateGreetings.forEachIndexed { i, greeting ->
-                            EditableField(
-                                label = "G${i + 1}",
-                                value = greeting,
-                            ) { v ->
-                                val newGreetings = tav.alternateGreetings.toMutableList().apply { set(i, v) }
-                                val newTav = tav.copy(alternateGreetings = newGreetings)
-                                onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
+                    // 角色信息 — 统一字段卡（每个字段一行，点击展开编辑）
+                    FieldCardGroup(
+                        title = "角色信息",
+                        fields = buildList {
+                            if (tav.systemPrompt.isNotBlank()) {
+                                add(FieldSpec("系统提示词(System Prompt)", tav.systemPrompt) { v ->
+                                    onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(systemPrompt = v)))
+                                })
                             }
-                        }
-                    }
-
-                    // 群聊专用开场白
-                    if (tav.groupOnlyGreetings.isNotEmpty()) {
-                        if (tav.alternateGreetings.isEmpty()) {
-                            SectionTitle("开场白")
-                        }
-                        tav.groupOnlyGreetings.forEachIndexed { i, greeting ->
-                            EditableField(
-                                label = "G${i + 1}",
-                                value = greeting,
-                            ) { v ->
-                                val newGreetings = tav.groupOnlyGreetings.toMutableList().apply { set(i, v) }
-                                val newTav = tav.copy(groupOnlyGreetings = newGreetings)
-                                onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
+                            add(FieldSpec("描述(Description)", tav.description) { v ->
+                                onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(description = v)))
+                            })
+                            add(FieldSpec("性格(Personality)", tav.personality) { v ->
+                                onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(personality = v)))
+                            })
+                            add(FieldSpec("场景(Scenario)", tav.scenario) { v ->
+                                onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(scenario = v)))
+                            })
+                            add(FieldSpec("示例消息(Examples)", tav.mesExample) { v ->
+                                onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(mesExample = v)))
+                            })
+                            if (tav.postHistoryInstructions.isNotBlank()) {
+                                add(FieldSpec("历史后续指令(PHI)", tav.postHistoryInstructions) { v ->
+                                    onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(postHistoryInstructions = v)))
+                                })
                             }
-                        }
+                            if (tav.firstMessage.isNotBlank()) {
+                                add(FieldSpec("开场白(First Message)", tav.firstMessage, previewLines = 1) { v ->
+                                    onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(firstMessage = v)))
+                                })
+                            }
+                            if (tav.creatorNotes.isNotBlank()) {
+                                add(FieldSpec("作者备注(Author's Notes)", tav.creatorNotes) { v ->
+                                    onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(creatorNotes = v)))
+                                })
+                            }
+                        },
+                    )
+
+                    // 备选/群聊开场白 — 统一字段卡
+                    if (tav.alternateGreetings.isNotEmpty() || tav.groupOnlyGreetings.isNotEmpty()) {
+                        FieldCardGroup(
+                            title = "开场白",
+                            fields = buildList {
+                                tav.alternateGreetings.forEachIndexed { i, greeting ->
+                                    add(FieldSpec("G${i + 1}", greeting) { v ->
+                                        val newGreetings = tav.alternateGreetings.toMutableList().apply { set(i, v) }
+                                        onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(alternateGreetings = newGreetings)))
+                                    })
+                                }
+                                tav.groupOnlyGreetings.forEachIndexed { i, greeting ->
+                                    add(FieldSpec("群聊G${i + 1}", greeting) { v ->
+                                        val newGreetings = tav.groupOnlyGreetings.toMutableList().apply { set(i, v) }
+                                        onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(groupOnlyGreetings = newGreetings)))
+                                    })
+                                }
+                            },
+                        )
                     }
 
                     // 内嵌世界书
@@ -311,21 +300,6 @@ fun TavernCharacterCard(
                                 onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
                             },
                         )
-                    }
-
-                    // 元数据分组
-                    if (tav.creatorNotes.isNotBlank() || tav.creator.isNotBlank() ||
-                        tav.characterVersion.isNotBlank() || tav.extensions.isNotEmpty() || tav.assets.isNotEmpty()
-                    ) {
-                        SectionTitle("元数据")
-                    }
-
-                    // creator notes
-                    if (tav.creatorNotes.isNotBlank()) {
-                        EditableField("${tav.creator.ifBlank { "作者" }} 的备注", tav.creatorNotes) { v ->
-                            val newTav = tav.copy(creatorNotes = v)
-                            onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
-                        }
                     }
 
                     // 元数据 — CardGroup 列表项（作者/版本/扩展/资源摘要）
@@ -478,79 +452,79 @@ private fun SectionTitle(text: String) {
     )
 }
 
+private data class FieldSpec(
+    val label: String,
+    val value: String,
+    val previewLines: Int = 2,
+    val onSave: (String) -> Unit,
+)
+
 /**
- * 可编辑字段组件 — 折叠预览3行，展开后OutlinedTextField可编辑
+ * 可编辑字段分组卡 — CardGroup 内每行一个字段：字段名+预览，点击整行展开编辑，折叠时自动保存。
  */
 @Composable
-private fun EditableField(
-    label: String,
-    value: String,
-    previewLines: Int = 2,
-    onSave: (String) -> Unit,
+private fun FieldCardGroup(
+    title: String,
+    fields: List<FieldSpec>,
 ) {
-    if (value.isBlank()) return
-    var expanded by remember { mutableStateOf(false) }
-    var editText by remember(value) { mutableStateOf(value) }
-    val rotationAngle by animateFloatAsState(
-        targetValue = if (expanded) 90f else 0f,
-        animationSpec = tween(200),
-    )
-    // 折叠时自动保存
-    LaunchedEffect(expanded) {
-        if (!expanded && editText != value) {
-            onSave(editText)
-        }
-    }
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(8.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 2.dp),
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { expanded = !expanded },
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    HugeIcons.ArrowRight01,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(14.dp)
-                        .graphicsLayer { rotationZ = rotationAngle },
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            if (expanded) {
-                OutlinedTextField(
-                    value = editText,
-                    onValueChange = { editText = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp),
-                    textStyle = MaterialTheme.typography.bodySmall,
-                    minLines = 3,
-                )
-            } else {
-                Text(
-                    text = value.lines().take(previewLines).joinToString("\n")
-                        .let { if (it.length < value.length) "$it…" else it },
-                    modifier = Modifier.padding(top = 2.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = previewLines,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+    // 用「标签+值」做稳定 key：字段值没变时保留展开/编辑状态，外部保存后值变化才重置
+    val stateKey = fields.map { it.label to it.value }
+    val expandedKeys = remember(stateKey) { mutableStateMapOf<String, Boolean>() }
+    val editTexts = remember(stateKey) { mutableStateMapOf<String, String>() }
+
+    CardGroup(title = { Text(title) }) {
+        fields.forEach { field ->
+            item(
+                onClick = {
+                    if (expandedKeys[field.label] == true) {
+                        expandedKeys[field.label] = false
+                        val text = editTexts[field.label] ?: field.value
+                        if (text != field.value) field.onSave(text)
+                    } else {
+                        expandedKeys[field.label] = true
+                    }
+                },
+                headlineContent = {
+                    Text(
+                        text = field.label,
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                },
+                supportingContent = {
+                    if (expandedKeys[field.label] == true) {
+                        OutlinedTextField(
+                            value = editTexts.getOrPut(field.label) { field.value },
+                            onValueChange = { editTexts[field.label] = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            textStyle = MaterialTheme.typography.bodySmall,
+                            minLines = 3,
+                        )
+                    } else {
+                        Text(
+                            text = field.value.lines().take(field.previewLines).joinToString("\n")
+                                .let { if (it.length < field.value.length) "$it…" else it },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = field.previewLines,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                },
+                trailingContent = {
+                    val rotationAngle by animateFloatAsState(
+                        targetValue = if (expandedKeys[field.label] == true) 90f else 0f,
+                        animationSpec = tween(200),
+                    )
+                    Icon(
+                        HugeIcons.ArrowRight01,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(14.dp)
+                            .graphicsLayer { rotationZ = rotationAngle },
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                },
+            )
         }
     }
 }
