@@ -98,7 +98,6 @@ class GenerationHandler(
         var messages: List<UIMessage> = messages
 
     fun describeTool(name: String): String = when {
-        name.startsWith("github_") -> "🔧 GitHub → 正在操作..."
         name.startsWith("execute_python") -> "🔧 Python → 正在执行代码..."
         name.startsWith("execute_command") -> "🔧 Shell → 正在执行命令..."
         name == "file" -> "🔧 文件 → 正在操作..."
@@ -169,7 +168,6 @@ class GenerationHandler(
                 appendLine("Python → execute_python (data processing, API)")
                 appendLine("Math → calculator (NOT execute_python)")
                 appendLine("Web → web_search / web_fetch")
-                appendLine("GitHub → github_tool")
                 appendLine("Memory → memory_tool")
                 appendLine("</tool_selection>")
                 appendLine()
@@ -307,20 +305,11 @@ class GenerationHandler(
         if (tool.name == "ask_user") tool else tool.copy(
             execute = { args ->
                 processingStatus.value = describeTool(tool.name)
-                if (tool.name.contains("github")) {
-                    me.rerere.rikkahub.data.ai.tools.GhProgress.processingRef = processingStatus
-                }
                 try {
                     val result = tool.execute(args)
-                    if (tool.name.contains("github")) {
-                        me.rerere.rikkahub.data.ai.tools.GhProgress.processingRef = null
-                    }
                     processingStatus.value = null
                     result
                 } catch (e: Exception) {
-                    if (tool.name.contains("github")) {
-                        me.rerere.rikkahub.data.ai.tools.GhProgress.processingRef = null
-                    }
                     processingStatus.value = null
                     throw e
                 }

@@ -87,9 +87,6 @@ sealed class LocalToolOption {
     @SerialName("shell_tools")
     data object ShellTools : LocalToolOption()
 
-    @Serializable
-    @SerialName("github_tools")
-    data object GitHubTools : LocalToolOption()
 
     @Serializable
     @SerialName("database_query")

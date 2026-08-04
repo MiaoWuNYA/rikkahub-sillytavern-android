@@ -427,44 +427,6 @@ private fun AssistantLocalToolContent(
                 }
             )
             item(
-                headlineContent = { Text("GitHub") },
-                supportingContent = { Text("允许 AI 搜索代码、查 CI、管理 PR/Issue（需配置 Token）") },
-                trailingContent = {
-                    Switch(
-                        checked = assistant.localTools.contains(LocalToolOption.GitHubTools),
-                        onCheckedChange = { toggleLocalTool(LocalToolOption.GitHubTools, it) }
-                    )
-                }
-            )
-            if (assistant.localTools.contains(LocalToolOption.GitHubTools)) {
-                item(
-                    headlineContent = { Text("  自动修复 CI") },
-                    supportingContent = { Text("CI 失败时 AI 自动读日志→修代码→重提") },
-                    trailingContent = {
-                        Switch(
-                            checked = assistant.enableAutoFixCi,
-                            onCheckedChange = { onUpdate(assistant.copy(enableAutoFixCi = it)) }
-                        )
-                    }
-                )
-                item(
-                    headlineContent = { Text("  CI 超时(秒)") },
-                    supportingContent = { Text("GitHub 操作超时，默认 120 秒") },
-                    trailingContent = {
-                        OutlinedTextField(
-                            value = assistant.enableCiTimeout.toString(),
-                            onValueChange = { v ->
-                                v.toIntOrNull()?.let { onUpdate(assistant.copy(enableCiTimeout = it)) }
-                            },
-                            modifier = Modifier.width(70.dp),
-                            textStyle = MaterialTheme.typography.bodyMedium,
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        )
-                    }
-                )
-            }
-            item(
                 headlineContent = { Text("数据库查询") },
                 supportingContent = { Text("允许 AI 查询本地数据库（对话记录/知识库/设置）") },
                 trailingContent = {

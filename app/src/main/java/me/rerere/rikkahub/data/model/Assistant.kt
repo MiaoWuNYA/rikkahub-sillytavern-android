@@ -65,8 +65,6 @@ data class Assistant(
     val allowConversationPromptInjection: Boolean = false, // 允许对话单独绑定提示词注入
     val tavernData: TavernCharacterData? = null,       // 酒馆角色卡结构化数据（从PNG/JSON导入时填充）
     val enableParallelToolExecution: Boolean = true,    // 并行执行多个工具调用
-    val enableAutoFixCi: Boolean = false,               // GitHub 工具自动修复 CI
-    val enableCiTimeout: Int = 120,                     // CI 工具操作超时(秒)，默认 120
     val toolRecurringLimit: Int = 8,                    // 单批同工具调用上限
     val totalStepsLimit: Int = 256,                     // 总工具调用轮数上限
     val toolExecTimeout: Int = 120,                     // 单工具执行超时(秒)

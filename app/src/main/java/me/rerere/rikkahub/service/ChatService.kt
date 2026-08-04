@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -73,7 +74,6 @@ import me.rerere.rikkahub.data.ai.tools.createSkillTools
 import me.rerere.rikkahub.data.ai.tools.createFileTools
 import me.rerere.rikkahub.data.ai.tools.createShellTools
 import me.rerere.rikkahub.data.ai.tools.createPythonTool
-import me.rerere.rikkahub.data.ai.tools.createGitHubTool
 import me.rerere.rikkahub.data.ai.tools.createDatabaseQueryTool
 import me.rerere.rikkahub.data.ai.tools.createCalculatorTool
 import me.rerere.rikkahub.data.ai.tools.createWebFetchTool
@@ -755,17 +755,20 @@ class ChatService(
             // start generating
             val session = getOrCreateSession(conversationId)
 
-            // 如果不在前台，提前启动前台 Service（不等第一块数据）
+            // 如果不在前台，提前启动前台 Service：异步启动 + 失败兜底，绝不让 Service 启动阻塞/中断生成
             if (!isForeground.value && settings.displaySetting.enableNotificationOnMessageGeneration) {
-                startGenerationForeground(senderName, conversationId.toString())
+                appScope.launch {
+                    runCatching { startGenerationForeground(senderName, conversationId.toString()) }
+                }
             }
 
-            // 监听前后台切换：一切后台立即启动 FG Service 保活
+            // 监听前后台切换：切后台 600ms 后才启动 FG Service 保活（防短暂切走造成反复启停），
+            // 启动失败不影响生成（Android 12+ 后台启动限制等）
             val fgJob: Job? = if (settings.displaySetting.enableNotificationOnMessageGeneration) {
                 appScope.launch {
-                    isForeground.drop(1).collect { foreground ->
+                    isForeground.drop(1).debounce(600).collect { foreground ->
                         if (!foreground) {
-                            startGenerationForeground(senderName, conversationId.toString())
+                            runCatching { startGenerationForeground(senderName, conversationId.toString()) }
                         } else {
                             stopGenerationForeground()
                         }
@@ -825,9 +828,6 @@ class ChatService(
                     // 命理工具: 始终可用
                     add(createMingliTool(context))
                     add(createMingliGuideTool(context))
-                    if (assistant.localTools.contains(LocalToolOption.GitHubTools)) {
-                        add(createGitHubTool(settingsStore, assistant.enableCiTimeout, assistant.enableAutoFixCi))
-                    }
                     if (assistant.localTools.contains(LocalToolOption.DatabaseQuery)) {
                         add(createDatabaseQueryTool(database))
                     }
@@ -1150,9 +1150,6 @@ class ChatService(
                 addAll(localTools.getTools(assistant.localTools))
                 if (assistant.localTools.contains(LocalToolOption.ShellTools)) {
                     addAll(createShellTools())
-                }
-                if (assistant.localTools.contains(LocalToolOption.GitHubTools)) {
-                    add(createGitHubTool(settingsStore, assistant.enableCiTimeout, assistant.enableAutoFixCi))
                 }
                 if (assistant.localTools.contains(LocalToolOption.DatabaseQuery)) {
                     add(createDatabaseQueryTool(database))

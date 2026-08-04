@@ -70,7 +70,6 @@ fun createFileTools(workspaceDir: String = "/storage/emulated/0/Download", skill
                 appendLine()
                 appendLine("When NOT to use:")
                 appendLine("- Shell commands (use execute_command)")
-                appendLine("- GitHub operations (use github_tool)")
                 appendLine()
                 appendLine("Args:")
                 appendLine("- action: read|write|patch|list|search|copy|move|mkdir|delete")
