@@ -33,14 +33,18 @@ class KnowledgeBaseTransformer(
         if (query.isBlank()) return messages
 
         try {
-            // 搜（走 RRF + 去重 + Token预算）
+            // 搜（走 RRF + 去重 + Token预算）；给界面一个明确的阶段提示，避免看起来像卡住
+            ctx.processingStatus?.value = "正在检索知识库…"
             val results = knowledgeBaseService.searchForInjection(
                 query = query,
                 assistantId = assistant.id.toString(),
                 settings = settings,
             )
 
-            if (results.isEmpty()) return messages
+            if (results.isEmpty()) {
+                ctx.processingStatus?.value = null
+                return messages
+            }
 
             // XML 格式注入
             val contextXml = buildString {
@@ -74,8 +78,10 @@ class KnowledgeBaseTransformer(
             }
 
             Log.d(TAG, "Injected ${results.size} KB chunks via XML format")
+            ctx.processingStatus?.value = null
             return injected
         } catch (e: Exception) {
+            ctx.processingStatus?.value = null
             Log.e(TAG, "Knowledge base injection failed", e)
             return messages
         }

@@ -4,9 +4,11 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import me.rerere.ai.provider.EmbeddingGenerationParams
 import me.rerere.ai.provider.ProviderManager
 import me.rerere.document.DocxParser
@@ -45,6 +47,20 @@ class KnowledgeBaseService(
 ) {
     private val dao: KnowledgeBaseDao = database.knowledgeBaseDao()
     private val writableDb get() = database.openHelper.writableDatabase
+
+    // ── 检索加速缓存 ──
+    // searchMemo：同一轮生成（含多步工具调用）会对同一 query 重复检索，20 秒内复用结果
+    private data class SearchMemoKey(val assistantId: String?, val query: String)
+    private data class SearchMemoValue(val results: List<KnowledgeSearchResult>, val at: Long)
+    private val searchMemo = object : LinkedHashMap<SearchMemoKey, SearchMemoValue>(32, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<SearchMemoKey, SearchMemoValue>) = size > 64
+    }
+    // decodedEmbeddings：向量检索每轮都要把 chunk 的 ByteArray 解码成 FloatArray，缓存避免重复解码
+    private val decodedEmbeddings = object : LinkedHashMap<String, FloatArray>(512, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, FloatArray>) = size > 4096
+    }
+    private val SEARCH_MEMO_TTL_MS = 20_000L
+    private val EMBEDDING_TIMEOUT_MS = 4_000L
 
     // 导入进度
     val importProgress = MutableStateFlow<ImportProgress?>(null)
@@ -686,6 +702,13 @@ class KnowledgeBaseService(
         val kbSettings = settings.kbInjectionSettings
         if (!kbSettings.enabled) return@withContext emptyList()
 
+        // 记忆缓存：同一轮生成（含多步工具调用）会对同一 query 重复检索，20 秒内直接复用
+        val memoKey = SearchMemoKey(assistantId, query)
+        val memo = synchronized(searchMemo) {
+            searchMemo[memoKey]?.takeIf { System.currentTimeMillis() - it.at < SEARCH_MEMO_TTL_MS }
+        }
+        if (memo != null) return@withContext memo.results
+
         try {
             // 1. Query Rewrite（可选）
             val queries = if (kbSettings.useQueryRewrite) {
@@ -702,7 +725,11 @@ class KnowledgeBaseService(
 
             // 2. 并行混合检索（FTS5 + 向量）
             val ftsResults = mutableListOf<KnowledgeSearchResult>()
-            val embeddingResults = mutableListOf<KnowledgeSearchResult>()
+            // 向量检索只对原始 query 调一次 embedding API（改写 query 不再重复调用），
+            // 与 FTS 并行执行，4 秒超时兜底（超时则只用 FTS 结果）
+            val embeddingDeferred = if (kbSettings.useHybridSearch) {
+                async(Dispatchers.IO) { computeEmbeddingResults(query, assistantId, settings) }
+            } else null
 
             queries.forEach { q ->
                 // FTS5
@@ -751,46 +778,9 @@ class KnowledgeBaseService(
                         }
                     }
                 } catch (_: Exception) {}
-
-                // 向量搜索（混合模式）
-                if (kbSettings.useHybridSearch) {
-                    try {
-                        val model = findEmbeddingModel(settings)
-                        if (model != null) {
-                            ensureEmbeddings(settings)
-                            val provider = model.findProvider(settings.providers)
-                            if (provider != null) {
-                                val providerImpl = providerManager.getProviderByType(provider)
-                                val emb = providerImpl.generateEmbedding(provider, EmbeddingGenerationParams(
-                                    model = model, input = listOf(q),
-                                )).embeddings.firstOrNull()
-                                if (emb != null) {
-                                    val embeddedChunks = if (assistantId != null) {
-                                        dao.getEmbeddedChunksForAssistant(assistantId)
-                                    } else {
-                                        dao.getAllEmbeddedChunks()
-                                    }
-                                    embeddedChunks.forEach { chunk ->
-                                        val chunkEmb = chunk.embedding?.let { KnowledgeChunkEntity.bytesToFloats(it) }
-                                        if (chunkEmb != null && chunkEmb.size == emb.size) {
-                                            val score = cosineSimilarity(emb, chunkEmb)
-                                            if (score >= kbSettings.scoreThreshold) {
-                                                val sourceEntity = dao.getSourceById(chunk.sourceId)
-                                                embeddingResults.add(KnowledgeSearchResult(
-                                                    chunk = chunk.toDomain(),
-                                                    score = score,
-                                                    source = sourceEntity?.toDomain() ?: KnowledgeSource(),
-                                                    matchType = MatchType.EMBEDDING,
-                                                ))
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } catch (_: Exception) {}
-                }
             }
+
+            val embeddingResults = embeddingDeferred?.await() ?: emptyList()
 
             // 3. RRF 融合
             val merged = rrfMerge(ftsResults, embeddingResults)
@@ -807,16 +797,82 @@ class KnowledgeBaseService(
             // 5. Token预算裁剪
             var tokenCount = 0
             val budget = kbSettings.tokenBudget
-            withParents.takeWhile { result ->
+            val finalResults = withParents.takeWhile { result ->
                 val tokens = estimateTokens(result.chunk.text)
                 if (tokenCount + tokens > budget) false
                 else { tokenCount += tokens; true }
             }
+            synchronized(searchMemo) {
+                searchMemo[memoKey] = SearchMemoValue(finalResults, System.currentTimeMillis())
+            }
+            finalResults
 
         } catch (e: Exception) {
             Log.w(TAG, "searchForInjection failed", e)
             emptyList()
         }
+    }
+
+    /**
+     * 向量检索：只对原始 query 调一次 embedding API，4 秒超时；解码向量走内存缓存。
+     */
+    private suspend fun computeEmbeddingResults(
+        query: String,
+        assistantId: String?,
+        settings: Settings,
+    ): List<KnowledgeSearchResult> = withTimeoutOrNull(EMBEDDING_TIMEOUT_MS) {
+        withContext(Dispatchers.IO) {
+            try {
+                val kbSettings = settings.kbInjectionSettings
+                val model = findEmbeddingModel(settings) ?: return@withContext emptyList()
+                ensureEmbeddings(settings)
+                val provider = model.findProvider(settings.providers) ?: return@withContext emptyList()
+                val providerImpl = providerManager.getProviderByType(provider)
+                val emb = providerImpl.generateEmbedding(
+                    provider,
+                    EmbeddingGenerationParams(model = model, input = listOf(query)),
+                ).embeddings.firstOrNull() ?: return@withContext emptyList()
+
+                val embeddedChunks = if (assistantId != null) {
+                    dao.getEmbeddedChunksForAssistant(assistantId)
+                } else {
+                    dao.getAllEmbeddedChunks()
+                }
+                val results = mutableListOf<KnowledgeSearchResult>()
+                embeddedChunks.forEach { chunk ->
+                    val chunkEmb = chunk.embedding?.let { decodeCachedEmbedding(chunk.id, it) }
+                    if (chunkEmb != null && chunkEmb.size == emb.size) {
+                        val score = cosineSimilarity(emb, chunkEmb)
+                        if (score >= kbSettings.scoreThreshold) {
+                            val sourceEntity = dao.getSourceById(chunk.sourceId)
+                            results.add(
+                                KnowledgeSearchResult(
+                                    chunk = chunk.toDomain(),
+                                    score = score,
+                                    source = sourceEntity?.toDomain() ?: KnowledgeSource(),
+                                    matchType = MatchType.EMBEDDING,
+                                )
+                            )
+                        }
+                    }
+                }
+                results
+            } catch (_: Exception) {
+                emptyList()
+            }
+        }
+    } ?: emptyList()
+
+    /** 解码向量缓存（LRU，上限 4096 条），避免每轮检索重复 ByteArray→FloatArray */
+    private fun decodeCachedEmbedding(chunkId: String, bytes: ByteArray): FloatArray? {
+        synchronized(decodedEmbeddings) {
+            decodedEmbeddings[chunkId]?.let { return it }
+        }
+        val decoded = KnowledgeChunkEntity.bytesToFloats(bytes)
+        synchronized(decodedEmbeddings) {
+            decodedEmbeddings[chunkId] = decoded
+        }
+        return decoded
     }
 
     /** RRF: Reciprocal Rank Fusion */
