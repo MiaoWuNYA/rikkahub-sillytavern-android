@@ -688,7 +688,12 @@ private fun LorebookTab(
                             style = MaterialTheme.typography.labelSmall,
                         )
                     }
-                    AnimatedVisibility(visible = worldInfoSettingsExpanded) {
+                    AnimatedVisibility(
+                        visible = worldInfoSettingsExpanded,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                    ) {
                 CardGroup(
                     title = {
                         Column {
