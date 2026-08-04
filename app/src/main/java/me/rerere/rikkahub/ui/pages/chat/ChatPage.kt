@@ -98,6 +98,7 @@ import me.rerere.rikkahub.data.repository.WorkspaceRepository
 import me.rerere.rikkahub.service.ChatError
 import me.rerere.rikkahub.ui.components.ai.ChatInput
 import me.rerere.rikkahub.ui.components.ai.FilesPicker
+import me.rerere.rikkahub.ui.components.ai.SlashVarOp
 import me.rerere.rikkahub.ui.components.ai.applyMacroVarSlash
 import me.rerere.rikkahub.ui.components.ai.completion.WorkspaceCompletionProvider
 import me.rerere.rikkahub.ui.components.ai.useCropLauncher
@@ -547,6 +548,22 @@ private fun ChatPageContent(
                     },
                     onSlashPrompt = {
                         promptPreview = vm.buildPromptPreview()
+                    },
+                    onSlashRerollPick = { seedArg ->
+                        val chatKey = conversation.id.toString()
+                        val current = setting.macroChatVariables[chatKey]?.get("__pick_reroll_seed")?.toLongOrNull() ?: 0L
+                        val next = seedArg.toLongOrNull() ?: (current + 1)
+                        val (newSettings, _) = applyMacroVarSlash(
+                            settings = setting,
+                            op = SlashVarOp.SET,
+                            name = "__pick_reroll_seed",
+                            value = next.toString(),
+                            chatKey = chatKey,
+                        )
+                        if (newSettings !== setting) {
+                            vm.updateSettings(newSettings)
+                        }
+                        toaster.show("已重新掷随机细节（种子 $next），下次回复生效")
                     },
                     onSlashSysgen = { prompt ->
                         if (currentChatModel == null) {

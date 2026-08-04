@@ -62,6 +62,9 @@ enum class BuiltinSlashKind {
     /** 查看当前发送给 AI 的提示词上下文 */
     PROMPT,
 
+    /** 重新掷 {{pick}} 稳定随机（官方 /reroll-pick） */
+    REROLL_PICK,
+
     /** 修改当前角色卡字段（字段=值） */
     UPDATE_CHAR,
 
@@ -179,6 +182,14 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.PROMPT,
+    ),
+    SlashCommand(
+        name = "reroll-pick",
+        description = "重新掷随机细节(Reroll Pick)：让 {{pick}} 换一批结果，可带种子数字",
+        argumentHint = "[种子，可选]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.REROLL_PICK,
     ),
 ) + varSlashCommands()
 

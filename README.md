@@ -56,8 +56,8 @@
 - **操控生成**：`/trigger` 不新增消息直接触发回复、`/sysgen` 让 AI 写系统旁白、`/inject` 注入提示词而不污染聊天记录
 - **状态与调试**：`/persona` 切换人设、`/prompt` 预览实际发送给 AI 的完整提示词
 - **角色卡管理**：`/char-get`、`/char-update`、`/char-duplicate`、`/rename-char`
-- **变量**：`/listvar`、`/setvar`、`/getvar`、`/addvar`、`/incvar`、`/decvar`、`/flushvar`
-- 等等，共 21 个内置命令，语义对照酒馆官方实现；技能目录里的命令会随技能自动出现
+- **变量与随机**：`/listvar`、`/setvar`、`/getvar`、`/addvar`、`/incvar`、`/decvar`、`/flushvar`、`/reroll-pick`（重新掷 `{{pick}}` 稳定随机）
+- 等等，共 22 个内置命令，语义对照酒馆官方实现；技能目录里的命令会随技能自动出现
 
 ### 5. 人设（Persona）
 

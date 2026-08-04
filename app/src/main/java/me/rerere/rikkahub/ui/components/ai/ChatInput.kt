@@ -155,6 +155,7 @@ fun ChatInput(
     onSlashContinue: ((String) -> Unit)? = null,
     onSlashImpersonate: ((String) -> Unit)? = null,
     onSlashPrompt: (() -> Unit)? = null,
+    onSlashRerollPick: ((String) -> Unit)? = null,
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
@@ -215,6 +216,7 @@ fun ChatInput(
                         onSlashContinue = onSlashContinue,
                         onSlashImpersonate = onSlashImpersonate,
                         onSlashPrompt = onSlashPrompt,
+                        onSlashRerollPick = onSlashRerollPick,
                     )
                 } else {
                     // 技能命令：与弹窗点击一致，把替换后的内容填回输入框
@@ -325,6 +327,7 @@ fun ChatInput(
                         onSlashContinue = onSlashContinue,
                         onSlashImpersonate = onSlashImpersonate,
                         onSlashPrompt = onSlashPrompt,
+                        onSlashRerollPick = onSlashRerollPick,
                         helpDialogVisible = showHelpDialog,
                         onDismissHelpDialog = { showHelpDialog = false },
                         onShowHelp = { showHelpDialog = true },
@@ -524,6 +527,7 @@ private fun TextInputRow(
     onSlashContinue: ((String) -> Unit)? = null,
     onSlashImpersonate: ((String) -> Unit)? = null,
     onSlashPrompt: (() -> Unit)? = null,
+    onSlashRerollPick: ((String) -> Unit)? = null,
     helpDialogVisible: Boolean,
     onDismissHelpDialog: () -> Unit,
     onShowHelp: () -> Unit,
@@ -762,6 +766,7 @@ private fun TextInputRow(
                                                 onSlashContinue = onSlashContinue,
                                                 onSlashImpersonate = onSlashImpersonate,
                                                 onSlashPrompt = onSlashPrompt,
+                                                onSlashRerollPick = onSlashRerollPick,
                                             )
                                         } else {
                                             // 需要参数的命令：填入输入框，补参数后发送
@@ -838,6 +843,7 @@ private fun TextInputRow(
                                                 onSlashContinue = onSlashContinue,
                                                 onSlashImpersonate = onSlashImpersonate,
                                                 onSlashPrompt = onSlashPrompt,
+                                                onSlashRerollPick = onSlashRerollPick,
                                             )
                                         } else {
                                             // 需要参数的命令：填入输入框，补参数后按发送执行（官方 AutoComplete 行为）
@@ -1085,6 +1091,7 @@ private fun handleBuiltinSlash(
     onSlashContinue: ((String) -> Unit)? = null,
     onSlashImpersonate: ((String) -> Unit)? = null,
     onSlashPrompt: (() -> Unit)? = null,
+    onSlashRerollPick: ((String) -> Unit)? = null,
 ) {
     when (cmd.builtinKind) {
         BuiltinSlashKind.HELP -> {
@@ -1115,6 +1122,15 @@ private fun handleBuiltinSlash(
                 toaster.show("当前页面不支持该命令")
             } else {
                 onSlashPrompt()
+            }
+        }
+
+        BuiltinSlashKind.REROLL_PICK -> {
+            if (onSlashRerollPick == null) {
+                toaster.show("当前页面不支持该命令")
+            } else {
+                onSlashRerollPick(args.trim())
+                state.clearInput()
             }
         }
 

@@ -724,10 +724,12 @@ class MacroEngine(
         return list[Random.nextInt(list.size)]
     }
 
-    /** 官方 pick：同一聊天 + 同一位置结果稳定（种子 = chat + 内容 hash + 位置）。 */
+    /** 官方 pick：同一聊天 + 同一位置结果稳定（种子 = chat + 重掷种子 + 内容 hash + 位置）。 */
     private fun stablePick(list: List<String>, state: EvalState): String {
         if (list.isEmpty()) return ""
-        val seed = "${state.ctx.conversationId ?: "global"}|${state.contentHash}|${state.position}"
+        // /reroll-pick 修改本对话保留变量 __pick_reroll_seed，从而让所有 {{pick}} 换一批结果
+        val rerollSeed = vars.get(state.ctx.conversationId?.toString(), "__pick_reroll_seed")?.toLongOrNull() ?: 0L
+        val seed = "${state.ctx.conversationId ?: "global"}|$rerollSeed|${state.contentHash}|${state.position}"
         state.position++
         val hash = MessageDigest.getInstance("MD5").digest(seed.toByteArray())
         val longSeed = ((hash[0].toLong() and 0xff) shl 56) or
