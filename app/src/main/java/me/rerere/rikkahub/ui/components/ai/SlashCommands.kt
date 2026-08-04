@@ -199,14 +199,14 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
 fun varSlashCommands(): List<SlashCommand> = listOf(
     SlashCommand(
         name = "listvar",
-        description = "列出当前对话变量(List Var)",
+        description = "列出当前对话变量(List Var)：提示显示本对话全部变量",
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
     ),
     SlashCommand(
         name = "setvar",
-        description = "设置当前对话变量(Set Var)",
+        description = "设置当前对话变量(Set Var)：宏里用 {{getvar::名}} 或 {{.名}} 读取",
         argumentHint = "[变量名] [值]",
         content = "",
         filePath = "builtin",
@@ -214,7 +214,7 @@ fun varSlashCommands(): List<SlashCommand> = listOf(
     ),
     SlashCommand(
         name = "getvar",
-        description = "读取当前对话变量(Get Var)",
+        description = "读取当前对话变量(Get Var)：提示显示当前值",
         argumentHint = "[变量名]",
         content = "",
         filePath = "builtin",
@@ -222,7 +222,7 @@ fun varSlashCommands(): List<SlashCommand> = listOf(
     ),
     SlashCommand(
         name = "addvar",
-        description = "当前对话变量加值(Add Var)",
+        description = "当前对话变量加值(Add Var)：数值相加，非数值拼接",
         argumentHint = "[变量名] [值]",
         content = "",
         filePath = "builtin",
