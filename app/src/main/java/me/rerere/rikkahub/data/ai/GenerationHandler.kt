@@ -39,7 +39,6 @@ import me.rerere.rikkahub.data.ai.transformers.findSafeInsertIndex
 import me.rerere.rikkahub.data.ai.transformers.onGenerationFinish
 import me.rerere.rikkahub.data.ai.transformers.transforms
 import me.rerere.rikkahub.data.ai.transformers.visualTransforms
-import me.rerere.rikkahub.data.ai.tools.CustomApiConfig
 import me.rerere.rikkahub.data.ai.tools.buildMemoryTools
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.findModelById
@@ -235,19 +234,6 @@ class GenerationHandler(
                 if (assistant.enableRecentChatsReference) {
                     appendLine()
                     append(buildRecentChatsPrompt(assistant, conversationRepo))
-                }
-                if (settings.customApiConfigs.isNotEmpty()) {
-                    appendLine()
-                    appendLine("<custom_apis>")
-                    settings.customApiConfigs.forEach { cfg ->
-                        val headerStr = if (cfg.headers.isNotEmpty()) {
-                            " (Headers: " + cfg.headers.joinToString(", ") { h -> "${h.key}: ${h.value}" } + ")"
-                        } else ""
-                        val descStr = if (cfg.description.isNotBlank()) " - ${cfg.description}" else ""
-                        appendLine("  [${cfg.name}] ${cfg.method} ${cfg.url}$headerStr$descStr")
-                    }
-                    appendLine("用 web_fetch 工具调用，body 按接口要求传 JSON")
-                    appendLine("</custom_apis>")
                 }
             },
             constraints = emptyList(),

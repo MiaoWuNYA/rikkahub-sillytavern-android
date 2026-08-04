@@ -64,7 +64,7 @@
 
 ### D. 工具与 Agent（本地独有）
 
-`data/ai/tools/LocalTools.kt`(+489，从 `tools/local/` 移动)、`FileTools.kt`(+430)、`TaskTools.kt`(+430)、`DatabaseQueryTool.kt`(+326)、`ShellTools.kt`(+81)、`PythonTools.kt`(+152)、`CalculatorTool.kt`(+127)、`WebFetchTool.kt`(+111)、`tools/local/MingliTool.kt`(+138)、`MingliGuideTool.kt`(+111)、`data/ai/python/PythonBridge.kt`(+235)、`JsBridge.kt`(+37)、`data/ai/prompts/SystemPromptAssembler.kt`(+134)、`data/ai/transformers/SkillAutoTriggerTransformer.kt`(+94)、`data/files/PluginManifest.kt`(+119)、`SkillRegistry.kt`(+43)、`SkillFrontmatterParser.kt`(+21)、`CustomApiConfig.kt`(+21)
+`data/ai/tools/LocalTools.kt`(+489，从 `tools/local/` 移动)、`FileTools.kt`(+430)、`TaskTools.kt`(+430)、`DatabaseQueryTool.kt`(+326)、`ShellTools.kt`(+81)、`PythonTools.kt`(+152)、`CalculatorTool.kt`(+127)、`WebFetchTool.kt`(+111)、`tools/local/MingliTool.kt`(+138)、`MingliGuideTool.kt`(+111)、`data/ai/python/PythonBridge.kt`(+235)、`JsBridge.kt`(+37)、`data/ai/prompts/SystemPromptAssembler.kt`(+134)、`data/ai/transformers/SkillAutoTriggerTransformer.kt`(+94)、`data/files/PluginManifest.kt`(+119)、`SkillRegistry.kt`(+43)、`SkillFrontmatterParser.kt`(+21)
 
 上游的 `data/ai/tools/SkillsTools.kt` 本地改了 +64/-35（技能工具）；`data/files/SkillManager.kt` +78/-5（**已回退缓存改动**，仅剩外部存储/公共目录两个早期差异，见第 5 节）。
 

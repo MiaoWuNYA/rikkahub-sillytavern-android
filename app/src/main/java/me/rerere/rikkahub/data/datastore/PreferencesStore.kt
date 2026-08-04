@@ -25,8 +25,6 @@ import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.rikkahub.AppScope
 import me.rerere.rikkahub.data.ai.mcp.McpServerConfig
-import me.rerere.rikkahub.data.ai.tools.CustomApiConfig
-import me.rerere.rikkahub.data.ai.tools.DEFAULT_CUSTOM_API_CONFIGS
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_COMPRESS_PROMPT
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_OCR_PROMPT
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_SUGGESTION_PROMPT
@@ -173,7 +171,6 @@ class SettingsStore(
         val SPONSOR_ALERT_DISMISSED_AT = intPreferencesKey("sponsor_alert_dismissed_at")
 
         // Custom HTTP API
-        val CUSTOM_API_CONFIGS = stringPreferencesKey("custom_api_configs")
 
         // 人设 & 导演备注（补全）
         val PERSONAS = stringPreferencesKey("personas")
@@ -286,9 +283,6 @@ class SettingsStore(
                     JsonInstant.decodeFromString(it)
                 } ?: BackupReminderConfig(),
                 githubToken = preferences[GITHUB_TOKEN] ?: "",
-                customApiConfigs = preferences[CUSTOM_API_CONFIGS]?.let {
-                    JsonInstant.decodeFromString(it)
-                } ?: DEFAULT_CUSTOM_API_CONFIGS,
                 launchCount = preferences[LAUNCH_COUNT] ?: 0,
                 sponsorAlertDismissedAt = preferences[SPONSOR_ALERT_DISMISSED_AT] ?: 0,
                 personas = preferences[PERSONAS]?.let { JsonInstant.decodeFromString(it) } ?: DEFAULT_PERSONAS,
@@ -480,7 +474,6 @@ class SettingsStore(
             preferences[WEB_SERVER_ACCESS_PASSWORD] = settings.webServerAccessPassword
             preferences[WEB_SERVER_LOCALHOST_ONLY] = settings.webServerLocalhostOnly
             preferences[GITHUB_TOKEN] = settings.githubToken
-            preferences[CUSTOM_API_CONFIGS] = JsonInstant.encodeToString(settings.customApiConfigs)
             preferences[BACKUP_REMINDER_CONFIG] = JsonInstant.encodeToString(settings.backupReminderConfig)
             preferences[LAUNCH_COUNT] = settings.launchCount
             preferences[SPONSOR_ALERT_DISMISSED_AT] = settings.sponsorAlertDismissedAt
@@ -641,7 +634,6 @@ data class Settings(
     val worldInfoOverflowAlert: Boolean = false,    // 官方 world_info_overflow_alert：预算溢出时提示
     val worldInfoUseGroupScoring: Boolean = false,  // 官方 world_info_use_group_scoring：组评分全局默认        // 递归最大层数（0=不限制，酒馆 max_recursion_steps）
     val quickMessages: List<QuickMessage> = emptyList(),
-    val customApiConfigs: List<CustomApiConfig> = DEFAULT_CUSTOM_API_CONFIGS,
     val personas: List<Persona> = DEFAULT_PERSONAS,
     val activePersonaId: Uuid? = null,             // 当前激活的 Persona
     val authorNote: String = "",                    // Author's Note 内容
