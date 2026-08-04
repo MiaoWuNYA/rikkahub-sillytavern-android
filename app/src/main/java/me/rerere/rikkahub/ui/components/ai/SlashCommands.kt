@@ -98,7 +98,7 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
     ),
     SlashCommand(
         name = "persona",
-        description = "切换用户人设(Persona)：不填参数查看当前，off 关闭",
+        description = "切换用户人设(Persona)",
         argumentHint = "[人设名]",
         content = "",
         filePath = "builtin",
