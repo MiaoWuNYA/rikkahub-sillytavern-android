@@ -1,6 +1,8 @@
 package me.rerere.rikkahub.ui.pages.chat
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -114,7 +116,10 @@ fun GroupChatListPage() {
             onDismissRequest = { showCreate = false },
             title = { Text("新建群聊") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     OutlinedTextField(
                         value = name, onValueChange = { name = it },
                         label = { Text("群名") }, singleLine = true,
@@ -184,12 +189,11 @@ fun GroupChatListPage() {
                             Checkbox(
                                 checked = a.id in selectedIds,
                                 onCheckedChange = { checked ->
-                                    scope.launch {
-                                        selectedIds = if (checked) selectedIds + a.id
-                                        else selectedIds - a.id
-                                    }
+                                    selectedIds = if (checked) selectedIds + a.id
+                                    else selectedIds - a.id
                                 },
                             )
+                            Spacer(Modifier.width(8.dp))
                             Text(a.name.ifBlank { "(未命名)" }, style = MaterialTheme.typography.bodyMedium)
                         }
                     }
