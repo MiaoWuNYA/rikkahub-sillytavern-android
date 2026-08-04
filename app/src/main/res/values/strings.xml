@@ -1211,6 +1211,7 @@
   <string name="prompt_page_use_group_scoring_desc">Pick group winner by matched keyword count</string>
   <string name="prompt_page_group_weight_preview">Weight: %d</string>
   <string name="prompt_page_constant_preview">Constant</string>
+  <string name="prompt_page_trigger_preview">Trigger</string>
   <string name="persona_page_empty">No personas yet</string>
   <string name="persona_page_empty_hint">Create a persona and inject it into the chat so AI knows your identity and style</string>
   <string name="group_member_subtitle">%1$d members · %2$s</string>

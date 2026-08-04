@@ -1299,6 +1299,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="prompt_page_use_group_scoring_desc">同组按匹配关键词数选胜者</string>
   <string name="prompt_page_group_weight_preview">权重(Weight):%d</string>
   <string name="prompt_page_constant_preview">常驻(Const)</string>
+  <string name="prompt_page_trigger_preview">触发(Trigger)</string>
   <string name="persona_page_empty">还没有用户人设</string>
   <string name="persona_page_empty_hint">创建一个用户人设，注入到对话中让 AI 了解你的身份与风格</string>
   <string name="group_member_subtitle">%1$d 位成员 · %2$s</string>

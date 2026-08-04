@@ -1331,7 +1331,7 @@ private fun CollapsibleEntryCard(
                                     color = MaterialTheme.colorScheme.primary,
                                 )
                                 Text(
-                                    if (entry.constant) stringResource(R.string.prompt_page_constant_active) else "触发(Trigger)",
+                                    if (entry.constant) stringResource(R.string.prompt_page_constant_active) else stringResource(R.string.prompt_page_trigger_preview),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                 )
