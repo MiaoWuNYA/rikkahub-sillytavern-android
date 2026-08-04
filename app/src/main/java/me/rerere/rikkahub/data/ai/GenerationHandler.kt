@@ -358,7 +358,7 @@ class GenerationHandler(
                                     settings = settings,
                                     conversationId = conversationId,
                                     workspaceCwd = workspaceCwd,
-                                ).filter { it.role != MessageRole.SYSTEM }
+                                )
                             )
                         )
                     },
@@ -400,7 +400,7 @@ class GenerationHandler(
                     finishedAt = Clock.System.now()
                         .toLocalDateTime(TimeZone.currentSystemDefault())
                 )
-                emit(GenerationChunk.Messages(messages.filter { it.role != MessageRole.SYSTEM }))
+                emit(GenerationChunk.Messages(messages))
 
                 val tools = messages.last().getTools().filter { !it.isExecuted }
                 if (tools.isEmpty()) {
@@ -452,7 +452,7 @@ class GenerationHandler(
                         }
                     }
                     messages = messages.dropLast(1) + lastMessage.copy(parts = updatedParts)
-                    emit(GenerationChunk.Messages(messages.filter { it.role != MessageRole.SYSTEM }))
+                    emit(GenerationChunk.Messages(messages))
                 }
 
                 // 3. Guardrail: same tool called N+ times in one batch → break
@@ -534,7 +534,7 @@ class GenerationHandler(
                         settings = settings,
                         conversationId = conversationId,
                         workspaceCwd = workspaceCwd,
-                    ).filter { it.role != MessageRole.SYSTEM }
+                    )
                 )
             )
         }
