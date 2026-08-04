@@ -178,11 +178,12 @@ private fun AssistantPromptContent(
                     maxLines = 10
                 )
 
-                Column {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
                         text = stringResource(R.string.assistant_page_available_variables),
                         style = MaterialTheme.typography.labelSmall
                     )
+                    // 基础占位符（旧版简单替换）
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(2.dp),
                         verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -195,6 +196,66 @@ private fun AssistantPromptContent(
                             ) {
                                 info.displayName()
                                 Text(": {{$k}}")
+                            }
+                        }
+                    }
+                    // 宏引擎 2.0：变量 / 条件 / 随机工具 / 时间
+                    listOf(
+                        "变量" to listOf(
+                            "setvar::变量名::值" to "设置本对话变量",
+                            "getvar::变量名" to "读取本对话变量",
+                            "incvar::变量名" to "变量+1",
+                            "decvar::变量名" to "变量-1",
+                            "addvar::变量名::值" to "变量加值",
+                            "hasvar::变量名" to "判断变量是否存在",
+                            "flushvar::变量名" to "删除变量",
+                            "setglobalvar::变量名::值" to "设置全局变量",
+                            ".变量名" to "变量简写读取",
+                            ".变量名++" to "变量简写自增",
+                        ),
+                        "条件" to listOf(
+                            "if::条件::内容" to "条件分支（可用{{else}}）",
+                            "// 注释" to "注释（不发送）",
+                        ),
+                        "随机与工具" to listOf(
+                            "pick::A::B::C" to "稳定随机选一",
+                            "roll::2d6+1" to "掷骰子",
+                            "space::N" to "N个空格",
+                            "newline::N" to "N个换行",
+                            "noop" to "空",
+                            "reverse::文本" to "反转文本",
+                            "allChatRange" to "消息范围",
+                            "groupNotMuted" to "群聊未禁言成员",
+                            "notChar" to "除自己外成员",
+                            "isMobile" to "是否手机端",
+                            "lastGenerationType" to "上次生成类型",
+                            "maxResponse" to "最大回复token",
+                            "greeting::N" to "第N条开场白",
+                        ),
+                        "时间" to listOf(
+                            "time::UTC+8" to "指定时区时间",
+                            "datetimeformat::yyyy-MM-dd HH:mm" to "自定义时间格式",
+                            "timeDiff::时间A::时间B" to "时间差",
+                        ),
+                    ).forEach { (groupName, macros) ->
+                        Text(
+                            text = groupName,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            macros.forEach { (key, desc) ->
+                                Tag(
+                                    onClick = {
+                                        systemPromptValue.insertAtCursor("{{$key}}")
+                                    }
+                                ) {
+                                    Text(desc)
+                                    Text(": {{$key}}")
+                                }
                             }
                         }
                     }
