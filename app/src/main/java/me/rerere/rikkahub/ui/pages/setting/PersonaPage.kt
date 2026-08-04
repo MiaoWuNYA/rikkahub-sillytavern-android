@@ -181,10 +181,10 @@ fun PersonaPage() {
                                     )
                                     if (persona.description.isNotBlank()) {
                                         Text(
-                                            text = persona.description.take(160),
+                                            text = persona.description.take(80),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            maxLines = 2,
+                                            maxLines = 1,
                                         )
                                     }
                                     if (persona.lockedCharacterIds.isNotEmpty()) {
@@ -385,20 +385,20 @@ private fun PersonaEditPage(
                             modifier = Modifier.fillMaxWidth(),
                         )
                         OutlinedTextField(
-                            value = desc,
-                            onValueChange = { desc = it },
-                            label = { Text("描述（外表/背景）") },
-                            minLines = 2,
-                            maxLines = 5,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        OutlinedTextField(
                             value = title,
                             onValueChange = { title = it },
                             label = { Text("短标题（展示用，可选）") },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                             supportingText = { Text("不填则使用名称") },
+                        )
+                        OutlinedTextField(
+                            value = desc,
+                            onValueChange = { desc = it },
+                            label = { Text("描述（外表/背景）") },
+                            minLines = 2,
+                            maxLines = 5,
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
