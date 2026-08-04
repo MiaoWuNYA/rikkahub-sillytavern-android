@@ -111,6 +111,7 @@ import me.rerere.rikkahub.data.model.SelectiveLogic
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.ExportDialog
 import me.rerere.rikkahub.ui.components.ui.CardGroup
+import me.rerere.rikkahub.ui.components.ui.IntTextField
 import me.rerere.rikkahub.ui.components.ui.FormItem
 import me.rerere.rikkahub.ui.components.ui.Select
 import me.rerere.rikkahub.ui.components.ui.Tag
@@ -480,11 +481,9 @@ private fun ModeInjectionEditSheet(
                     }
                 )
 
-                OutlinedTextField(
-                    value = injection.priority.toString(),
-                    onValueChange = {
-                        it.toIntOrNull()?.let { p -> onEdit(injection.copy(priority = p)) }
-                    },
+                IntTextField(
+                    value = injection.priority,
+                    onValueChange = { onEdit(injection.copy(priority = it)) },
                     label = { Text(stringResource(R.string.prompt_page_priority_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -500,11 +499,9 @@ private fun ModeInjectionEditSheet(
                 )
 
                 AnimatedVisibility(visible = injection.position == InjectionPosition.AT_DEPTH) {
-                    OutlinedTextField(
-                        value = injection.injectDepth.toString(),
-                        onValueChange = {
-                            it.toIntOrNull()?.let { d -> onEdit(injection.copy(injectDepth = d)) }
-                        },
+                    IntTextField(
+                        value = injection.injectDepth,
+                        onValueChange = { onEdit(injection.copy(injectDepth = it)) },
                         label = { Text(stringResource(R.string.prompt_page_inject_depth)) },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -690,7 +687,7 @@ private fun LorebookTab(
                         headlineContent = { Text(stringResource(R.string.prompt_page_world_info_budget_title)) },
                         supportingContent = { Text(stringResource(R.string.prompt_page_world_info_budget_desc)) },
                         trailingContent = {
-                            NumberSettingField(
+                            IntTextField(
                                 value = settings.worldInfoBudget,
                                 onCommit = { onSettingsUpdate(settings.copy(worldInfoBudget = it.coerceIn(0, 100000))) },
                             )
@@ -700,7 +697,7 @@ private fun LorebookTab(
                         headlineContent = { Text(stringResource(R.string.prompt_page_world_info_min_activations_title)) },
                         supportingContent = { Text(stringResource(R.string.prompt_page_world_info_min_activations_desc)) },
                         trailingContent = {
-                            NumberSettingField(
+                            IntTextField(
                                 value = settings.worldInfoMinActivations,
                                 onCommit = { onSettingsUpdate(settings.copy(worldInfoMinActivations = it.coerceIn(0, 50))) },
                             )
@@ -721,7 +718,7 @@ private fun LorebookTab(
                             headlineContent = { Text(stringResource(R.string.prompt_page_world_info_max_recursion_title)) },
                             supportingContent = { Text(stringResource(R.string.prompt_page_world_info_max_recursion_desc)) },
                             trailingContent = {
-                                NumberSettingField(
+                                IntTextField(
                                     value = settings.worldInfoMaxRecursionSteps,
                                     onCommit = { onSettingsUpdate(settings.copy(worldInfoMaxRecursionSteps = it.coerceIn(0, 20))) },
                                 )
@@ -1555,9 +1552,9 @@ private fun GroupSettingsDialog(
                 )
 
                 // 优先级
-                OutlinedTextField(
-                    value = edited.priority.toString(),
-                    onValueChange = { it.toIntOrNull()?.let { p -> edited = edited.copy(priority = p) } },
+                IntTextField(
+                    value = edited.priority,
+                    onValueChange = { edited = edited.copy(priority = it) },
                     label = { Text(stringResource(R.string.prompt_page_priority_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -1571,9 +1568,9 @@ private fun GroupSettingsDialog(
                 )
 
                 // 深度 (depth) — 始终显示
-                OutlinedTextField(
-                    value = edited.injectDepth.toString(),
-                    onValueChange = { it.toIntOrNull()?.let { d -> edited = edited.copy(injectDepth = d) } },
+                IntTextField(
+                    value = edited.injectDepth,
+                    onValueChange = { edited = edited.copy(injectDepth = it) },
                     label = { Text("深度 (depth)") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -1597,17 +1594,17 @@ private fun GroupSettingsDialog(
                     supportingText = { Text("仅保留数据，暂不执行") },
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = edited.displayIndex.toString(),
-                        onValueChange = { it.toIntOrNull()?.let { v -> edited = edited.copy(displayIndex = v) } },
+                    IntTextField(
+                        value = edited.displayIndex,
+                        onValueChange = { edited = edited.copy(displayIndex = it) },
                         label = { Text("显示序号(Display Index)") },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                     )
-                    OutlinedTextField(
-                        value = edited.displayPosition.toString(),
-                        onValueChange = { it.toIntOrNull()?.let { v -> edited = edited.copy(displayPosition = v) } },
+                    IntTextField(
+                        value = edited.displayPosition,
+                        onValueChange = { edited = edited.copy(displayPosition = it) },
                         label = { Text("显示位置(Display Position)") },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -1740,9 +1737,9 @@ private fun GroupSettingsDialog(
 
                 // 粘性 + 冷却
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = edited.sticky.toString(),
-                        onValueChange = { it.toIntOrNull()?.let { s -> edited = edited.copy(sticky = s) } },
+                    IntTextField(
+                        value = edited.sticky,
+                        onValueChange = { edited = edited.copy(sticky = it) },
                         label = { Text(stringResource(R.string.prompt_page_sticky)) },
                         supportingText = { Text(stringResource(R.string.prompt_page_sticky_desc)) },
                         suffix = { Text("轮", style = MaterialTheme.typography.bodySmall) },
@@ -1751,9 +1748,9 @@ private fun GroupSettingsDialog(
                         singleLine = true,
                         textStyle = MaterialTheme.typography.bodySmall,
                     )
-                    OutlinedTextField(
-                        value = edited.cooldown.toString(),
-                        onValueChange = { it.toIntOrNull()?.let { c -> edited = edited.copy(cooldown = c) } },
+                    IntTextField(
+                        value = edited.cooldown,
+                        onValueChange = { edited = edited.copy(cooldown = it) },
                         label = { Text(stringResource(R.string.prompt_page_cooldown)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -1785,9 +1782,9 @@ private fun GroupSettingsDialog(
 
                 // 组权重 + 覆盖
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = edited.groupWeight.toString(),
-                        onValueChange = { it.toIntOrNull()?.let { w -> edited = edited.copy(groupWeight = w) } },
+                    IntTextField(
+                        value = edited.groupWeight,
+                        onValueChange = { edited = edited.copy(groupWeight = it) },
                         label = { Text(stringResource(R.string.prompt_page_group_weight)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -1818,9 +1815,9 @@ private fun GroupSettingsDialog(
                 )
 
                 // 扫描深度
-                OutlinedTextField(
-                    value = edited.scanDepth.toString(),
-                    onValueChange = { it.toIntOrNull()?.let { d -> edited = edited.copy(scanDepth = d) } },
+                IntTextField(
+                    value = edited.scanDepth,
+                    onValueChange = { edited = edited.copy(scanDepth = it) },
                     label = { Text(stringResource(R.string.prompt_page_scan_depth)) },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -1841,30 +1838,6 @@ private fun GroupSettingsDialog(
 }
 
 @OptIn(ExperimentalLayoutApi::class)
-/**
- * 数字设置输入框：允许自由编辑（含清空），仅在解析成功时提交；
- * 修复原实现 onValueChange 只接受纯数字导致"删不掉字符"的问题。
- */
-@Composable
-private fun NumberSettingField(
-    value: Int,
-    onCommit: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var text by remember(value) { mutableStateOf(value.toString()) }
-    OutlinedTextField(
-        value = text,
-        onValueChange = { new ->
-            text = new
-            new.toIntOrNull()?.let(onCommit)
-        },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        modifier = modifier.width(90.dp),
-        textStyle = MaterialTheme.typography.bodyMedium,
-    )
-}
-
 @Composable
 private fun RegexInjectionEditDialog(
     entry: PromptInjection.RegexInjection,
@@ -1902,11 +1875,9 @@ private fun RegexInjectionEditDialog(
                     }
                 )
 
-                OutlinedTextField(
-                    value = entry.priority.toString(),
-                    onValueChange = {
-                        it.toIntOrNull()?.let { p -> onEdit(entry.copy(priority = p)) }
-                    },
+                IntTextField(
+                    value = entry.priority,
+                    onValueChange = { onEdit(entry.copy(priority = it)) },
                     label = { Text(stringResource(R.string.prompt_page_priority_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -1922,11 +1893,9 @@ private fun RegexInjectionEditDialog(
                 )
 
                 // 深度 (depth) — 始终显示
-                OutlinedTextField(
-                    value = entry.injectDepth.toString(),
-                    onValueChange = {
-                        it.toIntOrNull()?.let { d -> onEdit(entry.copy(injectDepth = d)) }
-                    },
+                IntTextField(
+                    value = entry.injectDepth,
+                    onValueChange = { onEdit(entry.copy(injectDepth = it)) },
                     label = { Text("深度 (depth)") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -2040,19 +2009,13 @@ private fun RegexInjectionEditDialog(
                     }
                 )
                 AnimatedVisibility(visible = entry.delayUntilRecursion > 0) {
-                    OutlinedTextField(
-                        value = entry.delayUntilRecursion.toString(),
-                        onValueChange = { v ->
-                            val level = v.toIntOrNull()
-                            if (level != null && level > 0) {
-                                onEdit(entry.copy(delayUntilRecursion = level))
-                            }
-                        },
+                    IntTextField(
+                        value = entry.delayUntilRecursion,
+                        onValueChange = { onEdit(entry.copy(delayUntilRecursion = it)) },
+                        validate = { it > 0 },
                         label = { Text(stringResource(R.string.prompt_page_delay_until_recursion_level)) },
                         supportingText = { Text(stringResource(R.string.prompt_page_delay_until_recursion_level_desc)) },
                         modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
                     )
                 }
 
@@ -2162,9 +2125,9 @@ private fun RegexInjectionEditDialog(
                 )
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = entry.groupWeight.toString(),
-                        onValueChange = { it.toIntOrNull()?.let { w -> onEdit(entry.copy(groupWeight = w)) } },
+                    IntTextField(
+                        value = entry.groupWeight,
+                        onValueChange = { onEdit(entry.copy(groupWeight = it)) },
                         label = { Text(stringResource(R.string.prompt_page_group_weight)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -2211,9 +2174,9 @@ private fun RegexInjectionEditDialog(
 
                 // 粘性 + 冷却
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = entry.sticky.toString(),
-                        onValueChange = { it.toIntOrNull()?.let { s -> onEdit(entry.copy(sticky = s)) } },
+                    IntTextField(
+                        value = entry.sticky,
+                        onValueChange = { onEdit(entry.copy(sticky = it)) },
                         label = { Text(stringResource(R.string.prompt_page_sticky)) },
                         supportingText = { Text(stringResource(R.string.prompt_page_sticky_desc)) },
                         suffix = { Text("轮", style = MaterialTheme.typography.bodySmall) },
@@ -2222,9 +2185,9 @@ private fun RegexInjectionEditDialog(
                         singleLine = true,
                         textStyle = MaterialTheme.typography.bodySmall,
                     )
-                    OutlinedTextField(
-                        value = entry.cooldown.toString(),
-                        onValueChange = { it.toIntOrNull()?.let { c -> onEdit(entry.copy(cooldown = c)) } },
+                    IntTextField(
+                        value = entry.cooldown,
+                        onValueChange = { onEdit(entry.copy(cooldown = it)) },
                         label = { Text(stringResource(R.string.prompt_page_cooldown)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -2232,9 +2195,9 @@ private fun RegexInjectionEditDialog(
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = entry.delay.toString(),
-                        onValueChange = { it.toIntOrNull()?.let { d -> onEdit(entry.copy(delay = d)) } },
+                    IntTextField(
+                        value = entry.delay,
+                        onValueChange = { onEdit(entry.copy(delay = it)) },
                         label = { Text("延迟(Delay)") },
                         supportingText = { Text("N轮后才开始检测触发") },
                         modifier = Modifier.weight(1f),
@@ -2255,11 +2218,9 @@ private fun RegexInjectionEditDialog(
                     }
                 )
 
-                OutlinedTextField(
-                    value = entry.scanDepth.toString(),
-                    onValueChange = {
-                        it.toIntOrNull()?.let { d -> onEdit(entry.copy(scanDepth = d)) }
-                    },
+                IntTextField(
+                    value = entry.scanDepth,
+                    onValueChange = { onEdit(entry.copy(scanDepth = it)) },
                     label = { Text(stringResource(R.string.prompt_page_scan_depth)) },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)

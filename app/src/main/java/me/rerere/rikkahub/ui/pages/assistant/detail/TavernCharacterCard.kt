@@ -46,6 +46,7 @@ import me.rerere.rikkahub.data.model.TavernBookEntry
 import me.rerere.rikkahub.data.model.TavernEmbeddedBook
 import me.rerere.rikkahub.ui.components.ui.FormItem
 import me.rerere.rikkahub.ui.components.ui.CardGroup
+import me.rerere.rikkahub.ui.components.ui.IntTextField
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.Book01
@@ -608,85 +609,52 @@ private fun EmbeddedBookSummary(
             ) {
                 // 全局世界书激活设置（与外置世界书页同一份全局数据，天然同步）
                 if (settings != null && onSettingsUpdate != null) {
-                    Card(
-                        shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
-                        modifier = Modifier.fillMaxWidth(),
+                    CardGroup(
+                        title = { Text("全局世界书激活设置（作用于所有世界书）") },
                     ) {
-                        Column(
-                            modifier = Modifier.padding(10.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            Text(
-                                "全局世界书激活设置（作用于所有世界书）",
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                            )
-                            FormItem(
-                                label = { Text("预算(Token Budget, 0=不限)", style = MaterialTheme.typography.labelSmall) },
-                                tail = {
-                                    OutlinedTextField(
-                                        value = settings.worldInfoBudget.toString(),
-                                        onValueChange = { v ->
-                                            v.toIntOrNull()?.let {
-                                                onSettingsUpdate(settings.copy(worldInfoBudget = it.coerceIn(0, 100000)))
-                                            }
-                                        },
-                                        singleLine = true,
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        modifier = Modifier.width(110.dp),
-                                        textStyle = MaterialTheme.typography.bodyMedium,
-                                    )
-                                },
-                            )
-                            FormItem(
-                                label = { Text("最少激活(Minimum Activations, 0=关)", style = MaterialTheme.typography.labelSmall) },
-                                tail = {
-                                    OutlinedTextField(
-                                        value = settings.worldInfoMinActivations.toString(),
-                                        onValueChange = { v ->
-                                            v.toIntOrNull()?.let {
-                                                onSettingsUpdate(settings.copy(worldInfoMinActivations = it.coerceIn(0, 50)))
-                                            }
-                                        },
-                                        singleLine = true,
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        modifier = Modifier.width(84.dp),
-                                        textStyle = MaterialTheme.typography.bodyMedium,
-                                    )
-                                },
-                            )
-                            FormItem(
-                                label = { Text("递归扫描(Recursive Scanning)", style = MaterialTheme.typography.labelSmall) },
-                                tail = {
-                                    Switch(
-                                        checked = settings.worldInfoRecursive,
-                                        onCheckedChange = {
-                                            onSettingsUpdate(settings.copy(worldInfoRecursive = it))
-                                        },
-                                    )
-                                },
-                            )
-                            if (settings.worldInfoRecursive) {
-                                FormItem(
-                                    label = { Text("最大递归层数(Max Recursion Steps, 0=不限)", style = MaterialTheme.typography.labelSmall) },
-                                    tail = {
-                                        OutlinedTextField(
-                                            value = settings.worldInfoMaxRecursionSteps.toString(),
-                                            onValueChange = { v ->
-                                                v.toIntOrNull()?.let {
-                                                    onSettingsUpdate(
-                                                        settings.copy(worldInfoMaxRecursionSteps = it.coerceIn(0, 20))
-                                                    )
-                                                }
-                                            },
-                                            singleLine = true,
-                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                            modifier = Modifier.width(84.dp),
-                                            textStyle = MaterialTheme.typography.bodyMedium,
-                                        )
-                                    },
+                        item(
+                            headlineContent = { Text("预算(Token Budget)") },
+                            supportingContent = { Text("0=不限") },
+                            trailingContent = {
+                                IntTextField(
+                                    value = settings.worldInfoBudget,
+                                    onValueChange = { onSettingsUpdate(settings.copy(worldInfoBudget = it.coerceIn(0, 100000))) },
+                                    modifier = Modifier.width(90.dp),
                                 )
-                            }
+                            },
+                        )
+                        item(
+                            headlineContent = { Text("最少激活(Minimum Activations)") },
+                            supportingContent = { Text("0=关") },
+                            trailingContent = {
+                                IntTextField(
+                                    value = settings.worldInfoMinActivations,
+                                    onValueChange = { onSettingsUpdate(settings.copy(worldInfoMinActivations = it.coerceIn(0, 50))) },
+                                    modifier = Modifier.width(84.dp),
+                                )
+                            },
+                        )
+                        item(
+                            headlineContent = { Text("递归扫描(Recursive Scanning)") },
+                            trailingContent = {
+                                Switch(
+                                    checked = settings.worldInfoRecursive,
+                                    onCheckedChange = { onSettingsUpdate(settings.copy(worldInfoRecursive = it)) },
+                                )
+                            },
+                        )
+                        if (settings.worldInfoRecursive) {
+                            item(
+                                headlineContent = { Text("最大递归层数(Max Recursion Steps)") },
+                                supportingContent = { Text("0=不限") },
+                                trailingContent = {
+                                    IntTextField(
+                                        value = settings.worldInfoMaxRecursionSteps,
+                                        onValueChange = { onSettingsUpdate(settings.copy(worldInfoMaxRecursionSteps = it.coerceIn(0, 20))) },
+                                        modifier = Modifier.width(84.dp),
+                                    )
+                                },
+                            )
                         }
                     }
                 }
@@ -1049,15 +1017,12 @@ private fun EmbeddedGroupSettingsDialog(
                 )
             }
             if (delayUntilRecursion > 0) {
-                OutlinedTextField(
-                    value = delayUntilRecursion.toString(),
-                    onValueChange = { v ->
-                        val level = v.toIntOrNull()
-                        if (level != null && level > 0) delayUntilRecursion = level
-                    },
+                IntTextField(
+                    value = delayUntilRecursion,
+                    onValueChange = { delayUntilRecursion = it },
+                    validate = { it > 0 },
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = MaterialTheme.typography.bodySmall,
-                    singleLine = true,
                     label = { Text("递归层级(Recursion Level)") },
                 )
             }
@@ -1555,15 +1520,12 @@ private fun EntryEditor(
                     )
                 }
                 if (delayUntilRecursion > 0) {
-                    OutlinedTextField(
-                        value = delayUntilRecursion.toString(),
-                        onValueChange = { v ->
-                            val level = v.toIntOrNull()
-                            if (level != null && level > 0) delayUntilRecursion = level
-                        },
+                    IntTextField(
+                        value = delayUntilRecursion,
+                        onValueChange = { delayUntilRecursion = it },
+                        validate = { it > 0 },
                         modifier = Modifier.fillMaxWidth(),
                         textStyle = MaterialTheme.typography.bodySmall,
-                        singleLine = true,
                         label = { Text("递归层级(Recursion Level)") },
                     )
                 }
