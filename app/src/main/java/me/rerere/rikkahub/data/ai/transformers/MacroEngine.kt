@@ -245,7 +245,13 @@ class MacroEngine(
 
     private fun evaluate(nodes: List<Node>, state: EvalState, depth: Int): String {
         if (depth > MAX_DEPTH) {
-            return nodes.joinToString("") { n -> if (n is Node.Text) n.text else n.raw }
+            // sealed 分支用 when 穷尽匹配，避免 else 分支无法智能转换出 Macro.raw
+            return nodes.joinToString("") { n ->
+                when (n) {
+                    is Node.Text -> n.text
+                    is Node.Macro -> n.raw
+                }
+            }
         }
         val sb = StringBuilder()
         for (node in nodes) {
