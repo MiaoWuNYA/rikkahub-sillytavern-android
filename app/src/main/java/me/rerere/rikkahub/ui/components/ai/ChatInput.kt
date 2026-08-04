@@ -718,7 +718,7 @@ private fun TextInputRow(
                                 onClick = {
                                     if (cmd.builtinKind != null) {
                                         if (cmd.argumentHint.isBlank()) {
-                                            // 无参数命令：点击直接执行（如 /trigger /help），不污染聊天
+                                            // 无参数命令（argumentHint 为空）：点击直接执行（如 /trigger /help），不污染聊天
                                             handleBuiltinSlash(
                                                 cmd = cmd,
                                                 args = slashArgs,

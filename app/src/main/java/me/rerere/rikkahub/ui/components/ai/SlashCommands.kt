@@ -10,7 +10,9 @@ data class SlashCommand(
     val name: String,                    // 命令名，如 "code-review"
     val description: String,             // 简短描述
     val allowedTools: List<String> = emptyList(), // 允许的工具（内置命令默认空）
-    val argumentHint: String = "",       // 参数提示，如 "[project-name]"
+    // 参数提示，如 "[文本]" / "[key]"。约定：空 = 点击建议时直接执行；
+    // 非空 = 点击建议时填入输入框，等用户补参数后按发送执行（需要参数的命令必须填，漏填会被当无参数直接执行）
+    val argumentHint: String = "",
     val disableModelInvocation: Boolean = false, // 纯脚本不调模型
     val content: String,                 // 指令正文
     val filePath: String,                // 源文件路径，如 "commands/code-review.md"
