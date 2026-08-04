@@ -807,9 +807,8 @@ class ChatService(
                 },
                 outputTransformers = outputTransformers,
                 tools = buildList {
-                    val skillDirs = assistant.enabledSkills.mapNotNull { skillManager.getSkillDir(it)?.absolutePath }
                     if (assistant.localTools.contains(LocalToolOption.FileTools)) {
-                        addAll(createFileTools(skillDirs = skillDirs))
+                        addAll(createFileTools())
                     }
                     if (assistant.enableWebSearch) {
                         addAll(createSearchTools(settings))
@@ -825,9 +824,11 @@ class ChatService(
                     if (assistant.localTools.contains(LocalToolOption.PythonEngine)) {
                         add(createPythonTool(context, assistant.toolExecTimeout))
                     }
-                    // 命理工具: 始终可用
-                    add(createMingliTool(context))
-                    add(createMingliGuideTool(context))
+                    // 命理工具: 一个开关控制两个工具（mingli + mingli_guide）
+                    if (assistant.enableMingliTools) {
+                        add(createMingliTool(context))
+                        add(createMingliGuideTool(context))
+                    }
                     if (assistant.localTools.contains(LocalToolOption.DatabaseQuery)) {
                         add(createDatabaseQueryTool(database))
                     }
@@ -848,10 +849,28 @@ class ChatService(
                             )
                         )
                     }
-                    mcpManager.getAllAvailableTools().forEach { (serverId, _, tool) ->
+                    // 对齐上游：MCP 工具名带服务器名前缀，且校验服务器名（仅字母数字），非法名直接报错返回
+                    mcpManager.getAllAvailableTools().also { allTools ->
+                        val invalidNames = allTools
+                            .map { it.second }
+                            .distinct()
+                            .filter { name -> name.isEmpty() || !name.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' } }
+                        if (invalidNames.isNotEmpty()) {
+                            addError(
+                                error = IllegalStateException(
+                                    context.getString(
+                                        R.string.error_mcp_invalid_server_name,
+                                        invalidNames.joinToString(", ")
+                                    )
+                                ),
+                                conversationId = conversationId,
+                            )
+                            return
+                        }
+                    }.forEach { (serverId, serverName, tool) ->
                         add(
                             Tool(
-                                name = "mcp__" + tool.name,
+                                name = "mcp__${serverName}__${tool.name}",
                                 description = tool.description ?: "",
                                 parameters = { tool.inputSchema },
                                 needsApproval = { tool.needsApproval },
@@ -1127,8 +1146,6 @@ class ChatService(
         val messages = history + UIMessage.user(prompt)
         var result = ""
 
-        val skillDirs = assistant.enabledSkills.mapNotNull { skillManager.getSkillDir(it)?.absolutePath }
-
         generationHandler.generateText(
             settings = settings,
             model = model,
@@ -1142,7 +1159,7 @@ class ChatService(
             },
             tools = buildList {
                 if (assistant.localTools.contains(LocalToolOption.FileTools)) {
-                    addAll(createFileTools(skillDirs = skillDirs))
+                    addAll(createFileTools())
                 }
                 if (assistant.enableWebSearch) {
                     addAll(createSearchTools(settings))
@@ -1171,10 +1188,28 @@ class ChatService(
                         )
                     )
                 }
-                mcpManager.getAllAvailableTools().forEach { (serverId, _, tool) ->
+                // 对齐上游：MCP 工具名带服务器名前缀，且校验服务器名（仅字母数字），非法名直接报错返回
+                mcpManager.getAllAvailableTools().also { allTools ->
+                    val invalidNames = allTools
+                        .map { it.second }
+                        .distinct()
+                        .filter { name -> name.isEmpty() || !name.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' } }
+                    if (invalidNames.isNotEmpty()) {
+                        addError(
+                            error = IllegalStateException(
+                                context.getString(
+                                    R.string.error_mcp_invalid_server_name,
+                                    invalidNames.joinToString(", ")
+                                )
+                            ),
+                            conversationId = conversationId,
+                        )
+                        return
+                    }
+                }.forEach { (serverId, serverName, tool) ->
                     add(
                         Tool(
-                            name = "mcp__" + tool.name,
+                            name = "mcp__${serverName}__${tool.name}",
                             description = tool.description ?: "",
                             parameters = { tool.inputSchema },
                             needsApproval = { tool.needsApproval },

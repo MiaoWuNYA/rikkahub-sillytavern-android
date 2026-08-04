@@ -417,6 +417,16 @@ private fun AssistantLocalToolContent(
                 }
             )
             item(
+                headlineContent = { Text("命理工具(Mingli Tools)") },
+                supportingContent = { Text("启用命理排盘工具（mingli + mingli_guide）") },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.enableMingliTools,
+                        onCheckedChange = { onUpdate(assistant.copy(enableMingliTools = it)) }
+                    )
+                }
+            )
+            item(
                 headlineContent = { Text("Shell 命令") },
                 supportingContent = { Text("允许 AI 执行 shell 命令") },
                 trailingContent = {

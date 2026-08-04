@@ -9,20 +9,12 @@ import java.io.File
 /**
  * 文件操作工具 — 统一 file 工具，通过 action 参数选择操作。
  */
-fun createFileTools(workspaceDir: String = "/storage/emulated/0/Download", skillDirs: List<String> = emptyList()): List<Tool> {
+fun createFileTools(workspaceDir: String = "/storage/emulated/0/Download"): List<Tool> {
     val defaultDir = workspaceDir
 
     fun resolveFile(path: String): File {
         val f = File(path)
         if (f.exists() || path.startsWith("/")) return f
-        for (skillDir in skillDirs) {
-            val candidate = File(skillDir, path).normalize()
-            if (candidate.exists()) {
-                val canonicalSkill = File(skillDir).canonicalPath
-                val canonicalCandidate = candidate.canonicalPath
-                if (canonicalCandidate.startsWith(canonicalSkill)) return candidate
-            }
-        }
         val fallback = File(defaultDir, path).normalize()
         val canonicalDownload = File(defaultDir).canonicalPath
         val canonicalFallback = fallback.canonicalPath
@@ -33,18 +25,6 @@ fun createFileTools(workspaceDir: String = "/storage/emulated/0/Download", skill
     fun resolveDestPath(path: String): File {
         val f = File(path)
         if (path.startsWith("/")) return f
-        for (skillDir in skillDirs) {
-            val candidate = File(skillDir, path).normalize()
-            val canonicalSkill = File(skillDir).canonicalPath
-            val canonicalCandidate = candidate.canonicalPath
-            if (candidate.exists() && canonicalCandidate.startsWith(canonicalSkill)) return candidate
-        }
-        if (skillDirs.isNotEmpty()) {
-            val candidate = File(skillDirs.first(), path).normalize()
-            val canonicalSkill = File(skillDirs.first()).canonicalPath
-            val canonicalCandidate = candidate.canonicalPath
-            if (canonicalCandidate.startsWith(canonicalSkill)) return candidate
-        }
         val fallback = File(defaultDir, path).normalize()
         val canonicalDownload = File(defaultDir).canonicalPath
         val canonicalFallback = fallback.canonicalPath
@@ -83,9 +63,6 @@ fun createFileTools(workspaceDir: String = "/storage/emulated/0/Download", skill
                 appendLine("- file_pattern/use_regex/context: Advanced search options")
                 appendLine()
                 appendLine("Absolute paths work as-is. Relative paths resolve to ${defaultDir}.")
-                if (skillDirs.isNotEmpty()) {
-                    appendLine("Skills dir: ${skillDirs.joinToString()}. For saving new skills, use this path.")
-                }
             },
             parameters = {
                 InputSchema.Obj(
