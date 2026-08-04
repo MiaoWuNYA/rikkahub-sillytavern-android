@@ -170,8 +170,8 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
     ),
     SlashCommand(
         name = "impersonate",
-        description = "以角色身份生成回复(Impersonate)：AI 以角色身份新写一条，可加开头文本由 AI 接写",
-        argumentHint = "[开头文本，可选]",
+        description = "生成你的发言草稿(Impersonate)：AI 以你的视角拟下一条发言，填入输入框待发送",
+        argumentHint = "[补充说明，可选]",
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.IMPERSONATE,

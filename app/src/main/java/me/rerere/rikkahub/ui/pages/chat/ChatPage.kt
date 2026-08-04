@@ -543,7 +543,10 @@ private fun ChatPageContent(
                         if (currentChatModel == null) {
                             toaster.show("请先选择模型", type = ToastType.Error)
                         } else {
-                            vm.impersonateGeneration(prefill)
+                            vm.impersonateDraft(prefill) { draft ->
+                                inputState.setMessageText(draft)
+                                toaster.show("已生成你的发言草稿，确认后发送")
+                            }
                         }
                     },
                     onSlashPrompt = {

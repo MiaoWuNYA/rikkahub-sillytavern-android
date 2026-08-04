@@ -795,20 +795,14 @@ class ChatService(
         session.setJob(job)
     }
 
-    // ---- 以角色身份生成回复（官方 /impersonate） ----
+    // ---- 生成你的发言草稿（官方 /impersonate） ----
 
     /**
-     * 官方 /impersonate：以当前角色身份生成一条回复。
-     * prefill 非空时，把该文本作为角色回复的开头（quiet_prompt，官方 quietToLoud 语义），
-     * 模型从它后面继续写，最终合并为一条助手消息；prefill 为空时直接生成一条新回复。
+     * 官方 /impersonate：让 AI 站在 {{user}} 的视角生成“你下一条要说的话”，
+     * 结果通过 onDraft 交回（本地填入输入框），不保存进聊天、不自动发送。
+     * extraInstruction 作为补充系统提示词（官方 quiet_prompt）。
      */
-    fun impersonateGeneration(conversationId: Uuid, prefill: String?) {
-        val trimmed = prefill?.trim().orEmpty()
-        if (trimmed.isBlank()) {
-            triggerGeneration(conversationId, GenerationType.IMPERSONATE)
-            return
-        }
-
+    fun impersonateDraft(conversationId: Uuid, extraInstruction: String?, onDraft: (String) -> Unit) {
         val session = getOrCreateSession(conversationId)
         val previousJob = session.getJob()
         previousJob?.cancel()
@@ -822,8 +816,9 @@ class ChatService(
                 val conversation = getConversationFlow(conversationId).value
                 val assistant = settings.getAssistantById(conversation.assistantId)
                     ?: settings.getCurrentAssistant()
-                val nodes = conversation.messageNodes
-                val history = nodes.map { node ->
+                val userName = settings.displaySetting.userNickname.ifBlank { "User" }
+                val charName = assistant.name.ifBlank { "Assistant" }
+                val history = conversation.messageNodes.map { node ->
                     UIMessage(
                         role = node.role,
                         parts = listOf(UIMessagePart.Text(
@@ -831,28 +826,27 @@ class ChatService(
                         )),
                     )
                 }
-                val continuation = generateForAssistant(
+                // 官方默认 impersonation_prompt：从 {{user}} 视角写，不要写成 {{char}}
+                val impersonationInstruction =
+                    "[Write your next reply from the point of view of $userName, using the chat history so far as a guideline for the writing style of $userName. Don't write as $charName or system. Don't describe actions of $charName.]"
+                val extraSystemMessages = buildList {
+                    add(UIMessage.system(impersonationInstruction))
+                    extraInstruction?.trim()?.takeIf { it.isNotBlank() }?.let {
+                        add(UIMessage.system(it))
+                    }
+                }
+                val draft = generateForAssistant(
                     assistant = assistant,
                     settings = settings,
-                    prompt = trimmed,
+                    prompt = "",
                     promptRole = MessageRole.ASSISTANT,
                     history = history,
+                    extraSystemMessages = extraSystemMessages,
                     conversationId = conversationId,
                     generationType = GenerationType.IMPERSONATE,
                 )
-                if (continuation.isBlank()) return@launch
-
-                // 合并为一条助手消息：预填文本 + 模型续写（官方 quietToLoud 行为）
-                updateConversationState(conversationId) { conv ->
-                    conv.copy(
-                        messageNodes = conv.messageNodes + UIMessage(
-                            role = MessageRole.ASSISTANT,
-                            parts = listOf(UIMessagePart.Text(
-                                trimmed.trimEnd() + "\n\n" + continuation
-                            )),
-                        ).toMessageNode(),
-                    )
-                }
+                if (draft.isBlank()) return@launch
+                onDraft(draft.trim())
                 _generationDoneFlow.emit(conversationId)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -1288,15 +1282,20 @@ class ChatService(
         conversationId: Uuid? = null,
         generationType: GenerationType = GenerationType.NORMAL,
         promptRole: MessageRole = MessageRole.USER,
+        extraSystemMessages: List<UIMessage> = emptyList(),
         onChunk: ((String, List<UIMessagePart>?) -> Unit)? = null,
     ): String {
         val model = settings.findModelById(assistant.chatModelId ?: settings.chatModelId)
             ?: error("No model configured for assistant '${assistant.name}'")
 
-        val messages = history + UIMessage(
-            role = promptRole,
-            parts = listOf(UIMessagePart.Text(prompt)),
-        )
+        val messages = history + extraSystemMessages + if (prompt.isBlank()) {
+            emptyList()
+        } else {
+            listOf(UIMessage(
+                role = promptRole,
+                parts = listOf(UIMessagePart.Text(prompt)),
+            ))
+        }
         var result = ""
 
         // MCP 工具：对齐上游校验服务器名（仅字母数字），非法名直接报错返回

@@ -310,9 +310,9 @@ class ChatVM(
         chatService.continueGeneration(_conversationId, prompt.ifBlank { null })
     }
 
-    /** 官方 /impersonate：以角色身份生成一条回复；prefill 为回复开头文本（可空） */
-    fun impersonateGeneration(prefill: String = "") {
-        chatService.impersonateGeneration(_conversationId, prefill.ifBlank { null })
+    /** 官方 /impersonate：生成你的发言草稿，填入输入框待发送 */
+    fun impersonateDraft(prefill: String = "", onDraft: (String) -> Unit) {
+        chatService.impersonateDraft(_conversationId, prefill.ifBlank { null }, onDraft)
     }
 
     /** /prompt：当前发送给 AI 的上下文预览（系统提示词 + 消息列表） */
