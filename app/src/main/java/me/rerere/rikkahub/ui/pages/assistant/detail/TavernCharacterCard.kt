@@ -47,7 +47,6 @@ import me.rerere.rikkahub.data.model.TavernBookEntry
 import me.rerere.rikkahub.data.model.TavernEmbeddedBook
 import me.rerere.rikkahub.ui.components.ui.FormItem
 import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.components.ui.UIAvatar
 import me.rerere.rikkahub.ui.components.ui.IntTextField
 import me.rerere.rikkahub.ui.components.ui.InsertionStrategySelector
 import me.rerere.hugeicons.HugeIcons
@@ -120,11 +119,6 @@ fun TavernCharacterCard(
                         .size(18.dp)
                         .graphicsLayer { rotationZ = rotationAngle },
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                UIAvatar(
-                    name = displayName,
-                    value = assistant.avatar,
-                    modifier = Modifier.size(44.dp),
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Row(
