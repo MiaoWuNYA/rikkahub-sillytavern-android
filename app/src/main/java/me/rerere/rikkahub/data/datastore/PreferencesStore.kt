@@ -266,7 +266,7 @@ class SettingsStore(
                     JsonInstant.decodeFromString(it)
                 } ?: emptyList(),
                 // 世界书预算 = 绝对 token 上限（本实现语义）；不兼容任何旧百分比值
-                worldInfoBudget = preferences[WORLD_INFO_BUDGET] ?: 1024,
+                worldInfoBudget = preferences[WORLD_INFO_BUDGET] ?: 4096,
                 worldInfoMinActivations = preferences[WORLD_INFO_MIN_ACTIVATIONS] ?: 0,
                 worldInfoRecursive = preferences[WORLD_INFO_RECURSIVE] ?: false,
                 worldInfoMaxRecursionSteps = preferences[WORLD_INFO_MAX_RECURSION_STEPS] ?: 0,
@@ -632,7 +632,7 @@ data class Settings(
     val selectedASRProviderId: Uuid? = null,
     val modeInjections: List<PromptInjection.ModeInjection> = DEFAULT_MODE_INJECTIONS,
     val lorebooks: List<Lorebook> = emptyList(),
-    val worldInfoBudget: Int = 1024,                // 世界书单轮注入 token 预算上限（0=不限，对齐酒馆 world_info_budget_cap）
+    val worldInfoBudget: Int = 4096,                // 世界书单轮注入 token 预算上限（0=不限，对齐酒馆 world_info_budget_cap）
     val worldInfoMinActivations: Int = 0,           // 世界书最少激活数（0=关闭，酒馆 min_activations）
     val worldInfoRecursive: Boolean = false,        // 递归扫描（酒馆 world_info_recursive）
     val worldInfoMaxRecursionSteps: Int = 0,
