@@ -348,7 +348,7 @@
   <string name="export_to_file_desc">保存为JSON文件</string>
   <string name="extension_content_manage">管理</string>
   <string name="extension_content_unnamed">未命名</string>
-  <string name="extension_content_unnamed_lorebook">未命名Lorebook</string>
+  <string name="extension_content_unnamed_lorebook">未命名世界书</string>
   <string name="extension_selector_go_to_extensions">管理扩展</string>
   <string name="extension_selector_go_to_skills">前往管理 Skills</string>
   <string name="extension_selector_lorebooks_empty">无可用的lorebooks</string>

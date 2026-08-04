@@ -64,7 +64,7 @@ fun <T> Select(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(4.dp))
-                    .clickable { expanded = true }
+                    .clickable { expanded = !expanded }
                     .padding(vertical = 8.dp, horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
