@@ -718,8 +718,6 @@ sealed interface Screen : NavKey {
     data object SettingWeb : Screen
 
     @Serializable
-
-    @Serializable
     data object Debug : Screen
 
     @Serializable
@@ -769,6 +767,4 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object GroupChatList : Screen
-
-    @Serializable
 }
