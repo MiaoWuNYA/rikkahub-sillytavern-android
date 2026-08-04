@@ -615,7 +615,7 @@ private fun EmbeddedBookSummary(
                     ) {
                         item(
                             headlineContent = { Text("默认扫描深度(Default Scan Depth)") },
-                            supportingContent = { Text("条目未设置时使用，官方默认 2") },
+                            supportingContent = { Text("角色卡条目自带时优先用条目值；未写时用此默认（官方2）") },
                             trailingContent = {
                                 IntTextField(
                                     value = settings.worldInfoDepth,

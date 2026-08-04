@@ -547,7 +547,7 @@
   <string name="prompt_page_position_top_of_chat">对话开头</string>
   <string name="prompt_page_world_info_budget_desc">每轮从世界书注入的最大 token 数（0=不限制）</string>
   <string name="prompt_page_world_info_depth_title">默认扫描深度(Default Scan Depth)</string>
-  <string name="prompt_page_world_info_depth_desc">条目未设置扫描深度时使用（官方默认2，只扫最近N条消息）</string>
+  <string name="prompt_page_world_info_depth_desc">条目未设置时用此默认（官方2）；导入角色卡条目自带 scan_depth 时，优先用条目自己的值</string>
   <string name="prompt_page_world_info_strategy_title">插入策略(Insertion Strategy)</string>
   <string name="prompt_page_world_info_strategy_desc">角色卡世界书与全局世界书的注入顺序（官方默认角色卡优先）</string>
   <string name="prompt_page_world_info_overflow_title">预算溢出提醒(Overflow Alert)</string>
