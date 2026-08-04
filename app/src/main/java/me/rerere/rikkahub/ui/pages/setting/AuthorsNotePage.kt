@@ -1,6 +1,7 @@
 package me.rerere.rikkahub.ui.pages.setting
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -77,25 +78,27 @@ fun AuthorsNotePage() {
             }
 
             // 内容输入
-            // 快速预设
-            CardGroup(title = { Text("快速预设") }) {
+            // 快速预设：一行横向 chips，点击填入内容（不占纵向空间，输入框保持可见）
+            Text(
+                text = "快速预设",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Medium,
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 authorsNotePresets.forEach { (label, content) ->
-                    item(
+                    FilterChip(
+                        selected = settings.authorNote == content,
                         onClick = {
                             scope.launch {
                                 settingsStore.update(settings.copy(authorNote = content))
                             }
                         },
-                        headlineContent = { Text(label, style = MaterialTheme.typography.titleSmall) },
-                        supportingContent = {
-                            Text(
-                                text = content.replace("\n", " "),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
+                        label = { Text(label) },
                     )
                 }
             }

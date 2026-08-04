@@ -335,35 +335,32 @@ private fun PersonaEditPage(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // 快速预设（仅新建时）
+            // 快速预设（仅新建时）：一行横向 chips，点击填入（不占纵向空间）
             if (initial == null) {
                 item {
-                    CardGroup(title = { Text("快速预设") }) {
-                        personaPresets.forEach { (pName, pTitle, pDesc) ->
-                            item(
-                                onClick = {
-                                    name = pName
-                                    title = pTitle
-                                    desc = pDesc
-                                },
-                                headlineContent = { Text(pName, style = MaterialTheme.typography.titleSmall) },
-                                supportingContent = {
-                                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                        Text(
-                                            text = pTitle,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                        Text(
-                                            text = pDesc,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                    }
-                                },
-                            )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "快速预设",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Medium,
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            personaPresets.forEach { (pName, pTitle, pDesc) ->
+                                FilterChip(
+                                    selected = name == pName,
+                                    onClick = {
+                                        name = pName
+                                        title = pTitle
+                                        desc = pDesc
+                                    },
+                                    label = { Text(pName) },
+                                )
+                            }
                         }
                     }
                 }
