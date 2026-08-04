@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -777,7 +778,7 @@ fun GroupChatPage(groupId: String) {
             ) {
                     // 群名
                     Column {
-                        Text("群名", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.group_chat_name), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
                         Spacer(Modifier.height(4.dp))
                         OutlinedTextField(
                             value = gc.name,
@@ -794,7 +795,7 @@ fun GroupChatPage(groupId: String) {
                     }
                     // 模型选择
                     Column {
-                        Text("模型", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.group_model), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
                         Spacer(Modifier.height(4.dp))
                         ModelSelector(
                             modelId = gc.chatModelId,
@@ -813,7 +814,7 @@ fun GroupChatPage(groupId: String) {
                     Divider()
 
                     // 激活策略
-                    CardGroup(title = { Text("激活策略(Activation Strategy)") }) {
+                    CardGroup(title = { Text(stringResource(R.string.group_activation_strategy)) }) {
                         listOf(
                             GroupActivationStrategy.NATURAL to "自然(Natural)",
                             GroupActivationStrategy.LIST to "列表(List)",
@@ -850,7 +851,7 @@ fun GroupChatPage(groupId: String) {
                     }
 
                     // 生成模式
-                    CardGroup(title = { Text("生成模式(Generation Mode)") }) {
+                    CardGroup(title = { Text(stringResource(R.string.group_generation_mode)) }) {
                         listOf(
                             GroupGenerationMode.SWAP to "替换(Swap)",
                             GroupGenerationMode.APPEND to "追加(Append)",
@@ -888,8 +889,8 @@ fun GroupChatPage(groupId: String) {
                     // 允许自回复
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("允许自回复", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
-                            Text("AI可以连续发言", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.group_allow_self_reply), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+                            Text(stringResource(R.string.group_self_reply_desc), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Switch(
                             checked = gc.allowSelfResponses,
@@ -905,8 +906,8 @@ fun GroupChatPage(groupId: String) {
 
                     // 自动接话延迟
                     Column {
-                        Text("自动接话延迟: ${gc.autoModeDelay}秒", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
-                        Text("设为0可禁用自动接话", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.group_auto_reply_delay, gc.autoModeDelay), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.group_auto_reply_delay_desc), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.height(4.dp))
                         Slider(
                             value = gc.autoModeDelay.toFloat(),
@@ -951,7 +952,7 @@ fun GroupChatPage(groupId: String) {
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
-                            Text("0=无上限", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.group_rounds_unlimited), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text("30", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
@@ -959,7 +960,7 @@ fun GroupChatPage(groupId: String) {
                     Divider()
 
                     // 成员列表
-                    Text("成员设置", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
+                    Text(stringResource(R.string.group_member_settings), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
                     members.forEach { m ->
                         val isEnabled = m.id !in gc.disabledMemberIds
                         Surface(
@@ -993,7 +994,7 @@ fun GroupChatPage(groupId: String) {
                                 if (isEnabled) {
                                     Spacer(Modifier.height(4.dp))
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text("话多程度", style = MaterialTheme.typography.labelSmall, modifier = Modifier.width(56.dp))
+                                        Text(stringResource(R.string.group_talkativeness), style = MaterialTheme.typography.labelSmall, modifier = Modifier.width(56.dp))
                                         Slider(
                                             value = m.talkativeness,
                                             onValueChange = { v ->

@@ -1312,6 +1312,12 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="group_gen_swap">替换(Swap)</string>
   <string name="group_gen_append">追加(Append)</string>
   <string name="group_gen_append_disabled">追加含禁言(Append Disabled)</string>
+  <string name="group_model">模型(Model)</string>
+  <string name="group_self_reply_desc">AI可以连续发言</string>
+  <string name="group_auto_reply_delay_desc">设为0可禁用自动接话</string>
+  <string name="group_rounds_unlimited">0=无上限</string>
+  <string name="group_member_settings">成员设置(Member Settings)</string>
+  <string name="group_talkativeness">话多程度(Talkativeness)</string>
   <string name="prompt_page_sticky_desc">0 = 关闭, N = 持续N轮</string>
 <string name="skills_page_import_from_file">从文件导入</string>
   <string name="skills_page_add_manually">手动添加</string>

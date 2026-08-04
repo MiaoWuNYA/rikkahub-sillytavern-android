@@ -1321,6 +1321,12 @@
   <string name="group_gen_swap">Swap</string>
   <string name="group_gen_append">Append</string>
   <string name="group_gen_append_disabled">Append Disabled</string>
+  <string name="group_model">Model</string>
+  <string name="group_self_reply_desc">AI can keep speaking</string>
+  <string name="group_auto_reply_delay_desc">Set to 0 to disable auto reply</string>
+  <string name="group_rounds_unlimited">0 = unlimited</string>
+  <string name="group_member_settings">Member Settings</string>
+  <string name="group_talkativeness">Talkativeness</string>
   <string name="prompt_page_sticky_desc">0 = off, N = persist for N turns</string>
   <string name="prompt_page_no_group">Ungrouped</string>
   <string name="prompt_page_no_entries">No entries yet. Tap + to add one.</string>
