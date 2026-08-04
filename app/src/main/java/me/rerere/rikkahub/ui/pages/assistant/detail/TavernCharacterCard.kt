@@ -47,13 +47,18 @@ import me.rerere.rikkahub.data.model.TavernBookEntry
 import me.rerere.rikkahub.data.model.TavernEmbeddedBook
 import me.rerere.rikkahub.ui.components.ui.FormItem
 import me.rerere.rikkahub.ui.components.ui.CardGroup
+import me.rerere.rikkahub.ui.components.ui.UIAvatar
 import me.rerere.rikkahub.ui.components.ui.IntTextField
 import me.rerere.rikkahub.ui.components.ui.InsertionStrategySelector
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.Book01
 import me.rerere.hugeicons.stroke.File01
+import me.rerere.hugeicons.stroke.File02
 import me.rerere.hugeicons.stroke.Folder01
+import me.rerere.hugeicons.stroke.Image02
+import me.rerere.hugeicons.stroke.MusicNote03
+import me.rerere.hugeicons.stroke.Video01
 import me.rerere.hugeicons.stroke.MapPin
 import me.rerere.hugeicons.stroke.Message01
 import me.rerere.hugeicons.stroke.Message02
@@ -78,6 +83,13 @@ fun TavernCharacterCard(
     onExport: (() -> Unit)? = null,
 ) {
     val tav = assistant.tavernData ?: return
+    val displayName = tav.name.ifBlank { assistant.name.ifBlank { "角色卡" } }
+    val subParts = buildList {
+        add(tav.spec.removePrefix("chara_card_").uppercase())
+        if (tav.embeddedBook != null) add("世界书 ${tav.embeddedBook!!.entries.size} 条")
+        if (tav.alternateGreetings.isNotEmpty()) add("开场白 ${1 + tav.alternateGreetings.size} 个")
+    }
+    val subInfo = subParts.joinToString(" · ")
     var expanded by remember { mutableStateOf(false) }
     val rotationAngle by animateFloatAsState(
         targetValue = if (expanded) 90f else 0f,
@@ -109,11 +121,10 @@ fun TavernCharacterCard(
                         .graphicsLayer { rotationZ = rotationAngle },
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Icon(
-                    HugeIcons.Book01,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.primary,
+                UIAvatar(
+                    name = displayName,
+                    value = assistant.avatar,
+                    modifier = Modifier.size(44.dp),
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Row(
@@ -121,8 +132,11 @@ fun TavernCharacterCard(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "角色卡",
-                            style = MaterialTheme.typography.titleSmall,
+                            text = displayName,
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
                         )
                         Surface(
                             shape = RoundedCornerShape(4.dp),
@@ -136,6 +150,15 @@ fun TavernCharacterCard(
                             )
                         }
                     }
+                    // 副信息：spec · 世界书条数 · 开场白数
+                    Text(
+                        text = subInfo,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                     // 统计行 — 图标徽章表示有无内容
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
