@@ -222,7 +222,7 @@ fun TavernCharacterCard(
                         onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
                     }
                     if (tav.postHistoryInstructions.isNotBlank()) {
-                        EditableField("历史后续指令(Post-Hist)", tav.postHistoryInstructions) { v ->
+                        EditableField("历史后续指令(PHI)", tav.postHistoryInstructions) { v ->
                             val newTav = tav.copy(postHistoryInstructions = v)
                             onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
                         }

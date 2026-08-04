@@ -1666,8 +1666,8 @@ private fun GroupSettingsDialog(
                 val triggerOptions = listOf(
                     "normal" to "普通(Normal)",
                     "continue" to "继续(Continue)",
-                    "impersonate" to "伪角色(Impersonate)",
-                    "swipe" to "重掷(Swipe)",
+                    "impersonate" to "扮演(Impersonate)",
+                    "swipe" to "滑动备选(Swipe)",
                     "regenerate" to "重新生成(Regenerate)",
                     "quiet" to "安静(Quiet)",
                 )
