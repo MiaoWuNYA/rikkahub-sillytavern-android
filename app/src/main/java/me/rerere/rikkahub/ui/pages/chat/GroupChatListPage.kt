@@ -183,34 +183,27 @@ fun GroupChatListPage() {
                         Switch(checked = allowSelf, onCheckedChange = { allowSelf = it })
                     }
 
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "选择成员:（已选 ${selectedIds.size}/${settings.assistants.size}）",
-                        style = MaterialTheme.typography.labelMedium,
-                    )
-                    // 成员列表独立有界滚动块：保证所有助手可见、不与上方设置重叠
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 260.dp)
-                            .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
-                    ) {
+                    // 成员列表：与上方"激活策略/生成模式"一致，用 CardGroup 行样式
+                    CardGroup(title = { Text("选择成员（已选 ${selectedIds.size}/${settings.assistants.size}）") }) {
                         settings.assistants.forEach { a ->
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Checkbox(
-                                    checked = a.id in selectedIds,
-                                    onCheckedChange = { checked ->
-                                        selectedIds = if (checked) selectedIds + a.id
-                                        else selectedIds - a.id
-                                    },
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(a.name.ifBlank { "(未命名)" }, style = MaterialTheme.typography.bodyMedium)
-                            }
+                            item(
+                                onClick = {
+                                    selectedIds = if (a.id in selectedIds) selectedIds - a.id
+                                    else selectedIds + a.id
+                                },
+                                headlineContent = {
+                                    Text(a.name.ifBlank { "(未命名)" }, style = MaterialTheme.typography.bodyMedium)
+                                },
+                                trailingContent = {
+                                    Checkbox(
+                                        checked = a.id in selectedIds,
+                                        onCheckedChange = { checked ->
+                                            selectedIds = if (checked) selectedIds + a.id
+                                            else selectedIds - a.id
+                                        },
+                                    )
+                                },
+                            )
                         }
                     }
                 }
