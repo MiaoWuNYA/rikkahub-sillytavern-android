@@ -779,10 +779,10 @@ class MacroEngine(
             .replace("mm", "mm")
             .replace("ss", "ss")
             .replace("A", "a")
-            .replace("ddd", "EEE")
             .replace("dddd", "EEEE")
-            .replace("LLL", "yyyy年M月d日")
+            .replace("ddd", "EEE")
             .replace("LLLL", "yyyy年M月d日 EEEE")
+            .replace("LLL", "yyyy年M月d日")
             .replace("LL", "yyyy年M月d日")
         return try {
             DateTimeFormatter.ofPattern(mapped, Locale.getDefault()).format(LocalDateTime.now())

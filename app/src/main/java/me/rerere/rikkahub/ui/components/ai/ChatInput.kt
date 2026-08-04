@@ -1191,7 +1191,7 @@ private fun handleBuiltinSlash(
         BuiltinSlashKind.INJECT -> {
             val tokens = args.trim().split(" ")
             if (tokens.any { it.equals("position=none", ignoreCase = true) }) {
-                toaster.show("本地暂不支持隐藏注入(none)，请用 position=before / position=chat 或默认(主提示后)")
+                toaster.show("本地暂不支持隐藏注入(none)，请用 position=before / after / chat 或默认(主提示后)")
                 return
             }
             val position = when {
@@ -1215,7 +1215,7 @@ private fun handleBuiltinSlash(
                 .joinToString(" ")
                 .trim()
             if (content.isBlank()) {
-                toaster.show("用法: /inject 注入内容 [position=before|chat] [depth=数字] [role=user|assistant]")
+                toaster.show("用法: /inject 注入内容 [position=before|after|chat] [depth=数字] [role=user|assistant|system]")
             } else if (onSlashInject == null) {
                 toaster.show("当前页面不支持该命令")
             } else {
@@ -1254,7 +1254,7 @@ private fun handleBuiltinSlash(
             val needsValue = op == SlashVarOp.SET || op == SlashVarOp.ADD
             if (key.isBlank() || (needsValue && value.isBlank())) {
                 toaster.show(
-                    if (needsValue) "用法: /${cmd.name} key 值（也支持 key=名称 写法）" else "用法: /${cmd.name} key"
+                    if (needsValue) "用法: /${cmd.name} 变量名 值（也支持 key=名称 写法）" else "用法: /${cmd.name} 变量名"
                 )
                 return
             }
