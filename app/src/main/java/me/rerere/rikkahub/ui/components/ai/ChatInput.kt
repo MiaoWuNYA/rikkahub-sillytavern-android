@@ -69,6 +69,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
@@ -162,7 +163,7 @@ fun ChatInput(
     val slashCommands = remember(assistant.enabledSkills) {
         val allSkills = skillManager.listSkills()
         val enabledSkills = allSkills.filter { it.name in assistant.enabledSkills }
-        collectSlashCommands(enabledSkills)
+        collectSlashCommands(enabledSkills, LocalContext.current)
     }
     val hazeTintColor = MaterialTheme.colorScheme.surfaceContainerLow
     val inputHazeStyle = HazeMaterials.thin(containerColor = hazeTintColor)
@@ -539,7 +540,7 @@ private fun TextInputRow(
     val slashCommands = remember(assistant.enabledSkills) {
         val allSkills = skillManager.listSkills()
         val enabledSkills = allSkills.filter { it.name in assistant.enabledSkills }
-        collectSlashCommands(enabledSkills)
+        collectSlashCommands(enabledSkills, LocalContext.current)
     }
     var showSlashPopup by remember { mutableStateOf(false) }
     var slashFilter by remember { mutableStateOf("") }

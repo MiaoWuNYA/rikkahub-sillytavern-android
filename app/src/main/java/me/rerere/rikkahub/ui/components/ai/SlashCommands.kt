@@ -1,5 +1,7 @@
 package me.rerere.rikkahub.ui.components.ai
 
+import android.content.Context
+
 import me.rerere.rikkahub.data.files.CommandFile
 
 /**
@@ -75,180 +77,180 @@ enum class BuiltinSlashKind {
 /**
  * 内置命令 — 官方 SillyTavern 常用命令的实用子集，全局可用
  */
-fun builtinSlashCommands(): List<SlashCommand> = listOf(
+fun builtinSlashCommands(context: Context): List<SlashCommand> = listOf(
     SlashCommand(
         name = "help",
-        description = "显示可用命令(Help)",
+        description = context.getString(R.string.slash_help_desc),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.HELP,
     ),
     SlashCommand(
         name = "sys",
-        description = "插入系统消息(Sys)：直接写入一条系统消息，不触发生成",
-        argumentHint = "[name=显示名] [at=位置] [文本]",
+        description = context.getString(R.string.slash_sys_desc),
+        argumentHint = context.getString(R.string.slash_sys_hint),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.SYS,
     ),
     SlashCommand(
         name = "sendas",
-        description = "插入助手消息(Send As)：默认以当前助手身份，可指定角色名与位置，不触发生成",
-        argumentHint = "[name=角色名] [at=位置] [文本]",
+        description = context.getString(R.string.slash_sendas_desc),
+        argumentHint = context.getString(R.string.slash_sendas_hint),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.SENDAS,
     ),
     SlashCommand(
         name = "send",
-        description = "插入用户消息(Send)：直接写入一条用户消息，不触发生成",
-        argumentHint = "[name=显示名] [at=位置] [文本]",
+        description = context.getString(R.string.slash_send_desc),
+        argumentHint = context.getString(R.string.slash_send_hint),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.SEND,
     ),
     SlashCommand(
         name = "persona",
-        description = "切换用户人设/临时用户名(Persona)：官方 /persona-set 别名，找不到人设时设置临时用户名",
-        argumentHint = "[mode=lookup|temp|all] [人设名或临时用户名]",
+        description = context.getString(R.string.slash_persona_desc),
+        argumentHint = context.getString(R.string.slash_persona_hint),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.PERSONA,
     ),
     SlashCommand(
         name = "trigger",
-        description = "直接触发AI回复(Trigger)：不添加新消息，让 AI 回复一次",
+        description = context.getString(R.string.slash_trigger_desc),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.TRIGGER,
     ),
     SlashCommand(
         name = "sysgen",
-        description = "AI生成系统旁白(Sysgen)：生成后插入聊天，不触发普通回复",
-        argumentHint = "[name=显示名] [at=位置] [提示词] 如 描写雨夜街道",
+        description = context.getString(R.string.slash_sysgen_desc),
+        argumentHint = context.getString(R.string.slash_sysgen_hint),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.SYSGEN,
     ),
     SlashCommand(
         name = "inject",
-        description = "注入提示词(Inject)：写入发送给AI的提示词，不进入聊天记录；默认 after·深度4·system",
-        argumentHint = "[文本] [position=before|after|chat] [depth=数字] [role=user|assistant|system]",
+        description = context.getString(R.string.slash_inject_desc),
+        argumentHint = context.getString(R.string.slash_inject_hint),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.INJECT,
     ),
     SlashCommand(
         name = "char-get",
-        description = "查看当前角色卡(Char Get)：提示显示角色卡摘要",
+        description = context.getString(R.string.slash_char_get_desc),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.INFO,
     ),
     SlashCommand(
         name = "char-update",
-        description = "修改角色卡字段(Char Update)：可用字段 name/description/personality/scenario/system_prompt/first_mes/mes_example/phi/creator_notes",
-        argumentHint = "[字段=值] 如 description=新描述",
+        description = context.getString(R.string.slash_char_update_desc),
+        argumentHint = context.getString(R.string.slash_char_update_hint),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.UPDATE_CHAR,
     ),
     SlashCommand(
         name = "char-duplicate",
-        description = "复制当前角色卡(Char Duplicate)",
+        description = context.getString(R.string.slash_char_duplicate_desc),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.DUPLICATE,
     ),
     SlashCommand(
         name = "rename-char",
-        description = "重命名角色(Rename Char)",
-        argumentHint = "[新名字]",
+        description = context.getString(R.string.slash_rename_char_desc),
+        argumentHint = context.getString(R.string.slash_rename_char_hint),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.RENAME,
     ),
     SlashCommand(
         name = "continue",
-        description = "续写最后一条助手回复(Continue)：在原回复末尾继续生成，可加补充文本",
-        argumentHint = "[补充文本，可选]",
+        description = context.getString(R.string.slash_continue_desc),
+        argumentHint = context.getString(R.string.slash_continue_hint),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.CONTINUE,
     ),
     SlashCommand(
         name = "impersonate",
-        description = "生成你的发言草稿(Impersonate)：AI 以你的视角拟下一条发言，填入输入框待发送",
-        argumentHint = "[补充说明，可选]",
+        description = context.getString(R.string.slash_impersonate_desc),
+        argumentHint = context.getString(R.string.slash_impersonate_hint),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.IMPERSONATE,
     ),
     SlashCommand(
         name = "reroll-pick",
-        description = "重新掷随机细节(Reroll Pick)：让 {{pick}} 换一批结果，可带种子数字",
-        argumentHint = "[种子，可选]",
+        description = context.getString(R.string.slash_reroll_pick_desc),
+        argumentHint = context.getString(R.string.slash_reroll_pick_hint),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.REROLL_PICK,
     ),
-) + varSlashCommands()
+) + varSlashCommands(context)
 
 /**
  * 官方变量命令家族（对齐 SillyTavern variables.js，仅保留本对话级 7 个）。
  */
-fun varSlashCommands(): List<SlashCommand> = listOf(
+fun varSlashCommands(context: Context): List<SlashCommand> = listOf(
     SlashCommand(
         name = "listvar",
-        description = "列出当前对话变量(List Var)：提示显示本对话全部变量",
+        description = context.getString(R.string.slash_listvar_desc),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
     ),
     SlashCommand(
         name = "setvar",
-        description = "设置当前对话变量(Set Var)：宏里用 {{getvar::名}} 或 {{.名}} 读取",
-        argumentHint = "[变量名] [值]",
+        description = context.getString(R.string.slash_setvar_desc),
+        argumentHint = context.getString(R.string.slash_setvar_hint),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
     ),
     SlashCommand(
         name = "getvar",
-        description = "读取当前对话变量(Get Var)：提示显示当前值",
-        argumentHint = "[变量名]",
+        description = context.getString(R.string.slash_getvar_desc),
+        argumentHint = context.getString(R.string.slash_getvar_hint),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
     ),
     SlashCommand(
         name = "addvar",
-        description = "当前对话变量加值(Add Var)：数值相加，非数值拼接",
-        argumentHint = "[变量名] [值]",
+        description = context.getString(R.string.slash_addvar_desc),
+        argumentHint = context.getString(R.string.slash_addvar_hint),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
     ),
     SlashCommand(
         name = "incvar",
-        description = "当前对话变量+1(Inc Var)",
-        argumentHint = "[变量名]",
+        description = context.getString(R.string.slash_incvar_desc),
+        argumentHint = context.getString(R.string.slash_incvar_hint),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
     ),
     SlashCommand(
         name = "decvar",
-        description = "当前对话变量-1(Dec Var)",
-        argumentHint = "[变量名]",
+        description = context.getString(R.string.slash_decvar_desc),
+        argumentHint = context.getString(R.string.slash_decvar_hint),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
     ),
     SlashCommand(
         name = "flushvar",
-        description = "删除当前对话变量(Flush Var)",
-        argumentHint = "[变量名]",
+        description = context.getString(R.string.slash_flushvar_desc),
+        argumentHint = context.getString(R.string.slash_flushvar_hint),
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
@@ -260,6 +262,7 @@ fun varSlashCommands(): List<SlashCommand> = listOf(
  */
 fun collectSlashCommands(
     enabledSkills: List<me.rerere.rikkahub.data.files.SkillMetadata>,
+    context: Context,
 ): List<SlashCommand> {
     val commands = enabledSkills.flatMap { skill ->
         skill.commands.map { cmd ->
@@ -286,7 +289,7 @@ fun collectSlashCommands(
             filePath = "SKILL.md (${skill.name})",
         )
     }
-    return commands + invocableSkills + builtinSlashCommands()
+    return commands + invocableSkills + builtinSlashCommands(context)
 }
 
 /**

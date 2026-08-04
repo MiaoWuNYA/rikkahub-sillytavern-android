@@ -1327,6 +1327,45 @@
   <string name="group_rounds_unlimited">0 = unlimited</string>
   <string name="group_member_settings">Member Settings</string>
   <string name="group_talkativeness">Talkativeness</string>
+  <string name="slash_help_desc">Show available commands (Help)</string>
+  <string name="slash_sys_desc">Insert a system message (Sys) without triggering generation</string>
+  <string name="slash_sys_hint">[name=display] [at=position] [text]</string>
+  <string name="slash_sendas_desc">Insert an assistant message (Send As); defaults to current character, can specify name and position</string>
+  <string name="slash_sendas_hint">[name=character] [at=position] [text]</string>
+  <string name="slash_send_desc">Insert a user message (Send) without triggering generation</string>
+  <string name="slash_send_hint">[name=display] [at=position] [text]</string>
+  <string name="slash_persona_desc">Switch persona / temporary user name (Persona): /persona-set alias</string>
+  <string name="slash_persona_hint">[mode=lookup|temp|all] [persona name]</string>
+  <string name="slash_trigger_desc">Trigger an AI reply (Trigger) without adding a message</string>
+  <string name="slash_sysgen_desc">Generate a system narration (Sysgen) and insert it into the chat</string>
+  <string name="slash_sysgen_hint">[name=display] [at=position] [prompt]</string>
+  <string name="slash_inject_desc">Inject text into the AI prompt (Inject), not into chat history; default after·depth4·system</string>
+  <string name="slash_inject_hint">[text] [position=before|after|chat] [depth=number] [role=user|assistant|system]</string>
+  <string name="slash_char_get_desc">Show current character card summary (Char Get)</string>
+  <string name="slash_char_update_desc">Update character card fields (Char Update)</string>
+  <string name="slash_char_update_hint">[field=value] e.g. description=new</string>
+  <string name="slash_char_duplicate_desc">Duplicate current character card (Char Duplicate)</string>
+  <string name="slash_rename_char_desc">Rename character (Rename Char)</string>
+  <string name="slash_rename_char_hint">[new name]</string>
+  <string name="slash_continue_desc">Continue the last assistant reply (Continue), optional extra prompt</string>
+  <string name="slash_continue_hint">[optional prompt]</string>
+  <string name="slash_impersonate_desc">Generate your reply draft (Impersonate) into the input box</string>
+  <string name="slash_impersonate_hint">[optional note]</string>
+  <string name="slash_reroll_pick_desc">Re-roll stable random details (Reroll Pick)</string>
+  <string name="slash_reroll_pick_hint">[optional seed]</string>
+  <string name="slash_listvar_desc">List chat variables (List Var)</string>
+  <string name="slash_setvar_desc">Set a chat variable (Set Var)</string>
+  <string name="slash_setvar_hint">[name] [value]</string>
+  <string name="slash_getvar_desc">Get a chat variable (Get Var)</string>
+  <string name="slash_getvar_hint">[name]</string>
+  <string name="slash_addvar_desc">Add a value to a chat variable (Add Var)</string>
+  <string name="slash_addvar_hint">[name] [value]</string>
+  <string name="slash_incvar_desc">Increment a chat variable by 1 (Inc Var)</string>
+  <string name="slash_incvar_hint">[name]</string>
+  <string name="slash_decvar_desc">Decrement a chat variable by 1 (Dec Var)</string>
+  <string name="slash_decvar_hint">[name]</string>
+  <string name="slash_flushvar_desc">Delete a chat variable (Flush Var)</string>
+  <string name="slash_flushvar_hint">[name]</string>
   <string name="prompt_page_sticky_desc">0 = off, N = persist for N turns</string>
   <string name="prompt_page_no_group">Ungrouped</string>
   <string name="prompt_page_no_entries">No entries yet. Tap + to add one.</string>

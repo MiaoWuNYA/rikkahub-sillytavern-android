@@ -1318,6 +1318,45 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="group_rounds_unlimited">0=无上限</string>
   <string name="group_member_settings">成员设置(Member Settings)</string>
   <string name="group_talkativeness">话多程度(Talkativeness)</string>
+  <string name="slash_help_desc">显示可用命令(Help)</string>
+  <string name="slash_sys_desc">插入系统消息(Sys)：直接写入一条系统消息，不触发生成</string>
+  <string name="slash_sys_hint">[name=显示名] [at=位置] [文本]</string>
+  <string name="slash_sendas_desc">插入助手消息(Send As)：默认以当前助手身份，可指定角色名与位置，不触发生成</string>
+  <string name="slash_sendas_hint">[name=角色名] [at=位置] [文本]</string>
+  <string name="slash_send_desc">插入用户消息(Send)：直接写入一条用户消息，不触发生成</string>
+  <string name="slash_send_hint">[name=显示名] [at=位置] [文本]</string>
+  <string name="slash_persona_desc">切换用户人设/临时用户名(Persona)：官方 /persona-set 别名，找不到人设时设置临时用户名</string>
+  <string name="slash_persona_hint">[mode=lookup|temp|all] [人设名或临时用户名]</string>
+  <string name="slash_trigger_desc">直接触发AI回复(Trigger)：不添加新消息，让 AI 回复一次</string>
+  <string name="slash_sysgen_desc">AI生成系统旁白(Sysgen)：生成后插入聊天，不触发普通回复</string>
+  <string name="slash_sysgen_hint">[name=显示名] [at=位置] [提示词] 如 描写雨夜街道</string>
+  <string name="slash_inject_desc">注入提示词(Inject)：写入发送给AI的提示词，不进入聊天记录；默认 after·深度4·system</string>
+  <string name="slash_inject_hint">[文本] [position=before|after|chat] [depth=数字] [role=user|assistant|system]</string>
+  <string name="slash_char_get_desc">查看当前角色卡(Char Get)：提示显示角色卡摘要</string>
+  <string name="slash_char_update_desc">修改角色卡字段(Char Update)：可用字段 name/description/personality/scenario/system_prompt/first_mes/mes_example/phi/creator_notes</string>
+  <string name="slash_char_update_hint">[字段=值] 如 description=新描述</string>
+  <string name="slash_char_duplicate_desc">复制当前角色卡(Char Duplicate)</string>
+  <string name="slash_rename_char_desc">重命名角色(Rename Char)</string>
+  <string name="slash_rename_char_hint">[新名字]</string>
+  <string name="slash_continue_desc">续写最后一条助手回复(Continue)：在原回复末尾继续生成，可加补充文本</string>
+  <string name="slash_continue_hint">[补充文本，可选]</string>
+  <string name="slash_impersonate_desc">生成你的发言草稿(Impersonate)：AI 以你的视角拟下一条发言，填入输入框待发送</string>
+  <string name="slash_impersonate_hint">[补充说明，可选]</string>
+  <string name="slash_reroll_pick_desc">重新掷随机细节(Reroll Pick)：让 {{pick}} 换一批结果，可带种子数字</string>
+  <string name="slash_reroll_pick_hint">[种子，可选]</string>
+  <string name="slash_listvar_desc">列出当前对话变量(List Var)：提示显示本对话全部变量</string>
+  <string name="slash_setvar_desc">设置当前对话变量(Set Var)：宏里用 {{getvar::名}} 或 {{.名}} 读取</string>
+  <string name="slash_setvar_hint">[变量名] [值]</string>
+  <string name="slash_getvar_desc">读取当前对话变量(Get Var)：提示显示当前值</string>
+  <string name="slash_getvar_hint">[变量名]</string>
+  <string name="slash_addvar_desc">当前对话变量加值(Add Var)：数值相加，非数值拼接</string>
+  <string name="slash_addvar_hint">[变量名] [值]</string>
+  <string name="slash_incvar_desc">当前对话变量+1(Inc Var)</string>
+  <string name="slash_incvar_hint">[变量名]</string>
+  <string name="slash_decvar_desc">当前对话变量-1(Dec Var)</string>
+  <string name="slash_decvar_hint">[变量名]</string>
+  <string name="slash_flushvar_desc">删除当前对话变量(Flush Var)</string>
+  <string name="slash_flushvar_hint">[变量名]</string>
   <string name="prompt_page_sticky_desc">0 = 关闭, N = 持续N轮</string>
 <string name="skills_page_import_from_file">从文件导入</string>
   <string name="skills_page_add_manually">手动添加</string>
