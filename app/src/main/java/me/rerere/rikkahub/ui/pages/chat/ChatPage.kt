@@ -459,7 +459,7 @@ private fun ChatPageContent(
                     onSlashInsert = { role, text, name, at ->
                         vm.handleInsertMessage(role, text, name, at)
                     },
-                    onSlashPersona = { query ->
+                    onSlashPersona = { query, mode ->
                         val personas = setting.personas
                         val current = personas.find { it.id == setting.activePersonaId }
                         when {
@@ -486,11 +486,28 @@ private fun ChatPageContent(
                                 val target = personas.firstOrNull {
                                     it.name.equals(query, ignoreCase = true) || it.title.equals(query, ignoreCase = true)
                                 }
-                                if (target == null) {
-                                    toaster.show("未找到人设「$query」（可用: ${personas.joinToString("、") { it.name }}）")
-                                } else {
-                                    vm.updateSettings(setting.copy(activePersonaId = target.id))
-                                    toaster.show("已切换人设: ${target.name}")
+                                when {
+                                    // 官方 /persona-set mode=lookup：只选已有人设
+                                    target == null && mode == "lookup" -> {
+                                        toaster.show("未找到人设「$query」")
+                                    }
+
+                                    // 官方 /persona-set mode=temp：只设置临时用户名，不找/不选人设
+                                    target != null && mode == "temp" -> {
+                                        vm.updateSettings(setting.copy(userNickname = query))
+                                        toaster.show("已设置临时用户名: $query")
+                                    }
+
+                                    // 官方 /persona-set mode=all（默认）：先找已有，找不到则设置临时用户名
+                                    target != null -> {
+                                        vm.updateSettings(setting.copy(activePersonaId = target.id))
+                                        toaster.show("已切换人设: ${target.name}")
+                                    }
+
+                                    else -> {
+                                        vm.updateSettings(setting.copy(userNickname = query))
+                                        toaster.show("未找到人设「$query」，已按官方行为设置临时用户名: $query")
+                                    }
                                 }
                             }
                         }

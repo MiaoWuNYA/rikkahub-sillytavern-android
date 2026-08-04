@@ -109,8 +109,8 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
     ),
     SlashCommand(
         name = "persona",
-        description = "切换用户人设(Persona)",
-        argumentHint = "[人设名，可选]",
+        description = "切换用户人设/临时用户名(Persona)：官方 /persona-set 别名，找不到人设时设置临时用户名",
+        argumentHint = "[mode=lookup|temp|all] [人设名或临时用户名]",
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.PERSONA,

@@ -147,7 +147,7 @@ fun ChatInput(
     onLongSendClick: () -> Unit,
     onSlashDuplicate: (() -> Unit)? = null,
     onSlashInsert: ((MessageRole, String, String?, Int?) -> Unit)? = null,
-    onSlashPersona: ((String) -> Unit)? = null,
+    onSlashPersona: ((String, String) -> Unit)? = null,
     onSlashTrigger: (() -> Unit)? = null,
     onSlashSysgen: ((String, String?, Int?) -> Unit)? = null,
     onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)? = null,
@@ -516,7 +516,7 @@ private fun TextInputRow(
     onUpdateAssistant: (Assistant) -> Unit,
     onSlashDuplicate: (() -> Unit)?,
     onSlashInsert: ((MessageRole, String, String?, Int?) -> Unit)?,
-    onSlashPersona: ((String) -> Unit)?,
+    onSlashPersona: ((String, String) -> Unit)?,
     onSlashTrigger: (() -> Unit)?,
     onSlashSysgen: ((String, String?, Int?) -> Unit)?,
     onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)?,
@@ -1076,7 +1076,7 @@ private fun handleBuiltinSlash(
     onUpdateAssistant: (Assistant) -> Unit,
     onSlashDuplicate: (() -> Unit)?,
     onSlashInsert: ((MessageRole, String, String?, Int?) -> Unit)?,
-    onSlashPersona: ((String) -> Unit)?,
+    onSlashPersona: ((String, String) -> Unit)?,
     onSlashTrigger: (() -> Unit)?,
     onSlashSysgen: ((String, String?, Int?) -> Unit)?,
     onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)?,
@@ -1158,8 +1158,13 @@ private fun handleBuiltinSlash(
         }
 
         BuiltinSlashKind.PERSONA -> {
-            if (onSlashPersona != null) {
-                onSlashPersona(args.trim())
+            val mode = Regex("mode=(\S+)", RegexOption.IGNORE_CASE)
+                .find(args)?.groupValues?.get(1)?.lowercase() ?: "all"
+            if (mode !in listOf("lookup", "temp", "all")) {
+                toaster.show("mode 必须是 lookup / temp / all")
+            } else if (onSlashPersona != null) {
+                val name = args.replace(Regex("mode=("[^"]*"|\S+)", RegexOption.IGNORE_CASE), "").trim()
+                onSlashPersona(name, mode)
                 state.clearInput()
             } else {
                 toaster.show("当前页面不支持该命令")
