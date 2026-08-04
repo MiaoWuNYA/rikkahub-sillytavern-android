@@ -737,16 +737,28 @@ private fun LorebookTab(
                             },
                         )
                     }
-                    item(
-                        headlineContent = { Text(stringResource(R.string.prompt_page_world_info_strategy_title)) },
-                        supportingContent = { Text(stringResource(R.string.prompt_page_world_info_strategy_desc)) },
-                        trailingContent = {
+                    item {
+                        // 插入策略选项较多，放到整行选择区，避免在行尾被挤压换行
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.prompt_page_world_info_strategy_title),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                            Text(
+                                text = stringResource(R.string.prompt_page_world_info_strategy_desc),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
                             InsertionStrategySelector(
                                 selected = settings.worldInfoCharacterStrategy,
                                 onSelect = { onSettingsUpdate(settings.copy(worldInfoCharacterStrategy = it)) },
                             )
-                        },
-                    )
+                        }
+                    }
                     item(
                         headlineContent = { Text(stringResource(R.string.prompt_page_world_info_overflow_title)) },
                         supportingContent = { Text(stringResource(R.string.prompt_page_world_info_overflow_desc)) },

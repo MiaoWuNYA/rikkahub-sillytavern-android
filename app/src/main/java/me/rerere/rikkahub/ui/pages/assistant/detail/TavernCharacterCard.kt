@@ -26,6 +26,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontStyle
@@ -611,11 +612,11 @@ private fun EmbeddedBookSummary(
                 // 全局世界书激活设置（与外置世界书页同一份全局数据，天然同步）
                 if (settings != null && onSettingsUpdate != null) {
                     CardGroup(
-                        title = { Text("全局世界书激活设置（作用于所有世界书）") },
+                        title = { Text(stringResource(R.string.prompt_page_world_info_global_title)) },
                     ) {
                         item(
-                            headlineContent = { Text("默认扫描深度(Default Scan Depth)") },
-                            supportingContent = { Text("角色卡条目自带时优先用条目值；未写时用此默认（官方2）") },
+                            headlineContent = { Text(stringResource(R.string.prompt_page_world_info_depth_title)) },
+                            supportingContent = { Text(stringResource(R.string.prompt_page_world_info_depth_desc)) },
                             trailingContent = {
                                 IntTextField(
                                     value = settings.worldInfoDepth,
@@ -625,8 +626,8 @@ private fun EmbeddedBookSummary(
                             },
                         )
                         item(
-                            headlineContent = { Text("预算(Token Budget)") },
-                            supportingContent = { Text("0=不限") },
+                            headlineContent = { Text(stringResource(R.string.prompt_page_world_info_budget_title)) },
+                            supportingContent = { Text(stringResource(R.string.prompt_page_world_info_budget_desc)) },
                             trailingContent = {
                                 IntTextField(
                                     value = settings.worldInfoBudget,
@@ -636,8 +637,8 @@ private fun EmbeddedBookSummary(
                             },
                         )
                         item(
-                            headlineContent = { Text("最少激活(Minimum Activations)") },
-                            supportingContent = { Text("0=关") },
+                            headlineContent = { Text(stringResource(R.string.prompt_page_world_info_min_activations_title)) },
+                            supportingContent = { Text(stringResource(R.string.prompt_page_world_info_min_activations_desc)) },
                             trailingContent = {
                                 IntTextField(
                                     value = settings.worldInfoMinActivations,
@@ -647,7 +648,7 @@ private fun EmbeddedBookSummary(
                             },
                         )
                         item(
-                            headlineContent = { Text("递归扫描(Recursive Scanning)") },
+                            headlineContent = { Text(stringResource(R.string.prompt_page_world_info_recursive_title)) },
                             trailingContent = {
                                 Switch(
                                     checked = settings.worldInfoRecursive,
@@ -657,8 +658,8 @@ private fun EmbeddedBookSummary(
                         )
                         if (settings.worldInfoRecursive) {
                             item(
-                                headlineContent = { Text("最大递归层数(Max Recursion Steps)") },
-                                supportingContent = { Text("0=不限") },
+                                headlineContent = { Text(stringResource(R.string.prompt_page_world_info_max_recursion_title)) },
+                                supportingContent = { Text(stringResource(R.string.prompt_page_world_info_max_recursion_desc)) },
                                 trailingContent = {
                                     IntTextField(
                                         value = settings.worldInfoMaxRecursionSteps,
@@ -669,8 +670,8 @@ private fun EmbeddedBookSummary(
                             )
                         }
                         item(
-                            headlineContent = { Text("插入策略(Insertion Strategy)") },
-                            supportingContent = { Text("角色卡/全局世界书注入顺序") },
+                            headlineContent = { Text(stringResource(R.string.prompt_page_world_info_strategy_title)) },
+                            supportingContent = { Text(stringResource(R.string.prompt_page_world_info_strategy_desc)) },
                             trailingContent = {
                                 InsertionStrategySelector(
                                     selected = settings.worldInfoCharacterStrategy,
@@ -679,7 +680,7 @@ private fun EmbeddedBookSummary(
                             },
                         )
                         item(
-                            headlineContent = { Text("预算溢出提醒(Overflow Alert)") },
+                            headlineContent = { Text(stringResource(R.string.prompt_page_world_info_overflow_title)) },
                             trailingContent = {
                                 Switch(
                                     checked = settings.worldInfoOverflowAlert,
@@ -688,7 +689,7 @@ private fun EmbeddedBookSummary(
                             },
                         )
                         item(
-                            headlineContent = { Text("组评分全局默认(Global Group Scoring)") },
+                            headlineContent = { Text(stringResource(R.string.prompt_page_world_info_group_scoring_title)) },
                             trailingContent = {
                                 Switch(
                                     checked = settings.worldInfoUseGroupScoring,
