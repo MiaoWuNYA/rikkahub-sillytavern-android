@@ -121,7 +121,7 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
     ),
     SlashCommand(
         name = "inject",
-        description = "注入提示词(Inject)：写入发送给AI的提示词，不进入聊天记录",
+        description = "注入提示词(Inject)：写入发送给AI的提示词，不进入聊天记录；默认 after·深度4·system",
         argumentHint = "[文本] [position=before|after|chat] [depth=数字] [role=user|assistant|system]",
         content = "",
         filePath = "builtin",
@@ -136,7 +136,7 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
     ),
     SlashCommand(
         name = "char-update",
-        description = "修改角色卡字段(Char Update)",
+        description = "修改角色卡字段(Char Update)：可用字段 name/description/personality/scenario/system_prompt/first_mes/mes_example/phi/creator_notes",
         argumentHint = "[字段=值] 如 description=新描述",
         content = "",
         filePath = "builtin",

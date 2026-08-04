@@ -714,57 +714,79 @@ private fun TextInputRow(
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
                     )
-                    slashCommands.forEachIndexed { index, cmd ->
-                        SlashCommandItem(
-                            cmd = cmd,
-                            fullDescription = true,
-                            onClick = {
-                                if (cmd.builtinKind != null) {
-                                    if (cmd.argumentHint.isBlank()) {
-                                        // 无参数命令：点击直接执行
-                                        handleBuiltinSlash(
-                                            cmd = cmd,
-                                            args = "",
-                                            state = state,
-                                            toaster = toaster,
-                                            settings = settings,
-                                            assistant = assistant,
-                                            onUpdateAssistant = onUpdateAssistant,
-                                            onSlashDuplicate = onSlashDuplicate,
-                                            onSlashInsert = onSlashInsert,
-                                            onSlashPersona = onSlashPersona,
-                                            onSlashTrigger = onSlashTrigger,
-                                            onSlashSysgen = onSlashSysgen,
-                                            onSlashInject = onSlashInject,
-                                            onSlashVar = onSlashVar,
-                                            onShowHelp = onShowHelp,
-                                            onSlashContinue = onSlashContinue,
-                                            onSlashImpersonate = onSlashImpersonate,
-                                            onSlashPrompt = onSlashPrompt,
-                                        )
-                                    } else {
-                                        // 需要参数的命令：填入输入框，补参数后发送
-                                        state.setMessageText("/${cmd.name} ")
-                                    }
-                                } else {
-                                    // 技能命令：展开内容填入输入框
-                                    var text = cmd.content
-                                        .replace("\$ARGUMENTS", "")
-                                        .replace("\$ARGS", "")
-                                    for (i in 0..9) {
-                                        text = text.replace("\$ARGS.$i", "")
-                                    }
-                                    state.setMessageText(text)
-                                }
-                                onDismissHelpDialog()
-                            },
+                    val groupedCommands = slashCommands.groupBy { cmd ->
+                        when (cmd.builtinKind) {
+                            BuiltinSlashKind.VAR -> "变量"
+                            BuiltinSlashKind.INFO,
+                            BuiltinSlashKind.UPDATE_CHAR,
+                            BuiltinSlashKind.DUPLICATE,
+                            BuiltinSlashKind.RENAME -> "角色卡"
+                            BuiltinSlashKind.HELP -> "其他"
+                            null -> "技能"
+                            else -> "消息与生成"
+                        }
+                    }
+                    val categoryOrder = listOf("消息与生成", "角色卡", "变量", "技能", "其他")
+                    categoryOrder.forEach { category ->
+                        val cmds = groupedCommands[category] ?: return@forEach
+                        Text(
+                            text = category,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         )
-                        if (index < slashCommands.size - 1) {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 10.dp),
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                                thickness = 0.5.dp,
+                        cmds.forEachIndexed { index, cmd ->
+                            SlashCommandItem(
+                                cmd = cmd,
+                                fullDescription = true,
+                                onClick = {
+                                    if (cmd.builtinKind != null) {
+                                        if (cmd.argumentHint.isBlank()) {
+                                            // 无参数命令：点击直接执行
+                                            handleBuiltinSlash(
+                                                cmd = cmd,
+                                                args = "",
+                                                state = state,
+                                                toaster = toaster,
+                                                settings = settings,
+                                                assistant = assistant,
+                                                onUpdateAssistant = onUpdateAssistant,
+                                                onSlashDuplicate = onSlashDuplicate,
+                                                onSlashInsert = onSlashInsert,
+                                                onSlashPersona = onSlashPersona,
+                                                onSlashTrigger = onSlashTrigger,
+                                                onSlashSysgen = onSlashSysgen,
+                                                onSlashInject = onSlashInject,
+                                                onSlashVar = onSlashVar,
+                                                onShowHelp = onShowHelp,
+                                                onSlashContinue = onSlashContinue,
+                                                onSlashImpersonate = onSlashImpersonate,
+                                                onSlashPrompt = onSlashPrompt,
+                                            )
+                                        } else {
+                                            // 需要参数的命令：填入输入框，补参数后发送
+                                            state.setMessageText("/${cmd.name} ")
+                                        }
+                                    } else {
+                                        // 技能命令：展开内容填入输入框
+                                        var text = cmd.content
+                                            .replace("\$ARGUMENTS", "")
+                                            .replace("\$ARGS", "")
+                                        for (i in 0..9) {
+                                            text = text.replace("\$ARGS.$i", "")
+                                        }
+                                        state.setMessageText(text)
+                                    }
+                                    onDismissHelpDialog()
+                                },
                             )
+                            if (index < cmds.size - 1) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = 10.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                                    thickness = 0.5.dp,
+                                )
+                            }
                         }
                     }
                 }
