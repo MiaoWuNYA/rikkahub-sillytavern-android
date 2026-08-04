@@ -44,6 +44,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -146,12 +147,16 @@ fun AssistantPage(vm: AssistantVM = koinViewModel()) {
         ) {
             val lazyListState = rememberLazyListState()
             val isFiltering = selectedTagIds.isNotEmpty() || searchQuery.isNotBlank()
+            val currentAssistants by rememberUpdatedState(settings.assistants)
             val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
                 if (!isFiltering) {
-                    val newAssistants = settings.assistants.toMutableList().apply {
-                        add(to.index, removeAt(from.index))
+                    val assistants = currentAssistants
+                    if (from.index in assistants.indices && to.index in 0..assistants.size) {
+                        val newAssistants = assistants.toMutableList().apply {
+                            add(to.index, removeAt(from.index))
+                        }
+                        vm.updateSettings(settings.copy(assistants = newAssistants))
                     }
-                    vm.updateSettings(settings.copy(assistants = newAssistants))
                 }
             }
             val haptic = LocalHapticFeedback.current
@@ -268,11 +273,15 @@ private fun AssistantTagsFilterRow(
     val haptic = LocalHapticFeedback.current
     if (settings.assistantTags.isNotEmpty()) {
         val tagsListState = rememberLazyListState()
+        val currentTags by rememberUpdatedState(settings.assistantTags)
         val tagsReorderableState = rememberReorderableLazyListState(tagsListState) { from, to ->
-            val newTags = settings.assistantTags.toMutableList().apply {
-                add(to.index, removeAt(from.index))
+            val tags = currentTags
+            if (from.index in tags.indices && to.index in 0..tags.size) {
+                val newTags = tags.toMutableList().apply {
+                    add(to.index, removeAt(from.index))
+                }
+                vm.updateSettings(settings.copy(assistantTags = newTags))
             }
-            vm.updateSettings(settings.copy(assistantTags = newTags))
         }
 
         LazyRow(

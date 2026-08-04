@@ -206,10 +206,14 @@ private fun ModeInjectionTab(
     val toaster = LocalToaster.current
     val currentModeInjections by rememberUpdatedState(modeInjections)
     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
-        val newList = modeInjections.toMutableList()
-        val item = newList.removeAt(from.index)
-        newList.add(to.index, item)
-        onUpdate(newList)
+        // 用最新列表而非首次组合的快照，拖拽中列表变化不再越界
+        val current = currentModeInjections
+        if (from.index in current.indices && to.index in 0..current.size) {
+            val newList = current.toMutableList()
+            val item = newList.removeAt(from.index)
+            newList.add(to.index, item)
+            onUpdate(newList)
+        }
     }
     val editState = useEditState<PromptInjection.ModeInjection> { edited ->
         val index = modeInjections.indexOfFirst { it.id == edited.id }
@@ -631,10 +635,14 @@ private fun LorebookTab(
     val toaster = LocalToaster.current
     val currentLorebooks by rememberUpdatedState(lorebooks)
     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
-        val newList = lorebooks.toMutableList()
-        val item = newList.removeAt(from.index)
-        newList.add(to.index, item)
-        onUpdate(newList)
+        // 用最新列表而非首次组合的快照，拖拽中列表变化不再越界
+        val current = currentLorebooks
+        if (from.index in current.indices && to.index in 0..current.size) {
+            val newList = current.toMutableList()
+            val item = newList.removeAt(from.index)
+            newList.add(to.index, item)
+            onUpdate(newList)
+        }
     }
     val editState = useEditState<Lorebook> { edited ->
         val index = lorebooks.indexOfFirst { it.id == edited.id }

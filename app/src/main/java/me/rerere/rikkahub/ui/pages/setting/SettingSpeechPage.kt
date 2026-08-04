@@ -53,6 +53,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -306,11 +307,15 @@ private fun TTSProviderList(
     modifier: Modifier = Modifier
 ) {
     val lazyListState = rememberLazyListState()
+    val currentProviders by rememberUpdatedState(settings.ttsProviders)
     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
-        val newProviders = settings.ttsProviders.toMutableList().apply {
-            add(to.index, removeAt(from.index))
+        val providers = currentProviders
+        if (from.index in providers.indices && to.index in 0..providers.size) {
+            val newProviders = providers.toMutableList().apply {
+                add(to.index, removeAt(from.index))
+            }
+            onUpdateSettings(settings.copy(ttsProviders = newProviders))
         }
-        onUpdateSettings(settings.copy(ttsProviders = newProviders))
     }
 
     LazyColumn(
@@ -430,11 +435,15 @@ private fun ASRProviderList(
     modifier: Modifier = Modifier
 ) {
     val lazyListState = rememberLazyListState()
+    val currentAsrProviders by rememberUpdatedState(settings.asrProviders)
     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
-        val newProviders = settings.asrProviders.toMutableList().apply {
-            add(to.index, removeAt(from.index))
+        val providers = currentAsrProviders
+        if (from.index in providers.indices && to.index in 0..providers.size) {
+            val newProviders = providers.toMutableList().apply {
+                add(to.index, removeAt(from.index))
+            }
+            onUpdateSettings(settings.copy(asrProviders = newProviders))
         }
-        onUpdateSettings(settings.copy(asrProviders = newProviders))
     }
 
     LazyColumn(

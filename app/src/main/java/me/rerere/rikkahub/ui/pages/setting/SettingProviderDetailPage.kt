@@ -74,6 +74,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -399,8 +400,12 @@ private fun ModelList(
     }
     var expanded by rememberSaveable { mutableStateOf(true) }
     val lazyListState = rememberLazyListState()
+    val currentSetting by rememberUpdatedState(providerSetting)
     val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
-        onUpdateProvider(providerSetting.moveMove(from.index, to.index))
+        val models = currentSetting.models
+        if (from.index in models.indices && to.index in 0..models.size) {
+            onUpdateProvider(currentSetting.moveMove(from.index, to.index))
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
