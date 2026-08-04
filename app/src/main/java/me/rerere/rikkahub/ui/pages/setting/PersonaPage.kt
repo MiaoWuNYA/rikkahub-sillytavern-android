@@ -340,7 +340,7 @@ private fun PersonaEditPage(
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            text = "快速预设",
+                            text = "快速预设（${personaPresets.size}）",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Medium,
                         )

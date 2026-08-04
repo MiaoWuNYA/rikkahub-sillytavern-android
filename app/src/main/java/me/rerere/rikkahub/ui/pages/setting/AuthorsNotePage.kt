@@ -80,7 +80,7 @@ fun AuthorsNotePage() {
             // 内容输入
             // 快速预设：一行横向 chips，点击填入内容（不占纵向空间，输入框保持可见）
             Text(
-                text = "快速预设",
+                text = "快速预设（${authorsNotePresets.size}）",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Medium,
             )
