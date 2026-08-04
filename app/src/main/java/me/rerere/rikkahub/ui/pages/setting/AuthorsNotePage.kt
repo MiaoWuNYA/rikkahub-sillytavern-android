@@ -77,30 +77,6 @@ fun AuthorsNotePage() {
             }
 
             // 内容输入
-            // 快速预设
-            CardGroup(title = { Text("快速预设") }) {
-                authorsNotePresets.forEach { (label, content) ->
-                    item(
-                        onClick = {
-                            scope.launch {
-                                settingsStore.update(settings.copy(authorNote = content))
-                            }
-                        },
-                        headlineContent = { Text(label, style = MaterialTheme.typography.titleSmall) },
-                        supportingContent = {
-                            Text(
-                                text = content.replace("\n", " "),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    )
-                }
-            }
-
-            // 内容输入
             Card(
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
@@ -119,6 +95,29 @@ fun AuthorsNotePage() {
                         minLines = 4,
                         maxLines = 8,
                         modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            // 快速预设
+            CardGroup(title = { Text("快速预设") }) {
+                authorsNotePresets.forEach { (label, content) ->
+                    item(
+                        onClick = {
+                            scope.launch {
+                                settingsStore.update(settings.copy(authorNote = content))
+                            }
+                        },
+                        headlineContent = { Text(label, style = MaterialTheme.typography.titleSmall) },
+                        supportingContent = {
+                            Text(
+                                text = content.replace("\n", " "),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     )
                 }
             }
