@@ -1271,6 +1271,23 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="tavern_export_json_success">已导出 JSON: %1$s</string>
   <string name="tavern_export_failed">导出失败: %1$s</string>
   <string name="tavern_export_close">关闭(Close)</string>
+  <string name="persona_page_title">用户设定(Persona)</string>
+  <string name="persona_page_create">创建用户设定(Create Persona)</string>
+  <string name="persona_page_save">保存(Save)</string>
+  <string name="persona_page_basic_info">基本信息(Basic Info)</string>
+  <string name="persona_page_name">名称(Name)</string>
+  <string name="persona_page_short_name">短标题(Short Name)</string>
+  <string name="persona_page_short_name_desc">不填则使用名称</string>
+  <string name="persona_page_description">描述(Description)</string>
+  <string name="persona_page_position">插入位置(Position)</string>
+  <string name="persona_page_depth">深度(Depth)</string>
+  <string name="persona_page_depth_desc">官方范围 0–9999；0 = 对话最末尾</string>
+  <string name="persona_page_role">身份(Role)</string>
+  <string name="persona_page_locked_characters">绑定到角色(Locked Characters)</string>
+  <string name="persona_page_locked_desc">绑定后，只有这些角色会注入该人设</string>
+  <string name="persona_page_locked_count">已绑定 %d 个角色</string>
+  <string name="persona_page_choose_characters">选择角色</string>
+  <string name="persona_page_hide_characters">收起角色列表</string>
   <string name="prompt_page_sticky_desc">0 = 关闭, N = 持续N轮</string>
 <string name="skills_page_import_from_file">从文件导入</string>
   <string name="skills_page_add_manually">手动添加</string>

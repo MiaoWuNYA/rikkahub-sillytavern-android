@@ -47,7 +47,7 @@ fun PersonaPage() {
     Scaffold(
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text("用户人设") },
+                title = { Text(stringResource(R.string.persona_page_title)) },
                 navigationIcon = { BackButton() },
                 scrollBehavior = scrollBehavior,
                 colors = CustomColors.topBarColors,
@@ -244,7 +244,7 @@ fun PersonaPage() {
                 OutlinedButton(
                     onClick = { showCreate = true },
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text("+ 创建用户人设") }
+                ) { Text(stringResource(R.string.persona_page_create)) }
             }
         }
     }
@@ -320,7 +320,7 @@ private fun PersonaEditPage(
                             ))
                         },
                         enabled = name.isNotBlank(),
-                    ) { Text("保存") }
+                    ) { Text(stringResource(R.string.persona_page_save)) }
                 },
                 scrollBehavior = scrollBehavior,
                 colors = CustomColors.topBarColors,
@@ -373,26 +373,26 @@ private fun PersonaEditPage(
                     colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("基本信息", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.persona_page_basic_info), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                         OutlinedTextField(
                             value = name,
                             onValueChange = { name = it },
-                            label = { Text("名称") },
+                            label = { Text(stringResource(R.string.persona_page_name)) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                         )
                         OutlinedTextField(
                             value = title,
                             onValueChange = { title = it },
-                            label = { Text("短标题（展示用，可选）") },
+                            label = { Text(stringResource(R.string.persona_page_short_name)) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
-                            supportingText = { Text("不填则使用名称") },
+                            supportingText = { Text(stringResource(R.string.persona_page_short_name_desc)) },
                         )
                         OutlinedTextField(
                             value = desc,
                             onValueChange = { desc = it },
-                            label = { Text("描述（外表/背景）") },
+                            label = { Text(stringResource(R.string.persona_page_description)) },
                             minLines = 2,
                             maxLines = 5,
                             modifier = Modifier.fillMaxWidth(),
@@ -403,7 +403,7 @@ private fun PersonaEditPage(
 
             // 注入设置
             item {
-                CardGroup(title = { Text("注入位置（Position）") }) {
+                CardGroup(title = { Text(stringResource(R.string.persona_page_position)) }) {
                     PersonaInjectionPosition.entries.forEach { p ->
                         item(
                             onClick = { pos = p },
@@ -439,18 +439,18 @@ private fun PersonaEditPage(
                                     depth = num
                                 }
                             },
-                            label = { Text("插入深度（Depth）") },
+                            label = { Text(stringResource(R.string.persona_page_depth)) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
                             isError = depthText.isNotEmpty() && (depthNum == null || depthNum !in 0..9999),
-                            supportingText = { Text("官方范围 0–9999；0 = 对话最末尾") },
+                            supportingText = { Text(stringResource(R.string.persona_page_depth_desc)) },
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
                 if (pos == PersonaInjectionPosition.AT_DEPTH) {
                     Spacer(Modifier.height(12.dp))
-                    CardGroup(title = { Text("注入角色（Role）") }) {
+                    CardGroup(title = { Text(stringResource(R.string.persona_page_role)) }) {
                         listOf(
                             MessageRole.SYSTEM to "系统",
                             MessageRole.USER to "用户",
@@ -478,24 +478,24 @@ private fun PersonaEditPage(
                     colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("绑定到角色（Locked Characters）", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.persona_page_locked_characters), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            "绑定后，只有这些角色会注入该人设",
+                            stringResource(R.string.persona_page_locked_desc),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Spacer(Modifier.height(8.dp))
                         if (lockedIds.isNotEmpty()) {
                             Text(
-                                "已绑定 ${lockedIds.size} 个角色",
+                                stringResource(R.string.persona_page_locked_count, lockedIds.size),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.tertiary,
                             )
                             Spacer(Modifier.height(4.dp))
                         }
                         TextButton(onClick = { showCharPicker = !showCharPicker }) {
-                            Text(if (showCharPicker) "收起角色列表" else "选择角色")
+                            Text(if (showCharPicker) stringResource(R.string.persona_page_hide_characters) else stringResource(R.string.persona_page_choose_characters))
                         }
                         if (showCharPicker) {
                             assistants.forEach { asst ->

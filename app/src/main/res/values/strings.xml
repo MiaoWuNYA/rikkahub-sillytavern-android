@@ -1280,6 +1280,23 @@
   <string name="tavern_export_json_success">Exported JSON: %1$s</string>
   <string name="tavern_export_failed">Export failed: %1$s</string>
   <string name="tavern_export_close">Close</string>
+  <string name="persona_page_title">Persona</string>
+  <string name="persona_page_create">Create Persona</string>
+  <string name="persona_page_save">Save</string>
+  <string name="persona_page_basic_info">Basic Info</string>
+  <string name="persona_page_name">Name</string>
+  <string name="persona_page_short_name">Short Name</string>
+  <string name="persona_page_short_name_desc">Fallback to name when empty</string>
+  <string name="persona_page_description">Description</string>
+  <string name="persona_page_position">Position</string>
+  <string name="persona_page_depth">Depth</string>
+  <string name="persona_page_depth_desc">Official range 0–9999; 0 = end of chat</string>
+  <string name="persona_page_role">Role</string>
+  <string name="persona_page_locked_characters">Locked Characters</string>
+  <string name="persona_page_locked_desc">When locked, only these characters will receive this persona</string>
+  <string name="persona_page_locked_count">%d characters locked</string>
+  <string name="persona_page_choose_characters">Choose Characters</string>
+  <string name="persona_page_hide_characters">Hide Character List</string>
   <string name="prompt_page_sticky_desc">0 = off, N = persist for N turns</string>
   <string name="prompt_page_no_group">Ungrouped</string>
   <string name="prompt_page_no_entries">No entries yet. Tap + to add one.</string>
