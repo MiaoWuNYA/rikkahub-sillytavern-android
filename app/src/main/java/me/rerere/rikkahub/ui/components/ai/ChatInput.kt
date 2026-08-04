@@ -677,46 +677,83 @@ private fun TextInputRow(
             )
         }
 
-        // /help 命令列表对话框
+        // /help 命令列表：复用斜杠弹窗同款卡片样式，列出全部命令 + 完整描述，点击可执行或填入输入框
         if (helpDialogVisible) {
-            BasicAlertDialog(
-                onDismissRequest = onDismissHelpDialog,
-                content = {
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shadowElevation = 8.dp,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(4.dp)
+                        .heightIn(max = 420.dp)
+                        .verticalScroll(rememberScrollState()),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                                .verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = "可用命令",
-                                style = MaterialTheme.typography.titleLarge,
-                            )
-                            slashCommands.forEach { cmd ->
-                                Column {
-                                    Text(
-                                        text = buildString {
-                                            append("/${cmd.name}")
-                                            if (cmd.argumentHint.isNotBlank()) append(" ${cmd.argumentHint}")
-                                        },
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color = MaterialTheme.colorScheme.primary,
-                                    )
-                                    Text(
-                                        text = cmd.description,
-                                        style = MaterialTheme.typography.bodySmall,
-                                    )
-                                }
-                            }
+                        Text(
+                            text = "可用命令",
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = onDismissHelpDialog) {
+                            Text("关闭")
                         }
                     }
-                },
-            )
+                    slashCommands.forEach { cmd ->
+                        SlashCommandItem(
+                            cmd = cmd,
+                            fullDescription = true,
+                            onClick = {
+                                if (cmd.builtinKind != null) {
+                                    if (cmd.argumentHint.isBlank()) {
+                                        // 无参数命令：点击直接执行
+                                        handleBuiltinSlash(
+                                            cmd = cmd,
+                                            args = "",
+                                            state = state,
+                                            toaster = toaster,
+                                            settings = settings,
+                                            assistant = assistant,
+                                            onUpdateAssistant = onUpdateAssistant,
+                                            onSlashDuplicate = onSlashDuplicate,
+                                            onSlashInsert = onSlashInsert,
+                                            onSlashPersona = onSlashPersona,
+                                            onSlashTrigger = onSlashTrigger,
+                                            onSlashSysgen = onSlashSysgen,
+                                            onSlashInject = onSlashInject,
+                                            onSlashVar = onSlashVar,
+                                            onShowHelp = onShowHelp,
+                                            onSlashContinue = onSlashContinue,
+                                            onSlashImpersonate = onSlashImpersonate,
+                                            onSlashPrompt = onSlashPrompt,
+                                        )
+                                    } else {
+                                        // 需要参数的命令：填入输入框，补参数后发送
+                                        state.setMessageText("/${cmd.name} ")
+                                    }
+                                } else {
+                                    // 技能命令：展开内容填入输入框
+                                    var text = cmd.content
+                                        .replace("\$ARGUMENTS", "")
+                                        .replace("\$ARGS", "")
+                                    for (i in 0..9) {
+                                        text = text.replace("\$ARGS.$i", "")
+                                    }
+                                    state.setMessageText(text)
+                                }
+                                onDismissHelpDialog()
+                            },
+                        )
+                    }
+                }
+            }
         }
 
         // 斜杠命令弹窗
@@ -733,7 +770,8 @@ private fun TextInputRow(
                 ) {
                     Column(modifier = Modifier.padding(4.dp)) {
                         filtered.take(5).forEach { cmd ->
-                            Surface(
+                            SlashCommandItem(
+                                cmd = cmd,
                                 onClick = {
                                     if (cmd.builtinKind != null) {
                                         if (cmd.argumentHint.isBlank()) {
@@ -776,51 +814,7 @@ private fun TextInputRow(
                                     }
                                     showSlashPopup = false
                                 },
-                                color = Color.Transparent,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp, 8.dp)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = "/${cmd.name}",
-                                            style = MaterialTheme.typography.labelLarge,
-                                            color = MaterialTheme.colorScheme.primary,
-                                        )
-                                        if (cmd.argumentHint.isNotBlank()) {
-                                            Spacer(Modifier.width(6.dp))
-                                            Text(
-                                                text = cmd.argumentHint,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                            )
-                                        }
-                                    }
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = cmd.description,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.weight(1f),
-                                        )
-                                        if (cmd.disableModelInvocation) {
-                                            Spacer(Modifier.width(6.dp))
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f),
-                                            ) {
-                                                Text(
-                                                    text = "⚡脚本",
-                                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
-                                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                                    color = MaterialTheme.colorScheme.tertiary,
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                            )
                         }
                     }
                 }
@@ -957,6 +951,65 @@ private fun ChatInputState.applyCompletion(
     textContent.edit {
         replace(start, end, item.insertText)
         selection = TextRange(start + item.insertText.length)
+    }
+}
+
+/**
+ * 斜杠命令行（斜杠建议弹窗与 /help 列表共用）
+ * fullDescription=true 时显示完整描述（/help 用），否则单行省略（建议弹窗用）
+ */
+@Composable
+private fun SlashCommandItem(
+    cmd: SlashCommand,
+    onClick: () -> Unit,
+    fullDescription: Boolean = false,
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        color = Color.Transparent,
+    ) {
+        Column(modifier = Modifier.padding(12.dp, 8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "/${cmd.name}",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                if (cmd.argumentHint.isNotBlank()) {
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = cmd.argumentHint,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    )
+                }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = cmd.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = if (fullDescription) Int.MAX_VALUE else 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                if (cmd.disableModelInvocation) {
+                    Spacer(Modifier.width(6.dp))
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f),
+                    ) {
+                        Text(
+                            text = "⚡脚本",
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                            color = MaterialTheme.colorScheme.tertiary,
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
