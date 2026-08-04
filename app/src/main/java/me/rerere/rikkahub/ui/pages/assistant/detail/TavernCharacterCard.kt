@@ -136,7 +136,7 @@ fun TavernCharacterCard(
                             )
                         }
                     }
-                    // 统计行 — 用图标+颜色表示有无内容
+                    // 统计行 — 图标徽章表示有无内容
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -186,14 +186,23 @@ fun TavernCharacterCard(
                 exit = shrinkVertically() + fadeOut(),
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // 标签
+                    // 标签 — 与作者/版本一致的小标签流式排布
                     if (tav.tags.isNotEmpty()) {
-                        Text(
-                            text = "标签(Tags)：${tav.tags.joinToString(" · ")}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        )
+                        FlowRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            tav.tags.forEach { tag ->
+                                Text(
+                                    text = "#$tag",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
                     }
 
                     // 角色信息分组标题
@@ -302,48 +311,36 @@ fun TavernCharacterCard(
                         }
                     }
 
-                    // 作者信息 — FlowRow + 小标签样式
-                    if (tav.creator.isNotBlank() || tav.characterVersion.isNotBlank()) {
-                        FlowRow(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
+                    // 元数据 — CardGroup 列表项（作者/版本/扩展/资源摘要）
+                    if (tav.creator.isNotBlank() || tav.characterVersion.isNotBlank() ||
+                        tav.extensions.isNotEmpty() || tav.assets.isNotEmpty()
+                    ) {
+                        CardGroup {
                             if (tav.creator.isNotBlank()) {
-                                MetaTag("作者: ${tav.creator}")
+                                item(
+                                    headlineContent = { Text("作者") },
+                                    supportingContent = { Text(tav.creator) },
+                                )
                             }
                             if (tav.characterVersion.isNotBlank()) {
-                                MetaTag("版本: v${tav.characterVersion}")
+                                item(
+                                    headlineContent = { Text("版本") },
+                                    supportingContent = { Text("v${tav.characterVersion}") },
+                                )
                             }
-                        }
-                    }
-
-                    // 数据完整性摘要
-                    if (tav.extensions.isNotEmpty() || tav.assets.isNotEmpty()) {
-                        FlowRow(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
                             if (tav.extensions.isNotEmpty()) {
-                                MetaTag("扩展字段: ${tav.extensions.size}")
+                                item(
+                                    headlineContent = { Text("扩展字段") },
+                                    supportingContent = { Text("${tav.extensions.size} 个，导出时原样保留") },
+                                )
                             }
                             if (tav.assets.isNotEmpty()) {
-                                MetaTag("资源文件: ${tav.assets.size}")
+                                item(
+                                    headlineContent = { Text("资源文件") },
+                                    supportingContent = { Text("${tav.assets.size} 个") },
+                                )
                             }
                         }
-                    }
-                    if (tav.extensions.isNotEmpty()) {
-                        Text(
-                            text = "扩展字段为原始数据，当前界面不展开（导出时原样保留）",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
-                        )
                     }
 
                     // 资源文件列表
@@ -357,6 +354,19 @@ fun TavernCharacterCard(
                         CardGroup {
                             tav.assets.forEach { asset ->
                                 item(
+                                    leadingContent = {
+                                        Icon(
+                                            imageVector = when (asset.type.lowercase()) {
+                                                "image" -> HugeIcons.Image02
+                                                "audio" -> HugeIcons.MusicNote03
+                                                "video" -> HugeIcons.Video01
+                                                else -> HugeIcons.File02
+                                            },
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp),
+                                            tint = MaterialTheme.colorScheme.primary,
+                                        )
+                                    },
                                     headlineContent = {
                                         Text(
                                             text = asset.name.ifBlank { asset.type.ifBlank { "未命名资源" } },
@@ -452,24 +462,6 @@ private fun SectionTitle(text: String) {
 }
 
 /**
- * 元数据小标签 — secondaryContainer 背景的小标签
- */
-@Composable
-private fun MetaTag(text: String) {
-    Surface(
-        shape = RoundedCornerShape(4.dp),
-        color = MaterialTheme.colorScheme.secondaryContainer,
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSecondaryContainer,
-        )
-    }
-}
-
-/**
  * 可编辑字段组件 — 折叠预览3行，展开后OutlinedTextField可编辑
  */
 @Composable
@@ -492,54 +484,56 @@ private fun EditableField(
             onSave(editText)
         }
     }
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = !expanded },
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                HugeIcons.ArrowRight01,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(14.dp)
-                    .graphicsLayer { rotationZ = rotationAngle },
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.weight(1f),
-            )
-        }
-        if (expanded) {
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceContainerLow,
-                shape = RoundedCornerShape(4.dp),
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 2.dp),
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, top = 4.dp),
+                    .clickable { expanded = !expanded },
+                verticalAlignment = Alignment.CenterVertically,
             ) {
+                Icon(
+                    HugeIcons.ArrowRight01,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(14.dp)
+                        .graphicsLayer { rotationZ = rotationAngle },
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            if (expanded) {
                 OutlinedTextField(
                     value = editText,
                     onValueChange = { editText = it },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
                     textStyle = MaterialTheme.typography.bodySmall,
                     minLines = 3,
                 )
+            } else {
+                Text(
+                    text = value.lines().take(previewLines).joinToString("\n")
+                        .let { if (it.length < value.length) "$it…" else it },
+                    modifier = Modifier.padding(top = 2.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = previewLines,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
-        } else {
-            Text(
-                text = value.lines().take(previewLines).joinToString("\n")
-                    .let { if (it.length < value.length) "$it…" else it },
-                modifier = Modifier.padding(start = 16.dp),
-                style = MaterialTheme.typography.bodySmall.copy(fontStyle = FontStyle.Italic),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = previewLines,
-                overflow = TextOverflow.Ellipsis,
-            )
         }
     }
 }
