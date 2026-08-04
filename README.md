@@ -1,8 +1,9 @@
 # RikkaHub Plus — 命理 & 酒馆增强版
 
-> 基于 [RikkaHub](https://github.com/rikkahub/rikkahub) 的深度定制分支（Android 原生 LLM 聊天客户端）。
-> 上游全部能力完整保留。下文把每个系统拆成"上游有什么 / 本地在上游基础上做了什么"，全部对照代码。
-> 与上游逐文件差异与合并工作流见 [DIVERGENCE.md](DIVERGENCE.md)。
+> 基于 [RikkaHub](https://github.com/rikkahub/rikkahub) 的深度定制分支（Android 原生 LLM 聊天客户端），上游全部能力完整保留。
+> 下文按"上游有什么 / 本地在上游基础上做了什么"对照代码说明；逐文件差异与合并工作流见 [DIVERGENCE.md](DIVERGENCE.md)。
+
+**核心亮点**：酒馆角色卡 / 世界书系统全面强化（字段无损导入导出、官方注入结构）、全新命理排盘系统（八套体系）、宏引擎 2.0 与斜杠命令、技能自动触发与 Python / JS 双桥接。
 
 ---
 
@@ -35,21 +36,28 @@
 - **示例消息前后锚点**（EM Top/Bottom）注入
 - 条目导入导出字段完整（insertion_order、extensions.*）
 
-### 3. 宏引擎
+### 3. 宏引擎 2.0
 
-**上游有什么**：简单的占位符替换（`{{char}}` 之类）。
+**上游有什么**：简单的占位符替换（`{{char}}`、`{{user}}` 之类）。
 
-**本地在上游基础上**：新增完整宏引擎 2.0——变量家族（set/get/inc/dec/add/has/delete + global + `.var/$var` 简写）、`{{if}}/{{else}}/!`/比较/`&&||`、`{{pick}}`（稳定种子）/`{{roll}}`（骰子）/`{{random}}`、时间宏、`{{original}}`、`{{charFirstMessage::N}}` 等，未知宏原样保留。
+**本地在上游基础上**：把提示词当"程序"写——
+
+- **变量系统**：`/setvar`、`/getvar`、`/incvar` 等命令管理对话变量，宏里用 `{{getvar::key}}` 或 `.key` 简写读取，同一张卡能随剧情状态自动切换说法
+- **条件逻辑**：`{{if}} / {{else}} / !`、比较运算符、`&&` / `||`，支持分支与嵌套
+- **随机与时间**：`{{pick::A|B|C}}`（同轮稳定随机）、`{{roll::1d20}}`、`{{random}}`、时间与间隔宏
+- **对话感知**：`{{lastUserMessage}}`、`{{lastCharMessage}}`、`{{idleDuration}}`、`{{charFirstMessage::N}}`、`{{original}}` 等等
+- 未知宏原样保留，不会破坏模板
 
 ### 4. 斜杠命令
 
-**上游没有**。本地新增（输入框直接输入即执行，`/help` 可查看全部命令）：
-- `/sys` 系统消息、`/sendas` 插入助手消息（直接写入，不触发生成）
-- `/continue` 续写最后一条助手回复（可加补充文本，AI 在原回复末尾继续写）
-- `/impersonate` 以角色身份生成一条新回复（可加开头文本，AI 从该文本后面接写）
-- `/prompt` 弹窗预览发送给 AI 的完整提示词
-- `/persona` 切换人设、`/trigger` 无消息直接触发、`/sysgen` AI 写旁白、`/inject` 注入提示词
-- `/char-update`、`/char-duplicate`、`/rename-char`、7 个变量命令
+**上游没有**。本地新增（输入框直接输入即执行，`/help` 随时查看全部命令与说明）：
+
+- **角色扮演**：`/impersonate` 以角色身份新写一条回复（可带开头文本由 AI 接写）、`/continue` 在原回复末尾继续生成、`/sendas` / `/sys` 直接插入助手 / 系统消息（不触发生成）
+- **操控生成**：`/trigger` 不新增消息直接触发回复、`/sysgen` 让 AI 写系统旁白、`/inject` 注入提示词而不污染聊天记录
+- **状态与调试**：`/persona` 切换人设、`/prompt` 预览实际发送给 AI 的完整提示词
+- **角色卡管理**：`/char-get`、`/char-update`、`/char-duplicate`、`/rename-char`
+- **变量**：`/listvar`、`/setvar`、`/getvar`、`/addvar`、`/incvar`、`/decvar`、`/flushvar`
+- 等等，共 21 个内置命令，语义对照酒馆官方实现；技能目录里的命令会随技能自动出现
 
 ### 5. 人设（Persona）
 
