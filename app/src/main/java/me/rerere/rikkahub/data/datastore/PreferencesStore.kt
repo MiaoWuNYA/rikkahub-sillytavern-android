@@ -265,10 +265,8 @@ class SettingsStore(
                 lorebooks = preferences[LOREBOOKS]?.let {
                     JsonInstant.decodeFromString(it)
                 } ?: emptyList(),
-                worldInfoBudget = (preferences[WORLD_INFO_BUDGET] ?: 1024).let {
-                    // worldInfoBudget 为 token 预算；1–200 区间的值按默认 1024 处理
-                    if (it in 1..200) 1024 else it
-                },
+                // 世界书预算 = 绝对 token 上限（本实现语义）；不兼容任何旧百分比值
+                worldInfoBudget = preferences[WORLD_INFO_BUDGET] ?: 1024,
                 worldInfoMinActivations = preferences[WORLD_INFO_MIN_ACTIVATIONS] ?: 0,
                 worldInfoRecursive = preferences[WORLD_INFO_RECURSIVE] ?: false,
                 worldInfoMaxRecursionSteps = preferences[WORLD_INFO_MAX_RECURSION_STEPS] ?: 0,

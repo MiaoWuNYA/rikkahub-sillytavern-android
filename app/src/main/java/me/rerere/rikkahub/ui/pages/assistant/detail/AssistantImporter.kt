@@ -421,6 +421,7 @@ private fun parseEntriesArray(arr: kotlinx.serialization.json.JsonArray): List<T
                 sticky = parseStickyInt(e["sticky"]),
                 cooldown = e["cooldown"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
                 depth = e["depth"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 4,
+                // 官方语义：条目未写 scan_depth 时为 null → 注入时用全局默认（world_info_depth=2）
                 scanDepth = e["scan_depth"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
                 role = parseEntryRole(e),
                 groupWeight = e["group_weight"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 100,
@@ -460,6 +461,7 @@ private fun parseEntriesMap(obj: JsonObject): List<TavernBookEntry> {
                 sticky = parseStickyInt(e["sticky"]),
                 cooldown = e["cooldown"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
                 depth = e["depth"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 4,
+                // 官方语义：条目未写 scan_depth 时为 null → 注入时用全局默认（world_info_depth=2）
                 scanDepth = e["scan_depth"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
                 role = parseEntryRole(e),
                 groupWeight = e["group_weight"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 100,
