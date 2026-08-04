@@ -543,7 +543,7 @@ fun Assistant.assembleMainPrompt(): String {
 
 /**
  * 官方 Chat Completion 结构拆分 — 角色卡字段消息（对应官方 persona/description/personality/scenario 独立消息）。
- * 内部顺序对齐官方 OpenAI 模式：人设(按位置设置) → 描述 → 性格 → 场景
+ * 内部顺序对齐官方 OpenAI 模式：描述 → 性格 → 场景（人设由独立 SYSTEM 消息在角色卡之后注入）
  */
 fun Assistant.assembleCharacterCardBlock(
 ): String {
