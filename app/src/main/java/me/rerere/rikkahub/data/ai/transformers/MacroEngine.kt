@@ -442,7 +442,8 @@ class MacroEngine(
             "time" -> timeMacro(args.firstOrNull())
             "timeDiff" -> timeDiff(args.getOrNull(0), args.getOrNull(1))
             "greeting", "charFirstMessage" -> greetingMacro(args.firstOrNull(), state.ctx)
-            "maxContext", "maxContextTokens" -> state.ctx.assistant.contextMessageLimit?.toString() ?: ""
+            // 官方语义是上下文 token 上限；本地没有 token 概念，返回空避免把消息条数误当 token 误导模型
+            "maxContext", "maxContextTokens" -> ""
             "maxResponse", "maxResponseTokens" -> state.ctx.assistant.maxTokens?.toString() ?: ""
             "maxPrompt", "maxPromptTokens" -> ""
             "allChatRange" -> if (state.ctx.messages.isEmpty()) "" else "0-${state.ctx.messages.lastIndex}"
