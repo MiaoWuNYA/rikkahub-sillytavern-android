@@ -13,7 +13,6 @@ class SkillManager(
 ) {
     companion object {
         private const val TAG = "SkillManager"
-        private const val SKILL_CACHE_TTL_MS = 3000L
     }
 
     fun getSkillsDir(): File {
@@ -33,34 +32,7 @@ class SkillManager(
         return if (dir.exists() && dir.canRead()) dir else null
     }
 
-    // 磁盘扫描缓存：一次发送里 createSkillTools 和 SkillAutoTriggerTransformer 会各扫一遍，
-    // 外部存储上目录遍历 + SKILL.md frontmatter 解析可能耗时数十到数百毫秒
-    @Volatile
-    private var skillsCache: List<SkillMetadata>? = null
-    private var skillsCacheAt: Long = 0L
-
     fun listSkills(): List<SkillMetadata> {
-        val now = System.currentTimeMillis()
-        skillsCache?.let { cached ->
-            if (now - skillsCacheAt < SKILL_CACHE_TTL_MS) return cached
-        }
-        val skills = scanSkills()
-        synchronized(this) {
-            skillsCache = skills
-            skillsCacheAt = now
-        }
-        return skills
-    }
-
-    /** 保存/删除/改名后立即失效，避免 UI 看到旧列表 */
-    fun invalidateSkillsCache() {
-        synchronized(this) {
-            skillsCache = null
-            skillsCacheAt = 0L
-        }
-    }
-
-    private fun scanSkills(): List<SkillMetadata> {
         val skillsDir = getSkillsDir()
         return skillsDir.listFiles()
             ?.filter { it.isDirectory }
@@ -91,16 +63,13 @@ class SkillManager(
             return null
         }
         val skillDir = resolveSkillDir(name) ?: return null
-        val meta = parseSkillFile(skillDir.resolve("SKILL.md"), skillDir)
-        invalidateSkillsCache()
-        return meta
+        return parseSkillFile(skillDir.resolve("SKILL.md"), skillDir)
     }
 
     suspend fun deleteSkill(name: String): Boolean = withContext(Dispatchers.IO) {
         val skillDir = resolveSkillDir(name) ?: return@withContext false
         val deleted = skillDir.deleteRecursively()
         if (deleted) {
-            invalidateSkillsCache()
             settingsStore.update { settings ->
                 settings.copy(
                     assistants = settings.assistants.map { assistant ->
@@ -148,7 +117,6 @@ class SkillManager(
         val target = SkillPaths.resolveSkillFile(skillDir, relativePath) ?: return false
         target.parentFile?.mkdirs()
         target.writeText(content)
-        invalidateSkillsCache()
         return true
     }
 
@@ -187,7 +155,6 @@ class SkillManager(
             }
 
             backupDir?.deleteRecursively()
-            invalidateSkillsCache()
             return true
         } catch (e: Exception) {
             Log.w(TAG, "saveSkillFileBytesAtomically: Failed to save $skillName", e)
@@ -208,9 +175,7 @@ class SkillManager(
     fun deleteSkillFile(skillName: String, relativePath: String): Boolean {
         val skillDir = resolveSkillDir(skillName) ?: return false
         val target = SkillPaths.resolveSkillFile(skillDir, relativePath) ?: return false
-        val deleted = target.delete()
-        if (deleted) invalidateSkillsCache()
-        return deleted
+        return target.delete()
     }
 
     /** 删除 skill 内的目录（递归删除） */
