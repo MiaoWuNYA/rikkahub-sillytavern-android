@@ -1199,8 +1199,9 @@ private fun handleBuiltinSlash(
                 tokens.any { it.equals("position=chat", ignoreCase = true) } -> InjectionPosition.AT_DEPTH
                 else -> InjectionPosition.AFTER_SYSTEM_PROMPT
             }
+            // 官方语义：depth 不限制范围（0=对话末尾，负数/大数由注入层安全兜底），无效值回退默认 4
             val depth = tokens.firstOrNull { it.startsWith("depth=", ignoreCase = true) }
-                ?.substringAfter("=")?.toIntOrNull()?.coerceIn(1, 100) ?: 4
+                ?.substringAfter("=")?.toIntOrNull() ?: 4
             val role = when {
                 tokens.any { it.equals("role=user", ignoreCase = true) } -> MessageRole.USER
                 tokens.any { it.equals("role=assistant", ignoreCase = true) } -> MessageRole.ASSISTANT
