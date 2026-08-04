@@ -873,7 +873,7 @@ class MacroEngine(
             MacroEntry(".变量名", "变量简写读取", "变量"),
             MacroEntry(".变量名++", "变量简写自增", "变量"),
             MacroEntry("if::条件::内容", "条件分支（可用{{else}}）", "条件"),
-            MacroEntry("// 注释", "注释（不发送）", "条件"),
+            MacroEntry("// 注释", "注释（不发送）", "随机与工具"),
             MacroEntry("pick::A::B::C", "稳定随机选一", "随机与工具"),
             MacroEntry("roll::2d6+1", "掷骰子", "随机与工具"),
             MacroEntry("random::A::B::C", "随机选一（每次不同）", "随机与工具"),
