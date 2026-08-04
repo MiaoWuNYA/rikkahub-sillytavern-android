@@ -1281,6 +1281,13 @@
   <string name="tavern_export_failed">Export failed: %1$s</string>
   <string name="tavern_export_close">Close</string>
   <string name="persona_page_title">Persona</string>
+  <string name="tavern_card_author">Author</string>
+  <string name="tavern_card_version">Version</string>
+  <string name="tavern_card_extensions">Extensions</string>
+  <string name="tavern_card_extensions_count">%d fields, preserved as-is on export</string>
+  <string name="tavern_card_assets">Assets</string>
+  <string name="tavern_card_assets_count">%d files</string>
+  <string name="tavern_card_automation_id_desc">Data only, not executed yet</string>
   <string name="persona_page_create">Create Persona</string>
   <string name="persona_page_save">Save</string>
   <string name="persona_page_basic_info">Basic Info</string>

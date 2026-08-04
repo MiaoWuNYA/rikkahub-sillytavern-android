@@ -1272,6 +1272,13 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="tavern_export_failed">导出失败: %1$s</string>
   <string name="tavern_export_close">关闭(Close)</string>
   <string name="persona_page_title">用户设定(Persona)</string>
+  <string name="tavern_card_author">作者</string>
+  <string name="tavern_card_version">版本</string>
+  <string name="tavern_card_extensions">扩展字段</string>
+  <string name="tavern_card_extensions_count">%d 个，导出时原样保留</string>
+  <string name="tavern_card_assets">资源文件</string>
+  <string name="tavern_card_assets_count">%d 个</string>
+  <string name="tavern_card_automation_id_desc">仅保留数据，暂不执行</string>
   <string name="persona_page_create">创建用户设定(Create Persona)</string>
   <string name="persona_page_save">保存(Save)</string>
   <string name="persona_page_basic_info">基本信息(Basic Info)</string>
