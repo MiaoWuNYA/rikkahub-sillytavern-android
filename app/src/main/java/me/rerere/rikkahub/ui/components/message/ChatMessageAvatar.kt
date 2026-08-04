@@ -62,16 +62,18 @@ fun ChatMessageAssistantAvatar(
     val settings = LocalSettings.current
     val showIcon = settings.displaySetting.showModelIcon
     val useAssistantAvatar = assistant?.useAssistantAvatar == true
-    if (message.role == MessageRole.ASSISTANT && (model != null || useAssistantAvatar)) {
+    if (message.role == MessageRole.ASSISTANT && (model != null || useAssistantAvatar || !message.name.isNullOrBlank())) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
             modifier = modifier
         ) {
+            val displayName = message.name?.takeIf { it.isNotBlank() }
+                ?: (assistant?.name ?: "").ifEmpty { stringResource(R.string.assistant_page_default_assistant) }
             if (useAssistantAvatar) {
                 if (showIcon) {
                     UIAvatar(
-                        name = assistant.name,
+                        name = displayName,
                         modifier = Modifier.size(28.dp),
                         value = assistant.avatar,
                         loading = loading,
@@ -84,7 +86,7 @@ fun ChatMessageAssistantAvatar(
                 ) {
                     if (settings.displaySetting.showModelName) {
                         Text(
-                            text = assistant.name.ifEmpty { stringResource(R.string.assistant_page_default_assistant) },
+                            text = displayName,
                             style = MaterialTheme.typography.labelLargeEmphasized,
                             maxLines = 1,
                         )
@@ -105,12 +107,21 @@ fun ChatMessageAssistantAvatar(
                 ) {
                     if (settings.displaySetting.showModelName) {
                         Text(
-                            text = model.displayName,
+                            text = message.name?.takeIf { it.isNotBlank() } ?: model.displayName,
                             style = MaterialTheme.typography.labelLargeEmphasized,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
+                }
+            } else if (!message.name.isNullOrBlank()) {
+                // /sendas name= 插入的消息：无模型/头像时也显示角色名
+                if (settings.displaySetting.showModelName) {
+                    Text(
+                        text = message.name ?: "",
+                        style = MaterialTheme.typography.labelLargeEmphasized,
+                        maxLines = 1,
+                    )
                 }
             }
         }

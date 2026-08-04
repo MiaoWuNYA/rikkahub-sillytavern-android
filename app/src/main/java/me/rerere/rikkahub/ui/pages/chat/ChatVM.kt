@@ -201,9 +201,9 @@ class ChatVM(
     /**
      * 插入指定角色消息（/sys、/sendas，不触发生成）
      */
-    fun handleInsertMessage(role: MessageRole, text: String) {
+    fun handleInsertMessage(role: MessageRole, text: String, name: String? = null) {
         if (text.isBlank()) return
-        chatService.insertMessage(_conversationId, role, listOf(UIMessagePart.Text(text)))
+        chatService.insertMessage(_conversationId, role, listOf(UIMessagePart.Text(text)), name)
     }
 
     /**

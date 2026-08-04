@@ -535,8 +535,8 @@ private fun ChatPageContent(
                         )
                         toaster.show("已复制角色卡: ${dup.name}")
                     },
-                    onSlashInsert = { role, text ->
-                        vm.handleInsertMessage(role, text)
+                    onSlashInsert = { role, text, name ->
+                        vm.handleInsertMessage(role, text, name)
                     },
                     onSlashPersona = { query ->
                         val personas = setting.personas

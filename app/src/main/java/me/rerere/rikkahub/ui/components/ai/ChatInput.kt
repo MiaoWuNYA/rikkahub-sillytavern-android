@@ -146,7 +146,7 @@ fun ChatInput(
     onCompressContext: (String, String, String) -> Unit = { _, _, _ -> },
     onLongSendClick: () -> Unit,
     onSlashDuplicate: (() -> Unit)? = null,
-    onSlashInsert: ((MessageRole, String) -> Unit)? = null,
+    onSlashInsert: ((MessageRole, String, String?) -> Unit)? = null,
     onSlashPersona: ((String) -> Unit)? = null,
     onSlashTrigger: (() -> Unit)? = null,
     onSlashSysgen: ((String) -> Unit)? = null,
@@ -518,7 +518,7 @@ private fun TextInputRow(
     toaster: com.dokar.sonner.ToasterState,
     onUpdateAssistant: (Assistant) -> Unit,
     onSlashDuplicate: (() -> Unit)?,
-    onSlashInsert: ((MessageRole, String) -> Unit)?,
+    onSlashInsert: ((MessageRole, String, String?) -> Unit)?,
     onSlashPersona: ((String) -> Unit)?,
     onSlashTrigger: (() -> Unit)?,
     onSlashSysgen: ((String) -> Unit)?,
@@ -1081,7 +1081,7 @@ private fun handleBuiltinSlash(
     assistant: Assistant,
     onUpdateAssistant: (Assistant) -> Unit,
     onSlashDuplicate: (() -> Unit)?,
-    onSlashInsert: ((MessageRole, String) -> Unit)?,
+    onSlashInsert: ((MessageRole, String, String?) -> Unit)?,
     onSlashPersona: ((String) -> Unit)?,
     onSlashTrigger: (() -> Unit)?,
     onSlashSysgen: ((String) -> Unit)?,
@@ -1141,19 +1141,19 @@ private fun handleBuiltinSlash(
             } else if (onSlashInsert == null) {
                 toaster.show("当前页面不支持该命令")
             } else {
-                onSlashInsert(MessageRole.SYSTEM, text)
+                onSlashInsert(MessageRole.SYSTEM, text, null)
                 state.clearInput()
             }
         }
 
         BuiltinSlashKind.SENDAS -> {
-            val text = args.trim()
+            val (name, text) = parseSendAsArgs(args)
             if (text.isBlank()) {
-                toaster.show("用法: /sendas 文本（以当前助手身份发言）")
+                toaster.show("用法: /sendas [name=角色名] 文本（以指定角色/当前助手身份发言）")
             } else if (onSlashInsert == null) {
                 toaster.show("当前页面不支持该命令")
             } else {
-                onSlashInsert(MessageRole.ASSISTANT, text)
+                onSlashInsert(MessageRole.ASSISTANT, text, name)
                 state.clearInput()
             }
         }
@@ -1460,4 +1460,34 @@ private fun FullScreenEditor(
             }
         }
     }
+}
+
+/**
+ * 解析 /sendas 的参数：
+ * 支持 name="角色名" / name=角色名 前缀，其余部分为消息文本；
+ * 不带 name= 时返回 null（使用当前助手身份）。
+ */
+private fun parseSendAsArgs(raw: String): Pair<String?, String> {
+    var args = raw.trim()
+    var name: String? = null
+    if (args.startsWith("name=", ignoreCase = true)) {
+        args = args.substring(5).trimStart()
+        if (args.startsWith("\"")) {
+            val end = args.indexOf('"', 1)
+            if (end > 0) {
+                name = args.substring(1, end)
+                args = args.substring(end + 1).trim()
+            }
+        } else {
+            val sp = args.indexOf(' ')
+            if (sp >= 0) {
+                name = args.substring(0, sp)
+                args = args.substring(sp).trim()
+            } else {
+                name = args
+                args = ""
+            }
+        }
+    }
+    return name to args
 }

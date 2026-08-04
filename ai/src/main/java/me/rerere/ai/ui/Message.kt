@@ -22,6 +22,7 @@ data class UIMessage(
     val id: Uuid = Uuid.random(),
     val role: MessageRole,
     val parts: List<UIMessagePart>,
+    val name: String? = null,
     val annotations: List<UIMessageAnnotation> = emptyList(),
     val createdAt: LocalDateTime = Clock.System.now()
         .toLocalDateTime(TimeZone.currentSystemDefault()),

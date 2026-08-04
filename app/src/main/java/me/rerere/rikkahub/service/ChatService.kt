@@ -405,7 +405,7 @@ class ChatService(
      *
      * 用于 /sys（系统消息）和 /sendas（以助手身份发言）等官方斜杠命令
      */
-    fun insertMessage(conversationId: Uuid, role: MessageRole, content: List<UIMessagePart>) {
+    fun insertMessage(conversationId: Uuid, role: MessageRole, content: List<UIMessagePart>, name: String? = null) {
         if (content.isEmptyInputMessage()) return
 
         val session = getOrCreateSession(conversationId)
@@ -422,6 +422,7 @@ class ChatService(
                     messageNodes = currentConversation.messageNodes + UIMessage(
                         role = role,
                         parts = content,
+                        name = name,
                     ).toMessageNode(),
                 )
                 saveConversation(conversationId, newConversation)

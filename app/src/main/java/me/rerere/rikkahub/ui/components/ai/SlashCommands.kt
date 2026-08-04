@@ -93,8 +93,8 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
     ),
     SlashCommand(
         name = "sendas",
-        description = "插入助手消息(Send As)：直接写入，不触发生成",
-        argumentHint = "[文本]",
+        description = "插入助手消息(Send As)：可直接指定角色名，不触发生成",
+        argumentHint = "[name=角色名] [文本]",
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.SENDAS,

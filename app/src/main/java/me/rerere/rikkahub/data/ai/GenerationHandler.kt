@@ -626,7 +626,7 @@ class GenerationHandler(
                 add(UIMessage.user(prompt = userContext))
             }
 
-            addAll(limitedChat)
+            addAll(limitedChat.withMessageNames())
         }.let { base ->
             val persona = settings.personas.find { it.id == settings.activePersonaId }
             if (persona != null && persona.enabled && persona.description.isNotBlank() &&
@@ -1003,4 +1003,23 @@ private fun buildUserContext(
     _lastUserContextKey = key
     _lastUserContext = result
     return result
+}
+
+/**
+ * /sendas name= 注入：发送给模型前把消息自带的名字写入内容（对齐官方默认行为），
+ * 让 AI 明确知道这条消息是谁说的；本地保存与 UI 保持原始文本不变。
+ */
+private fun List<UIMessage>.withMessageNames(): List<UIMessage> = map { message ->
+    val name = message.name?.takeIf { it.isNotBlank() } ?: return@map message
+    val textIndex = message.parts.indexOfFirst { it is UIMessagePart.Text }
+    if (textIndex >= 0) {
+        val part = message.parts[textIndex] as UIMessagePart.Text
+        message.copy(
+            parts = message.parts.toMutableList().also { list ->
+                list[textIndex] = part.copy(text = "$name: ${part.text}")
+            }
+        )
+    } else {
+        message.copy(parts = listOf(UIMessagePart.Text("$name: ")) + message.parts)
+    }
 }
