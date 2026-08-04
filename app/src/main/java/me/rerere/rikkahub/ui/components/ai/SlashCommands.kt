@@ -122,14 +122,14 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
     SlashCommand(
         name = "inject",
         description = "注入提示词(Inject)：写入发送给AI的提示词，不进入聊天记录",
-        argumentHint = "[文本] [position=before|chat] [depth=数字] [role=user|assistant]",
+        argumentHint = "[文本] [position=before|after|chat] [depth=数字] [role=user|assistant|system]",
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.INJECT,
     ),
     SlashCommand(
         name = "char-get",
-        description = "查看当前角色卡(Char Get)：弹窗显示角色卡摘要",
+        description = "查看当前角色卡(Char Get)：提示显示角色卡摘要",
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.INFO,
@@ -160,7 +160,7 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
     SlashCommand(
         name = "continue",
         description = "续写最后一条助手回复(Continue)：在原回复末尾继续生成，可加补充文本",
-        argumentHint = "[补充指令，可选]",
+        argumentHint = "[补充文本，可选]",
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.CONTINUE,
@@ -195,7 +195,7 @@ fun varSlashCommands(): List<SlashCommand> = listOf(
     SlashCommand(
         name = "setvar",
         description = "设置当前对话变量(Set Var)",
-        argumentHint = "[key] [值]",
+        argumentHint = "[变量名] [值]",
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
@@ -203,7 +203,7 @@ fun varSlashCommands(): List<SlashCommand> = listOf(
     SlashCommand(
         name = "getvar",
         description = "读取当前对话变量(Get Var)",
-        argumentHint = "[key]",
+        argumentHint = "[变量名]",
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
@@ -211,7 +211,7 @@ fun varSlashCommands(): List<SlashCommand> = listOf(
     SlashCommand(
         name = "addvar",
         description = "当前对话变量加值(Add Var)",
-        argumentHint = "[key] [值]",
+        argumentHint = "[变量名] [值]",
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
@@ -219,7 +219,7 @@ fun varSlashCommands(): List<SlashCommand> = listOf(
     SlashCommand(
         name = "incvar",
         description = "当前对话变量+1(Inc Var)",
-        argumentHint = "[key]",
+        argumentHint = "[变量名]",
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
@@ -227,7 +227,7 @@ fun varSlashCommands(): List<SlashCommand> = listOf(
     SlashCommand(
         name = "decvar",
         description = "当前对话变量-1(Dec Var)",
-        argumentHint = "[key]",
+        argumentHint = "[变量名]",
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
@@ -235,7 +235,7 @@ fun varSlashCommands(): List<SlashCommand> = listOf(
     SlashCommand(
         name = "flushvar",
         description = "删除当前对话变量(Flush Var)",
-        argumentHint = "[key]",
+        argumentHint = "[变量名]",
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
