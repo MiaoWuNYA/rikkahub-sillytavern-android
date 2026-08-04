@@ -77,7 +77,6 @@ import me.rerere.rikkahub.data.ai.tools.createPythonTool
 import me.rerere.rikkahub.data.ai.tools.createDatabaseQueryTool
 import me.rerere.rikkahub.data.ai.tools.createCalculatorTool
 import me.rerere.rikkahub.data.ai.tools.createWebFetchTool
-import me.rerere.rikkahub.data.ai.tools.createSleepTool
 import me.rerere.rikkahub.data.ai.tools.createTaskTools
 import me.rerere.rikkahub.data.ai.tools.createConversationTools
 import me.rerere.rikkahub.data.ai.tools.local.createMingliTool
@@ -836,7 +835,6 @@ class ChatService(
                         add(createCalculatorTool(context))
                     }
                     add(createWebFetchTool())
-                    add(createSleepTool())
                     if (assistant.localTools.contains(LocalToolOption.TaskTools)) {
                         addAll(createTaskTools())
                     }
@@ -1146,6 +1144,25 @@ class ChatService(
         val messages = history + UIMessage.user(prompt)
         var result = ""
 
+        // MCP 工具：对齐上游校验服务器名（仅字母数字），非法名直接报错返回
+        val mcpTools = mcpManager.getAllAvailableTools()
+        val invalidMcpNames = mcpTools
+            .map { it.second }
+            .distinct()
+            .filter { name -> name.isEmpty() || !name.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' } }
+        if (invalidMcpNames.isNotEmpty()) {
+            addError(
+                error = IllegalStateException(
+                    context.getString(
+                        R.string.error_mcp_invalid_server_name,
+                        invalidMcpNames.joinToString(", ")
+                    )
+                ),
+                conversationId = conversationId,
+            )
+            return ""
+        }
+
         generationHandler.generateText(
             settings = settings,
             model = model,
@@ -1175,7 +1192,6 @@ class ChatService(
                     add(createCalculatorTool(context))
                 }
                 add(createWebFetchTool())
-                add(createSleepTool())
                 if (assistant.localTools.contains(LocalToolOption.TaskTools)) {
                     addAll(createTaskTools())
                 }
@@ -1188,25 +1204,7 @@ class ChatService(
                         )
                     )
                 }
-                // 对齐上游：MCP 工具名带服务器名前缀，且校验服务器名（仅字母数字），非法名直接报错返回
-                mcpManager.getAllAvailableTools().also { allTools ->
-                    val invalidNames = allTools
-                        .map { it.second }
-                        .distinct()
-                        .filter { name -> name.isEmpty() || !name.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' } }
-                    if (invalidNames.isNotEmpty()) {
-                        addError(
-                            error = IllegalStateException(
-                                context.getString(
-                                    R.string.error_mcp_invalid_server_name,
-                                    invalidNames.joinToString(", ")
-                                )
-                            ),
-                            conversationId = conversationId,
-                        )
-                        return
-                    }
-                }.forEach { (serverId, serverName, tool) ->
+                mcpTools.forEach { (serverId, serverName, tool) ->
                     add(
                         Tool(
                             name = "mcp__${serverName}__${tool.name}",

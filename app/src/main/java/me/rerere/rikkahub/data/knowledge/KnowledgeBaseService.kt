@@ -56,8 +56,8 @@ class KnowledgeBaseService(
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<SearchMemoKey, SearchMemoValue>) = size > 64
     }
     // decodedEmbeddings：向量检索每轮都要把 chunk 的 ByteArray 解码成 FloatArray，缓存避免重复解码
-    private val decodedEmbeddings = object : LinkedHashMap<String, FloatArray>(512, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, FloatArray>) = size > 4096
+    private val decodedEmbeddings = object : LinkedHashMap<String, List<Float>>(512, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, List<Float>>) = size > 4096
     }
     private val SEARCH_MEMO_TTL_MS = 20_000L
     private val EMBEDDING_TIMEOUT_MS = 4_000L
@@ -864,7 +864,7 @@ class KnowledgeBaseService(
     } ?: emptyList()
 
     /** 解码向量缓存（LRU，上限 4096 条），避免每轮检索重复 ByteArray→FloatArray */
-    private fun decodeCachedEmbedding(chunkId: String, bytes: ByteArray): FloatArray? {
+    private fun decodeCachedEmbedding(chunkId: String, bytes: ByteArray): List<Float>? {
         synchronized(decodedEmbeddings) {
             decodedEmbeddings[chunkId]?.let { return it }
         }
