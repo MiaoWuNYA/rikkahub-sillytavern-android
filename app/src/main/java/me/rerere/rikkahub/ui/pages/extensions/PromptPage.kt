@@ -670,88 +670,63 @@ private fun LorebookTab(
             state = lazyListState
         ) {
             item {
-                Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
+                CardGroup(
+                    title = {
+                        Column {
+                            Text(
+                                text = stringResource(R.string.prompt_page_world_info_global_title),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            Text(
+                                text = stringResource(R.string.prompt_page_world_info_global_desc),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.prompt_page_world_info_global_title),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Medium,
-                        )
-                        Text(
-                            text = stringResource(R.string.prompt_page_world_info_global_desc),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        FormItem(
-                            label = { Text(stringResource(R.string.prompt_page_world_info_budget_title)) },
-                            description = { Text(stringResource(R.string.prompt_page_world_info_budget_desc)) }
-                        ) {
-                            OutlinedTextField(
-                                value = settings.worldInfoBudget.toString(),
-                                onValueChange = { v ->
-                                    v.toIntOrNull()?.let {
-                                        onSettingsUpdate(settings.copy(worldInfoBudget = it.coerceIn(0, 100000)))
-                                    }
-                                },
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                modifier = Modifier.width(110.dp),
-                                textStyle = MaterialTheme.typography.bodyMedium,
+                    item(
+                        headlineContent = { Text(stringResource(R.string.prompt_page_world_info_budget_title)) },
+                        supportingContent = { Text(stringResource(R.string.prompt_page_world_info_budget_desc)) },
+                        trailingContent = {
+                            NumberSettingField(
+                                value = settings.worldInfoBudget,
+                                onCommit = { onSettingsUpdate(settings.copy(worldInfoBudget = it.coerceIn(0, 100000))) },
                             )
-                        }
-                        FormItem(
-                            label = { Text(stringResource(R.string.prompt_page_world_info_min_activations_title)) },
-                            description = { Text(stringResource(R.string.prompt_page_world_info_min_activations_desc)) }
-                        ) {
-                            OutlinedTextField(
-                                value = settings.worldInfoMinActivations.toString(),
-                                onValueChange = { v ->
-                                    v.toIntOrNull()?.let {
-                                        onSettingsUpdate(settings.copy(worldInfoMinActivations = it.coerceIn(0, 50)))
-                                    }
-                                },
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                modifier = Modifier.width(90.dp),
-                                textStyle = MaterialTheme.typography.bodyMedium,
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.prompt_page_world_info_min_activations_title)) },
+                        supportingContent = { Text(stringResource(R.string.prompt_page_world_info_min_activations_desc)) },
+                        trailingContent = {
+                            NumberSettingField(
+                                value = settings.worldInfoMinActivations,
+                                onCommit = { onSettingsUpdate(settings.copy(worldInfoMinActivations = it.coerceIn(0, 50))) },
                             )
-                        }
-                        FormItem(
-                            label = { Text(stringResource(R.string.prompt_page_world_info_recursive_title)) },
-                            description = { Text(stringResource(R.string.prompt_page_world_info_recursive_desc)) }
-                        ) {
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.prompt_page_world_info_recursive_title)) },
+                        supportingContent = { Text(stringResource(R.string.prompt_page_world_info_recursive_desc)) },
+                        trailingContent = {
                             Switch(
                                 checked = settings.worldInfoRecursive,
-                                onCheckedChange = {
-                                    onSettingsUpdate(settings.copy(worldInfoRecursive = it))
-                                }
+                                onCheckedChange = { onSettingsUpdate(settings.copy(worldInfoRecursive = it)) },
                             )
-                        }
-                        if (settings.worldInfoRecursive) {
-                            FormItem(
-                                label = { Text(stringResource(R.string.prompt_page_world_info_max_recursion_title)) },
-                                description = { Text(stringResource(R.string.prompt_page_world_info_max_recursion_desc)) }
-                            ) {
-                                OutlinedTextField(
-                                    value = settings.worldInfoMaxRecursionSteps.toString(),
-                                    onValueChange = { v ->
-                                        v.toIntOrNull()?.let {
-                                            onSettingsUpdate(settings.copy(worldInfoMaxRecursionSteps = it.coerceIn(0, 20)))
-                                        }
-                                    },
-                                    singleLine = true,
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    modifier = Modifier.width(90.dp),
-                                    textStyle = MaterialTheme.typography.bodyMedium,
+                        },
+                    )
+                    if (settings.worldInfoRecursive) {
+                        item(
+                            headlineContent = { Text(stringResource(R.string.prompt_page_world_info_max_recursion_title)) },
+                            supportingContent = { Text(stringResource(R.string.prompt_page_world_info_max_recursion_desc)) },
+                            trailingContent = {
+                                NumberSettingField(
+                                    value = settings.worldInfoMaxRecursionSteps,
+                                    onCommit = { onSettingsUpdate(settings.copy(worldInfoMaxRecursionSteps = it.coerceIn(0, 20))) },
                                 )
-                            }
-                        }
+                            },
+                        )
                     }
                 }
             }
@@ -1866,6 +1841,30 @@ private fun GroupSettingsDialog(
 }
 
 @OptIn(ExperimentalLayoutApi::class)
+/**
+ * 数字设置输入框：允许自由编辑（含清空），仅在解析成功时提交；
+ * 修复原实现 onValueChange 只接受纯数字导致"删不掉字符"的问题。
+ */
+@Composable
+private fun NumberSettingField(
+    value: Int,
+    onCommit: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var text by remember(value) { mutableStateOf(value.toString()) }
+    OutlinedTextField(
+        value = text,
+        onValueChange = { new ->
+            text = new
+            new.toIntOrNull()?.let(onCommit)
+        },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        modifier = modifier.width(90.dp),
+        textStyle = MaterialTheme.typography.bodyMedium,
+    )
+}
+
 @Composable
 private fun RegexInjectionEditDialog(
     entry: PromptInjection.RegexInjection,
