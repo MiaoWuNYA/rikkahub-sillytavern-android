@@ -926,12 +926,12 @@ fun GroupChatPage(groupId: String) {
                     // 自动接话轮数
                     Column {
                         Text(
-                            "自动接话轮数: ${if (gc.autoChatRounds <= 0) "无上限" else gc.autoChatRounds}",
+                            stringResource(R.string.group_auto_reply_rounds, if (gc.autoChatRounds <= 0) "无上限" else gc.autoChatRounds.toString()),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Medium,
                         )
                         Text(
-                            "0=无上限；每轮全体已选成员各发言一次，发消息即打断",
+                            stringResource(R.string.group_auto_reply_rounds_desc),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

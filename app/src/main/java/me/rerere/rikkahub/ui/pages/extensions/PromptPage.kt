@@ -1450,14 +1450,14 @@ private fun RegexInjectionEntryCard(
                         color = MaterialTheme.colorScheme.tertiary,
                     )
                     Text(
-                        "权重(Weight):${entry.groupWeight}",
+                        stringResource(R.string.prompt_page_group_weight_preview, entry.groupWeight),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     )
                 }
                 if (entry.constantActive) {
                     Text(
-                        "常驻(Const)",
+                        stringResource(R.string.prompt_page_constant_preview),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     )
@@ -1746,7 +1746,7 @@ private fun GroupSettingsDialog(
                     label = { Text(stringResource(R.string.prompt_page_automation_id)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    supportingText = { Text("仅保留数据，暂不执行") },
+                    supportingText = { Text(stringResource(R.string.tavern_card_automation_id_desc)) },
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     IntTextField(
@@ -1774,7 +1774,7 @@ private fun GroupSettingsDialog(
                     label = { Text(stringResource(R.string.prompt_page_triggers)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    supportingText = { Text("逗号分隔；不选 = 所有生成类型都触发") },
+                    supportingText = { Text(stringResource(R.string.prompt_page_triggers_desc)) },
                 )
                 // 官方生成类型快捷多选
                 val triggerOptions = listOf(
@@ -1814,7 +1814,7 @@ private fun GroupSettingsDialog(
                 // 预算豁免（官方 ignore_budget）
                 FormItem(
                     label = { Text(stringResource(R.string.prompt_page_ignore_budget)) },
-                    description = { Text("该条目不受世界书 token 预算限制，总是注入") },
+                    description = { Text(stringResource(R.string.prompt_page_ignore_budget_desc)) },
                     tail = {
                         Switch(
                             checked = edited.ignoreBudget,
@@ -1897,7 +1897,7 @@ private fun GroupSettingsDialog(
                         onValueChange = { edited = edited.copy(sticky = it) },
                         label = { Text(stringResource(R.string.prompt_page_sticky)) },
                         supportingText = { Text(stringResource(R.string.prompt_page_sticky_desc)) },
-                        suffix = { Text("轮", style = MaterialTheme.typography.bodySmall) },
+                        suffix = { Text(stringResource(R.string.prompt_page_rounds_suffix), style = MaterialTheme.typography.bodySmall) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
@@ -1974,7 +1974,7 @@ private fun GroupSettingsDialog(
                     value = edited.scanDepth,
                     onValueChange = { edited = edited.copy(scanDepth = it) },
                     label = { Text(stringResource(R.string.prompt_page_scan_depth)) },
-                    placeholder = { Text("默认(全局)") },
+                    placeholder = { Text(stringResource(R.string.prompt_page_scan_depth_global)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -2334,7 +2334,7 @@ private fun RegexInjectionEditDialog(
                         onValueChange = { onEdit(entry.copy(sticky = it)) },
                         label = { Text(stringResource(R.string.prompt_page_sticky)) },
                         supportingText = { Text(stringResource(R.string.prompt_page_sticky_desc)) },
-                        suffix = { Text("轮", style = MaterialTheme.typography.bodySmall) },
+                        suffix = { Text(stringResource(R.string.prompt_page_rounds_suffix), style = MaterialTheme.typography.bodySmall) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
@@ -2354,7 +2354,7 @@ private fun RegexInjectionEditDialog(
                         value = entry.delay,
                         onValueChange = { onEdit(entry.copy(delay = it)) },
                         label = { Text(stringResource(R.string.prompt_page_delay)) },
-                        supportingText = { Text("N轮后才开始检测触发") },
+                        supportingText = { Text(stringResource(R.string.prompt_page_delay_until_recursion_desc)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
@@ -2377,7 +2377,7 @@ private fun RegexInjectionEditDialog(
                     value = entry.scanDepth,
                     onValueChange = { onEdit(entry.copy(scanDepth = it)) },
                     label = { Text(stringResource(R.string.prompt_page_scan_depth)) },
-                    placeholder = { Text("默认(全局)") },
+                    placeholder = { Text(stringResource(R.string.prompt_page_scan_depth_global)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
 

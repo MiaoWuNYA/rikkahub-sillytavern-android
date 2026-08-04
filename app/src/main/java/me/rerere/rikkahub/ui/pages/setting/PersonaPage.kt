@@ -114,12 +114,12 @@ fun PersonaPage() {
                             Text("👤", style = MaterialTheme.typography.titleLarge)
                             Spacer(Modifier.height(8.dp))
                             Text(
-                                "还没有用户人设",
+                                stringResource(R.string.persona_page_empty),
                                 style = MaterialTheme.typography.titleSmall,
                             )
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                "创建一个用户人设，注入到对话中让 AI 了解你的身份与风格",
+                                stringResource(R.string.persona_page_empty_hint),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

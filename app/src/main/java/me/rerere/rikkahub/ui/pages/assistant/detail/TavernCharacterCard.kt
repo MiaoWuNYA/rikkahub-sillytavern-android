@@ -974,7 +974,7 @@ private fun EmbeddedGroupSettingsDialog(
                     headlineContent = { Text(stringResource(R.string.prompt_page_constant_active), style = MaterialTheme.typography.bodyMedium) },
                     supportingContent = {
                         Text(
-                            "不依赖关键词，始终注入",
+                            stringResource(R.string.prompt_page_constant_active_desc),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -985,7 +985,7 @@ private fun EmbeddedGroupSettingsDialog(
                     headlineContent = { Text(stringResource(R.string.prompt_page_keyword_trigger), style = MaterialTheme.typography.bodyMedium) },
                     supportingContent = {
                         Text(
-                            "关闭后按向量触发",
+                            stringResource(R.string.prompt_page_vector_trigger_desc),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -1129,7 +1129,7 @@ private fun EmbeddedGroupSettingsDialog(
                     headlineContent = { Text(stringResource(R.string.prompt_page_ignore_budget), style = MaterialTheme.typography.bodyMedium) },
                     supportingContent = {
                         Text(
-                            "该条目不受世界书 token 预算限制，总是注入",
+                            stringResource(R.string.prompt_page_ignore_budget_desc),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -1448,7 +1448,7 @@ private fun EntryEditor(
                 headlineContent = { Text(stringResource(R.string.prompt_page_constant_active), style = MaterialTheme.typography.bodyMedium) },
                 supportingContent = {
                     Text(
-                        "不依赖关键词，始终注入",
+                        stringResource(R.string.prompt_page_constant_active_desc),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1459,7 +1459,7 @@ private fun EntryEditor(
                 headlineContent = { Text(stringResource(R.string.prompt_page_keyword_trigger), style = MaterialTheme.typography.bodyMedium) },
                 supportingContent = {
                     Text(
-                        "关闭后按向量触发",
+                        stringResource(R.string.prompt_page_vector_trigger_desc),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1620,7 +1620,7 @@ private fun EntryEditor(
                         headlineContent = { Text(stringResource(R.string.prompt_page_exclude_recursion), style = MaterialTheme.typography.bodyMedium) },
                         supportingContent = {
                             Text(
-                                "内容不参与递归扫描",
+                                stringResource(R.string.prompt_page_prevent_recursion_desc),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -1721,7 +1721,7 @@ private fun EntryEditor(
                         headlineContent = { Text(stringResource(R.string.prompt_page_use_group_scoring), style = MaterialTheme.typography.bodyMedium) },
                         supportingContent = {
                             Text(
-                                "同组按匹配关键词数选胜者",
+                                stringResource(R.string.prompt_page_use_group_scoring_desc),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -1766,7 +1766,7 @@ private fun EntryEditor(
                         headlineContent = { Text(stringResource(R.string.prompt_page_ignore_budget), style = MaterialTheme.typography.bodyMedium) },
                         supportingContent = {
                             Text(
-                                "该条目不受世界书 token 预算限制，总是注入",
+                                stringResource(R.string.prompt_page_ignore_budget_desc),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

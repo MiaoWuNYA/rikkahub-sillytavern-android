@@ -701,16 +701,16 @@ private fun TextInputRow(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "可用命令",
+                            text = stringResource(R.string.slash_help_title),
                             style = MaterialTheme.typography.titleSmall,
                             modifier = Modifier.weight(1f),
                         )
                         TextButton(onClick = onDismissHelpDialog) {
-                            Text("关闭")
+                            Text(stringResource(R.string.slash_help_close))
                         }
                     }
                     Text(
-                        text = "无参数命令点击直接执行；带参数命令点击填入输入框，补参数后发送",
+                        text = stringResource(R.string.slash_help_tip),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),

@@ -1199,6 +1199,22 @@
   <string name="theme_name_autumn">Autumn Yellow</string>
   <string name="theme_name_black">Neutral Black</string>
   <string name="theme_name_claude">Claude</string>
+  <string name="slash_help_title">Available Commands</string>
+  <string name="slash_help_close">Close</string>
+  <string name="slash_help_tip">Commands without arguments run on tap; commands with arguments fill the input box for you to complete</string>
+  <string name="prompt_page_ignore_budget_desc">This entry ignores the world info token budget and is always injected</string>
+  <string name="prompt_page_rounds_suffix">turns</string>
+  <string name="prompt_page_scan_depth_global">Default (Global)</string>
+  <string name="prompt_page_delay_until_recursion_desc">Only checked after N recursion rounds</string>
+  <string name="prompt_page_vector_trigger_desc">Trigger by vector when off</string>
+  <string name="prompt_page_prevent_recursion_desc">Content does not participate in recursive scanning</string>
+  <string name="prompt_page_use_group_scoring_desc">Pick group winner by matched keyword count</string>
+  <string name="prompt_page_group_weight_preview">Weight: %d</string>
+  <string name="prompt_page_constant_preview">Constant</string>
+  <string name="persona_page_empty">No personas yet</string>
+  <string name="persona_page_empty_hint">Create a persona and inject it into the chat so AI knows your identity and style</string>
+  <string name="group_member_subtitle">%1$d members · %2$s</string>
+  <string name="group_auto_reply_rounds_desc">0 = unlimited; each round all enabled members speak once, sending a message interrupts</string>
   <string name="theme_name_minimal">Minimal White</string>
   <string name="theme_name_ocean">Ocean Blue</string>
   <string name="theme_name_sakura">Sakura Pink</string>

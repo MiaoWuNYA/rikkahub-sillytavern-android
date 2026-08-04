@@ -90,7 +90,7 @@ fun GroupChatListPage() {
                                 Text(gc.name.ifBlank { "未命名群聊" },
                                     style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                                 Text(
-                                    "${members.size} 位成员 · ${members.take(3).joinToString { it.name }}",
+                                    stringResource(R.string.group_member_subtitle, members.size, members.take(3).joinToString { it.name }),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,

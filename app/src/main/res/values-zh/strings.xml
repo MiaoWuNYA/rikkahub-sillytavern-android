@@ -1287,6 +1287,22 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_tts_page_default_playback_speed">默认播放速度</string>
   <string name="setting_tts_page_default_playback_speed_description">本地应用到所有 TTS 服务商，不改变其合成设置。</string>
   <string name="theme_name_claude">Claude</string>
+  <string name="slash_help_title">可用命令(Available Commands)</string>
+  <string name="slash_help_close">关闭(Close)</string>
+  <string name="slash_help_tip">无参数命令点击直接执行；带参数命令点击填入输入框，补参数后发送</string>
+  <string name="prompt_page_ignore_budget_desc">该条目不受世界书 token 预算限制，总是注入</string>
+  <string name="prompt_page_rounds_suffix">轮</string>
+  <string name="prompt_page_scan_depth_global">默认(全局)</string>
+  <string name="prompt_page_delay_until_recursion_desc">N轮后才开始检测触发</string>
+  <string name="prompt_page_vector_trigger_desc">关闭后按向量触发</string>
+  <string name="prompt_page_prevent_recursion_desc">内容不参与递归扫描</string>
+  <string name="prompt_page_use_group_scoring_desc">同组按匹配关键词数选胜者</string>
+  <string name="prompt_page_group_weight_preview">权重(Weight):%d</string>
+  <string name="prompt_page_constant_preview">常驻(Const)</string>
+  <string name="persona_page_empty">还没有用户人设</string>
+  <string name="persona_page_empty_hint">创建一个用户人设，注入到对话中让 AI 了解你的身份与风格</string>
+  <string name="group_member_subtitle">%1$d 位成员 · %2$s</string>
+  <string name="group_auto_reply_rounds_desc">0=无上限；每轮全体已选成员各发言一次，发消息即打断</string>
   <string name="persona_page_create">创建用户设定(Create Persona)</string>
   <string name="persona_page_save">保存(Save)</string>
   <string name="persona_page_basic_info">基本信息(Basic Info)</string>
