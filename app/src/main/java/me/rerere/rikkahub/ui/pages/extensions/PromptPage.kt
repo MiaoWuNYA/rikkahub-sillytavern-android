@@ -112,6 +112,7 @@ import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.ExportDialog
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.IntTextField
+import me.rerere.rikkahub.ui.components.ui.NullableIntTextField
 import me.rerere.rikkahub.ui.components.ui.InsertionStrategySelector
 import me.rerere.rikkahub.ui.components.ui.FormItem
 import me.rerere.rikkahub.ui.components.ui.Select

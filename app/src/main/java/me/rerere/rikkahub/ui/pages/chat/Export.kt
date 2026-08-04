@@ -248,11 +248,7 @@ private fun exportToMarkdown(
         append("*Exported on ${LocalDateTime.now().toLocalString()}*\n\n")
 
         messages.forEach { message ->
-            val role = when (message.role) {
-                MessageRole.USER -> "**User**"
-                MessageRole.SYSTEM -> "**System**"
-                else -> "**Assistant**"
-            }
+            val role = if (message.role == MessageRole.USER) "**User**" else "**Assistant**"
             append("$role:\n\n")
             message.parts.forEach { part ->
                 when (part) {
