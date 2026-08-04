@@ -32,8 +32,11 @@ enum class BuiltinSlashKind {
     /** 系统消息：插入 SYSTEM 角色消息，不触发生成 */
     SYS,
 
-    /** 以助手身份发言（官方 sendas 的本地简化），不触发生成 */
+    /** 以助手身份发言（官方 sendas），不触发生成 */
     SENDAS,
+
+    /** 以用户身份发言（官方 send），不触发生成 */
+    SEND,
 
     /** 切换用户人设 */
     PERSONA,
@@ -59,9 +62,6 @@ enum class BuiltinSlashKind {
     /** 以角色身份生成一条回复（官方 /impersonate） */
     IMPERSONATE,
 
-    /** 查看当前发送给 AI 的提示词上下文 */
-    PROMPT,
-
     /** 重新掷 {{pick}} 稳定随机（官方 /reroll-pick） */
     REROLL_PICK,
 
@@ -86,18 +86,26 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
     SlashCommand(
         name = "sys",
         description = "插入系统消息(Sys)：直接写入一条系统消息，不触发生成",
-        argumentHint = "[文本]",
+        argumentHint = "[name=显示名] [at=位置] [文本]",
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.SYS,
     ),
     SlashCommand(
         name = "sendas",
-        description = "插入助手消息(Send As)：可直接指定角色名，不触发生成",
-        argumentHint = "[name=角色名] [文本]",
+        description = "插入助手消息(Send As)：默认以当前助手身份，可指定角色名与位置，不触发生成",
+        argumentHint = "[name=角色名] [at=位置] [文本]",
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.SENDAS,
+    ),
+    SlashCommand(
+        name = "send",
+        description = "插入用户消息(Send)：直接写入一条用户消息，不触发生成",
+        argumentHint = "[name=显示名] [at=位置] [文本]",
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.SEND,
     ),
     SlashCommand(
         name = "persona",
@@ -117,7 +125,7 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
     SlashCommand(
         name = "sysgen",
         description = "AI生成系统旁白(Sysgen)：生成后插入聊天，不触发普通回复",
-        argumentHint = "[提示词] 如 描写雨夜街道",
+        argumentHint = "[name=显示名] [at=位置] [提示词] 如 描写雨夜街道",
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.SYSGEN,
@@ -175,13 +183,6 @@ fun builtinSlashCommands(): List<SlashCommand> = listOf(
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.IMPERSONATE,
-    ),
-    SlashCommand(
-        name = "prompt",
-        description = "查看发送给AI的提示词(Prompt)：弹窗预览实际发送的提示词",
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.PROMPT,
     ),
     SlashCommand(
         name = "reroll-pick",

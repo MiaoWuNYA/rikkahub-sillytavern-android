@@ -146,15 +146,14 @@ fun ChatInput(
     onCompressContext: (String, String, String) -> Unit = { _, _, _ -> },
     onLongSendClick: () -> Unit,
     onSlashDuplicate: (() -> Unit)? = null,
-    onSlashInsert: ((MessageRole, String, String?) -> Unit)? = null,
+    onSlashInsert: ((MessageRole, String, String?, Int?) -> Unit)? = null,
     onSlashPersona: ((String) -> Unit)? = null,
     onSlashTrigger: (() -> Unit)? = null,
-    onSlashSysgen: ((String) -> Unit)? = null,
+    onSlashSysgen: ((String, String?, Int?) -> Unit)? = null,
     onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)? = null,
     onSlashVar: ((SlashVarOp, String, String) -> String?)? = null,
     onSlashContinue: ((String) -> Unit)? = null,
     onSlashImpersonate: ((String) -> Unit)? = null,
-    onSlashPrompt: (() -> Unit)? = null,
     onSlashRerollPick: ((String) -> Unit)? = null,
 ) {
     val toaster = LocalToaster.current
@@ -215,7 +214,6 @@ fun ChatInput(
                         onSlashVar = onSlashVar,
                         onSlashContinue = onSlashContinue,
                         onSlashImpersonate = onSlashImpersonate,
-                        onSlashPrompt = onSlashPrompt,
                         onSlashRerollPick = onSlashRerollPick,
                     )
                 } else {
@@ -326,7 +324,6 @@ fun ChatInput(
                         onSlashVar = onSlashVar,
                         onSlashContinue = onSlashContinue,
                         onSlashImpersonate = onSlashImpersonate,
-                        onSlashPrompt = onSlashPrompt,
                         onSlashRerollPick = onSlashRerollPick,
                         helpDialogVisible = showHelpDialog,
                         onDismissHelpDialog = { showHelpDialog = false },
@@ -518,15 +515,14 @@ private fun TextInputRow(
     toaster: com.dokar.sonner.ToasterState,
     onUpdateAssistant: (Assistant) -> Unit,
     onSlashDuplicate: (() -> Unit)?,
-    onSlashInsert: ((MessageRole, String, String?) -> Unit)?,
+    onSlashInsert: ((MessageRole, String, String?, Int?) -> Unit)?,
     onSlashPersona: ((String) -> Unit)?,
     onSlashTrigger: (() -> Unit)?,
-    onSlashSysgen: ((String) -> Unit)?,
+    onSlashSysgen: ((String, String?, Int?) -> Unit)?,
     onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)?,
     onSlashVar: ((SlashVarOp, String, String) -> String?)?,
     onSlashContinue: ((String) -> Unit)? = null,
     onSlashImpersonate: ((String) -> Unit)? = null,
-    onSlashPrompt: (() -> Unit)? = null,
     onSlashRerollPick: ((String) -> Unit)? = null,
     helpDialogVisible: Boolean,
     onDismissHelpDialog: () -> Unit,
@@ -765,7 +761,6 @@ private fun TextInputRow(
                                                 onShowHelp = onShowHelp,
                                                 onSlashContinue = onSlashContinue,
                                                 onSlashImpersonate = onSlashImpersonate,
-                                                onSlashPrompt = onSlashPrompt,
                                                 onSlashRerollPick = onSlashRerollPick,
                                             )
                                         } else {
@@ -842,7 +837,6 @@ private fun TextInputRow(
                                                 onShowHelp = onShowHelp,
                                                 onSlashContinue = onSlashContinue,
                                                 onSlashImpersonate = onSlashImpersonate,
-                                                onSlashPrompt = onSlashPrompt,
                                                 onSlashRerollPick = onSlashRerollPick,
                                             )
                                         } else {
@@ -1081,16 +1075,15 @@ private fun handleBuiltinSlash(
     assistant: Assistant,
     onUpdateAssistant: (Assistant) -> Unit,
     onSlashDuplicate: (() -> Unit)?,
-    onSlashInsert: ((MessageRole, String, String?) -> Unit)?,
+    onSlashInsert: ((MessageRole, String, String?, Int?) -> Unit)?,
     onSlashPersona: ((String) -> Unit)?,
     onSlashTrigger: (() -> Unit)?,
-    onSlashSysgen: ((String) -> Unit)?,
+    onSlashSysgen: ((String, String?, Int?) -> Unit)?,
     onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)?,
     onSlashVar: ((SlashVarOp, String, String) -> String?)?,
     onShowHelp: () -> Unit = {},
     onSlashContinue: ((String) -> Unit)? = null,
     onSlashImpersonate: ((String) -> Unit)? = null,
-    onSlashPrompt: (() -> Unit)? = null,
     onSlashRerollPick: ((String) -> Unit)? = null,
 ) {
     when (cmd.builtinKind) {
@@ -1117,14 +1110,6 @@ private fun handleBuiltinSlash(
             }
         }
 
-        BuiltinSlashKind.PROMPT -> {
-            if (onSlashPrompt == null) {
-                toaster.show("当前页面不支持该命令")
-            } else {
-                onSlashPrompt()
-            }
-        }
-
         BuiltinSlashKind.REROLL_PICK -> {
             if (onSlashRerollPick == null) {
                 toaster.show("当前页面不支持该命令")
@@ -1135,25 +1120,39 @@ private fun handleBuiltinSlash(
         }
 
         BuiltinSlashKind.SYS -> {
-            val text = args.trim()
-            if (text.isBlank()) {
-                toaster.show("用法: /sys 系统消息内容")
+            val parsed = parseInsertArgs(args)
+            if (parsed.text.isBlank()) {
+                toaster.show("用法: /sys [name=显示名] [at=位置] 系统消息内容")
             } else if (onSlashInsert == null) {
                 toaster.show("当前页面不支持该命令")
             } else {
-                onSlashInsert(MessageRole.SYSTEM, text, null)
+                onSlashInsert(MessageRole.SYSTEM, parsed.text, parsed.name, parsed.at)
                 state.clearInput()
             }
         }
 
         BuiltinSlashKind.SENDAS -> {
-            val (name, text) = parseSendAsArgs(args)
-            if (text.isBlank()) {
-                toaster.show("用法: /sendas [name=角色名] 文本（以指定角色/当前助手身份发言）")
+            val parsed = parseInsertArgs(args)
+            // 官方行为：不带 name= 时默认使用当前角色名，让 AI 明确认领这条消息
+            val name = parsed.name ?: assistant.name.ifBlank { null }
+            if (parsed.text.isBlank()) {
+                toaster.show("用法: /sendas [name=角色名] [at=位置] 文本")
             } else if (onSlashInsert == null) {
                 toaster.show("当前页面不支持该命令")
             } else {
-                onSlashInsert(MessageRole.ASSISTANT, text, name)
+                onSlashInsert(MessageRole.ASSISTANT, parsed.text, name, parsed.at)
+                state.clearInput()
+            }
+        }
+
+        BuiltinSlashKind.SEND -> {
+            val parsed = parseInsertArgs(args)
+            if (parsed.text.isBlank()) {
+                toaster.show("用法: /send [name=显示名] [at=位置] 文本")
+            } else if (onSlashInsert == null) {
+                toaster.show("当前页面不支持该命令")
+            } else {
+                onSlashInsert(MessageRole.USER, parsed.text, parsed.name, parsed.at)
                 state.clearInput()
             }
         }
@@ -1177,13 +1176,13 @@ private fun handleBuiltinSlash(
         }
 
         BuiltinSlashKind.SYSGEN -> {
-            val text = args.trim()
-            if (text.isBlank()) {
-                toaster.show("用法: /sysgen 提示词，如 描写雨夜街道")
+            val parsed = parseInsertArgs(args)
+            if (parsed.text.isBlank()) {
+                toaster.show("用法: /sysgen [name=显示名] [at=位置] 提示词，如 描写雨夜街道")
             } else if (onSlashSysgen == null) {
                 toaster.show("当前页面不支持该命令")
             } else {
-                onSlashSysgen(text)
+                onSlashSysgen(parsed.text, parsed.name, parsed.at)
                 state.clearInput()
             }
         }
@@ -1463,31 +1462,29 @@ private fun FullScreenEditor(
 }
 
 /**
- * 解析 /sendas 的参数：
- * 支持 name="角色名" / name=角色名 前缀，其余部分为消息文本；
- * 不带 name= 时返回 null（使用当前助手身份）。
+ * 解析消息插入类命令（/sys /sendas /send）的参数：
+ * 支持任意顺序的 name="显示名" / name=显示名、at=位置 参数，
+ * 其余部分为消息文本；不带 name= 时使用默认身份，不带 at= 时追加到末尾。
  */
-private fun parseSendAsArgs(raw: String): Pair<String?, String> {
+private data class InsertArgs(val name: String?, val at: Int?, val text: String)
+
+private fun parseInsertArgs(raw: String): InsertArgs {
     var args = raw.trim()
     var name: String? = null
-    if (args.startsWith("name=", ignoreCase = true)) {
-        args = args.substring(5).trimStart()
-        if (args.startsWith("\"")) {
-            val end = args.indexOf('"', 1)
-            if (end > 0) {
-                name = args.substring(1, end)
-                args = args.substring(end + 1).trim()
-            }
-        } else {
-            val sp = args.indexOf(' ')
-            if (sp >= 0) {
-                name = args.substring(0, sp)
-                args = args.substring(sp).trim()
-            } else {
-                name = args
-                args = ""
-            }
+    var at: Int? = null
+    while (true) {
+        val m = Regex("^(name|at)=("[^"]*"|\\S+)(.*)$", RegexOption.IGNORE_CASE).find(args) ?: break
+        val key = m.groupValues[1].lowercase()
+        var value = m.groupValues[2]
+        if (value.startsWith("\"") && value.endsWith("\"")) {
+            value = value.substring(1, value.length - 1)
         }
+        if (key == "name") {
+            name = value
+        } else {
+            at = value.toIntOrNull()
+        }
+        args = m.groupValues[3].trimStart()
     }
-    return name to args
+    return InsertArgs(name, at, args.trim())
 }

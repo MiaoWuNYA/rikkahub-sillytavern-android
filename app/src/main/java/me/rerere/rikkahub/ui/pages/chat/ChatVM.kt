@@ -201,9 +201,9 @@ class ChatVM(
     /**
      * 插入指定角色消息（/sys、/sendas，不触发生成）
      */
-    fun handleInsertMessage(role: MessageRole, text: String, name: String? = null) {
+    fun handleInsertMessage(role: MessageRole, text: String, name: String? = null, at: Int? = null) {
         if (text.isBlank()) return
-        chatService.insertMessage(_conversationId, role, listOf(UIMessagePart.Text(text)), name)
+        chatService.insertMessage(_conversationId, role, listOf(UIMessagePart.Text(text)), name, at)
     }
 
     /**
@@ -216,9 +216,9 @@ class ChatVM(
     /**
      * 生成系统旁白并插入聊天（/sysgen）
      */
-    fun handleGenerateSystemNarration(prompt: String) {
+    fun handleGenerateSystemNarration(prompt: String, name: String? = null, at: Int? = null) {
         if (prompt.isBlank()) return
-        chatService.generateSystemNarration(_conversationId, prompt)
+        chatService.generateSystemNarration(_conversationId, prompt, name, at)
     }
 
     /**
@@ -314,30 +314,6 @@ class ChatVM(
     fun impersonateDraft(prefill: String = "", onDraft: (String) -> Unit) {
         chatService.impersonateDraft(_conversationId, prefill.ifBlank { null }, onDraft)
     }
-
-    /** /prompt：当前发送给 AI 的上下文预览（系统提示词 + 消息列表） */
-    fun buildPromptPreview(): String {
-        val conv = conversation.value ?: return "（无对话）"
-        val settingsValue = settings.value
-        val assistant = settingsValue.getAssistantById(conv.assistantId)
-            ?: settingsValue.getCurrentAssistant()
-        return buildString {
-            appendLine("===== 系统提示词 =====")
-            appendLine(assistant.systemPrompt.ifBlank { "（无）" })
-            val tav = assistant.tavernData
-            if (tav != null) {
-                if (tav.description.isNotBlank()) { appendLine(); appendLine("描述：${tav.description}") }
-                if (tav.personality.isNotBlank()) { appendLine(); appendLine("性格：${tav.personality}") }
-                if (tav.scenario.isNotBlank()) { appendLine(); appendLine("场景：${tav.scenario}") }
-            }
-            appendLine()
-            appendLine("===== 消息（按发送顺序） =====")
-            conv.currentMessages.forEachIndexed { index, m ->
-                appendLine("[${index + 1}] ${m.role}: ${m.toText()}")
-            }
-        }
-    }
-
 
     fun saveConversationAsync() {
         viewModelScope.launch {

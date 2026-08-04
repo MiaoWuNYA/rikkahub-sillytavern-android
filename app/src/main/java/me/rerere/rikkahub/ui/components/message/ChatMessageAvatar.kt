@@ -31,18 +31,21 @@ fun ChatMessageUserAvatar(
 ) {
     val settings = LocalSettings.current
     if (message.role == MessageRole.USER && !message.parts.isEmptyUIMessage() && settings.displaySetting.showUserAvatar) {
+        // /send name= 插入的用户消息优先显示消息自带名字（官方 /send 的 name 参数）
+        val displayName = message.name?.takeIf { it.isNotBlank() }
+            ?: nickname.ifEmpty { stringResource(R.string.user_default_name) }
         Row(
             modifier = modifier,
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = nickname.ifEmpty { stringResource(R.string.user_default_name) },
+                text = displayName,
                 style = MaterialTheme.typography.labelLargeEmphasized,
                 maxLines = 1,
             )
             UIAvatar(
-                name = nickname,
+                name = displayName,
                 modifier = Modifier.size(28.dp),
                 value = avatar,
                 loading = false,

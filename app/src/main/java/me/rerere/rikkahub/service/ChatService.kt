@@ -405,7 +405,13 @@ class ChatService(
      *
      * 用于 /sys（系统消息）和 /sendas（以助手身份发言）等官方斜杠命令
      */
-    fun insertMessage(conversationId: Uuid, role: MessageRole, content: List<UIMessagePart>, name: String? = null) {
+    fun insertMessage(
+        conversationId: Uuid,
+        role: MessageRole,
+        content: List<UIMessagePart>,
+        name: String? = null,
+        at: Int? = null,
+    ) {
         if (content.isEmptyInputMessage()) return
 
         val session = getOrCreateSession(conversationId)
@@ -418,13 +424,22 @@ class ChatService(
                 finishInterruptedPendingTools(conversationId)
 
                 val currentConversation = session.state.value
-                val newConversation = currentConversation.copy(
-                    messageNodes = currentConversation.messageNodes + UIMessage(
-                        role = role,
-                        parts = content,
-                        name = name,
-                    ).toMessageNode(),
-                )
+                val node = UIMessage(
+                    role = role,
+                    parts = content,
+                    name = name,
+                ).toMessageNode()
+                val messageNodes = if (at == null) {
+                    currentConversation.messageNodes + node
+                } else {
+                    // 官方 at 语义：非负按索引插入，负数从末尾往前（-1 = 最后一条之前），越界安全截断
+                    val index = when {
+                        at < 0 -> (currentConversation.messageNodes.size + at).coerceIn(0, currentConversation.messageNodes.size)
+                        else -> at.coerceIn(0, currentConversation.messageNodes.size)
+                    }
+                    currentConversation.messageNodes.toMutableList().apply { add(index, node) }
+                }
+                val newConversation = currentConversation.copy(messageNodes = messageNodes)
                 saveConversation(conversationId, newConversation)
                 _generationDoneFlow.emit(conversationId)
             } catch (e: Exception) {
@@ -463,7 +478,7 @@ class ChatService(
      * 参考官方 /sysgen：按提示词让模型写一条系统叙述消息，
      * 生成结果以 SYSTEM 角色插入对话历史（AI 下次回复可见）。
      */
-    fun generateSystemNarration(conversationId: Uuid, prompt: String) {
+    fun generateSystemNarration(conversationId: Uuid, prompt: String, name: String? = null, at: Int? = null) {
         if (prompt.isBlank()) return
 
         val session = getOrCreateSession(conversationId)
@@ -523,16 +538,25 @@ class ChatService(
                     return@launch
                 }
 
-                // 以 SYSTEM 角色插入对话历史（不触发回复）
+                // 以 SYSTEM 角色插入对话历史（不触发回复），支持官方 name= 与 at=
                 val latest = getConversationFlow(conversationId).value
+                val node = UIMessage(
+                    role = MessageRole.SYSTEM,
+                    parts = listOf(UIMessagePart.Text(narration)),
+                    name = name,
+                ).toMessageNode()
+                val messageNodes = if (at == null) {
+                    latest.messageNodes + node
+                } else {
+                    val index = when {
+                        at < 0 -> (latest.messageNodes.size + at).coerceIn(0, latest.messageNodes.size)
+                        else -> at.coerceIn(0, latest.messageNodes.size)
+                    }
+                    latest.messageNodes.toMutableList().apply { add(index, node) }
+                }
                 saveConversation(
                     conversationId,
-                    latest.copy(
-                        messageNodes = latest.messageNodes + UIMessage(
-                            role = MessageRole.SYSTEM,
-                            parts = listOf(UIMessagePart.Text(narration)),
-                        ).toMessageNode(),
-                    ),
+                    latest.copy(messageNodes = messageNodes),
                 )
             } catch (e: Exception) {
                 e.printStackTrace()
