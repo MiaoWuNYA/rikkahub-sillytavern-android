@@ -1279,6 +1279,14 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="tavern_card_assets">资源文件</string>
   <string name="tavern_card_assets_count">%d 个</string>
   <string name="tavern_card_automation_id_desc">仅保留数据，暂不执行</string>
+  <string name="impersonate">以用户身份回复(Reply as User)</string>
+  <string name="prompt_page_group_settings">组设置(Group Settings)：%s</string>
+  <string name="prompt_page_no_entries">暂无条目，点击 + 添加</string>
+  <string name="prompt_page_no_group">未分组(Ungrouped)</string>
+  <string name="safe_mode_enter_app">进入应用</string>
+  <string name="setting_tts_page_default_playback_speed">默认播放速度</string>
+  <string name="setting_tts_page_default_playback_speed_description">本地应用到所有 TTS 服务商，不改变其合成设置。</string>
+  <string name="theme_name_claude">Claude</string>
   <string name="persona_page_create">创建用户设定(Create Persona)</string>
   <string name="persona_page_save">保存(Save)</string>
   <string name="persona_page_basic_info">基本信息(Basic Info)</string>
