@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -192,6 +193,7 @@ fun ChatInput(
                     handleBuiltinSlash(
                         cmd = cmd,
                         args = args,
+                        onShowHelp = { showHelpDialog = true },
                         state = state,
                         toaster = toaster,
                         settings = settings,
@@ -521,6 +523,7 @@ private fun TextInputRow(
     var showSlashPopup by remember { mutableStateOf(false) }
     var slashFilter by remember { mutableStateOf("") }
     var slashArgs by remember { mutableStateOf("") }
+    var showHelpDialog by remember { mutableStateOf(false) }
 
     // 监听文本变化，检测斜杠命令
     val currentText = state.textContent.text
@@ -655,6 +658,48 @@ private fun TextInputRow(
             )
         }
 
+        // /help 命令列表对话框
+        if (showHelpDialog) {
+            BasicAlertDialog(
+                onDismissRequest = { showHelpDialog = false },
+                content = {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                text = "可用命令",
+                                style = MaterialTheme.typography.titleLarge,
+                            )
+                            slashCommands.forEach { cmd ->
+                                Column {
+                                    Text(
+                                        text = buildString {
+                                            append("/${cmd.name}")
+                                            if (cmd.argumentHint.isNotBlank()) append(" ${cmd.argumentHint}")
+                                        },
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                    Text(
+                                        text = cmd.description,
+                                        style = MaterialTheme.typography.bodySmall,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+            )
+        }
+
         // 斜杠命令弹窗
         if (showSlashPopup && slashCommands.isNotEmpty()) {
             val filtered = slashCommands.filter {
@@ -672,22 +717,8 @@ private fun TextInputRow(
                             Surface(
                                 onClick = {
                                     if (cmd.builtinKind != null) {
-                                        handleBuiltinSlash(
-                                            cmd = cmd,
-                                            args = slashArgs,
-                                            state = state,
-                                            toaster = toaster,
-                                            settings = settings,
-                                            assistant = assistant,
-                                            onUpdateAssistant = onUpdateAssistant,
-                                            onSlashDuplicate = onSlashDuplicate,
-                                            onSlashInsert = onSlashInsert,
-                                            onSlashPersona = onSlashPersona,
-                                            onSlashTrigger = onSlashTrigger,
-                                            onSlashSysgen = onSlashSysgen,
-                                            onSlashInject = onSlashInject,
-                                            onSlashVar = onSlashVar,
-                                        )
+                                        // 官方行为：点选只把命令填入输入框，不执行；补参数后按发送执行
+                                        state.setMessageText("/${cmd.name} ${slashArgs}".trimEnd())
                                     } else {
                                         val argsList = slashArgs.split(" ", limit = 10)
                                         var text = cmd.content
@@ -904,12 +935,12 @@ private fun handleBuiltinSlash(
     onSlashSysgen: ((String) -> Unit)?,
     onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)?,
     onSlashVar: ((SlashVarOp, String, String) -> String?)?,
+    onShowHelp: () -> Unit = {},
 ) {
     when (cmd.builtinKind) {
         BuiltinSlashKind.HELP -> {
-            val names = builtinSlashCommands().joinToString("  ") { "/${it.name}" }
-            toaster.show("内置命令: $names")
-            state.clearInput()
+            // 在 UI 里列出全部可用命令，不再弹 toast
+            onShowHelp()
         }
 
         BuiltinSlashKind.SYS -> {
