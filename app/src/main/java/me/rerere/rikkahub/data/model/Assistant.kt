@@ -72,9 +72,7 @@ data class Assistant(
     val toolExecTimeout: Int = 120,                     // 单工具执行超时(秒)
     val jsTimeout: Int = 15,                            // JavaScript引擎超时(秒)
     val shellTimeout: Int = 60,                         // Shell命令超时(秒)
-    val enableKnowledgeBase: Boolean = false,           // 启用知识库检索
     val talkativeness: Float = 0.5f,                    // 群聊发言倾向 (0-1)，酒馆对齐
-    val embeddingModelId: Uuid? = null,                  // 专用embedding模型（null=使用聊天模型）
     val enableAutoCompact: Boolean = true,               // 自动压缩对话历史（token过多时）
     val enableAutoMemoryExtract: Boolean = true,          // [新增] 自动从对话提取记忆（独立开关，不依赖 enableMemory）
     val autoMemoryExtractInterval: Int = 5,                // 每 N 轮对话提取一次记忆

@@ -6,7 +6,6 @@ import kotlinx.coroutines.runBlocking
 import me.rerere.rikkahub.data.ai.tools.LocalToolOption
 import me.rerere.rikkahub.data.db.AppDatabase
 import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.knowledge.KnowledgeBaseService
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.TavernCharacterData
 import me.rerere.rikkahub.data.model.TavernEmbeddedBook
@@ -23,7 +22,6 @@ class PythonBridge(
     private val db: AppDatabase,
     private val settingsStore: SettingsStore,
     private val conversationRepo: ConversationRepository,
-    private val kbService: KnowledgeBaseService,
 ) {
 
     private fun td(a: Assistant) = a.tavernData ?: TavernCharacterData()
@@ -35,54 +33,6 @@ class PythonBridge(
         } else {
             a.copy(localTools = a.localTools - tool)
         }
-    }
-
-    // ============================================================
-    // 知识库
-    // ============================================================
-
-    fun queryKnowledgeBase(query: String, limit: Int = 10): String = runBlocking {
-        try {
-            db.knowledgeBaseDao().getAllSources().take(limit).joinToString("\n---\n") {
-                "[${it.id}] ${it.name}\n"
-            }
-        } catch (e: Exception) { "Error: ${e.message}" }
-    }
-
-    fun addKnowledgeEntry(title: String, content: String, assistantId: String? = null): String = runBlocking {
-        try {
-            val sourceId = kbService.importText(title, content, assistantId)
-            if (sourceId != null) "ok: $sourceId" else "Error: empty content"
-        } catch (e: Exception) { "Error: ${e.message}" }
-    }
-
-    fun listKnowledgeEntries(limit: Int = 20): String = runBlocking {
-        try {
-            db.knowledgeBaseDao().getAllSources().take(limit).joinToString("\n") {
-                "[${it.id}] ${it.name} (${it.type})"
-            }
-        } catch (e: Exception) { "Error: ${e.message}" }
-    }
-
-    fun deleteKnowledgeEntry(id: String): String = runBlocking {
-        try {
-            kbService.deleteSource(id)
-            "ok"
-        } catch (e: Exception) { "Error: ${e.message}" }
-    }
-
-    fun updateKnowledgeEntry(id: String, title: String? = null, content: String? = null): String = runBlocking {
-        try {
-            db.knowledgeBaseDao().let { dao ->
-                val existing = dao.getSourceById(id) ?: return@runBlocking "Error: 条目 $id 不存在"
-                val newTitle = title ?: existing.name
-                val newContent = content ?: ""
-                // 删除旧条目并重新导入
-                kbService.deleteSource(id)
-                val newId = kbService.importText(newTitle, newContent, existing.assistantId)
-                if (newId != null) "ok: $id → $newId" else "Error: 更新失败"
-            }
-        } catch (e: Exception) { "Error: ${e.message}" }
     }
 
     // ============================================================
@@ -136,7 +86,6 @@ class PythonBridge(
                 appendLine("启用记忆: ${a.enableMemory}")
                 appendLine("并行执行: ${a.enableParallelToolExecution}")
                 appendLine("自动压缩: ${a.enableAutoCompact}")
-                appendLine("知识库: ${a.enableKnowledgeBase}")
                 appendLine("总轮数上限: ${a.totalStepsLimit}")
                 appendLine("工具超时: ${a.toolExecTimeout}s")
                 appendLine("JS超时: ${a.jsTimeout}s")
@@ -167,7 +116,6 @@ class PythonBridge(
                 "max_tokens", "maxTokens" -> a.copy(maxTokens = int())
                 "stream_output", "streamOutput" -> a.copy(streamOutput = bool())
                 "enable_memory", "enableMemory" -> a.copy(enableMemory = bool())
-                "enable_knowledge_base", "enableKnowledgeBase" -> a.copy(enableKnowledgeBase = bool())
                 "enable_parallel_tools", "enableParallelToolExecution" -> a.copy(enableParallelToolExecution = bool())
                 "enable_auto_compact", "enableAutoCompact" -> a.copy(enableAutoCompact = bool())
                 "total_steps", "totalStepsLimit" -> a.copy(totalStepsLimit = int())
@@ -226,7 +174,6 @@ class PythonBridge(
                 "dynamic_color", "dynamicColor" -> s.dynamicColor.toString()
                 "web_search", "enableWebSearch" -> s.enableWebSearch.toString()
                 "default_chat_model", "chatModelId" -> s.chatModelId.toString()
-                "embedding_model", "embeddingModelId" -> s.embeddingModelId?.toString() ?: "使用聊天模型"
                 "web_server_enabled", "webServerEnabled" -> s.webServerEnabled.toString()
                 "web_server_port", "webServerPort" -> s.webServerPort.toString()
                 else -> "未知 key: $key"

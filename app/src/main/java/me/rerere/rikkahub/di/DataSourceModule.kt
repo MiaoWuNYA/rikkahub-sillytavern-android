@@ -198,10 +198,6 @@ val dataSourceModule = module {
     }
 
     single {
-        get<AppDatabase>().knowledgeBaseDao()
-    }
-
-    single {
         MessageFtsManager(get())
     }
 

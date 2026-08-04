@@ -33,8 +33,6 @@ import kotlinx.coroutines.launch
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.ai.tools.LocalToolOption
 import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.db.entity.KnowledgeSourceEntity
-import me.rerere.rikkahub.data.knowledge.KnowledgeBaseService
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.ui.components.ai.ModelSelector
 import me.rerere.rikkahub.ui.components.nav.BackButton
@@ -59,16 +57,8 @@ fun AssistantLocalToolPage(id: String) {
     )
     val assistant by vm.assistant.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
-    val kbService: KnowledgeBaseService = koinInject()
-    val sources by kbService.getAllSourcesFlow().collectAsStateWithLifecycle(initialValue = emptyList())
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val scope = rememberCoroutineScope()
-
-    // 当前助理已绑定的知识源ID集合（从关联表查）
-    var boundSourceIds by remember { mutableStateOf<Set<String>>(emptySet()) }
-    LaunchedEffect(id) {
-        boundSourceIds = kbService.getBoundSourceIds(id).toSet()
-    }
 
     Scaffold(
         topBar = {
@@ -90,17 +80,8 @@ fun AssistantLocalToolPage(id: String) {
             innerPadding = innerPadding,
             assistant = assistant,
             settings = settings,
-            sources = sources,
-            assistantId = vm.assistant.value.id.toString(),
-            boundSourceIds = boundSourceIds,
             scope = scope,
             onUpdate = { vm.update(it) },
-            onToggleSource = { sourceId, bind ->
-                scope.launch {
-                    kbService.assignSourceToAssistant(sourceId, if (bind) assistant.id.toString() else null)
-                    boundSourceIds = kbService.getBoundSourceIds(assistant.id.toString()).toSet()
-                }
-            },
         )
     }
 }
@@ -110,12 +91,8 @@ private fun AssistantLocalToolContent(
     innerPadding: PaddingValues,
     assistant: Assistant,
     settings: Settings,
-    sources: List<KnowledgeSourceEntity>,
-    assistantId: String,
-    boundSourceIds: Set<String>,
     scope: kotlinx.coroutines.CoroutineScope,
     onUpdate: (Assistant) -> Unit,
-    onToggleSource: (sourceId: String, bind: Boolean) -> Unit,
 ) {
     val context = LocalContext.current
     val toaster = LocalToaster.current
@@ -264,69 +241,6 @@ private fun AssistantLocalToolContent(
         }
         CardGroup {
             item(
-                headlineContent = { Text("启用知识库") },
-                supportingContent = { Text("生成时自动检索知识库中相关内容并注入上下文") },
-                trailingContent = {
-                    Switch(
-                        checked = assistant.enableKnowledgeBase,
-                        onCheckedChange = { onUpdate(assistant.copy(enableKnowledgeBase = it)) }
-                    )
-                }
-            )
-        }
-        AnimatedVisibility(visible = assistant.enableKnowledgeBase) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                CardGroup {
-                    item(
-                        headlineContent = { Text("Embedding 模型") },
-                        supportingContent = { Text("用于将知识库内容向量化搜索，不选则使用全局模型或聊天模型") },
-                        trailingContent = {
-                            ModelSelector(
-                                modelId = assistant.embeddingModelId,
-                                providers = settings.providers,
-                                type = me.rerere.ai.provider.ModelType.CHAT,
-                                allowClear = true,
-                                onSelect = { model ->
-                                    onUpdate(assistant.copy(
-                                        embeddingModelId = if (model.modelId.isNullOrBlank()) null
-                                        else model.id
-                                    ))
-                                }
-                            )
-                        }
-                    )
-                }
-                if (sources.isNotEmpty()) {
-                    CardGroup {
-                        sources.forEach { source ->
-                            val isBound = source.id in boundSourceIds
-                            item(
-                                headlineContent = { Text(source.name.ifBlank { "未命名" }) },
-                                supportingContent = {
-                                    Text(
-                                        when (source.type) {
-                                            "FILE" -> "文件 · ${source.chunkCount}块"
-                                            "CHAT" -> "聊天记录 · ${source.chunkCount}块"
-                                            "TEXT" -> "笔记 · ${source.chunkCount}块"
-                                            "BATCH" -> "批量 · ${source.chunkCount}块"
-                                            else -> "${source.type} · ${source.chunkCount}块"
-                                        }
-                                    )
-                                },
-                                trailingContent = {
-                                    Switch(
-                                        checked = isBound,
-                                        onCheckedChange = { onToggleSource(source.id, it) }
-                                    )
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        CardGroup {
-            item(
                 headlineContent = {
                     Text(stringResource(R.string.assistant_page_local_tools_javascript_engine_title))
                 },
@@ -438,7 +352,7 @@ private fun AssistantLocalToolContent(
             )
             item(
                 headlineContent = { Text("数据库查询") },
-                supportingContent = { Text("允许 AI 查询本地数据库（对话记录/知识库/设置）") },
+                supportingContent = { Text("允许 AI 查询本地数据库（对话记录/设置）") },
                 trailingContent = {
                     Switch(
                         checked = assistant.localTools.contains(LocalToolOption.DatabaseQuery),

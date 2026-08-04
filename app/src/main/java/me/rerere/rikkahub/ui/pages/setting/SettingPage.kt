@@ -238,12 +238,6 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         supportingContent = { Text(stringResource(R.string.setting_page_group_chat_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_group_chat)) },
                     )
-                    item(
-                        onClick = { navController.navigate(Screen.KnowledgeBase) },
-                        leadingContent = { Icon(HugeIcons.BookOpen02, null) },
-                        supportingContent = { Text("管理知识库，导入文件/聊天记录/笔记") },
-                        headlineContent = { Text("知识库") },
-                    )
                 }
             }
 

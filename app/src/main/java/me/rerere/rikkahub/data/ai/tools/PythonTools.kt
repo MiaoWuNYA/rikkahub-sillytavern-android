@@ -18,7 +18,6 @@ import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.ai.python.PythonBridge
 import me.rerere.rikkahub.data.db.AppDatabase
 import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.knowledge.KnowledgeBaseService
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import org.koin.java.KoinJavaComponent
 import java.io.File
@@ -73,7 +72,6 @@ fun createPythonTool(context: Context, timeoutSec: Int = 30): Tool = Tool(
             db = KoinJavaComponent.get<AppDatabase>(AppDatabase::class.java),
             settingsStore = KoinJavaComponent.get<SettingsStore>(SettingsStore::class.java),
             conversationRepo = KoinJavaComponent.get<ConversationRepository>(ConversationRepository::class.java),
-            kbService = KoinJavaComponent.get<KnowledgeBaseService>(KnowledgeBaseService::class.java),
         )
 
         val rawResult = withContext(Dispatchers.IO) {

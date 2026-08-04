@@ -9,7 +9,6 @@ import me.rerere.ai.core.TokenUsage
 import me.rerere.rikkahub.data.db.dao.ConversationDAO
 import me.rerere.rikkahub.data.db.dao.FavoriteDAO
 import me.rerere.rikkahub.data.db.dao.GenMediaDAO
-import me.rerere.rikkahub.data.db.dao.KnowledgeBaseDao
 import me.rerere.rikkahub.data.db.dao.ManagedFileDAO
 import me.rerere.rikkahub.data.db.dao.MemoryDAO
 import me.rerere.rikkahub.data.db.dao.WorkspaceDAO
@@ -18,9 +17,6 @@ import me.rerere.rikkahub.data.db.dao.MessageNodeDAO
 import me.rerere.rikkahub.data.db.entity.ConversationEntity
 import me.rerere.rikkahub.data.db.entity.FavoriteEntity
 import me.rerere.rikkahub.data.db.entity.GenMediaEntity
-import me.rerere.rikkahub.data.db.entity.KnowledgeChunkEntity
-import me.rerere.rikkahub.data.db.entity.KnowledgeSourceAssistantEntity
-import me.rerere.rikkahub.data.db.entity.KnowledgeSourceEntity
 import me.rerere.rikkahub.data.db.entity.ManagedFileEntity
 import me.rerere.rikkahub.data.db.entity.MemoryEntity
 import me.rerere.rikkahub.data.db.entity.MessageNodeEntity
@@ -40,9 +36,6 @@ import me.rerere.rikkahub.utils.JsonInstant
     FolderEntity::class,
         ManagedFileEntity::class,
         FavoriteEntity::class,
-        KnowledgeSourceEntity::class,
-        KnowledgeChunkEntity::class,
-        KnowledgeSourceAssistantEntity::class,
     ],
     version = 25,
     autoMigrations = [
@@ -72,7 +65,6 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun messageNodeDao(): MessageNodeDAO
 
-    abstract fun knowledgeBaseDao(): KnowledgeBaseDao
 
     abstract fun managedFileDao(): ManagedFileDAO
 
