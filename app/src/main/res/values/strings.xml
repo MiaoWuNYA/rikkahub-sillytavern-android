@@ -1297,6 +1297,30 @@
   <string name="persona_page_locked_count">%d characters locked</string>
   <string name="persona_page_choose_characters">Choose Characters</string>
   <string name="persona_page_hide_characters">Hide Character List</string>
+  <string name="group_chat_list_title">Group Chat</string>
+  <string name="group_chat_empty">No group chats yet</string>
+  <string name="group_chat_empty_hint">Tap + to create</string>
+  <string name="group_chat_create_title">New Group Chat</string>
+  <string name="group_chat_name">Group Name</string>
+  <string name="group_activation_strategy">Activation Strategy</string>
+  <string name="group_generation_mode">Generation Mode</string>
+  <string name="group_auto_reply_delay">Auto reply delay: %d s</string>
+  <string name="group_auto_reply_rounds">Auto reply rounds: %1$s (0 = unlimited)</string>
+  <string name="group_allow_self_reply">Allow Self Reply</string>
+  <string name="group_members">Members (%1$d/%2$d)</string>
+  <string name="group_create">Create</string>
+  <string name="group_cancel">Cancel</string>
+  <string name="group_mode_natural">Natural</string>
+  <string name="group_mode_list">List</string>
+  <string name="group_mode_manual">Manual</string>
+  <string name="group_mode_pooled">Pooled</string>
+  <string name="group_mode_natural_desc">Detect names in your input + roll to pick a replier</string>
+  <string name="group_mode_list_desc">All enabled members speak in turn</string>
+  <string name="group_mode_manual_desc">Manually choose who speaks before each reply</string>
+  <string name="group_mode_pooled_desc">Prefer members who have not spoken since the last user message</string>
+  <string name="group_gen_swap">Swap</string>
+  <string name="group_gen_append">Append</string>
+  <string name="group_gen_append_disabled">Append Disabled</string>
   <string name="prompt_page_sticky_desc">0 = off, N = persist for N turns</string>
   <string name="prompt_page_no_group">Ungrouped</string>
   <string name="prompt_page_no_entries">No entries yet. Tap + to add one.</string>

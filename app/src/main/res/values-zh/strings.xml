@@ -1288,6 +1288,30 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="persona_page_locked_count">已绑定 %d 个角色</string>
   <string name="persona_page_choose_characters">选择角色</string>
   <string name="persona_page_hide_characters">收起角色列表</string>
+  <string name="group_chat_list_title">群聊(Group Chat)</string>
+  <string name="group_chat_empty">还没有群聊</string>
+  <string name="group_chat_empty_hint">点击 + 创建</string>
+  <string name="group_chat_create_title">新群聊(New Group Chat)</string>
+  <string name="group_chat_name">群名(Group Name)</string>
+  <string name="group_activation_strategy">激活策略(Activation Strategy)</string>
+  <string name="group_generation_mode">生成模式(Generation Mode)</string>
+  <string name="group_auto_reply_delay">自动接话延迟: %d 秒</string>
+  <string name="group_auto_reply_rounds">自动接话轮数: %1$s（0=无上限）</string>
+  <string name="group_allow_self_reply">允许自接话(Allow Self Reply)</string>
+  <string name="group_members">选择成员(Members)（已选 %1$d/%2$d）</string>
+  <string name="group_create">创建(Create)</string>
+  <string name="group_cancel">取消(Cancel)</string>
+  <string name="group_mode_natural">自然(Natural)</string>
+  <string name="group_mode_list">列表(List)</string>
+  <string name="group_mode_manual">手动(Manual)</string>
+  <string name="group_mode_pooled">随机(Pooled)</string>
+  <string name="group_mode_natural_desc">检测你输入中提到的名字 + 掷骰子选人回复</string>
+  <string name="group_mode_list_desc">全部启用成员依次发言</string>
+  <string name="group_mode_manual_desc">每次发言前手动选择谁说话（未选择时只发送消息不回复）</string>
+  <string name="group_mode_pooled_desc">用户消息后未发言的成员优先，随机选 1 人</string>
+  <string name="group_gen_swap">替换(Swap)</string>
+  <string name="group_gen_append">追加(Append)</string>
+  <string name="group_gen_append_disabled">追加含禁言(Append Disabled)</string>
   <string name="prompt_page_sticky_desc">0 = 关闭, N = 持续N轮</string>
 <string name="skills_page_import_from_file">从文件导入</string>
   <string name="skills_page_add_manually">手动添加</string>

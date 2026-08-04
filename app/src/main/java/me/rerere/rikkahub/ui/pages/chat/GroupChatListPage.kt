@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -40,7 +41,7 @@ fun GroupChatListPage() {
     Scaffold(
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text("群聊") },
+                title = { Text(stringResource(R.string.group_chat_list_title)) },
                 navigationIcon = { BackButton() },
                 scrollBehavior = scrollBehavior,
                 colors = CustomColors.topBarColors,
@@ -61,8 +62,8 @@ fun GroupChatListPage() {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("👥", style = MaterialTheme.typography.headlineLarge)
                     Spacer(Modifier.height(8.dp))
-                    Text("还没有群聊", style = MaterialTheme.typography.bodyLarge)
-                    Text("点击 + 创建", style = MaterialTheme.typography.bodySmall,
+                    Text(stringResource(R.string.group_chat_empty), style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.group_chat_empty_hint), style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
@@ -114,7 +115,7 @@ fun GroupChatListPage() {
 
         AlertDialog(
             onDismissRequest = { showCreate = false },
-            title = { Text("新建群聊") },
+            title = { Text(stringResource(R.string.group_chat_create_title)) },
             text = {
                 Column(
                     modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -122,11 +123,11 @@ fun GroupChatListPage() {
                 ) {
                     OutlinedTextField(
                         value = name, onValueChange = { name = it },
-                        label = { Text("群名") }, singleLine = true,
+                        label = { Text(stringResource(R.string.group_chat_name)) }, singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
 
-                    CardGroup(title = { Text("激活策略(Activation Strategy)") }) {
+                    CardGroup(title = { Text(stringResource(R.string.group_activation_strategy)) }) {
                         GroupActivationStrategy.entries.forEach { mode ->
                             item(
                                 onClick = { selectedMode = mode },
@@ -147,7 +148,7 @@ fun GroupChatListPage() {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
 
-                    CardGroup(title = { Text("生成模式(Generation Mode)") }) {
+                    CardGroup(title = { Text(stringResource(R.string.group_generation_mode)) }) {
                         GroupGenerationMode.entries.forEach { mode ->
                             item(
                                 onClick = { selectedGenMode = mode },
@@ -162,7 +163,7 @@ fun GroupChatListPage() {
                         }
                     }
 
-                    Text("自动接话延迟: ${autoDelay}秒", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.group_auto_reply_delay, autoDelay), style = MaterialTheme.typography.labelMedium)
                     Slider(
                         value = autoDelay.toFloat(),
                         onValueChange = { autoDelay = it.toInt() },
@@ -170,7 +171,7 @@ fun GroupChatListPage() {
                         steps = 29,
                     )
 
-                    Text("自动接话轮数: ${if (autoRounds <= 0) "无上限" else autoRounds}（0=无上限）", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.group_auto_reply_rounds, if (autoRounds <= 0) "无上限" else autoRounds.toString()), style = MaterialTheme.typography.labelMedium)
                     Slider(
                         value = autoRounds.toFloat(),
                         onValueChange = { autoRounds = it.toInt() },
@@ -179,12 +180,12 @@ fun GroupChatListPage() {
                     )
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("允许自接话", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.group_allow_self_reply), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                         Switch(checked = allowSelf, onCheckedChange = { allowSelf = it })
                     }
 
                     // 成员列表：与上方"激活策略/生成模式"一致，用 CardGroup 行样式
-                    CardGroup(title = { Text("选择成员（已选 ${selectedIds.size}/${settings.assistants.size}）") }) {
+                    CardGroup(title = { Text(stringResource(R.string.group_members, selectedIds.size, settings.assistants.size)) }) {
                         settings.assistants.forEach { a ->
                             item(
                                 onClick = {
@@ -227,29 +228,32 @@ fun GroupChatListPage() {
                             showCreate = false
                         }
                     }
-                ) { Text("创建") }
+                ) { Text(stringResource(R.string.group_create)) }
             },
-            dismissButton = { TextButton(onClick = { showCreate = false }) { Text("取消") } },
+            dismissButton = { TextButton(onClick = { showCreate = false }) { Text(stringResource(R.string.group_cancel)) } },
         )
     }
 }
 
+@Composable
 private fun modeLabel(mode: GroupActivationStrategy): String = when (mode) {
-    GroupActivationStrategy.NATURAL -> "自然(Natural)"
-    GroupActivationStrategy.LIST -> "列表(List)"
-    GroupActivationStrategy.MANUAL -> "手动(Manual)"
-    GroupActivationStrategy.POOLED -> "随机(Pooled)"
+    GroupActivationStrategy.NATURAL -> stringResource(R.string.group_mode_natural)
+    GroupActivationStrategy.LIST -> stringResource(R.string.group_mode_list)
+    GroupActivationStrategy.MANUAL -> stringResource(R.string.group_mode_manual)
+    GroupActivationStrategy.POOLED -> stringResource(R.string.group_mode_pooled)
 }
 
+@Composable
 private fun modeDesc(mode: GroupActivationStrategy): String = when (mode) {
-    GroupActivationStrategy.NATURAL -> "检测你输入中提到的名字 + 掷骰子选人回复"
-    GroupActivationStrategy.LIST -> "全部启用成员依次发言"
-    GroupActivationStrategy.MANUAL -> "每次发言前手动选择谁说话（未选择时只发送消息不回复）"
-    GroupActivationStrategy.POOLED -> "用户消息后未发言的成员优先，随机选 1 人"
+    GroupActivationStrategy.NATURAL -> stringResource(R.string.group_mode_natural_desc)
+    GroupActivationStrategy.LIST -> stringResource(R.string.group_mode_list_desc)
+    GroupActivationStrategy.MANUAL -> stringResource(R.string.group_mode_manual_desc)
+    GroupActivationStrategy.POOLED -> stringResource(R.string.group_mode_pooled_desc)
 }
 
+@Composable
 private fun genModeLabel(mode: GroupGenerationMode): String = when (mode) {
-    GroupGenerationMode.SWAP -> "替换(Swap)"
-    GroupGenerationMode.APPEND -> "追加(Append)"
-    GroupGenerationMode.APPEND_DISABLED -> "追加含禁言(Append Disabled)"
+    GroupGenerationMode.SWAP -> stringResource(R.string.group_gen_swap)
+    GroupGenerationMode.APPEND -> stringResource(R.string.group_gen_append)
+    GroupGenerationMode.APPEND_DISABLED -> stringResource(R.string.group_gen_append_disabled)
 }
