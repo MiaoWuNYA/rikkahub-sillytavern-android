@@ -293,7 +293,7 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
         }
 
     /** 注入块使用内部标记避免被当作真实消息，发给模型前移除标记。 */
-    private fun stripInjectedMarker(text: String): String =
+    internal fun stripInjectedMarker(text: String): String =
         text.removePrefix("[Author's Note]\n").removePrefix("[User Persona]\n")
 
     /** 骰子表达式：支持 NdM±K，例如 1d20 / 2d6+3 / 3d6+1d4-2 */
