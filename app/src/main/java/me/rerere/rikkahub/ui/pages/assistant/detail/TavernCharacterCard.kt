@@ -611,9 +611,16 @@ private fun EmbeddedBookSummary(
             ) {
                 // 全局世界书激活设置（与外置世界书页同一份全局数据，天然同步）
                 if (settings != null && onSettingsUpdate != null) {
-                    CardGroup(
-                        title = { Text(stringResource(R.string.prompt_page_world_info_global_title)) },
+                    var worldInfoSettingsExpanded by rememberSaveable { mutableStateOf(false) }
+                    TextButton(
+                        onClick = { worldInfoSettingsExpanded = !worldInfoSettingsExpanded },
                     ) {
+                        Icon(HugeIcons.Setting07, null, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.size(4.dp))
+                        Text(stringResource(R.string.prompt_page_world_info_settings_button), style = MaterialTheme.typography.labelSmall)
+                    }
+                    AnimatedVisibility(visible = worldInfoSettingsExpanded) {
+                    CardGroup {
                         item {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -778,6 +785,7 @@ private fun EmbeddedBookSummary(
                                 )
                             }
                         }
+                    }
                     }
                 }
 

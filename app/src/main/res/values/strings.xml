@@ -562,6 +562,7 @@
   <string name="prompt_page_world_info_budget_title">Token Budget</string>
   <string name="prompt_page_world_info_global_desc">Budget, scan depth, insertion strategy, recursion, etc. apply to all world books (including embedded books)</string>
   <string name="prompt_page_world_info_global_title">Global World Info Activation Settings (applies to all world books)</string>
+  <string name="prompt_page_world_info_settings_button">Global World Info Settings</string>
   <string name="prompt_page_world_info_min_activations_desc">Keep scanning earlier messages until at least this many entries activate (0 = off)</string>
   <string name="prompt_page_world_info_min_activations_title">Minimum Activations</string>
   <string name="prompt_page_priority_format">Priority: %d</string>

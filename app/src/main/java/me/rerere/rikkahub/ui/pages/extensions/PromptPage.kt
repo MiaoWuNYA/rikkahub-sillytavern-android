@@ -669,6 +669,26 @@ private fun LorebookTab(
             state = lazyListState
         ) {
             item {
+                var worldInfoSettingsExpanded by rememberSaveable { mutableStateOf(false) }
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    TextButton(
+                        onClick = { worldInfoSettingsExpanded = !worldInfoSettingsExpanded },
+                    ) {
+                        Icon(
+                            imageVector = HugeIcons.Setting07,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Spacer(Modifier.size(4.dp))
+                        Text(
+                            text = stringResource(R.string.prompt_page_world_info_settings_button),
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                    }
+                    AnimatedVisibility(visible = worldInfoSettingsExpanded) {
                 CardGroup(
                     title = {
                         Column {
@@ -852,6 +872,8 @@ private fun LorebookTab(
                                 onCheckedChange = { onSettingsUpdate(settings.copy(worldInfoUseGroupScoring = it)) },
                             )
                         }
+                    }
+                }
                     }
                 }
             }
