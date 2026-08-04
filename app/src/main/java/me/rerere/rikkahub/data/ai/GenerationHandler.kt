@@ -149,7 +149,11 @@ class GenerationHandler(
         val mainIdentity = if (conversationOverride) {
             conversationSystemPrompt
         } else if (useOfficialSplit) {
-            assistant.assembleMainPrompt()
+            // 官方默认 Main Prompt：角色卡没有 system_prompt 时必须明确"下一句由角色回复"，
+            // 否则模型只能靠内容猜角色——/sendas 等插入助手消息后会把角色认反
+            assistant.assembleMainPrompt().ifBlank {
+                "Write ${assistant.name}'s next reply in a fictional chat between ${assistant.name} and $userName."
+            }
         } else if (assistant.tavernData != null) {
             assistant.assembleContext(userName = userName, personaDesc = personaDescForPrompt)
         } else {
