@@ -46,9 +46,6 @@ enum class BuiltinSlashKind {
     /** 帮助：列出内置命令 */
     HELP,
 
-    /** 信息展示：Toast 显示结果 */
-    INFO,
-
     /** 系统消息：插入 SYSTEM 角色消息，不触发生成 */
     SYS,
 
@@ -191,13 +188,6 @@ fun builtinSlashCommands(context: Context): List<SlashCommand> = listOf(
             SlashExample("/sysgen 描写雨夜街道", "让 AI 写一条系统旁白插入聊天（会触发一次生成）"),
             SlashExample("/sysgen trim=true name=旁白 描写角色内心的挣扎", "裁剪到完整句子，以「旁白」名字插入"),
         ),
-    ),
-    SlashCommand(
-        name = "char-get",
-        description = context.getString(R.string.slash_char_get_desc),
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.INFO,
     ),
     SlashCommand(
         name = "char-update",

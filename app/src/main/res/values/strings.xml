@@ -1416,7 +1416,6 @@
   <string name="slash_trigger_desc">Trigger an AI reply (Trigger) without adding a message</string>
   <string name="slash_sysgen_desc">Generate a system narration (Sysgen) and insert it into the chat</string>
   <string name="slash_sysgen_hint">[name=display] [at=position] [trim=true] [prompt]</string>
-  <string name="slash_char_get_desc">Show current character card summary (Char Get)</string>
   <string name="slash_char_update_desc">Update character card fields (Char Update)</string>
   <string name="slash_char_update_hint">[field=value] e.g. description=new</string>
   <string name="slash_char_duplicate_desc">Duplicate current character card (Char Duplicate)</string>

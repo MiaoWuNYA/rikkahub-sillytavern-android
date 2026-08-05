@@ -729,7 +729,6 @@ private fun TextInputRow(
                     val groupedCommands = slashCommands.groupBy { cmd ->
                         when (cmd.builtinKind) {
                             BuiltinSlashKind.VAR -> stringResource(R.string.slash_category_variables)
-                            BuiltinSlashKind.INFO,
                             BuiltinSlashKind.UPDATE_CHAR,
                             BuiltinSlashKind.DUPLICATE,
                             BuiltinSlashKind.RENAME -> stringResource(R.string.slash_category_character)
@@ -1386,26 +1385,6 @@ private fun handleBuiltinSlash(
                 toaster.show(result)
             }
             state.clearInput()
-        }
-
-        BuiltinSlashKind.INFO -> {
-            when (cmd.name) {
-                "char-get" -> {
-                    val tav = assistant.tavernData
-                    if (tav == null) {
-                        toaster.show("当前助手没有角色卡")
-                    } else {
-                        val summary = buildString {
-                            append("角色卡: ${tav.name.ifBlank { assistant.name }}")
-                            if (tav.description.isNotBlank()) append("\n描述: ${tav.description.take(80)}")
-                            if (tav.personality.isNotBlank()) append("\n性格: ${tav.personality.take(80)}")
-                            if (tav.systemPrompt.isNotBlank()) append("\n系统提示词: ${tav.systemPrompt.take(80)}")
-                            if (tav.embeddedBook != null) append("\n内嵌世界书: ${tav.embeddedBook.entries.size} 条")
-                        }
-                        toaster.show(summary)
-                    }
-                }
-            }
         }
 
         BuiltinSlashKind.RENAME -> {
