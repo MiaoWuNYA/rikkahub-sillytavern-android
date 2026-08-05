@@ -545,7 +545,7 @@ private val personaPresets = listOf(
     Triple(
         "时间感知",
         "间隔意识",
-        "[Be aware of the time that has passed since {{user}} last spoke and reflect it naturally.]\n距离 {{user}} 上次说话：{{idleDuration}}。\n如果间隔明显（数小时或数天），让角色自然地体现这段空白对 {{user}} 的影响——比如刚回来、等待已久、心情变化——但不必机械地提及具体分钟数。",
+        "[Be aware of the current time and how long it has been since {{user}} last spoke, and reflect it naturally.]\n现在时刻：{{time}}。\n距离 {{user}} 上次说话：{{idleDuration}}。\n如果间隔明显（数小时或数天），让角色自然地体现这段空白对 {{user}} 的影响——比如刚回来、等待已久、心情变化——但不必机械地提及具体分钟数。",
     ),
     Triple(
         "目标驱动",

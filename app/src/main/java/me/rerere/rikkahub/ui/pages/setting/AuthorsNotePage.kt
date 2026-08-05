@@ -291,15 +291,15 @@ private val authorsNotePresets = listOf(
     ),
     Pair(
         "动态推进（感知最新）",
-        "[Advance the plot from the user's latest message.]\n用户最新说的是：{{lastUserMessage}}\n围绕它推进：先回应，再补充新信息、制造新冲突或留下钩子。",
+        "[Advance the plot from the user's latest input.]\n用户最新说的是：{{input}}\n围绕它推进：先回应，再补充新信息、制造新冲突或留下钩子。",
     ),
     Pair(
         "开场引导（自动识别）",
-        "[Adapt to whether this is the opening or an ongoing scene.]\n{{if {{lastCharMessage}}}}\n  对话已经进行中：延续当前场景，从对话的进展自然接下去。\n{{else}}\n  这是开场：按照 {{char}} 的开场白展开场景，自然地开始互动。\n{{/if}}",
+        "[Adapt to whether this is the opening or an ongoing scene.]\n{{if {{lastCharMessage}}}}\n  对话已经进行中：延续当前场景，从对话的进展自然接下去。\n{{else}}\n  这是开场：以 {{char}} 的开场白开始——{{charFirstMessage}}\n自然接续开场白进入互动。\n{{/if}}",
     ),
     Pair(
         "时间流逝（动态）",
-        "[Reflect the time that has passed since the last interaction.]\n距离上次互动已过去：{{idleDuration}}。\n如果间隔明显，让场景自然体现这段空白（等待、离去又回来、氛围变化），但不必提及具体分钟数。",
+        "[Reflect the current time and the time that has passed since the last interaction.]\n现在时刻：{{time}}。\n距离上次互动已过去：{{idleDuration}}。\n如果间隔明显，让场景自然体现这段空白（等待、离去又回来、氛围变化），但不必提及具体分钟数。",
     ),
     Pair(
         "随机氛围（稳定）",
