@@ -1219,7 +1219,7 @@
   <string name="tavern_field_mes_example">Examples</string>
   <string name="tavern_field_phi">PHI</string>
   <string name="tavern_field_first_message">First Message</string>
-  <string name="tavern_field_creator_notes">Author's Notes</string>
+  <string name="tavern_field_creator_notes">Author\'s Notes</string>
   <string name="tavern_group_char_info">Character Info</string>
   <string name="tavern_group_greetings">Greetings</string>
   <string name="prompt_page_pos_em_top">EM Top</string>
@@ -1237,8 +1237,8 @@
   <string name="prompt_page_logic_not_any">NOT ANY</string>
   <string name="prompt_page_logic_or_any">OR ANY</string>
   <string name="persona_page_position_in_prompt">In Prompt</string>
-  <string name="persona_page_position_top">Top of Author's Note</string>
-  <string name="persona_page_position_bottom">Bottom of Author's Note</string>
+  <string name="persona_page_position_top">Top of Author\'s Note</string>
+  <string name="persona_page_position_bottom">Bottom of Author\'s Note</string>
   <string name="persona_page_position_at_depth">At Depth (depth %d)</string>
   <string name="persona_page_position_none">None</string>
   <string name="slash_category_variables">Variables</string>
@@ -1257,7 +1257,7 @@
   <string name="persona_page_new">New Persona</string>
   <string name="persona_page_back">Back</string>
   <string name="persona_page_presets">Quick Presets (%d)</string>
-  <string name="persona_page_position_merge_desc">Top/Bottom options merge with the author's note and follow its interval</string>
+  <string name="persona_page_position_merge_desc">Top/Bottom options merge with the author\'s note and follow its interval</string>
   <string name="persona_page_role_system">System</string>
   <string name="persona_page_role_user">User</string>
   <string name="persona_page_role_assistant">Assistant</string>
