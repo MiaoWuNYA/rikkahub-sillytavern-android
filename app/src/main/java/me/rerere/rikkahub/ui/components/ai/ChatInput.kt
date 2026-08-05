@@ -107,6 +107,7 @@ import me.rerere.rikkahub.data.files.SkillManager
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.model.QuickMessage
+import me.rerere.rikkahub.service.ChatService
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionContext
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionItem
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionList
@@ -154,6 +155,7 @@ fun ChatInput(
     onSlashContinue: ((String) -> Unit)? = null,
     onSlashImpersonate: ((String) -> Unit)? = null,
     onSlashRerollPick: ((String) -> Unit)? = null,
+    onSlashGen: ((ChatService.GenArgs, (String) -> Unit) -> Unit)? = null,
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
@@ -220,6 +222,7 @@ fun ChatInput(
                         onSlashContinue = onSlashContinue,
                         onSlashImpersonate = onSlashImpersonate,
                         onSlashRerollPick = onSlashRerollPick,
+                        onSlashGen = onSlashGen,
                     )
                 } else {
                     // 技能命令：与弹窗点击一致，把替换后的内容填回输入框
@@ -329,6 +332,7 @@ fun ChatInput(
                         onSlashContinue = onSlashContinue,
                         onSlashImpersonate = onSlashImpersonate,
                         onSlashRerollPick = onSlashRerollPick,
+                        onSlashGen = onSlashGen,
                         helpDialogVisible = showHelpDialog,
                         onDismissHelpDialog = { showHelpDialog = false },
                         onShowHelp = { showHelpDialog = true },
@@ -527,6 +531,7 @@ private fun TextInputRow(
     onSlashContinue: ((String) -> Unit)? = null,
     onSlashImpersonate: ((String) -> Unit)? = null,
     onSlashRerollPick: ((String) -> Unit)? = null,
+    onSlashGen: ((ChatService.GenArgs, (String) -> Unit) -> Unit)? = null,
     helpDialogVisible: Boolean,
     onDismissHelpDialog: () -> Unit,
     onShowHelp: () -> Unit,
@@ -765,6 +770,7 @@ private fun TextInputRow(
                                                 onSlashContinue = onSlashContinue,
                                                 onSlashImpersonate = onSlashImpersonate,
                                                 onSlashRerollPick = onSlashRerollPick,
+                                                onSlashGen = onSlashGen,
                                             )
                                         } else {
                                             // 需要参数的命令：填入输入框，补参数后发送
@@ -840,6 +846,7 @@ private fun TextInputRow(
                                                 onSlashContinue = onSlashContinue,
                                                 onSlashImpersonate = onSlashImpersonate,
                                                 onSlashRerollPick = onSlashRerollPick,
+                                                onSlashGen = onSlashGen,
                                             )
                                         } else {
                                             // 需要参数的命令：填入输入框，补参数后按发送执行（官方 AutoComplete 行为）
@@ -1086,6 +1093,7 @@ private fun handleBuiltinSlash(
     onSlashContinue: ((String) -> Unit)? = null,
     onSlashImpersonate: ((String) -> Unit)? = null,
     onSlashRerollPick: ((String) -> Unit)? = null,
+    onSlashGen: ((ChatService.GenArgs, (String) -> Unit) -> Unit)? = null,
 ) {
     when (cmd.builtinKind) {
         BuiltinSlashKind.HELP -> {
@@ -1120,22 +1128,43 @@ private fun handleBuiltinSlash(
             }
         }
 
+        BuiltinSlashKind.GEN -> {
+            val parsed = parseGenArgs(args)
+            if (parsed.prompt.isBlank()) {
+                toaster.show("用法: /gen [trim=true] [as=system|char] [lock=true] [length=词数] [name=名字] 提示词")
+            } else if (onSlashGen == null) {
+                toaster.show("当前页面不支持该命令")
+            } else {
+                // 官方 setInputText / setInputTextAfterPrompt：trim=true 替换输入框，否则在命令文本后追加
+                val original = state.textContent.text.toString().trimEnd()
+                state.clearInput()
+                onSlashGen(parsed) { draft ->
+                    val merged = if (parsed.trim || original.isBlank()) draft else "$original\n\n$draft"
+                    state.setMessageText(merged)
+                    toaster.show(if (parsed.trim) "已生成，确认后发送" else "已生成并追加到输入框，确认后发送")
+                }
+            }
+        }
+
         BuiltinSlashKind.SYS -> {
             val parsed = parseInsertArgs(args)
+            // 官方 NARRATOR_NAME_DEFAULT = "System"（/sys 默认名），可 /sysname 修改（本地不支持，固定 System）
+            val name = parsed.name ?: "System"
             if (parsed.text.isBlank()) {
                 toaster.show("用法: /sys [name=显示名] [at=位置] 系统消息内容")
             } else if (onSlashInsert == null) {
                 toaster.show("当前页面不支持该命令")
             } else {
-                onSlashInsert(MessageRole.SYSTEM, parsed.text, parsed.name, parsed.at)
+                onSlashInsert(MessageRole.SYSTEM, parsed.text, name, parsed.at)
                 state.clearInput()
             }
         }
 
         BuiltinSlashKind.SENDAS -> {
             val parsed = parseInsertArgs(args)
-            // 官方行为：不带 name= 时默认使用当前角色名，让 AI 明确认领这条消息
-            val name = parsed.name ?: assistant.name.ifBlank { null }
+            // 官方行为：不带 name= 时默认使用当前角色卡名字（name2），让 AI 明确认领这条消息
+            val charName = assistant.tavernData?.name?.takeIf { it.isNotBlank() } ?: assistant.name
+            val name = parsed.name ?: charName.ifBlank { null }
             if (parsed.text.isBlank()) {
                 toaster.show("用法: /sendas [name=角色名] [at=位置] 文本")
             } else if (onSlashInsert == null) {
@@ -1183,12 +1212,14 @@ private fun handleBuiltinSlash(
 
         BuiltinSlashKind.SYSGEN -> {
             val parsed = parseInsertArgs(args)
+            // 官方 NARRATOR_NAME_DEFAULT = "System"（/sysgen 默认名，sendNarratorMessage 同 /sys）
+            val name = parsed.name ?: "System"
             if (parsed.text.isBlank()) {
                 toaster.show("用法: /sysgen [name=显示名] [at=位置] [trim=true] 提示词，如 描写雨夜街道")
             } else if (onSlashSysgen == null) {
                 toaster.show("当前页面不支持该命令")
             } else {
-                onSlashSysgen(parsed.text, parsed.name, parsed.at, parsed.trim)
+                onSlashSysgen(parsed.text, name, parsed.at, parsed.trim)
                 state.clearInput()
             }
         }
@@ -1457,4 +1488,37 @@ private fun parseInsertArgs(raw: String): InsertArgs {
         args = m.groupValues[3].trimStart()
     }
     return InsertArgs(name, at, args.trim(), trim)
+}
+
+/**
+ * 解析 /gen 参数（官方 generateCallback：trim/lock/name/length/as）
+ */
+private fun parseGenArgs(raw: String): ChatService.GenArgs {
+    var args = raw.trim()
+    var asRole = ChatService.QuietPromptAs.DEFAULT
+    var lock = false
+    var length = 0
+    var name: String? = null
+    var trim = false
+    while (true) {
+        val m = Regex("^(as|lock|length|name|trim)=(\"[^\"]*\"|\\S+)(.*)$", RegexOption.IGNORE_CASE).find(args) ?: break
+        val key = m.groupValues[1].lowercase()
+        var value = m.groupValues[2]
+        if (value.startsWith("\"") && value.endsWith("\"")) {
+            value = value.substring(1, value.length - 1)
+        }
+        when (key) {
+            "as" -> asRole = when (value.lowercase()) {
+                "system" -> ChatService.QuietPromptAs.SYSTEM
+                "char" -> ChatService.QuietPromptAs.CHAR
+                else -> ChatService.QuietPromptAs.DEFAULT
+            }
+            "lock" -> lock = value.equals("true", ignoreCase = true) || value == "1"
+            "length" -> length = value.toIntOrNull() ?: 0
+            "name" -> name = value
+            "trim" -> trim = value.equals("true", ignoreCase = true) || value == "1"
+        }
+        args = m.groupValues[3].trimStart()
+    }
+    return ChatService.GenArgs(prompt = args, asRole = asRole, lock = lock, length = length, name = name, trim = trim)
 }

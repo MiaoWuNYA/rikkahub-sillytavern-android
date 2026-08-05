@@ -439,6 +439,7 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
                     // 输出 assistant 消息
                     add(buildJsonObject {
                         put("role", "assistant")
+                        message.name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
                         putJsonArray("content") { contentBuffer.forEach { add(it) } }
                     })
                     contentBuffer.clear()
@@ -458,6 +459,7 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
         if (contentBuffer.isNotEmpty()) {
             add(buildJsonObject {
                 put("role", "assistant")
+                message.name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
                 putJsonArray("content") { contentBuffer.forEach { add(it) } }
             })
         }
@@ -466,6 +468,7 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
     private fun JsonArrayBuilder.addUserMessage(message: UIMessage) {
         add(buildJsonObject {
             put("role", message.role.name.lowercase())
+            message.name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
             putJsonArray("content") {
                 message.parts.mapNotNull { it.toContentBlock() }.forEach { add(it) }
             }

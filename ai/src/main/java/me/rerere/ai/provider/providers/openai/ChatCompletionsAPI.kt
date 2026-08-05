@@ -511,7 +511,8 @@ class ChatCompletionsAPI(
                     buildAssistantMessageJson(
                         contentParts = contentBuffer,
                         tools = group.tools,
-                        reasoningPart = reasoningPart
+                        reasoningPart = reasoningPart,
+                        name = message.name
                     )?.let { assistantMessage ->
                         add(assistantMessage)
                     }
@@ -536,7 +537,8 @@ class ChatCompletionsAPI(
             buildAssistantMessageJson(
                 contentParts = contentBuffer,
                 tools = emptyList(),
-                reasoningPart = reasoningPart
+                reasoningPart = reasoningPart,
+                name = message.name
             )?.let { assistantMessage ->
                 add(assistantMessage)
             }
@@ -546,7 +548,8 @@ class ChatCompletionsAPI(
     private fun buildAssistantMessageJson(
         contentParts: List<UIMessagePart>,
         tools: List<UIMessagePart.Tool>,
-        reasoningPart: UIMessagePart.Reasoning?
+        reasoningPart: UIMessagePart.Reasoning?,
+        name: String?
     ): JsonObject? {
         val hasUsableContent = contentParts.any { part ->
             when (part) {
@@ -562,6 +565,8 @@ class ChatCompletionsAPI(
 
         return buildJsonObject {
             put("role", "assistant")
+            // 官方 openai.js:610 始终携带 name 字段（/sendas 角色名等）
+            name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
 
             // reasoning_content
             if (hasReasoning) {
@@ -627,6 +632,8 @@ class ChatCompletionsAPI(
     private fun JsonArrayBuilder.addNonAssistantMessage(message: UIMessage) {
         add(buildJsonObject {
             put("role", JsonPrimitive(message.role.name.lowercase()))
+            // 官方 openai.js:610 始终携带 name 字段（/sendas 角色名、/sys 旁白名等），模型据此识别消息归属
+            message.name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
 
             if (message.parts.isOnlyTextPart()) {
                 put("content", message.parts.filterIsInstance<UIMessagePart.Text>().first().text)

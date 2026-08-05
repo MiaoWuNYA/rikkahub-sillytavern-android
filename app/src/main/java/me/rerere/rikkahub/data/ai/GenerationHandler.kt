@@ -1001,10 +1001,15 @@ private fun buildUserContext(
 }
 
 /**
- * /sendas name= 注入：发送给模型前把消息自带的名字写入内容（对齐官方默认行为），
+ * name= 注入：发送给模型前把消息自带的名字写入内容（对齐官方 names_behavior.DEFAULT），
  * 让 AI 明确知道这条消息是谁说的；本地保存与 UI 保持原始文本不变。
+ *
+ * 官方规则（openai.js:581-605）：sendas/群聊等 assistant 消息拼 "名字: " 前缀；
+ * SYSTEM 角色（narrator，/sys /sysgen）不拼 —— 官方 narrator 消息带独立 name 字段但不进 content，
+ * 否则会泄漏 "System: " 污染提示词。
  */
 private fun List<UIMessage>.withMessageNames(): List<UIMessage> = map { message ->
+    if (message.role == MessageRole.SYSTEM) return@map message
     val name = message.name?.takeIf { it.isNotBlank() } ?: return@map message
     val textIndex = message.parts.indexOfFirst { it is UIMessagePart.Text }
     if (textIndex >= 0) {

@@ -561,6 +561,13 @@ private fun ChatPageContent(
                             vm.handleGenerateSystemNarration(prompt, name, at, trim)
                         }
                     },
+                    onSlashGen = { args, onDraft ->
+                        if (currentChatModel == null) {
+                            toaster.show("请先选择模型", type = ToastType.Error)
+                        } else {
+                            vm.quietGenerate(args, onDraft)
+                        }
+                    },
                     onSlashVar = { op, name, value ->
                         val (newSettings, result) = applyMacroVarSlash(
                             settings = setting,

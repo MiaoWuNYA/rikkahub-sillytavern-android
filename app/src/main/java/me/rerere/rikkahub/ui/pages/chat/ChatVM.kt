@@ -293,6 +293,11 @@ class ChatVM(
         chatService.impersonateDraft(_conversationId, prefill.ifBlank { null }, onDraft)
     }
 
+    /** 官方 /gen：安静生成，结果填入输入框待确认 */
+    fun quietGenerate(args: ChatService.GenArgs, onDraft: (String) -> Unit) {
+        chatService.quietGenerate(_conversationId, args, onDraft)
+    }
+
     fun saveConversationAsync() {
         viewModelScope.launch {
             chatService.saveConversation(_conversationId, conversation.value)

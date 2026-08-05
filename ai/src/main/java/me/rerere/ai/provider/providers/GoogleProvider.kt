@@ -633,6 +633,7 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                     // 输出 model 消息
                     add(buildJsonObject {
                         put("role", "model")
+                        message.name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
                         putJsonArray("parts") { partsBuffer.forEach { add(it) } }
                     })
                     partsBuffer.clear()
@@ -652,6 +653,7 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
         if (partsBuffer.isNotEmpty()) {
             add(buildJsonObject {
                 put("role", "model")
+                message.name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
                 putJsonArray("parts") { partsBuffer.forEach { add(it) } }
             })
         }
@@ -660,6 +662,7 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
     private fun JsonArrayBuilder.addUserMessage(message: UIMessage) {
         add(buildJsonObject {
             put("role", commonRoleToGoogleRole(message.role))
+            message.name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
             putJsonArray("parts") {
                 message.parts.mapNotNull { it.toGooglePart() }.forEach { add(it) }
             }

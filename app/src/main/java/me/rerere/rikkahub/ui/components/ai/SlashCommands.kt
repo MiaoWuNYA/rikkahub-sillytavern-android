@@ -62,6 +62,9 @@ enum class BuiltinSlashKind {
     /** 以角色身份生成一条回复（官方 /impersonate） */
     IMPERSONATE,
 
+    /** 安静生成：用提示词让 AI 生成文本，结果填入输入框（官方 /gen） */
+    GEN,
+
     /** 重新掷 {{pick}} 稳定随机（官方 /reroll-pick） */
     REROLL_PICK,
 
@@ -175,6 +178,14 @@ fun builtinSlashCommands(context: Context): List<SlashCommand> = listOf(
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.IMPERSONATE,
+    ),
+    SlashCommand(
+        name = "gen",
+        description = context.getString(R.string.slash_gen_desc),
+        argumentHint = context.getString(R.string.slash_gen_hint),
+        content = "",
+        filePath = "builtin",
+        builtinKind = BuiltinSlashKind.GEN,
     ),
     SlashCommand(
         name = "reroll-pick",

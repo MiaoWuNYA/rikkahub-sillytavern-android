@@ -422,9 +422,29 @@ class ChatService(
                 finishInterruptedPendingTools(conversationId)
 
                 val currentConversation = session.state.value
+                // 官方：/send 应用 USER_INPUT 正则，/sendas 应用 SLASH_COMMAND 正则（本地无 SLASH_COMMAND placement，映射 ASSISTANT scope），/sys 不应用
+                val scope = when (role) {
+                    MessageRole.USER -> AssistantAffectScope.USER
+                    MessageRole.ASSISTANT -> AssistantAffectScope.ASSISTANT
+                    else -> null
+                }
+                val processedContent = if (scope != null) {
+                    val settings = settingsStore.settingsFlow.first()
+                    val assistant = settings.getAssistantById(currentConversation.assistantId)
+                        ?: settings.getCurrentAssistant()
+                    content.map { part ->
+                        if (part is UIMessagePart.Text) {
+                            part.copy(text = part.text.replaceRegexes(assistant, scope, visual = false))
+                        } else {
+                            part
+                        }
+                    }
+                } else {
+                    content
+                }
                 val node = UIMessage(
                     role = role,
-                    parts = content,
+                    parts = processedContent,
                     name = name,
                 ).toMessageNode()
                 val messageNodes = if (at == null) {
@@ -526,9 +546,10 @@ class ChatService(
                     messages = listOf(narratorSystem) + history + UIMessage.user(prompt),
                     params = backgroundTextGenerationParams(model),
                 )
-                // 官方 /sysgen trim=true：按最后一个句子边界裁剪（trimToEndSentence）
+                // 官方 /sysgen trim=true：先按最后一个句子边界裁剪（trimToEndSentence），再走 getRegexedString(message, SLASH_COMMAND)
                 val rawNarration = result.choices[0].message?.toText().orEmpty()
-                val narration = if (trim) trimToEndSentence(rawNarration) else rawNarration.trim()
+                val trimmed = if (trim) trimToEndSentence(rawNarration) else rawNarration.trim()
+                val narration = trimmed.replaceRegexes(assistant, AssistantAffectScope.ASSISTANT, visual = false)
                 if (narration.isBlank()) {
                     addError(
                         IllegalStateException("生成的旁白为空"),
@@ -826,7 +847,8 @@ class ChatService(
                 val assistant = settings.getAssistantById(conversation.assistantId)
                     ?: settings.getCurrentAssistant()
                 val userName = settings.displaySetting.userNickname.ifBlank { "User" }
-                val charName = assistant.name.ifBlank { "Assistant" }
+                // 官方 name2：角色卡名字，改过助手名时也能正确定位（否则 AI 会以为自己在扮演别的角色）
+                val charName = (assistant.tavernData?.name?.takeIf { it.isNotBlank() } ?: assistant.name).ifBlank { "Assistant" }
                 val history = conversation.messageNodes.map { node ->
                     UIMessage(
                         role = node.role,
@@ -856,6 +878,107 @@ class ChatService(
                 )
                 if (draft.isBlank()) return@launch
                 onDraft(draft.trim())
+                _generationDoneFlow.emit(conversationId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                addError(e, conversationId, title = context.getString(R.string.error_title_send_message))
+            }
+        }
+        session.setJob(job)
+    }
+
+    // ---- 安静生成（官方 /gen） ----
+
+    /**
+     * 官方 /gen 的 as= 参数（createRawPrompt）：prompt 以什么角色注入。
+     */
+    enum class QuietPromptAs {
+        /** 默认：作为用户输入 */
+        DEFAULT,
+
+        /** as=system：作为系统指令注入 */
+        SYSTEM,
+
+        /** as=char：作为角色发言注入（内容前缀角色名） */
+        CHAR,
+    }
+
+    /**
+     * 官方 /gen 参数集（generateCallback：trim/lock/name/length/as）。
+     */
+    data class GenArgs(
+        val prompt: String,
+        val asRole: QuietPromptAs = QuietPromptAs.DEFAULT,
+        val lock: Boolean = false,
+        val length: Int = 0,
+        val name: String? = null,
+        val trim: Boolean = false,
+    )
+
+    /**
+     * 官方 /gen：安静生成（quiet generation）。
+     * 输入/输出都不写入聊天历史，结果通过 onDraft 交回（本地填入输入框，
+     * trim=true 替换、否则追加到命令文本后，对齐官方 setInputText / setInputTextAfterPrompt）。
+     */
+    fun quietGenerate(
+        conversationId: Uuid,
+        args: GenArgs,
+        onDraft: (String) -> Unit,
+    ) {
+        if (args.prompt.isBlank()) return
+
+        val session = getOrCreateSession(conversationId)
+        val previousJob = session.getJob()
+        previousJob?.cancel()
+
+        val job = appScope.launch {
+            try {
+                runCatching { previousJob?.join() }
+                finishInterruptedPendingTools(conversationId)
+
+                val settings = settingsStore.settingsFlow.first()
+                val conversation = getConversationFlow(conversationId).value
+                val assistant = settings.getAssistantById(conversation.assistantId)
+                    ?: settings.getCurrentAssistant()
+
+                // 官方 createRawPrompt：lock=true 只发 prompt，不带系统提示词与聊天历史
+                val history = if (args.lock) emptyList() else conversation.messageNodes.map { node ->
+                    UIMessage(
+                        role = node.role,
+                        parts = listOf(UIMessagePart.Text(
+                            node.messages.getOrNull(node.selectIndex)?.toText().orEmpty()
+                        )),
+                    )
+                }
+                // 官方 as=char：以角色发言注入，内容前缀角色名（name 优先，其次角色卡名）
+                val charName = if (args.asRole == QuietPromptAs.CHAR) {
+                    args.name?.takeIf { it.isNotBlank() }
+                        ?: (assistant.tavernData?.name?.takeIf { it.isNotBlank() } ?: assistant.name)
+                } else {
+                    null
+                }
+                // 官方 length=：末尾追加"生成约 N 词回复"指令
+                val effectivePrompt = buildString {
+                    if (!charName.isNullOrBlank()) append(charName).append(": ")
+                    append(args.prompt)
+                    if (args.length > 0) append("\n\n[Start a new ").append(args.length).append(" word reply]")
+                }
+                val promptRole = when (args.asRole) {
+                    QuietPromptAs.SYSTEM -> MessageRole.SYSTEM
+                    QuietPromptAs.CHAR -> MessageRole.ASSISTANT
+                    QuietPromptAs.DEFAULT -> MessageRole.USER
+                }
+                val result = generateForAssistant(
+                    assistant = assistant,
+                    settings = settings,
+                    prompt = effectivePrompt,
+                    promptRole = promptRole,
+                    history = history,
+                    conversationId = conversationId,
+                    generationType = GenerationType.QUIET,
+                )
+                if (result.isBlank()) return@launch
+                onDraft(result.trim())
                 _generationDoneFlow.emit(conversationId)
             } catch (e: Exception) {
                 e.printStackTrace()
