@@ -195,7 +195,7 @@ fun ChatInput(
             // 生成中：斜杠命令不打断当前生成（官方 waitUntilCondition 语义），提示等待；普通消息仍可取消
             val pendingText = state.textContent.text.toString().trimStart()
             if (pendingText.startsWith("/")) {
-                toaster.show("正在生成中，请等待完成后再执行命令")
+                toaster.show(slashContext.getString(R.string.slash_toast_generating))
                 return
             }
             onCancelClick()
@@ -226,6 +226,7 @@ fun ChatInput(
                         onSlashImpersonate = onSlashImpersonate,
                         onSlashRerollPick = onSlashRerollPick,
                         onSlashGen = onSlashGen,
+                        context = slashContext,
                     )
                 } else {
                     // 技能命令：与弹窗点击一致，把替换后的内容填回输入框
@@ -780,6 +781,7 @@ private fun TextInputRow(
                                                 onSlashImpersonate = onSlashImpersonate,
                                                 onSlashRerollPick = onSlashRerollPick,
                                                 onSlashGen = onSlashGen,
+                                                context = slashContext,
                                             )
                                         } else {
                                             // 需要参数的命令：填入输入框，补参数后发送
@@ -856,6 +858,7 @@ private fun TextInputRow(
                                                 onSlashImpersonate = onSlashImpersonate,
                                                 onSlashRerollPick = onSlashRerollPick,
                                                 onSlashGen = onSlashGen,
+                                                context = slashContext,
                                             )
                                         } else {
                                             // 需要参数的命令：填入输入框，补参数后按发送执行（官方 AutoComplete 行为）
@@ -1072,7 +1075,7 @@ private fun SlashCommandItem(
                         color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f),
                     ) {
                         Text(
-                            text = "⚡脚本",
+                            text = stringResource(R.string.slash_ui_script_badge),
                             modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                             color = MaterialTheme.colorScheme.tertiary,
@@ -1087,7 +1090,7 @@ private fun SlashCommandItem(
                     ) {
                         Icon(
                             imageVector = if (expanded) Lucide.ChevronUp else Lucide.ChevronDown,
-                            contentDescription = if (expanded) "收起" else "展开",
+                            contentDescription = if (expanded) stringResource(R.string.slash_ui_collapse) else stringResource(R.string.slash_ui_expand),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(16.dp),
                         )
@@ -1192,6 +1195,7 @@ private fun handleBuiltinSlash(
     onSlashImpersonate: ((String) -> Unit)? = null,
     onSlashRerollPick: ((String) -> Unit)? = null,
     onSlashGen: ((ChatService.GenArgs, (String) -> Unit) -> Unit)? = null,
+    context: android.content.Context,
 ) {
     when (cmd.builtinKind) {
         BuiltinSlashKind.HELP -> {
@@ -1201,7 +1205,7 @@ private fun handleBuiltinSlash(
 
         BuiltinSlashKind.CONTINUE -> {
             if (onSlashContinue == null) {
-                toaster.show("当前页面不支持该命令")
+                toaster.show(context.getString(R.string.slash_toast_not_supported))
             } else {
                 onSlashContinue(args.trim())
                 state.clearInput()
@@ -1210,7 +1214,7 @@ private fun handleBuiltinSlash(
 
         BuiltinSlashKind.IMPERSONATE -> {
             if (onSlashImpersonate == null) {
-                toaster.show("当前页面不支持该命令")
+                toaster.show(context.getString(R.string.slash_toast_not_supported))
             } else {
                 // 官方：生成前清空输入框（防递归），结果流式写入输入框
                 state.clearInput()
@@ -1220,7 +1224,7 @@ private fun handleBuiltinSlash(
 
         BuiltinSlashKind.REROLL_PICK -> {
             if (onSlashRerollPick == null) {
-                toaster.show("当前页面不支持该命令")
+                toaster.show(context.getString(R.string.slash_toast_not_supported))
             } else {
                 onSlashRerollPick(args.trim())
                 state.clearInput()
@@ -1230,9 +1234,9 @@ private fun handleBuiltinSlash(
         BuiltinSlashKind.GEN -> {
             val parsed = parseGenArgs(args)
             if (parsed.prompt.isBlank()) {
-                toaster.show("用法: /gen [trim=true] [as=char] [length=token数] [name=名字] 提示词（默认以系统指令生成）")
+                toaster.show(context.getString(R.string.slash_toast_gen_usage))
             } else if (onSlashGen == null) {
-                toaster.show("当前页面不支持该命令")
+                toaster.show(context.getString(R.string.slash_toast_not_supported))
             } else {
                 // 官方 /gen 结果走管道（常配 /setinput 写输入框）；本地无管道，直接填输入框：
                 // trim=true 替换；否则追加到输入框原有文本之后（官方 setInputTextAfterPrompt 语义，
@@ -1244,7 +1248,7 @@ private fun handleBuiltinSlash(
                 onSlashGen(parsed) { draft ->
                     val merged = if (parsed.trim || keep.isBlank()) draft else "$keep\n\n$draft"
                     state.setMessageText(merged)
-                    toaster.show(if (parsed.trim) "已生成，确认后发送" else "已生成并追加到输入框，确认后发送")
+                    toaster.show(if (parsed.trim) context.getString(R.string.slash_toast_gen_done_replace) else context.getString(R.string.slash_toast_gen_done_append))
                 }
             }
         }
@@ -1254,9 +1258,9 @@ private fun handleBuiltinSlash(
             // 官方 NARRATOR_NAME_DEFAULT = "System"（/sys 默认名），可 /sysname 修改（本地不支持，固定 System）
             val name = parsed.name ?: "System"
             if (parsed.text.isBlank()) {
-                toaster.show("用法: /sys [name=显示名] [at=位置] 系统消息内容")
+                toaster.show(context.getString(R.string.slash_toast_sys_usage))
             } else if (onSlashInsert == null) {
-                toaster.show("当前页面不支持该命令")
+                toaster.show(context.getString(R.string.slash_toast_not_supported))
             } else {
                 onSlashInsert(MessageRole.SYSTEM, parsed.text, name, parsed.at)
                 state.clearInput()
@@ -1269,9 +1273,9 @@ private fun handleBuiltinSlash(
             val charName = assistant.tavernData?.name?.takeIf { it.isNotBlank() } ?: assistant.name
             val name = parsed.name ?: charName.ifBlank { null }
             if (parsed.text.isBlank()) {
-                toaster.show("用法: /sendas [name=角色名] [at=位置] 文本")
+                toaster.show(context.getString(R.string.slash_toast_sendas_usage))
             } else if (onSlashInsert == null) {
-                toaster.show("当前页面不支持该命令")
+                toaster.show(context.getString(R.string.slash_toast_not_supported))
             } else {
                 onSlashInsert(MessageRole.ASSISTANT, parsed.text, name, parsed.at)
                 state.clearInput()
@@ -1281,9 +1285,9 @@ private fun handleBuiltinSlash(
         BuiltinSlashKind.SEND -> {
             val parsed = parseInsertArgs(args)
             if (parsed.text.isBlank()) {
-                toaster.show("用法: /send [name=显示名] [at=位置] 文本")
+                toaster.show(context.getString(R.string.slash_toast_send_usage))
             } else if (onSlashInsert == null) {
-                toaster.show("当前页面不支持该命令")
+                toaster.show(context.getString(R.string.slash_toast_not_supported))
             } else {
                 // 官方 /send 默认 name1（当前人设名/用户名）
                 val personaName = settings.personas.firstOrNull { it.id == settings.activePersonaId }?.name
@@ -1298,13 +1302,13 @@ private fun handleBuiltinSlash(
             val mode = Regex("mode=(\\S+)", RegexOption.IGNORE_CASE)
                 .find(args)?.groupValues?.get(1)?.lowercase() ?: "all"
             if (mode !in listOf("lookup", "temp", "all")) {
-                toaster.show("mode 必须是 lookup / temp / all")
+                toaster.show(context.getString(R.string.slash_toast_persona_mode))
             } else if (onSlashPersona != null) {
                 val name = args.replace(Regex("mode=(\"[^\"]*\"|\\S+)", RegexOption.IGNORE_CASE), "").trim()
                 onSlashPersona(name, mode)
                 state.clearInput()
             } else {
-                toaster.show("当前页面不支持该命令")
+                toaster.show(context.getString(R.string.slash_toast_not_supported))
             }
         }
 
@@ -1313,7 +1317,7 @@ private fun handleBuiltinSlash(
                 onSlashTrigger()
                 state.clearInput()
             } else {
-                toaster.show("当前页面不支持该命令")
+                toaster.show(context.getString(R.string.slash_toast_not_supported))
             }
         }
 
@@ -1322,9 +1326,9 @@ private fun handleBuiltinSlash(
             // 官方 NARRATOR_NAME_DEFAULT = "System"（/sysgen 默认名，sendNarratorMessage 同 /sys）
             val name = parsed.name ?: "System"
             if (parsed.text.isBlank()) {
-                toaster.show("用法: /sysgen [name=显示名] [at=位置] [trim=true] 提示词，如 描写雨夜街道")
+                toaster.show(context.getString(R.string.slash_toast_sysgen_usage))
             } else if (onSlashSysgen == null) {
-                toaster.show("当前页面不支持该命令")
+                toaster.show(context.getString(R.string.slash_toast_not_supported))
             } else {
                 onSlashSysgen(parsed.text, name, parsed.at, parsed.trim)
                 state.clearInput()
@@ -1346,7 +1350,7 @@ private fun handleBuiltinSlash(
             if (op == SlashVarOp.LIST) {
                 val result = onSlashVar?.invoke(op, "", "")
                 if (result == null) {
-                    toaster.show("当前页面不支持该命令")
+                    toaster.show(context.getString(R.string.slash_toast_not_supported))
                 } else {
                     toaster.show(result)
                 }
@@ -1373,14 +1377,14 @@ private fun handleBuiltinSlash(
             val needsValue = op == SlashVarOp.SET || op == SlashVarOp.ADD
             if (key.isBlank() || (needsValue && value.isBlank())) {
                 toaster.show(
-                    if (needsValue) "用法: /${cmd.name} 变量名 值（也支持 key=名称 写法）" else "用法: /${cmd.name} 变量名"
+                    if (needsValue) context.getString(R.string.slash_toast_var_usage_value, cmd.name) else context.getString(R.string.slash_toast_var_usage, cmd.name)
                 )
                 return
             }
 
             val result = onSlashVar?.invoke(op, key, value)
             if (result == null) {
-                toaster.show("当前页面不支持该命令")
+                toaster.show(context.getString(R.string.slash_toast_not_supported))
             } else {
                 toaster.show(result)
             }
@@ -1390,7 +1394,7 @@ private fun handleBuiltinSlash(
         BuiltinSlashKind.RENAME -> {
             val newName = args.trim()
             if (newName.isBlank()) {
-                toaster.show("用法: /rename-char 新名字")
+                toaster.show(context.getString(R.string.slash_toast_rename_usage))
             } else {
                 onUpdateAssistant(
                     assistant.copy(
@@ -1398,7 +1402,7 @@ private fun handleBuiltinSlash(
                         tavernData = assistant.tavernData?.copy(name = newName),
                     )
                 )
-                toaster.show("已重命名为: $newName")
+                toaster.show(context.getString(R.string.slash_toast_renamed, newName))
             }
         }
 
@@ -1417,11 +1421,11 @@ private fun handleBuiltinSlash(
                 rest = rest.removeRange(m.range.first, m.range.last + 1).trim()
             }
             if (updates.isEmpty()) {
-                toaster.show("用法: /char-update 字段=值 [字段2=值2 ...]（name/description/personality/scenario/systemPrompt/firstMessage/messageExamples/creatorNotes/postHistoryInstructions/characterVersion/creator/tags）")
+                toaster.show(context.getString(R.string.slash_toast_char_update_usage))
                 return
             }
             var currentTav = assistant.tavernData ?: run {
-                toaster.show("当前助手没有角色卡")
+                toaster.show(context.getString(R.string.slash_toast_no_char_card))
                 return
             }
             var nameChanged = false
@@ -1429,31 +1433,31 @@ private fun handleBuiltinSlash(
             var unknown: String? = null
             for ((field, value) in updates) {
                 when (field) {
-                    "name" -> { currentTav = currentTav.copy(name = value); nameChanged = true; applied += "名称" }
-                    "description" -> { currentTav = currentTav.copy(description = value); applied += "描述" }
-                    "personality" -> { currentTav = currentTav.copy(personality = value); applied += "性格" }
-                    "scenario" -> { currentTav = currentTav.copy(scenario = value); applied += "场景" }
-                    "systemprompt", "system_prompt" -> { currentTav = currentTav.copy(systemPrompt = value); applied += "系统提示词" }
-                    "firstmessage", "first_mes" -> { currentTav = currentTav.copy(firstMessage = value); applied += "开场白" }
-                    "messageexamples", "mesexample", "mes_example" -> { currentTav = currentTav.copy(mesExample = value); applied += "示例对话" }
-                    "posthistoryinstructions", "post_history_instructions", "phi" -> { currentTav = currentTav.copy(postHistoryInstructions = value); applied += "历史后指令" }
-                    "creator" -> { currentTav = currentTav.copy(creator = value); applied += "作者" }
-                    "creatornotes", "creator_notes" -> { currentTav = currentTav.copy(creatorNotes = value); applied += "作者备注" }
-                    "characterversion", "character_version" -> { currentTav = currentTav.copy(characterVersion = value); applied += "角色版本" }
-                    "tags" -> { currentTav = currentTav.copy(tags = value.split(',').map { it.trim() }.filter { it.isNotBlank() }); applied += "标签" }
+                    "name" -> { currentTav = currentTav.copy(name = value); nameChanged = true; applied += context.getString(R.string.slash_field_name) }
+                    "description" -> { currentTav = currentTav.copy(description = value); applied += context.getString(R.string.slash_field_description) }
+                    "personality" -> { currentTav = currentTav.copy(personality = value); applied += context.getString(R.string.slash_field_personality) }
+                    "scenario" -> { currentTav = currentTav.copy(scenario = value); applied += context.getString(R.string.slash_field_scenario) }
+                    "systemprompt", "system_prompt" -> { currentTav = currentTav.copy(systemPrompt = value); applied += context.getString(R.string.slash_field_system_prompt) }
+                    "firstmessage", "first_mes" -> { currentTav = currentTav.copy(firstMessage = value); applied += context.getString(R.string.slash_field_first_message) }
+                    "messageexamples", "mesexample", "mes_example" -> { currentTav = currentTav.copy(mesExample = value); applied += context.getString(R.string.slash_field_message_examples) }
+                    "posthistoryinstructions", "post_history_instructions", "phi" -> { currentTav = currentTav.copy(postHistoryInstructions = value); applied += context.getString(R.string.slash_field_post_history_instructions) }
+                    "creator" -> { currentTav = currentTav.copy(creator = value); applied += context.getString(R.string.slash_field_creator) }
+                    "creatornotes", "creator_notes" -> { currentTav = currentTav.copy(creatorNotes = value); applied += context.getString(R.string.slash_field_creator_notes) }
+                    "characterversion", "character_version" -> { currentTav = currentTav.copy(characterVersion = value); applied += context.getString(R.string.slash_field_character_version) }
+                    "tags" -> { currentTav = currentTav.copy(tags = value.split(',').map { it.trim() }.filter { it.isNotBlank() }); applied += context.getString(R.string.slash_field_tags) }
                     else -> unknown = field
                 }
             }
             onUpdateAssistant(assistant.copy(name = if (nameChanged) currentTav.name else assistant.name, tavernData = currentTav))
-            if (applied.isNotEmpty()) toaster.show("已更新: ${applied.joinToString("、")}")
-            if (unknown != null) toaster.show("未知字段: $unknown")
+            if (applied.isNotEmpty()) toaster.show(context.getString(R.string.slash_toast_char_updated, applied.joinToString(context.getString(R.string.slash_field_sep))))
+            if (unknown != null) toaster.show(context.getString(R.string.slash_toast_unknown_field, unknown))
         }
 
         BuiltinSlashKind.DUPLICATE -> {
             if (onSlashDuplicate != null) {
                 onSlashDuplicate()
             } else {
-                toaster.show("当前页面不支持该命令")
+                toaster.show(context.getString(R.string.slash_toast_not_supported))
             }
         }
 

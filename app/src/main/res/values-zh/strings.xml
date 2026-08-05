@@ -29,6 +29,7 @@
   <string name="assistant_extensions_page_tab_skills">Skills</string>
   <string name="assistant_extensions_page_title">扩展管理</string>
   <string name="assistant_importer_import_failed">导入失败</string>
+  <string name="assistant_importer_import_success">角色卡导入成功</string>
   <string name="assistant_importer_import_tavern_json">导入酒馆角色卡 (JSON)</string>
   <string name="assistant_importer_import_tavern_png">导入酒馆角色卡 (PNG)</string>
   <string name="assistant_importer_importing">导入中...</string>
@@ -1440,6 +1441,68 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="slash_example_decvar_1_desc">变量 -1（未设置时从 0 起算）</string>
   <string name="slash_example_flushvar_1_cmd">/flushvar money</string>
   <string name="slash_example_flushvar_1_desc">删除变量 money</string>
+  <!-- 斜杠命令运行提示（toast / 变量 / 状态） -->
+  <string name="slash_toast_generating">正在生成中，请等待完成后再执行命令</string>
+  <string name="slash_toast_not_supported">当前页面不支持该命令</string>
+  <string name="slash_toast_gen_usage">用法: /gen [trim=true] [as=char] [length=token数] [name=名字] 提示词（默认以系统指令生成）</string>
+  <string name="slash_toast_gen_done_replace">已生成，确认后发送</string>
+  <string name="slash_toast_gen_done_append">已生成并追加到输入框，确认后发送</string>
+  <string name="slash_toast_sys_usage">用法: /sys [name=显示名] [at=位置] 系统消息内容</string>
+  <string name="slash_toast_sendas_usage">用法: /sendas [name=角色名] [at=位置] 文本</string>
+  <string name="slash_toast_send_usage">用法: /send [name=显示名] [at=位置] 文本</string>
+  <string name="slash_toast_persona_mode">mode 必须是 lookup / temp / all</string>
+  <string name="slash_toast_sysgen_usage">用法: /sysgen [name=显示名] [at=位置] [trim=true] 提示词，如 描写雨夜街道</string>
+  <string name="slash_toast_var_usage_value">用法: /%1$s 变量名 值（也支持 key=名称 写法）</string>
+  <string name="slash_toast_var_usage">用法: /%1$s 变量名</string>
+  <string name="slash_toast_rename_usage">用法: /rename-char 新名字</string>
+  <string name="slash_toast_renamed">已重命名为: %1$s</string>
+  <string name="slash_toast_char_update_usage">用法: /char-update 字段=值 [字段2=值2 ...]（name/description/personality/scenario/systemPrompt/firstMessage/messageExamples/creatorNotes/postHistoryInstructions/characterVersion/creator/tags）</string>
+  <string name="slash_toast_no_char_card">当前助手没有角色卡</string>
+  <string name="slash_toast_char_updated">已更新: %1$s</string>
+  <string name="slash_toast_unknown_field">未知字段: %1$s</string>
+  <string name="slash_toast_draft_ready">已生成你的发言草稿，确认后发送</string>
+  <string name="slash_toast_reroll_done">已重新掷随机细节（种子 %1$s），下次回复生效</string>
+  <string name="slash_toast_no_model">请先选择模型</string>
+  <string name="slash_field_name">名称</string>
+  <string name="slash_field_description">描述</string>
+  <string name="slash_field_personality">性格</string>
+  <string name="slash_field_scenario">场景</string>
+  <string name="slash_field_system_prompt">系统提示词</string>
+  <string name="slash_field_first_message">开场白</string>
+  <string name="slash_field_message_examples">示例对话</string>
+  <string name="slash_field_post_history_instructions">历史后指令</string>
+  <string name="slash_field_creator">作者</string>
+  <string name="slash_field_creator_notes">作者备注</string>
+  <string name="slash_field_character_version">角色版本</string>
+  <string name="slash_field_tags">标签</string>
+  <string name="slash_field_sep">、</string>
+  <string name="slash_ui_script_badge">脚本</string>
+  <string name="slash_ui_collapse">收起</string>
+  <string name="slash_ui_expand">展开</string>
+  <string name="slash_var_unset">（未设置）</string>
+  <string name="slash_var_deleted">已删除 %1$s</string>
+  <string name="slash_var_empty">（暂无变量）</string>
+  <string name="slash_var_list_prefix">本对话: </string>
+  <string name="slash_sysgen_status">正在生成系统旁白…</string>
+  <string name="slash_error_sysgen_no_messages">当前对话还没有消息，无法生成旁白</string>
+  <string name="slash_error_no_model">请先选择模型</string>
+  <string name="slash_error_sysgen_empty">生成的旁白为空</string>
+  <string name="slash_error_continue_no_message">没有可继续的助手消息</string>
+  <!-- 斜杠命令运行提示（persona / duplicate / trigger）与开场白面板 -->
+  <string name="slash_toast_char_duplicated">已复制角色卡: %1$s</string>
+  <string name="slash_toast_persona_current">当前人设: %1$s（输入 /persona 人设名 可切换）</string>
+  <string name="slash_toast_persona_none_active">当前无激活人设（可用: %1$s）</string>
+  <string name="slash_toast_persona_off">已关闭人设</string>
+  <string name="slash_toast_persona_already_off">当前已无激活人设</string>
+  <string name="slash_toast_persona_not_found">未找到人设「%1$s」</string>
+  <string name="slash_toast_persona_temp_set">已设置临时用户名: %1$s</string>
+  <string name="slash_toast_persona_switched">已切换人设: %1$s</string>
+  <string name="slash_toast_persona_fallback">未找到人设「%1$s」，已按官方行为设置临时用户名: %2$s</string>
+  <string name="slash_toast_trigger_no_messages">当前对话还没有消息，无法触发回复</string>
+  <string name="slash_ui_unnamed">未命名</string>
+  <string name="slash_ui_copy_suffix"> (副本)</string>
+  <string name="chat_page_select_opening">选择开场白</string>
+  <string name="chat_page_opening_current">当前</string>
   <string name="prompt_page_ignore_budget_desc">该条目不受世界书 token 预算限制，总是注入</string>
   <string name="prompt_page_rounds_suffix">轮</string>
   <string name="prompt_page_scan_depth_global">默认(全局)</string>

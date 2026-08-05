@@ -142,6 +142,7 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
     val currentChatModel by vm.currentChatModel.collectAsStateWithLifecycle()
     val enableWebSearch by vm.enableWebSearch.collectAsStateWithLifecycle()
     val errors by vm.errors.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val softwareKeyboardController = LocalSoftwareKeyboardController.current
@@ -423,7 +424,7 @@ private fun ChatPageContent(
                     onCancelClick = { vm.stopGeneration() },
                     onSendClick = {
                         if (currentChatModel == null) {
-                            toaster.show("请先选择模型", type = ToastType.Error)
+                            toaster.show(context.getString(R.string.slash_toast_no_model), type = ToastType.Error)
                             return@ChatInput
                         }
                         if (inputState.isEditing()) {
@@ -449,12 +450,12 @@ private fun ChatPageContent(
                         val src = setting.getCurrentAssistant()
                         val dup = src.copy(
                             id = kotlin.uuid.Uuid.random(),
-                            name = src.name.ifBlank { "未命名" } + " (副本)",
+                            name = src.name.ifBlank { context.getString(R.string.slash_ui_unnamed) } + context.getString(R.string.slash_ui_copy_suffix),
                         )
                         vm.updateSettings(
                             setting.copy(assistants = setting.assistants + dup)
                         )
-                        toaster.show("已复制角色卡: ${dup.name}")
+                        toaster.show(context.getString(R.string.slash_toast_char_duplicated, dup.name))
                     },
                     onSlashInsert = { role, text, name, at ->
                         vm.handleInsertMessage(role, text, name, at)
@@ -466,9 +467,9 @@ private fun ChatPageContent(
                             query.isBlank() -> {
                                 toaster.show(
                                     if (current != null) {
-                                        "当前人设: ${current.name}（输入 /persona 人设名 可切换）"
+                                        context.getString(R.string.slash_toast_persona_current, current.name)
                                     } else {
-                                        "当前无激活人设（可用: ${personas.joinToString("、") { it.name }}）"
+                                        context.getString(R.string.slash_toast_persona_none_active, personas.joinToString(context.getString(R.string.slash_field_sep)) { it.name })
                                     }
                                 )
                             }
@@ -476,9 +477,9 @@ private fun ChatPageContent(
                             query.equals("off", ignoreCase = true) || query.equals("none", ignoreCase = true) -> {
                                 if (setting.activePersonaId != null) {
                                     vm.updateSettings(setting.copy(activePersonaId = null))
-                                    toaster.show("已关闭人设")
+                                    toaster.show(context.getString(R.string.slash_toast_persona_off))
                                 } else {
-                                    toaster.show("当前已无激活人设")
+                                    toaster.show(context.getString(R.string.slash_toast_persona_already_off))
                                 }
                             }
 
@@ -489,24 +490,24 @@ private fun ChatPageContent(
                                 when {
                                     // 官方 /persona-set mode=lookup：只选已有人设
                                     target == null && mode == "lookup" -> {
-                                        toaster.show("未找到人设「$query」")
+                                        toaster.show(context.getString(R.string.slash_toast_persona_not_found, query))
                                     }
 
                                     // 官方 /persona-set mode=temp：只设置临时用户名，不找/不选人设
                                     target != null && mode == "temp" -> {
                                         vm.updateSettings(setting.copy(displaySetting = setting.displaySetting.copy(userNickname = query)))
-                                        toaster.show("已设置临时用户名: $query")
+                                        toaster.show(context.getString(R.string.slash_toast_persona_temp_set, query))
                                     }
 
                                     // 官方 /persona-set mode=all（默认）：先找已有，找不到则设置临时用户名
                                     target != null -> {
                                         vm.updateSettings(setting.copy(activePersonaId = target.id))
-                                        toaster.show("已切换人设: ${target.name}")
+                                        toaster.show(context.getString(R.string.slash_toast_persona_switched, target.name))
                                     }
 
                                     else -> {
                                         vm.updateSettings(setting.copy(displaySetting = setting.displaySetting.copy(userNickname = query)))
-                                        toaster.show("未找到人设「$query」，已按官方行为设置临时用户名: $query")
+                                        toaster.show(context.getString(R.string.slash_toast_persona_fallback, query, query))
                                     }
                                 }
                             }
@@ -514,23 +515,23 @@ private fun ChatPageContent(
                     },
                     onSlashTrigger = {
                         if (currentChatModel == null) {
-                            toaster.show("请先选择模型", type = ToastType.Error)
+                            toaster.show(context.getString(R.string.slash_toast_no_model), type = ToastType.Error)
                         } else if (vm.conversation.value.currentMessages.isEmpty()) {
-                            toaster.show("当前对话还没有消息，无法触发回复", type = ToastType.Warning)
+                            toaster.show(context.getString(R.string.slash_toast_trigger_no_messages), type = ToastType.Warning)
                         } else {
                             vm.handleTriggerGeneration()
                         }
                     },
                     onSlashContinue = { prompt ->
                         if (currentChatModel == null) {
-                            toaster.show("请先选择模型", type = ToastType.Error)
+                            toaster.show(context.getString(R.string.slash_toast_no_model), type = ToastType.Error)
                         } else {
                             vm.continueGeneration(prompt)
                         }
                     },
                     onSlashImpersonate = { prefill ->
                         if (currentChatModel == null) {
-                            toaster.show("请先选择模型", type = ToastType.Error)
+                            toaster.show(context.getString(R.string.slash_toast_no_model), type = ToastType.Error)
                         } else {
                             var announced = false
                             vm.impersonateDraft(prefill) { draft ->
@@ -538,7 +539,7 @@ private fun ChatPageContent(
                                 inputState.setMessageText(draft)
                                 if (!announced) {
                                     announced = true
-                                    toaster.show("已生成你的发言草稿，确认后发送")
+                                    toaster.show(context.getString(R.string.slash_toast_draft_ready))
                                 }
                             }
                         }
@@ -548,6 +549,7 @@ private fun ChatPageContent(
                         val current = setting.macroChatVariables[chatKey]?.get("__pick_reroll_seed")?.toLongOrNull() ?: 0L
                         val next = seedArg.toLongOrNull() ?: (current + 1)
                         val (newSettings, _) = applyMacroVarSlash(
+                            context = context,
                             settings = setting,
                             op = SlashVarOp.SET,
                             name = "__pick_reroll_seed",
@@ -557,24 +559,25 @@ private fun ChatPageContent(
                         if (newSettings !== setting) {
                             vm.updateSettings(newSettings)
                         }
-                        toaster.show("已重新掷随机细节（种子 $next），下次回复生效")
+                        toaster.show(context.getString(R.string.slash_toast_reroll_done, next))
                     },
                     onSlashSysgen = { prompt, name, at, trim ->
                         if (currentChatModel == null) {
-                            toaster.show("请先选择模型", type = ToastType.Error)
+                            toaster.show(context.getString(R.string.slash_toast_no_model), type = ToastType.Error)
                         } else {
                             vm.handleGenerateSystemNarration(prompt, name, at, trim)
                         }
                     },
                     onSlashGen = { args, onDraft ->
                         if (currentChatModel == null) {
-                            toaster.show("请先选择模型", type = ToastType.Error)
+                            toaster.show(context.getString(R.string.slash_toast_no_model), type = ToastType.Error)
                         } else {
                             vm.quietGenerate(args, onDraft)
                         }
                     },
                     onSlashVar = { op, name, value ->
                         val (newSettings, result) = applyMacroVarSlash(
+                            context = context,
                             settings = setting,
                             op = op,
                             name = name,
@@ -1043,7 +1046,7 @@ private fun GreetingPickerDialog(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "选择开场白",
+                    text = stringResource(R.string.chat_page_select_opening),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -1107,7 +1110,7 @@ private fun GreetingPickerDialog(
                         if (isSelected) {
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                text = "当前",
+                                text = stringResource(R.string.chat_page_opening_current),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.primary,

@@ -1352,6 +1352,68 @@
   <string name="slash_example_decvar_1_desc">Variable -1 (starts from 0 if unset)</string>
   <string name="slash_example_flushvar_1_cmd">/flushvar money</string>
   <string name="slash_example_flushvar_1_desc">Delete variable money</string>
+  <!-- 斜杠命令运行提示（toast / 变量 / 状态） -->
+  <string name="slash_toast_generating">Generating… please wait until it finishes</string>
+  <string name="slash_toast_not_supported">This command is not supported on this page</string>
+  <string name="slash_toast_gen_usage">Usage: /gen [trim=true] [as=char] [length=tokens] [name=name] prompt (defaults to system instruction)</string>
+  <string name="slash_toast_gen_done_replace">Generated — review before sending</string>
+  <string name="slash_toast_gen_done_append">Generated and appended to the input — review before sending</string>
+  <string name="slash_toast_sys_usage">Usage: /sys [name=display name] [at=position] system message</string>
+  <string name="slash_toast_sendas_usage">Usage: /sendas [name=character name] [at=position] text</string>
+  <string name="slash_toast_send_usage">Usage: /send [name=display name] [at=position] text</string>
+  <string name="slash_toast_persona_mode">mode must be lookup / temp / all</string>
+  <string name="slash_toast_sysgen_usage">Usage: /sysgen [name=display name] [at=position] [trim=true] prompt, e.g. describe a rainy night street</string>
+  <string name="slash_toast_var_usage_value">Usage: /%1$s variable value (key=name also supported)</string>
+  <string name="slash_toast_var_usage">Usage: /%1$s variable</string>
+  <string name="slash_toast_rename_usage">Usage: /rename-char new name</string>
+  <string name="slash_toast_renamed">Renamed to: %1$s</string>
+  <string name="slash_toast_char_update_usage">Usage: /char-update field=value [field2=value2 ...] (name/description/personality/scenario/systemPrompt/firstMessage/messageExamples/creatorNotes/postHistoryInstructions/characterVersion/creator/tags)</string>
+  <string name="slash_toast_no_char_card">The current assistant has no character card</string>
+  <string name="slash_toast_char_updated">Updated: %1$s</string>
+  <string name="slash_toast_unknown_field">Unknown field: %1$s</string>
+  <string name="slash_toast_draft_ready">Your reply draft is ready — review before sending</string>
+  <string name="slash_toast_reroll_done">Rerolled random details (seed %1$s) — takes effect on next reply</string>
+  <string name="slash_toast_no_model">Please select a model first</string>
+  <string name="slash_field_name">Name</string>
+  <string name="slash_field_description">Description</string>
+  <string name="slash_field_personality">Personality</string>
+  <string name="slash_field_scenario">Scenario</string>
+  <string name="slash_field_system_prompt">System Prompt</string>
+  <string name="slash_field_first_message">First Message</string>
+  <string name="slash_field_message_examples">Message Examples</string>
+  <string name="slash_field_post_history_instructions">Post-History Instructions</string>
+  <string name="slash_field_creator">Creator</string>
+  <string name="slash_field_creator_notes">Creator Notes</string>
+  <string name="slash_field_character_version">Character Version</string>
+  <string name="slash_field_tags">Tags</string>
+  <string name="slash_field_sep">, </string>
+  <string name="slash_ui_script_badge">Script</string>
+  <string name="slash_ui_collapse">Collapse</string>
+  <string name="slash_ui_expand">Expand</string>
+  <string name="slash_var_unset">(unset)</string>
+  <string name="slash_var_deleted">Deleted %1$s</string>
+  <string name="slash_var_empty">(no variables)</string>
+  <string name="slash_var_list_prefix">This chat: </string>
+  <string name="slash_sysgen_status">Generating system narration…</string>
+  <string name="slash_error_sysgen_no_messages">No messages in this conversation — cannot generate narration</string>
+  <string name="slash_error_no_model">Please select a model first</string>
+  <string name="slash_error_sysgen_empty">Generated narration is empty</string>
+  <string name="slash_error_continue_no_message">No assistant message to continue</string>
+  <!-- 斜杠命令运行提示（persona / duplicate / trigger）与开场白面板 -->
+  <string name="slash_toast_char_duplicated">Duplicated character card: %1$s</string>
+  <string name="slash_toast_persona_current">Current persona: %1$s (type /persona name to switch)</string>
+  <string name="slash_toast_persona_none_active">No active persona (available: %1$s)</string>
+  <string name="slash_toast_persona_off">Persona disabled</string>
+  <string name="slash_toast_persona_already_off">No active persona already</string>
+  <string name="slash_toast_persona_not_found">Persona "%1$s" not found</string>
+  <string name="slash_toast_persona_temp_set">Temporary username set: %1$s</string>
+  <string name="slash_toast_persona_switched">Switched to persona: %1$s</string>
+  <string name="slash_toast_persona_fallback">Persona "%1$s" not found — temporary username set per official behavior: %2$s</string>
+  <string name="slash_toast_trigger_no_messages">No messages yet — cannot trigger a reply</string>
+  <string name="slash_ui_unnamed">Unnamed</string>
+  <string name="slash_ui_copy_suffix"> (copy)</string>
+  <string name="chat_page_select_opening">Select opening</string>
+  <string name="chat_page_opening_current">Current</string>
   <string name="prompt_page_ignore_budget_desc">This entry ignores the world info token budget and is always injected</string>
   <string name="prompt_page_rounds_suffix">turns</string>
   <string name="prompt_page_scan_depth_global">Default (Global)</string>
@@ -1447,7 +1509,7 @@
   <string name="web_search_enabled">Web search enabled</string>
   <string name="setting_theme_page_delete_theme_title">Delete Theme</string>
   <string name="setting_theme_page_delete_theme_message">Are you sure you want to delete this theme?</string>
-<string name="assistant_importer_import_success">角色卡导入成功</string>
+<string name="assistant_importer_import_success">Character card imported successfully</string>
   <string name="prompt_page_secondary_keys_label">Optional Filter</string>
   <string name="prompt_page_selective">Selective Mode</string>
   <string name="prompt_page_selective_desc">Use secondary keywords for advanced trigger logic</string>

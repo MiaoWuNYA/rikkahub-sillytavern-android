@@ -511,14 +511,14 @@ class ChatService(
                 val currentConversation = session.state.value
                 if (currentConversation.currentMessages.isEmpty()) {
                     addError(
-                        IllegalStateException("当前对话还没有消息，无法生成旁白"),
+                        IllegalStateException(context.getString(R.string.slash_error_sysgen_no_messages)),
                         conversationId,
                         title = context.getString(R.string.error_title_send_message),
                     )
                     return@launch
                 }
 
-                session.processingStatus.value = "正在生成系统旁白…"
+                session.processingStatus.value = context.getString(R.string.slash_sysgen_status)
 
                 val settings = settingsStore.settingsFlow.first()
                 val assistant = settings.getAssistantById(currentConversation.assistantId)
@@ -527,7 +527,7 @@ class ChatService(
                 val provider = model?.findProvider(settings.providers)
                 if (model == null || provider == null) {
                     addError(
-                        IllegalStateException("请先选择模型"),
+                        IllegalStateException(context.getString(R.string.slash_error_no_model)),
                         conversationId,
                         title = context.getString(R.string.error_title_send_message),
                     )
@@ -552,7 +552,7 @@ class ChatService(
                 val narration = trimmed.replaceRegexes(assistant, AssistantAffectScope.ASSISTANT, visual = false)
                 if (narration.isBlank()) {
                     addError(
-                        IllegalStateException("生成的旁白为空"),
+                        IllegalStateException(context.getString(R.string.slash_error_sysgen_empty)),
                         conversationId,
                         title = context.getString(R.string.error_title_send_message),
                     )
@@ -770,7 +770,7 @@ class ChatService(
                 val lastAssistantIndex = nodes.indexOfLast { it.role == MessageRole.ASSISTANT }
                 if (lastAssistantIndex < 0) {
                     addError(
-                        IllegalStateException("没有可继续的助手消息"),
+                        IllegalStateException(context.getString(R.string.slash_error_continue_no_message)),
                         conversationId,
                         title = context.getString(R.string.error_title_generation),
                     )

@@ -1,5 +1,7 @@
 package me.rerere.rikkahub.ui.components.ai
 
+import android.content.Context
+import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
 
 /**
@@ -29,6 +31,7 @@ enum class SlashVarOp {
  *  - list：列出本对话变量
  */
 fun applyMacroVarSlash(
+    context: Context,
     settings: Settings,
     op: SlashVarOp,
     name: String,
@@ -48,7 +51,7 @@ fun applyMacroVarSlash(
             "$name = $value"
         }
 
-        SlashVarOp.GET -> current() ?: "（未设置）"
+        SlashVarOp.GET -> current() ?: context.getString(R.string.slash_var_unset)
 
         SlashVarOp.ADD -> {
             // 官方 Number() 语义：小数也按数值相加（10.5+1.5=12），结果整数时去掉 .0
@@ -80,11 +83,15 @@ fun applyMacroVarSlash(
 
         SlashVarOp.FLUSH -> {
             store().remove(name)
-            "已删除 $name"
+            context.getString(R.string.slash_var_deleted, name)
         }
 
         SlashVarOp.LIST -> {
-            if (chat.isEmpty()) "（暂无变量）" else "本对话: " + chat.entries.joinToString("、") { "${it.key}=${it.value}" }
+            if (chat.isEmpty()) {
+                context.getString(R.string.slash_var_empty)
+            } else {
+                context.getString(R.string.slash_var_list_prefix) + chat.entries.joinToString(context.getString(R.string.slash_field_sep)) { "${it.key}=${it.value}" }
+            }
         }
     }
 
