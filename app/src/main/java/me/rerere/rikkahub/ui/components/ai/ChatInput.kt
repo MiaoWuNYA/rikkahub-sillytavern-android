@@ -1114,8 +1114,9 @@ private fun handleBuiltinSlash(
             if (onSlashImpersonate == null) {
                 toaster.show("当前页面不支持该命令")
             } else {
-                onSlashImpersonate(args.trim())
+                // 官方：生成前清空输入框（防递归），结果流式写入输入框
                 state.clearInput()
+                onSlashImpersonate(args.trim())
             }
         }
 

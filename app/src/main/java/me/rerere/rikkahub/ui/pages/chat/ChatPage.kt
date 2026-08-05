@@ -532,9 +532,14 @@ private fun ChatPageContent(
                         if (currentChatModel == null) {
                             toaster.show("请先选择模型", type = ToastType.Error)
                         } else {
+                            var announced = false
                             vm.impersonateDraft(prefill) { draft ->
+                                // 官方流式写输入框：每次 chunk 全量替换
                                 inputState.setMessageText(draft)
-                                toaster.show("已生成你的发言草稿，确认后发送")
+                                if (!announced) {
+                                    announced = true
+                                    toaster.show("已生成你的发言草稿，确认后发送")
+                                }
                             }
                         }
                     },

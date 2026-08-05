@@ -847,8 +847,6 @@ class ChatService(
                 val assistant = settings.getAssistantById(conversation.assistantId)
                     ?: settings.getCurrentAssistant()
                 val userName = settings.displaySetting.userNickname.ifBlank { "User" }
-                // 官方 name2：角色卡名字，改过助手名时也能正确定位（否则 AI 会以为自己在扮演别的角色）
-                val charName = (assistant.tavernData?.name?.takeIf { it.isNotBlank() } ?: assistant.name).ifBlank { "Assistant" }
                 val history = conversation.messageNodes.map { node ->
                     UIMessage(
                         role = node.role,
@@ -857,24 +855,34 @@ class ChatService(
                         )),
                     )
                 }
-                // 官方默认 impersonation_prompt：从 {{user}} 视角写，不要写成 {{char}}
-                val impersonationInstruction =
-                    "[Write your next reply from the point of view of $userName, using the chat history so far as a guideline for the writing style of $userName. Don't write as $charName or system. Don't describe actions of $charName.]"
-                val extraSystemMessages = buildList {
-                    add(UIMessage.system(impersonationInstruction))
-                    extraInstruction?.trim()?.takeIf { it.isNotBlank() }?.let {
-                        add(UIMessage.system(it))
-                    }
+                // 官方 /impersonate：prompt 作为 quiet_prompt（quietToLoud=true）追加到历史最后一行
+                // （script.js modifyLastPromptLine，非 instruct 模式 \n${prompt}），无额外系统指令；
+                // 提示词末尾加 "name1:" 引导，模型续写即用户发言（non-instruct impersonation line）
+                val effectiveHistory = history.toMutableList()
+                val instruction = extraInstruction?.trim().takeIf { it.isNotBlank() }
+                if (instruction != null && effectiveHistory.isNotEmpty()) {
+                    val last = effectiveHistory.last()
+                    val lastText = last.parts.filterIsInstance<UIMessagePart.Text>().joinToString("\n") { it.text }
+                    effectiveHistory[effectiveHistory.size - 1] = last.copy(
+                        parts = listOf(UIMessagePart.Text("$lastText\n$instruction"))
+                    )
                 }
+                val draftHistory = effectiveHistory + UIMessage(
+                    role = MessageRole.ASSISTANT,
+                    parts = listOf(UIMessagePart.Text("$userName:")),
+                )
                 val draft = generateForAssistant(
                     assistant = assistant,
                     settings = settings,
                     prompt = "",
-                    promptRole = MessageRole.ASSISTANT,
-                    history = history,
-                    extraSystemMessages = extraSystemMessages,
+                    promptRole = MessageRole.USER,
+                    history = draftHistory,
                     conversationId = conversationId,
                     generationType = GenerationType.IMPERSONATE,
+                    // 官方 onProgressStreaming：结果流式写入输入框（sendTextarea.value = processedText）
+                    onChunk = { text, _ ->
+                        onDraft(text)
+                    },
                 )
                 if (draft.isBlank()) return@launch
                 onDraft(draft.trim())
