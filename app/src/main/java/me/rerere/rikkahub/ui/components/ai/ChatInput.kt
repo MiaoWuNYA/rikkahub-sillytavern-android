@@ -160,10 +160,11 @@ fun ChatInput(
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
     val skillManager: SkillManager = koinInject()
+    val slashContext = LocalContext.current
     val slashCommands = remember(assistant.enabledSkills) {
         val allSkills = skillManager.listSkills()
         val enabledSkills = allSkills.filter { it.name in assistant.enabledSkills }
-        collectSlashCommands(enabledSkills, LocalContext.current)
+        collectSlashCommands(enabledSkills, slashContext)
     }
     val hazeTintColor = MaterialTheme.colorScheme.surfaceContainerLow
     val inputHazeStyle = HazeMaterials.thin(containerColor = hazeTintColor)
@@ -537,10 +538,11 @@ private fun TextInputRow(
         settings.getQuickMessagesOfAssistant(assistant)
     }
     // 斜杠命令
+    val slashContext = LocalContext.current
     val slashCommands = remember(assistant.enabledSkills) {
         val allSkills = skillManager.listSkills()
         val enabledSkills = allSkills.filter { it.name in assistant.enabledSkills }
-        collectSlashCommands(enabledSkills, LocalContext.current)
+        collectSlashCommands(enabledSkills, slashContext)
     }
     var showSlashPopup by remember { mutableStateOf(false) }
     var slashFilter by remember { mutableStateOf("") }
@@ -1164,7 +1166,7 @@ private fun handleBuiltinSlash(
             if (mode !in listOf("lookup", "temp", "all")) {
                 toaster.show("mode 必须是 lookup / temp / all")
             } else if (onSlashPersona != null) {
-                val name = args.replace(Regex("mode=("[^"]*"|\\S+)", RegexOption.IGNORE_CASE), "").trim()
+                val name = args.replace(Regex("mode=(\"[^\"]*\"|\\S+)", RegexOption.IGNORE_CASE), "").trim()
                 onSlashPersona(name, mode)
                 state.clearInput()
             } else {
@@ -1479,7 +1481,7 @@ private fun parseInsertArgs(raw: String): InsertArgs {
     var name: String? = null
     var at: Int? = null
     while (true) {
-        val m = Regex("^(name|at)=("[^"]*"|\\S+)(.*)$", RegexOption.IGNORE_CASE).find(args) ?: break
+        val m = Regex("^(name|at)=(\"[^\"]*\"|\\S+)(.*)$", RegexOption.IGNORE_CASE).find(args) ?: break
         val key = m.groupValues[1].lowercase()
         var value = m.groupValues[2]
         if (value.startsWith("\"") && value.endsWith("\"")) {
