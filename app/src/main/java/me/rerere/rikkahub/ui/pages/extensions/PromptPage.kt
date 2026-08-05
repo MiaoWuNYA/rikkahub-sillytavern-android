@@ -53,6 +53,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FloatingToolbarDefaults.ScreenOffset
 import androidx.compose.material3.FloatingToolbarDefaults.floatingToolbarVerticalNestedScroll
@@ -1189,6 +1190,154 @@ private fun LorebookEditSheet(
                         )
                     }
                 )
+
+                // 书级激活设置（官方 lorebook 字段；null = 跟随全局）
+                CardGroup(
+                    title = {
+                        Column {
+                            Text(
+                                text = stringResource(R.string.prompt_page_lorebook_settings_title),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            Text(
+                                text = stringResource(R.string.prompt_page_lorebook_settings_desc),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
+                ) {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.prompt_page_lorebook_depth_title), style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    stringResource(R.string.prompt_page_world_info_depth_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            NullableIntTextField(
+                                value = book.scanDepth,
+                                onValueChange = { onEdit(book.copy(scanDepth = it?.coerceIn(0, 1000))) },
+                                modifier = Modifier.width(84.dp),
+                            )
+                        }
+                    }
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.prompt_page_lorebook_budget_title), style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    stringResource(R.string.prompt_page_world_info_budget_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            NullableIntTextField(
+                                value = book.tokenBudget,
+                                onValueChange = { onEdit(book.copy(tokenBudget = it?.coerceIn(0, 100000))) },
+                                modifier = Modifier.width(84.dp),
+                            )
+                        }
+                    }
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.prompt_page_lorebook_min_activations_title), style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    stringResource(R.string.prompt_page_world_info_min_activations_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            NullableIntTextField(
+                                value = book.minActivations,
+                                onValueChange = { onEdit(book.copy(minActivations = it?.coerceIn(0, 50))) },
+                                modifier = Modifier.width(84.dp),
+                            )
+                        }
+                    }
+                    item {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(stringResource(R.string.prompt_page_lorebook_recursive_title), style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                stringResource(R.string.prompt_page_world_info_recursive_desc),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                FilterChip(
+                                    selected = book.recursiveScanning == null,
+                                    onClick = { onEdit(book.copy(recursiveScanning = null)) },
+                                    label = {
+                                        Text(
+                                            stringResource(R.string.prompt_page_follow_global),
+                                            style = MaterialTheme.typography.labelSmall,
+                                        )
+                                    },
+                                )
+                                FilterChip(
+                                    selected = book.recursiveScanning == true,
+                                    onClick = { onEdit(book.copy(recursiveScanning = true)) },
+                                    label = {
+                                        Text(
+                                            stringResource(R.string.prompt_page_enabled_option),
+                                            style = MaterialTheme.typography.labelSmall,
+                                        )
+                                    },
+                                )
+                                FilterChip(
+                                    selected = book.recursiveScanning == false,
+                                    onClick = { onEdit(book.copy(recursiveScanning = false)) },
+                                    label = {
+                                        Text(
+                                            stringResource(R.string.prompt_page_disabled_option),
+                                            style = MaterialTheme.typography.labelSmall,
+                                        )
+                                    },
+                                )
+                            }
+                        }
+                    }
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.prompt_page_lorebook_max_recursion_title), style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    stringResource(R.string.prompt_page_world_info_max_recursion_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            NullableIntTextField(
+                                value = book.maxRecursionSteps,
+                                onValueChange = { onEdit(book.copy(maxRecursionSteps = it?.coerceIn(0, 20))) },
+                                modifier = Modifier.width(84.dp),
+                            )
+                        }
+                    }
+                }
 
                 // 条目列表（按分组）
                 val groupedEntries = book.entries.groupBy { it.group }

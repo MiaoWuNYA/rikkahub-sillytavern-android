@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,6 +50,7 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.ui.FormItem
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.IntTextField
+import me.rerere.rikkahub.ui.components.ui.NullableIntTextField
 import me.rerere.rikkahub.ui.components.ui.InsertionStrategySelector
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowRight01
@@ -297,6 +299,11 @@ fun TavernCharacterCard(
                             book = book,
                             settings = settings,
                             onSettingsUpdate = onSettingsUpdate,
+                            onBookUpdate = { newBook ->
+                                val tav = assistant.tavernData ?: return@EmbeddedBookSummary
+                                val newTav = tav.copy(embeddedBook = newBook)
+                                onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
+                            },
                             onEntryUpdate = { updated ->
                                 val tav = assistant.tavernData ?: return@EmbeddedBookSummary
                                 val oldBook = tav.embeddedBook ?: return@EmbeddedBookSummary
@@ -541,6 +548,7 @@ private fun FieldCardGroup(
 private fun EmbeddedBookSummary(
     book: TavernEmbeddedBook,
     onEntryUpdate: (TavernBookEntry) -> Unit = {},
+    onBookUpdate: (TavernEmbeddedBook) -> Unit = {},
     settings: Settings? = null,
     onSettingsUpdate: ((Settings) -> Unit)? = null,
 ) {
@@ -779,6 +787,154 @@ private fun EmbeddedBookSummary(
                             }
                         }
                     }
+                    }
+                }
+
+                // 书级激活设置（官方 lorebook 字段；null = 跟随全局）
+                CardGroup(
+                    title = {
+                        Column {
+                            Text(
+                                text = stringResource(R.string.prompt_page_lorebook_settings_title),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            Text(
+                                text = stringResource(R.string.prompt_page_lorebook_settings_desc),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
+                ) {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.prompt_page_lorebook_depth_title), style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    stringResource(R.string.prompt_page_world_info_depth_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            NullableIntTextField(
+                                value = book.scanDepth,
+                                onValueChange = { onBookUpdate(book.copy(scanDepth = it?.coerceIn(0, 1000))) },
+                                modifier = Modifier.width(84.dp),
+                            )
+                        }
+                    }
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.prompt_page_lorebook_budget_title), style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    stringResource(R.string.prompt_page_world_info_budget_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            NullableIntTextField(
+                                value = book.tokenBudget,
+                                onValueChange = { onBookUpdate(book.copy(tokenBudget = it?.coerceIn(0, 100000))) },
+                                modifier = Modifier.width(84.dp),
+                            )
+                        }
+                    }
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.prompt_page_lorebook_min_activations_title), style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    stringResource(R.string.prompt_page_world_info_min_activations_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            NullableIntTextField(
+                                value = book.minActivations,
+                                onValueChange = { onBookUpdate(book.copy(minActivations = it?.coerceIn(0, 50))) },
+                                modifier = Modifier.width(84.dp),
+                            )
+                        }
+                    }
+                    item {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(stringResource(R.string.prompt_page_lorebook_recursive_title), style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                stringResource(R.string.prompt_page_world_info_recursive_desc),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                FilterChip(
+                                    selected = book.recursiveScanning == null,
+                                    onClick = { onBookUpdate(book.copy(recursiveScanning = null)) },
+                                    label = {
+                                        Text(
+                                            stringResource(R.string.prompt_page_follow_global),
+                                            style = MaterialTheme.typography.labelSmall,
+                                        )
+                                    },
+                                )
+                                FilterChip(
+                                    selected = book.recursiveScanning == true,
+                                    onClick = { onBookUpdate(book.copy(recursiveScanning = true)) },
+                                    label = {
+                                        Text(
+                                            stringResource(R.string.prompt_page_enabled_option),
+                                            style = MaterialTheme.typography.labelSmall,
+                                        )
+                                    },
+                                )
+                                FilterChip(
+                                    selected = book.recursiveScanning == false,
+                                    onClick = { onBookUpdate(book.copy(recursiveScanning = false)) },
+                                    label = {
+                                        Text(
+                                            stringResource(R.string.prompt_page_disabled_option),
+                                            style = MaterialTheme.typography.labelSmall,
+                                        )
+                                    },
+                                )
+                            }
+                        }
+                    }
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(stringResource(R.string.prompt_page_lorebook_max_recursion_title), style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    stringResource(R.string.prompt_page_world_info_max_recursion_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            NullableIntTextField(
+                                value = book.maxRecursionSteps,
+                                onValueChange = { onBookUpdate(book.copy(maxRecursionSteps = it?.coerceIn(0, 20))) },
+                                modifier = Modifier.width(84.dp),
+                            )
+                        }
                     }
                 }
 

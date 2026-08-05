@@ -509,6 +509,16 @@
   <string name="prompt_page_edit">编辑</string>
   <string name="prompt_page_edit_entry">编辑条目</string>
   <string name="prompt_page_edit_lorebook">编辑世界书</string>
+  <string name="prompt_page_lorebook_settings_title">书级激活设置(Book Settings)</string>
+  <string name="prompt_page_lorebook_settings_desc">留空表示跟随全局设置</string>
+  <string name="prompt_page_lorebook_depth_title">扫描深度(Scan Depth)</string>
+  <string name="prompt_page_lorebook_budget_title">Token 预算上限(Budget Cap)</string>
+  <string name="prompt_page_lorebook_min_activations_title">最少激活数(Min Activations)</string>
+  <string name="prompt_page_lorebook_recursive_title">递归扫描(Recursive Scanning)</string>
+  <string name="prompt_page_lorebook_max_recursion_title">最大递归步骤(Max Recursion Steps)</string>
+  <string name="prompt_page_follow_global">跟随全局(Follow Global)</string>
+  <string name="prompt_page_enabled_option">开(On)</string>
+  <string name="prompt_page_disabled_option">关(Off)</string>
   <string name="prompt_page_edit_mode_injection">编辑模式注入</string>
   <string name="prompt_page_empty_hint">点击下方按钮添加</string>
   <string name="prompt_page_enabled">已启用(Enabled)</string>

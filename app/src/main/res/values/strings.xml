@@ -513,6 +513,16 @@
   <string name="prompt_page_edit">Edit</string>
   <string name="prompt_page_edit_entry">Edit Entry</string>
   <string name="prompt_page_edit_lorebook">Edit Lorebook</string>
+  <string name="prompt_page_lorebook_settings_title">Book Activation Settings</string>
+  <string name="prompt_page_lorebook_settings_desc">Blank = follow global settings</string>
+  <string name="prompt_page_lorebook_depth_title">Scan Depth</string>
+  <string name="prompt_page_lorebook_budget_title">Budget Cap</string>
+  <string name="prompt_page_lorebook_min_activations_title">Minimum Activations</string>
+  <string name="prompt_page_lorebook_recursive_title">Recursive Scanning</string>
+  <string name="prompt_page_lorebook_max_recursion_title">Max Recursion Steps</string>
+  <string name="prompt_page_follow_global">Follow Global</string>
+  <string name="prompt_page_enabled_option">On</string>
+  <string name="prompt_page_disabled_option">Off</string>
   <string name="prompt_page_edit_mode_injection">Edit Mode Injection</string>
   <string name="prompt_page_empty_hint">Click the button below to add</string>
   <string name="prompt_page_enabled">Enabled</string>

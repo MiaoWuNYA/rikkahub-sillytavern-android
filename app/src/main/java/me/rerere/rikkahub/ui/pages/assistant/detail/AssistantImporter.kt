@@ -620,9 +620,12 @@ private fun parseStickyInt(element: kotlinx.serialization.json.JsonElement?): In
 /**
  * 将内嵌世界书条目转为Rikkahub的RegexInjection
  */
-private fun tavernEntryToInjection(entry: TavernBookEntry): PromptInjection.RegexInjection {
+internal fun tavernEntryToInjection(
+    entry: TavernBookEntry,
+    id: Uuid = Uuid.random(),
+): PromptInjection.RegexInjection {
     return PromptInjection.RegexInjection(
-        id = Uuid.random(),
+        id = id,
         name = entry.comment.ifEmpty { entry.keys.firstOrNull() ?: "Entry ${entry.id}" },
         enabled = !entry.disable,
         priority = entry.priority,
