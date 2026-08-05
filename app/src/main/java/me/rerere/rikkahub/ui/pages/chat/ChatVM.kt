@@ -221,6 +221,8 @@ class ChatVM(
     }
 
     /**
+     * 压缩上下文
+     */
     fun handleCompressContext(additionalPrompt: String, targetTokens: Int, keepRecentMessages: Int): Job {
         return viewModelScope.launch {
             chatService.compressConversation(

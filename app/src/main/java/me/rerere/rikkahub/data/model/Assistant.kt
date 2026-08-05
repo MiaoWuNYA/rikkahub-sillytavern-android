@@ -133,7 +133,9 @@ private fun compileRegexCached(pattern: String): Regex? {
                     else -> throw IllegalArgumentException("Unknown regex flag: $c")
                 }
             }
-            Regex(body, options)
+            // options 是 Pattern 位标志（Int），Kotlin Regex 构造需要 Set<RegexOption>
+            val optionSet = RegexOption.entries.filter { options and it.value != 0 }.toSet()
+            Regex(body, optionSet)
         } else {
             Regex(pattern)
         }

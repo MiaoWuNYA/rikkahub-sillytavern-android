@@ -668,6 +668,7 @@ private val personaPresets = listOf(
 )
 
 /** 人设注入位置的中文名称（对齐酒馆官方位置）。 */
+@Composable
 private fun personaPositionLabel(position: PersonaInjectionPosition): String {
     return when (position) {
         PersonaInjectionPosition.IN_PROMPT -> stringResource(R.string.persona_page_position_in_prompt)
