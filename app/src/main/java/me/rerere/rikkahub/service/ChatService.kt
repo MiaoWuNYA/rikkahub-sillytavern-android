@@ -890,25 +890,23 @@ class ChatService(
     // ---- 安静生成（官方 /gen） ----
 
     /**
-     * 官方 /gen 的 as= 参数（createRawPrompt）：prompt 以什么角色注入。
+     * 官方 /gen 的 as= 参数：generateCallback 中 `as = args?.as || 'system'`，
+     * 只有 char 特殊（quietToLoud=true），其余一律按系统指令处理。
      */
     enum class QuietPromptAs {
-        /** 默认：作为用户输入 */
-        DEFAULT,
-
-        /** as=system：作为系统指令注入 */
+        /** as=system / 缺省：prompt 作为系统指令注入 */
         SYSTEM,
 
-        /** as=char：作为角色发言注入（内容前缀角色名） */
+        /** as=char：quietToLoud，prompt 以角色发言注入（名字用角色名） */
         CHAR,
     }
 
     /**
-     * 官方 /gen 参数集（generateCallback：trim/lock/name/length/as）。
+     * 官方 /gen 参数集（generateCallback）：lock/trim/as/length/name + 本地适配。
      */
     data class GenArgs(
         val prompt: String,
-        val asRole: QuietPromptAs = QuietPromptAs.DEFAULT,
+        val asRole: QuietPromptAs = QuietPromptAs.SYSTEM,
         val lock: Boolean = false,
         val length: Int = 0,
         val name: String? = null,
@@ -941,8 +939,9 @@ class ChatService(
                 val assistant = settings.getAssistantById(conversation.assistantId)
                     ?: settings.getCurrentAssistant()
 
-                // 官方 createRawPrompt：lock=true 只发 prompt，不带系统提示词与聊天历史
-                val history = if (args.lock) emptyList() else conversation.messageNodes.map { node ->
+                // 官方 lock=true：生成期间禁用发送按钮防递归；本地生成期间 UI 已有 loading 保护，
+                // 且 /gen 不写入聊天，lock 无需特殊处理，保留参数兼容。
+                val history = conversation.messageNodes.map { node ->
                     UIMessage(
                         role = node.role,
                         parts = listOf(UIMessagePart.Text(
@@ -950,23 +949,22 @@ class ChatService(
                         )),
                     )
                 }
-                // 官方 as=char：以角色发言注入，内容前缀角色名（name 优先，其次角色卡名）
+                // 官方 as=char（quietToLoud）：prompt 以角色发言注入，instruct 模式名字用 name2；
+                // name= 优先，其次角色卡名（本地单角色，官方 name= 是多角色选卡）
                 val charName = if (args.asRole == QuietPromptAs.CHAR) {
                     args.name?.takeIf { it.isNotBlank() }
                         ?: (assistant.tavernData?.name?.takeIf { it.isNotBlank() } ?: assistant.name)
                 } else {
                     null
                 }
-                // 官方 length=：末尾追加"生成约 N 词回复"指令
-                val effectivePrompt = buildString {
-                    if (!charName.isNullOrBlank()) append(charName).append(": ")
-                    append(args.prompt)
-                    if (args.length > 0) append("\n\n[Start a new ").append(args.length).append(" word reply]")
+                val effectivePrompt = if (!charName.isNullOrBlank()) {
+                    "$charName: ${args.prompt}"
+                } else {
+                    args.prompt
                 }
                 val promptRole = when (args.asRole) {
                     QuietPromptAs.SYSTEM -> MessageRole.SYSTEM
                     QuietPromptAs.CHAR -> MessageRole.ASSISTANT
-                    QuietPromptAs.DEFAULT -> MessageRole.USER
                 }
                 val result = generateForAssistant(
                     assistant = assistant,
@@ -976,9 +974,13 @@ class ChatService(
                     history = history,
                     conversationId = conversationId,
                     generationType = GenerationType.QUIET,
+                    // 官方 length=：TempResponseLength 临时设置模型响应长度（max_tokens），非拼 prompt
+                    maxTokensOverride = args.length.takeIf { it > 0 },
                 )
-                if (result.isBlank()) return@launch
-                onDraft(result.trim())
+                // 官方 trim=true：trimToEndSentence 按最后一个句子边界裁剪
+                val finalText = if (args.trim) trimToEndSentence(result.trim()) else result.trim()
+                if (finalText.isBlank()) return@launch
+                onDraft(finalText)
                 _generationDoneFlow.emit(conversationId)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -1415,6 +1417,7 @@ class ChatService(
         generationType: GenerationType = GenerationType.NORMAL,
         promptRole: MessageRole = MessageRole.USER,
         extraSystemMessages: List<UIMessage> = emptyList(),
+        maxTokensOverride: Int? = null,
         onChunk: ((String, List<UIMessagePart>?) -> Unit)? = null,
     ): String {
         val model = settings.findModelById(assistant.chatModelId ?: settings.chatModelId)
@@ -1510,6 +1513,8 @@ class ChatService(
                 add(templateTransformer)
             },
             outputTransformers = outputTransformers,
+            // 官方 /gen length=：临时覆盖响应长度（TempResponseLength 语义），用完即弃
+            maxTokensOverride = maxTokensOverride,
         ).collect { chunk ->
             when (chunk) {
                 is GenerationChunk.Messages -> {

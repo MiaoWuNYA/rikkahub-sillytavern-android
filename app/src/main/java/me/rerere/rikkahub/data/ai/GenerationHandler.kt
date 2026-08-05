@@ -89,6 +89,7 @@ class GenerationHandler(
         workspaceCwd: String? = null,
         conversationId: Uuid? = null,
         generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
+        maxTokensOverride: Int? = null,
     ): Flow<GenerationChunk> = flow {
         val provider = model.findProvider(settings.providers) ?: error("Provider not found")
         val providerImpl = providerManager.getProviderByType(provider)
@@ -690,7 +691,7 @@ class GenerationHandler(
             model = model,
             temperature = assistant.temperature,
             topP = assistant.topP,
-            maxTokens = assistant.maxTokens,
+            maxTokens = maxTokensOverride ?: assistant.maxTokens,
             tools = tools,
             reasoningLevel = assistant.reasoningLevel,
             customHeaders = buildList {

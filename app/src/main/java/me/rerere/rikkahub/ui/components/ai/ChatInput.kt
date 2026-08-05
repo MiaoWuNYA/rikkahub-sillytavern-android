@@ -1131,11 +1131,12 @@ private fun handleBuiltinSlash(
         BuiltinSlashKind.GEN -> {
             val parsed = parseGenArgs(args)
             if (parsed.prompt.isBlank()) {
-                toaster.show("用法: /gen [trim=true] [as=system|char] [lock=true] [length=词数] [name=名字] 提示词")
+                toaster.show("用法: /gen [trim=true] [as=char] [length=token数] [name=名字] 提示词（默认以系统指令生成）")
             } else if (onSlashGen == null) {
                 toaster.show("当前页面不支持该命令")
             } else {
-                // 官方 setInputText / setInputTextAfterPrompt：trim=true 替换输入框，否则在命令文本后追加
+                // 官方 /gen 结果走管道（常配 /setinput 写输入框）；本地无管道，直接填输入框：
+                // trim=true 替换，否则追加到命令文本后（官方 setInputText 替换 / setInputTextAfterPrompt 追加语义）
                 val original = state.textContent.text.toString().trimEnd()
                 state.clearInput()
                 onSlashGen(parsed) { draft ->
@@ -1491,11 +1492,12 @@ private fun parseInsertArgs(raw: String): InsertArgs {
 }
 
 /**
- * 解析 /gen 参数（官方 generateCallback：trim/lock/name/length/as）
+ * 解析 /gen 参数（官方 generateCallback：trim/lock/name/length/as）。
+ * 官方 as 缺省即 'system'，只有 char 特殊（quietToLoud），其他值一律按 system 处理。
  */
 private fun parseGenArgs(raw: String): ChatService.GenArgs {
     var args = raw.trim()
-    var asRole = ChatService.QuietPromptAs.DEFAULT
+    var asRole = ChatService.QuietPromptAs.SYSTEM
     var lock = false
     var length = 0
     var name: String? = null
@@ -1509,9 +1511,8 @@ private fun parseGenArgs(raw: String): ChatService.GenArgs {
         }
         when (key) {
             "as" -> asRole = when (value.lowercase()) {
-                "system" -> ChatService.QuietPromptAs.SYSTEM
                 "char" -> ChatService.QuietPromptAs.CHAR
-                else -> ChatService.QuietPromptAs.DEFAULT
+                else -> ChatService.QuietPromptAs.SYSTEM
             }
             "lock" -> lock = value.equals("true", ignoreCase = true) || value == "1"
             "length" -> length = value.toIntOrNull() ?: 0

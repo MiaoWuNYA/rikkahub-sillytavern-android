@@ -1426,7 +1426,7 @@
   <string name="slash_reroll_pick_desc">Re-roll stable random details (Reroll Pick)</string>
   <string name="slash_reroll_pick_hint">[optional seed]</string>
   <string name="slash_gen_desc">Generate text quietly (Gen), result goes to the input box</string>
-  <string name="slash_gen_hint">[trim=true] [as=system|char] [lock=true] [length=words] [name=name] prompt</string>
+  <string name="slash_gen_hint">[trim=true] [as=char] [length=tokens] [name=name] prompt (default: as system instruction)</string>
   <string name="slash_listvar_desc">List chat variables (List Var)</string>
   <string name="slash_setvar_desc">Set a chat variable (Set Var)</string>
   <string name="slash_setvar_hint">[name] [value]</string>

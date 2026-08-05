@@ -1425,7 +1425,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="slash_reroll_pick_desc">重新掷随机细节：让 {{pick}} 换一批结果，可带种子数字</string>
   <string name="slash_reroll_pick_hint">[种子，可选]</string>
   <string name="slash_gen_desc">安静生成：让 AI 按提示词生成文本，结果填入输入框待发送</string>
-  <string name="slash_gen_hint">[trim=true] [as=system|char] [lock=true] [length=词数] [name=名字] 提示词</string>
+  <string name="slash_gen_hint">[trim=true] [as=char] [length=token数] [name=名字] 提示词（默认以系统指令生成）</string>
   <string name="slash_listvar_desc">列出当前对话变量：提示显示本对话全部变量</string>
   <string name="slash_setvar_desc">设置当前对话变量：宏里用 {{getvar::名}} 或 {{.名}} 读取</string>
   <string name="slash_setvar_hint">[变量名] [值]</string>
