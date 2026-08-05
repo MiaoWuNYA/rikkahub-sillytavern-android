@@ -1205,6 +1205,153 @@
   <string name="slash_help_params">Parameters</string>
   <string name="slash_help_examples">Examples</string>
   <string name="slash_help_example_prefix">Ex: </string>
+  <!-- 斜杠命令帮助：参数说明与例句 -->
+  <string name="slash_param_sys_name_name">name=</string>
+  <string name="slash_param_sys_name_desc">Display name (default System)</string>
+  <string name="slash_param_sys_name_example">/sys name=Narrator A rainy night, empty streets</string>
+  <string name="slash_param_sys_at_name">at=</string>
+  <string name="slash_param_sys_at_desc">Insert position: non-negative counts from start, negative from end (-1 = before last message)</string>
+  <string name="slash_param_sys_at_example">/sys at=-1 The battle ended, everything went quiet</string>
+  <string name="slash_param_sendas_name_name">name=</string>
+  <string name="slash_param_sendas_name_desc">Speak as this character (default current character name)</string>
+  <string name="slash_param_sendas_name_example">/sendas name=Ningning She gently opened the window</string>
+  <string name="slash_param_sendas_at_name">at=</string>
+  <string name="slash_param_sendas_at_desc">Insert position (same as /sys at)</string>
+  <string name="slash_param_sendas_at_example">/sendas at=0 Opening line</string>
+  <string name="slash_param_send_name_name">name=</string>
+  <string name="slash_param_send_name_desc">Display name (defaults to your name)</string>
+  <string name="slash_param_send_name_example">/send name=Me I want to go to the night market</string>
+  <string name="slash_param_send_at_name">at=</string>
+  <string name="slash_param_send_at_desc">Insert position (same as /sys at)</string>
+  <string name="slash_param_send_at_example">/send at=0 First line</string>
+  <string name="slash_param_persona_mode_name">mode=</string>
+  <string name="slash_param_persona_mode_desc">lookup: pick existing persona / temp: set temporary user name / all: try persona then temp (default)</string>
+  <string name="slash_param_persona_mode_example">/persona mode=temp Nickname</string>
+  <string name="slash_param_persona_off_name">off / none</string>
+  <string name="slash_param_persona_off_desc">Deactivate current persona</string>
+  <string name="slash_param_persona_off_example">/persona off</string>
+  <string name="slash_param_sysgen_name_name">name=</string>
+  <string name="slash_param_sysgen_name_desc">Narration display name (default System)</string>
+  <string name="slash_param_sysgen_name_example">/sysgen name=Narrator Describe the hallway at night</string>
+  <string name="slash_param_sysgen_at_name">at=</string>
+  <string name="slash_param_sysgen_at_desc">Insert position (same as /sys at)</string>
+  <string name="slash_param_sysgen_at_example">/sysgen at=-1 Describe the hand gripping the sword</string>
+  <string name="slash_param_sysgen_trim_name">trim=</string>
+  <string name="slash_param_sysgen_trim_desc">true trims the result to complete sentences</string>
+  <string name="slash_param_sysgen_trim_example">/sysgen trim=true Describe the street after rain</string>
+  <string name="slash_param_char_update_field_name">field=value</string>
+  <string name="slash_param_char_update_field_desc">Update multiple at once: name/description/personality/scenario/systemPrompt/firstMessage/messageExamples/creatorNotes/postHistoryInstructions/characterVersion/creator/tags; quote values containing spaces</string>
+  <string name="slash_param_char_update_field_example">/char-update description=new description name=new name</string>
+  <string name="slash_param_char_update_tags_name">tags=</string>
+  <string name="slash_param_char_update_tags_desc">Tags, comma-separated</string>
+  <string name="slash_param_char_update_tags_example">/char-update tags=warrior,quiet</string>
+  <string name="slash_param_rename_char_name_name">new name</string>
+  <string name="slash_param_rename_char_name_desc">The name to change to</string>
+  <string name="slash_param_rename_char_name_example">/rename-char Maid</string>
+  <string name="slash_param_continue_text_name">extra text</string>
+  <string name="slash_param_continue_text_desc">Extra text to append before continuing (optional; blank = continue directly)</string>
+  <string name="slash_param_continue_text_example">/continue Then she turned to look out the window</string>
+  <string name="slash_param_impersonate_prompt_name">prompt</string>
+  <string name="slash_param_impersonate_prompt_desc">Guide for what the AI says (optional)</string>
+  <string name="slash_param_impersonate_prompt_example">/impersonate How would you respond to this provocation</string>
+  <string name="slash_param_gen_trim_name">trim=</string>
+  <string name="slash_param_gen_trim_desc">true replaces the input box; false (default) appends to the end</string>
+  <string name="slash_param_gen_trim_example">/gen trim=true Write a poem</string>
+  <string name="slash_param_gen_as_name">as=</string>
+  <string name="slash_param_gen_as_desc">char: generate from the character perspective (combine with name=); default system perspective</string>
+  <string name="slash_param_gen_as_example">/gen as=char name=Ningning How would she respond</string>
+  <string name="slash_param_gen_length_name">length=</string>
+  <string name="slash_param_gen_length_desc">Max tokens for generation (temporarily overrides the model setting)</string>
+  <string name="slash_param_gen_length_example">/gen length=200 Write a battle scene</string>
+  <string name="slash_param_gen_name_name">name=</string>
+  <string name="slash_param_gen_name_desc">Select character by name when as=char</string>
+  <string name="slash_param_gen_name_example">/gen name=Ningning What Ningning would say seeing the stars</string>
+  <string name="slash_param_setvar_name_name">variable name</string>
+  <string name="slash_param_setvar_name_desc">Variable name to set (key= syntax also works)</string>
+  <string name="slash_param_setvar_name_example">/setvar key=affection 50</string>
+  <string name="slash_param_setvar_value_name">value</string>
+  <string name="slash_param_setvar_value_desc">Variable value; quote if it contains spaces</string>
+  <string name="slash_param_setvar_value_example">/setvar name Zhang San</string>
+  <string name="slash_param_getvar_name_name">variable name</string>
+  <string name="slash_param_getvar_name_desc">Variable name to read (key= syntax also works)</string>
+  <string name="slash_param_getvar_name_example">/getvar key=affection</string>
+  <string name="slash_param_addvar_name_name">variable name</string>
+  <string name="slash_param_addvar_name_desc">Variable to add to</string>
+  <string name="slash_param_addvar_name_example">/addvar money 50</string>
+  <string name="slash_param_addvar_value_name">number</string>
+  <string name="slash_param_addvar_value_desc">Value to add (decimals supported)</string>
+  <string name="slash_param_addvar_value_example">/addvar affection 10.5</string>
+  <string name="slash_param_incvar_name_name">variable name</string>
+  <string name="slash_param_incvar_name_desc">Variable to increment</string>
+  <string name="slash_param_incvar_name_example">/incvar money</string>
+  <string name="slash_param_decvar_name_name">variable name</string>
+  <string name="slash_param_decvar_name_desc">Variable to decrement</string>
+  <string name="slash_param_decvar_name_example">/decvar money</string>
+  <string name="slash_param_flushvar_name_name">variable name</string>
+  <string name="slash_param_flushvar_name_desc">Variable to delete</string>
+  <string name="slash_param_flushvar_name_example">/flushvar money</string>
+  <string name="slash_example_sys_1_cmd">/sys A rainy night, streetlights flickering</string>
+  <string name="slash_example_sys_1_desc">Insert a system message at the end of the chat</string>
+  <string name="slash_example_sys_2_cmd">/sys name=Narrator at=-1 She gripped her sword</string>
+  <string name="slash_example_sys_2_desc">Named Narrator, inserted before the last message</string>
+  <string name="slash_example_sendas_1_cmd">/sendas She smiled slightly</string>
+  <string name="slash_example_sendas_1_desc">Insert an assistant message as the current character (no generation)</string>
+  <string name="slash_example_sendas_2_cmd">/sendas name=Ningning at=-1 She thought to herself</string>
+  <string name="slash_example_sendas_2_desc">As Ningning, inserted before the last message</string>
+  <string name="slash_example_send_1_cmd">/send Let's change the subject</string>
+  <string name="slash_example_send_1_desc">Insert a user message as yourself (no generation)</string>
+  <string name="slash_example_send_2_cmd">/send name=Traveler I am leaving tomorrow</string>
+  <string name="slash_example_send_2_desc">Inserted with the name Traveler</string>
+  <string name="slash_example_persona_1_cmd">/persona Chino</string>
+  <string name="slash_example_persona_1_desc">Switch to the saved persona Chino</string>
+  <string name="slash_example_persona_2_cmd">/persona mode=temp Adventurer</string>
+  <string name="slash_example_persona_2_desc">Set a temporary user name only, not saved as persona</string>
+  <string name="slash_example_persona_3_cmd">/persona off</string>
+  <string name="slash_example_persona_3_desc">Deactivate current persona</string>
+  <string name="slash_example_sysgen_1_cmd">/sysgen Describe the rainy night street</string>
+  <string name="slash_example_sysgen_1_desc">Ask the AI to write a system narration and insert it (triggers one generation)</string>
+  <string name="slash_example_sysgen_2_cmd">/sysgen trim=true name=Narrator Describe the character inner struggle</string>
+  <string name="slash_example_sysgen_2_desc">Trimmed to complete sentences, inserted as Narrator</string>
+  <string name="slash_example_char_update_1_cmd">/char-update name=Maid</string>
+  <string name="slash_example_char_update_1_desc">Change the character name</string>
+  <string name="slash_example_char_update_2_cmd">/char-update firstMessage=Good morning, I am the adventurer reporting in</string>
+  <string name="slash_example_char_update_2_desc">Change the first message</string>
+  <string name="slash_example_char_update_3_cmd">/char-update name=A description=B tags=warrior</string>
+  <string name="slash_example_char_update_3_desc">Update multiple fields at once</string>
+  <string name="slash_example_rename_char_1_cmd">/rename-char Maid</string>
+  <string name="slash_example_rename_char_1_desc">Rename the current character to Maid</string>
+  <string name="slash_example_continue_1_cmd">/continue</string>
+  <string name="slash_example_continue_1_desc">Let the AI keep writing after the last reply</string>
+  <string name="slash_example_continue_2_cmd">/continue Then she turned to look out the window</string>
+  <string name="slash_example_continue_2_desc">Continue after appending extra text</string>
+  <string name="slash_example_impersonate_1_cmd">/impersonate</string>
+  <string name="slash_example_impersonate_1_desc">Have the AI draft your next line from your perspective, into the input box</string>
+  <string name="slash_example_impersonate_2_cmd">/impersonate How would you respond to this provocation</string>
+  <string name="slash_example_impersonate_2_desc">Generate your line with a guide</string>
+  <string name="slash_example_gen_1_cmd">/gen Write a poem about the starry sky</string>
+  <string name="slash_example_gen_1_desc">Generated with system instruction, appended to the input box</string>
+  <string name="slash_example_gen_2_cmd">/gen trim=true as=char name=Ningning What would she think of the falling snow</string>
+  <string name="slash_example_gen_2_desc">Replaces the input box, generated from Ningning perspective</string>
+  <string name="slash_example_gen_3_cmd">/gen length=200 Describe a night battle</string>
+  <string name="slash_example_gen_3_desc">Limited to 200 tokens</string>
+  <string name="slash_example_setvar_1_cmd">/setvar money 100</string>
+  <string name="slash_example_setvar_1_desc">Set variable money to 100</string>
+  <string name="slash_example_setvar_2_cmd">/setvar key=affection 50</string>
+  <string name="slash_example_setvar_2_desc">Set using key= syntax (supports spaces/quotes)</string>
+  <string name="slash_example_getvar_1_cmd">/getvar money</string>
+  <string name="slash_example_getvar_1_desc">Read the value of variable money</string>
+  <string name="slash_example_getvar_2_cmd">/getvar key=affection</string>
+  <string name="slash_example_getvar_2_desc">Read using key= syntax</string>
+  <string name="slash_example_addvar_1_cmd">/addvar money 50</string>
+  <string name="slash_example_addvar_1_desc">Numeric addition: 100 + 50 = 150</string>
+  <string name="slash_example_addvar_2_cmd">/addvar affection 10.5</string>
+  <string name="slash_example_addvar_2_desc">Decimal addition supported</string>
+  <string name="slash_example_incvar_1_cmd">/incvar money</string>
+  <string name="slash_example_incvar_1_desc">Variable +1 (starts from 0 if unset)</string>
+  <string name="slash_example_decvar_1_cmd">/decvar money</string>
+  <string name="slash_example_decvar_1_desc">Variable -1 (starts from 0 if unset)</string>
+  <string name="slash_example_flushvar_1_cmd">/flushvar money</string>
+  <string name="slash_example_flushvar_1_desc">Delete variable money</string>
   <string name="prompt_page_ignore_budget_desc">This entry ignores the world info token budget and is always injected</string>
   <string name="prompt_page_rounds_suffix">turns</string>
   <string name="prompt_page_scan_depth_global">Default (Global)</string>

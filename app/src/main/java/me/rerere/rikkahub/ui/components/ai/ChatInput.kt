@@ -1118,7 +1118,7 @@ private fun SlashCommandItem(
                                             color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
                                         ) {
                                             Text(
-                                                text = param.name,
+                                                text = stringResource(param.nameRes),
                                                 modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.onTertiaryContainer,
@@ -1126,13 +1126,13 @@ private fun SlashCommandItem(
                                         }
                                         Spacer(Modifier.width(6.dp))
                                         Text(
-                                            text = param.description,
+                                            text = stringResource(param.descRes),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
                                     }
                                     Text(
-                                        text = stringResource(R.string.slash_help_example_prefix) + param.example,
+                                        text = stringResource(R.string.slash_help_example_prefix) + stringResource(param.exampleRes),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
                                         modifier = Modifier.padding(start = 2.dp, top = 2.dp),
@@ -1150,12 +1150,12 @@ private fun SlashCommandItem(
                             cmd.examples.forEach { example ->
                                 Column(modifier = Modifier.padding(bottom = 5.dp)) {
                                     Text(
-                                        text = example.command,
+                                        text = stringResource(example.commandRes),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.primary,
                                     )
                                     Text(
-                                        text = example.description,
+                                        text = stringResource(example.descRes),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.padding(start = 2.dp, top = 1.dp),
@@ -1420,12 +1420,10 @@ private fun handleBuiltinSlash(
                 toaster.show("用法: /char-update 字段=值 [字段2=值2 ...]（name/description/personality/scenario/systemPrompt/firstMessage/messageExamples/creatorNotes/postHistoryInstructions/characterVersion/creator/tags）")
                 return
             }
-            val tav = assistant.tavernData
-            if (tav == null) {
+            var currentTav = assistant.tavernData ?: run {
                 toaster.show("当前助手没有角色卡")
                 return
             }
-            var currentTav = tav
             var nameChanged = false
             val applied = mutableListOf<String>()
             var unknown: String? = null

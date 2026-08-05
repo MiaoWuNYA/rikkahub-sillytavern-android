@@ -1293,6 +1293,153 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="slash_help_params">参数</string>
   <string name="slash_help_examples">例句</string>
   <string name="slash_help_example_prefix">例：</string>
+  <!-- 斜杠命令帮助：参数说明与例句 -->
+  <string name="slash_param_sys_name_name">name=</string>
+  <string name="slash_param_sys_name_desc">消息显示的名字（默认 System）</string>
+  <string name="slash_param_sys_name_example">/sys name=旁白 雨夜，街道空旷</string>
+  <string name="slash_param_sys_at_name">at=</string>
+  <string name="slash_param_sys_at_desc">插入位置：非负数从开头数，负数从末尾数（-1=最后一条之前）</string>
+  <string name="slash_param_sys_at_example">/sys at=-1 战斗结束，四周安静下来</string>
+  <string name="slash_param_sendas_name_name">name=</string>
+  <string name="slash_param_sendas_name_desc">以哪个角色的身份发言（默认当前角色名）</string>
+  <string name="slash_param_sendas_name_example">/sendas name=宁凝 她轻轻推开窗</string>
+  <string name="slash_param_sendas_at_name">at=</string>
+  <string name="slash_param_sendas_at_desc">插入位置（同 /sys 的 at）</string>
+  <string name="slash_param_sendas_at_example">/sendas at=0 开场白</string>
+  <string name="slash_param_send_name_name">name=</string>
+  <string name="slash_param_send_name_desc">发言显示的名字（默认你的名字）</string>
+  <string name="slash_param_send_name_example">/send name=我 我想去夜市</string>
+  <string name="slash_param_send_at_name">at=</string>
+  <string name="slash_param_send_at_desc">插入位置（同 /sys 的 at）</string>
+  <string name="slash_param_send_at_example">/send at=0 开场第一句话</string>
+  <string name="slash_param_persona_mode_name">mode=</string>
+  <string name="slash_param_persona_mode_desc">lookup 只选已有人设 / temp 只设临时用户名 / all 先找已有再设临时（默认）</string>
+  <string name="slash_param_persona_mode_example">/persona mode=temp 小名</string>
+  <string name="slash_param_persona_off_name">off / none</string>
+  <string name="slash_param_persona_off_desc">关闭当前人设</string>
+  <string name="slash_param_persona_off_example">/persona off</string>
+  <string name="slash_param_sysgen_name_name">name=</string>
+  <string name="slash_param_sysgen_name_desc">旁白消息显示的名字（默认 System）</string>
+  <string name="slash_param_sysgen_name_example">/sysgen name=旁白 描写深夜的走廊</string>
+  <string name="slash_param_sysgen_at_name">at=</string>
+  <string name="slash_param_sysgen_at_desc">插入位置（同 /sys 的 at）</string>
+  <string name="slash_param_sysgen_at_example">/sysgen at=-1 描写角色握剑的手</string>
+  <string name="slash_param_sysgen_trim_name">trim=</string>
+  <string name="slash_param_sysgen_trim_desc">true 时把结果裁剪到完整句子</string>
+  <string name="slash_param_sysgen_trim_example">/sysgen trim=true 描写雨后的街道</string>
+  <string name="slash_param_char_update_field_name">字段=值</string>
+  <string name="slash_param_char_update_field_desc">可多个同时更新：name/description/personality/scenario/systemPrompt/firstMessage/messageExamples/creatorNotes/postHistoryInstructions/characterVersion/creator/tags；值含空格用引号</string>
+  <string name="slash_param_char_update_field_example">/char-update description=新的描述 name=新的名字</string>
+  <string name="slash_param_char_update_tags_name">tags=</string>
+  <string name="slash_param_char_update_tags_desc">标签，多个用逗号分隔</string>
+  <string name="slash_param_char_update_tags_example">/char-update tags=战士,沉默寡言</string>
+  <string name="slash_param_rename_char_name_name">新名字</string>
+  <string name="slash_param_rename_char_name_desc">要改成的名字</string>
+  <string name="slash_param_rename_char_name_example">/rename-char 女仆长</string>
+  <string name="slash_param_continue_text_name">追加文本</string>
+  <string name="slash_param_continue_text_desc">续写前追加的内容（可选，不填直接续写）</string>
+  <string name="slash_param_continue_text_example">/continue 然后她转头看向窗外</string>
+  <string name="slash_param_impersonate_prompt_name">提示词</string>
+  <string name="slash_param_impersonate_prompt_desc">引导 AI 说出的话（可选）</string>
+  <string name="slash_param_impersonate_prompt_example">/impersonate 你会怎样回应这段挑衅</string>
+  <string name="slash_param_gen_trim_name">trim=</string>
+  <string name="slash_param_gen_trim_desc">true 替换输入框内容；false（默认）追加到末尾</string>
+  <string name="slash_param_gen_trim_example">/gen trim=true 写一首诗</string>
+  <string name="slash_param_gen_as_name">as=</string>
+  <string name="slash_param_gen_as_desc">char 以角色视角生成（结合 name= 选角色）；默认系统视角</string>
+  <string name="slash_param_gen_as_example">/gen as=char name=宁凝 她会怎么回应</string>
+  <string name="slash_param_gen_length_name">length=</string>
+  <string name="slash_param_gen_length_desc">生成 token 上限（临时覆盖模型设置）</string>
+  <string name="slash_param_gen_length_example">/gen length=200 写一段战斗描写</string>
+  <string name="slash_param_gen_name_name">name=</string>
+  <string name="slash_param_gen_name_desc">as=char 时按角色名选卡</string>
+  <string name="slash_param_gen_name_example">/gen name=宁凝 宁凝看到星空会说</string>
+  <string name="slash_param_setvar_name_name">变量名</string>
+  <string name="slash_param_setvar_name_desc">要设置的变量名（也支持 key= 写法）</string>
+  <string name="slash_param_setvar_name_example">/setvar key=好感度 50</string>
+  <string name="slash_param_setvar_value_name">值</string>
+  <string name="slash_param_setvar_value_desc">变量内容，含空格可用引号</string>
+  <string name="slash_param_setvar_value_example">/setvar name 张三</string>
+  <string name="slash_param_getvar_name_name">变量名</string>
+  <string name="slash_param_getvar_name_desc">要读取的变量名（也支持 key= 写法）</string>
+  <string name="slash_param_getvar_name_example">/getvar key=好感度</string>
+  <string name="slash_param_addvar_name_name">变量名</string>
+  <string name="slash_param_addvar_name_desc">要相加的变量名</string>
+  <string name="slash_param_addvar_name_example">/addvar money 50</string>
+  <string name="slash_param_addvar_value_name">数值</string>
+  <string name="slash_param_addvar_value_desc">加上的数值（支持小数）</string>
+  <string name="slash_param_addvar_value_example">/addvar 好感度 10.5</string>
+  <string name="slash_param_incvar_name_name">变量名</string>
+  <string name="slash_param_incvar_name_desc">要 +1 的变量名</string>
+  <string name="slash_param_incvar_name_example">/incvar money</string>
+  <string name="slash_param_decvar_name_name">变量名</string>
+  <string name="slash_param_decvar_name_desc">要 -1 的变量名</string>
+  <string name="slash_param_decvar_name_example">/decvar money</string>
+  <string name="slash_param_flushvar_name_name">变量名</string>
+  <string name="slash_param_flushvar_name_desc">要删除的变量名</string>
+  <string name="slash_param_flushvar_name_example">/flushvar money</string>
+  <string name="slash_example_sys_1_cmd">/sys 雨夜，路灯忽明忽暗</string>
+  <string name="slash_example_sys_1_desc">在聊天末尾插入一条系统消息</string>
+  <string name="slash_example_sys_2_cmd">/sys name=旁白 at=-1 她握紧了剑</string>
+  <string name="slash_example_sys_2_desc">用「旁白」名字、插在最后一条消息之前</string>
+  <string name="slash_example_sendas_1_cmd">/sendas 她笑了一下</string>
+  <string name="slash_example_sendas_1_desc">以当前角色身份插入一条助手消息（不触发生成）</string>
+  <string name="slash_example_sendas_2_cmd">/sendas name=宁凝 at=-1 她在心里想道</string>
+  <string name="slash_example_sendas_2_desc">以「宁凝」身份、插在最后一条之前</string>
+  <string name="slash_example_send_1_cmd">/send 我们换个话题吧</string>
+  <string name="slash_example_send_1_desc">以你的身份插入一条用户消息（不触发生成）</string>
+  <string name="slash_example_send_2_cmd">/send name=旅行者 我明天出发</string>
+  <string name="slash_example_send_2_desc">以「旅行者」的名字插入</string>
+  <string name="slash_example_persona_1_cmd">/persona 智乃</string>
+  <string name="slash_example_persona_1_desc">切换到已保存的人设「智乃」</string>
+  <string name="slash_example_persona_2_cmd">/persona mode=temp 冒险者</string>
+  <string name="slash_example_persona_2_desc">只设置临时用户名，不保存人设</string>
+  <string name="slash_example_persona_3_cmd">/persona off</string>
+  <string name="slash_example_persona_3_desc">关闭当前人设</string>
+  <string name="slash_example_sysgen_1_cmd">/sysgen 描写雨夜街道</string>
+  <string name="slash_example_sysgen_1_desc">让 AI 写一条系统旁白插入聊天（会触发一次生成）</string>
+  <string name="slash_example_sysgen_2_cmd">/sysgen trim=true name=旁白 描写角色内心的挣扎</string>
+  <string name="slash_example_sysgen_2_desc">裁剪到完整句子，以「旁白」名字插入</string>
+  <string name="slash_example_char_update_1_cmd">/char-update name=女仆长</string>
+  <string name="slash_example_char_update_1_desc">修改角色名字</string>
+  <string name="slash_example_char_update_2_cmd">/char-update firstMessage=早上好，我是来报到的冒险者</string>
+  <string name="slash_example_char_update_2_desc">修改开场白</string>
+  <string name="slash_example_char_update_3_cmd">/char-update name=A description=B tags=战士</string>
+  <string name="slash_example_char_update_3_desc">同时更新多个字段</string>
+  <string name="slash_example_rename_char_1_cmd">/rename-char 女仆长</string>
+  <string name="slash_example_rename_char_1_desc">把当前角色改名为「女仆长」</string>
+  <string name="slash_example_continue_1_cmd">/continue</string>
+  <string name="slash_example_continue_1_desc">让 AI 接着最后一条回复继续写</string>
+  <string name="slash_example_continue_2_cmd">/continue 然后她转头看向窗外</string>
+  <string name="slash_example_continue_2_desc">在追加内容后继续写</string>
+  <string name="slash_example_impersonate_1_cmd">/impersonate</string>
+  <string name="slash_example_impersonate_1_desc">让 AI 站在你的视角生成下一句话，填进输入框</string>
+  <string name="slash_example_impersonate_2_cmd">/impersonate 你会怎样回应这段挑衅</string>
+  <string name="slash_example_impersonate_2_desc">带引导地生成你的发言</string>
+  <string name="slash_example_gen_1_cmd">/gen 写一首关于星空的诗</string>
+  <string name="slash_example_gen_1_desc">以系统指令生成，结果追加到输入框末尾</string>
+  <string name="slash_example_gen_2_cmd">/gen trim=true as=char name=宁凝 她对落雪作何感想</string>
+  <string name="slash_example_gen_2_desc">替换输入框，以「宁凝」角色视角生成</string>
+  <string name="slash_example_gen_3_cmd">/gen length=200 描写一场夜战</string>
+  <string name="slash_example_gen_3_desc">限制 200 token 生成</string>
+  <string name="slash_example_setvar_1_cmd">/setvar money 100</string>
+  <string name="slash_example_setvar_1_desc">设置变量 money 为 100</string>
+  <string name="slash_example_setvar_2_cmd">/setvar key=好感度 50</string>
+  <string name="slash_example_setvar_2_desc">用 key= 写法设置（支持含空格/引号）</string>
+  <string name="slash_example_getvar_1_cmd">/getvar money</string>
+  <string name="slash_example_getvar_1_desc">读取变量 money 的值</string>
+  <string name="slash_example_getvar_2_cmd">/getvar key=好感度</string>
+  <string name="slash_example_getvar_2_desc">用 key= 写法读取</string>
+  <string name="slash_example_addvar_1_cmd">/addvar money 50</string>
+  <string name="slash_example_addvar_1_desc">数值相加：100 + 50 = 150</string>
+  <string name="slash_example_addvar_2_cmd">/addvar 好感度 10.5</string>
+  <string name="slash_example_addvar_2_desc">支持小数相加</string>
+  <string name="slash_example_incvar_1_cmd">/incvar money</string>
+  <string name="slash_example_incvar_1_desc">变量 +1（未设置时从 0 起算）</string>
+  <string name="slash_example_decvar_1_cmd">/decvar money</string>
+  <string name="slash_example_decvar_1_desc">变量 -1（未设置时从 0 起算）</string>
+  <string name="slash_example_flushvar_1_cmd">/flushvar money</string>
+  <string name="slash_example_flushvar_1_desc">删除变量 money</string>
   <string name="prompt_page_ignore_budget_desc">该条目不受世界书 token 预算限制，总是注入</string>
   <string name="prompt_page_rounds_suffix">轮</string>
   <string name="prompt_page_scan_depth_global">默认(全局)</string>

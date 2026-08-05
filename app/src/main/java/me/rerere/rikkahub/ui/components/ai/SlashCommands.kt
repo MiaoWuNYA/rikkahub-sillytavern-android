@@ -26,17 +26,17 @@ data class SlashCommand(
     val examples: List<SlashExample> = emptyList(),
 )
 
-/** 单个命名参数的说明与例句 */
+/** 单个命名参数的说明与例句（全部走本地化资源） */
 data class SlashParam(
-    val name: String,        // 参数名，如 "name="
-    val description: String, // 中文说明
-    val example: String,     // 例句（含参数用法）
+    val nameRes: Int,        // 参数名，如 "name="
+    val descRes: Int,        // 说明文字
+    val exampleRes: Int,     // 例句（含参数用法）
 )
 
-/** 完整命令例句与效果说明 */
+/** 完整命令例句与效果说明（全部走本地化资源） */
 data class SlashExample(
-    val command: String,  // 完整命令，如 "/sys name=旁白 雨夜"
-    val description: String, // 效果说明
+    val commandRes: Int,  // 完整命令，如 "/sys name=旁白 雨夜"
+    val descRes: Int,     // 效果说明
 )
 
 /**
@@ -108,12 +108,12 @@ fun builtinSlashCommands(context: Context): List<SlashCommand> = listOf(
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.SYS,
         params = listOf(
-            SlashParam("name=", "消息显示的名字（默认 System）", "/sys name=旁白 雨夜，街道空旷"),
-            SlashParam("at=", "插入位置：非负数从开头数，负数从末尾数（-1=最后一条之前）", "/sys at=-1 战斗结束，四周安静下来"),
+            SlashParam(R.string.slash_param_sys_name_name, R.string.slash_param_sys_name_desc, R.string.slash_param_sys_name_example),
+            SlashParam(R.string.slash_param_sys_at_name, R.string.slash_param_sys_at_desc, R.string.slash_param_sys_at_example),
         ),
         examples = listOf(
-            SlashExample("/sys 雨夜，路灯忽明忽暗", "在聊天末尾插入一条系统消息"),
-            SlashExample("/sys name=旁白 at=-1 她握紧了剑", "用「旁白」名字、插在最后一条消息之前"),
+            SlashExample(R.string.slash_example_sys_1_cmd, R.string.slash_example_sys_1_desc),
+            SlashExample(R.string.slash_example_sys_2_cmd, R.string.slash_example_sys_2_desc),
         ),
     ),
     SlashCommand(
@@ -124,12 +124,12 @@ fun builtinSlashCommands(context: Context): List<SlashCommand> = listOf(
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.SENDAS,
         params = listOf(
-            SlashParam("name=", "以哪个角色的身份发言（默认当前角色名）", "/sendas name=宁凝 她轻轻推开窗"),
-            SlashParam("at=", "插入位置（同 /sys 的 at）", "/sendas at=0 开场白"),
+            SlashParam(R.string.slash_param_sendas_name_name, R.string.slash_param_sendas_name_desc, R.string.slash_param_sendas_name_example),
+            SlashParam(R.string.slash_param_sendas_at_name, R.string.slash_param_sendas_at_desc, R.string.slash_param_sendas_at_example),
         ),
         examples = listOf(
-            SlashExample("/sendas 她笑了一下", "以当前角色身份插入一条助手消息（不触发生成）"),
-            SlashExample("/sendas name=宁凝 at=-1 她在心里想道", "以「宁凝」身份、插在最后一条之前"),
+            SlashExample(R.string.slash_example_sendas_1_cmd, R.string.slash_example_sendas_1_desc),
+            SlashExample(R.string.slash_example_sendas_2_cmd, R.string.slash_example_sendas_2_desc),
         ),
     ),
     SlashCommand(
@@ -140,12 +140,12 @@ fun builtinSlashCommands(context: Context): List<SlashCommand> = listOf(
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.SEND,
         params = listOf(
-            SlashParam("name=", "发言显示的名字（默认你的名字）", "/send name=我 我想去夜市"),
-            SlashParam("at=", "插入位置（同 /sys 的 at）", "/send at=0 开场第一句话"),
+            SlashParam(R.string.slash_param_send_name_name, R.string.slash_param_send_name_desc, R.string.slash_param_send_name_example),
+            SlashParam(R.string.slash_param_send_at_name, R.string.slash_param_send_at_desc, R.string.slash_param_send_at_example),
         ),
         examples = listOf(
-            SlashExample("/send 我们换个话题吧", "以你的身份插入一条用户消息（不触发生成）"),
-            SlashExample("/send name=旅行者 我明天出发", "以「旅行者」的名字插入"),
+            SlashExample(R.string.slash_example_send_1_cmd, R.string.slash_example_send_1_desc),
+            SlashExample(R.string.slash_example_send_2_cmd, R.string.slash_example_send_2_desc),
         ),
     ),
     SlashCommand(
@@ -156,13 +156,13 @@ fun builtinSlashCommands(context: Context): List<SlashCommand> = listOf(
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.PERSONA,
         params = listOf(
-            SlashParam("mode=", "lookup 只选已有人设 / temp 只设临时用户名 / all 先找已有再设临时（默认）", "/persona mode=temp 小名"),
-            SlashParam("off / none", "关闭当前人设", "/persona off"),
+            SlashParam(R.string.slash_param_persona_mode_name, R.string.slash_param_persona_mode_desc, R.string.slash_param_persona_mode_example),
+            SlashParam(R.string.slash_param_persona_off_name, R.string.slash_param_persona_off_desc, R.string.slash_param_persona_off_example),
         ),
         examples = listOf(
-            SlashExample("/persona 智乃", "切换到已保存的人设「智乃」"),
-            SlashExample("/persona mode=temp 冒险者", "只设置临时用户名，不保存人设"),
-            SlashExample("/persona off", "关闭当前人设"),
+            SlashExample(R.string.slash_example_persona_1_cmd, R.string.slash_example_persona_1_desc),
+            SlashExample(R.string.slash_example_persona_2_cmd, R.string.slash_example_persona_2_desc),
+            SlashExample(R.string.slash_example_persona_3_cmd, R.string.slash_example_persona_3_desc),
         ),
     ),
     SlashCommand(
@@ -180,13 +180,13 @@ fun builtinSlashCommands(context: Context): List<SlashCommand> = listOf(
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.SYSGEN,
         params = listOf(
-            SlashParam("name=", "旁白消息显示的名字（默认 System）", "/sysgen name=旁白 描写深夜的走廊"),
-            SlashParam("at=", "插入位置（同 /sys 的 at）", "/sysgen at=-1 描写角色握剑的手"),
-            SlashParam("trim=", "true 时把结果裁剪到完整句子", "/sysgen trim=true 描写雨后的街道"),
+            SlashParam(R.string.slash_param_sysgen_name_name, R.string.slash_param_sysgen_name_desc, R.string.slash_param_sysgen_name_example),
+            SlashParam(R.string.slash_param_sysgen_at_name, R.string.slash_param_sysgen_at_desc, R.string.slash_param_sysgen_at_example),
+            SlashParam(R.string.slash_param_sysgen_trim_name, R.string.slash_param_sysgen_trim_desc, R.string.slash_param_sysgen_trim_example),
         ),
         examples = listOf(
-            SlashExample("/sysgen 描写雨夜街道", "让 AI 写一条系统旁白插入聊天（会触发一次生成）"),
-            SlashExample("/sysgen trim=true name=旁白 描写角色内心的挣扎", "裁剪到完整句子，以「旁白」名字插入"),
+            SlashExample(R.string.slash_example_sysgen_1_cmd, R.string.slash_example_sysgen_1_desc),
+            SlashExample(R.string.slash_example_sysgen_2_cmd, R.string.slash_example_sysgen_2_desc),
         ),
     ),
     SlashCommand(
@@ -197,13 +197,13 @@ fun builtinSlashCommands(context: Context): List<SlashCommand> = listOf(
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.UPDATE_CHAR,
         params = listOf(
-            SlashParam("字段=值", "可多个同时更新：name/description/personality/scenario/systemPrompt/firstMessage/messageExamples/creatorNotes/postHistoryInstructions/characterVersion/creator/tags；值含空格用引号", "/char-update description=新的描述 name=新的名字"),
-            SlashParam("tags=", "标签，多个用逗号分隔", "/char-update tags=战士,沉默寡言"),
+            SlashParam(R.string.slash_param_char_update_field_name, R.string.slash_param_char_update_field_desc, R.string.slash_param_char_update_field_example),
+            SlashParam(R.string.slash_param_char_update_tags_name, R.string.slash_param_char_update_tags_desc, R.string.slash_param_char_update_tags_example),
         ),
         examples = listOf(
-            SlashExample("/char-update name=女仆长", "修改角色名字"),
-            SlashExample("/char-update firstMessage=早上好，我是来报到的冒险者", "修改开场白"),
-            SlashExample("/char-update name=A description=B tags=战士", "同时更新多个字段"),
+            SlashExample(R.string.slash_example_char_update_1_cmd, R.string.slash_example_char_update_1_desc),
+            SlashExample(R.string.slash_example_char_update_2_cmd, R.string.slash_example_char_update_2_desc),
+            SlashExample(R.string.slash_example_char_update_3_cmd, R.string.slash_example_char_update_3_desc),
         ),
     ),
     SlashCommand(
@@ -221,10 +221,10 @@ fun builtinSlashCommands(context: Context): List<SlashCommand> = listOf(
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.RENAME,
         params = listOf(
-            SlashParam("新名字", "要改成的名字", "/rename-char 女仆长"),
+            SlashParam(R.string.slash_param_rename_char_name_name, R.string.slash_param_rename_char_name_desc, R.string.slash_param_rename_char_name_example),
         ),
         examples = listOf(
-            SlashExample("/rename-char 女仆长", "把当前角色改名为「女仆长」"),
+            SlashExample(R.string.slash_example_rename_char_1_cmd, R.string.slash_example_rename_char_1_desc),
         ),
     ),
     SlashCommand(
@@ -235,11 +235,11 @@ fun builtinSlashCommands(context: Context): List<SlashCommand> = listOf(
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.CONTINUE,
         params = listOf(
-            SlashParam("追加文本", "续写前追加的内容（可选，不填直接续写）", "/continue 然后她转头看向窗外"),
+            SlashParam(R.string.slash_param_continue_text_name, R.string.slash_param_continue_text_desc, R.string.slash_param_continue_text_example),
         ),
         examples = listOf(
-            SlashExample("/continue", "让 AI 接着最后一条回复继续写"),
-            SlashExample("/continue 然后她转头看向窗外", "在追加内容后继续写"),
+            SlashExample(R.string.slash_example_continue_1_cmd, R.string.slash_example_continue_1_desc),
+            SlashExample(R.string.slash_example_continue_2_cmd, R.string.slash_example_continue_2_desc),
         ),
     ),
     SlashCommand(
@@ -250,11 +250,11 @@ fun builtinSlashCommands(context: Context): List<SlashCommand> = listOf(
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.IMPERSONATE,
         params = listOf(
-            SlashParam("提示词", "引导 AI 说出的话（可选）", "/impersonate 你会怎样回应这段挑衅"),
+            SlashParam(R.string.slash_param_impersonate_prompt_name, R.string.slash_param_impersonate_prompt_desc, R.string.slash_param_impersonate_prompt_example),
         ),
         examples = listOf(
-            SlashExample("/impersonate", "让 AI 站在你的视角生成下一句话，填进输入框"),
-            SlashExample("/impersonate 你会怎样回应这段挑衅", "带引导地生成你的发言"),
+            SlashExample(R.string.slash_example_impersonate_1_cmd, R.string.slash_example_impersonate_1_desc),
+            SlashExample(R.string.slash_example_impersonate_2_cmd, R.string.slash_example_impersonate_2_desc),
         ),
     ),
     SlashCommand(
@@ -265,15 +265,15 @@ fun builtinSlashCommands(context: Context): List<SlashCommand> = listOf(
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.GEN,
         params = listOf(
-            SlashParam("trim=", "true 替换输入框内容；false（默认）追加到末尾", "/gen trim=true 写一首诗"),
-            SlashParam("as=", "char 以角色视角生成（结合 name= 选角色）；默认系统视角", "/gen as=char name=宁凝 她会怎么回应"),
-            SlashParam("length=", "生成 token 上限（临时覆盖模型设置）", "/gen length=200 写一段战斗描写"),
-            SlashParam("name=", "as=char 时按角色名选卡", "/gen name=宁凝 宁凝看到星空会说"),
+            SlashParam(R.string.slash_param_gen_trim_name, R.string.slash_param_gen_trim_desc, R.string.slash_param_gen_trim_example),
+            SlashParam(R.string.slash_param_gen_as_name, R.string.slash_param_gen_as_desc, R.string.slash_param_gen_as_example),
+            SlashParam(R.string.slash_param_gen_length_name, R.string.slash_param_gen_length_desc, R.string.slash_param_gen_length_example),
+            SlashParam(R.string.slash_param_gen_name_name, R.string.slash_param_gen_name_desc, R.string.slash_param_gen_name_example),
         ),
         examples = listOf(
-            SlashExample("/gen 写一首关于星空的诗", "以系统指令生成，结果追加到输入框末尾"),
-            SlashExample("/gen trim=true as=char name=宁凝 她对落雪作何感想", "替换输入框，以「宁凝」角色视角生成"),
-            SlashExample("/gen length=200 描写一场夜战", "限制 200 token 生成"),
+            SlashExample(R.string.slash_example_gen_1_cmd, R.string.slash_example_gen_1_desc),
+            SlashExample(R.string.slash_example_gen_2_cmd, R.string.slash_example_gen_2_desc),
+            SlashExample(R.string.slash_example_gen_3_cmd, R.string.slash_example_gen_3_desc),
         ),
     ),
     SlashCommand(
@@ -305,12 +305,12 @@ fun varSlashCommands(context: Context): List<SlashCommand> = listOf(
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
         params = listOf(
-            SlashParam("变量名", "要设置的变量名（也支持 key= 写法）", "/setvar key=好感度 50"),
-            SlashParam("值", "变量内容，含空格可用引号", "/setvar name 张三"),
+            SlashParam(R.string.slash_param_setvar_name_name, R.string.slash_param_setvar_name_desc, R.string.slash_param_setvar_name_example),
+            SlashParam(R.string.slash_param_setvar_value_name, R.string.slash_param_setvar_value_desc, R.string.slash_param_setvar_value_example),
         ),
         examples = listOf(
-            SlashExample("/setvar money 100", "设置变量 money 为 100"),
-            SlashExample("/setvar key=好感度 50", "用 key= 写法设置（支持含空格/引号）"),
+            SlashExample(R.string.slash_example_setvar_1_cmd, R.string.slash_example_setvar_1_desc),
+            SlashExample(R.string.slash_example_setvar_2_cmd, R.string.slash_example_setvar_2_desc),
         ),
     ),
     SlashCommand(
@@ -321,11 +321,11 @@ fun varSlashCommands(context: Context): List<SlashCommand> = listOf(
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
         params = listOf(
-            SlashParam("变量名", "要读取的变量名（也支持 key= 写法）", "/getvar key=好感度"),
+            SlashParam(R.string.slash_param_getvar_name_name, R.string.slash_param_getvar_name_desc, R.string.slash_param_getvar_name_example),
         ),
         examples = listOf(
-            SlashExample("/getvar money", "读取变量 money 的值"),
-            SlashExample("/getvar key=好感度", "用 key= 写法读取"),
+            SlashExample(R.string.slash_example_getvar_1_cmd, R.string.slash_example_getvar_1_desc),
+            SlashExample(R.string.slash_example_getvar_2_cmd, R.string.slash_example_getvar_2_desc),
         ),
     ),
     SlashCommand(
@@ -336,12 +336,12 @@ fun varSlashCommands(context: Context): List<SlashCommand> = listOf(
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
         params = listOf(
-            SlashParam("变量名", "要相加的变量名", "/addvar money 50"),
-            SlashParam("数值", "加上的数值（支持小数）", "/addvar 好感度 10.5"),
+            SlashParam(R.string.slash_param_addvar_name_name, R.string.slash_param_addvar_name_desc, R.string.slash_param_addvar_name_example),
+            SlashParam(R.string.slash_param_addvar_value_name, R.string.slash_param_addvar_value_desc, R.string.slash_param_addvar_value_example),
         ),
         examples = listOf(
-            SlashExample("/addvar money 50", "数值相加：100 + 50 = 150"),
-            SlashExample("/addvar 好感度 10.5", "支持小数相加"),
+            SlashExample(R.string.slash_example_addvar_1_cmd, R.string.slash_example_addvar_1_desc),
+            SlashExample(R.string.slash_example_addvar_2_cmd, R.string.slash_example_addvar_2_desc),
         ),
     ),
     SlashCommand(
@@ -352,10 +352,10 @@ fun varSlashCommands(context: Context): List<SlashCommand> = listOf(
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
         params = listOf(
-            SlashParam("变量名", "要 +1 的变量名", "/incvar money"),
+            SlashParam(R.string.slash_param_incvar_name_name, R.string.slash_param_incvar_name_desc, R.string.slash_param_incvar_name_example),
         ),
         examples = listOf(
-            SlashExample("/incvar money", "变量 +1（未设置时从 0 起算）"),
+            SlashExample(R.string.slash_example_incvar_1_cmd, R.string.slash_example_incvar_1_desc),
         ),
     ),
     SlashCommand(
@@ -366,10 +366,10 @@ fun varSlashCommands(context: Context): List<SlashCommand> = listOf(
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
         params = listOf(
-            SlashParam("变量名", "要 -1 的变量名", "/decvar money"),
+            SlashParam(R.string.slash_param_decvar_name_name, R.string.slash_param_decvar_name_desc, R.string.slash_param_decvar_name_example),
         ),
         examples = listOf(
-            SlashExample("/decvar money", "变量 -1（未设置时从 0 起算）"),
+            SlashExample(R.string.slash_example_decvar_1_cmd, R.string.slash_example_decvar_1_desc),
         ),
     ),
     SlashCommand(
@@ -380,10 +380,10 @@ fun varSlashCommands(context: Context): List<SlashCommand> = listOf(
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.VAR,
         params = listOf(
-            SlashParam("变量名", "要删除的变量名", "/flushvar money"),
+            SlashParam(R.string.slash_param_flushvar_name_name, R.string.slash_param_flushvar_name_desc, R.string.slash_param_flushvar_name_example),
         ),
         examples = listOf(
-            SlashExample("/flushvar money", "删除变量 money"),
+            SlashExample(R.string.slash_example_flushvar_1_cmd, R.string.slash_example_flushvar_1_desc),
         ),
     ),
 )

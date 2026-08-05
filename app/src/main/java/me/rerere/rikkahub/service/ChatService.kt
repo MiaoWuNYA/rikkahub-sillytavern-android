@@ -868,7 +868,7 @@ class ChatService(
                 // （script.js modifyLastPromptLine，非 instruct 模式 \n${prompt}），无额外系统指令；
                 // 提示词末尾加 "name1:" 引导，模型续写即用户发言（non-instruct impersonation line）
                 val effectiveHistory = history.toMutableList()
-                val instruction = extraInstruction?.trim().takeIf { it.isNotBlank() }
+                val instruction = extraInstruction?.trim()?.takeIf { it.isNotBlank() }
                 if (instruction != null && effectiveHistory.isNotEmpty()) {
                     val last = effectiveHistory.last()
                     val lastText = last.parts.filterIsInstance<UIMessagePart.Text>().joinToString("\n") { it.text }

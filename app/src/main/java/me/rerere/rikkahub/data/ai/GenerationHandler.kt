@@ -355,6 +355,7 @@ class GenerationHandler(
                     workspaceCwd = workspaceCwd,
                     conversationId = conversationId,
                     generationType = generationType,
+                    maxTokensOverride = maxTokensOverride,
                 )
                 messages = messages.visualTransforms(
                     transformers = outputTransformers,
@@ -539,6 +540,7 @@ class GenerationHandler(
         workspaceCwd: String? = null,
         conversationId: Uuid? = null,
         generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
+        maxTokensOverride: Int? = null,
     ) {
         val limitedChat = messages.limitContext(assistant.contextMessageLimit)
         val internalMessages = buildList {
