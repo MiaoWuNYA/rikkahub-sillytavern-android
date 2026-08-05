@@ -189,6 +189,12 @@ fun ChatInput(
         focusManager.clearFocus(force = true)
         keyboardController?.hide()
         if (loading) {
+            // 生成中：斜杠命令不打断当前生成（官方 waitUntilCondition 语义），提示等待；普通消息仍可取消
+            val pendingText = state.textContent.text.toString().trimStart()
+            if (pendingText.startsWith("/")) {
+                toaster.show("正在生成中，请等待完成后再执行命令")
+                return
+            }
             onCancelClick()
             return
         }
