@@ -1137,11 +1137,14 @@ private fun handleBuiltinSlash(
                 toaster.show("当前页面不支持该命令")
             } else {
                 // 官方 /gen 结果走管道（常配 /setinput 写输入框）；本地无管道，直接填输入框：
-                // trim=true 替换，否则追加到命令文本后（官方 setInputText 替换 / setInputTextAfterPrompt 追加语义）
-                val original = state.textContent.text.toString().trimEnd()
+                // trim=true 替换；否则追加到输入框原有文本之后（官方 setInputTextAfterPrompt 语义，
+                // 追加在 prompt 之后）。执行命令时输入框里只有命令本身，命令外文本为空，
+                // 若把命令本身也算进去再写回输入框，会再次匹配 /gen 无限递归。
+                val full = state.textContent.text.toString().trimEnd()
+                val keep = if (full.startsWith("/")) "" else full
                 state.clearInput()
                 onSlashGen(parsed) { draft ->
-                    val merged = if (parsed.trim || original.isBlank()) draft else "$original\n\n$draft"
+                    val merged = if (parsed.trim || keep.isBlank()) draft else "$keep\n\n$draft"
                     state.setMessageText(merged)
                     toaster.show(if (parsed.trim) "已生成，确认后发送" else "已生成并追加到输入框，确认后发送")
                 }
@@ -1184,7 +1187,11 @@ private fun handleBuiltinSlash(
             } else if (onSlashInsert == null) {
                 toaster.show("当前页面不支持该命令")
             } else {
-                onSlashInsert(MessageRole.USER, parsed.text, parsed.name, parsed.at)
+                // 官方 /send 默认 name1（当前人设名/用户名）
+                val personaName = settings.personas.firstOrNull { it.id == settings.activePersonaId }?.name
+                val defaultName = personaName
+                    ?: settings.displaySetting.userNickname.ifBlank { null }
+                onSlashInsert(MessageRole.USER, parsed.text, parsed.name ?: defaultName, parsed.at)
                 state.clearInput()
             }
         }
@@ -1213,7 +1220,7 @@ private fun handleBuiltinSlash(
         }
 
         BuiltinSlashKind.SYSGEN -> {
-            val parsed = parseInsertArgs(args)
+            val parsed = parseInsertArgs(args, allowTrim = true)
             // 官方 NARRATOR_NAME_DEFAULT = "System"（/sysgen 默认名，sendNarratorMessage 同 /sys）
             val name = parsed.name ?: "System"
             if (parsed.text.isBlank()) {
@@ -1250,9 +1257,21 @@ private fun handleBuiltinSlash(
             }
 
             val trimmed = args.trim()
-            val keyToken = trimmed.substringBefore(" ").trim()
-            val key = keyToken.removePrefix("key=").ifBlank { keyToken }
-            val value = trimmed.substringAfter(" ", "").trim()
+            // 官方：key= 命名参数可出现在任意位置、支持引号；剩余内容作为值
+            val keyMatch = Regex("(^|\\s)key=(\"[^\"]*\"|\\S+)", RegexOption.IGNORE_CASE).find(trimmed)
+            val key: String
+            val value: String
+            if (keyMatch != null) {
+                var kv = keyMatch.groupValues[2]
+                if (kv.startsWith("\"") && kv.endsWith("\"")) {
+                    kv = kv.substring(1, kv.length - 1)
+                }
+                key = kv
+                value = trimmed.removeRange(keyMatch.range.first, keyMatch.range.last + 1).trim()
+            } else {
+                key = trimmed.substringBefore(" ").trim()
+                value = trimmed.substringAfter(" ", "").trim()
+            }
             val needsValue = op == SlashVarOp.SET || op == SlashVarOp.ADD
             if (key.isBlank() || (needsValue && value.isBlank())) {
                 toaster.show(
@@ -1306,39 +1325,52 @@ private fun handleBuiltinSlash(
         }
 
         BuiltinSlashKind.UPDATE_CHAR -> {
-            val eqIndex = args.indexOf('=')
-            if (eqIndex <= 0) {
-                toaster.show("用法: /char-update 字段=值")
+            // 官方 char-update：多个 字段=值 同时更新，字段名为驼峰（firstMessage/messageExamples/...），
+            // 兼容本地下划线别名；命名参数可从任意位置提取
+            val updates = mutableListOf<Pair<String, String>>()
+            var rest = args
+            while (true) {
+                val m = Regex("(^|\\s)([A-Za-z_][A-Za-z0-9_]*)=(\"[^\"]*\"|\\S+)").find(rest) ?: break
+                var value = m.groupValues[3]
+                if (value.startsWith("\"") && value.endsWith("\"")) {
+                    value = value.substring(1, value.length - 1)
+                }
+                updates += m.groupValues[2].lowercase() to value
+                rest = rest.removeRange(m.range.first, m.range.last + 1).trim()
+            }
+            if (updates.isEmpty()) {
+                toaster.show("用法: /char-update 字段=值 [字段2=值2 ...]（name/description/personality/scenario/systemPrompt/firstMessage/messageExamples/creatorNotes/postHistoryInstructions/characterVersion/creator/tags）")
                 return
             }
-            val field = args.substring(0, eqIndex).trim()
-            val value = args.substring(eqIndex + 1).trim()
             val tav = assistant.tavernData
             if (tav == null) {
                 toaster.show("当前助手没有角色卡")
                 return
             }
-            val updated = when (field.lowercase()) {
-                "name" -> {
-                    onUpdateAssistant(assistant.copy(name = value, tavernData = tav.copy(name = value)))
-                    "名称"
+            var currentTav = tav
+            var nameChanged = false
+            val applied = mutableListOf<String>()
+            var unknown: String? = null
+            for ((field, value) in updates) {
+                when (field) {
+                    "name" -> { currentTav = currentTav.copy(name = value); nameChanged = true; applied += "名称" }
+                    "description" -> { currentTav = currentTav.copy(description = value); applied += "描述" }
+                    "personality" -> { currentTav = currentTav.copy(personality = value); applied += "性格" }
+                    "scenario" -> { currentTav = currentTav.copy(scenario = value); applied += "场景" }
+                    "systemprompt", "system_prompt" -> { currentTav = currentTav.copy(systemPrompt = value); applied += "系统提示词" }
+                    "firstmessage", "first_mes" -> { currentTav = currentTav.copy(firstMessage = value); applied += "开场白" }
+                    "messageexamples", "mesexample", "mes_example" -> { currentTav = currentTav.copy(mesExample = value); applied += "示例对话" }
+                    "posthistoryinstructions", "post_history_instructions", "phi" -> { currentTav = currentTav.copy(postHistoryInstructions = value); applied += "历史后指令" }
+                    "creator" -> { currentTav = currentTav.copy(creator = value); applied += "作者" }
+                    "creatornotes", "creator_notes" -> { currentTav = currentTav.copy(creatorNotes = value); applied += "作者备注" }
+                    "characterversion", "character_version" -> { currentTav = currentTav.copy(characterVersion = value); applied += "角色版本" }
+                    "tags" -> { currentTav = currentTav.copy(tags = value.split(',').map { it.trim() }.filter { it.isNotBlank() }); applied += "标签" }
+                    else -> unknown = field
                 }
-                "description" -> { onUpdateAssistant(assistant.copy(tavernData = tav.copy(description = value))); "描述" }
-                "personality" -> { onUpdateAssistant(assistant.copy(tavernData = tav.copy(personality = value))); "性格" }
-                "scenario" -> { onUpdateAssistant(assistant.copy(tavernData = tav.copy(scenario = value))); "场景" }
-                "system_prompt", "systemprompt" -> { onUpdateAssistant(assistant.copy(tavernData = tav.copy(systemPrompt = value))); "系统提示词" }
-                "first_mes", "firstmes" -> { onUpdateAssistant(assistant.copy(tavernData = tav.copy(firstMessage = value))); "开场白" }
-                "mes_example", "mesexample" -> { onUpdateAssistant(assistant.copy(tavernData = tav.copy(mesExample = value))); "示例对话" }
-                "post_history_instructions", "phi" -> { onUpdateAssistant(assistant.copy(tavernData = tav.copy(postHistoryInstructions = value))); "历史后指令" }
-                "creator_notes", "creatornotes" -> { onUpdateAssistant(assistant.copy(tavernData = tav.copy(creatorNotes = value))); "作者备注" }
-                "character_version", "characterversion" -> { onUpdateAssistant(assistant.copy(tavernData = tav.copy(characterVersion = value))); "角色版本" }
-                else -> null
             }
-            if (updated == null) {
-                toaster.show("未知字段: $field（可用 name/description/personality/scenario/system_prompt/first_mes/mes_example/phi/creator_notes）")
-            } else {
-                toaster.show("已更新$updated")
-            }
+            onUpdateAssistant(assistant.copy(name = if (nameChanged) currentTav.name else assistant.name, tavernData = currentTav))
+            if (applied.isNotEmpty()) toaster.show("已更新: ${applied.joinToString("、")}")
+            if (unknown != null) toaster.show("未知字段: $unknown")
         }
 
         BuiltinSlashKind.DUPLICATE -> {
@@ -1470,24 +1502,37 @@ private fun FullScreenEditor(
  */
 private data class InsertArgs(val name: String?, val at: Int?, val text: String, val trim: Boolean = false)
 
-private fun parseInsertArgs(raw: String): InsertArgs {
+/**
+ * 官方 isTrueBoolean：true/1/on（大小写不敏感）。
+ */
+private fun isTrueBoolean(value: String): Boolean =
+    value.equals("true", ignoreCase = true) || value == "1" || value.equals("on", ignoreCase = true)
+
+/**
+ * 解析插消息类命令参数（sys/send/sendas/sysgen）。
+ * 官方 SlashCommandParser 允许命名参数出现在任意位置（不仅开头），
+ * 解析后从原文剥离，剩余作为正文。
+ */
+private fun parseInsertArgs(raw: String, allowTrim: Boolean = false): InsertArgs {
     var args = raw.trim()
     var name: String? = null
     var at: Int? = null
     var trim = false
     while (true) {
-        val m = Regex("^(name|at|trim)=(\"[^\"]*\"|\\S+)(.*)$", RegexOption.IGNORE_CASE).find(args) ?: break
-        val key = m.groupValues[1].lowercase()
-        var value = m.groupValues[2]
+        // 官方命名参数可从任意位置提取（不在开头也能解析）
+        val m = Regex("(^|\\s)(name|at|trim)=(\"[^\"]*\"|\\S+)", RegexOption.IGNORE_CASE).find(args) ?: break
+        val key = m.groupValues[2].lowercase()
+        var value = m.groupValues[3]
         if (value.startsWith("\"") && value.endsWith("\"")) {
             value = value.substring(1, value.length - 1)
         }
         when (key) {
             "name" -> name = value
             "at" -> at = value.toIntOrNull()
-            "trim" -> trim = value.equals("true", ignoreCase = true) || value == "1"
+            // 官方 /sys /send /sendas 没有 trim 参数，正文里的 "trim=..." 应原样保留
+            "trim" -> if (allowTrim) trim = isTrueBoolean(value)
         }
-        args = m.groupValues[3].trimStart()
+        args = args.removeRange(m.range.first, m.range.last + 1).trim()
     }
     return InsertArgs(name, at, args.trim(), trim)
 }
@@ -1504,9 +1549,9 @@ private fun parseGenArgs(raw: String): ChatService.GenArgs {
     var name: String? = null
     var trim = false
     while (true) {
-        val m = Regex("^(as|lock|length|name|trim)=(\"[^\"]*\"|\\S+)(.*)$", RegexOption.IGNORE_CASE).find(args) ?: break
-        val key = m.groupValues[1].lowercase()
-        var value = m.groupValues[2]
+        val m = Regex("(^|\\s)(as|lock|length|name|trim)=(\"[^\"]*\"|\\S+)", RegexOption.IGNORE_CASE).find(args) ?: break
+        val key = m.groupValues[2].lowercase()
+        var value = m.groupValues[3]
         if (value.startsWith("\"") && value.endsWith("\"")) {
             value = value.substring(1, value.length - 1)
         }
@@ -1515,12 +1560,12 @@ private fun parseGenArgs(raw: String): ChatService.GenArgs {
                 "char" -> ChatService.QuietPromptAs.CHAR
                 else -> ChatService.QuietPromptAs.SYSTEM
             }
-            "lock" -> lock = value.equals("true", ignoreCase = true) || value == "1"
+            "lock" -> lock = isTrueBoolean(value)
             "length" -> length = value.toIntOrNull() ?: 0
             "name" -> name = value
-            "trim" -> trim = value.equals("true", ignoreCase = true) || value == "1"
+            "trim" -> trim = isTrueBoolean(value)
         }
-        args = m.groupValues[3].trimStart()
+        args = args.removeRange(m.range.first, m.range.last + 1).trim()
     }
     return ChatService.GenArgs(prompt = args, asRole = asRole, lock = lock, length = length, name = name, trim = trim)
 }

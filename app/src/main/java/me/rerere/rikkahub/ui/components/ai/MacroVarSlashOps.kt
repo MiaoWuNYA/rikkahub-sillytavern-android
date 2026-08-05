@@ -51,10 +51,14 @@ fun applyMacroVarSlash(
         SlashVarOp.GET -> current() ?: "（未设置）"
 
         SlashVarOp.ADD -> {
-            val left = current()?.toLongOrNull()
-            val right = value.toLongOrNull()
+            // 官方 Number() 语义：小数也按数值相加（10.5+1.5=12），结果整数时去掉 .0
+            val left = current()?.toDoubleOrNull()
+            val right = value.toDoubleOrNull()
             val next = when {
-                left != null && right != null -> (left + right).toString()
+                left != null && right != null -> {
+                    val sum = left + right
+                    if (sum % 1.0 == 0.0) sum.toLong().toString() else sum.toString()
+                }
                 current() == null -> value
                 else -> (current() ?: "") + value
             }

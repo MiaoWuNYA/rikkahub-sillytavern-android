@@ -760,6 +760,13 @@ class ChatService(
                 val settings = settingsStore.settingsFlow.first()
                 val conversation = getConversationFlow(conversationId).value
                 val nodes = conversation.messageNodes
+                // 官方（script.js Generate continue 分支）：最后一条不是助手消息时退化为正常回复，
+                // 在用户最新消息后生成回复，用户发言不会从上下文丢失
+                if (nodes.lastOrNull()?.role != MessageRole.ASSISTANT) {
+                    handleMessageComplete(conversationId, generationType = GenerationType.NORMAL)
+                    _generationDoneFlow.emit(conversationId)
+                    return@launch
+                }
                 val lastAssistantIndex = nodes.indexOfLast { it.role == MessageRole.ASSISTANT }
                 if (lastAssistantIndex < 0) {
                     addError(
@@ -846,7 +853,9 @@ class ChatService(
                 val conversation = getConversationFlow(conversationId).value
                 val assistant = settings.getAssistantById(conversation.assistantId)
                     ?: settings.getCurrentAssistant()
-                val userName = settings.displaySetting.userNickname.ifBlank { "User" }
+                // 官方 name1：激活人设名优先，其次临时用户名
+                val userName = settings.personas.firstOrNull { it.id == settings.activePersonaId }?.name
+                    ?: settings.displaySetting.userNickname.ifBlank { "User" }
                 val history = conversation.messageNodes.map { node ->
                     UIMessage(
                         role = node.role,
