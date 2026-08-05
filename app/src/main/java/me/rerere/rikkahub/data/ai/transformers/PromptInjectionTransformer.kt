@@ -9,11 +9,9 @@ import me.rerere.rikkahub.data.model.AuthorNotePosition
 import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.Lorebook
-import me.rerere.rikkahub.data.model.TavernBookEntry
 import me.rerere.rikkahub.data.model.extractContextForMatching
 import me.rerere.rikkahub.data.model.isTriggered
 import me.rerere.rikkahub.data.model.matchedKeyScore
-import me.rerere.rikkahub.ui.pages.assistant.detail.tavernEntryToInjection
 import kotlin.uuid.Uuid
 import kotlin.random.Random
 
@@ -23,12 +21,6 @@ import kotlin.random.Random
  * 根据 Assistant 关联的 ModeInjection 和 Lorebook 进行提示词注入
  */
 object PromptInjectionTransformer : InputMessageTransformer {
-
-    /** 未绑定外置书时，内嵌书条目生成稳定 id（卡内索引+内容哈希），保证 sticky/cooldown 跨轮生效 */
-    private fun stableEmbeddedEntryId(entry: TavernBookEntry): Uuid {
-        val h = (entry.id * 31 + entry.content.hashCode()).toLong()
-        return Uuid.fromUuidBits((h shl 32) or h.ushr(32), h)
-    }
 
     // 粘性追踪：assistantId:conversationId → (injectionId → 剩余轮数)
     private val stickyTracker = mutableMapOf<String, MutableMap<Uuid, Int>>()
@@ -217,30 +209,10 @@ internal fun collectInjections(
         .filter { it.enabled && effectiveModeInjectionIds.contains(it.id) }
         .forEach { injections.add(it) }
 
-    // 2. 获取关联的 Lorebook 中被触发的 RegexInjection
+    // 2. 获取关联的 Lorebook 中被触发的 RegexInjection。
+    //    官方模型：角色卡内嵌书在导入时转成独立外置书并绑定，注入只读外置绑定；解绑后不再注入
     val enabledLorebooks = lorebooks.filter {
         it.enabled && effectiveLorebookIds.contains(it.id)
-    }.let { books ->
-        // 官方：角色卡内嵌世界书始终生效（不依赖外置绑定）；
-        // 已绑定时外置书已同步内嵌内容，避免重复注入
-        if (books.isEmpty() && effectiveLorebookIds.isEmpty()) {
-            val embedded = assistant.tavernData?.embeddedBook
-            if (embedded != null && embedded.entries.isNotEmpty()) {
-                books + Lorebook(
-                    id = Uuid.random(),
-                    name = embedded.name,
-                    description = embedded.description,
-                    // 稳定 id（卡内索引+内容哈希）：未绑定回退路径下 sticky/cooldown 跨轮生效
-                    entries = embedded.entries.map { tavernEntryToInjection(it, stableEmbeddedEntryId(it)) },
-                    isCharacterBook = true,
-                    scanDepth = embedded.scanDepth,
-                    tokenBudget = embedded.tokenBudget,
-                    recursiveScanning = embedded.recursiveScanning,
-                    maxRecursionSteps = embedded.maxRecursionSteps,
-                    minActivations = embedded.minActivations,
-                )
-            } else books
-        } else books
     }.let { books ->
         // 官方 world_info_character_strategy：1=角色卡世界书优先 2=全局优先 0=均匀（保持列表顺序）
         when (worldInfoCharacterStrategy) {

@@ -620,12 +620,9 @@ private fun parseStickyInt(element: kotlinx.serialization.json.JsonElement?): In
 /**
  * 将内嵌世界书条目转为Rikkahub的RegexInjection
  */
-internal fun tavernEntryToInjection(
-    entry: TavernBookEntry,
-    id: Uuid = Uuid.random(),
-): PromptInjection.RegexInjection {
+private fun tavernEntryToInjection(entry: TavernBookEntry): PromptInjection.RegexInjection {
     return PromptInjection.RegexInjection(
-        id = id,
+        id = Uuid.random(),
         name = entry.comment.ifEmpty { entry.keys.firstOrNull() ?: "Entry ${entry.id}" },
         enabled = !entry.disable,
         priority = entry.priority,
@@ -708,7 +705,19 @@ internal fun syncExternalToEmbedded(
             } ?: TavernBookEntry()
             injectionToTavernEntry(injection, template)
         }
-        assistant.copy(tavernData = tav.copy(embeddedBook = book.copy(entries = newEntries)))
+        // 书级激活设置也同步（外置书为准，与 syncEmbeddedToExternal 反向对称）
+        assistant.copy(
+            tavernData = tav.copy(
+                embeddedBook = book.copy(
+                    entries = newEntries,
+                    scanDepth = boundBook.scanDepth,
+                    tokenBudget = boundBook.tokenBudget?.takeIf { it > 0 },
+                    recursiveScanning = boundBook.recursiveScanning,
+                    maxRecursionSteps = boundBook.maxRecursionSteps?.let { if (it <= 0) 0 else it },
+                    minActivations = boundBook.minActivations?.coerceAtLeast(0),
+                )
+            )
+        )
     }
 }
 
