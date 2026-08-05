@@ -283,67 +283,67 @@ fun AuthorsNotePage() {
 private val authorsNotePresets = listOf(
     Pair(
         "防复读（动态）",
-        "[Never repeat the previous reply. Vary wording, sentence structure and imagery.]\n{{if::{{lastCharMessage}}::你上一条回复是：{{lastCharMessage}}\n请换一种完全不同的表达方式，不要复述其中的句式、比喻或结论。}}",
+        "[Advance the scene with new information instead of repeating what was already said.]\n{{if {{lastCharMessage}}}}\n  {{lastCharMessage}}\n{{/if}}\nEvery reply must feel different: vary wording, sentence structure, and imagery.",
     ),
     Pair(
         "状态面板（变量）",
-        "[Track the story state variables below and keep them consistent. Only change them when the plot clearly demands it.]\n主角状态：受伤={{if::{{hasvar::受伤}}::{{getvar::受伤}}{{else}}无}} ｜ 好感度={{if::{{hasvar::好感度}}::{{getvar::好感度}}{{else}}未建立}} ｜ 当前目标={{if::{{hasvar::目标}}::{{getvar::目标}}{{else}}无}}\n涉及以上状态时严格保持一致，状态变化必须由剧情明确推动。",
+        "[Keep the tracked variables below consistent; only change them when the plot clearly demands it.]\n主角状态：受伤={{if {{hasvar::受伤}}}} {{getvar::受伤}} {{else}}无{{/if}} ｜ 好感度={{if {{hasvar::好感度}}}} {{getvar::好感度}} {{else}}未建立{{/if}} ｜ 当前目标={{if {{hasvar::目标}}}} {{getvar::目标}} {{else}}无{{/if}}\nEvery reply must stay consistent with this state; let the story move it only when it naturally would.",
     ),
     Pair(
         "动态推进（感知最新）",
-        "[Advance the plot based on the latest user message. Do not repeat or summarize it.]\n{{if::{{lastUserMessage}}::用户最新说的是：{{lastUserMessage}}\n围绕它推进：先回应，再补充新信息、制造新冲突或留下钩子。}}",
+        "[Advance the plot from the user's latest message.]\n用户最新说的是：{{lastUserMessage}}\n围绕它推进：先回应，再补充新信息、制造新冲突或留下钩子。",
     ),
     Pair(
         "开场引导（自动识别）",
-        "[Determine whether this is the opening scene or an ongoing conversation and act accordingly.]\n{{if::{{lastCharMessage}}::对话已经进行中：延续当前场景，不要重新自我介绍或从头解释。||这是开场：按照 {{char}} 的开场白展开场景，自然地开始互动，不要跳出角色。}}",
+        "[Adapt to whether this is the opening or an ongoing scene.]\n{{if {{lastCharMessage}}}}\n  对话已经进行中：延续当前场景，从对话的进展自然接下去。\n{{else}}\n  这是开场：按照 {{char}} 的开场白展开场景，自然地开始互动。\n{{/if}}",
     ),
     Pair(
         "时间流逝（动态）",
-        "[Reflect the time that has passed since the last interaction.]\n距离上次互动已过去：{{idleDuration}}。\n如果间隔明显，请让场景自然体现这段空白（角色等待、离去又回来、氛围变化等），但不要机械地提及具体分钟数。",
+        "[Reflect the time that has passed since the last interaction.]\n距离上次互动已过去：{{idleDuration}}。\n如果间隔明显，让场景自然体现这段空白（等待、离去又回来、氛围变化），但不必提及具体分钟数。",
     ),
     Pair(
         "随机氛围（稳定）",
-        "[Keep the chosen atmosphere consistent throughout this scene.]\n本场景氛围基调：{{pick::阴雨连绵|黄昏将至|雪夜寂静|晴空微风}}。\n场景描写围绕这个基调展开，不要频繁切换。",
+        "[Keep the chosen atmosphere consistent throughout this scene.]\n本场景氛围基调：{{pick::阴雨连绵|黄昏将至|雪夜寂静|晴空微风}}。\n场景描写围绕这个基调展开，让氛围沉淀下来，不要频繁切换。",
     ),
     Pair(
         "群聊感知（动态）",
-        "[Respond as the current speaker and interact with the other participants naturally.]\n在场成员：{{groupNotMuted}}。\n{{if::{{group}}::这是群聊：只替自己发言，不要替其他角色说话或替他们决定行动。||这是单聊。}}",
+        "[Interact naturally with the other participants.]\n在场成员：{{groupNotMuted}}。\n{{if {{group}}}}\n  这是群聊：只替自己发言，让其他角色各自回应。\n{{else}}\n  这是单聊。\n{{/if}}",
     ),
     Pair(
         "状态机（简写变量）",
-        "[Story state tracker. Keep these values consistent; update them only when the plot clearly demands it.]\n受伤：{{.受伤 || 无}} ｜ 好感度：{{.好感度 || 0}} ｜ 金币：{{.金币 || 0}} ｜ 目标：{{.目标 || 无}}\n{{if {{.受伤}}}}\n  角色描写必须体现：身上有{{.受伤}}，动作、对话都受其影响。\n{{/if}}",
+        "[Track these variables consistently; change them only when the plot clearly demands it.]\n受伤：{{.受伤 || 无}} ｜ 好感度：{{.好感度 || 0}} ｜ 金币：{{.金币 || 0}} ｜ 目标：{{.目标 || 无}}\n{{if {{.受伤}}}}\n  角色描写必须体现：身上有 {{.受伤}}，动作、对话都受其影响。\n{{/if}}",
     ),
     Pair(
         "回合计数",
-        "[Track the story round automatically.]\n当前进行到第 {{.回合++}} 轮。\n随轮次推进，剧情应有明显进展，不要原地打转。",
+        "[Track the story round automatically.]\n当前进行到第 {{.回合++}} 轮。\n随轮次推进，剧情应有明显进展。",
     ),
     Pair(
         "懒初始化（防覆盖）",
-        "[Initialize story state only when it does not exist yet; never overwrite existing values.]\n{{.主角名字 ??= {{user}}}}\n{{.与主角关系 ||= 陌生人}}\n{{.主线阶段 ||= 开端}}\n当前主角：{{.主角名字}}，关系：{{.与主角关系}}，阶段：{{.主线阶段}}。",
+        "[Initialize story state only when it does not exist yet.]\n{{.主角名字 ??= {{user}}}}\n{{.与主角关系 ||= 陌生人}}\n{{.主线阶段 ||= 开端}}\n当前主角：{{.主角名字}}，关系：{{.与主角关系}}，阶段：{{.主线阶段}}。",
     ),
     Pair(
         "场景时钟",
-        "[Maintain a consistent in-story clock.]\n{{if {{.场景时间}}}}\n  当前剧情时间：{{.场景时间}}\n{{/if}}\n场景时间变化必须与剧情推进一致（对话、行动需要花费合理的时间）。",
+        "[Maintain a consistent in-story clock.]\n{{if {{.场景时间}}}}\n  当前剧情时间：{{.场景时间}}\n{{/if}}\n时间推进与剧情一致：对话、行动需要花费合理的时间。",
     ),
     Pair(
         "动态悬念",
         "[Create and maintain one active mystery or hook at a time.]\n{{if {{.悬念}}}}\n  当前未解悬念：{{.悬念}}——每个回复都应轻轻触碰它，不要遗忘，也不要一次性揭开。\n{{else}}\n  当前没有进行中的悬念，请在本轮自然埋下一个。\n{{/if}}",
     ),
     Pair(
-        "格式强化（官方）",
-        "[Formatting rules — apply to every reply.]\n用斜体（*…*）表示动作与心理，用引号（“…”）表示台词，环境与叙述用正常段落。\n{{if {{.回复长度}}}}\n  本条回复控制在约 {{.回复长度}} token。\n{{/if}}\n对话与叙述要平衡：不要一整段全是台词，也不要一整段流水账。",
+        "格式强化",
+        "[Apply these formatting rules to every reply.]\n用斜体（*…*）表示动作与心理，用引号（“…”）表示台词，环境与叙述用正常段落。\n{{if {{.回复长度}}}}\n  本条回复控制在约 {{.回复长度}} token。\n{{/if}}\n对话与叙述要平衡。",
     ),
     Pair(
-        "指令强化（官方）",
-        "[Reinforce the original instructions.]\n记住本次对话开始时收到的全部设定与规则：角色卡的核心设定、人设、世界信息优先于行文便利。\n对话再长也不得遗忘或篡改既定事实；若与用户临时指令冲突，以角色设定为准，但不要生硬拒绝用户。",
+        "指令强化",
+        "[Reinforce the original instructions.]\n记住本次对话开始时收到的全部设定与规则：角色卡的核心设定、人设、世界信息优先于行文便利。\n对话再长也不得遗忘或篡改既定事实；与用户临时指令冲突时，以角色设定为准，但保持自然。",
     ),
     Pair(
         "临时状态（官方）",
-        "[Just-in-time scene state — apply while it lasts.]\n{{if {{.临时状态}}}}\n  当前有效状态：{{.临时状态}}\n  在本状态解除前，每次回复都必须自然体现它（行动受限、情绪、处境等）。\n{{/if}}",
+        "[Apply this state only while it lasts.]\n{{if {{.临时状态}}}}\n  当前有效状态：{{.临时状态}}\n  在本状态解除前，每次回复都自然体现它（行动受限、情绪、处境等）。\n{{/if}}",
     ),
     Pair(
         "内容尺度",
-        "[Content rating control — follow the current rating strictly.]\n当前尺度：{{.尺度 || 标准}}\n{{if {{.尺度 == 温和}}}}\n  亲密内容点到为止：允许暗示与留白，禁止露骨描写。\n{{/if}}\n{{if {{.尺度 == 标准}}}}\n  允许适度的浪漫与亲密描写，控制在主流影视级别，避免过度露骨。\n{{/if}}\n{{if {{.尺度 == 开放}}}}\n  允许成人内容，但仍要保持角色一致性、剧情逻辑和基本文学质量，不写机械重复。\n{{/if}}",
+        "[Follow the current rating strictly.]\n当前尺度：{{.尺度 || 标准}}\n{{if {{.尺度 == 温和}}}}\n  亲密内容点到为止：允许暗示与留白，保持含蓄。\n{{/if}}\n{{if {{.尺度 == 标准}}}}\n  允许适度的浪漫与亲密描写，控制在主流影视级别。\n{{/if}}\n{{if {{.尺度 == 开放}}}}\n  允许成人内容，但仍要保持角色一致性、剧情逻辑和基本文学质量。\n{{/if}}",
     ),
     Pair(
         "言行一致",
@@ -351,27 +351,27 @@ private val authorsNotePresets = listOf(
     ),
     Pair(
         "禁用语",
-        "[Avoid clichéd AI phrasing.]\n禁止使用以下 AI 腔词汇：delve、tapestry、unravel、embark、怔怔、心中一动、不禁、顿时、仿佛置身、微微颔首。\n{{if {{.额外禁词}}}}\n  额外禁止：{{.额外禁词}}。\n{{/if}}",
+        "[Prefer fresh, direct phrasing.]\n尽量避开 AI 腔词汇（delve、tapestry、unravel、怔怔、心中一动、不禁、仿佛置身、微微颔首）。\n{{if {{.额外禁词}}}}\n  额外避开：{{.额外禁词}}。\n{{/if}}",
     ),
     Pair(
         "关系阶段",
-        "[Relationship stage tracker — keep it consistent; only change with meaningful plot events.]\n当前关系：{{.关系 || 陌生}}\n{{if {{.关系 == 陌生}}}}\n  角色保持礼貌距离：话少、观察多，不主动交心。\n{{/if}}\n{{if {{.关系 == 熟悉}}}}\n  角色开始主动开玩笑、偶尔透露私事，会主动关心你。\n{{/if}}\n{{if {{.关系 == 亲密}}}}\n  角色在意你的安危、流露柔软一面，但仍保留自己的底线和秘密。\n{{/if}}\n{{if {{.关系 == 紧张}}}}\n  角色对你有戒心、语气生硬，需要行动才能修复关系。\n{{/if}}",
+        "[Track the relationship stage; only change it with meaningful plot events.]\n当前关系：{{.关系 || 陌生}}\n{{if {{.关系 == 陌生}}}}\n  角色保持礼貌距离：话少、观察多，不主动交心。\n{{/if}}\n{{if {{.关系 == 熟悉}}}}\n  角色开始主动开玩笑、偶尔透露私事，会主动关心你。\n{{/if}}\n{{if {{.关系 == 亲密}}}}\n  角色在意你的安危、流露柔软一面，但仍保留自己的底线和秘密。\n{{/if}}\n{{if {{.关系 == 紧张}}}}\n  角色对你有戒心、语气生硬，需要行动才能修复关系。\n{{/if}}",
     ),
     Pair(
         "信息边界",
-        "[Information boundaries — only reveal what the character could reasonably know.]\n{{if {{.秘密}}}}\n  TA 不知道的秘密：{{.秘密}}。除非剧情明确揭示，TA 绝不能说出或暗示这个秘密。\n{{/if}}\n{{if {{.已知信息}}}}\n  TA 已经知道：{{.已知信息}}，可以自然地使用这些信息。\n{{/if}}",
+        "[The character only reveals what they could reasonably know.]\n{{if {{.秘密}}}}\n  TA 不知道的秘密：{{.秘密}}。除非剧情明确揭示，TA 绝不能说出或暗示这个秘密。\n{{/if}}\n{{if {{.已知信息}}}}\n  TA 已经知道：{{.已知信息}}，可以自然地使用这些信息。\n{{/if}}",
     ),
     Pair(
         "沉浸式扮演",
-        "[Stay fully in character as {{char}}. Never break character, never mention AI, prompts, or rules.]\n用第一人称扮演角色，通过对话、动作和神态展现性格，而不是直接叙述人设。\n台词用引号，动作与心理用斜体。\n只叙述 {{char}} 与配角的想法、感受、行动和对话，绝不替 {{user}} 说话、行动或决定。\n角色拥有自己的目标、立场和情绪，可以不同意、拒绝、怀疑，像真实的人一样自主行动。\n每个角色只能知道亲眼见过、亲耳听过或能合理推断的信息，不能全知。\n世界的行动可以作用于 {{user}}，但选择永远留给 {{user}}。",
+        "[Stay fully in character as {{char}}. Never break character, never mention AI, prompts, or rules.]\n用第一人称扮演角色，通过对话、动作和神态展现性格，而不是直接叙述人设。\n台词用引号，动作与心理用斜体。\n只叙述 {{char}} 与配角的想法、感受、行动和对话，绝不替 {{user}} 说话、行动或决定。\n角色拥有自己的目标、立场和情绪，可以不同意、拒绝、怀疑，像真实的人一样自主行动。\n每个角色只能知道亲眼见过、亲耳听过或能合理推断的信息。\n世界的行动可以作用于 {{user}}，但选择永远留给 {{user}}。",
     ),
     Pair(
         "叙事笔法",
-        "[Show, don't tell. Use concrete sensory description and natural-sounding dialogue.]\n用具体的动作、神态、环境和感官细节表达情绪与氛围，避免直接贴标签。\n对话与叙述均衡：避免一整段全是台词，也避免一整段干巴巴的流水账。\n避免 AI 腔：不重复同一句式、不总结上一轮、不写空洞的感叹和说教。\n每次回复都换一种写法，保持新鲜感，避免公式化套路。\n不要过度堆砌辞藻，节奏张弛有度。",
+        "[Show, don't tell. Use concrete sensory description and natural-sounding dialogue.]\n用具体的动作、神态、环境和感官细节表达情绪与氛围，避免直接贴标签。\n对话与叙述均衡：避免一整段全是台词，也避免一整段干巴巴的流水账。\n每次回复都换一种写法，保持新鲜感。",
     ),
     Pair(
         "剧情节奏",
-        "[Advance the plot meaningfully. Track scene continuity and leave hooks.]\n每轮都要有新信息、新细节或新转折，不复述已知内容，不停留在原地。\n保持场景连续：地点、时间、人物位置、已发生事件和角色状态前后一致，转场交代清楚。\n按剧情需要控制篇幅：紧张场景精炼，重要场景给足展开；一般回复约 200–400 token。\n结尾留下自然的钩子或悬念，让对话可以继续。",
+        "[Advance the plot meaningfully. Track scene continuity and leave hooks.]\n每轮都要有新信息、新细节或新转折，不复述已知内容。\n保持场景连续：地点、时间、人物位置、已发生事件和角色状态前后一致，转场交代清楚。\n按剧情需要控制篇幅：紧张场景精炼，重要场景给足展开；一般回复约 200–400 token。\n结尾留下自然的钩子或悬念，让对话可以继续。",
     ),
     Pair(
         "严肃正式",
@@ -379,7 +379,7 @@ private val authorsNotePresets = listOf(
     ),
     Pair(
         "轻松闲聊",
-        "[Write your next reply like a casual chat between friends.]\n使用自然口语化的语言，句子可以松散，但要真实。\n可以开玩笑、可以跑题，但必须回应我实际说的内容。\n不要过度热情或刻意讨好，保持自然的朋友感。",
+        "[Write your next reply like a casual chat between friends.]\n使用自然口语化的语言，句子可以松散，但要真实。\n可以开玩笑、可以跑题，但必须回应我实际说的内容。\n保持自然的朋友感，不过度热情或刻意讨好。",
     ),
     Pair(
         "冲突制造",
@@ -411,6 +411,6 @@ private val authorsNotePresets = listOf(
     ),
     Pair(
         "外语气氛",
-        "[Write the reply in the language and cultural tone of the current conversation.]\n中文保持自然韵律，避免翻译腔；英文使用地道表达，避免直译感；日语注意敬语体系。\n符合目标语言的文化语境和表达习惯，不用中文思维硬套。",
+        "[Write in the language and cultural tone of the current conversation.]\n中文保持自然韵律，避免翻译腔；英文使用地道表达，避免直译感；日语注意敬语体系。\n符合目标语言的文化语境和表达习惯，不用中文思维硬套。",
     ),
 )
