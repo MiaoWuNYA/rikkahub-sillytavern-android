@@ -257,7 +257,15 @@ class AssistantDetailVM(
                     ignoreBudget = e.ignoreBudget,
                 )
             }
-            lb.copy(entries = synced)
+            // 书级激活设置也同步（官方 lorebook 字段，内置书为准）
+            lb.copy(
+                entries = synced,
+                scanDepth = book.scanDepth,
+                tokenBudget = book.tokenBudget?.takeIf { it > 0 },
+                recursiveScanning = book.recursiveScanning,
+                maxRecursionSteps = book.maxRecursionSteps?.let { if (it <= 0) 0 else it },
+                minActivations = book.minActivations?.coerceAtLeast(0),
+            )
         }
     }
 

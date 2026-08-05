@@ -525,6 +525,12 @@ data class Lorebook(
     val entries: List<PromptInjection.RegexInjection> = emptyList(),
     // 是否来自角色卡内嵌世界书（官方 world_info_character_strategy 排序用）
     val isCharacterBook: Boolean = false,
+    // 书级激活设置（官方 lorebook 字段，null = 用全局设置）
+    val scanDepth: Int? = null,             // 该书条目的默认扫描深度（官方 scan_depth）
+    val tokenBudget: Int? = null,           // 该书预算上限（官方 token_budget）
+    val recursiveScanning: Boolean? = null, // 该书递归扫描开关（官方 recursive_scanning）
+    val maxRecursionSteps: Int? = null,     // 该书最大递归步数（官方 max_recursion_steps）
+    val minActivations: Int? = null,        // 该书最少激活数（官方 min_activations）
 )
 
 /**

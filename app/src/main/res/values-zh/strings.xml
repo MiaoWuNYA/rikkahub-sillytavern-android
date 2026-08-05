@@ -352,7 +352,7 @@
   <string name="extension_content_unnamed_lorebook">未命名世界书</string>
   <string name="extension_selector_go_to_extensions">管理扩展</string>
   <string name="extension_selector_go_to_skills">前往管理 Skills</string>
-  <string name="extension_selector_lorebooks_empty">无可用的lorebooks</string>
+  <string name="extension_selector_lorebooks_empty">没有可用的世界书</string>
   <string name="extension_selector_mode_injections_empty">无可用的模式注入</string>
   <string name="extension_selector_quick_messages_empty">暂无快捷消息</string>
   <string name="extension_selector_skills_empty">暂无 Skills</string>
@@ -529,7 +529,7 @@
   <string name="prompt_page_delay_until_recursion_level">递归等级(Recursion Level)</string>
   <string name="prompt_page_delay_until_recursion_level_desc">第 N 级递归扫描才检查；当前级无命中时逐级开放</string>
   <string name="prompt_page_world_info_max_recursion_desc">限制条目激活递归的次数（0=不限制）</string>
-  <string name="prompt_page_world_info_max_recursion_title">最大递归深度(Max Recursion Steps)</string>
+  <string name="prompt_page_world_info_max_recursion_title">最大递归步骤(Max Recursion Steps)</string>
   <string name="prompt_page_world_info_recursive_desc">对已注入的世界书内容再次扫描关键词，链式带出关联条目</string>
   <string name="prompt_page_world_info_recursive_title">递归扫描</string>
   <string name="prompt_page_mode_injection_empty">暂无模式注入</string>
@@ -1231,7 +1231,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="prompt_page_group_weight">组权重(Group Weight)</string>
   <string name="prompt_page_group_override">确定优先级(Prioritize)</string>
   <string name="prompt_page_probability">触发概率: %d%%</string>
-  <string name="prompt_page_sticky">黏性(Sticky)</string>
+  <string name="prompt_page_sticky">粘性(Sticky)</string>
   <string name="prompt_page_cooldown">冷却(Cooldown)</string>
   <string name="prompt_page_delay">延迟(Delay)</string>
   <string name="prompt_page_triggers">触发器(Triggers)</string>

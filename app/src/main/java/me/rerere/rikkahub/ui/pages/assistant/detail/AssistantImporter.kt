@@ -63,15 +63,6 @@ import kotlin.uuid.Uuid
 data class TavernImportResult(
     val assistant: Assistant,
     val newLorebooks: List<Lorebook> = emptyList(),  // 从内嵌世界书创建的新Lorebook
-    val importedBookSettings: ImportedBookSettings = ImportedBookSettings(),
-)
-
-/** 角色卡内嵌世界书自带的激活设置（酒馆旧字段），导入时同步到全局设置 */
-data class ImportedBookSettings(
-    val recursiveScanning: Boolean? = null,
-    val maxRecursionSteps: Int? = null,
-    val minActivations: Int? = null,
-    val tokenBudget: Int? = null,
 )
 
 @Composable
@@ -192,19 +183,7 @@ private suspend fun importFromUri(
         TavernImportResult(
             assistant = assistant,
             newLorebooks = lorebooks,
-            importedBookSettings = buildImportedBookSettings(assistant.tavernData?.embeddedBook),
         )
-    )
-}
-
-/** 从内嵌世界书提取导入时要同步到全局设置的字段（只保留显式提供的值） */
-private fun buildImportedBookSettings(book: TavernEmbeddedBook?): ImportedBookSettings {
-    if (book == null) return ImportedBookSettings()
-    return ImportedBookSettings(
-        recursiveScanning = book.recursiveScanning,
-        maxRecursionSteps = book.maxRecursionSteps?.let { if (it <= 0) 0 else it },
-        minActivations = book.minActivations?.coerceAtLeast(0),
-        tokenBudget = book.tokenBudget?.takeIf { it > 0 },
     )
 }
 
@@ -865,6 +844,12 @@ private fun buildEmbeddedLorebooks(tavData: TavernCharacterData): List<Lorebook>
             isCharacterBook = true,
             enabled = true,
             entries = entries,
+            // 书级激活设置（官方 lorebook 字段），导入时进书本身而非全局，避免污染其他角色卡
+            scanDepth = tavData.embeddedBook?.scanDepth,
+            tokenBudget = tavData.embeddedBook?.tokenBudget?.takeIf { it > 0 },
+            recursiveScanning = tavData.embeddedBook?.recursiveScanning,
+            maxRecursionSteps = tavData.embeddedBook?.maxRecursionSteps?.let { if (it <= 0) 0 else it },
+            minActivations = tavData.embeddedBook?.minActivations?.coerceAtLeast(0),
         )
     )
 }

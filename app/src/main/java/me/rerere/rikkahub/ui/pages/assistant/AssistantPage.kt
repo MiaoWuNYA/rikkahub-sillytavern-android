@@ -381,8 +381,6 @@ private fun AssistantCreationSheet(
                                     lorebookIds = result.assistant.lorebookIds + lorebookIds
                                 ))
                             }
-                            // 内嵌世界书自带的激活设置同步到全局
-                            vm.applyImportedBookSettings(result.importedBookSettings)
                             state.confirm()
                         },
                         modifier = Modifier.fillMaxWidth(),
