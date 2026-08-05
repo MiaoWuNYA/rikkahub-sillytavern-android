@@ -77,9 +77,36 @@
 
 ## 🔮 Astrology & Divination (brand-new, absent upstream)
 
-- **Twelve divination systems**: Modern Western astrology, Traditional Western astrology, Vedic (Indian) astrology, deep classical (Hellenistic/medieval) astrology, BaZi (Eight Characters), Zi Wei Dou Shu, Tarot, Lenormand, Human Design, numerology/Kabbalah, Qi Men Dun Jia (incl. Da Liu Ren), and Liu Yao (incl. Plum Blossom)
-- **Timing techniques**: transits, progressions, returns, profections, Firdaria, length-of-life, Almuten, Arabic parts, midpoints, antiscia, draconic charts
-- **Dual mode**: a deterministic `mingli` tool plus engine self-exploration through the JavaScript / Python bridge — one switch controls both
+A complete deterministic charting system plus engine self-exploration. **One master switch controls both tools** (`mingli` deterministic charts + `mingli_guide` interpretation templates); Chinese, English, and alias system names are all recognized.
+
+### Twelve divination systems
+
+| System | Engine | Highlights |
+|---|---|---|
+| Tarot (Rider–Waite) | Arcanite + Elemental Dignity engine | Multiple spreads, elemental strength & dignity analysis |
+| Lenormand | Arcanite Lenormand | Multiple spreads, positional semantics |
+| BaZi (Four Pillars) | lunar_python calendar + dedicated BaZi engine | Ten Gods, luck pillars, yearly flows, five-element strength |
+| Zi Wei Dou Shu | iztro (QuickJS) + optional Ni Haixia / pure Python | Three-square/four-direction palaces, decadal, yearly/monthly/daily/hourly flows, small limit |
+| Modern Western astrology | Caelus (VSOP87D full data) | Natal/transits/progressions/returns/profections/Firdaria/ACG, element & modality balance |
+| Traditional Western astrology | Caelus classical module | Classical dignities, Almuten, length-of-life, primary/secondary directions, horary, antiscia, fixed-star conjunctions |
+| Vedic (Indian) astrology | Caelus + NodeJhora (DE440) | Shadbala, Ashtakavarga, Jaimini, KP, full timing techniques |
+| Deep classical astrology | stellium engine | Full output: Firdaria, profections, ZR, length-of-life, Almuten, draconic, Arabic parts, midpoints, antiscia |
+| Human Design | NatalEngine | Type, channels, gates, gene keys |
+| Numerology / Kabbalah | Kaabalah | Life path numbers, Kabbalah paths |
+| Qi Men Dun Jia (incl. Da Liu Ren) | QiMen TS engine | Day + hour charts |
+| Liu Yao (incl. Plum Blossom) | ichingshifa (Yarrow-stalk method) | Primary/transformed hexagrams, line texts, moving-line analysis |
+
+### Timing techniques
+
+Transits, secondary & primary directions, solar/lunar returns, annual profections, Firdaria, length-of-life, Almuten Figuris, Arabic parts, midpoints, antiscia, draconic charts, plus decadal / yearly / monthly / daily / hourly progressions.
+
+### Dual-mode workflow
+
+1. **Deterministic charts**: call `mingli(system=<name>, params={...})` for structured chart data (houses, stars, aspects, timing techniques — every field is meant to be interpreted);
+2. **Interpretation templates**: `mingli_guide(system=<name>)` must load the authoritative Markdown template (`assets/mingli/`, 14 files) and follow it rule by rule — skipping the template counts as a violation;
+3. **Engine self-exploration**: when more depth is needed, `eval_javascript` (QuickJS with 13 prebuilt JS engines) or `execute_python` (lunar calendar, custom calculations) can dig deeper without duplicating chart code.
+
+The workflow is baked into the system-prompt assembler: chart → load template → structure the reply strictly per the template, covering every point and using every returned field.
 
 ---
 

@@ -77,9 +77,36 @@
 
 ## 🔮 命理系统（全新，上游没有）
 
-- **排盘引擎（十二套体系）**：现代西洋占星、传统西洋占星、印度占星（吠陀）、深度古典占星（希腊/中世纪）、八字、紫微斗数、塔罗、雷诺曼、人类图、灵数卡巴拉、奇门遁甲（含大六壬）、六爻（含梅花易数）
-- **时间技法**：行运、推运、返照、小限、Firdaria、寿元、Almuten、阿拉伯点、中点、映点、龙首盘
-- **双模式**：确定性排盘工具（`mingli`）+ 引擎自探索（JavaScript / Python 桥接），一个开关同时控制两个命理工具
+一套完整的确定性排盘系统 + 引擎自探索能力，**一个开关同时控制两个命理工具**（`mingli` 确定性排盘 + `mingli_guide` 解读模板），中文、英文体系名和别名都能直接识别。
+
+### 十二套排盘体系
+
+| 体系 | 引擎实现 | 亮点 |
+|---|---|---|
+| 塔罗（韦特） | Arcanite + 元素尊贵引擎 | 多牌阵、元素强弱与相位分析（Elemental Dignity） |
+| 雷诺曼 | Arcanite Lenormand | 多牌阵、牌面位置语义 |
+| 八字（四柱） | lunar_python 农历 + 专属八字引擎 | 十神、大运、流年、五行强弱 |
+| 紫微斗数 | iztro（QuickJS）+ 可选倪海夏 / 纯 Python | 三方四正、大限、流年/流月/流日/流时、小限 |
+| 现代西洋占星 | Caelus（VSOP87D 全数据） | 本命/行运/推运/返照/小限/Firdaria/ACG，元素与模式平衡 |
+| 传统西洋占星 | Caelus 古典模块 | 古典尊贵、Almuten、寿元、主限/次限、卜卦、映点、恒星合相 |
+| 吠陀（印度占星） | Caelus + NodeJhora（DE440） | Shadbala、Ashtakavarga、Jaimini、KP，全面时间技法 |
+| 深度古典占星 | stellium 引擎 | 全量返回：Firdaria、小限、ZR、寿元、Almuten、龙首盘、阿拉伯点、中点、映点 |
+| 人类图 | NatalEngine | 类型、通道、闸门、基因钥匙 |
+| 灵数卡巴拉 | Kaabalah | 生命灵数、卡巴拉路径 |
+| 奇门遁甲（含大六壬） | QiMen TS 引擎 | 日家 + 时家 |
+| 六爻（含梅花易数） | ichingshifa（大衍筮法） | 本卦/变卦/卦爻辞、动爻分析 |
+
+### 时间技法
+
+行运（Transits）、次限/主限推运（Progressions/Directions）、太阳/月亮返照（Returns）、年度小限（Profections）、Firdaria、寿元（Length of Life）、Almuten Figuris、阿拉伯点（Arabic Parts）、中点（Midpoints）、映点（Antiscia）、龙首盘（Draconic）、大限/流年/流月/流日/流时。
+
+### 双模式工作流
+
+1. **确定性排盘**：调用 `mingli(system=体系名, params={...})`，返回结构化排盘数据（宫位、星曜、角度、时间技法等，全部字段供解读使用）；
+2. **解读模板**：`mingli_guide(system=体系名)` 强制读取对应权威解读模板（`assets/mingli/` 下 14 份 Markdown），逐条遵守，跳过模板视为违规解读；
+3. **引擎自探索**：数据不够时可用 `eval_javascript`（QuickJS，加载已打包的 13 个 JS 引擎）或 `execute_python`（农历/历法/自定义计算）继续深挖，不写重复排盘代码。
+
+工作流被写进系统提示词组装器：排盘 → 读模板 → 严格按模板组织回复，模板中提到的每个要点都必须覆盖，返回的所有字段都必须被解读使用。
 
 ---
 
