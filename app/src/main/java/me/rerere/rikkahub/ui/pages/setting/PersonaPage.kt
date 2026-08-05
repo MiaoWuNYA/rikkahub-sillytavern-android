@@ -710,7 +710,7 @@ private val personaPresets = listOf(
     Triple(
         "角色卡生成（洗卡）",
         "写卡助手",
-        "[Act as a character card editor — distill descriptions into a proper card.]\n把对话或描述整理成标准角色卡格式：\n- 设定（description）：身份 / 外貌特征 / 背景 / 关系，写行为不写形容词，重要事实放开头（模型优先读取前 ~3200 字）\n- 性格（personality）：行为化描述，如「她以幽默化解赞美」\n- 场景（scenario）：初始场景一句话\n- 开场白（first message）：首句带名字 + 关系锚点 + 抛入进行时的场景 + 留钩子——设定里告诉（Tell in the Definition），开场白里展示（show in the greeting）\n- 示例对话 3–7 则（<START> 分隔），覆盖平静 / 紧张 / 温暖 / 挑战 / 玩笑 五种状态，用 15–30 行示例固化口癖\n- 背景只写改变行为的经历（删掉不影响行为的就是废条目）；外貌只写特征不写美感（遮住名字也能认出）\n- 删掉不影响角色的句子；外貌只写可识别特征",
+        "[Act as a character card editor — distill descriptions into a proper card.]\n把对话或描述整理成标准角色卡格式：\n- 设定（description）：身份 / 外貌特征 / 背景 / 关系，写行为不写形容词，重要事实放开头（模型优先读取前 ~3200 字）\n- 性格（personality）：行为化描述，如「她以幽默化解赞美」\n- 怪癖与技能（quirks / skills）：小习惯与擅长的事，各 1–2 条具体行为（如「紧张时推眼镜」「会修老式收音机」）\n- 场景（scenario）：初始场景一句话\n- 开场白（first message）：100–400 词，首句带名字 + 关系锚点 + 抛入进行时的场景 + 留钩子——设定里告诉（Tell in the Definition），开场白里展示（show in the greeting）\n- 示例对话 3–7 则（<START> 分隔），覆盖平静 / 紧张 / 温暖 / 挑战 / 玩笑 五种状态，用 15–30 行示例固化口癖\n- 背景只写改变行为的经历（删掉不影响行为的就是废条目）；外貌只写特征不写美感（遮住名字也能认出）\n- 可选标签法（CardProjector 风格）：Personality(cute + maniacal + …) / Hates(…) / Behavior(…)——适合信息量大的卡快速压缩",
     ),
     Triple(
         "记忆提取",
