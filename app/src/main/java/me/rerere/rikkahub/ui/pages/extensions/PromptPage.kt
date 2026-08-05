@@ -595,8 +595,8 @@ private fun getPositionLabel(position: InjectionPosition): String = when (positi
     InjectionPosition.AFTER_DIALOG -> stringResource(R.string.prompt_page_position_after_dialog)
     InjectionPosition.AT_DEPTH -> stringResource(R.string.prompt_page_position_at_depth)
     InjectionPosition.AUTHOR_NOTE -> stringResource(R.string.prompt_page_position_author_note)
-    InjectionPosition.EM_TOP -> "示例消息前(EM Top)"
-    InjectionPosition.EM_BOTTOM -> "示例消息后(EM Bottom)"
+    InjectionPosition.EM_TOP -> stringResource(R.string.prompt_page_pos_em_top)
+    InjectionPosition.EM_BOTTOM -> stringResource(R.string.prompt_page_pos_em_bottom)
 }
 
 @Composable
@@ -615,7 +615,7 @@ private fun InjectionRoleSelector(
 
 @Composable
 private fun getRoleLabel(role: MessageRole): String = when (role) {
-    MessageRole.SYSTEM -> "系统(System)"
+    MessageRole.SYSTEM -> stringResource(R.string.prompt_page_role_system)
     MessageRole.USER -> stringResource(R.string.prompt_page_role_user)
     MessageRole.ASSISTANT -> stringResource(R.string.prompt_page_role_assistant)
     else -> role.name
@@ -1786,12 +1786,12 @@ private fun GroupSettingsDialog(
                 )
                 // 官方生成类型快捷多选
                 val triggerOptions = listOf(
-                    "normal" to "普通(Normal)",
-                    "continue" to "继续(Continue)",
-                    "impersonate" to "扮演(Impersonate)",
-                    "swipe" to "滑动备选(Swipe)",
-                    "regenerate" to "重新生成(Regenerate)",
-                    "quiet" to "安静(Quiet)",
+                    "normal" to stringResource(R.string.prompt_page_trigger_normal),
+                    "continue" to stringResource(R.string.prompt_page_trigger_continue),
+                    "impersonate" to stringResource(R.string.prompt_page_trigger_impersonate),
+                    "swipe" to stringResource(R.string.prompt_page_trigger_swipe),
+                    "regenerate" to stringResource(R.string.prompt_page_trigger_regenerate),
+                    "quiet" to stringResource(R.string.prompt_page_trigger_quiet),
                 )
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -2258,11 +2258,11 @@ private fun RegexInjectionEditDialog(
                                 headlineContent = {
                                     Text(
                                         when (logic) {
-                                            SelectiveLogic.AND_ANY -> "任一副键匹配(AND_ANY)"
-                                            SelectiveLogic.AND_ALL -> "全部副键匹配(AND_ALL)"
-                                            SelectiveLogic.NOT_ALL -> "副键非全部匹配(NOT_ALL)"
-                                            SelectiveLogic.NOT_ANY -> "副键均不匹配(NOT_ANY)"
-                                            SelectiveLogic.OR_ANY -> "任一匹配(OR_ANY)"
+                                            SelectiveLogic.AND_ANY -> stringResource(R.string.prompt_page_logic_and_any)
+                                            SelectiveLogic.AND_ALL -> stringResource(R.string.prompt_page_logic_and_all)
+                                            SelectiveLogic.NOT_ALL -> stringResource(R.string.prompt_page_logic_not_all)
+                                            SelectiveLogic.NOT_ANY -> stringResource(R.string.prompt_page_logic_not_any)
+                                            SelectiveLogic.OR_ANY -> stringResource(R.string.prompt_page_logic_or_any)
                                         },
                                         style = MaterialTheme.typography.bodyMedium,
                                     )

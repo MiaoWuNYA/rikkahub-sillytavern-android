@@ -230,37 +230,37 @@ fun TavernCharacterCard(
 
                     // 角色信息 — 统一字段卡（每个字段一行，点击展开编辑）
                     FieldCardGroup(
-                        title = "角色信息",
+                        title = stringResource(R.string.tavern_group_char_info),
                         fields = buildList {
                             if (tav.systemPrompt.isNotBlank()) {
-                                add(FieldSpec("系统提示词(System Prompt)", tav.systemPrompt) { v ->
+                                add(FieldSpec(stringResource(R.string.tavern_field_system_prompt)), tav.systemPrompt) { v ->
                                     onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(systemPrompt = v)))
                                 })
                             }
-                            add(FieldSpec("描述(Description)", tav.description) { v ->
+                            add(FieldSpec(stringResource(R.string.tavern_field_description)), tav.description) { v ->
                                 onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(description = v)))
                             })
-                            add(FieldSpec("性格(Personality)", tav.personality) { v ->
+                            add(FieldSpec(stringResource(R.string.tavern_field_personality)), tav.personality) { v ->
                                 onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(personality = v)))
                             })
-                            add(FieldSpec("场景(Scenario)", tav.scenario) { v ->
+                            add(FieldSpec(stringResource(R.string.tavern_field_scenario)), tav.scenario) { v ->
                                 onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(scenario = v)))
                             })
-                            add(FieldSpec("示例消息(Examples)", tav.mesExample) { v ->
+                            add(FieldSpec(stringResource(R.string.tavern_field_mes_example)), tav.mesExample) { v ->
                                 onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(mesExample = v)))
                             })
                             if (tav.postHistoryInstructions.isNotBlank()) {
-                                add(FieldSpec("历史后续指令(PHI)", tav.postHistoryInstructions) { v ->
+                                add(FieldSpec(stringResource(R.string.tavern_field_phi)), tav.postHistoryInstructions) { v ->
                                     onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(postHistoryInstructions = v)))
                                 })
                             }
                             if (tav.firstMessage.isNotBlank()) {
-                                add(FieldSpec("开场白(First Message)", tav.firstMessage, previewLines = 1) { v ->
+                                add(FieldSpec(stringResource(R.string.tavern_field_first_message)), tav.firstMessage, previewLines = 1) { v ->
                                     onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(firstMessage = v)))
                                 })
                             }
                             if (tav.creatorNotes.isNotBlank()) {
-                                add(FieldSpec("作者备注(Author's Notes)", tav.creatorNotes) { v ->
+                                add(FieldSpec(stringResource(R.string.tavern_field_creator_notes)), tav.creatorNotes) { v ->
                                     onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(creatorNotes = v)))
                                 })
                             }
@@ -270,7 +270,7 @@ fun TavernCharacterCard(
                     // 备选/群聊开场白 — 统一字段卡
                     if (tav.alternateGreetings.isNotEmpty() || tav.groupOnlyGreetings.isNotEmpty()) {
                         FieldCardGroup(
-                            title = "开场白",
+                            title = stringResource(R.string.tavern_group_greetings),
                             fields = buildList {
                                 tav.alternateGreetings.forEachIndexed { i, greeting ->
                                     add(FieldSpec("G${i + 1}", greeting) { v ->

@@ -717,17 +717,17 @@ private fun TextInputRow(
                     )
                     val groupedCommands = slashCommands.groupBy { cmd ->
                         when (cmd.builtinKind) {
-                            BuiltinSlashKind.VAR -> "变量"
+                            BuiltinSlashKind.VAR -> stringResource(R.string.slash_category_variables)
                             BuiltinSlashKind.INFO,
                             BuiltinSlashKind.UPDATE_CHAR,
                             BuiltinSlashKind.DUPLICATE,
-                            BuiltinSlashKind.RENAME -> "角色卡"
-                            BuiltinSlashKind.HELP -> "其他"
-                            null -> "技能"
-                            else -> "消息与生成"
+                            BuiltinSlashKind.RENAME -> stringResource(R.string.slash_category_character)
+                            BuiltinSlashKind.HELP -> stringResource(R.string.slash_category_other)
+                            null -> stringResource(R.string.slash_category_skills)
+                            else -> stringResource(R.string.slash_category_message)
                         }
                     }
-                    val categoryOrder = listOf("消息与生成", "角色卡", "变量", "技能", "其他")
+                    val categoryOrder = listOf(stringResource(R.string.slash_category_message), stringResource(R.string.slash_category_character), stringResource(R.string.slash_category_variables), stringResource(R.string.slash_category_skills), stringResource(R.string.slash_category_other))
                     categoryOrder.forEach { category ->
                         val cmds = groupedCommands[category] ?: return@forEach
                         Text(

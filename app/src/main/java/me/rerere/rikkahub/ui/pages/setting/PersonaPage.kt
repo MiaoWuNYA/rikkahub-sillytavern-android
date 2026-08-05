@@ -170,11 +170,11 @@ fun PersonaPage() {
                                     }
                                     Text(
                                         text = "注入位置：" + when (persona.position) {
-                                            PersonaInjectionPosition.IN_PROMPT -> "系统提示词内（In Prompt）"
-                                            PersonaInjectionPosition.TOP_OF_CHAT -> "导演备注上方（Top of Author's Note）"
-                                            PersonaInjectionPosition.BOTTOM_OF_CHAT -> "导演备注下方（Bottom of Author's Note）"
-                                            PersonaInjectionPosition.AT_DEPTH -> "指定深度（At Depth，深度${persona.depth}）"
-                                            PersonaInjectionPosition.NONE -> "不注入（None）"
+                                            PersonaInjectionPosition.IN_PROMPT -> stringResource(R.string.persona_page_position_in_prompt)
+                                            PersonaInjectionPosition.TOP_OF_CHAT -> stringResource(R.string.persona_page_position_top)
+                                            PersonaInjectionPosition.BOTTOM_OF_CHAT -> stringResource(R.string.persona_page_position_bottom)
+                                            PersonaInjectionPosition.AT_DEPTH -> stringResource(R.string.persona_page_position_at_depth, persona.depth)
+                                            PersonaInjectionPosition.NONE -> stringResource(R.string.persona_page_position_none)
                                         },
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
@@ -668,10 +668,10 @@ private val personaPresets = listOf(
 /** 人设注入位置的中文名称（对齐酒馆官方位置）。 */
 private fun personaPositionLabel(position: PersonaInjectionPosition): String {
     return when (position) {
-        PersonaInjectionPosition.IN_PROMPT -> "系统提示词内（In Prompt）"
-        PersonaInjectionPosition.TOP_OF_CHAT -> "导演备注上方（Top of Author's Note）"
-        PersonaInjectionPosition.BOTTOM_OF_CHAT -> "导演备注下方（Bottom of Author's Note）"
+        PersonaInjectionPosition.IN_PROMPT -> stringResource(R.string.persona_page_position_in_prompt)
+        PersonaInjectionPosition.TOP_OF_CHAT -> stringResource(R.string.persona_page_position_top)
+        PersonaInjectionPosition.BOTTOM_OF_CHAT -> stringResource(R.string.persona_page_position_bottom)
         PersonaInjectionPosition.AT_DEPTH -> "指定深度（At Depth）"
-        PersonaInjectionPosition.NONE -> "不注入（None）"
+        PersonaInjectionPosition.NONE -> stringResource(R.string.persona_page_position_none)
     }
 }
