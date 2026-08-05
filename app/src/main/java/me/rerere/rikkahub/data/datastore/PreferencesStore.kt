@@ -146,7 +146,9 @@ class SettingsStore(
         val MODE_INJECTIONS = stringPreferencesKey("mode_injections")
         val LOREBOOKS = stringPreferencesKey("lorebooks")
         val WORLD_INFO_BUDGET = intPreferencesKey("world_info_budget")
+        val WORLD_INFO_BUDGET_CAP = intPreferencesKey("world_info_budget_cap")
         val WORLD_INFO_MIN_ACTIVATIONS = intPreferencesKey("world_info_min_activations")
+        val WORLD_INFO_MIN_ACTIVATIONS_DEPTH_MAX = intPreferencesKey("world_info_min_activations_depth_max")
         val WORLD_INFO_RECURSIVE = booleanPreferencesKey("world_info_recursive")
         val WORLD_INFO_MAX_RECURSION_STEPS = intPreferencesKey("world_info_max_recursion_steps")
         val WORLD_INFO_DEPTH = intPreferencesKey("world_info_depth")
@@ -262,9 +264,11 @@ class SettingsStore(
                 lorebooks = preferences[LOREBOOKS]?.let {
                     JsonInstant.decodeFromString(it)
                 } ?: emptyList(),
-                // 世界书预算 = 绝对 token 上限（本实现语义）；不兼容任何旧百分比值
-                worldInfoBudget = preferences[WORLD_INFO_BUDGET] ?: 4096,
+                // 官方 world_info_budget：世界书预算 = 上下文 token 的百分比（0-100，官方默认 25）
+                worldInfoBudget = preferences[WORLD_INFO_BUDGET]?.coerceIn(0, 100) ?: 25,
+                worldInfoBudgetCap = preferences[WORLD_INFO_BUDGET_CAP] ?: 0,
                 worldInfoMinActivations = preferences[WORLD_INFO_MIN_ACTIVATIONS] ?: 0,
+                worldInfoMinActivationsDepthMax = preferences[WORLD_INFO_MIN_ACTIVATIONS_DEPTH_MAX] ?: 0,
                 worldInfoRecursive = preferences[WORLD_INFO_RECURSIVE] ?: false,
                 worldInfoMaxRecursionSteps = preferences[WORLD_INFO_MAX_RECURSION_STEPS] ?: 0,
                 worldInfoDepth = preferences[WORLD_INFO_DEPTH] ?: 2,
@@ -460,7 +464,9 @@ class SettingsStore(
             preferences[MODE_INJECTIONS] = JsonInstant.encodeToString(settings.modeInjections)
             preferences[LOREBOOKS] = JsonInstant.encodeToString(settings.lorebooks)
             preferences[WORLD_INFO_BUDGET] = settings.worldInfoBudget
+            preferences[WORLD_INFO_BUDGET_CAP] = settings.worldInfoBudgetCap
             preferences[WORLD_INFO_MIN_ACTIVATIONS] = settings.worldInfoMinActivations
+            preferences[WORLD_INFO_MIN_ACTIVATIONS_DEPTH_MAX] = settings.worldInfoMinActivationsDepthMax
             preferences[WORLD_INFO_RECURSIVE] = settings.worldInfoRecursive
             preferences[WORLD_INFO_MAX_RECURSION_STEPS] = settings.worldInfoMaxRecursionSteps
             preferences[WORLD_INFO_DEPTH] = settings.worldInfoDepth
@@ -625,10 +631,12 @@ data class Settings(
     val selectedASRProviderId: Uuid? = null,
     val modeInjections: List<PromptInjection.ModeInjection> = DEFAULT_MODE_INJECTIONS,
     val lorebooks: List<Lorebook> = emptyList(),
-    val worldInfoBudget: Int = 4096,                // 世界书单轮注入 token 预算上限（0=不限，对齐酒馆 world_info_budget_cap）
+    val worldInfoBudget: Int = 25,                  // 官方 world_info_budget：世界书预算 = 上下文 token 的百分比（官方默认 25%）
+    val worldInfoBudgetCap: Int = 0,                // 官方 world_info_budget_cap：预算绝对 token 上限（0=不限制，官方默认 0）
     val worldInfoMinActivations: Int = 0,           // 世界书最少激活数（0=关闭，酒馆 min_activations）
+    val worldInfoMinActivationsDepthMax: Int = 0,   // 官方 world_info_min_activations_depth_max：min_activations 最大扫描深度（0=不限制）
     val worldInfoRecursive: Boolean = false,        // 递归扫描（酒馆 world_info_recursive）
-    val worldInfoMaxRecursionSteps: Int = 0,
+    val worldInfoMaxRecursionSteps: Int = 0,            // 官方 world_info_max_recursion_steps：总扫描轮数上限（0=不限制，官方默认0）
     val worldInfoDepth: Int = 2,                    // 官方 world_info_depth：条目未设置扫描深度时的默认值（官方默认2）
     val worldInfoCharacterStrategy: Int = 1,        // 官方 world_info_character_strategy：0=均匀 1=角色卡优先 2=全局优先
     val worldInfoOverflowAlert: Boolean = false,    // 官方 world_info_overflow_alert：预算溢出时提示

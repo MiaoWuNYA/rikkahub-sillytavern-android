@@ -509,16 +509,6 @@
   <string name="prompt_page_edit">编辑</string>
   <string name="prompt_page_edit_entry">编辑条目</string>
   <string name="prompt_page_edit_lorebook">编辑世界书</string>
-  <string name="prompt_page_lorebook_settings_title">书级激活设置(Book Settings)</string>
-  <string name="prompt_page_lorebook_settings_desc">留空表示跟随全局设置</string>
-  <string name="prompt_page_lorebook_depth_title">扫描深度(Scan Depth)</string>
-  <string name="prompt_page_lorebook_budget_title">Token 预算上限(Budget Cap)</string>
-  <string name="prompt_page_lorebook_min_activations_title">最少激活数(Min Activations)</string>
-  <string name="prompt_page_lorebook_recursive_title">递归扫描(Recursive Scanning)</string>
-  <string name="prompt_page_lorebook_max_recursion_title">最大递归步骤(Max Recursion Steps)</string>
-  <string name="prompt_page_follow_global">跟随全局(Follow Global)</string>
-  <string name="prompt_page_enabled_option">开(On)</string>
-  <string name="prompt_page_disabled_option">关(Off)</string>
   <string name="prompt_page_edit_mode_injection">编辑模式注入</string>
   <string name="prompt_page_empty_hint">点击下方按钮添加</string>
   <string name="prompt_page_enabled">已启用(Enabled)</string>
@@ -538,7 +528,7 @@
   <string name="prompt_page_delay_until_recursion">延迟到递归(Delay until recursion)</string>
   <string name="prompt_page_delay_until_recursion_level">递归等级(Recursion Level)</string>
   <string name="prompt_page_delay_until_recursion_level_desc">第 N 级递归扫描才检查；当前级无命中时逐级开放</string>
-  <string name="prompt_page_world_info_max_recursion_desc">限制条目激活递归的次数（0=不限制）</string>
+  <string name="prompt_page_world_info_max_recursion_desc">限制递归扫描的总轮数（0=不限制，官方默认0）</string>
   <string name="prompt_page_world_info_max_recursion_title">最大递归步骤(Max Recursion Steps)</string>
   <string name="prompt_page_world_info_recursive_desc">对已注入的世界书内容再次扫描关键词，链式带出关联条目</string>
   <string name="prompt_page_world_info_recursive_title">递归扫描</string>
@@ -556,7 +546,10 @@
   <string name="prompt_page_position_before_character">角色卡前</string>
   <string name="prompt_page_position_bottom_of_chat">最新消息前</string>
   <string name="prompt_page_position_top_of_chat">对话开头</string>
-  <string name="prompt_page_world_info_budget_desc">每轮从世界书注入的最大 token 数（0=不限制）</string>
+  <string name="prompt_page_world_info_budget_desc">世界书预算 = 当前上下文 Token 的百分比（官方默认25%）</string>
+  <string name="prompt_page_world_info_budget_cap_desc">预算的绝对 Token 上限（0=不限制）</string>
+  <string name="prompt_page_world_info_budget_cap_title">预算上限(Budget Cap)</string>
+  <string name="prompt_page_world_info_budget_title">预算(百分比)(Budget % of Context)</string>
   <string name="prompt_page_world_info_depth_title">扫描深度(Scan Depth)</string>
   <string name="prompt_page_world_info_depth_desc">条目未设置时用此默认（官方2）；导入角色卡条目自带 scan_depth 时，优先用条目自己的值</string>
   <string name="prompt_page_world_info_strategy_title">插入策略(Insertion Strategy)</string>
@@ -565,11 +558,12 @@
   <string name="prompt_page_world_info_overflow_desc">世界书被预算截断时提示</string>
   <string name="prompt_page_world_info_group_scoring_title">使用群组评分(Use Group Scoring)</string>
   <string name="prompt_page_world_info_group_scoring_desc">组内按匹配关键词数选胜者（条目未单独设置时生效）</string>
-  <string name="prompt_page_world_info_budget_title">Token 预算上限(Budget Cap)</string>
   <string name="prompt_page_world_info_global_desc">预算、扫描深度、插入策略、递归等设置作用于所有世界书（含内嵌世界书）</string>
   <string name="prompt_page_world_info_global_title">全局世界书激活设置（作用于所有世界书）</string>
   <string name="prompt_page_world_info_settings_button">全局世界书设置</string>
   <string name="prompt_page_world_info_min_activations_desc">激活数不足时继续往更早消息扫描，直到达到该数量（0=关闭）</string>
+  <string name="prompt_page_world_info_min_activations_depth_desc">最少激活扫描的最大深度（0=不限制）</string>
+  <string name="prompt_page_world_info_min_activations_depth_title">最少激活最大深度(Min Activations Max Depth)</string>
   <string name="prompt_page_world_info_min_activations_title">最少激活数</string>
   <string name="prompt_page_priority_format">优先级：%d</string>
   <string name="prompt_page_priority_label">优先级(Priority)</string>

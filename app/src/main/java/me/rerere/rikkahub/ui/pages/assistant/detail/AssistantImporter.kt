@@ -363,11 +363,6 @@ private fun parseEmbeddedBook(obj: JsonObject?): TavernEmbeddedBook? {
     return TavernEmbeddedBook(
         name = obj["name"]?.jsonPrimitive?.contentOrNull ?: "",
         description = obj["description"]?.jsonPrimitive?.contentOrNull ?: "",
-        scanDepth = obj["scan_depth"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
-        tokenBudget = obj["token_budget"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
-        recursiveScanning = obj["recursive_scanning"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull(),
-        maxRecursionSteps = obj["max_recursion_steps"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
-        minActivations = obj["min_activations"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
         extensions = parseExtensions(obj["extensions"]?.jsonObject),
         extensionsRaw = obj["extensions"]?.toString() ?: "",
         entries = entries,
@@ -705,16 +700,10 @@ internal fun syncExternalToEmbedded(
             } ?: TavernBookEntry()
             injectionToTavernEntry(injection, template)
         }
-        // 书级激活设置也同步（外置书为准，与 syncEmbeddedToExternal 反向对称）
         assistant.copy(
             tavernData = tav.copy(
                 embeddedBook = book.copy(
                     entries = newEntries,
-                    scanDepth = boundBook.scanDepth,
-                    tokenBudget = boundBook.tokenBudget?.takeIf { it > 0 },
-                    recursiveScanning = boundBook.recursiveScanning,
-                    maxRecursionSteps = boundBook.maxRecursionSteps?.let { if (it <= 0) 0 else it },
-                    minActivations = boundBook.minActivations?.coerceAtLeast(0),
                 )
             )
         )
@@ -856,12 +845,6 @@ private fun buildEmbeddedLorebooks(tavData: TavernCharacterData): List<Lorebook>
             isCharacterBook = true,
             enabled = true,
             entries = entries,
-            // 书级激活设置（官方 lorebook 字段），导入时进书本身而非全局，避免污染其他角色卡
-            scanDepth = tavData.embeddedBook?.scanDepth,
-            tokenBudget = tavData.embeddedBook?.tokenBudget?.takeIf { it > 0 },
-            recursiveScanning = tavData.embeddedBook?.recursiveScanning,
-            maxRecursionSteps = tavData.embeddedBook?.maxRecursionSteps?.let { if (it <= 0) 0 else it },
-            minActivations = tavData.embeddedBook?.minActivations?.coerceAtLeast(0),
         )
     )
 }

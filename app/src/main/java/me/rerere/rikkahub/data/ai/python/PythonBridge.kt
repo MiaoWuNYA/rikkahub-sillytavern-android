@@ -136,8 +136,6 @@ class PythonBridge(
                 // 内嵌世界书
                 "book_name" -> a.copy(tavernData = td(a).copy(embeddedBook = book(a).copy(name = value)))
                 "book_description" -> a.copy(tavernData = td(a).copy(embeddedBook = book(a).copy(description = value)))
-                "book_scan_depth" -> a.copy(tavernData = td(a).copy(embeddedBook = book(a).copy(scanDepth = int())))
-                "book_token_budget" -> a.copy(tavernData = td(a).copy(embeddedBook = book(a).copy(tokenBudget = int())))
 
                 // -- 工具开关 --
                 "tool_python_engine", "tool_python" -> toggleTool(a, LocalToolOption.PythonEngine, bool())

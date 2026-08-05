@@ -127,11 +127,6 @@ object CardExporter {
                     putJsonObject("character_book") {
                         put("name", tav.embeddedBook.name)
                         put("description", tav.embeddedBook.description)
-                        if (tav.embeddedBook.scanDepth != null) put("scan_depth", tav.embeddedBook.scanDepth)
-                        if (tav.embeddedBook.tokenBudget != null) put("token_budget", tav.embeddedBook.tokenBudget)
-                        if (tav.embeddedBook.recursiveScanning != null) put("recursive_scanning", tav.embeddedBook.recursiveScanning)
-                        if (tav.embeddedBook.maxRecursionSteps != null) put("max_recursion_steps", tav.embeddedBook.maxRecursionSteps)
-                        if (tav.embeddedBook.minActivations != null) put("min_activations", tav.embeddedBook.minActivations)
                         if (!tav.embeddedBook.extensionsRaw.isNullOrBlank()) {
                             put("extensions", kotlinx.serialization.json.Json.parseToJsonElement(tav.embeddedBook.extensionsRaw))
                         } else if (tav.embeddedBook.extensions.isNotEmpty()) {

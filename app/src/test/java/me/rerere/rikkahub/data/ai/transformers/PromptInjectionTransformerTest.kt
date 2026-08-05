@@ -1010,6 +1010,42 @@ class PromptInjectionTransformerTest {
         val systemText = getMessageText(result[0])
         assertEquals("System prompt", systemText)
     }
+
+    @Test
+    fun `disabled entry should not trigger`() {
+        // 官方：entry.disable 的条目在扫描循环开头直接跳过（不参与匹配/预算）
+        val lorebookId = Uuid.random()
+        val disabledEntry = createRegexInjection(
+            keywords = listOf("magic"),
+            content = "Should not appear",
+            enabled = false,
+        )
+        val enabledEntry = createRegexInjection(
+            keywords = listOf("sword"),
+            content = "Enabled entry appears",
+            enabled = true,
+        )
+        val lorebook = createLorebook(
+            id = lorebookId,
+            entries = listOf(disabledEntry, enabledEntry),
+        )
+
+        val messages = listOf(
+            UIMessage.system("System prompt"),
+            UIMessage.user("magic sword"),
+        )
+
+        val result = transformMessages(
+            messages = messages,
+            assistant = createAssistant(lorebookIds = setOf(lorebookId)),
+            modeInjections = emptyList(),
+            lorebooks = listOf(lorebook),
+        )
+
+        val text = result.joinToString("\n") { getMessageText(it) }
+        assertFalse(text.contains("Should not appear"))
+        assertTrue(text.contains("Enabled entry appears"))
+    }
     // endregion
 
     // region Multiple injections tests
@@ -1378,10 +1414,11 @@ class PromptInjectionTransformerTest {
             assistant = createAssistant(lorebookIds = setOf(lorebookId)),
             modeInjections = emptyList(),
             lorebooks = listOf(createLorebook(id = lorebookId, entries = listOf(highPriority, lowPriority))),
-            worldInfoBudget = 1,
+            worldInfoBudget = 100,
+            worldInfoBudgetCap = 6,
         )
 
-        // 预算=1：只注入高优先级条目
+        // 预算 = min(100% of context ≈ 10, cap 6) = 6：高优先级条目(5 tokens)可接受，低优先级累计超预算被跳过
         val injected = result.filter { getMessageText(it).contains("entry") }.joinToString { getMessageText(it) }
         assertTrue(injected.contains("High priority entry"))
         assertFalse(injected.contains("Low priority entry"))
@@ -1389,11 +1426,11 @@ class PromptInjectionTransformerTest {
 
     @Test
     fun `min activations should rescan earlier messages`() {
+        // 无条目 scanDepth → 用全局深度 worldInfoDepth=2，首轮只扫最后 2 条（不含 ancient）
         val entry = createRegexInjection(
             id = Uuid.random(),
             keywords = listOf("ancient"),
             content = "Ancient lore injected",
-            scanDepth = 1,  // 只扫最后1条
         )
 
         // ancient 出现在较早消息，最后一条不含
@@ -1447,13 +1484,14 @@ class PromptInjectionTransformerTest {
         assertTrue(plain.any { getMessageText(it).contains("Alpha lore") })
         assertFalse(plain.any { getMessageText(it).contains("Beta lore injected") })
 
-        // 开启递归：A 内容含 beta → 链式带出 B
+        // 开启递归：A 内容含 beta → 链式带出 B（官方默认 max_recursion_steps=1 只扫首轮，这里显式开 2 轮）
         val recursive = transformMessages(
             messages = messages,
             assistant = createAssistant(lorebookIds = setOf(lorebookId)),
             modeInjections = emptyList(),
             lorebooks = listOf(createLorebook(id = lorebookId, entries = listOf(entryA, entryB))),
             worldInfoRecursive = true,
+            worldInfoMaxRecursionSteps = 2,
         )
         assertTrue(recursive.any { getMessageText(it).contains("Alpha lore") })
         assertTrue(recursive.any { getMessageText(it).contains("Beta lore injected") })
@@ -1594,6 +1632,7 @@ class PromptInjectionTransformerTest {
             emptyList(),
             lorebooks,
             worldInfoRecursive = true,
+            worldInfoMaxRecursionSteps = 2,
         )
         val allText = result.joinToString("\n") { getMessageText(it) }
         assertTrue(allText.contains("A mentions beta"))
@@ -1632,13 +1671,14 @@ class PromptInjectionTransformerTest {
         assertFalse(plainText.contains("B mentions gamma"))
         assertFalse(plainText.contains("C content"))
 
-        // 开启递归：层级 2 → 3 逐级开放，B、C 依次被链式带出
+        // 开启递归：层级 2 → 3 逐级开放，B、C 依次被链式带出（3 轮）
         val recursive = transformMessages(
             messages,
             assistant,
             emptyList(),
             lorebooks,
             worldInfoRecursive = true,
+            worldInfoMaxRecursionSteps = 3,
         )
         val recursiveText = recursive.joinToString("\n") { getMessageText(it) }
         assertTrue(recursiveText.contains("A mentions beta"))

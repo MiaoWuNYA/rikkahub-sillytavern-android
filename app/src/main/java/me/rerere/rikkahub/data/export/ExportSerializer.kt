@@ -160,12 +160,6 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
                 name = fileName ?: LocalDateTime.now().toLocalString(),
                 description = "",
                 enabled = true,
-                // 官方 lorebook 书级激活设置（null = 用全局设置）
-                scanDepth = stLorebook.scan_depth,
-                tokenBudget = stLorebook.token_budget?.takeIf { it > 0 },
-                recursiveScanning = stLorebook.recursive_scanning,
-                maxRecursionSteps = stLorebook.max_recursion_steps?.let { if (it <= 0) 0 else it },
-                minActivations = stLorebook.min_activations?.coerceAtLeast(0),
                 entries = stLorebook.entries.values.map { entry ->
                     PromptInjection.RegexInjection(
                         id = Uuid.random(),
@@ -254,11 +248,6 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
 @Serializable
 private data class SillyTavernLorebook(
     val entries: Map<String, SillyTavernEntry> = emptyMap(),
-    val scan_depth: Int? = null,
-    val token_budget: Int? = null,
-    val recursive_scanning: Boolean? = null,
-    val max_recursion_steps: Int? = null,
-    val min_activations: Int? = null,
 )
 
 @Serializable

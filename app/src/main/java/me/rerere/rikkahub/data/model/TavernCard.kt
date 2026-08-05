@@ -57,11 +57,6 @@ data class TavernAsset(
 data class TavernEmbeddedBook(
     val name: String = "",
     val description: String = "",
-    val scanDepth: Int? = null,
-    val tokenBudget: Int? = null,
-    val recursiveScanning: Boolean? = null,
-    val maxRecursionSteps: Int? = null,
-    val minActivations: Int? = null,
     val extensions: Map<String, String> = emptyMap(),
     val extensionsRaw: String = "",              // 顶层 extensions 原始 JSON（无损保留，导出优先）
     val entries: List<TavernBookEntry> = emptyList(),

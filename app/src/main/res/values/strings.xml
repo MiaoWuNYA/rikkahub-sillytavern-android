@@ -513,16 +513,6 @@
   <string name="prompt_page_edit">Edit</string>
   <string name="prompt_page_edit_entry">Edit Entry</string>
   <string name="prompt_page_edit_lorebook">Edit Lorebook</string>
-  <string name="prompt_page_lorebook_settings_title">Book Activation Settings</string>
-  <string name="prompt_page_lorebook_settings_desc">Blank = follow global settings</string>
-  <string name="prompt_page_lorebook_depth_title">Scan Depth</string>
-  <string name="prompt_page_lorebook_budget_title">Budget Cap</string>
-  <string name="prompt_page_lorebook_min_activations_title">Minimum Activations</string>
-  <string name="prompt_page_lorebook_recursive_title">Recursive Scanning</string>
-  <string name="prompt_page_lorebook_max_recursion_title">Max Recursion Steps</string>
-  <string name="prompt_page_follow_global">Follow Global</string>
-  <string name="prompt_page_enabled_option">On</string>
-  <string name="prompt_page_disabled_option">Off</string>
   <string name="prompt_page_edit_mode_injection">Edit Mode Injection</string>
   <string name="prompt_page_empty_hint">Click the button below to add</string>
   <string name="prompt_page_enabled">Enabled</string>
@@ -560,7 +550,10 @@
   <string name="prompt_page_position_before_character">Before Character</string>
   <string name="prompt_page_position_bottom_of_chat">Before Latest Message</string>
   <string name="prompt_page_position_top_of_chat">Top of Chat</string>
-  <string name="prompt_page_world_info_budget_desc">Maximum tokens injected from world info per turn (0 = unlimited)</string>
+  <string name="prompt_page_world_info_budget_desc">World info budget as a percentage of the current context tokens (official default 25%)</string>
+  <string name="prompt_page_world_info_budget_cap_desc">Absolute token cap for the budget (0 = unlimited)</string>
+  <string name="prompt_page_world_info_budget_cap_title">Budget Cap</string>
+  <string name="prompt_page_world_info_budget_title">Budget (% of Context)</string>
   <string name="prompt_page_world_info_depth_title">Scan Depth</string>
   <string name="prompt_page_world_info_depth_desc">Used when an entry has no scan depth. Imported card entries with their own scan_depth take priority (official default 2)</string>
   <string name="prompt_page_world_info_strategy_title">Insertion Strategy</string>
@@ -569,11 +562,12 @@
   <string name="prompt_page_world_info_overflow_desc">Show a hint when world info is cut by the budget</string>
   <string name="prompt_page_world_info_group_scoring_title">Use Group Scoring</string>
   <string name="prompt_page_world_info_group_scoring_desc">Pick group winners by matched key count when entries have no per-entry setting</string>
-  <string name="prompt_page_world_info_budget_title">Budget Cap</string>
   <string name="prompt_page_world_info_global_desc">Budget, scan depth, insertion strategy, recursion, etc. apply to all world books (including embedded books)</string>
   <string name="prompt_page_world_info_global_title">Global World Info Activation Settings (applies to all world books)</string>
   <string name="prompt_page_world_info_settings_button">Global World Info Settings</string>
   <string name="prompt_page_world_info_min_activations_desc">Keep scanning earlier messages until at least this many entries activate (0 = off)</string>
+  <string name="prompt_page_world_info_min_activations_depth_desc">Maximum depth for the min activations scan (0 = unlimited)</string>
+  <string name="prompt_page_world_info_min_activations_depth_title">Min Activations Max Depth</string>
   <string name="prompt_page_world_info_min_activations_title">Minimum Activations</string>
   <string name="prompt_page_priority_format">Priority: %d</string>
   <string name="prompt_page_priority_label">Priority</string>
