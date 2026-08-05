@@ -1245,7 +1245,7 @@
   <string name="slash_category_character">Character Cards</string>
   <string name="slash_category_other">Other</string>
   <string name="slash_category_skills">Skills</string>
-  <string name="slash_category_message">Messages & Generation</string>
+  <string name="slash_category_message">Messages &amp; Generation</string>
   <string name="persona_page_empty">No personas yet</string>
   <string name="persona_page_empty_hint">Create a persona and inject it into the chat so AI knows your identity and style</string>
   <string name="group_member_subtitle">%1$d members · %2$s</string>
