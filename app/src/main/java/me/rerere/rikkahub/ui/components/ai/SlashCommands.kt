@@ -50,9 +50,6 @@ enum class BuiltinSlashKind {
     /** 生成系统旁白：按提示词让 AI 写一条系统消息并插入 */
     SYSGEN,
 
-    /** 注入提示词：把文本注入当前对话的 LLM 提示词 */
-    INJECT,
-
     /** 变量命令：设置/读取/增删宏变量（官方变量家族） */
     VAR,
 
@@ -132,14 +129,6 @@ fun builtinSlashCommands(context: Context): List<SlashCommand> = listOf(
         content = "",
         filePath = "builtin",
         builtinKind = BuiltinSlashKind.SYSGEN,
-    ),
-    SlashCommand(
-        name = "inject",
-        description = context.getString(R.string.slash_inject_desc),
-        argumentHint = context.getString(R.string.slash_inject_hint),
-        content = "",
-        filePath = "builtin",
-        builtinKind = BuiltinSlashKind.INJECT,
     ),
     SlashCommand(
         name = "char-get",

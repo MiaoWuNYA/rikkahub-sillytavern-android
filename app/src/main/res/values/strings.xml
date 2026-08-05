@@ -1412,9 +1412,7 @@
   <string name="slash_persona_hint">[mode=lookup|temp|all] [persona name]</string>
   <string name="slash_trigger_desc">Trigger an AI reply (Trigger) without adding a message</string>
   <string name="slash_sysgen_desc">Generate a system narration (Sysgen) and insert it into the chat</string>
-  <string name="slash_sysgen_hint">[name=display] [at=position] [prompt]</string>
-  <string name="slash_inject_desc">Inject text into the AI prompt (Inject), not into chat history; default after·depth4·system</string>
-  <string name="slash_inject_hint">[text] [position=before|after|chat] [depth=number] [role=user|assistant|system]</string>
+  <string name="slash_sysgen_hint">[name=display] [at=position] [trim=true] [prompt]</string>
   <string name="slash_char_get_desc">Show current character card summary (Char Get)</string>
   <string name="slash_char_update_desc">Update character card fields (Char Update)</string>
   <string name="slash_char_update_hint">[field=value] e.g. description=new</string>

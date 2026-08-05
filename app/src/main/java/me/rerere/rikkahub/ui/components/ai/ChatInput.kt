@@ -106,7 +106,6 @@ import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.files.SkillManager
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.QuickMessage
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionContext
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionItem
@@ -150,8 +149,7 @@ fun ChatInput(
     onSlashInsert: ((MessageRole, String, String?, Int?) -> Unit)? = null,
     onSlashPersona: ((String, String) -> Unit)? = null,
     onSlashTrigger: (() -> Unit)? = null,
-    onSlashSysgen: ((String, String?, Int?) -> Unit)? = null,
-    onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)? = null,
+    onSlashSysgen: ((String, String?, Int?, Boolean) -> Unit)? = null,
     onSlashVar: ((SlashVarOp, String, String) -> String?)? = null,
     onSlashContinue: ((String) -> Unit)? = null,
     onSlashImpersonate: ((String) -> Unit)? = null,
@@ -218,7 +216,6 @@ fun ChatInput(
                         onSlashPersona = onSlashPersona,
                         onSlashTrigger = onSlashTrigger,
                         onSlashSysgen = onSlashSysgen,
-                        onSlashInject = onSlashInject,
                         onSlashVar = onSlashVar,
                         onSlashContinue = onSlashContinue,
                         onSlashImpersonate = onSlashImpersonate,
@@ -328,7 +325,6 @@ fun ChatInput(
                         onSlashPersona = onSlashPersona,
                         onSlashTrigger = onSlashTrigger,
                         onSlashSysgen = onSlashSysgen,
-                        onSlashInject = onSlashInject,
                         onSlashVar = onSlashVar,
                         onSlashContinue = onSlashContinue,
                         onSlashImpersonate = onSlashImpersonate,
@@ -526,8 +522,7 @@ private fun TextInputRow(
     onSlashInsert: ((MessageRole, String, String?, Int?) -> Unit)?,
     onSlashPersona: ((String, String) -> Unit)?,
     onSlashTrigger: (() -> Unit)?,
-    onSlashSysgen: ((String, String?, Int?) -> Unit)?,
-    onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)?,
+    onSlashSysgen: ((String, String?, Int?, Boolean) -> Unit)?,
     onSlashVar: ((SlashVarOp, String, String) -> String?)?,
     onSlashContinue: ((String) -> Unit)? = null,
     onSlashImpersonate: ((String) -> Unit)? = null,
@@ -765,8 +760,7 @@ private fun TextInputRow(
                                                 onSlashPersona = onSlashPersona,
                                                 onSlashTrigger = onSlashTrigger,
                                                 onSlashSysgen = onSlashSysgen,
-                                                onSlashInject = onSlashInject,
-                                                onSlashVar = onSlashVar,
+                                                                        onSlashVar = onSlashVar,
                                                 onShowHelp = onShowHelp,
                                                 onSlashContinue = onSlashContinue,
                                                 onSlashImpersonate = onSlashImpersonate,
@@ -841,8 +835,7 @@ private fun TextInputRow(
                                                 onSlashPersona = onSlashPersona,
                                                 onSlashTrigger = onSlashTrigger,
                                                 onSlashSysgen = onSlashSysgen,
-                                                onSlashInject = onSlashInject,
-                                                onSlashVar = onSlashVar,
+                                                                        onSlashVar = onSlashVar,
                                                 onShowHelp = onShowHelp,
                                                 onSlashContinue = onSlashContinue,
                                                 onSlashImpersonate = onSlashImpersonate,
@@ -1087,8 +1080,7 @@ private fun handleBuiltinSlash(
     onSlashInsert: ((MessageRole, String, String?, Int?) -> Unit)?,
     onSlashPersona: ((String, String) -> Unit)?,
     onSlashTrigger: (() -> Unit)?,
-    onSlashSysgen: ((String, String?, Int?) -> Unit)?,
-    onSlashInject: ((String, InjectionPosition, Int, MessageRole) -> Unit)?,
+    onSlashSysgen: ((String, String?, Int?, Boolean) -> Unit)?,
     onSlashVar: ((SlashVarOp, String, String) -> String?)?,
     onShowHelp: () -> Unit = {},
     onSlashContinue: ((String) -> Unit)? = null,
@@ -1192,48 +1184,11 @@ private fun handleBuiltinSlash(
         BuiltinSlashKind.SYSGEN -> {
             val parsed = parseInsertArgs(args)
             if (parsed.text.isBlank()) {
-                toaster.show("用法: /sysgen [name=显示名] [at=位置] 提示词，如 描写雨夜街道")
+                toaster.show("用法: /sysgen [name=显示名] [at=位置] [trim=true] 提示词，如 描写雨夜街道")
             } else if (onSlashSysgen == null) {
                 toaster.show("当前页面不支持该命令")
             } else {
-                onSlashSysgen(parsed.text, parsed.name, parsed.at)
-                state.clearInput()
-            }
-        }
-
-        BuiltinSlashKind.INJECT -> {
-            val tokens = args.trim().split(" ")
-            if (tokens.any { it.equals("position=none", ignoreCase = true) }) {
-                toaster.show("本地暂不支持隐藏注入(none)，请用 position=before / after / chat 或默认(主提示后)")
-                return
-            }
-            val position = when {
-                tokens.any { it.equals("position=before", ignoreCase = true) } -> InjectionPosition.BEFORE_SYSTEM_PROMPT
-                tokens.any { it.equals("position=chat", ignoreCase = true) } -> InjectionPosition.AT_DEPTH
-                else -> InjectionPosition.AFTER_SYSTEM_PROMPT
-            }
-            // 官方语义：depth 不限制范围（0=对话末尾，负数/大数由注入层安全兜底），无效值回退默认 4
-            val depth = tokens.firstOrNull { it.startsWith("depth=", ignoreCase = true) }
-                ?.substringAfter("=")?.toIntOrNull() ?: 4
-            val role = when {
-                tokens.any { it.equals("role=user", ignoreCase = true) } -> MessageRole.USER
-                tokens.any { it.equals("role=assistant", ignoreCase = true) } -> MessageRole.ASSISTANT
-                else -> MessageRole.SYSTEM
-            }
-            val content = tokens
-                .filterNot {
-                    it.startsWith("position=", ignoreCase = true) ||
-                        it.startsWith("depth=", ignoreCase = true) ||
-                        it.startsWith("role=", ignoreCase = true)
-                }
-                .joinToString(" ")
-                .trim()
-            if (content.isBlank()) {
-                toaster.show("用法: /inject 注入内容 [position=before|after|chat] [depth=数字] [role=user|assistant|system]")
-            } else if (onSlashInject == null) {
-                toaster.show("当前页面不支持该命令")
-            } else {
-                onSlashInject(content, position, depth, role)
+                onSlashSysgen(parsed.text, parsed.name, parsed.at, parsed.trim)
                 state.clearInput()
             }
         }
@@ -1476,29 +1431,30 @@ private fun FullScreenEditor(
 }
 
 /**
- * 解析消息插入类命令（/sys /sendas /send）的参数：
- * 支持任意顺序的 name="显示名" / name=显示名、at=位置 参数，
+ * 解析消息插入类命令（/sys /sendas /send /sysgen）的参数：
+ * 支持任意顺序的 name="显示名" / name=显示名、at=位置、trim=布尔（sysgen 专用）参数，
  * 其余部分为消息文本；不带 name= 时使用默认身份，不带 at= 时追加到末尾。
  */
-private data class InsertArgs(val name: String?, val at: Int?, val text: String)
+private data class InsertArgs(val name: String?, val at: Int?, val text: String, val trim: Boolean = false)
 
 private fun parseInsertArgs(raw: String): InsertArgs {
     var args = raw.trim()
     var name: String? = null
     var at: Int? = null
+    var trim = false
     while (true) {
-        val m = Regex("^(name|at)=(\"[^\"]*\"|\\S+)(.*)$", RegexOption.IGNORE_CASE).find(args) ?: break
+        val m = Regex("^(name|at|trim)=(\"[^\"]*\"|\\S+)(.*)$", RegexOption.IGNORE_CASE).find(args) ?: break
         val key = m.groupValues[1].lowercase()
         var value = m.groupValues[2]
         if (value.startsWith("\"") && value.endsWith("\"")) {
             value = value.substring(1, value.length - 1)
         }
-        if (key == "name") {
-            name = value
-        } else {
-            at = value.toIntOrNull()
+        when (key) {
+            "name" -> name = value
+            "at" -> at = value.toIntOrNull()
+            "trim" -> trim = value.equals("true", ignoreCase = true) || value == "1"
         }
         args = m.groupValues[3].trimStart()
     }
-    return InsertArgs(name, at, args.trim())
+    return InsertArgs(name, at, args.trim(), trim)
 }

@@ -1411,9 +1411,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="slash_persona_hint">[mode=lookup|temp|all] [人设名或临时用户名]</string>
   <string name="slash_trigger_desc">直接触发AI回复：不添加新消息，让 AI 回复一次</string>
   <string name="slash_sysgen_desc">AI生成系统旁白：生成后插入聊天，不触发普通回复</string>
-  <string name="slash_sysgen_hint">[name=显示名] [at=位置] [提示词] 如 描写雨夜街道</string>
-  <string name="slash_inject_desc">注入提示词：写入发送给AI的提示词，不进入聊天记录；默认 after·深度4·system</string>
-  <string name="slash_inject_hint">[文本] [position=before|after|chat] [depth=数字] [role=user|assistant|system]</string>
+  <string name="slash_sysgen_hint">[name=显示名] [at=位置] [trim=true] [提示词] 如 描写雨夜街道</string>
   <string name="slash_char_get_desc">查看当前角色卡：提示显示角色卡摘要</string>
   <string name="slash_char_update_desc">修改角色卡字段：可用字段 name/description/personality/scenario/system_prompt/first_mes/mes_example/phi/creator_notes</string>
   <string name="slash_char_update_hint">[字段=值] 如 description=新描述</string>

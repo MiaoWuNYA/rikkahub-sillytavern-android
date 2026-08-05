@@ -554,16 +554,12 @@ private fun ChatPageContent(
                         }
                         toaster.show("已重新掷随机细节（种子 $next），下次回复生效")
                     },
-                    onSlashSysgen = { prompt, name, at ->
+                    onSlashSysgen = { prompt, name, at, trim ->
                         if (currentChatModel == null) {
                             toaster.show("请先选择模型", type = ToastType.Error)
                         } else {
-                            vm.handleGenerateSystemNarration(prompt, name, at)
+                            vm.handleGenerateSystemNarration(prompt, name, at, trim)
                         }
-                    },
-                    onSlashInject = { content, position, depth, role ->
-                        vm.handleInjectPrompt(content, position, depth, role)
-                        toaster.show("已注入提示词，下次回复生效")
                     },
                     onSlashVar = { op, name, value ->
                         val (newSettings, result) = applyMacroVarSlash(

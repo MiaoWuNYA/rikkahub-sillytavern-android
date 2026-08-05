@@ -116,7 +116,28 @@ private val regexCache = SimpleCache.builder<String, Result<Regex>>()
 
 private fun compileRegexCached(pattern: String): Regex? {
     regexCache.getIfPresent(pattern)?.let { return it.getOrNull() }
-    val result = runCatching { Regex(pattern) }.onFailure { it.printStackTrace() }
+    val result = runCatching {
+        // 官方酒馆脚本支持 /pattern/flags 内联形式（如 /(?<=x)y/g），Kotlin Regex 不支持，解析成 flags + pattern
+        val slashForm = Regex("""^/(.*)/([a-z]*)$""", RegexOption.DOT_MATCHES_ALL).matchEntire(pattern)
+        if (slashForm != null) {
+            val body = slashForm.groupValues[1]
+            val flagChars = slashForm.groupValues[2]
+            var options = 0
+            for (c in flagChars) {
+                options = when (c) {
+                    'i' -> options or RegexOption.IGNORE_CASE.value
+                    'm' -> options or RegexOption.MULTILINE.value
+                    's' -> options or RegexOption.DOT_MATCHES_ALL.value
+                    'x' -> options or RegexOption.COMMENTS.value
+                    'u', 'y', 'g', 'd' -> options // JS 独有/默认标志，忽略
+                    else -> throw IllegalArgumentException("Unknown regex flag: $c")
+                }
+            }
+            Regex(body, options)
+        } else {
+            Regex(pattern)
+        }
+    }.onFailure { it.printStackTrace() }
     regexCache.put(pattern, result)
     return result.getOrNull()
 }
@@ -139,9 +160,14 @@ fun String.replaceRegexes(
 
 private fun replaceWithRegex(input: String, regex: AssistantRegex): String {
     val compiled = compileRegexCached(regex.findRegex)
+    // 官方酒馆：替换字符串里的 {{match}}（不区分大小写）= 当前完整匹配，等价 $0
+    val replacement = regex.replaceString.replace(
+        Regex("""\{\{match}}""", RegexOption.IGNORE_CASE),
+        "$0",
+    )
     if (compiled != null) {
         try {
-            return input.replace(regex = compiled, replacement = regex.replaceString)
+            return input.replace(regex = compiled, replacement = replacement)
         } catch (e: Exception) {
             e.printStackTrace()
             // 替换字符串可能引用不存在的分组，失败时返回原字符串
@@ -149,7 +175,7 @@ private fun replaceWithRegex(input: String, regex: AssistantRegex): String {
         }
     }
     // 编译失败：尝试变长 lookbehind 模拟（官方 JS 引擎支持，java.util.regex 不支持）
-    val simulated = VariableLookbehind.replace(input, regex.findRegex, regex.replaceString)
+    val simulated = VariableLookbehind.replace(input, regex.findRegex, replacement)
     return simulated ?: input
 }
 
