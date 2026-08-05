@@ -81,32 +81,37 @@
 
 ### 十二套排盘体系
 
-| 体系 | 引擎实现 | 亮点 |
+| 体系 | 实际引擎 | 亮点 |
 |---|---|---|
-| 塔罗（韦特） | Arcanite + 元素尊贵引擎 | 多牌阵、元素强弱与相位分析（Elemental Dignity） |
-| 雷诺曼 | Arcanite Lenormand | 多牌阵、牌面位置语义 |
-| 八字（四柱） | lunar_python 农历 + 专属八字引擎 | 十神、大运、流年、五行强弱 |
-| 紫微斗数 | iztro（QuickJS）+ 可选倪海夏 / 纯 Python | 三方四正、大限、流年/流月/流日/流时、小限 |
-| 现代西洋占星 | Caelus（VSOP87D 全数据） | 本命/行运/推运/返照/小限/Firdaria/ACG，元素与模式平衡 |
-| 传统西洋占星 | Caelus 古典模块 | 古典尊贵、Almuten、寿元、主限/次限、卜卦、映点、恒星合相 |
-| 吠陀（印度占星） | Caelus + NodeJhora（DE440） | Shadbala、Ashtakavarga、Jaimini、KP，全面时间技法 |
-| 深度古典占星 | stellium 引擎 | 全量返回：Firdaria、小限、ZR、寿元、Almuten、龙首盘、阿拉伯点、中点、映点 |
-| 人类图 | NatalEngine | 类型、通道、闸门、基因钥匙 |
-| 灵数卡巴拉 | Kaabalah | 生命灵数、卡巴拉路径 |
-| 奇门遁甲（含大六壬） | QiMen TS 引擎 | 日家 + 时家 |
-| 六爻（含梅花易数） | ichingshifa（大衍筮法） | 本卦/变卦/卦爻辞、动爻分析 |
+| 塔罗（韦特） | Arcanite（Python 统一牌库）+ 元素尊贵引擎 + Kaabalah（JS） | 多牌阵、元素强弱与相位分析（Elemental Dignity）、卡巴拉对应/主题/生命之树 |
+| 雷诺曼 | Arcanite（Python 牌库）+ LenormandFate 命运引擎 | 多牌阵、位置语义、命运连读 |
+| 八字（四柱） | lunar_python（农历/节气）+ bazi_china（Python） | 十神、月令、干支、生肖、罗睺、大运流年 |
+| 紫微斗数 | iztro（JS，默认）+ 可选倪海夏（JS）/ 纯 Python | 三方四正、大限、流年/流月/流日/流时、小限，多引擎可对照 |
+| 现代西洋占星 | Caelus（JS，全量星历） | chart/derived/events/eclipses/Firdaria/profections/directions/relational/ACG，元素与模式平衡 |
+| 传统西洋占星 | PySwissEph + FlatLib（Python） | 古典尊贵（essential/accidental）、Almuten、ruler/exalt、焦伤、卜卦、映点、恒星合相 |
+| 吠陀（印度占星） | PyJHora（Python） | Vimsottari 大运、Ashtakavarga、Tajaka 年运、Saham、Raja Yoga/Dosha、日食月食 |
+| 深度古典占星 | stellium（Python，SwissEph 底层） | 全量返回：Firdaria、小限、ZR、寿元、Almuten、龙首盘、阿拉伯点、中点、映点 |
+| 人类图 | NatalEngine（JS） | 类型/权威/中心/通道/闸门/轮回交叉/Profile、基因钥匙、行运 |
+| 灵数卡巴拉 | Kaabalah（JS） | 灵数 6 核心、个人年/挑战、斐波那契、Gematria 正反查、Ifa Odu、生命之树 |
+| 奇门遁甲（含大六壬） | QiMen TS（JS）+ LiuRen TS（JS） | 日家/时家、法术（QMA），大六壬独立引擎 |
+| 六爻（含梅花易数） | ichingshifa（Python，大衍筮法）+ iching-shifa（JS） | **双引擎对照**：同一爻值各自出解读，本卦/变卦/动爻 |
+
+> 说明：以上引擎信息逐个对照 `app/src/main/python/routes/` 源码确认（2026-08）。
 
 ### 时间技法
 
 行运（Transits）、次限/主限推运（Progressions/Directions）、太阳/月亮返照（Returns）、年度小限（Profections）、Firdaria、寿元（Length of Life）、Almuten Figuris、阿拉伯点（Arabic Parts）、中点（Midpoints）、映点（Antiscia）、龙首盘（Draconic）、大限/流年/流月/流日/流时。
 
-### 双模式工作流
+### 架构亮点与双模式
 
-1. **确定性排盘**：调用 `mingli(system=体系名, params={...})`，返回结构化排盘数据（宫位、星曜、角度、时间技法等，全部字段供解读使用）；
-2. **解读模板**：`mingli_guide(system=体系名)` 强制读取对应权威解读模板（`assets/mingli/` 下 14 份 Markdown），逐条遵守，跳过模板视为违规解读；
-3. **引擎自探索**：数据不够时可用 `eval_javascript`（QuickJS，加载已打包的 13 个 JS 引擎）或 `execute_python`（农历/历法/自定义计算）继续深挖，不写重复排盘代码。
+- **统一入口**：`mingli_router` 一张路由表，中文名、英文名、别名全部可识别（如“紫微”/“ziwei”/“紫微斗数”/“紫薇”），12 体系一个工具入口；
+- **双引擎桥接**：Python 引擎（lunar_python、bazi_china、Arcanite、PyJHora、ichingshifa、PySwissEph+FlatLib、stellium、纯 Python 紫微）+ JS 引擎（QuickJS 预编译 13 个：caelus/iztro/natalengine/kaabalah/qimen/liuren/iching-shifa/ziwei-nihai/lunar/astronomy/horoscope/taixuan/node-jhora 等），跨语言共用一套调用链；
+- **交叉验证**：六爻 Python+JS 双引擎对照、紫微三引擎可选、塔罗与卡巴拉互映，同一问题可多引擎印证；
+- **确定性结构化输出**：所有排盘返回统一 JSON（宫位、星曜、角度、时间技法字段齐全），AI 解读时逐字段使用；
+- **强制解读模板**：`mingli_guide(system=体系名)` 读取 `assets/mingli/` 下 14 份权威 Markdown 模板，逐条遵守，跳过视为违规；工作流（排盘 → 读模板 → 按模板组织回复）写死在系统提示词组装器里，模板要点必须全覆盖、返回字段必须全部使用；
+- **引擎自探索**：数据不够时可用 `eval_javascript`（已加载引擎继续深挖）或 `execute_python`（农历/历法/自定义计算），不写重复排盘代码。
 
-工作流被写进系统提示词组装器：排盘 → 读模板 → 严格按模板组织回复，模板中提到的每个要点都必须覆盖，返回的所有字段都必须被解读使用。
+**时间技法**：行运、次限/主限推运、太阳/月亮返照、年度小限、Firdaria、寿元、Almuten、阿拉伯点、中点、映点、龙首盘、大限/流年/流月/流日/流时。
 
 ---
 
@@ -114,15 +119,19 @@
 
 ### 技能系统
 
-**上游有什么**：读 `SKILL.md` + `use_skill` 工具（模型主动调用才能加载）。
+**上游有什么**（对照 `app/src/main/java/.../data/ai/tools/SkillsTools.kt`）：读 `SKILL.md` + `use_skill` 工具——只有模型主动调用工具才能加载技能，技能文件锁在应用私有目录，无安装、无更新、无发现机制。
 
-**本地在上游基础上：**
+**本地在上游基础上（对照 `SkillsVM.kt` / `SkillsPage.kt`）：**
 
 - **新增自动触发**：命中技能关键词时自动把 SKILL.md 注入提示词，不依赖模型自觉
 - **新增公共技能目录** `/Rikkahub/skills`：文件管理器直接放进去就能识别
-- **技能目录改用外部存储**：不再锁在应用私有目录里
-- **新增 GitHub 技能安装**：按仓库/marketplace 直接装
-- **技能页/详情页重写** + `use_skill` 工具增强（按分类组织、linked_files、命令提示）
+- **技能目录改用外部存储**：不再锁在应用私有目录里，可随时增删
+- **GitHub 一键安装**：支持 `github.com/owner/repo` 或 `github.com/owner/repo/tree/branch/路径` 链接，从仓库目录树解析技能（支持子目录、多技能仓库）
+- **批量下载**：一次导入整个仓库里的所有技能（GitHub API 递归目录树 + 并发下载，带信号量限流）
+- **更新检测**：安装时记录仓库源与整目录哈希（`skillShas`），可一键检查单个/全部技能更新；同源技能目录哈希变化即提示更新
+- **安装源记录**：技能保存来源仓库 URL，识别“本地已有/可更新/同源”状态，避免重复安装
+- **技能市场/注册表**：从内置 registry 条目直接安装（`installFromRegistry`）
+- **技能页/详情页重写** + `use_skill` 工具增强（按分类组织、linked_files、命令提示、实时刷新）
 
 ### 工具集
 

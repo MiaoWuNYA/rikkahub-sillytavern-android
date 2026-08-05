@@ -81,32 +81,33 @@ A complete deterministic charting system plus engine self-exploration. **One mas
 
 ### Twelve divination systems
 
-| System | Engine | Highlights |
+| System | Actual engine | Highlights |
 |---|---|---|
-| Tarot (Rider–Waite) | Arcanite + Elemental Dignity engine | Multiple spreads, elemental strength & dignity analysis |
-| Lenormand | Arcanite Lenormand | Multiple spreads, positional semantics |
-| BaZi (Four Pillars) | lunar_python calendar + dedicated BaZi engine | Ten Gods, luck pillars, yearly flows, five-element strength |
-| Zi Wei Dou Shu | iztro (QuickJS) + optional Ni Haixia / pure Python | Three-square/four-direction palaces, decadal, yearly/monthly/daily/hourly flows, small limit |
-| Modern Western astrology | Caelus (VSOP87D full data) | Natal/transits/progressions/returns/profections/Firdaria/ACG, element & modality balance |
-| Traditional Western astrology | Caelus classical module | Classical dignities, Almuten, length-of-life, primary/secondary directions, horary, antiscia, fixed-star conjunctions |
-| Vedic (Indian) astrology | Caelus + NodeJhora (DE440) | Shadbala, Ashtakavarga, Jaimini, KP, full timing techniques |
-| Deep classical astrology | stellium engine | Full output: Firdaria, profections, ZR, length-of-life, Almuten, draconic, Arabic parts, midpoints, antiscia |
-| Human Design | NatalEngine | Type, channels, gates, gene keys |
-| Numerology / Kabbalah | Kaabalah | Life path numbers, Kabbalah paths |
-| Qi Men Dun Jia (incl. Da Liu Ren) | QiMen TS engine | Day + hour charts |
-| Liu Yao (incl. Plum Blossom) | ichingshifa (Yarrow-stalk method) | Primary/transformed hexagrams, line texts, moving-line analysis |
+| Tarot (Rider–Waite) | Arcanite (Python deck library) + Elemental Dignity engine + Kaabalah (JS) | Multiple spreads, elemental strength & dignity analysis, Kabbalah correspondence/theme/Tree of Life |
+| Lenormand | Arcanite (Python) + LenormandFate engine | Multiple spreads, positional semantics, fate reading |
+| BaZi (Four Pillars) | lunar_python (lunar calendar) + bazi_china (Python) | Ten Gods, monthly order, stems/branches, zodiac, Rahu, luck & yearly flows |
+| Zi Wei Dou Shu | iztro (JS, default) + optional Ni Haixia (JS) / pure Python | Three-square/four-direction palaces, decadal, yearly/monthly/daily/hourly flows, small limit; multi-engine cross-check |
+| Modern Western astrology | Caelus (JS, full ephemeris) | chart/derived/events/eclipses/Firdaria/profections/directions/relational/ACG, element & modality balance |
+| Traditional Western astrology | PySwissEph + FlatLib (Python) | Essential/accidental dignities, Almuten, ruler/exalt, combustion, horary, antiscia, fixed-star conjunctions |
+| Vedic (Indian) astrology | PyJHora (Python) | Vimsottari dasa, Ashtakavarga, Tajaka annual, Saham, Raja Yoga/Dosha, solar/lunar eclipses |
+| Deep classical astrology | stellium (Python, SwissEph-backed) | Full output: Firdaria, profections, ZR, length-of-life, Almuten, draconic, Arabic parts, midpoints, antiscia |
+| Human Design | NatalEngine (JS) | Type/authority/centers/channels/gates/incarnation cross/Profile, gene keys, transits |
+| Numerology / Kabbalah | Kaabalah (JS) | Six core numbers, personal year/challenges, Fibonacci, Gematria (forward/reverse), Ifa Odu, Tree of Life |
+| Qi Men Dun Jia (incl. Da Liu Ren) | QiMen TS (JS) + LiuRen TS (JS) | Day/hour charts, QMA spells; Da Liu Ren as its own engine |
+| Liu Yao (incl. Plum Blossom) | ichingshifa (Python, Yarrow-stalk) + iching-shifa (JS) | **Dual-engine cross-check**: both engines interpret the same line values; primary/transformed hexagrams, moving lines |
 
-### Timing techniques
+> Engine facts verified against `app/src/main/python/routes/` source (2026-08).
 
-Transits, secondary & primary directions, solar/lunar returns, annual profections, Firdaria, length-of-life, Almuten Figuris, Arabic parts, midpoints, antiscia, draconic charts, plus decadal / yearly / monthly / daily / hourly progressions.
+### Architecture highlights & dual mode
 
-### Dual-mode workflow
+- **Single entry point**: `mingli_router` maps Chinese names, English names, and aliases (e.g. 紫微 / ziwei / 紫微斗数 / 紫薇) — twelve systems behind one tool;
+- **Dual-engine bridge**: Python engines (lunar_python, bazi_china, Arcanite, PyJHora, ichingshifa, PySwissEph+FlatLib, stellium, pure-Python Zi Wei) plus prebuilt QuickJS engines (caelus/iztro/natalengine/kaabalah/qimen/liuren/iching-shifa/ziwei-nihai/lunar/astronomy/horoscope/taixuan/node-jhora) share one calling chain across languages;
+- **Cross-validation**: Liu Yao runs Python + JS side by side, Zi Wei offers three selectable engines, Tarot cross-references Kabbalah — the same question can be verified by multiple engines;
+- **Deterministic structured output**: every chart returns unified JSON (houses, stars, aspects, timing techniques), and the AI is instructed to use every field;
+- **Mandatory interpretation templates**: `mingli_guide(system=<name>)` loads one of 14 authoritative Markdown templates in `assets/mingli/` and must follow them rule by rule — skipping a template counts as a violation. The workflow (chart → load template → structure reply per template) is baked into the system-prompt assembler;
+- **Engine self-exploration**: when more depth is needed, `eval_javascript` (dig deeper with already-loaded engines) or `execute_python` (lunar calendar, custom calculations) can continue without duplicating chart code.
 
-1. **Deterministic charts**: call `mingli(system=<name>, params={...})` for structured chart data (houses, stars, aspects, timing techniques — every field is meant to be interpreted);
-2. **Interpretation templates**: `mingli_guide(system=<name>)` must load the authoritative Markdown template (`assets/mingli/`, 14 files) and follow it rule by rule — skipping the template counts as a violation;
-3. **Engine self-exploration**: when more depth is needed, `eval_javascript` (QuickJS with 13 prebuilt JS engines) or `execute_python` (lunar calendar, custom calculations) can dig deeper without duplicating chart code.
-
-The workflow is baked into the system-prompt assembler: chart → load template → structure the reply strictly per the template, covering every point and using every returned field.
+**Timing techniques**: transits, secondary & primary directions, solar/lunar returns, annual profections, Firdaria, length-of-life, Almuten Figuris, Arabic parts, midpoints, antiscia, draconic charts, plus decadal / yearly / monthly / daily / hourly progressions.
 
 ---
 
@@ -116,13 +117,17 @@ The workflow is baked into the system-prompt assembler: chart → load template 
 
 **Upstream**: reads `SKILL.md` + a `use_skill` tool (model must call it).
 
-**This fork adds**:
+**This fork adds** (verified against `SkillsVM.kt` / `SkillsPage.kt`):
 
 - **Automatic triggering**: matching skill keywords inject SKILL.md into the prompt without relying on the model
 - **Public skills directory** `/Rikkahub/skills`: drop files in via the file manager
 - **External-storage skills**: no longer locked inside the app-private directory
-- **GitHub skill install**: install directly by repository / marketplace
-- **Rewritten skills page/detail page** + enhanced `use_skill` (categories, linked_files, command hints)
+- **GitHub one-click install**: accepts `github.com/owner/repo` or `github.com/owner/repo/tree/branch/path` links; resolves skills from the repo tree (subdirectories and multi-skill repos supported)
+- **Batch download**: imports every skill in a repository at once (GitHub recursive tree API + concurrent downloads with a semaphore)
+- **Update detection**: records the repo source and a whole-directory hash (`skillShas`) on install; one-click update checks per skill or all skills — a changed hash from the same repo flags an update
+- **Install-source tracking**: each skill remembers its source repo URL and shows local/updatable/same-source status to avoid duplicate installs
+- **Skill registry/marketplace**: install directly from built-in registry entries (`installFromRegistry`)
+- **Rewritten skills page/detail page** + enhanced `use_skill` (categories, linked_files, command hints, live refresh)
 
 ### Tools
 
