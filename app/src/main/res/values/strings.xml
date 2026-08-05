@@ -1298,7 +1298,7 @@
   <string name="slash_example_sendas_1_desc">Insert an assistant message as the current character (no generation)</string>
   <string name="slash_example_sendas_2_cmd">/sendas name=Ningning at=-1 She thought to herself</string>
   <string name="slash_example_sendas_2_desc">As Ningning, inserted before the last message</string>
-  <string name="slash_example_send_1_cmd">/send Let's change the subject</string>
+  <string name="slash_example_send_1_cmd">/send Let\'s change the subject</string>
   <string name="slash_example_send_1_desc">Insert a user message as yourself (no generation)</string>
   <string name="slash_example_send_2_cmd">/send name=Traveler I am leaving tomorrow</string>
   <string name="slash_example_send_2_desc">Inserted with the name Traveler</string>
