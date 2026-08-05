@@ -553,7 +553,11 @@ private fun EmbeddedBookSummary(
     // 组设置状态
     var groupSettingsTarget by remember { mutableStateOf<Pair<String, List<TavernBookEntry>>?>(null) }
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+    Column(
+        modifier = Modifier
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .animateContentSize(animationSpec = tween(durationMillis = 200)),
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -598,7 +602,11 @@ private fun EmbeddedBookSummary(
                 )
             }
         }
-        AnimatedVisibility(visible = showEntries) {
+        AnimatedVisibility(
+            visible = showEntries,
+            enter = fadeIn(animationSpec = tween(durationMillis = 200)),
+            exit = fadeOut(animationSpec = tween(durationMillis = 200)),
+        ) {
             Column(
                 modifier = Modifier.padding(top = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -613,7 +621,11 @@ private fun EmbeddedBookSummary(
                         Spacer(Modifier.size(4.dp))
                         Text(stringResource(R.string.prompt_page_world_info_settings_button), style = MaterialTheme.typography.labelSmall)
                     }
-                    AnimatedVisibility(visible = worldInfoSettingsExpanded) {
+                    AnimatedVisibility(
+                        visible = worldInfoSettingsExpanded,
+                        enter = fadeIn(animationSpec = tween(durationMillis = 200)),
+                        exit = fadeOut(animationSpec = tween(durationMillis = 200)),
+                    ) {
                     CardGroup {
                         item {
                             Row(
@@ -871,7 +883,11 @@ private fun EmbeddedBookSummary(
                             }
                         }
                     }
-                    AnimatedVisibility(visible = groupExpanded) {
+                    AnimatedVisibility(
+                        visible = groupExpanded,
+                        enter = fadeIn(animationSpec = tween(durationMillis = 200)),
+                        exit = fadeOut(animationSpec = tween(durationMillis = 200)),
+                    ) {
                         Column(modifier = Modifier.padding(start = 8.dp)) {
                             groupEntries.forEach { entry ->
                                 CollapsibleEntryCard(entry = entry, onUpdate = onEntryUpdate)

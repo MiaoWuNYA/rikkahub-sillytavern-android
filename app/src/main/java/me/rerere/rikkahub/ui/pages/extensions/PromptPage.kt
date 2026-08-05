@@ -17,7 +17,10 @@ import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.Setting07
 import me.rerere.hugeicons.stroke.Folder01
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -681,7 +684,9 @@ private fun LorebookTab(
             item {
                 var worldInfoSettingsExpanded by rememberSaveable { mutableStateOf(false) }
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateContentSize(animationSpec = tween(durationMillis = 200)),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     TextButton(
@@ -703,6 +708,11 @@ private fun LorebookTab(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 4.dp),
+                        // 只用淡入淡出，不做 expand/shrink 高度动画：
+                        // LazyColumn item 内的高度动画不逐帧传播给列表布局，动画结束时高度突变会让下方条目跳一下，
+                        // 高度变化交给外层 animateContentSize 平滑插值。
+                        enter = fadeIn(animationSpec = tween(durationMillis = 200)),
+                        exit = fadeOut(animationSpec = tween(durationMillis = 200)),
                     ) {
                 CardGroup(
                     title = {
@@ -1626,7 +1636,8 @@ private fun LorebookGroupSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 4.dp),
+            .padding(top = 4.dp)
+            .animateContentSize(animationSpec = tween(durationMillis = 200)),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         // 组头
@@ -1686,8 +1697,12 @@ private fun LorebookGroupSection(
             }
         }
 
-        // 组内条目
-        AnimatedVisibility(visible = expanded) {
+        // 组内条目（fade-only：LazyColumn item 内高度动画不逐帧传播，会跳；高度交给外层 animateContentSize 平滑）
+        AnimatedVisibility(
+            visible = expanded,
+            enter = fadeIn(animationSpec = tween(durationMillis = 200)),
+            exit = fadeOut(animationSpec = tween(durationMillis = 200)),
+        ) {
             Column(
                 modifier = Modifier.padding(start = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
