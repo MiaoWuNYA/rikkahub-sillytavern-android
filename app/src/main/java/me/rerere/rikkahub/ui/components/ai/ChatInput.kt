@@ -90,6 +90,9 @@ import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.ModelAbility
 import me.rerere.ai.provider.ModelType
 import me.rerere.asr.ASRStatus
+import com.composables.icons.lucide.ChevronDown
+import com.composables.icons.lucide.ChevronUp
+import com.composables.icons.lucide.Lucide
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.ArrowUp02
@@ -735,6 +738,7 @@ private fun TextInputRow(
                             else -> stringResource(R.string.slash_category_message)
                         }
                     }
+                    var expandedCmd by remember { mutableStateOf<String?>(null) }
                     val categoryOrder = listOf(stringResource(R.string.slash_category_message), stringResource(R.string.slash_category_character), stringResource(R.string.slash_category_variables), stringResource(R.string.slash_category_skills), stringResource(R.string.slash_category_other))
                     categoryOrder.forEach { category ->
                         val cmds = groupedCommands[category] ?: return@forEach
@@ -748,6 +752,12 @@ private fun TextInputRow(
                             SlashCommandItem(
                                 cmd = cmd,
                                 fullDescription = true,
+                                expanded = expandedCmd == cmd.name,
+                                onToggleExpand = if (cmd.params.isNotEmpty() || cmd.examples.isNotEmpty()) {
+                                    { expandedCmd = if (expandedCmd == cmd.name) null else cmd.name }
+                                } else {
+                                    null
+                                },
                                 onClick = {
                                     if (cmd.builtinKind != null) {
                                         if (cmd.argumentHint.isBlank()) {
@@ -1016,12 +1026,15 @@ private fun ChatInputState.applyCompletion(
 /**
  * 斜杠命令行（斜杠建议弹窗与 /help 列表共用）
  * fullDescription=true 时显示完整描述（/help 用），否则单行省略（建议弹窗用）
+ * /help 模式下有参数/例句的命令可点击箭头展开详情
  */
 @Composable
 private fun SlashCommandItem(
     cmd: SlashCommand,
     onClick: () -> Unit,
     fullDescription: Boolean = false,
+    expanded: Boolean = false,
+    onToggleExpand: (() -> Unit)? = null,
 ) {
     Surface(
         onClick = onClick,
@@ -1065,6 +1078,92 @@ private fun SlashCommandItem(
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                             color = MaterialTheme.colorScheme.tertiary,
                         )
+                    }
+                }
+                if (onToggleExpand != null && (cmd.params.isNotEmpty() || cmd.examples.isNotEmpty())) {
+                    Spacer(Modifier.width(6.dp))
+                    IconButton(
+                        onClick = onToggleExpand,
+                        modifier = Modifier.size(24.dp),
+                    ) {
+                        Icon(
+                            imageVector = if (expanded) Lucide.ChevronUp else Lucide.ChevronDown,
+                            contentDescription = if (expanded) "收起" else "展开",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
+            }
+            if (expanded) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                        if (cmd.params.isNotEmpty()) {
+                            Text(
+                                text = stringResource(R.string.slash_help_params),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(bottom = 4.dp),
+                            )
+                            cmd.params.forEach { param ->
+                                Column(modifier = Modifier.padding(bottom = 5.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
+                                        ) {
+                                            Text(
+                                                text = param.name,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                            )
+                                        }
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            text = param.description,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                    Text(
+                                        text = stringResource(R.string.slash_help_example_prefix) + param.example,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
+                                        modifier = Modifier.padding(start = 2.dp, top = 2.dp),
+                                    )
+                                }
+                            }
+                        }
+                        if (cmd.examples.isNotEmpty()) {
+                            Text(
+                                text = stringResource(R.string.slash_help_examples),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(top = 2.dp, bottom = 4.dp),
+                            )
+                            cmd.examples.forEach { example ->
+                                Column(modifier = Modifier.padding(bottom = 5.dp)) {
+                                    Text(
+                                        text = example.command,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                    Text(
+                                        text = example.description,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(start = 2.dp, top = 1.dp),
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

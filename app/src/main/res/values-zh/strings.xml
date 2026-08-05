@@ -1290,6 +1290,9 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="slash_help_title">可用命令</string>
   <string name="slash_help_close">关闭</string>
   <string name="slash_help_tip">无参数命令点击直接执行；带参数命令点击填入输入框，补参数后发送</string>
+  <string name="slash_help_params">参数</string>
+  <string name="slash_help_examples">例句</string>
+  <string name="slash_help_example_prefix">例：</string>
   <string name="prompt_page_ignore_budget_desc">该条目不受世界书 token 预算限制，总是注入</string>
   <string name="prompt_page_rounds_suffix">轮</string>
   <string name="prompt_page_scan_depth_global">默认(全局)</string>

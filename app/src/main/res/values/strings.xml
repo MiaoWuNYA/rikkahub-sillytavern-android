@@ -1202,6 +1202,9 @@
   <string name="slash_help_title">Available Commands</string>
   <string name="slash_help_close">Close</string>
   <string name="slash_help_tip">Commands without arguments run on tap; commands with arguments fill the input box for you to complete</string>
+  <string name="slash_help_params">Parameters</string>
+  <string name="slash_help_examples">Examples</string>
+  <string name="slash_help_example_prefix">Ex: </string>
   <string name="prompt_page_ignore_budget_desc">This entry ignores the world info token budget and is always injected</string>
   <string name="prompt_page_rounds_suffix">turns</string>
   <string name="prompt_page_scan_depth_global">Default (Global)</string>
