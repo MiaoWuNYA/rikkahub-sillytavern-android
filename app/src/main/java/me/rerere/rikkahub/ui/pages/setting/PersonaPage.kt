@@ -80,13 +80,13 @@ fun PersonaPage() {
                         },
                         headlineContent = {
                             Text(
-                                text = if (active != null) "当前：${active.name}" else "未激活人设",
+                                text = if (active != null) stringResource(R.string.persona_page_current, active.name) else stringResource(R.string.persona_page_inactive),
                                 style = MaterialTheme.typography.titleSmall,
                             )
                         },
                         supportingContent = {
                             Text(
-                                text = if (active != null) "已注入到提示词中" else "选择一个用户人设激活",
+                                text = if (active != null) stringResource(R.string.persona_page_injected) else stringResource(R.string.persona_page_select_hint),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -154,7 +154,7 @@ fun PersonaPage() {
                             },
                             headlineContent = {
                                 Text(
-                                    text = persona.name.ifBlank { "未命名" },
+                                    text = persona.name.ifBlank { stringResource(R.string.persona_page_unnamed) },
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Medium,
                                 )
@@ -169,7 +169,7 @@ fun PersonaPage() {
                                         )
                                     }
                                     Text(
-                                        text = "注入位置：" + when (persona.position) {
+                                        text = stringResource(R.string.persona_page_position_label) + when (persona.position) {
                                             PersonaInjectionPosition.IN_PROMPT -> stringResource(R.string.persona_page_position_in_prompt)
                                             PersonaInjectionPosition.TOP_OF_CHAT -> stringResource(R.string.persona_page_position_top)
                                             PersonaInjectionPosition.BOTTOM_OF_CHAT -> stringResource(R.string.persona_page_position_bottom)
@@ -189,7 +189,7 @@ fun PersonaPage() {
                                     }
                                     if (persona.lockedCharacterIds.isNotEmpty()) {
                                         Text(
-                                            text = "已绑定 ${persona.lockedCharacterIds.size} 个角色",
+                                            text = stringResource(R.string.persona_page_locked_count, persona.lockedCharacterIds.size),
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.tertiary,
                                         )
@@ -227,7 +227,7 @@ fun PersonaPage() {
                                     ) {
                                         Icon(
                                             HugeIcons.Delete01,
-                                            contentDescription = "删除人设",
+                                            contentDescription = stringResource(R.string.persona_page_delete),
                                             modifier = Modifier.size(18.dp),
                                             tint = MaterialTheme.colorScheme.error,
                                         )
@@ -298,10 +298,10 @@ private fun PersonaEditPage(
     Scaffold(
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text(if (initial != null) "编辑人设" else "新建用户人设") },
+                title = { Text(if (initial != null) stringResource(R.string.persona_page_edit) else stringResource(R.string.persona_page_new)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(HugeIcons.ArrowLeft01, "返回")
+                        Icon(HugeIcons.ArrowLeft01, stringResource(R.string.persona_page_back))
                     }
                 },
                 actions = {
@@ -340,7 +340,7 @@ private fun PersonaEditPage(
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            text = "快速预设（${personaPresets.size}）",
+                            text = stringResource(R.string.persona_page_presets, personaPresets.size),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Medium,
                         )
@@ -420,7 +420,7 @@ private fun PersonaEditPage(
                     }
                 }
                 Text(
-                    text = "导演备注上/下方选项会与导演备注内容合并注入，并跟随其间隔节奏",
+                    text = stringResource(R.string.persona_page_position_merge_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
@@ -452,9 +452,9 @@ private fun PersonaEditPage(
                     Spacer(Modifier.height(12.dp))
                     CardGroup(title = { Text(stringResource(R.string.persona_page_role)) }) {
                         listOf(
-                            MessageRole.SYSTEM to "系统",
-                            MessageRole.USER to "用户",
-                            MessageRole.ASSISTANT to "助手",
+                            MessageRole.SYSTEM to stringResource(R.string.persona_page_role_system),
+                            MessageRole.USER to stringResource(R.string.persona_page_role_user),
+                            MessageRole.ASSISTANT to stringResource(R.string.persona_page_role_assistant),
                         ).forEach { (r, label) ->
                             item(
                                 onClick = { role = r },
@@ -671,7 +671,7 @@ private fun personaPositionLabel(position: PersonaInjectionPosition): String {
         PersonaInjectionPosition.IN_PROMPT -> stringResource(R.string.persona_page_position_in_prompt)
         PersonaInjectionPosition.TOP_OF_CHAT -> stringResource(R.string.persona_page_position_top)
         PersonaInjectionPosition.BOTTOM_OF_CHAT -> stringResource(R.string.persona_page_position_bottom)
-        PersonaInjectionPosition.AT_DEPTH -> "指定深度（At Depth）"
+        PersonaInjectionPosition.AT_DEPTH -> stringResource(R.string.persona_page_position_at_depth_short)
         PersonaInjectionPosition.NONE -> stringResource(R.string.persona_page_position_none)
     }
 }
