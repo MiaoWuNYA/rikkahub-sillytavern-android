@@ -118,8 +118,9 @@ class MacroEngine(
         val head = text.substring(open + 2, close).trim()
         if (head.isEmpty()) return null
 
-        // {{/name}} 闭合标签
-        if (head.startsWith("/")) {
+        // {{/name}} 闭合标签。{{//}}/{{// 内容}} 是注释宏本体（块注释 {{//}}...{{///}} 的闭合是 {{///}}，含第三个斜杠）
+        val isCommentMacro = head.startsWith("//") && head.getOrNull(2) != '/'
+        if (head.startsWith("/") && !isCommentMacro) {
             return Node.Macro(raw = raw, name = head.drop(1).trim().lowercase(), isClosing = true) to close + 2
         }
         // {{else}}
@@ -157,7 +158,7 @@ class MacroEngine(
         }
 
         // 作用域块：任何宏后面紧跟 {{/name}} 时，内容成为最后一个参数（官方通用 scoped 语法）
-        val block = findScopedBlock(text, close + 2, name)
+        val block = if (isScopedCandidate(name, rest)) findScopedBlock(text, close + 2, name) else null
         if (block != null) {
             val (content, end) = block
             val processedContent = if (preserveWhitespace) content else content.dedentAndTrim()
@@ -193,7 +194,7 @@ class MacroEngine(
             val head = text.substring(open + 2, close).trim()
             val isClose = head.startsWith("/") && head.drop(1).trim().equals(name, ignoreCase = true)
             val isOpen = head.substringBefore(" ").substringBefore("::").trim()
-                .equals(name, ignoreCase = true)
+                .equals(name, ignoreCase = true) && isScopedCandidate(name, head)
             if (isOpen) depth++
             if (isClose) {
                 depth--
@@ -238,6 +239,48 @@ class MacroEngine(
         }
         parts.add(current.toString().trim())
         return parts.filterIndexed { index, s -> !(index == 0 && s.isEmpty()) }
+    }
+
+    /**
+     * 该宏的此形式是否参与作用域块配对（官方语义下部分宏存在自闭合形式）：
+     * - 注释宏 {{// 内容}} / {{comment 内容}}：有参数 = 单行注释，自闭合
+     * - if 宏 {{if::条件::内容}}：顶层参数 >= 2 = 行内 if，自闭合（块 if 只带条件参数）
+     * - 其余宏保持通用 scoped 语法
+     */
+    private fun isScopedCandidate(name: String, rest: String): Boolean {
+        if (name == "//" || name == "comment") {
+            return rest.substringAfter(name).trim().isEmpty()
+        }
+        if (name == "if") {
+            return topLevelSegmentCount(rest) <= 2
+        }
+        return true
+    }
+
+    /** 统计顶层 :: 段数（嵌套 {{...}} 内部的 :: 不计）。 */
+    private fun topLevelSegmentCount(rest: String): Int {
+        if (rest.isEmpty()) return 1
+        var count = 1
+        var depth = 0
+        var i = 0
+        while (i < rest.length) {
+            when {
+                rest.startsWith("{{", i) -> {
+                    depth++
+                    i += 2
+                }
+                rest.startsWith("}}", i) -> {
+                    if (depth > 0) depth--
+                    i += 2
+                }
+                rest.startsWith("::", i) && depth == 0 -> {
+                    count++
+                    i += 2
+                }
+                else -> i++
+            }
+        }
+        return count
     }
 
     // ---------- 求值 ----------

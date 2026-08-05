@@ -130,20 +130,189 @@ fun String.replaceRegexes(
     if (assistant.regexes.isEmpty()) return this
     return assistant.regexes.fold(this) { acc, regex ->
         if (regex.enabled && regex.visualOnly == visual && regex.affectingScope.contains(scope)) {
-            val compiled = compileRegexCached(regex.findRegex) ?: return@fold acc
-            try {
-                acc.replace(
-                    regex = compiled,
-                    replacement = regex.replaceString,
-                )
-            } catch (e: Exception) {
-                e.printStackTrace()
-                // 替换字符串可能引用不存在的分组，失败时返回原字符串
-                acc
-            }
+            replaceWithRegex(acc, regex)
         } else {
             acc
         }
+    }
+}
+
+private fun replaceWithRegex(input: String, regex: AssistantRegex): String {
+    val compiled = compileRegexCached(regex.findRegex)
+    if (compiled != null) {
+        try {
+            return input.replace(regex = compiled, replacement = regex.replaceString)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // 替换字符串可能引用不存在的分组，失败时返回原字符串
+            return input
+        }
+    }
+    // 编译失败：尝试变长 lookbehind 模拟（官方 JS 引擎支持，java.util.regex 不支持）
+    val simulated = VariableLookbehind.replace(input, regex.findRegex, regex.replaceString)
+    return simulated ?: input
+}
+
+/**
+ * 变长 lookbehind 模拟（官方酒馆正则脚本常用 (?<=...) 变长断言，JS 支持而 java.util.regex 只支持固定长度）。
+ *
+ * 策略（只处理模式开头的 lookbehind，官方脚本的变长断言几乎都在开头）：
+ * 1. 提取开头的 (?<=P) / (?<!P)，P 内不允许捕获组（移除后 $N 编号会错乱）
+ * 2. 剩余主体编译，逐匹配验证"匹配位置之前的前缀以 P 结尾 / 不以 P 结尾"
+ * 3. 验证通过的匹配手动应用替换字符串（支持 $N / ${name} / $& 引用）
+ */
+private object VariableLookbehind {
+    fun replace(input: String, pattern: String, replacement: String): String? {
+        val leading = extractLeadingLookbehinds(pattern) ?: return null
+        val (assertions, body) = leading
+        if (body.isEmpty()) return null
+        val bodyRegex = runCatching { Regex(body) }.getOrNull() ?: return null
+        val compiledAssertions = assertions.map { (negative, p) ->
+            val compiled = runCatching { Regex(p) }.getOrNull() ?: return null
+            Triple(negative, compiled, p)
+        }
+
+        val out = StringBuilder()
+        var last = 0
+        for (m in bodyRegex.findAll(input)) {
+            val pass = compiledAssertions.all { (negative, compiled, _) ->
+                val prefixOk = prefixEndsWith(input, m.range.first, compiled)
+                if (negative) !prefixOk else prefixOk
+            }
+            if (!pass) continue
+            out.append(input, last, m.range.first)
+            out.append(applyReplacement(m, replacement))
+            last = m.range.last + 1
+        }
+        out.append(input, last)
+        return out.toString()
+    }
+
+    /** 前缀 input[0..end) 是否存在以 end 结束的匹配（即 lookbehind 断言成立）。 */
+    private fun prefixEndsWith(input: String, end: Int, compiled: Regex): Boolean {
+        for (m in compiled.findAll(input)) {
+            if (m.range.first > end) return false
+            if (m.range.last + 1 == end) return true
+        }
+        return false
+    }
+
+    /** 提取模式开头的 (?<=P) / (?<!P) 断言；P 内不允许捕获组或嵌套断言。 */
+    private fun extractLeadingLookbehinds(pattern: String): Pair<List<Pair<Boolean, String>>, String>? {
+        val assertions = mutableListOf<Pair<Boolean, String>>()
+        var rest = pattern
+        while (true) {
+            if (!rest.startsWith("(?<")) break
+            val negative = rest.startsWith("(?<!", 0)
+            if (!negative && !rest.startsWith("(?<=", 0)) break
+            val openLen = if (negative) 4 else 4
+            // 扫描 P 到配对的 )（括号配对、跳过转义与字符类）
+            var depth = 0
+            var i = openLen
+            var inClass = false
+            while (i < rest.length) {
+                val c = rest[i]
+                if (c == '\\') {
+                    i += 2
+                    continue
+                }
+                if (c == '[') inClass = true
+                if (c == ']') inClass = false
+                if (!inClass) {
+                    if (c == '(') depth++
+                    if (c == ')') {
+                        if (depth == 0) break
+                        depth--
+                    }
+                }
+                i++
+            }
+            if (i >= rest.length) return null
+            val p = rest.substring(openLen, i)
+            if (p.isEmpty() || !isSafeAssertionBody(p)) return null
+            assertions.add(negative to p)
+            rest = rest.substring(i + 1)
+        }
+        return if (assertions.isEmpty()) null else assertions to rest
+    }
+
+    /** 断言体安全：无捕获组（裸 (）、无嵌套 lookbehind、无未配对括号。 */
+    private fun isSafeAssertionBody(p: String): Boolean {
+        var i = 0
+        var inClass = false
+        while (i < p.length) {
+            val c = p[i]
+            if (c == '\\') {
+                i += 2
+                continue
+            }
+            if (c == '[') inClass = true
+            if (c == ']') inClass = false
+            if (!inClass) {
+                if (c == '(') {
+                    if (i + 1 < p.length && p[i + 1] == '?') {
+                        // (?: (?= (?! (?<= (?<! (?<name —— 都不是捕获组
+                        val special = p.substring(i, minOf(i + 4, p.length))
+                        if (special.startsWith("(?<") && !special.startsWith("(?<=") && !special.startsWith("(?<!")) {
+                            // (?<name> 命名捕获组，也排除
+                            return false
+                        }
+                    } else {
+                        return false
+                    }
+                }
+            }
+            i++
+        }
+        return true
+    }
+
+    /** 手动应用替换字符串：$N、${name}、$&（=$0）、\$ 与 \\ 转义。 */
+    private fun applyReplacement(m: MatchResult, replacement: String): String {
+        val sb = StringBuilder()
+        var i = 0
+        while (i < replacement.length) {
+            val c = replacement[i]
+            when {
+                c == '\\' && i + 1 < replacement.length -> {
+                    sb.append(replacement[i + 1])
+                    i += 2
+                }
+                c == '$' && i + 1 < replacement.length && replacement[i + 1] == '{' -> {
+                    val close = replacement.indexOf('}', i)
+                    if (close > 0) {
+                        val name = replacement.substring(i + 2, close)
+                        val group = m.groups[name]
+                        sb.append(group?.value ?: "")
+                        i = close + 1
+                    } else {
+                        sb.append('$')
+                        i++
+                    }
+                }
+                c == '$' && i + 1 < replacement.length && replacement[i + 1] == '&' -> {
+                    sb.append(m.groupValues.getOrElse(0) { "" })
+                    i += 2
+                }
+                c == '$' -> {
+                    var j = i + 1
+                    while (j < replacement.length && replacement[j].isDigit()) j++
+                    if (j > i + 1) {
+                        val g = replacement.substring(i + 1, j).toIntOrNull() ?: 0
+                        sb.append(if (g < m.groupValues.size) m.groupValues[g] else "")
+                        i = j
+                    } else {
+                        sb.append('$')
+                        i++
+                    }
+                }
+                else -> {
+                    sb.append(c)
+                    i++
+                }
+            }
+        }
+        return sb.toString()
     }
 }
 
@@ -466,14 +635,18 @@ private fun parseRegexFromString(input: String): Regex? {
  *
  * @param messages 消息列表
  * @param scanDepth 扫描深度（最近N条消息）
+ * @param startDepth 已扫过的旧层数（官方 WorldInfoBuffer slice(startDepth, depth)：跳过最靠近开头的 startDepth 条消息）
  * @return 拼接的文本内容
  */
 fun extractContextForMatching(
     messages: List<UIMessage>,
-    scanDepth: Int
+    scanDepth: Int,
+    startDepth: Int = 0,
 ): String {
+    if (scanDepth <= startDepth) return ""
     return messages
         .takeLast(scanDepth)
+        .dropLast(startDepth)
         .joinToString("\n") { it.toText() }
 }
 
@@ -542,29 +715,40 @@ fun Assistant.assembleMainPrompt(): String {
 }
 
 /**
- * 官方 Chat Completion 结构拆分 — 角色卡字段消息（对应官方 persona/description/personality/scenario 独立消息）。
- * 内部顺序对齐官方 OpenAI 模式：描述 → 性格 → 场景（人设由独立 SYSTEM 消息在角色卡之后注入）
+ * 官方 Chat Completion 结构拆分 — 角色卡字段消息（对应官方 charDescription/charPersonality/scenario 独立 system 消息，
+ * promptManagerDefaultPromptOrder 顺序：描述 → 性格 → 场景）。
+ * 每字段独立一条消息，世界书 before/after_char 锚点（CharacterCardData 标记）才能精确落在官方位置。
+ * 性格内容对齐官方默认 personality_format = {{personality}}（纯文本，无前缀）。
  */
-fun Assistant.assembleCharacterCardBlock(
-): String {
-    val tav = this.tavernData ?: return ""
-    val description = tav.description.takeIf { it.isNotBlank() }
-    val personality = tav.personality.takeIf { it.isNotBlank() }
-    val scenario = tav.scenario.takeIf { it.isNotBlank() }
-    if (description == null && personality == null && scenario == null) return ""
-
-    return buildString {
-        description?.let {
-            if (isNotEmpty()) appendLine()
-            append(it)
+fun Assistant.assembleCharacterCardMessages(): List<UIMessage> {
+    val tav = this.tavernData ?: return emptyList()
+    return buildList {
+        tav.description.takeIf { it.isNotBlank() }?.let {
+            add(
+                UIMessage(
+                    role = MessageRole.SYSTEM,
+                    parts = listOf(UIMessagePart.Text(it)),
+                    annotations = listOf(UIMessageAnnotation.CharacterCardData),
+                )
+            )
         }
-        personality?.let {
-            if (isNotEmpty()) appendLine()
-            append("${this@assembleCharacterCardBlock.name}'s personality: $it")
+        tav.personality.takeIf { it.isNotBlank() }?.let {
+            add(
+                UIMessage(
+                    role = MessageRole.SYSTEM,
+                    parts = listOf(UIMessagePart.Text(it)),
+                    annotations = listOf(UIMessageAnnotation.CharacterCardData),
+                )
+            )
         }
-        scenario?.let {
-            if (isNotEmpty()) appendLine()
-            append("Scenario: $it")
+        tav.scenario.takeIf { it.isNotBlank() }?.let {
+            add(
+                UIMessage(
+                    role = MessageRole.SYSTEM,
+                    parts = listOf(UIMessagePart.Text(it)),
+                    annotations = listOf(UIMessageAnnotation.CharacterCardData),
+                )
+            )
         }
     }
 }

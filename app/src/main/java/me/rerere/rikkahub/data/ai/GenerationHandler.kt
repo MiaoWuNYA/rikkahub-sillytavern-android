@@ -46,7 +46,7 @@ import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantMemory
 import me.rerere.rikkahub.data.model.assembleContext
-import me.rerere.rikkahub.data.model.assembleCharacterCardBlock
+import me.rerere.rikkahub.data.model.assembleCharacterCardMessages
 import me.rerere.rikkahub.data.model.assembleMainPrompt
 import me.rerere.rikkahub.data.model.buildExampleMessages
 import me.rerere.rikkahub.data.repository.ConversationRepository
@@ -250,18 +250,9 @@ class GenerationHandler(
             if (mainText.isNotBlank()) {
                 add(UIMessage.system(prompt = mainText))
             }
-            // 官方拆分：角色卡字段独立消息（世界书 before/after char 锚点）
+            // 官方拆分：角色卡字段独立消息（charDescription/charPersonality/scenario，世界书 before/after char 锚点）
             if (useOfficialSplit && !conversationOverride) {
-                val cardText = assistant.assembleCharacterCardBlock()
-                if (cardText.isNotBlank()) {
-                    add(
-                        UIMessage(
-                            role = MessageRole.SYSTEM,
-                            parts = listOf(UIMessagePart.Text(cardText)),
-                            annotations = listOf(me.rerere.ai.ui.UIMessageAnnotation.CharacterCardData),
-                        )
-                    )
-                }
+                addAll(assistant.assembleCharacterCardMessages())
             }
         }
     }
@@ -646,8 +637,12 @@ class GenerationHandler(
                         val embedded = assistant.tavernData != null && !useOfficialSplit && !conversationOverride &&
                             template.contains("{{persona}}")
                         if (!embedded) {
-                            // 官方顺序（populateChatCompletion）：人设位于场景/角色卡字段之后
-                            val idx = (base.indexOfLast { it.role == MessageRole.SYSTEM } + 1).coerceAtLeast(0)
+                            // 官方顺序（promptManagerDefaultPromptOrder）：人设位于 before_char 世界书之后、角色卡字段之前
+                            val cardStart = base.indexOfFirst { msg ->
+                                msg.annotations.any { it is me.rerere.ai.ui.UIMessageAnnotation.CharacterCardData }
+                            }
+                            val idx = if (cardStart >= 0) cardStart
+                            else (base.indexOfLast { it.role == MessageRole.SYSTEM } + 1).coerceAtLeast(0)
                             base.take(idx) + UIMessage.system(personaText) + base.drop(idx)
                         } else {
                             base

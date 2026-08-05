@@ -152,9 +152,10 @@ internal fun transformMessages(
         }
     }
 
-    // 按位置和优先级分组
+    // 按位置分组。官方构建提示词时按 order 降序遍历 + unshift（world-info.js sortFn + WIBeforeEntries.unshift），
+    // 最终注入顺序 = order 升序（先写的在前），这里直接按 priority 升序对齐
     val byPosition = resolvedInjections
-        .sortedByDescending { it.priority }
+        .sortedBy { it.priority }
         .groupBy { it.position }
 
     // 应用注入
@@ -236,9 +237,11 @@ internal fun collectInjections(
             if (entry.matchPersonaDescription && personaDescription.isNotBlank()) appendLine(personaDescription)
         }.trim()
 
-        // 扫描函数：跨全部 Lorebook 检查触发，再按官方 filterByInclusionGroups 做同组选择
+        // 扫描函数：跨全部 Lorebook 检查触发，再按官方 filterByInclusionGroups 做同组选择。
+        // 注意：概率掷点不在本函数内（官方先组选、后逐条掷概率），由主循环统一处理
         fun evaluateLorebooks(
             scanDepthOverride: Int? = null,
+            startDepthOverride: Int = 0,
             extraContext: String = "",
             isRecursion: Boolean = false,
             currentRecursionDelayLevel: Int = 0,
@@ -289,9 +292,11 @@ internal fun collectInjections(
                     // delay：消息数不够则不激活
                     if (entry.delay > 0 && nonSystemMessages.size < entry.delay) continue
 
-                    // 正常触发检查（min_activations 重扫时扩大扫描深度）
-                    val depth = scanDepthOverride ?: entry.scanDepth ?: worldInfoDepth
-                    val chatContext = extractContextForMatching(nonSystemMessages, depth)
+                    // 正常触发检查（min_activations 重扫时扩大扫描深度）。
+                    // 官方 WorldInfoBuffer.get：条目 scanDepth 优先，否则全局深度；
+                    // startDepth 表示已扫过的旧层（min_activations 逐层推进时跳过）
+                    val depth = entry.scanDepth ?: scanDepthOverride ?: worldInfoDepth
+                    val chatContext = extractContextForMatching(nonSystemMessages, depth, startDepthOverride)
                     // 官方 match_*：只把该条目开启的角色卡字段纳入扫描
                     val entryCharScan = buildCharScanContext(entry)
                     val context = buildString {
@@ -305,14 +310,9 @@ internal fun collectInjections(
                         }
                         append(chatContext)
                     }
-                    // 官方顺序：先关键词激活，再 verifyProbability（粘性免掷；失败后本次扫描不再参与）
+                    // 概率失败过的条目本次扫描不再参与（官方 failedProbabilityChecks）
                     if (failedProbabilityIds.contains(entry.id)) continue
                     if (entry.isTriggered(context, rollProbability = false)) {
-                        val effectiveProb = if (entry.useProbability) entry.probability else 100
-                        if (effectiveProb < 100 && Random.nextInt(100) >= effectiveProb) {
-                            failedProbabilityIds.add(entry.id)
-                            continue
-                        }
                         newlyTriggered.add(entry)
                         triggeredScores[entry.id] = entry.matchedKeyScore(context)
                     }
@@ -328,95 +328,113 @@ internal fun collectInjections(
             )
         }
 
-        var activatedEntries = evaluateLorebooks()
-
-        // 最少激活数（酒馆 min_activations）：激活不足时用更大扫描深度重扫补足
-        if (worldInfoMinActivations > 0 && activatedEntries.size < worldInfoMinActivations) {
-            val extra = evaluateLorebooks(
-                scanDepthOverride = Int.MAX_VALUE,
+        // 官方 checkWorldInfo 主循环：INITIAL → (RECURSION / MIN_ACTIVATIONS / 层级开放) 循环，
+        // 每轮：扫描触发 → 组选 → 逐条 概率 → 预算
+        val activatedEntries = mutableListOf<PromptInjection.RegexInjection>()
+        val knownIds = mutableSetOf<Uuid>()
+        var recursionContext = ""
+        // 官方 WorldInfoBuffer：skew 随 min_activations 逐层推进，全局深度 = world_info_depth + skew，
+        // 扫描起点 startDepth = skew（跳过已扫过的旧层）
+        var skew = 0
+        var isRecursion = false
+        var currentLevel = 0
+        var overflowed = false
+        var usedTokens = 0
+        // 官方 availableRecursionDelayLevels：delay_until_recursion 去重升序，逐级开放
+        val availableLevels = enabledLorebooks
+            .flatMap { it.entries.map { e -> e.delayUntilRecursion } }
+            .filter { it > 0 }
+            .distinct()
+            .sorted()
+            .toMutableList()
+        // 官方 max_recursion_steps 统计的是总扫描循环数（含首轮），递归轮数 = 值 - 1；
+        // 0 = 不限制，但加 10 层安全上限防止极端循环
+        val maxSteps = when {
+            worldInfoMaxRecursionSteps > 1 -> worldInfoMaxRecursionSteps - 1
+            worldInfoMaxRecursionSteps == 1 -> 0
+            else -> 10
+        }
+        var steps = 0
+        while (steps < maxSteps) {
+            steps++
+            val found = evaluateLorebooks(
+                scanDepthOverride = worldInfoDepth + skew,
+                startDepthOverride = skew,
+                // 官方：递归缓冲只参与 RECURSION 扫描，min_activations 扫描不带
+                extraContext = if (isRecursion) recursionContext else "",
+                isRecursion = isRecursion,
+                currentRecursionDelayLevel = currentLevel,
                 alreadyActivated = activatedEntries,
             )
-                .filter { it.id !in activatedEntries.map { e -> e.id } }
-            activatedEntries = activatedEntries + extra
-        }
 
-        // 递归扫描（酒馆 world_info_recursive）：用已注入条目的内容再扫描关联条目
-        if (worldInfoRecursive) {
-            // 官方：可用延迟层级 = 全部条目 delay_until_recursion 去重升序，逐级开放
-            val availableLevels = enabledLorebooks
-                .flatMap { it.entries.map { e -> e.delayUntilRecursion } }
-                .filter { it > 0 }
-                .distinct()
-                .sorted()
-                .toMutableList()
-            var currentLevel = availableLevels.firstOrNull() ?: 0
-            if (availableLevels.isNotEmpty()) availableLevels.removeAt(0)
-
-            // 官方 successfulNewEntriesForRecursion：prevent_recursion 条目的内容不进递归缓冲
-            var recursionContext = activatedEntries
-                .filter { !it.preventRecursion }
-                .joinToString("\n") { it.content }
-            var steps = 0
-            // 官方 max_recursion_steps 统计的是总扫描循环数（含首轮），递归轮数 = 值 - 1；
-            // 0 = 不限制，但加 10 层安全上限防止极端循环
-            val maxSteps = when {
-                worldInfoMaxRecursionSteps > 1 -> worldInfoMaxRecursionSteps - 1
-                worldInfoMaxRecursionSteps == 1 -> 0
-                else -> 10
-            }
-            // 官方：即使首轮没有新条目，只要还有未开放的层级，也会继续递归扫描
-            // （聊天内容本身可能命中更高级别的延迟条目）
-            while ((recursionContext.isNotBlank() || availableLevels.isNotEmpty()) && steps < maxSteps) {
-                steps++
-                val knownIds = activatedEntries.map { it.id }.toSet()
-                val newOnes = evaluateLorebooks(
-                    extraContext = recursionContext,
-                    isRecursion = true,
-                    alreadyActivated = activatedEntries,
-                    currentRecursionDelayLevel = currentLevel,
-                )
-                    .filter { it.id !in knownIds }
-                if (newOnes.isEmpty()) {
-                    // 官方：本轮无新条目 → 开放下一延迟层级继续扫描；层级耗尽才停
-                    if (availableLevels.isNotEmpty()) {
-                        currentLevel = availableLevels.removeAt(0)
+            // 官方：组选后逐条掷概率 + 预算（newEntries.sort：粘性优先，再按原始顺序即 priority 降序）
+            val accepted = mutableListOf<PromptInjection.RegexInjection>()
+            var pendingIgnoreBudget = found.count { it.ignoreBudget }
+            val budgetEnabled = worldInfoBudget > 0
+            for (entry in found.sortedWith(
+                compareByDescending<PromptInjection.RegexInjection> { activeStickyEntries.containsKey(it.id) }
+                    .thenByDescending { it.priority }
+            )) {
+                pendingIgnoreBudget -= if (entry.ignoreBudget) 1 else 0
+                // 官方：预算溢出后非 ignoreBudget 条目不再注入（后面还有 ignoreBudget 则跳过，否则停止）
+                if (overflowed && !entry.ignoreBudget) {
+                    if (pendingIgnoreBudget > 0) continue else break
+                }
+                if (failedProbabilityIds.contains(entry.id)) continue
+                // 官方 verifyProbability：useProbability 且 <100 才掷；sticky 免掷；失败记入 failedProbabilityChecks
+                if (entry.useProbability && entry.probability < 100 && !activeStickyEntries.containsKey(entry.id)) {
+                    if (Random.nextInt(100) >= entry.probability) {
+                        failedProbabilityIds.add(entry.id)
                         continue
                     }
-                    break
                 }
-                activatedEntries = activatedEntries + newOnes
-                val newRecursionText = newOnes
-                    .filter { !it.preventRecursion }
-                    .joinToString("\n") { it.content }
-                // 官方递归缓冲是逐轮累积的：下一轮可命中跨多轮内容组合的关键词
+                // 官方预算检查：累计 token >= 预算 → 溢出，触发溢出的条目本身也不注入
+                if (budgetEnabled && !entry.ignoreBudget && usedTokens + estimateTokens(entry.content) >= worldInfoBudget) {
+                    overflowed = true
+                    if (worldInfoOverflowAlert) onOverflow()
+                    continue
+                }
+                accepted.add(entry)
+                if (budgetEnabled && !entry.ignoreBudget) {
+                    usedTokens += estimateTokens(entry.content)
+                }
+            }
+
+            val newOnes = accepted.filter { it.id !in knownIds }
+            newOnes.forEach { knownIds.add(it.id) }
+            activatedEntries.addAll(newOnes)
+
+            // 官方 successfulNewEntriesForRecursion：prevent_recursion 条目的内容不进递归缓冲，逐轮累积
+            val newRecursionText = newOnes
+                .filter { !it.preventRecursion }
+                .joinToString("\n") { it.content }
+            if (newRecursionText.isNotBlank()) {
                 recursionContext = listOf(recursionContext, newRecursionText)
                     .filter { it.isNotBlank() }
                     .joinToString("\n")
-                if (recursionContext.isBlank() && availableLevels.isEmpty()) break
             }
-        }
 
-        // token 预算（酒馆 world_info_budget_cap）：按优先级注入，直到估计 token 数达到上限
-        if (worldInfoBudget > 0) {
-            val sorted = activatedEntries.sortedByDescending { it.priority }
-            val selected = mutableListOf<PromptInjection.RegexInjection>()
-            var usedTokens = 0
-            for (entry in sorted) {
-                val cost = estimateTokens(entry.content)
-                // 官方 ignore_budget：豁免预算，总是注入且不计入预算
-                if (entry.ignoreBudget) {
-                    selected.add(entry)
-                    continue
-                }
-                if (selected.isNotEmpty() && usedTokens + cost > worldInfoBudget) {
-                    if (worldInfoOverflowAlert) onOverflow()
-                    break
-                }
-                selected.add(entry)
-                usedTokens += cost
+            // 官方状态机：
+            // 1. 本轮有成功新条目且未溢出 → 递归扫描
+            if (worldInfoRecursive && !overflowed && newOnes.isNotEmpty()) {
+                isRecursion = true
+                continue
             }
-            // 预算再小也至少注入最高优先级的一条，避免世界书整体失效
-            activatedEntries = selected.ifEmpty { sorted.take(1) }
+            // 2. min_activations 未满足 → 扫描深度逐层 +1 重扫（官方 buffer.advanceScan），
+            //    达到目标或深度超限才停；min 扫描不带递归缓冲
+            val minNotSatisfied = worldInfoMinActivations > 0 && activatedEntries.size < worldInfoMinActivations
+            if (!overflowed && minNotSatisfied && worldInfoDepth + skew < nonSystemMessages.size) {
+                skew++
+                isRecursion = false
+                continue
+            }
+            // 3. 还有未开放的 delay_until_recursion 层级 → 开放下一级继续扫描
+            if (availableLevels.isNotEmpty()) {
+                currentLevel = availableLevels.removeAt(0)
+                isRecursion = true
+                continue
+            }
+            break
         }
 
         for (entry in activatedEntries) {
@@ -609,11 +627,11 @@ internal fun applyInjections(
         result[idx].annotations.any { it is UIMessageAnnotation.CharacterCardData }
     }
 
-    // 处理 BEFORE_CHARACTER：主提示之后、角色卡消息之前（官方 ↑Char）
+    // 处理 BEFORE_CHARACTER：主提示之后（官方 promptManagerDefaultPromptOrder：main → ↑Char → 人设 → 角色卡字段）
     val beforeCharInjections = byPosition[InjectionPosition.BEFORE_CHARACTER]
     if (!beforeCharInjections.isNullOrEmpty()) {
-        var insertIndex = if (cardIndices.isNotEmpty()) cardIndices.first()
-        else (result.indexOfFirst { it.role == MessageRole.SYSTEM }.let { if (it >= 0) it + 1 else 0 })
+        var insertIndex = result.indexOfFirst { it.role == MessageRole.SYSTEM }
+            .let { if (it >= 0) it + 1 else 0 }
         insertIndex = findSafeInsertIndex(result, insertIndex)
         createMergedInjectionMessages(beforeCharInjections).forEach { message ->
             result.add(insertIndex, message)
