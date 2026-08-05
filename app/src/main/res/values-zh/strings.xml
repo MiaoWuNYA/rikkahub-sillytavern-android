@@ -1235,7 +1235,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="prompt_page_cooldown">冷却(Cooldown)</string>
   <string name="prompt_page_delay">延迟(Delay)</string>
   <string name="prompt_page_triggers">触发器(Triggers)</string>
-  <string name="prompt_page_ignore_budget">无视回复限额(Ignore budget)</string>
+  <string name="prompt_page_ignore_budget">无视预算(Ignore budget)</string>
   <string name="prompt_page_match_scope">扫描范围(Match)</string>
   <string name="prompt_page_use_group_scoring">使用群组评分(Use Group Scoring)</string>
   <string name="prompt_page_automation_id">自动化 ID(Automation ID)</string>
@@ -1531,7 +1531,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="prompt_page_trigger_impersonate">扮演(Impersonate)</string>
   <string name="prompt_page_trigger_swipe">滑动备选(Swipe)</string>
   <string name="prompt_page_trigger_regenerate">重新生成(Regenerate)</string>
-  <string name="prompt_page_trigger_quiet">安静(Quiet)</string>
+  <string name="prompt_page_trigger_quiet">静默(Quiet)</string>
   <string name="prompt_page_logic_and_any">任一副键匹配(AND ANY)</string>
   <string name="prompt_page_logic_and_all">全部副键匹配(AND ALL)</string>
   <string name="prompt_page_logic_not_all">副键非全部匹配(NOT ALL)</string>

@@ -198,7 +198,7 @@ class AssistantDetailVM(
     ): List<Lorebook> {
         val tav = assistant.tavernData ?: return lorebooks
         val book = tav.embeddedBook ?: return lorebooks
-        if (assistant.lorebookIds.isEmpty() || book.entries.isEmpty()) return lorebooks
+        if (assistant.lorebookIds.isEmpty()) return lorebooks
         return lorebooks.map { lb ->
             if (lb.id !in assistant.lorebookIds) return@map lb
             val synced = book.entries.map { e ->

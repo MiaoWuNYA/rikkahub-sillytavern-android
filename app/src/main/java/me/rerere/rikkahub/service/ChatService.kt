@@ -659,12 +659,12 @@ class ChatService(
                         messageNodes = conversation.messageNodes.subList(0, indexAt + 1)
                     )
                     saveConversation(conversationId, newConversation)
-                    handleMessageComplete(conversationId)
+                    handleMessageComplete(conversationId, generationType = GenerationType.REGENERATE)
                 } else {
                     if (regenerateAssistantMsg) {
                         val node = conversation.getMessageNodeByMessage(message)
                         val nodeIndex = conversation.messageNodes.indexOf(node)
-                        handleMessageComplete(conversationId, messageRange = 0..<nodeIndex)
+                        handleMessageComplete(conversationId, messageRange = 0..<nodeIndex, generationType = GenerationType.REGENERATE)
                     } else {
                         saveConversation(conversationId, conversation)
                     }
