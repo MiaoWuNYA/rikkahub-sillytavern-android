@@ -927,7 +927,7 @@
   <string name="setting_page_group_chat">Group Chat</string>
   <string name="setting_page_group_chat_desc">Multi-character group chat</string>
   <string name="setting_page_general_settings">General Settings</string>
-  <string name="setting_page_interaction_notification_settings">Interaction &amp;amp; Notifications</string>
+  <string name="setting_page_interaction_notification_settings">Interaction &amp; Notifications</string>
   <string name="setting_page_mcp">MCP</string>
   <string name="setting_page_mcp_desc">Configure MCP Servers</string>
   <string name="setting_page_message_display_settings">Message Display</string>
