@@ -452,12 +452,14 @@ private fun PersonaEditPage(
                 }
                 if (pos == PersonaInjectionPosition.AT_DEPTH) {
                     Spacer(Modifier.height(12.dp))
+                    // CardGroup content 非 @Composable，stringResource 需在 @Composable 上下文先取好
+                    val roleOptions = listOf(
+                        MessageRole.SYSTEM to stringResource(R.string.persona_page_role_system),
+                        MessageRole.USER to stringResource(R.string.persona_page_role_user),
+                        MessageRole.ASSISTANT to stringResource(R.string.persona_page_role_assistant),
+                    )
                     CardGroup(title = { Text(stringResource(R.string.persona_page_role)) }) {
-                        listOf(
-                            MessageRole.SYSTEM to stringResource(R.string.persona_page_role_system),
-                            MessageRole.USER to stringResource(R.string.persona_page_role_user),
-                            MessageRole.ASSISTANT to stringResource(R.string.persona_page_role_assistant),
-                        ).forEach { (r, label) ->
+                        roleOptions.forEach { (r, label) ->
                             item(
                                 onClick = { role = r },
                                 headlineContent = { Text(label, style = MaterialTheme.typography.bodyMedium) },
