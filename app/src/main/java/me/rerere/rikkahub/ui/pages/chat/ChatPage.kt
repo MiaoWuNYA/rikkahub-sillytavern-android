@@ -494,7 +494,7 @@ private fun ChatPageContent(
 
                                     // 官方 /persona-set mode=temp：只设置临时用户名，不找/不选人设
                                     target != null && mode == "temp" -> {
-                                        vm.updateSettings(setting.copy(userNickname = query))
+                                        vm.updateSettings(setting.copy(displaySetting = setting.displaySetting.copy(userNickname = query)))
                                         toaster.show("已设置临时用户名: $query")
                                     }
 
@@ -505,7 +505,7 @@ private fun ChatPageContent(
                                     }
 
                                     else -> {
-                                        vm.updateSettings(setting.copy(userNickname = query))
+                                        vm.updateSettings(setting.copy(displaySetting = setting.displaySetting.copy(userNickname = query)))
                                         toaster.show("未找到人设「$query」，已按官方行为设置临时用户名: $query")
                                     }
                                 }

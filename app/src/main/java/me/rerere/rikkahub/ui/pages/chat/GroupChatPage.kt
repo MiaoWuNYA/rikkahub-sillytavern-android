@@ -34,6 +34,7 @@ import me.rerere.hugeicons.stroke.Play
 import me.rerere.hugeicons.stroke.Settings03
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.model.*
+import me.rerere.rikkahub.R
 import me.rerere.rikkahub.service.ChatService
 import me.rerere.rikkahub.ui.components.ai.ChatInput
 import me.rerere.rikkahub.ui.components.ai.ModelSelector

@@ -14,6 +14,7 @@ import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.MagicWand01
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.ArrowRight01
+import me.rerere.hugeicons.stroke.Setting07
 import me.rerere.hugeicons.stroke.Folder01
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState

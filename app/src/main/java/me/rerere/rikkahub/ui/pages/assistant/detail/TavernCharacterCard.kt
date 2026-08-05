@@ -45,6 +45,7 @@ import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.TavernBookEntry
 import me.rerere.rikkahub.data.model.TavernEmbeddedBook
+import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.ui.FormItem
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.IntTextField
@@ -61,6 +62,7 @@ import me.rerere.hugeicons.stroke.Video01
 import me.rerere.hugeicons.stroke.MapPin
 import me.rerere.hugeicons.stroke.Message01
 import me.rerere.hugeicons.stroke.Message02
+import me.rerere.hugeicons.stroke.Setting07
 import me.rerere.hugeicons.stroke.Share01
 import me.rerere.hugeicons.stroke.Tools
 import me.rerere.hugeicons.stroke.UserCircle
@@ -233,34 +235,34 @@ fun TavernCharacterCard(
                         title = stringResource(R.string.tavern_group_char_info),
                         fields = buildList {
                             if (tav.systemPrompt.isNotBlank()) {
-                                add(FieldSpec(stringResource(R.string.tavern_field_system_prompt)), tav.systemPrompt) { v ->
+                                add(FieldSpec(stringResource(R.string.tavern_field_system_prompt), tav.systemPrompt) { v ->
                                     onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(systemPrompt = v)))
                                 })
                             }
-                            add(FieldSpec(stringResource(R.string.tavern_field_description)), tav.description) { v ->
+                            add(FieldSpec(stringResource(R.string.tavern_field_description), tav.description) { v ->
                                 onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(description = v)))
                             })
-                            add(FieldSpec(stringResource(R.string.tavern_field_personality)), tav.personality) { v ->
+                            add(FieldSpec(stringResource(R.string.tavern_field_personality), tav.personality) { v ->
                                 onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(personality = v)))
                             })
-                            add(FieldSpec(stringResource(R.string.tavern_field_scenario)), tav.scenario) { v ->
+                            add(FieldSpec(stringResource(R.string.tavern_field_scenario), tav.scenario) { v ->
                                 onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(scenario = v)))
                             })
-                            add(FieldSpec(stringResource(R.string.tavern_field_mes_example)), tav.mesExample) { v ->
+                            add(FieldSpec(stringResource(R.string.tavern_field_mes_example), tav.mesExample) { v ->
                                 onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(mesExample = v)))
                             })
                             if (tav.postHistoryInstructions.isNotBlank()) {
-                                add(FieldSpec(stringResource(R.string.tavern_field_phi)), tav.postHistoryInstructions) { v ->
+                                add(FieldSpec(stringResource(R.string.tavern_field_phi), tav.postHistoryInstructions) { v ->
                                     onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(postHistoryInstructions = v)))
                                 })
                             }
                             if (tav.firstMessage.isNotBlank()) {
-                                add(FieldSpec(stringResource(R.string.tavern_field_first_message)), tav.firstMessage, previewLines = 1) { v ->
+                                add(FieldSpec(stringResource(R.string.tavern_field_first_message), tav.firstMessage, previewLines = 1) { v ->
                                     onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(firstMessage = v)))
                                 })
                             }
                             if (tav.creatorNotes.isNotBlank()) {
-                                add(FieldSpec(stringResource(R.string.tavern_field_creator_notes)), tav.creatorNotes) { v ->
+                                add(FieldSpec(stringResource(R.string.tavern_field_creator_notes), tav.creatorNotes) { v ->
                                     onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(creatorNotes = v)))
                                 })
                             }

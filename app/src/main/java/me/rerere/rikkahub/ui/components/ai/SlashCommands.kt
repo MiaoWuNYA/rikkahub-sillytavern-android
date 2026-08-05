@@ -3,6 +3,7 @@ package me.rerere.rikkahub.ui.components.ai
 import android.content.Context
 
 import me.rerere.rikkahub.data.files.CommandFile
+import me.rerere.rikkahub.R
 
 /**
  * 斜杠命令 — 来自 skill 的 commands 目录下的 .md 文件

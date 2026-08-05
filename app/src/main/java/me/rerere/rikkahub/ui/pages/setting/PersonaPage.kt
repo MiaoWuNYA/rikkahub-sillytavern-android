@@ -29,6 +29,7 @@ import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.Persona
 import me.rerere.rikkahub.data.model.PersonaInjectionPosition
+import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.FormItem
