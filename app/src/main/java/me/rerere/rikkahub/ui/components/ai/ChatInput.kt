@@ -1159,12 +1159,12 @@ private fun handleBuiltinSlash(
         }
 
         BuiltinSlashKind.PERSONA -> {
-            val mode = Regex("mode=(\S+)", RegexOption.IGNORE_CASE)
+            val mode = Regex("mode=(\\S+)", RegexOption.IGNORE_CASE)
                 .find(args)?.groupValues?.get(1)?.lowercase() ?: "all"
             if (mode !in listOf("lookup", "temp", "all")) {
                 toaster.show("mode 必须是 lookup / temp / all")
             } else if (onSlashPersona != null) {
-                val name = args.replace(Regex("mode=("[^"]*"|\S+)", RegexOption.IGNORE_CASE), "").trim()
+                val name = args.replace(Regex("mode=("[^"]*"|\\S+)", RegexOption.IGNORE_CASE), "").trim()
                 onSlashPersona(name, mode)
                 state.clearInput()
             } else {
