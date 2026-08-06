@@ -328,8 +328,9 @@ internal fun collectInjections(
                     continue
                 }
 
-                // 官方：exclude_recursion 条目在递归扫描中被跳过（内容是否进递归缓冲另算）
-                if (isRecursion && entry.excludeRecursion && !activeStickyEntries.containsKey(entry.id)) continue
+                // 官方：exclude_recursion 条目在递归扫描中被跳过（官方还要求全局递归开关开启；
+                // 全局递归关时 delay_until_recursion 层级开放也走 RECURSION 状态，但官方不视其为递归，不排除）
+                if (isRecursion && worldInfoRecursive && entry.excludeRecursion && !activeStickyEntries.containsKey(entry.id)) continue
 
                 // 官方：constant / 激活中 sticky 条目直接加入（constant 在前，sticky 在后）
                 if (entry.constantActive || activeStickyEntries.containsKey(entry.id)) {
