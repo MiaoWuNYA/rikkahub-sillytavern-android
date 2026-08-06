@@ -26,7 +26,7 @@ An AI chat client that runs on your phone (Kotlin + Jetpack Compose + Material Y
 | 🎴 Character cards | 6 fields parsed, no export | **22 fields, lossless**: official injection structure, PNG / JSON export, visual editor |
 | 📚 Lorebooks | Basic keyword matching | **Full official semantics**: four keyword modes, cross-book groups, recursive scanning, sticky / cooldown, token budget |
 | 🧩 Macros | Simple placeholders | **Macro Engine 2.0**: variables, conditionals, random & time, conversation-aware — prompts become programmable |
-| ⌨️ Slash commands | None | **22 built-in commands**: `/impersonate` `/continue` `/sysgen` `/reroll-pick` … |
+| ⌨️ Slash commands | None | **21 built-in commands**: `/impersonate` `/continue` `/sysgen` `/reroll-pick` … |
 | 👥 Personas / Author's Note / Group chats | None | **Three brand-new systems**, aligned with official SillyTavern semantics |
 | 🔮 Divination | None | **Twelve charting systems** + 14 mandatory interpretation templates, Python / JS dual-engine cross-validation |
 | 🚀 Skills | Loaded only if the model calls them | **Automatic triggering**, public directory, GitHub one-click install / batch download / update detection |
@@ -36,60 +36,91 @@ In one sentence: **upstream is a base chat client; this is a complete toolbox fo
 
 ---
 
-## 🍺 Tavern System
+## 🍺 Tavern System (the fork's main battleground)
 
-### Character Cards: Import → Structure → Inject → Export → Edit
+> Scale, verified file by file: card import `AssistantImporter.kt` — upstream 183 lines → fully rewritten here for V2/V3; lorebook engine `PromptInjectionTransformer.kt` — upstream 269 lines → 860 here; lorebook/injection editor `PromptPage.kt` — 2485 lines here; character-card editor `TavernCharacterCard.kt` — 1942 lines here; exporter `CardExporter.kt` — 313 lines here.
 
-**Upstream**: JSON (V2/V3) and PNG imports exist, but only 6 fields are parsed (name / first_mes / system_prompt / description / personality / scenario) and flattened into a single system-prompt string. **No export.**
+### 1. Character Cards: Import → Structure → Inject → Export → Edit
+
+**Upstream**: JSON (V2/V3) and PNG imports exist, but only 6 fields are parsed (name / first_mes / system_prompt / description / personality / scenario) and flattened into a single system-prompt string ("You are roleplaying as X + ## Description + ## Personality + ## Scenario"). Everything else is dropped. **No export, no editor.**
 
 **This fork:**
 
-- **All 22 fields preserved structurally**: example messages, alternate greetings, creator notes, post-history instructions (PHI), version, tags, nickname, assets, `character_book` (embedded lorebook), `extensions` (depth prompts), and more. What upstream drops, this fork keeps.
+- **Field coverage grows from 6 to 20+**: example messages (mes_example), alternate greetings, creator notes (creator_notes / creator_notes_multilingual), post-history instructions (PHI), character version, tags, nickname, assets, group_only_greetings, creation / modification dates, `character_book` (embedded lorebook), and `extensions` (depth prompts, including their depth and role). What upstream drops, this fork keeps — even the raw extensions structure, so import → export round-trips without data loss.
 - **Official Chat Completion injection structure**: main prompt, standalone character-field messages, example messages split on `<START>` into real user/assistant turns, PHI appended after history, depth prompts injected at their configured depth/role.
-- **Lossless export (new)**: PNG / JSON with official field names (`insertion_order`, `extensions.*`); import → export round-trips without data loss.
-- **Character detail editor (new)**: visual editing of all 22 fields, embedded-lorebook management, and an export button.
+- **Lossless export (new)**: PNG / JSON via `CardExporter.kt`, with official field names (`insertion_order`, `extensions.*`); import → export round-trips without data loss.
+- **Character detail editor (new)**: visual editing of all 22 fields, embedded-lorebook management, and an export button — one screen handles the whole card.
 
-### Lorebooks
+### 2. Lorebooks
 
-**Upstream**: keyword matching → content injection, with scan depth, constant entries, priority, and injection position.
+**Upstream**: a 5-field model (id / name / description / enabled / entries) with keyword matching → content injection, scan depth, constant entries, priority, and injection position.
 
-**This fork adds:**
+**This fork** — aligned rule by rule with the official SillyTavern world-info.js semantics; entry fields grow from 6 to 30+:
 
-- **Four selective-logic modes** for primary/secondary keywords (AND_ANY / AND_ALL / NOT_ANY / NOT_ALL), official semantics
-- **Cross-book groups**: only one entry per group activates — sticky wins → keyword score → override → weighted random
+| Capability | Local field | Official counterpart |
+|---|---|---|
+| Four selective-logic modes | `selective` + `selectiveLogic` | `selective` + `selective_logic` (and_any / and_all / not_any / not_all) |
+| Whole-word / regex / case | `matchWholeWords` / `useRegex` / `caseSensitive` | `match_whole_words` / `key_regex` / `key_case_sensitive` |
+| Per-entry scan depth | `scanDepth` (overrides the global default) | `scan_depth` |
+| Constant activation | `constantActive` | `constant` |
+| Cross-book groups | `group` / `groupWeight` / `groupOverride` | `group` (comma-separated) / `group_weight` / `group_override` |
+| Trigger probability | `probability` / `useProbability` | `probability` / `use_probability` |
+| Sticky / cooldown | `sticky` / `cooldown` | `sticky` / `cooldown` |
+| Delayed activation | `delay` | `extensions.delay` |
+| Recursion controls | `excludeRecursion` / `preventRecursion` | `extensions.exclude_recursion` / `prevent_recursion` |
+| Delay until recursion | `delayUntilRecursion` (true or numeric levels) | `extensions.delay_until_recursion` |
+| Budget exemption | `ignoreBudget` | `extensions.ignore_budget` |
+| Character-field matching | `match_*` ×6 (persona / description / personality / depth prompt / scenario / creator notes) | `extensions.match_*` |
+| Display order / generation filter | `displayIndex` / `displayPosition` / `triggers` | `display_index` / `display_position` / `triggers` |
+
+**Scan engine** (`PromptInjectionTransformer.kt`, 269 → 860 lines):
+
+- **Official checkWorldInfo state machine**: INITIAL → RECURSION / MIN_ACTIVATIONS / delay-level loop, with the full budget, overflow, sticky, and cooldown lifecycle
+- **Cross-book group selection**: only one entry per group activates — sticky wins → keyword score (use_group_scoring) → group_override → weighted random
 - **Recursive scanning**: activated content feeds further scans with accumulating context; exclude / prevent controls and numeric `delay_until_recursion` levels opened step by step
-- **Sticky / cooldown**: entries persist for N turns then enter cooldown, isolated per conversation
-- **Trigger probability**, **token budget with `ignore_budget` exemption**, **official regex keys** (`/pattern/flags`)
-- **`match_*`**: per-entry control over which character-card fields are scanned; **EM Top / EM Bottom** anchors around example messages
-- Full entry import/export
+- **Token budget**: budget = global budget % × context tokens; scanning stops on overflow (with an optional alert), `ignore_budget` entries exempt
+- **Official serialization compatibility**: `selective_logic` and friends serialize under their official enum names (and_any…), so entries interoperate with Tavern imports/exports
 
-### Macro Engine 2.0
+**Editor** (`PromptPage.kt`, 2485 lines):
 
-**Upstream**: simple placeholder substitution (`{{char}}`, `{{user}}`).
+- **Global settings panel**: scan depth, token budget (+ absolute cap), minimum activations (+ max depth), recursive scanning (+ max recursion steps), insertion strategy (character-first / global-first / uniform), overflow alert, group scoring — all mapped to the official settings
+- **Entry editor**: keywords (primary / secondary, four logic modes, regex, whole-word), injection position / depth / role, probability, sticky / cooldown / delay, groups & weights, recursion controls, match_*, budget exemption
+- **Drag-to-reorder**, plus two-way sync between external and embedded (character-book) lorebooks
 
-**This fork** — prompts become programs:
+### 3. Macro Engine 2.0
+
+**Upstream**: `PlaceholderTransformer.kt` (162 lines) — a key-value table of `{{char}}` / `{{user}}` / `{{time}}`, string replacement, only ~6 placeholders.
+
+**This fork** (`MacroEngine.kt`, 965 lines) — prompts become programs:
 
 - **Variables**: `/setvar` `/getvar` `/incvar` … manage conversation variables, read with `{{getvar::key}}` or the `.key` shorthand — one card can react to story state
 - **Conditionals**: `{{if}} / {{else}} / !`, comparison operators, `&&` / `||`, with nesting
-- **Random & time**: `{{pick::A|B|C}}` (stable within a turn), `{{roll::1d20}}`, `{{random}}`, time and idle-duration macros
+- **Random & time**: `{{pick::A|B|C}}` (stable within a turn), `{{roll::1d20}}`, `{{random}}`, `{{time}}`, `{{trim}}`, `{{comment}}`
 - **Conversation-aware**: `{{lastUserMessage}}`, `{{lastCharMessage}}`, `{{idleDuration}}`, `{{charFirstMessage::N}}`, `{{original}}`
 - Unknown macros pass through untouched
 
-### Slash Commands (absent upstream)
+### 4. Slash Commands (absent upstream)
 
-Type them in the input box and hit send; `/help` lists everything. Parameterless commands run on tap; parameterized ones fill the input box for completion.
+Type them in the input box and hit send; `/help` lists everything with descriptions. Parameterless commands run on tap; parameterized ones fill the input box for completion. 21 built-in commands:
 
-- **Roleplay**: `/impersonate` (the AI drafts your reply from your point of view), `/continue`, `/sendas`, `/sys`, `/send`
-- **Generation control**: `/trigger`, `/sysgen` (AI writes system narration), `/inject` (inject a prompt without polluting chat history)
-- **Character management**: `/char-get` `/char-update` `/char-duplicate` `/rename-char`
-- **Variables & random**: `/listvar` `/setvar` `/getvar` `/addvar` `/incvar` `/decvar` `/flushvar` `/reroll-pick`
+- **Roleplay**: `/impersonate` (the AI drafts your reply from your point of view), `/continue` (continue at the end of the last reply), `/sendas`, `/sys`, `/send`
+- **Generation control**: `/trigger` (trigger a reply without adding a message), `/sysgen` (AI writes system narration), `/gen`
+- **Character management**: `/char-update`, `/char-duplicate`, `/rename-char`
+- **Variables & random**: `/listvar` `/setvar` `/getvar` `/addvar` `/incvar` `/decvar` `/flushvar` `/reroll-pick` (re-roll the stable `{{pick}}` random)
+- **Persona**: `/persona` (alias of official `/persona-set`)
 - All aligned with official SillyTavern semantics; skill-provided commands appear automatically
 
-### Personas / Author's Note / Group Chats (absent upstream)
+### 5. Personas (absent upstream)
 
-- **Personas**: official five-position injection (IN_PROMPT / TOP / BOTTOM / AT_DEPTH / NONE), per-character binding, standalone SYSTEM-message injection
-- **Author's Note**: official interval semantics (1 = every user message / N = multiples), injection depth, injection role, master switch
-- **Group chats**: multi-character conversations with independent prompts / personas / models per member; four speaker-selection strategies (Natural / List / Weighted random / Manual); auto-reply (configurable rounds & delay, interrupted by user messages)
+Official five-position injection (IN_PROMPT / TOP / BOTTOM / AT_DEPTH / NONE), per-character binding, standalone SYSTEM-message injection, and a disable option.
+
+### 6. Author's Note (Director's Note) (absent upstream)
+
+Official interval semantics (1 = every user message / N = multiples), injection depth, injection role, and a master switch.
+
+### 7. Group Chats (absent upstream)
+
+Multi-character conversations with independent prompts / personas / models per member; four speaker-selection strategies (Natural / List / Weighted random / Manual); auto-reply (configurable rounds & delay, interrupted by user messages); live speaker status.
 
 ---
 

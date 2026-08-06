@@ -15,7 +15,7 @@
 - **多提供商**：OpenAI / Claude / Gemini / DeepSeek 等任意 OpenAI、Anthropic、Google 兼容 API
 - **酒馆兼容**：SillyTavern 角色卡 / 世界书深度兼容，字段无损导入导出，官方注入结构
 - **命理系统**：十二套确定性排盘引擎（八字 / 紫微 / 塔罗 / 西洋占星 / 吠陀 / 奇门 / 六爻…），AI 按权威模板逐条解读
-- **可编程提示词**：宏引擎 2.0、22 个斜杠命令、群聊、技能自动触发、Python / JS 双引擎桥接
+- **可编程提示词**：宏引擎 2.0、21 个斜杠命令、群聊、技能自动触发、Python / JS 双引擎桥接
 
 ---
 
@@ -26,7 +26,7 @@
 | 🎴 角色卡 | 解析 6 个字段，无导出 | **22 字段无损**：官方注入结构、PNG / JSON 导出、可视化编辑 |
 | 📚 世界书 | 基础关键词匹配 | **官方全套语义**：四档关键词、跨书分组、递归扫描、粘性 / 冷却、token 预算 |
 | 🧩 宏 | 简单占位符 | **宏引擎 2.0**：变量、条件、随机、对话感知，提示词可编程 |
-| ⌨️ 斜杠命令 | 无 | **22 个内置命令**：`/impersonate` `/continue` `/sysgen` `/reroll-pick` … |
+| ⌨️ 斜杠命令 | 无 | **21 个内置命令**：`/impersonate` `/continue` `/sysgen` `/reroll-pick` … |
 | 👥 人设 / 导演备注 / 群聊 | 无 | **三个全新系统**，全部对齐酒馆官方语义 |
 | 🔮 命理 | 无 | **十二套排盘体系** + 14 份强制解读模板，Python / JS 双引擎交叉验证 |
 | 🚀 技能 | 模型手动调用才加载 | **自动触发**、公共目录、GitHub 一键安装 / 批量下载 / 更新检测 |
@@ -36,60 +36,91 @@
 
 ---
 
-## 🍺 酒馆系统
+## 🍺 酒馆系统（本分支的主战场）
 
-### 角色卡：导入 → 结构化 → 注入 → 导出 → 编辑
+> 规模对照（逐文件核对）：角色卡导入 `AssistantImporter.kt` 上游 183 行 → 本地 V2/V3 全量重写；世界书引擎 `PromptInjectionTransformer.kt` 上游 269 行 → 本地 860 行；世界书 / 注入编辑页 `PromptPage.kt` 本地 2485 行；角色卡编辑页 `TavernCharacterCard.kt` 本地 1942 行；导出器 `CardExporter.kt` 本地 313 行。
 
-**上游**：JSON（V2/V3）与 PNG 可导入，但只解析 6 个字段（name / first_mes / system_prompt / description / personality / scenario），拼成一段 system prompt 字符串；**没有导出**。
+### 1. 角色卡：导入 → 结构化 → 注入 → 导出 → 编辑
+
+**上游**：JSON（V2/V3）与 PNG 可导入，但只解析 6 个字段（name / first_mes / system_prompt / description / personality / scenario），拼成一段 "You are roleplaying as X + ## Description + ## Personality + ## Scenario" 的系统提示字符串；其余字段全部丢弃；**没有导出，没有编辑页**。
 
 **本分支**：
 
-- **22 个字段全部结构化保留**：示例对话、备选开场白、作者备注、历史后指令（PHI）、版本、标签、昵称、素材、`character_book`（内嵌世界书）、`extensions`（深度提示）等。上游会丢掉的，这里一个不丢。
-- **官方 Chat Completion 注入结构**：主提示、角色卡字段独立消息、示例消息按 `<START>` 解析成真正的 user/assistant 对话、PHI 放历史末尾、深度提示按深度 / 角色注入。
-- **无损导出（新增）**：PNG / JSON，字段名对齐官方规范（`insertion_order`、`extensions.*`），导入再导出不丢东西。
-- **角色卡详情编辑页（新增）**：22 个字段可视化编辑 + 内嵌世界书管理 + 导出按钮。
+- **字段从 6 个扩到 20+ 个，全部结构化保留**：示例对话（mes_example）、备选开场白（alternate_greetings）、作者备注（creator_notes / creator_notes_multilingual）、历史后指令（PHI）、角色版本、标签、昵称、素材（assets）、仅群聊开场白（group_only_greetings）、创建 / 修改时间、`character_book`（内嵌世界书）、`extensions`（深度提示，含深度与角色参数）。上游会丢掉的，这里一个不丢——extensions 原始结构也保留，导入再导出无损往返。
+- **官方 Chat Completion 注入结构**：主提示、角色卡字段独立消息、示例消息按 `<START>` 分块解析成真正的 user/assistant 对话、PHI 放历史末尾、深度提示按配置的深度 / 角色注入。
+- **无损导出（新增）**：PNG / JSON 导出（`CardExporter.kt`），字段名对齐官方规范（`insertion_order`、`extensions.*`），导入再导出不丢东西。
+- **角色卡详情编辑页（新增）**：22 个字段可视化编辑 + 内嵌世界书管理 + 导出按钮，一张卡全部搞定。
 
-### 世界书（Lorebook）
+### 2. 世界书（Lorebook）
 
-**上游**：关键词包含匹配 → 注入内容，支持扫描深度、常驻条目、优先级、注入位置。
+**上游**：5 字段数据模型（id / name / description / enabled / entries）+ 关键词包含匹配 → 注入内容，支持扫描深度、常驻条目、优先级、注入位置。
 
-**本分支新增**：
+**本分支**——逐条对齐酒馆官方 world-info.js 语义，条目字段从上游的 6 个扩到 30+ 个：
 
-- 主 / 副关键词**四档逻辑**（AND_ANY / AND_ALL / NOT_ANY / NOT_ALL），官方语义
-- **跨世界书分组**：同组只激活一条——粘性优先 → 关键词评分 → 覆盖优先 → 加权随机
-- **递归扫描**：已激活内容继续扫，缓冲逐层累积；exclude / prevent 控制、`delay_until_recursion` 数字层级逐级开放
-- **粘性 / 冷却**：激活后保留 N 轮、到期自动冷却，按对话隔离
-- **触发概率**、**token 预算 + `ignore_budget` 豁免**、**官方正则键**（`/pattern/flags`）
-- **`match_*`**：逐条控制扫描角色卡字段；**示例消息前后锚点**（EM Top / Bottom）
-- 条目导入导出字段完整
+| 能力 | 本地字段 | 官方对应 |
+|---|---|---|
+| 主 / 副关键词四档逻辑 | `selective` + `selectiveLogic` | `selective` + `selective_logic`（and_any / and_all / not_any / not_all） |
+| 整词 / 正则 / 大小写 | `matchWholeWords` / `useRegex` / `caseSensitive` | `match_whole_words` / `key_regex` / `key_case_sensitive` |
+| 条目级扫描深度 | `scanDepth`（覆盖全局深度） | `scan_depth` |
+| 常驻激活 | `constantActive` | `constant` |
+| 跨书分组 | `group` / `groupWeight` / `groupOverride` | `group`（逗号分隔）/ `group_weight` / `group_override` |
+| 触发概率 | `probability` / `useProbability` | `probability` / `use_probability` |
+| 粘性 / 冷却 | `sticky` / `cooldown` | `sticky` / `cooldown` |
+| 延迟激活 | `delay` | `extensions.delay` |
+| 递归控制 | `excludeRecursion` / `preventRecursion` | `extensions.exclude_recursion` / `prevent_recursion` |
+| 延迟到递归 | `delayUntilRecursion`（true 或数字层级） | `extensions.delay_until_recursion` |
+| 预算豁免 | `ignoreBudget` | `extensions.ignore_budget` |
+| 匹配角色卡字段 | `match_*` ×6（人设 / 描述 / 性格 / 深度提示 / 场景 / 作者备注） | `extensions.match_*` |
+| 展示排序 / 生成过滤 | `displayIndex` / `displayPosition` / `triggers` | `display_index` / `display_position` / `triggers` |
 
-### 宏引擎 2.0
+**扫描引擎**（`PromptInjectionTransformer.kt`，269 → 860 行）：
 
-**上游**：简单占位符替换（`{{char}}`、`{{user}}`）。
+- **官方 checkWorldInfo 状态机**：INITIAL → RECURSION / MIN_ACTIVATIONS / 层级开放循环，含预算、溢出、粘性、冷却的完整生命周期
+- **跨世界书分组选胜**：同组只激活一条——粘性优先 → 关键词评分（use_group_scoring）→ group_override → 加权随机
+- **递归扫描**：已激活条目的内容进递归缓冲继续扫，缓冲逐层累积；exclude / prevent 控制、`delay_until_recursion` 数字层级逐级开放
+- **token 预算**：budget = 全局预算百分比 × 上下文 token，溢出即停（可弹提醒），`ignore_budget` 条目豁免
+- **官方序列化兼容**：selective_logic 等字段用官方枚举名（and_any…）序列化，与酒馆导入导出互通
 
-**本分支**——提示词变成程序：
+**编辑页**（`PromptPage.kt`，2485 行）：
+
+- **全局设置面板**：扫描深度、token 预算（+ 绝对上限）、最少激活数（+ 最大深度）、递归扫描（+ 最大递归轮数）、插入策略（角色卡优先 / 全局优先 / 均匀）、溢出提醒、组评分——全部对齐官方设置项
+- **条目编辑器**：关键词（主 / 副、四档逻辑、正则、整词）、注入位置 / 深度 / 角色、概率、粘性 / 冷却 / 延迟、分组与权重、递归控制、match_*、预算豁免
+- **拖拽排序**（reorderable）+ 外置世界书与内嵌世界书双向同步
+
+### 3. 宏引擎 2.0
+
+**上游**：`PlaceholderTransformer.kt`（162 行）——一张 `{{char}}` / `{{user}}` / `{{time}}` 键值表，字符串替换，仅 6 个占位符。
+
+**本分支**（`MacroEngine.kt`，965 行）——提示词变成程序：
 
 - **变量系统**：`/setvar` `/getvar` `/incvar` … 管理对话变量，宏里用 `{{getvar::key}}` 或 `.key` 简写读取，一张卡随剧情状态自动切换说法
-- **条件逻辑**：`{{if}} / {{else}} / !`、比较运算符、`&&` / `||`，支持嵌套
-- **随机与时间**：`{{pick::A|B|C}}`（同轮稳定随机）、`{{roll::1d20}}`、`{{random}}`、时间与间隔宏
+- **条件逻辑**：`{{if}} / {{else}} / !`、比较运算符、`&&` / `||`，支持分支与嵌套
+- **随机与时间**：`{{pick::A|B|C}}`（同轮稳定随机）、`{{roll::1d20}}`、`{{random}}`、`{{time}}`、`{{trim}}`、`{{comment}}`
 - **对话感知**：`{{lastUserMessage}}`、`{{lastCharMessage}}`、`{{idleDuration}}`、`{{charFirstMessage::N}}`、`{{original}}`
 - 未知宏原样保留，不破坏模板
 
-### 斜杠命令（上游没有）
+### 4. 斜杠命令（上游没有）
 
-输入框直接输入即执行，`/help` 随时查看全部命令；无参数命令点击直接执行，带参数命令点击自动填入补全。
+输入框直接输入即执行，`/help` 随时查看全部命令与说明；无参数命令点击直接执行，带参数命令点击自动填入输入框补参数后发送。21 个内置命令：
 
-- **角色扮演**：`/impersonate`（AI 以你的视角拟话）、`/continue`、`/sendas`、`/sys`、`/send`
-- **操控生成**：`/trigger`、`/sysgen`（AI 写系统旁白）、`/inject`（注入提示词不污染聊天记录）
-- **角色卡管理**：`/char-get` `/char-update` `/char-duplicate` `/rename-char`
-- **变量与随机**：`/listvar` `/setvar` `/getvar` `/addvar` `/incvar` `/decvar` `/flushvar` `/reroll-pick`
-- 语义对照酒馆官方实现；技能目录里的命令随技能自动出现
+- **角色扮演**：`/impersonate`（AI 以你的视角拟话）、`/continue`（在原回复末尾继续生成）、`/sendas`、`/sys`、`/send`
+- **操控生成**：`/trigger`（不新增消息直接触发回复）、`/sysgen`（让 AI 写系统旁白）、`/gen`
+- **角色卡管理**：`/char-update`、`/char-duplicate`、`/rename-char`
+- **变量与随机**：`/listvar` `/setvar` `/getvar` `/addvar` `/incvar` `/decvar` `/flushvar` `/reroll-pick`（重新掷 `{{pick}}` 稳定随机）
+- **人设**：`/persona`（官方 `/persona-set` 别名）
+- 语义对照酒馆官方实现；技能目录里的命令会随技能自动出现
 
-### 人设 / 导演备注 / 群聊（上游没有）
+### 5. 人设（Persona）— 上游没有
 
-- **人设**：官方五档注入位置（IN_PROMPT / TOP / BOTTOM / AT_DEPTH / NONE）、按角色绑定、独立 SYSTEM 消息注入
-- **导演备注（Author's Note）**：官方间隔语义（1=每次 / N=用户消息倍数）、注入深度、注入角色、总开关
-- **群聊**：多人角色共同对话，每角色独立提示词 / 人设 / 模型；四种选人策略（自然 / 列表 / 带权重随机 / 手动）；自动接话（轮数、延迟可配，用户发言即打断）
+官方五档注入位置（IN_PROMPT / TOP / BOTTOM / AT_DEPTH / NONE）、按角色绑定、独立 SYSTEM 消息注入、禁用即不注入。
+
+### 6. 导演备注（Author's Note）— 上游没有
+
+官方间隔语义（1=每次 / N=用户消息倍数）、注入深度、注入角色、总开关。
+
+### 7. 群聊 — 上游没有
+
+多人角色共同对话，每角色独立提示词 / 人设 / 模型；四种选人策略（自然 / 列表 / 带权重随机 / 手动）；自动接话（轮数、延迟可配，用户发言即打断）；发言人状态提示。
 
 ---
 
