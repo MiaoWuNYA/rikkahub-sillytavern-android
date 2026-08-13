@@ -85,6 +85,7 @@ import me.rerere.rikkahub.data.datastore.findModelById
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.ui.components.message.MessagePartBlock
 import me.rerere.rikkahub.ui.components.message.ThinkingStep
+import me.rerere.rikkahub.ui.components.message.ChatMessageServerToolStep
 import me.rerere.rikkahub.ui.components.message.groupMessageParts
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
@@ -565,6 +566,10 @@ private fun ExportedChatMessage(
                                         ExportedToolStep(
                                             tool = step.tool
                                         )
+                                    }
+
+                                    is ThinkingStep.ServerToolStep -> {
+                                        ChatMessageServerToolStep(tool = step.tool)
                                     }
                                 }
                             }

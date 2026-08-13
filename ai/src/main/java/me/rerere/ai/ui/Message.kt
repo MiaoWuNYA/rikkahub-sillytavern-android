@@ -3,17 +3,12 @@ package me.rerere.ai.ui
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.core.TokenUsage
-import me.rerere.ai.provider.Model
 import me.rerere.ai.util.json
 import kotlin.math.roundToInt
 import kotlin.time.Clock
-import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 // 公共消息抽象, 具体的Provider实现会转换为API接口需要的DTO
@@ -31,124 +26,6 @@ data class UIMessage(
     val usage: TokenUsage? = null,
     val translation: String? = null
 ) {
-    private fun appendChunk(chunk: MessageChunk): UIMessage {
-        val choice = chunk.choices.getOrNull(0)
-        val message = choice?.delta ?: choice?.message
-        return message?.let { delta ->
-            // Handle Parts
-            var newParts = delta.parts.fold(parts) { acc, deltaPart ->
-                when (deltaPart) {
-                    is UIMessagePart.Text -> {
-                        // Skip empty text deltas
-                        if (deltaPart.text.isEmpty()) {
-                            acc
-                        } else {
-                            val lastPart = acc.lastOrNull()
-                            if (lastPart is UIMessagePart.Text) {
-                                // Append to the last Text part
-                                acc.dropLast(1) + lastPart.copy(text = lastPart.text + deltaPart.text)
-                            } else {
-                                // Create new Text part
-                                acc + deltaPart
-                            }
-                        }
-                    }
-
-                    is UIMessagePart.Image -> {
-                        val lastPart = acc.lastOrNull()
-                        if (lastPart is UIMessagePart.Image) {
-                            // Append to the last Image part (for streaming base64)
-                            acc.dropLast(1) + lastPart.copy(
-                                url = lastPart.url + deltaPart.url,
-                                metadata = deltaPart.metadata ?: lastPart.metadata
-                            )
-                        } else {
-                            // Create new Image part
-                            acc + UIMessagePart.Image(
-                                url = "data:image/png;base64,${deltaPart.url}",
-                                metadata = deltaPart.metadata,
-                            )
-                        }
-                    }
-
-                    is UIMessagePart.Reasoning -> {
-                        // Skip empty reasoning deltas
-                        if (deltaPart.reasoning.isEmpty() && deltaPart.metadata == null) {
-                            acc
-                        } else {
-                            val lastPart = acc.lastOrNull()
-                            if (lastPart is UIMessagePart.Reasoning) {
-                                // Append to the last Reasoning part
-                                acc.dropLast(1) + UIMessagePart.Reasoning(
-                                    reasoning = lastPart.reasoning + deltaPart.reasoning,
-                                    createdAt = lastPart.createdAt,
-                                    finishedAt = null,
-                                ).also {
-                                    it.metadata = deltaPart.metadata ?: lastPart.metadata
-                                }
-                            } else {
-                                // Create new Reasoning part
-                                acc + deltaPart
-                            }
-                        }
-                    }
-
-                    is UIMessagePart.Tool -> {
-                        if (deltaPart.toolCallId.isBlank()) {
-                            // No ID yet - append to the last Tool if it also has no ID
-                            val lastTool = acc.lastOrNull { it is UIMessagePart.Tool } as? UIMessagePart.Tool
-                            if (lastTool != null) {
-                                acc.map { part ->
-                                    if (part === lastTool) part.merge(deltaPart) else part
-                                }
-                            } else {
-                                acc + deltaPart.copy()
-                            }
-                        } else {
-                            // Has ID - find and update by ID, or insert new
-                            val existsPart = acc.find {
-                                it is UIMessagePart.Tool && it.toolCallId == deltaPart.toolCallId
-                            } as? UIMessagePart.Tool
-                            if (existsPart == null) {
-                                acc + deltaPart.copy()
-                            } else {
-                                acc.map { part ->
-                                    if (part is UIMessagePart.Tool && part.toolCallId == deltaPart.toolCallId) {
-                                        part.merge(deltaPart)
-                                    } else part
-                                }
-                            }
-                        }
-                    }
-
-                    else -> {
-                        println("delta part append not supported: $deltaPart")
-                        acc
-                    }
-                }
-            }
-            // Handle Reasoning End
-            if (parts.filterIsInstance<UIMessagePart.Reasoning>()
-                    .isNotEmpty() && delta.parts.filterIsInstance<UIMessagePart.Reasoning>()
-                    .isEmpty()
-            ) {
-                newParts = newParts.map { part ->
-                    if (part is UIMessagePart.Reasoning && part.finishedAt == null) {
-                        part.copy(finishedAt = Clock.System.now())
-                    } else part
-                }
-            }
-            // Handle annotations
-            val newAnnotations = delta.annotations.ifEmpty {
-                annotations
-            }
-            copy(
-                parts = newParts,
-                annotations = newAnnotations,
-            )
-        } ?: this
-    }
-
     fun summaryAsText(maxLength: Int = Int.MAX_VALUE): String {
         val text = "[${role.name}]: " + parts.joinToString(separator = "\n") { part ->
             when (part) {
@@ -190,10 +67,6 @@ data class UIMessage(
         it is UIMessagePart.Image && it.url.startsWith("data:")
     }
 
-    operator fun plus(chunk: MessageChunk): UIMessage {
-        return this.appendChunk(chunk)
-    }
-
     companion object {
         fun system(prompt: String) = UIMessage(
             role = MessageRole.SYSTEM,
@@ -209,28 +82,6 @@ data class UIMessage(
             role = MessageRole.ASSISTANT,
             parts = listOf(UIMessagePart.Text(prompt))
         )
-    }
-}
-
-/**
- * 处理MessageChunk合并
- *
- * @receiver 已有消息列表
- * @param chunk 消息chunk
- * @param model 模型, 可以不传，如果传了，会把模型id写入到消息，标记是哪个模型输出的消息
- * @return 新消息列表
- */
-fun List<UIMessage>.handleMessageChunk(chunk: MessageChunk, model: Model? = null): List<UIMessage> {
-    require(this.isNotEmpty()) {
-        "messages must not be empty"
-    }
-    val choice = chunk.choices.getOrNull(0) ?: return this
-    val message = choice.delta ?: choice.message ?: return this
-    if (this.last().role != message.role) {
-        return this + (UIMessage(modelId = model?.id, role = message.role, parts = emptyList()) + chunk)
-    } else {
-        val last = this.last() + chunk
-        return this.dropLast(1) + last
     }
 }
 
@@ -352,170 +203,10 @@ private fun List<UIMessage>.alignContextStart(startIndex: Int): Int {
     return adjustedStartIndex
 }
 
-@Serializable
-sealed class ToolApprovalState {
-    @Serializable
-    @SerialName("auto")
-    data object Auto : ToolApprovalState()
-
-    @Serializable
-    @SerialName("pending")
-    data object Pending : ToolApprovalState()
-
-    @Serializable
-    @SerialName("approved")
-    data object Approved : ToolApprovalState()
-
-    @Serializable
-    @SerialName("denied")
-    data class Denied(val reason: String = "") : ToolApprovalState()
-
-    @Serializable
-    @SerialName("answered")
-    data class Answered(val answer: String) : ToolApprovalState()
-}
-
-fun ToolApprovalState.canResumeToolExecution(): Boolean {
-    return when (this) {
-        ToolApprovalState.Approved -> true
-        is ToolApprovalState.Denied -> true
-        is ToolApprovalState.Answered -> true
-        ToolApprovalState.Auto,
-        ToolApprovalState.Pending,
-            -> false
-    }
-}
-
-@Serializable
-sealed class UIMessagePart {
-    abstract val metadata: JsonObject?
-
-    @Serializable
-    @SerialName("text")
-    data class Text(
-        val text: String,
-        override var metadata: JsonObject? = null
-    ) : UIMessagePart()
-
-    @Serializable
-    @SerialName("image")
-    data class Image(
-        val url: String,
-        override var metadata: JsonObject? = null
-    ) : UIMessagePart()
-
-    @Serializable
-    @SerialName("video")
-    data class Video(
-        val url: String,
-        override var metadata: JsonObject? = null
-    ) : UIMessagePart()
-
-    @Serializable
-    @SerialName("audio")
-    data class Audio(
-        val url: String,
-        override var metadata: JsonObject? = null
-    ) : UIMessagePart()
-
-    @Serializable
-    @SerialName("document")
-    data class Document(
-        val url: String,
-        val fileName: String,
-        val mime: String = "text/*",
-        override var metadata: JsonObject? = null
-    ) : UIMessagePart()
-
-    @Serializable
-    @SerialName("reasoning")
-    data class Reasoning(
-        val reasoning: String,
-        val createdAt: Instant = Clock.System.now(),
-        val finishedAt: Instant? = Clock.System.now(),
-        override var metadata: JsonObject? = null
-    ) : UIMessagePart()
-
-    @Deprecated("Deprecated")
-    @Serializable
-    @SerialName("search")
-    data object Search : UIMessagePart() {
-        override var metadata: JsonObject? = null
-    }
-
-    @Deprecated("Use UIMessagePart.Tool instead")
-    @Serializable
-    @SerialName("tool_call")
-    data class ToolCall(
-        val toolCallId: String,
-        val toolName: String,
-        val arguments: String,
-        val approvalState: ToolApprovalState = ToolApprovalState.Auto,
-        override var metadata: JsonObject? = null
-    ) : UIMessagePart() {
-        fun merge(other: ToolCall): ToolCall {
-            return ToolCall(
-                toolCallId = toolCallId,
-                toolName = toolName + other.toolName,
-                arguments = arguments + other.arguments,
-                approvalState = approvalState,
-                metadata = if (other.metadata != null) other.metadata else metadata,
-            )
-        }
-    }
-
-    @Deprecated("Use UIMessagePart.Tool instead")
-    @Serializable
-    @SerialName("tool_result")
-    data class ToolResult(
-        val toolCallId: String,
-        val toolName: String,
-        val content: JsonElement,
-        val arguments: JsonElement,
-        override var metadata: JsonObject? = null
-    ) : UIMessagePart()
-
-    @Serializable
-    @SerialName("tool")
-    data class Tool(
-        val toolCallId: String,
-        val toolName: String,
-        val input: String,
-        val output: List<UIMessagePart> = emptyList(),
-        val approvalState: ToolApprovalState = ToolApprovalState.Auto,
-        override var metadata: JsonObject? = null
-    ) : UIMessagePart() {
-        /** Whether the tool has been executed (has output) */
-        val isExecuted: Boolean get() = output.isNotEmpty()
-
-        /** Whether the tool is pending user approval */
-        val isPending: Boolean get() = approvalState is ToolApprovalState.Pending
-
-        /** Whether generation can resume and handle this tool immediately */
-        val canResumeExecution: Boolean get() = !isExecuted && approvalState.canResumeToolExecution()
-
-        /** Parse input string as JsonElement */
-        fun inputAsJson(): JsonElement = runCatching {
-            json.parseToJsonElement(input.ifBlank { "{}" })
-        }.getOrElse { JsonObject(emptyMap()) }
-
-        fun merge(other: Tool): Tool {
-            return Tool(
-                toolCallId = toolCallId,
-                toolName = toolName + other.toolName,
-                input = input + other.input,
-                output = output + other.output,
-                approvalState = approvalState,
-                metadata = if (other.metadata != null) other.metadata else metadata,
-            )
-        }
-    }
-}
-
 /**
  * Sort message parts by type priority:
  * - Reasoning (-1): shown first
- * - Text, Tool, ToolCall, ToolResult, Search (0): middle
+ * - Text, Tool, ServerTool, ToolCall, ToolResult, Search (0): middle
  * - Image, Video, Audio, Document (1): shown last
  *
  * WARNING: This function is intended for migration only.
@@ -538,6 +229,7 @@ fun List<UIMessagePart>.toSortedMessageParts(): List<UIMessagePart> {
             is UIMessagePart.Reasoning -> -1
             is UIMessagePart.Text -> 0
             is UIMessagePart.Tool -> 0
+            is UIMessagePart.ServerTool -> 0
             is UIMessagePart.ToolCall -> 0
             is UIMessagePart.ToolResult -> 0
             is UIMessagePart.Search -> 0
@@ -803,39 +495,3 @@ fun <T> List<T>.migrateToolNodes(
 
     return result
 }
-
-@Serializable
-sealed class UIMessageAnnotation {
-    @Serializable
-    @SerialName("url_citation")
-    data class UrlCitation(
-        val title: String,
-        val url: String
-    ) : UIMessageAnnotation()
-
-    /** 角色卡 mes_example 解析出的示例消息标记（EMTop/EMBottom 锚点用） */
-    @Serializable
-    @SerialName("example_message")
-    data object ExampleMessage : UIMessageAnnotation()
-
-    /** 角色卡字段消息标记（官方独立 system 消息，世界书 before/after char 锚点用） */
-    @Serializable
-    @SerialName("character_card")
-    data object CharacterCardData : UIMessageAnnotation()
-}
-
-@Serializable
-data class MessageChunk(
-    val id: String,
-    val model: String,
-    val choices: List<UIMessageChoice>,
-    val usage: TokenUsage? = null,
-)
-
-@Serializable
-data class UIMessageChoice(
-    val index: Int,
-    val delta: UIMessage?,
-    val message: UIMessage?,
-    val finishReason: String?
-)

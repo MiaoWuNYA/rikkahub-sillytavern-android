@@ -648,6 +648,12 @@
   <string name="search_page_title">搜索消息</string>
   <string name="search_page_untitled">无标题</string>
   <string name="search_picker_title">搜索设置</string>
+  <string name="search_picker_local_title">本地搜索</string>
+  <string name="search_picker_local_description">接入各种三方搜索提供商</string>
+  <string name="search_picker_model_title">模型搜索</string>
+  <string name="search_picker_model_description">模型提供商云端自带搜索</string>
+  <string name="search_picker_select_provider">选择搜索服务商</string>
+  <string name="search_picker_turn_off">关闭搜索</string>
   <string name="select_and_copy">选择复制</string>
   <string name="send">发送</string>
   <string name="setting_asr_configure_api_key">API密钥</string>
@@ -1805,4 +1811,10 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="assistant_page_context_message_limit_count">上下文消息限制: %d</string>
   <string name="assistant_page_context_message_limit_unlimited">无限上下文消息</string>
   <string name="assistant_page_context_message_limit_warning">限制上下文会在每次上下文被修剪时使提示词缓存失效。更大的限制修剪频率更低；无限制则从不修剪，并保持缓存完全完好。</string>
+  <string name="setting_update_reminder_enabled">更新提醒已启用</string>
+  <string name="setting_update_reminder_paused_until">已暂停至 %1$s</string>
+  <string name="setting_update_reminder_pause_title">暂停更新提醒</string>
+  <string name="setting_update_reminder_pause_description">选择暂停更新提醒的时长。它们会自动恢复。</string>
+  <string name="setting_update_reminder_pause_days">%1$d 天</string>
+  <string name="setting_update_reminder_resume_now">立即恢复</string>
 </resources>

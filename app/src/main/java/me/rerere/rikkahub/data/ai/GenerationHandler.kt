@@ -19,7 +19,6 @@ import kotlinx.serialization.json.put
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.core.ReasoningLevel
 import me.rerere.ai.core.Tool
-import me.rerere.ai.core.merge
 import me.rerere.ai.provider.CustomBody
 import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.Provider
@@ -30,7 +29,8 @@ import me.rerere.ai.registry.ModelRegistry
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.ai.ui.ToolApprovalState
-import me.rerere.ai.ui.handleMessageChunk
+import me.rerere.ai.ui.StreamChunkHandler
+import me.rerere.ai.ui.handleTextGenerationResult
 import me.rerere.ai.ui.limitContext
 import me.rerere.rikkahub.data.ai.transformers.InputMessageTransformer
 import me.rerere.rikkahub.data.ai.transformers.MessageTransformer
@@ -706,23 +706,16 @@ class GenerationHandler(
             }
         )
         if (stream) {
+        if (stream) {
             // Streaming: retry once on transient error (429/5xx/timeout)
+            val streamChunkHandler = StreamChunkHandler(model)
             try {
                 providerImpl.streamText(
                     providerSetting = provider,
                     messages = internalMessages,
                     params = params
                 ).collect {
-                    messages = messages.handleMessageChunk(chunk = it, model = model)
-                    it.usage?.let { usage ->
-                        messages = messages.mapIndexed { index, message ->
-                            if (index == messages.lastIndex) {
-                                message.copy(usage = message.usage.merge(usage))
-                            } else {
-                                message
-                            }
-                        }
-                    }
+                    messages = streamChunkHandler.handle(messages, it)
                     onUpdateMessages(messages)
                 }
             } catch (e: Exception) {
@@ -734,16 +727,7 @@ class GenerationHandler(
                         messages = internalMessages,
                         params = params
                     ).collect {
-                        messages = messages.handleMessageChunk(chunk = it, model = model)
-                        it.usage?.let { usage ->
-                            messages = messages.mapIndexed { index, message ->
-                                if (index == messages.lastIndex) {
-                                    message.copy(usage = message.usage.merge(usage))
-                                } else {
-                                    message
-                                }
-                            }
-                        }
+                        messages = streamChunkHandler.handle(messages, it)
                         onUpdateMessages(messages)
                     }
                 } else {
@@ -751,28 +735,13 @@ class GenerationHandler(
                 }
             }
         } else {
-            val chunk = try {
-                providerImpl.generateText(
-                    providerSetting = provider,
-                    messages = internalMessages,
-                    params = params,
-                )
-            } catch (e: Exception) {
-                Log.e(TAG, "generateText failed: ${e.message}")
-                throw e
-            }
-            messages = messages.handleMessageChunk(chunk = chunk, model = model)
-            (chunk as? me.rerere.ai.ui.MessageChunk)?.usage?.let { usage ->
-                messages = messages.mapIndexed { index, message ->
-                    if (index == messages.lastIndex) {
-                        message.copy(
-                            usage = message.usage.merge(usage)
-                        )
-                    } else {
-                        message
-                    }
-                }
-            }
+            val result = providerImpl.generateText(
+                providerSetting = provider,
+                messages = internalMessages,
+                params = params,
+            )
+            messages = messages.handleTextGenerationResult(result = result, model = model)
+
             onUpdateMessages(messages)
         }
     }
@@ -799,6 +768,7 @@ class GenerationHandler(
 
             var messages = listOf(UIMessage.user(prompt))
             var translatedText = ""
+            val streamChunkHandler = StreamChunkHandler(model)
 
             providerHandler.streamText(
                 providerSetting = provider,
@@ -808,7 +778,7 @@ class GenerationHandler(
                     reasoningLevel = ReasoningLevel.fromBudgetTokens(settings.translateThinkingBudget),
                 ),
             ).collect { chunk ->
-                messages = messages.handleMessageChunk(chunk)
+                messages = streamChunkHandler.handle(messages, chunk)
                 translatedText = messages.lastOrNull()?.toText() ?: ""
 
                 if (translatedText.isNotBlank()) {
@@ -819,7 +789,7 @@ class GenerationHandler(
         } else {
             // Use Qwen MT model with special translation options
             val messages = listOf(UIMessage.user(sourceText))
-            val chunk = providerHandler.generateText(
+            val result = providerHandler.generateText(
                 providerSetting = provider,
                 messages = messages,
                 params = TextGenerationParams(
@@ -840,7 +810,7 @@ class GenerationHandler(
                     )
                 ),
             )
-            val translatedText = chunk.choices.firstOrNull()?.message?.toText() ?: ""
+            val translatedText = result.message.toText()
 
             if (translatedText.isNotBlank()) {
                 onStreamUpdate?.invoke(translatedText)

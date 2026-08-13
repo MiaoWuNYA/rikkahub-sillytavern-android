@@ -424,7 +424,7 @@ fun GroupChatPage(groupId: String) {
                             settings = settings,
                             hazeState = hazeState,
                             enableSearch = false,
-                            onToggleSearch = {},
+                            onUpdateSearchMode = {},
                             onUpdateChatModel = { model ->
                                 scope.launch {
                                     settingsStore.update { s ->
