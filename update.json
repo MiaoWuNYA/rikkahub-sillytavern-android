@@ -1,0 +1,12 @@
+{
+  "version": "2.4.6",
+  "publishedAt": "2026-08-13T15:58:35Z",
+  "changelog": "基于上游 2.4.6 代码，保留命理/酒馆/群聊等自定义功能。\n\n- 合入上游 AI 模块重构与搜索更新\n- 更新检查已切换到本仓库，不再跟随官方版本",
+  "downloads": [
+    {
+      "name": "rikkahub-plus-2.4.6-arm64-v8a.apk",
+      "url": "https://github.com/heikeyangle-code/rikkahub-plus/releases/download/v2.4.6/rikkahub-plus-2.4.6-arm64-v8a.apk",
+      "size": "约 171 MB"
+    }
+  ]
+}
