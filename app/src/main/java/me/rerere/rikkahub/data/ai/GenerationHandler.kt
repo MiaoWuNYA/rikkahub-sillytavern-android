@@ -706,7 +706,6 @@ class GenerationHandler(
             }
         )
         if (stream) {
-        if (stream) {
             // Streaming: retry once on transient error (429/5xx/timeout)
             val streamChunkHandler = StreamChunkHandler(model)
             try {
