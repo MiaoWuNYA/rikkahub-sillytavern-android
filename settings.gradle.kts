@@ -42,3 +42,5 @@ include(":material3")
 // Build 1779956616 — force cache refresh
 include(":workspace")
 include(":app:baselineprofile")
+include(":videogen")
+include(":oauth")

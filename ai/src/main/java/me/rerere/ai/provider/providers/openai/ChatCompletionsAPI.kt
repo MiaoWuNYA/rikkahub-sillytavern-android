@@ -26,6 +26,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
+import me.rerere.ai.core.InputSchema
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.core.ReasoningLevel
 import me.rerere.ai.core.TokenUsage
@@ -93,6 +94,11 @@ class ChatCompletionsAPI(
             .post(json.encodeToString(requestBody).toRequestBody("application/json".toMediaType()))
             .addHeader("Authorization", "Bearer ${keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString())}")
             .configureReferHeaders(providerSetting.baseUrl)
+            .apply {
+                if (providerSetting.baseUrl.toHttpUrl().host == "opencode.ai") {
+                    params.sessionId?.let { header("x-opencode-session", it) }
+                }
+            }
             .build()
 
         Log.i(TAG, "generateText: ${json.encodeToString(requestBody)}")
@@ -145,6 +151,11 @@ class ChatCompletionsAPI(
             .addHeader("Authorization", "Bearer ${keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString())}")
             .addHeader("Content-Type", "application/json")
             .configureReferHeaders(providerSetting.baseUrl)
+            .apply {
+                if (providerSetting.baseUrl.toHttpUrl().host == "opencode.ai") {
+                    params.sessionId?.let { header("x-opencode-session", it) }
+                }
+            }
             .build()
 
         Log.i(TAG, "streamText: ${json.encodeToString(requestBody)}")
@@ -254,6 +265,7 @@ class ChatCompletionsAPI(
 
             // open router适配
             if(isOpenRouter) {
+                params.sessionId?.let { put("session_id", it) }
                 if(params.model.outputModalities.contains(Modality.IMAGE)) {
                     put("modalities", buildJsonArray {
                         add("image")
@@ -345,6 +357,14 @@ class ChatCompletionsAPI(
                         })
                     }
 
+                    "api.xiaomimimo.com", "token-plan-cn.xiaomimimo.com" -> {
+                        // 小米 MiMo
+                        // https://mimo.mi.com/docs/zh-CN/api/chat/openai-api
+                        put("thinking", buildJsonObject {
+                            put("type", if (!level.isEnabled) "disabled" else "enabled")
+                        })
+                    }
+
                     "api.moonshot.cn" -> {
                         put("thinking", buildJsonObject {
                             put("type", if (!level.isEnabled) "disabled" else "enabled")
@@ -362,8 +382,8 @@ class ChatCompletionsAPI(
                         })
                         if (level.isEnabled && level != ReasoningLevel.AUTO) {
                             val effort = when (level) {
-                                ReasoningLevel.MEDIUM -> "high"
-                                ReasoningLevel.XHIGH -> "max"
+                                ReasoningLevel.MEDIUM, ReasoningLevel.HIGH -> "high"
+                                ReasoningLevel.MAX -> "max"
                                 else -> level.effort
                             }
                             put("reasoning_effort", effort)
@@ -374,7 +394,7 @@ class ChatCompletionsAPI(
                         if ("deepseek-v4" in params.model.modelId.lowercase()) {
                             if (level != ReasoningLevel.AUTO) {
                                 val effort = when (level) {
-                                    ReasoningLevel.XHIGH -> "max"
+                                    ReasoningLevel.XHIGH, ReasoningLevel.MAX -> "max"
                                     ReasoningLevel.OFF -> "none"
                                     else -> "high"
                                 }
@@ -415,6 +435,7 @@ class ChatCompletionsAPI(
                                     "parameters",
                                     json.encodeToJsonElement(
                                         tool.parameters()
+                                            ?: InputSchema.Obj(properties = JsonObject(emptyMap()))
                                     )
                                 )
                             })
@@ -430,8 +451,8 @@ class ChatCompletionsAPI(
                 ModelRegistry.KIMI_K2_6.match(model.modelId) ||
                 ModelRegistry.KIMI_K3.match(model.modelId) ||
                 ModelRegistry.KIMI_K3_ALIAS.match(model.modelId)
-        return !ModelRegistry.OPENAI_O_MODELS.match(model.modelId) && 
-               !ModelRegistry.GPT_5.match(model.modelId) && 
+        return !ModelRegistry.OPENAI_O_MODELS.match(model.modelId) &&
+               !ModelRegistry.GPT_5.match(model.modelId) &&
                !isMoonshotRestricted
     }
 

@@ -10,6 +10,7 @@ import me.rerere.rikkahub.data.db.AppDatabase
 import me.rerere.rikkahub.data.event.AppEventBus
 import me.rerere.rikkahub.service.ChatNotificationManager
 import me.rerere.rikkahub.service.ChatService
+import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspaceTerminalSessionManager
 import me.rerere.rikkahub.utils.EmojiData
 import me.rerere.rikkahub.utils.EmojiUtils
 import me.rerere.rikkahub.utils.JsonInstant
@@ -31,7 +32,10 @@ val appModule = module {
     }
 
     single {
-        UpdateChecker(get())
+        UpdateChecker(
+            client = get(),
+            appScope = get(),
+        )
     }
 
     single {
@@ -58,6 +62,9 @@ val appModule = module {
         SoundEffectPlayer(get())
     }
 
+single {
+        WorkspaceTerminalSessionManager(get(), get())
+    }
 
     // 生成通知与业务解耦：ChatService 只发事件，通知由这里消费；
     // createdAtStart 保证进程启动即订阅，否则后台生成的事件会因无订阅者而丢失
@@ -80,6 +87,7 @@ val appModule = module {
             memoryRepository = get(),
             workspaceRepository = get(),
             generationHandler = get(),
+            translationHandler = get(),
             templateTransformer = get(),
             providerManager = get(),
             localTools = get(),

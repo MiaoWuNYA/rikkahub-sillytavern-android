@@ -7,12 +7,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -146,6 +143,7 @@ fun ReasoningPicker(
                         ReasoningLevel.MEDIUM -> ReasoningMedium
                         ReasoningLevel.HIGH -> ReasoningHigh
                         ReasoningLevel.XHIGH -> ReasoningHigh
+                        ReasoningLevel.MAX -> ReasoningHigh
                     },
                     contentDescription = null,
                     modifier = Modifier.size(32.dp),
@@ -157,111 +155,41 @@ fun ReasoningPicker(
                 )
             }
 
-            Column(
+            Slider(
+                value = sliderValue,
+                onValueChange = { sliderValue = it },
+                onValueChangeFinished = {
+                    val snappedIndex = sliderValue.roundToInt().coerceIn(0, levelCount - 1)
+                    sliderValue = snappedIndex.toFloat()
+                    onUpdateReasoningLevel(levels[snappedIndex])
+                },
+                valueRange = 0f..(levelCount - 1).toFloat(),
+                steps = levelCount - 2,
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Slider(
-                    value = sliderValue,
-                    onValueChange = { sliderValue = it },
-                    onValueChangeFinished = {
-                        val snappedIndex = sliderValue.roundToInt().coerceIn(0, levelCount - 1)
-                        sliderValue = snappedIndex.toFloat()
-                        onUpdateReasoningLevel(levels[snappedIndex])
-                    },
-                    valueRange = 0f..(levelCount - 1).toFloat(),
-                    steps = levelCount - 2,
-                    modifier = Modifier.fillMaxWidth(),
-                    thumb = {
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(10.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.onPrimary)
-                            )
-                        }
-                    },
-                    track = { sliderState ->
-                        SliderDefaults.Track(
-                            sliderState = sliderState,
-                            drawStopIndicator = null,
-                            thumbTrackGapSize = 0.dp,
-                        )
-                    }
-                )
-
-                ReasoningScale(
-                    selectedLevel = reasoningLevel,
-                    onSelect = { level ->
-                        sliderValue = levels.indexOf(level).toFloat()
-                        onUpdateReasoningLevel(level)
-                    }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ReasoningScale(
-    selectedLevel: ReasoningLevel,
-    onSelect: (ReasoningLevel) -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        levels.forEach { level ->
-            val selected = level == selectedLevel
-            val tickColor by animateColorAsState(
-                if (selected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.outlineVariant
-            )
-            val labelColor by animateColorAsState(
-                if (selected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                ToggleSurface(
-                    checked = selected,
-                    onClick = { onSelect(level) },
-                    modifier = Modifier,
-                ) {
-                    Column(
+                thumb = {
+                    Box(
                         modifier = Modifier
-                            .padding(horizontal = 8.dp, vertical = 10.dp)
-                            .fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Box(
                             modifier = Modifier
-                                .width(if (selected) 20.dp else 16.dp)
-                                .height(if (selected) 6.dp else 4.dp)
-                                .clip(RoundedCornerShape(999.dp))
-                                .background(tickColor)
-                        )
-                        Text(
-                            text = level.label(),
-                            style = MaterialTheme.typography.labelSmall,
-                            textAlign = TextAlign.Center,
-                            color = labelColor,
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.onPrimary)
                         )
                     }
+                },
+                track = { sliderState ->
+                    SliderDefaults.Track(
+                        sliderState = sliderState,
+                        drawStopIndicator = null,
+                        thumbTrackGapSize = 0.dp,
+                    )
                 }
-            }
+            )
         }
     }
 }
@@ -275,6 +203,7 @@ private fun ReasoningIcon(level: ReasoningLevel) {
         ReasoningLevel.MEDIUM -> Icon(ReasoningMedium, null)
         ReasoningLevel.HIGH -> Icon(ReasoningHigh, null)
         ReasoningLevel.XHIGH -> Icon(ReasoningHigh, null)
+        ReasoningLevel.MAX -> Icon(ReasoningHigh, null)
     }
 }
 
@@ -286,6 +215,7 @@ private fun ReasoningLevel.label(): String = when (this) {
     ReasoningLevel.MEDIUM -> stringResource(R.string.reasoning_medium)
     ReasoningLevel.HIGH -> stringResource(R.string.reasoning_heavy)
     ReasoningLevel.XHIGH -> stringResource(R.string.reasoning_xhigh)
+    ReasoningLevel.MAX -> stringResource(R.string.reasoning_max)
 }
 
 @Composable

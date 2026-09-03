@@ -9,9 +9,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import me.rerere.ai.provider.BalanceOption
-import me.rerere.ai.provider.Modality
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelAbility
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
@@ -20,27 +17,6 @@ import kotlin.uuid.Uuid
 val DEFAULT_AUTO_MODEL_ID = Uuid.parse("b7055fb4-39f9-4042-a88a-0d80ed76cf08")
 
 val DEFAULT_PROVIDERS = listOf(
-    ProviderSetting.OpenAI(
-        id = Uuid.parse("a8d2d463-e8c0-41f2-b89e-f5eb8e716cce"),
-        name = "RikkaHub",
-        baseUrl = "https://api.rikka-ai.com/v1",
-        apiKey = "",
-        enabled = true,
-        builtIn = true,
-        description = {
-            Text(stringResource(R.string.rikkahub_provider_description))
-        },
-        models = listOf(
-            Model(
-                id = DEFAULT_AUTO_MODEL_ID,
-                modelId = "auto",
-                displayName = "Auto",
-                inputModalities = listOf(Modality.TEXT),
-                outputModalities = listOf(Modality.TEXT),
-                abilities = listOf(ModelAbility.TOOL, ModelAbility.REASONING),
-            )
-        )
-    ),
     ProviderSetting.OpenAI(
         id = Uuid.parse("1eeea727-9ee5-4cae-93e6-6fb01a4d051e"),
         name = "OpenAI",
@@ -103,11 +79,6 @@ val DEFAULT_PROVIDERS = listOf(
                 """.trimIndent()
             )
         },
-        balanceOption = BalanceOption(
-            enabled = true,
-            apiPath = "/user/info",
-            resultPath = "data.totalBalance",
-        ),
     ),
     ProviderSetting.OpenAI(
         id = Uuid.parse("f099ad5b-ef03-446d-8e78-7e36787f780b"),

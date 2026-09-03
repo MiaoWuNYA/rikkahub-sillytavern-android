@@ -5,6 +5,9 @@ import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
@@ -17,31 +20,29 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import me.rerere.ai.core.MessageRole
-import me.rerere.ai.core.ReasoningLevel
 import me.rerere.ai.core.Tool
-import me.rerere.ai.provider.CustomBody
 import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.Provider
 import me.rerere.ai.provider.ProviderManager
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.ai.provider.TextGenerationParams
-import me.rerere.ai.registry.ModelRegistry
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.ai.ui.ToolApprovalState
 import me.rerere.ai.ui.StreamChunkHandler
 import me.rerere.ai.ui.handleTextGenerationResult
 import me.rerere.ai.ui.limitContext
+import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.ai.transformers.InputMessageTransformer
 import me.rerere.rikkahub.data.ai.transformers.MessageTransformer
 import me.rerere.rikkahub.data.ai.transformers.OutputMessageTransformer
 import me.rerere.rikkahub.data.ai.transformers.findSafeInsertIndex
+import me.rerere.rikkahub.data.files.FileFolders
 import me.rerere.rikkahub.data.ai.transformers.onGenerationFinish
 import me.rerere.rikkahub.data.ai.transformers.transforms
 import me.rerere.rikkahub.data.ai.transformers.visualTransforms
 import me.rerere.rikkahub.data.ai.tools.buildMemoryTools
 import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.findModelById
 import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantMemory
@@ -51,12 +52,22 @@ import me.rerere.rikkahub.data.model.assembleMainPrompt
 import me.rerere.rikkahub.data.model.buildExampleMessages
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.data.repository.MemoryRepository
-import me.rerere.rikkahub.utils.applyPlaceholders
-import java.util.Locale
+import java.io.File
+import java.io.IOException
+import java.net.ConnectException
+import java.net.NoRouteToHostException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 private const val TAG = "GenerationHandler"
+private const val MAX_TOOL_OUTPUT_CHARS = 32 * 1024
+private const val TOOL_OUTPUT_PREVIEW_CHARS = 4 * 1024
+private const val MAX_PROVIDER_NETWORK_RETRIES = 3
+private const val INITIAL_PROVIDER_RETRY_DELAY_MS = 1_000L
+
+private class StreamChunkHandlingException(cause: Throwable) : RuntimeException(cause)
 
 @Serializable
 sealed interface GenerationChunk {
@@ -84,10 +95,10 @@ class GenerationHandler(
         maxSteps: Int = 256,
         processingStatus: MutableStateFlow<String?> = MutableStateFlow(null),
         conversationSystemPrompt: String? = null,
+        conversationId: Uuid? = null,
         conversationModeInjectionIds: Set<Uuid> = emptySet(),
         conversationLorebookIds: Set<Uuid> = emptySet(),
         workspaceCwd: String? = null,
-        conversationId: Uuid? = null,
         generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
         maxTokensOverride: Int? = null,
     ): Flow<GenerationChunk> = flow {
@@ -349,11 +360,11 @@ class GenerationHandler(
                     stream = assistant.streamOutput,
                     processingStatus = processingStatus,
                     conversationSystemPrompt = conversationSystemPrompt,
+                    conversationId = conversationId,
                     conversationModeInjectionIds = conversationModeInjectionIds,
                     conversationLorebookIds = conversationLorebookIds,
                     prebuiltSystemMessages = prebuiltSystemMessages,
                     workspaceCwd = workspaceCwd,
-                    conversationId = conversationId,
                     generationType = generationType,
                     maxTokensOverride = maxTokensOverride,
                 )
@@ -703,120 +714,177 @@ class GenerationHandler(
             customBody = buildList {
                 addAll(assistant.customBodies)
                 addAll(model.customBodies)
-            }
+            },
+            sessionId = conversationId?.toString(),
         )
-        if (stream) {
-            // Streaming: retry once on transient error (429/5xx/timeout)
-            val streamChunkHandler = StreamChunkHandler(model)
-            try {
-                providerImpl.streamText(
-                    providerSetting = provider,
-                    messages = internalMessages,
-                    params = params
-                ).collect {
-                    messages = streamChunkHandler.handle(messages, it)
-                    onUpdateMessages(messages)
+        try {
+            if (stream) {
+                // 每次重试都从本次模型调用开始前的消息快照重新合并，避免将重试响应
+                // 追加到已经展示的半截回复后面。预先创建助手消息可让所有尝试复用同一 ID，
+                // ChatService 因而会覆盖当前分支，而不是创建新的候选消息。
+                val responseBaseMessages =
+                    if (messages.lastOrNull()?.role == MessageRole.ASSISTANT) {
+                        messages
+                    } else {
+                        messages + UIMessage(
+                            role = MessageRole.ASSISTANT,
+                            parts = emptyList(),
+                            modelId = model.id,
+                        )
+                    }
+                var retryCount = 0
+
+                while (true) {
+                    val streamChunkHandler = StreamChunkHandler(model)
+                    var attemptMessages = responseBaseMessages
+                    try {
+                        providerImpl.streamText(
+                            providerSetting = provider,
+                            messages = internalMessages,
+                            params = params
+                        ).collect { chunk ->
+                            try {
+                                if (retryCount > 0) {
+                                    processingStatus.value = null
+                                }
+                                attemptMessages = streamChunkHandler.handle(attemptMessages, chunk)
+                                onUpdateMessages(attemptMessages)
+                            } catch (error: CancellationException) {
+                                throw error
+                            } catch (error: Throwable) {
+                                // 下游消息转换或 UI 更新失败不属于网络故障，不能重放模型请求。
+                                throw StreamChunkHandlingException(error)
+                            }
+                        }
+                        messages = attemptMessages
+                        break
+                    } catch (error: Throwable) {
+                        if (error is StreamChunkHandlingException) {
+                            throw error.cause ?: error
+                        }
+                        retryCount = awaitNetworkRetryOrThrow(
+                            error = error,
+                            retryCount = retryCount,
+                            processingStatus = processingStatus,
+                            enabled = settings.networkSetting.enableAutoRetry,
+                        )
+                    }
                 }
-            } catch (e: Exception) {
-                val msg = e.message ?: ""
-                if (msg.contains("429 ") || msg.contains("5") || msg.contains("timeout") || msg.contains("reset")) {
-                    Log.w(TAG, "streamText: retrying once after: ${e.message}")
-                    providerImpl.streamText(
+            } else {
+                val result = executeProviderRequestWithRetry(
+                    processingStatus = processingStatus,
+                    enabled = settings.networkSetting.enableAutoRetry,
+                ) {
+                    providerImpl.generateText(
                         providerSetting = provider,
                         messages = internalMessages,
-                        params = params
-                    ).collect {
-                        messages = streamChunkHandler.handle(messages, it)
-                        onUpdateMessages(messages)
-                    }
-                } else {
-                    throw e
+                        params = params,
+                    )
                 }
+                messages = messages.handleTextGenerationResult(result = result, model = model)
+                onUpdateMessages(messages)
             }
-        } else {
-            val result = providerImpl.generateText(
-                providerSetting = provider,
-                messages = internalMessages,
-                params = params,
-            )
-            messages = messages.handleTextGenerationResult(result = result, model = model)
-
-            onUpdateMessages(messages)
+        } finally {
+            processingStatus.value = null
         }
     }
 
-    fun translateText(
-        settings: Settings,
-        sourceText: String,
-        targetLanguage: Locale,
-        onStreamUpdate: ((String) -> Unit)? = null
-    ): Flow<String> = flow {
-        val model = settings.providers.findModelById(settings.translateModeId)
-            ?: error("Translation model not found")
-        val provider = model.findProvider(settings.providers)
-            ?: error("Translation provider not found")
-
-        val providerHandler = providerManager.getProviderByType(provider)
-
-        if (!ModelRegistry.QWEN_MT.match(model.modelId)) {
-            // Use regular translation with prompt
-            val prompt = settings.translatePrompt.applyPlaceholders(
-                "source_text" to sourceText,
-                "target_lang" to targetLanguage.toString(),
-            )
-
-            var messages = listOf(UIMessage.user(prompt))
-            var translatedText = ""
-            val streamChunkHandler = StreamChunkHandler(model)
-
-            providerHandler.streamText(
-                providerSetting = provider,
-                messages = messages,
-                params = TextGenerationParams(
-                    model = model,
-                    reasoningLevel = ReasoningLevel.fromBudgetTokens(settings.translateThinkingBudget),
-                ),
-            ).collect { chunk ->
-                messages = streamChunkHandler.handle(messages, chunk)
-                translatedText = messages.lastOrNull()?.toText() ?: ""
-
-                if (translatedText.isNotBlank()) {
-                    onStreamUpdate?.invoke(translatedText)
-                    emit(translatedText)
-                }
-            }
-        } else {
-            // Use Qwen MT model with special translation options
-            val messages = listOf(UIMessage.user(sourceText))
-            val result = providerHandler.generateText(
-                providerSetting = provider,
-                messages = messages,
-                params = TextGenerationParams(
-                    model = model,
-                    temperature = 0.3f,
-                    topP = 0.95f,
-                    customBody = listOf(
-                        CustomBody(
-                            key = "translation_options",
-                            value = buildJsonObject {
-                                put("source_lang", JsonPrimitive("auto"))
-                                put(
-                                    "target_lang",
-                                    JsonPrimitive(targetLanguage.getDisplayLanguage(Locale.ENGLISH))
-                                )
-                            }
-                        )
-                    )
-                ),
-            )
-            val translatedText = result.message.toText()
-
-            if (translatedText.isNotBlank()) {
-                onStreamUpdate?.invoke(translatedText)
-                emit(translatedText)
+    private suspend fun <T> executeProviderRequestWithRetry(
+        processingStatus: MutableStateFlow<String?>,
+        enabled: Boolean,
+        block: suspend () -> T,
+    ): T {
+        var retryCount = 0
+        while (true) {
+            try {
+                return block()
+            } catch (error: Throwable) {
+                retryCount = awaitNetworkRetryOrThrow(
+                    error = error,
+                    retryCount = retryCount,
+                    processingStatus = processingStatus,
+                    enabled = enabled,
+                )
             }
         }
-    }.flowOn(Dispatchers.IO)
+    }
+
+    private suspend fun awaitNetworkRetryOrThrow(
+        error: Throwable,
+        retryCount: Int,
+        processingStatus: MutableStateFlow<String?>,
+        enabled: Boolean,
+    ): Int {
+        // 用户主动停止生成时，底层连接也可能以 IOException("canceled") 收尾；
+        // 先检查协程状态，确保取消不会被当作网络波动重新拉起。
+        currentCoroutineContext().ensureActive()
+        if (!enabled || error !is IOException || retryCount >= MAX_PROVIDER_NETWORK_RETRIES) {
+            throw error
+        }
+
+        val nextRetryCount = retryCount + 1
+        val retryDelay = INITIAL_PROVIDER_RETRY_DELAY_MS shl retryCount
+        processingStatus.value = context.getString(
+            R.string.chat_generation_network_retrying,
+            getNetworkErrorMessage(error),
+            nextRetryCount,
+            MAX_PROVIDER_NETWORK_RETRIES,
+        )
+        Log.w(
+            TAG,
+            "Provider connection failed, retrying in ${retryDelay}ms " +
+                    "($nextRetryCount/$MAX_PROVIDER_NETWORK_RETRIES)",
+            error,
+        )
+        delay(retryDelay)
+        return nextRetryCount
+    }
+
+    private fun getNetworkErrorMessage(error: IOException): String {
+        val messageRes = when (error) {
+            is UnknownHostException -> R.string.chat_generation_network_unknown_host
+            is SocketTimeoutException -> R.string.chat_generation_network_timeout
+            is ConnectException, is NoRouteToHostException -> R.string.chat_generation_network_unreachable
+            else -> R.string.chat_generation_network_disconnected
+        }
+        return context.getString(messageRes)
+    }
+
+    private fun maybeTruncateToolOutput(
+        toolCallId: String,
+        output: List<UIMessagePart>,
+        hasShellAccess: Boolean,
+    ): List<UIMessagePart> {
+        val textParts = output.filterIsInstance<UIMessagePart.Text>()
+        val nonTextParts = output.filter { it !is UIMessagePart.Text }
+        val totalChars = textParts.sumOf { it.text.length }
+
+        if (totalChars <= MAX_TOOL_OUTPUT_CHARS || !hasShellAccess) return output
+
+        Log.i(TAG, "maybeTruncateToolOutput: truncating tool $toolCallId output ($totalChars chars)")
+
+        val fullText = textParts.joinToString("\n") { it.text }
+        val preview = fullText.take(TOOL_OUTPUT_PREVIEW_CHARS)
+
+        val fileName = "${toolCallId}.txt"
+        val outputDir = File(context.filesDir, FileFolders.TOOL_OUTPUTS).apply { mkdirs() }
+        File(outputDir, fileName).writeText(fullText)
+
+        return listOf(
+            UIMessagePart.Text(
+                buildString {
+                    appendLine("[Tool output truncated: $totalChars characters total]")
+                    appendLine("Full output saved to: /tool_outputs/$fileName")
+                    appendLine("Use shell to read: `cat /tool_outputs/$fileName`")
+                    appendLine("Use shell to search: `grep \"pattern\" /tool_outputs/$fileName`")
+                    appendLine()
+                    append(preview)
+                }
+            )
+        ) + nonTextParts
+    }
+
+
 }
 
 /**

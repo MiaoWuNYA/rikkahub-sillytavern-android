@@ -7,12 +7,16 @@ import android.widget.Toast
 import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import me.rerere.common.http.await
+import me.rerere.rikkahub.AppScope
 import me.rerere.rikkahub.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -20,10 +24,19 @@ import okhttp3.Request
 // 更新源已从官方服务器切到本仓库：发新版时同步更新仓库根目录 update.json 并发布 GitHub Release
 private const val API_URL = "https://raw.githubusercontent.com/heikeyangle-code/rikkahub-plus/mingli2/update.json"
 
-class UpdateChecker(private val client: OkHttpClient) {
+class UpdateChecker(
+    private val client: OkHttpClient,
+    appScope: AppScope,
+) {
     private val json = Json { ignoreUnknownKeys = true }
 
-    fun checkUpdate(): Flow<UiState<UpdateInfo>> = flow {
+    val updateState: StateFlow<UiState<UpdateInfo>> = checkUpdate().stateIn(
+        scope = appScope,
+        started = SharingStarted.Lazily,
+        initialValue = UiState.Loading,
+    )
+
+    private fun checkUpdate(): Flow<UiState<UpdateInfo>> = flow {
         emit(UiState.Loading)
         emit(
             UiState.Success(

@@ -8,9 +8,10 @@
 | 项 | 值 |
 |---|---|
 | 本地分支 | `mingli2` |
-| 上游 | `upstream/master`（github.com/rikkahub/rikkahub） |
-| 最近合入 | `aac6e9638`（2026-08-13，含 AI 模块重构 / 搜索模式 / 构建重构） |
-| 领先提交数 | 约 1780+ |
+| 上游 | `rikkahub/master`（github.com/rikkahub/rikkahub，最上游） |
+| 最近合入 | `rikkahub/master`（2026-09-03 合入，含 Settings 重构 / Provider 接口扩展 / 语音视频生成 / oauth / workspace） |
+| 本次冲突 | 17 处，全部人工解决（含 GenerationHandler 生成链 / ChatService / PreferencesStore / RouteActivity） |
+| 领先提交数 | 约 1920+ |
 | 上游文件被本地修改 | 约 100 个（含重命名） |
 | 本地独有文件 | 约 50 个 |
 
