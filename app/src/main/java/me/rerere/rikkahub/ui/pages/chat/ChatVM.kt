@@ -122,6 +122,17 @@ class ChatVM(
 
     fun clearAllErrors() = chatService.clearAllErrors()
 
+    val messageQueue = chatService.getMessageQueueFlow(_conversationId)
+
+    fun removeQueuedMessage(id: Uuid) = chatService.removeQueuedMessage(_conversationId, id)
+
+    fun beginEditQueuedMessage(id: Uuid) = chatService.beginEditQueuedMessage(_conversationId, id)
+
+    fun finishEditQueuedMessage(id: Uuid, parts: List<UIMessagePart>?) =
+        chatService.finishEditQueuedMessage(_conversationId, id, parts)
+
+    fun resumeMessageQueue() = chatService.resumeMessageQueue(_conversationId)
+
     // 生成完成
     val generationDoneFlow: SharedFlow<Uuid> = chatService.generationDoneFlow
 
