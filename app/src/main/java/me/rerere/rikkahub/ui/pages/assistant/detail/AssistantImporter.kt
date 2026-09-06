@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -88,17 +90,19 @@ private fun SillyTavernImporter(
     val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
     var isLoading by remember { mutableStateOf(false) }
+    // 多个开场白时，合并为同一对话的多条消息（部分卡片把开场白拆成连续多条）
+    var mergeGreetings by remember { mutableStateOf(false) }
 
     val pngPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
-        uri?.let { importFile(context, uri, onImport, filesManager, toaster, scope) { isLoading = it } }
+        uri?.let { importFile(context, uri, onImport, filesManager, toaster, scope, mergeGreetings) { isLoading = it } }
     }
 
     val jsonPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
-        uri?.let { importFile(context, uri, onImport, filesManager, toaster, scope) { isLoading = it } }
+        uri?.let { importFile(context, uri, onImport, filesManager, toaster, scope, mergeGreetings) { isLoading = it } }
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -118,6 +122,19 @@ private fun SillyTavernImporter(
             Text(if (isLoading) stringResource(R.string.assistant_importer_importing)
                  else stringResource(R.string.assistant_importer_import_tavern_json))
         }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 8.dp),
+        ) {
+            Checkbox(
+                checked = mergeGreetings,
+                onCheckedChange = { mergeGreetings = it },
+            )
+            Text(
+                text = stringResource(R.string.assistant_importer_merge_greetings),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
     }
 }
 
@@ -126,13 +143,14 @@ private fun importFile(
     onImport: (TavernImportResult) -> Unit,
     filesManager: FilesManager, toaster: ToasterState,
     scope: kotlinx.coroutines.CoroutineScope,
+    mergeGreetings: Boolean = false,
     setLoading: (Boolean) -> Unit
 ) {
     setLoading(true)
     scope.launch {
         try {
             runCatching {
-                importFromUri(context, uri, filesManager, onImport, toaster)
+                importFromUri(context, uri, filesManager, onImport, toaster, mergeGreetings)
             }.onFailure { e ->
                 e.printStackTrace()
                 toaster.show(e.message ?: context.getString(R.string.assistant_importer_import_failed))
@@ -143,7 +161,8 @@ private fun importFile(
 
 private suspend fun importFromUri(
     context: Context, uri: Uri, filesManager: FilesManager,
-    onImport: (TavernImportResult) -> Unit, toaster: ToasterState
+    onImport: (TavernImportResult) -> Unit, toaster: ToasterState,
+    mergeGreetings: Boolean = false,
 ) {
     val mime = withContext(Dispatchers.IO) { filesManager.getFileMimeType(uri) }
     val (jsonString, backgroundStr, avatarUri) = withContext(Dispatchers.IO) {
@@ -173,8 +192,8 @@ private suspend fun importFromUri(
         ?: error(context.getString(R.string.assistant_importer_missing_spec_field))
 
     val (assistant, lorebooks) = when (spec) {
-        "chara_card_v2" -> parseV2Card(context, json, backgroundStr, avatarUri)
-        "chara_card_v3" -> parseV3Card(context, json, backgroundStr, avatarUri)
+        "chara_card_v2" -> parseV2Card(context, json, backgroundStr, avatarUri, mergeGreetings)
+        "chara_card_v3" -> parseV3Card(context, json, backgroundStr, avatarUri, mergeGreetings)
         else -> error(context.getString(R.string.assistant_importer_unsupported_spec, spec))
     }
 
@@ -189,7 +208,7 @@ private suspend fun importFromUri(
 
 // ==================== V2 Parser ====================
 
-private fun parseV2Card(context: Context, json: JsonObject, background: String?, avatarUri: String?): Pair<Assistant, List<Lorebook>> {
+private fun parseV2Card(context: Context, json: JsonObject, background: String?, avatarUri: String?, mergeGreetings: Boolean = false): Pair<Assistant, List<Lorebook>> {
     val data = json["data"]?.jsonObject ?: error(context.getString(R.string.assistant_importer_missing_data_field))
     val name = data["name"]?.jsonPrimitiveOrNull?.contentOrNull
         ?: error(context.getString(R.string.assistant_importer_missing_name_field))
@@ -228,7 +247,7 @@ private fun parseV2Card(context: Context, json: JsonObject, background: String?,
     )
 
     val systemPrompt = buildTavernSystemPrompt(tavData)
-    val presetMessages = buildPresetMessages(tavData)
+    val presetMessages = buildPresetMessages(tavData, mergeGreetings)
     val lorebooks = buildEmbeddedLorebooks(tavData)
 
     val assistant = Assistant(
@@ -245,7 +264,7 @@ private fun parseV2Card(context: Context, json: JsonObject, background: String?,
 
 // ==================== V3 Parser ====================
 
-private fun parseV3Card(context: Context, json: JsonObject, background: String?, avatarUri: String?): Pair<Assistant, List<Lorebook>> {
+private fun parseV3Card(context: Context, json: JsonObject, background: String?, avatarUri: String?, mergeGreetings: Boolean = false): Pair<Assistant, List<Lorebook>> {
     val data = json["data"]?.jsonObject ?: error(context.getString(R.string.assistant_importer_missing_data_field))
     val name = data["name"]?.jsonPrimitiveOrNull?.contentOrNull
         ?: error(context.getString(R.string.assistant_importer_missing_name_field))
@@ -282,7 +301,7 @@ private fun parseV3Card(context: Context, json: JsonObject, background: String?,
     )
 
     val systemPrompt = buildTavernSystemPrompt(tavData)
-    val presetMessages = buildPresetMessages(tavData)
+    val presetMessages = buildPresetMessages(tavData, mergeGreetings)
     val lorebooks = buildEmbeddedLorebooks(tavData)
 
     val assistant = Assistant(
@@ -859,13 +878,20 @@ private fun buildTavernSystemPrompt(d: TavernCharacterData): String {
 }
 
 /**
- * 构建 presetMessages — 只使用 first_mes，alternate_greetings 由角色卡 UI 选择
+ * 构建 presetMessages — 默认只使用 first_mes，alternate_greetings 由角色卡 UI 选择
  * 用户在角色卡页面点「使用此开场白」时替换 presetMessages
+ * mergeGreetings 为 true 时（导入勾选「合并开场白」），把 first_mes 与所有
+ * alternate_greetings 作为同一对话的连续多条消息导入
  */
-private fun buildPresetMessages(d: TavernCharacterData): List<UIMessage> {
+private fun buildPresetMessages(d: TavernCharacterData, mergeGreetings: Boolean = false): List<UIMessage> {
     val messages = mutableListOf<UIMessage>()
     if (d.firstMessage.isNotBlank()) {
         messages.add(UIMessage.assistant(d.firstMessage))
+    }
+    if (mergeGreetings) {
+        d.alternateGreetings.filter { it.isNotBlank() }.forEach { greeting ->
+            messages.add(UIMessage.assistant(greeting))
+        }
     }
     return messages
 }

@@ -241,6 +241,22 @@ fun MarkdownBlock(
 ) {
     val settings = LocalSettings.current.displaySetting
     val darkMode = LocalDarkMode.current
+
+    // 酒馆角色卡等 HTML 富文本：把 HTML 卡片拆出来折叠渲染（支持 <style>/class CSS），
+    // 必须在引号染色前处理，否则染色注入的 <span> 会破坏 HTML 属性。
+    // HTML 部分默认折叠成按钮：WebView 为保证聊天列表可滚动不消费触摸事件，
+    // 整段塞进 WebView 会让卡片前后的普通文本也无法选中/交互
+    findHtmlCard(content)?.let { (cardStart, cardHtml) ->
+        val prose = content.substring(0, cardStart).trim()
+        Column(modifier) {
+            if (prose.isNotEmpty()) {
+                MarkdownBlock(content = prose, onClickCitation = onClickCitation)
+            }
+            HtmlCardBlock(html = cardHtml)
+        }
+        return
+    }
+
     val quoteColor = if (settings.enableTextColor) {
         settings.quoteColor.ifBlank { if (darkMode) "#E18A24" else "#C7731E" }
     } else null

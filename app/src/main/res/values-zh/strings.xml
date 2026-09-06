@@ -32,6 +32,10 @@
   <string name="assistant_importer_import_success">角色卡导入成功</string>
   <string name="assistant_importer_import_tavern_json">导入酒馆角色卡 (JSON)</string>
   <string name="assistant_importer_import_tavern_png">导入酒馆角色卡 (PNG)</string>
+  <string name="assistant_importer_merge_greetings">多个开场白合并为同一对话的多条消息</string>
+  <string name="html_block_fullscreen">全屏查看 HTML 卡片</string>
+  <string name="html_card_expand">网页卡片 · 点击查看</string>
+  <string name="html_card_collapse">收起网页卡片</string>
   <string name="assistant_importer_importing">导入中...</string>
   <string name="assistant_importer_missing_data_field">缺少数据字段</string>
   <string name="assistant_importer_missing_name_field">缺少名称字段</string>

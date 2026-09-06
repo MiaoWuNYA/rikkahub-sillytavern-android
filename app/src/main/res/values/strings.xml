@@ -31,6 +31,10 @@
   <string name="assistant_importer_import_failed">Import failed</string>
   <string name="assistant_importer_import_tavern_json">Import Tavern Character Card (JSON)</string>
   <string name="assistant_importer_import_tavern_png">Import Tavern Character Card (PNG)</string>
+  <string name="assistant_importer_merge_greetings">Merge multiple greetings as consecutive messages in one chat</string>
+  <string name="html_block_fullscreen">Open HTML card in full screen</string>
+  <string name="html_card_expand">Web card — tap to view</string>
+  <string name="html_card_collapse">Collapse web card</string>
   <string name="assistant_importer_importing">Importing...</string>
   <string name="assistant_importer_missing_data_field">Missing data field</string>
   <string name="assistant_importer_missing_name_field">Missing name field</string>
