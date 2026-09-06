@@ -8,8 +8,6 @@ from routes._lenormand_route import _lenormand
 from routes._bazi_route import _bazi
 from routes._ziwei_route import _ziwei
 from routes._western_astro_route import _western_astro
-from routes._traditional_astro_route import _traditional_astro
-from routes._vedic_route import _vedic
 from routes._human_design_route import _human_design
 from routes._kabbalah_route import _kabbalah
 from routes._qimen_route import _qimen
@@ -23,8 +21,6 @@ _ROUTER={
     "八字":_bazi,"bazi":_bazi,"四柱":_bazi,"生辰八字":_bazi,"排盘":_bazi,
     "紫微":_ziwei,"ziwei":_ziwei,"紫微斗数":_ziwei,"紫薇":_ziwei,
     "现代西洋占星":_western_astro,"现代占星":_western_astro,"西洋占星":_western_astro,"western_astro":_western_astro,"星座":_western_astro,
-    "传统西洋占星":_traditional_astro,"traditional_astro":_traditional_astro,"古典占星":_traditional_astro,"中世纪占星":_traditional_astro,"卜卦占星":_traditional_astro,"horary":_traditional_astro,
-    "吠陀":_vedic,"vedic":_vedic,"印度占星":_vedic,"jyotish":_vedic,"吠陀占星":_vedic,
     "人类图":_human_design,"human_design":_human_design,"humandesign":_human_design,
     "灵数卡巴拉":_kabbalah,"kabbalah":_kabbalah,"生命灵数":_kabbalah,"卡巴拉":_kabbalah,"生命数字":_kabbalah,
     "奇门":_qimen,"qimen":_qimen,"奇门遁甲":_qimen,"奇门三式":_qimen,

@@ -21,9 +21,11 @@ import me.rerere.rikkahub.data.ai.python.JsBridge
  * mingli 工具 — 命理排盘/抽牌/占卜统一入口。
  *
  * AI 不写执行代码，只调这个工具拿结构化 JSON 数据。
- * 支持: 塔罗 | 雷诺曼 | 八字 | 紫微 | 现代西洋占星 | 传统西洋占星 |
- *       吠陀(3引擎合一) | 人类图 | 灵数卡巴拉 | 奇门(含大六壬) | 六爻(含梅花易数) |
+ * 支持: 塔罗 | 雷诺曼 | 八字 | 紫微 | 现代西洋占星 |
+ *       人类图 | 灵数卡巴拉 | 奇门(含大六壬) | 六爻(含梅花易数) |
  *       深度古典占星(基于stellium组件化引擎)
+ * 注: 传统西洋占星(flatlib)与吠陀(仙人jhora)依赖 pyswisseph(C扩展，chaquopy android 索引无此包)，
+ *     已随对应 python 路由删除。
  */
 fun createMingliTool(context: Context): Tool = Tool(
     name = "mingli",
@@ -33,17 +35,17 @@ fun createMingliTool(context: Context): Tool = Tool(
         "则以用户的显式指令为准，禁止调mingli_guide，直接解读即可。AI应自行判断：用户给的是“怎么解读”的方法指令(跳过模板)，还是普通对话(仍走模板)。" +
         "【强制利用全部数据】返回数据结构中的所有字段都必须被AI使用。模板是解读主线框架，但不是数据过滤器——" +
         "每个字段都要在解读中找到对应的使用位置，不得因为模板未明确提及就跳过任何字段。AI应主动将数据中的每个字段融入解读。" +
-        "支持系统: 塔罗 | 雷诺曼 | 八字 | 紫微 | 现代西洋占星 | 传统西洋占星 | " +
-        "吠陀 | 人类图 | 灵数卡巴拉 | 奇门(含大六壬) | 六爻(含梅花易数) | 深度古典占星(基于stellium组件引擎)。" +
-        "西洋占星分两种风格: 现代西洋占星(心理/成长取向) vs 传统西洋占星(事件判断/卜卦取向)。" +
+        "支持系统: 塔罗 | 雷诺曼 | 八字 | 紫微 | 现代西洋占星 | " +
+        "人类图 | 灵数卡巴拉 | 奇门(含大六壬) | 六爻(含梅花易数) | 深度古典占星(基于stellium组件引擎)。" +
+        "现代西洋占星(心理/成长取向) vs 深度古典占星(stellium，Hellenistic/Medieval全栈，本质尊贵+主限向运等)。" +
         "深度古典占星(stellium)是组件化的深度引擎，支持Hellenistic/Medieval占星全栈(尊贵/互容/阿拉伯点/Firdaria/ZR/主限推运/卜卦等)",
     parameters = {
         InputSchema.Obj(
             properties = buildJsonObject {
                 put("system", buildJsonObject {
                     put("type", "string")
-                    put("description", "命理系统名(支持别名→主名): 塔罗/韦特→塔罗 | 雷诺曼→雷诺曼 | 八字/四柱/生辰→八字 | 紫微/紫薇/紫微斗数→紫微 | 星座/西洋占星→现代西洋占星 | 古典占星/卜卦/horary→传统西洋占星 | 印度占星/jyotish→吠陀 | 人类图→人类图 | 生命灵数/卡巴拉→灵数卡巴拉 | 奇门遁甲/奇门三式→奇门 | 大六壬/六壬→奇门(需配合feature=liuren) | 六爻→六爻纳甲(六爻梅花系统) | 梅花易数→梅花易数(六爻梅花系统) | 易经/周易→六爻梅花" +
-                            "现代西洋占星/传统西洋占星/吠陀/人类图/灵数卡巴拉/奇门(含大六壬)/六爻梅花。西洋占星分两种:现代西洋占星(心理/成长)vs传统西洋占星(事件/尊贵)")
+                    put("description", "命理系统名(支持别名→主名): 塔罗/韦特→塔罗 | 雷诺曼→雷诺曼 | 八字/四柱/生辰→八字 | 紫微/紫薇/紫微斗数→紫微 | 星座/西洋占星→现代西洋占星 | 人类图→人类图 | 生命灵数/卡巴拉→灵数卡巴拉 | 奇门遁甲/奇门三式→奇门 | 大六壬/六壬→奇门(需配合feature=liuren) | 六爻→六爻纳甲(六爻梅花系统) | 梅花易数→梅花易数(六爻梅花系统) | 易经/周易→六爻梅花" +
+                            "现代西洋占星/人类图/灵数卡巴拉/奇门(含大六壬)/六爻梅花")
                 })
                 put("params", buildJsonObject {
                     put("type", "object")
@@ -54,8 +56,6 @@ fun createMingliTool(context: Context): Tool = Tool(
                             " 八字: {year, month, day, hour, minute?, gender, feature?=bazi|shengxiao|luohou|all}" +
                             " 紫微: {year, month, day, hour, minute?, gender, engine?=iztro}" +
                             " 现代西洋占星: {year, month, day, hour, minute?, tz, lat, lon, partner_year?, partner_month?, partner_day?, partner_hour?, partner_minute?, partner_tz?=IANA, partner_lat?, partner_lon?} (tz必须正确: IANA时区名如Asia/Shanghai, 或数字偏移小时数范围-12~+14, 东八区=8; 非法值直接返回error)" +
-                            " 传统西洋占星: {year, month, day, hour, minute?, tz_offset, lat, lon} (tz_offset必须正确: 单位=小时, 东八区=8, 范围-12~+14; 非法值如480直接返回error, 不会静默算盘)" +
-                            " 吠陀: {year, month, day, hour, minute?, tz=IANA时区/数字偏移小时数范围-12~+14, lat?, lon?} (tz必须正确, 非法值直接返回error)" +
                             " 人类图: {year, month, day, hour, minute?, tz=IANA时区/数字偏移小时数范围-12~+14, gene_keys?=false(bool), transits?=false(bool)} (tz必须正确, 非法值直接返回error)" +
                             " 灵数卡巴拉: {year, month, day, word?, feature=numerology|gematria|odu|tarot|tree|all}" +
                             " 奇门(含大六壬): {year, month, day, hour?, minute?, feature=qimen|liuren|all} (大六壬需feature=liuren)" +

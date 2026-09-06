@@ -26,45 +26,20 @@ chaquopy {
             install("markdownify")
             install("tabulate")
             install("python-dateutil")
-            // === 吠陀占星引擎 (PyJHora 4.8.7, 去UI版) ===
-            // 注意: 使用 .tar.gz (源码包)而非 .whl, Chaquopy对源码包目录结构处理更完整
-            install(file("offline_pkgs/pyjhora-4.8.7.tar.gz").absolutePath)
             install("numpy")
             install("geocoder")
             install("geopy")
             install("pytz")
             install("timezonefinder")
-            // pyswisseph 由 CI 交叉编译后放入 offline_pkgs
-            install(file("offline_pkgs/pyswisseph-2.10.3.2-cp312-cp312-android_21_arm64_v8a.whl").absolutePath)
-            // === 传统西洋占星 (flatlib, 纯Python, 自带Moshier星历) ===
-            install(file("offline_pkgs/flatlib-0.2.3-py3-none-any.whl").absolutePath)
-            // === 八字/命理引擎 ===
-            install(file("offline_pkgs/lunar_python-latest.tar.gz").absolutePath)
-            install("cnlunar")
-            install(file("offline_pkgs/ichingshifa-src.tar.gz").absolutePath) // 周易筮法/六爻
-            install(file("offline_pkgs/kinliuren-0.1.2.9.tar.gz").absolutePath) // 大六壬
-            // kintaiyi 已删 (依赖ephem+numpy+kerykeion+astropy)
-            install(file("offline_pkgs/taixuanshifa-src.tar.gz").absolutePath) // 太玄筮法
-            install(file("offline_pkgs/jingjue-src.tar.gz").absolutePath) // 荆诀
-            install("bidict")            // bazi_china 所需
-            install("colorama")           // bazi_china 所需
-            install(file("offline_pkgs/meihua-yi-patched.tar.gz").absolutePath) // 梅花易数
-            install(file("offline_pkgs/arcanite-unified.tar.gz").absolutePath) // 统一塔罗引擎(arcanite+Waite+TarotKit,零C扩展)
+            // === 命理子项依赖：仅保留 chaquo.com/pypi-13.1 镜像可解析 + 本地离线轮子的部分 ===
+            // 其余子项(八字 lunar_python / 六爻 ichingshifa / 六壬 kinliuren / 太玄 taixuanshifa / 荆诀 jingjue /
+            // 塔罗·雷诺曼 arcanite 及其依赖 pydantic+jinja2+attrs+cattrs+platformdirs+url_normalize+urllib3+cn2an+proces)
+            // 在镜像无包且本地无离线轮子，装不上。对应路由代码保留，运行时缺包降级报错，但不阻碍编译。
+            // 若要恢复：提供离线 wheel 到 offline_pkgs/ 并改回 install(file(...))。
+            install("pyyaml")
+            install("markupsafe")
             install("setuptools")
-            // arcanite 依赖链 (纯Python, 零C扩展)
-            install(file("offline_pkgs/pydantic-latest.tar.gz").absolutePath)
-            install(file("offline_pkgs/pyyaml-latest.tar.gz").absolutePath)
-            install(file("offline_pkgs/markupsafe-latest.tar.gz").absolutePath)
-            install(file("offline_pkgs/jinja2-latest.tar.gz").absolutePath)
-            // 共享依赖
-            install(file("offline_pkgs/attrs-latest.tar.gz").absolutePath)
-            install(file("offline_pkgs/cattrs-latest.tar.gz").absolutePath)
-            install(file("offline_pkgs/platformdirs-latest.tar.gz").absolutePath)
-            install(file("offline_pkgs/url_normalize-latest.tar.gz").absolutePath)
-            install(file("offline_pkgs/urllib3-latest.tar.gz").absolutePath)
-            install(file("offline_pkgs/cn2an-latest.tar.gz").absolutePath) // ichingshifa 中文数字
-            install(file("offline_pkgs/proces-latest.tar.gz").absolutePath) // cn2an 依赖
-            // === 深度古典占星 (stellium, 组件化引擎, Hellenistic/Medieval全栈) ===
+            // === 深度古典占星 (stellium, 组件化引擎, Hellenistic/Medieval全栈) — 离线轮子, 零运行时依赖 ===
             install(file("offline_pkgs/stellium-0.22.0-py3-none-any.whl").absolutePath)
         }
     }

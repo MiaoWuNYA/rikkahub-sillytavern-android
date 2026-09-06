@@ -490,14 +490,8 @@ class SettingsStore(
             preferences[FAVORITE_MODELS] = JsonInstant.encodeToString(settings.favoriteModels)
             preferences[SELECT_MODEL] = settings.chatModelId.toString()
             preferences[FAST_MODEL] = settings.fastModelId.toString()
-            settings.titleModelId?.let {
-                preferences[TITLE_MODEL] = it.toString()
-            } ?: preferences.remove(TITLE_MODEL)
             preferences[TRANSLATE_MODEL] = settings.translateModeId.toString()
             preferences[ENABLE_SUGGESTION] = settings.enableSuggestion
-            settings.suggestionModelId?.let {
-                preferences[SUGGESTION_MODEL] = it.toString()
-            } ?: preferences.remove(SUGGESTION_MODEL)
             preferences[IMAGE_GENERATION_MODEL] = settings.imageGenerationModelId.toString()
             preferences[TITLE_PROMPT] = settings.titlePrompt
             preferences[TRANSLATION_PROMPT] = settings.translatePrompt
