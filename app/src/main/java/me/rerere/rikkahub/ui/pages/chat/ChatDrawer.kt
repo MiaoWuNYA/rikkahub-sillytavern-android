@@ -58,10 +58,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ChartColumn
+import me.rerere.hugeicons.stroke.Code
 import me.rerere.hugeicons.stroke.Image02
 import me.rerere.hugeicons.stroke.InLove
 import me.rerere.hugeicons.stroke.LanguageCircle
 import me.rerere.hugeicons.stroke.LookTop
+import me.rerere.hugeicons.stroke.Note01
 import me.rerere.hugeicons.stroke.PencilEdit01
 import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.Search01
@@ -72,6 +74,7 @@ import me.rerere.hugeicons.stroke.Folder01
 import me.rerere.hugeicons.stroke.FolderAdd
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
+import me.rerere.rikkahub.data.ai.PromptDebugCache
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Conversation
@@ -82,6 +85,7 @@ import me.rerere.rikkahub.ui.components.ui.BackupReminderCard
 import me.rerere.rikkahub.ui.components.ui.Greeting
 import me.rerere.rikkahub.ui.components.ui.Tooltip
 import me.rerere.rikkahub.ui.components.ui.UIAvatar
+import me.rerere.rikkahub.ui.components.webview.WebViewContentCache
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.context.Navigator
 import com.dokar.sonner.ToastType
@@ -360,6 +364,31 @@ fun ChatDrawerContent(
                             onClick = {
                                 showMenuPopup = false
                                 navController.navigate(Screen.ImageGen)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.chat_page_menu_prompt_viewer)) },
+                            leadingIcon = { Icon(HugeIcons.Code, null) },
+                            onClick = {
+                                showMenuPopup = false
+                                val html = PromptDebugCache.get(current.id)
+                                if (html == null) {
+                                    toaster.show(
+                                        context.getString(R.string.chat_page_menu_prompt_viewer_empty),
+                                        type = ToastType.Warning,
+                                    )
+                                } else {
+                                    val contentId = WebViewContentCache.store(context.cacheDir, html)
+                                    navController.navigate(Screen.WebView(contentId = contentId))
+                                }
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.setting_page_authors_note)) },
+                            leadingIcon = { Icon(HugeIcons.Note01, null) },
+                            onClick = {
+                                showMenuPopup = false
+                                navController.navigate(Screen.AuthorsNote)
                             }
                         )
                     }

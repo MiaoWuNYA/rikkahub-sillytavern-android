@@ -14,20 +14,22 @@ object RegexOutputTransformer : OutputMessageTransformer, KoinComponent {
     ): List<UIMessage> {
         val assistant = ctx.assistant
         if (assistant.regexes.isEmpty()) return messages // No regexes, return original messages
-        return messages.map { message ->
+        return messages.mapIndexed { index, message ->
+            // 官方深度语义：1 = 最新一条消息
+            val depth = messages.size - index
             val scope = when (message.role) {
                 MessageRole.ASSISTANT -> AssistantAffectScope.ASSISTANT
-                else -> return@map message // Skip non-assistant messages
+                else -> return@mapIndexed message // Skip non-assistant messages
             }
             message.copy(
                 parts = message.parts.map { part ->
                     when (part) {
                         is UIMessagePart.Text -> {
-                            part.copy(text = part.text.replaceRegexes(assistant, scope, visual = false))
+                            part.copy(text = part.text.replaceRegexes(assistant, scope, visual = false, depth = depth))
                         }
 
                         is UIMessagePart.Reasoning -> {
-                            part.copy(reasoning = part.reasoning.replaceRegexes(assistant, scope, visual = false))
+                            part.copy(reasoning = part.reasoning.replaceRegexes(assistant, scope, visual = false, depth = depth))
                         }
 
                         else -> part

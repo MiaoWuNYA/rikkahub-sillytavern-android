@@ -41,6 +41,7 @@ import me.rerere.rikkahub.data.ai.transformers.findSafeInsertIndex
 import me.rerere.rikkahub.data.files.FileFolders
 import me.rerere.rikkahub.data.ai.transformers.onGenerationFinish
 import me.rerere.rikkahub.data.ai.transformers.transforms
+import me.rerere.rikkahub.data.ai.PromptDebugCache
 import me.rerere.rikkahub.data.ai.transformers.visualTransforms
 import me.rerere.rikkahub.data.ai.tools.buildMemoryTools
 import me.rerere.rikkahub.data.datastore.Settings
@@ -697,6 +698,9 @@ class GenerationHandler(
             chatUserMessageCount = messages.count { it.role == MessageRole.USER },
             chatMessageCount = limitedChat.size,
         )
+
+        // 提示词查看器：缓存最终发送给模型的完整消息列表，供聊天抽屉"查看提示词"调试入口渲染
+        PromptDebugCache.store(conversationId, internalMessages)
 
         var messages: List<UIMessage> = messages
         val params = TextGenerationParams(

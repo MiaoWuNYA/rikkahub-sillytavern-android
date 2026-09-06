@@ -499,9 +499,19 @@ class ChatService(
                     val settings = settingsStore.settingsFlow.first()
                     val assistant = settings.getAssistantById(currentConversation.assistantId)
                         ?: settings.getCurrentAssistant()
+                    // 按插入位置换算官方深度语义（1 = 最新一条）
+                    val insertDepth = if (at == null) {
+                        1
+                    } else {
+                        val index = when {
+                            at < 0 -> (currentConversation.messageNodes.size + at).coerceIn(0, currentConversation.messageNodes.size)
+                            else -> at.coerceIn(0, currentConversation.messageNodes.size)
+                        }
+                        currentConversation.messageNodes.size + 1 - index
+                    }
                     content.map { part ->
                         if (part is UIMessagePart.Text) {
-                            part.copy(text = part.text.replaceRegexes(assistant, scope, visual = false))
+                            part.copy(text = part.text.replaceRegexes(assistant, scope, visual = false, depth = insertDepth))
                         } else {
                             part
                         }
@@ -616,7 +626,7 @@ class ChatService(
                 // 官方 /sysgen trim=true：先按最后一个句子边界裁剪（trimToEndSentence），再走 getRegexedString(message, SLASH_COMMAND)
                 val rawNarration = result.message.toText()
                 val trimmed = if (trim) trimToEndSentence(rawNarration) else rawNarration.trim()
-                val narration = trimmed.replaceRegexes(assistant, AssistantAffectScope.ASSISTANT, visual = false)
+                val narration = trimmed.replaceRegexes(assistant, AssistantAffectScope.ASSISTANT, visual = false, depth = 1)
                 if (narration.isBlank()) {
                     addError(
                         IllegalStateException(context.getString(R.string.slash_error_sysgen_empty)),
@@ -694,7 +704,9 @@ class ChatService(
                         text = part.text.replaceRegexes(
                             assistant = assistant,
                             scope = AssistantAffectScope.USER,
-                            visual = false
+                            visual = false,
+                            // 用户输入即将作为最新消息发出，官方深度语义 1 = 最新
+                            depth = 1
                         )
                     )
                 }

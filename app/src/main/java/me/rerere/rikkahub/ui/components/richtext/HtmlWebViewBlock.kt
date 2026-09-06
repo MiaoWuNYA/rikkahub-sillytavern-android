@@ -10,6 +10,8 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -131,6 +134,10 @@ fun HtmlWebViewBlock(
     }
 
     val navController = LocalNavController.current
+    val openFullscreen = {
+        val contentId = WebViewContentCache.store(context.cacheDir, fullscreenPage)
+        navController.navigate(Screen.WebView(contentId = contentId))
+    }
 
     Column(modifier = modifier) {
         AndroidView(
@@ -190,6 +197,12 @@ fun HtmlWebViewBlock(
         },
         modifier = Modifier
             .fillMaxWidth()
+            // 内联 WebView 自身不消费触摸（保证聊天列表可滚动），把点击事件交给
+            // Compose 层：点卡片任意位置直接进入全屏查看器，不用再找右上角放大按钮
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+            ) { openFullscreen() }
             .then(
                 if (contentHeight > 0) {
                     Modifier.height(with(density) { contentHeight.toDp() })
@@ -200,7 +213,7 @@ fun HtmlWebViewBlock(
         )
 
         // 内联 WebView 为保证聊天列表可滚动不消费触摸事件（只读），
-        // 点击/长按选择/内部滚动等交互放到全屏页完成
+        // 长按选择/内部滚动等交互放到全屏页完成
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
@@ -218,10 +231,7 @@ fun HtmlWebViewBlock(
                 }
             }
             IconButton(
-                onClick = {
-                    val contentId = WebViewContentCache.store(context.cacheDir, fullscreenPage)
-                    navController.navigate(Screen.WebView(contentId = contentId))
-                },
+                onClick = { openFullscreen() },
                 modifier = Modifier.size(32.dp),
             ) {
                 Icon(
@@ -235,15 +245,15 @@ fun HtmlWebViewBlock(
 }
 
 /**
- * HTML 角色卡折叠容器：默认只显示一个按钮，点击后才展开渲染 WebView。
- * 避免大卡片直接铺在聊天流里，也避免 WebView 触摸穿透影响普通文本的交互。
+ * HTML 角色卡容器：默认直接展开渲染 WebView（内联只读，点卡片即进全屏），
+ * 可手动折叠回按钮状态；折叠状态经 rememberSaveable 在列表滚动回收后恢复。
  */
 @Composable
 fun HtmlCardBlock(
     html: String,
     modifier: Modifier = Modifier,
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by rememberSaveable { mutableStateOf(true) }
     if (expanded) {
         HtmlWebViewBlock(html = html, modifier = modifier, onCollapse = { expanded = false })
     } else {

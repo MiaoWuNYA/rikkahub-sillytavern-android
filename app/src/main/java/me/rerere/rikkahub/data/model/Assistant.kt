@@ -108,6 +108,9 @@ data class AssistantRegex(
     val replaceString: String = "", // 替换字符串
     val affectingScope: Set<AssistantAffectScope> = setOf(),
     val visualOnly: Boolean = false, // 是否仅在视觉上影响
+    // 官方酒馆深度过滤：1 = 最新一条消息，0 = 不限制；导入 minDepth/maxDepth 字段
+    val minDepth: Int = 0,
+    val maxDepth: Int = 0,
 )
 
 // 流式输出时每个chunk都会调用replaceRegexes，正则必须缓存编译结果，
@@ -149,12 +152,15 @@ private fun compileRegexCached(pattern: String): Regex? {
 fun String.replaceRegexes(
     assistant: Assistant?,
     scope: AssistantAffectScope,
-    visual: Boolean = false
+    visual: Boolean = false,
+    depth: Int = 0, // 官方酒馆深度语义：1 = 最新一条消息；0/未知 = 不按深度过滤
 ): String {
     if (assistant == null) return this
     if (assistant.regexes.isEmpty()) return this
     return assistant.regexes.fold(this) { acc, regex ->
-        if (regex.enabled && regex.visualOnly == visual && regex.affectingScope.contains(scope)) {
+        val depthOk = depth <= 0 || ((regex.minDepth <= 0 || depth >= regex.minDepth) &&
+            (regex.maxDepth <= 0 || depth <= regex.maxDepth))
+        if (regex.enabled && depthOk && regex.visualOnly == visual && regex.affectingScope.contains(scope)) {
             replaceWithRegex(acc, regex)
         } else {
             acc
@@ -162,13 +168,25 @@ fun String.replaceRegexes(
     }
 }
 
-private fun replaceWithRegex(input: String, regex: AssistantRegex): String {
-    val compiled = compileRegexCached(regex.findRegex)
+// {{match}} 替换结果同样缓存：流式期间每个chunk每条消息都会调用，避免重复编译
+private val matchReplacementCache = SimpleCache.builder<String, String>()
+    .expireAfterWrite(10, TimeUnit.MINUTES)
+    .build()
+
+private fun resolveReplacement(replaceString: String): String {
+    matchReplacementCache.getIfPresent(replaceString)?.let { return it }
     // 官方酒馆：替换字符串里的 {{match}}（不区分大小写）= 当前完整匹配，等价 $0
-    val replacement = regex.replaceString.replace(
+    val replacement = replaceString.replace(
         Regex("""\{\{match}}""", RegexOption.IGNORE_CASE),
         "$0",
     )
+    matchReplacementCache.put(replaceString, replacement)
+    return replacement
+}
+
+private fun replaceWithRegex(input: String, regex: AssistantRegex): String {
+    val compiled = compileRegexCached(regex.findRegex)
+    val replacement = resolveReplacement(regex.replaceString)
     if (compiled != null) {
         try {
             return input.replace(regex = compiled, replacement = replacement)
@@ -459,6 +477,7 @@ sealed class PromptInjection {
         val useProbability: Boolean = true,              // 是否启用概率过滤（false=忽略probability直接触发）
         val inclusionGroup: String = "",                 // 本地遗留字段（官方无此字段；官方分组用顶层 group 逗号分隔）
         val useGroupScoring: Boolean = false,            // 酒馆 extensions.use_group_scoring（按匹配关键词数选组胜者）
+        val vectorized: Boolean = false,                 // 酒馆 vectorized：向量检索激活（需在全局设置配置嵌入模型）
         val groupPriority: Boolean = false,              // 本地遗留字段（官方无此字段；官方优先用 group_override）
         val automationId: String = "",                   // 酒馆 extensions.automation_id（本App暂不执行，仅保留）
         val displayIndex: Int = 0,                       // 酒馆 display_index（展示顺序）
