@@ -1,5 +1,7 @@
 package me.rerere.rikkahub.service
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.runBlocking
 import me.rerere.ai.ui.UIMessagePart
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -9,6 +11,47 @@ import org.junit.Test
 
 class MessageQueueTest {
     private fun text(value: String) = listOf(UIMessagePart.Text(value))
+
+    @Test
+    fun `editing a voice message preserves its reply observer and queue position`() {
+        val queue = MessageQueue()
+        val reply = CompletableDeferred<String?>()
+        queue.enqueue(text("original"), reply = reply)
+        queue.enqueue(text("later"))
+        val id = queue.state.value.messages.first().id
+        queue.beginEdit(id)
+        assertNull(queue.takeNext())
+        queue.finishEdit(id, text("edited"))
+        val dispatched = queue.takeNext()!!
+        assertEquals(text("edited"), dispatched.parts)
+        assertTrue(dispatched.reply === reply)
+        assertFalse(reply.isCompleted)
+        assertEquals(text("later"), queue.takeNext()!!.parts)
+    }
+
+    @Test
+    fun `pausing resolves voice observers but retains queued content for manual resume`() = runBlocking {
+        val queue = MessageQueue()
+        val reply = CompletableDeferred<String?>()
+        queue.enqueue(text("keep me"), reply = reply)
+        queue.pause()
+        assertTrue(reply.isCompleted)
+        assertTrue(runCatching { reply.await() }.exceptionOrNull() is IllegalStateException)
+        assertEquals(text("keep me"), queue.state.value.messages.single().parts)
+        queue.resume()
+        assertEquals(text("keep me"), queue.takeNext()!!.parts)
+    }
+
+    @Test
+    fun `tool approval can release reply observers without removing or resuming messages`() = runBlocking {
+        val queue = MessageQueue()
+        val reply = CompletableDeferred<String?>()
+        queue.enqueue(text("pending"), reply = reply)
+        queue.failReplyWaiters("approval required")
+        assertEquals("approval required", runCatching { reply.await() }.exceptionOrNull()?.message)
+        assertEquals(1, queue.state.value.messages.size)
+        assertFalse(queue.state.value.paused)
+    }
 
     @Test
     fun `dispatches in submission order and preserves send without answer`() {

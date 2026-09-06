@@ -25,13 +25,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlin.uuid.Uuid
 import me.rerere.ai.ui.UIMessagePart
+import me.rerere.rikkahub.R
 import me.rerere.rikkahub.service.MessageQueueState
 import me.rerere.rikkahub.service.QueuedMessage
 import me.rerere.rikkahub.ui.hooks.ChatInputState
-import kotlin.uuid.Uuid
 
 @Composable
 internal fun MessageQueuePanel(
@@ -53,7 +55,11 @@ internal fun MessageQueuePanel(
             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = if (state.paused) "队列已暂停 · ${state.messages.size} 条" else "待发送 · ${state.messages.size} 条",
+                        text = stringResource(
+                            if (state.paused) R.string.chat_page_queue_paused_count
+                            else R.string.chat_page_queue_pending_count,
+                            state.messages.size,
+                        ),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier
@@ -61,7 +67,7 @@ internal fun MessageQueuePanel(
                             .padding(vertical = 8.dp),
                     )
                     if (state.paused) {
-                        TextButton(onClick = onResume) { Text("继续发送") }
+                        TextButton(onClick = onResume) { Text(stringResource(R.string.chat_page_queue_resume)) }
                     }
                 }
                 LazyColumn(modifier = Modifier.heightIn(max = 180.dp)) {
@@ -72,14 +78,20 @@ internal fun MessageQueuePanel(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
+                            val attachmentLabels = listOf(
+                                stringResource(R.string.chat_page_queue_image),
+                                stringResource(R.string.chat_page_queue_file),
+                                stringResource(R.string.chat_page_queue_audio),
+                                stringResource(R.string.chat_page_queue_video),
+                            )
                             Text(
                                 text = "${index + 1}. " + message.parts.joinToString(" ") {
                                     when (it) {
                                         is UIMessagePart.Text -> it.text
-                                        is UIMessagePart.Image -> "[图片]"
-                                        is UIMessagePart.Document -> "[文件]"
-                                        is UIMessagePart.Audio -> "[音频]"
-                                        is UIMessagePart.Video -> "[视频]"
+                                        is UIMessagePart.Image -> attachmentLabels[0]
+                                        is UIMessagePart.Document -> attachmentLabels[1]
+                                        is UIMessagePart.Audio -> attachmentLabels[2]
+                                        is UIMessagePart.Video -> attachmentLabels[3]
                                         else -> ""
                                     }
                                 },
@@ -91,11 +103,11 @@ internal fun MessageQueuePanel(
                             TextButton(
                                 enabled = !message.isEditing,
                                 onClick = { editing = onBeginEdit(message.id) },
-                            ) { Text(if (message.isEditing) "编辑中" else "编辑") }
+                            ) { Text(if (message.isEditing) stringResource(R.string.chat_page_queue_editing) else stringResource(R.string.edit)) }
                             TextButton(
                                 enabled = !message.isEditing,
                                 onClick = { onRemove(message.id) },
-                            ) { Text("撤销") }
+                            ) { Text(stringResource(R.string.chat_page_queue_remove)) }
                         }
                     }
                 }
@@ -117,7 +129,7 @@ internal fun MessageQueuePanel(
         }
         AlertDialog(
             onDismissRequest = { editing = null },
-            title = { Text("编辑待发送消息") },
+            title = { Text(stringResource(R.string.chat_page_queue_edit_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (input.messageContent.isNotEmpty()) MediaFileInputRow(input)
@@ -140,10 +152,10 @@ internal fun MessageQueuePanel(
                         onFinishEdit(message.id, input.getContents())
                         editing = null
                     },
-                ) { Text("保存") }
+                ) { Text(stringResource(R.string.chat_page_save)) }
             },
             dismissButton = {
-                TextButton(onClick = { editing = null }) { Text("取消") }
+                TextButton(onClick = { editing = null }) { Text(stringResource(R.string.cancel)) }
             },
         )
     }
