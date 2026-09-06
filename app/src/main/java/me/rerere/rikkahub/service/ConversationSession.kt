@@ -1,13 +1,16 @@
 package me.rerere.rikkahub.service
 
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import me.rerere.rikkahub.data.model.Conversation
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.uuid.Uuid
@@ -39,6 +42,7 @@ class ConversationSession(
 
     // 生成任务（内聚在 session 中）
     private val _generationJob = MutableStateFlow<Job?>(null)
+    private val activeJobs = mutableSetOf<Job>()
     val generationJob: StateFlow<Job?> = _generationJob.asStateFlow()
     val isGenerating: Boolean get() = _generationJob.value?.isActive == true
     val isInUse: Boolean
@@ -79,12 +83,16 @@ class ConversationSession(
     }
 
     @Synchronized
-    fun setJob(job: Job?) {
+    fun setJob(job: Job?, cancelPrevious: Boolean = true) {
         val previous = _generationJob.value
         _generationJob.value = job
-        previous?.cancel()
+        if (cancelPrevious) previous?.cancel()
+        if (job != null) activeJobs.add(job)
         job?.invokeOnCompletion { cause ->
             synchronized(this) {
+                activeJobs.remove(job)
+                // Also propagate cancellation when a queued coroutine never entered its body.
+                if (!cancelPrevious && cause is CancellationException) previous?.cancel()
                 // A replaced job must not clear or advance its successor.
                 if (_generationJob.compareAndSet(job, null)) {
                     onGenerationFinished(id, cause)
@@ -96,6 +104,12 @@ class ConversationSession(
     }
 
     fun getJob(): Job? = _generationJob.value
+
+    @Synchronized
+    fun cancelJobs(): List<Job> = activeJobs.toList().also { jobs ->
+        // Cancel waiters first so a predecessor finishing cannot start the next approval.
+        jobs.asReversed().forEach { it.cancel() }
+    }
 
     private fun scheduleIdleCheck() {
         idleCheckJob?.cancel()
@@ -114,10 +128,21 @@ class ConversationSession(
 
     @Synchronized
     fun cleanup() {
-        val job = _generationJob.value
         _generationJob.value = null
-        job?.cancel()
+        cancelJobs()
         idleCheckJob?.cancel()
         idleCheckJob = null
+    }
+}
+
+/** Serialize approval saves without cancelling earlier decisions; stopping cancels the whole chain. */
+internal suspend fun afterPreviousGeneration(previous: Job?, block: suspend () -> Unit) {
+    try {
+        previous?.join()
+        block()
+    } catch (e: CancellationException) {
+        previous?.cancel()
+        withContext(NonCancellable) { previous?.join() }
+        throw e
     }
 }

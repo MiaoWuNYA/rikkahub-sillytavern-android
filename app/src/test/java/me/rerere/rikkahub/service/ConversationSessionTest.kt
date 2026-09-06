@@ -23,6 +23,104 @@ import kotlin.uuid.Uuid
 
 class ConversationSessionTest {
     @Test
+    fun `stop does not resume queued approval when predecessor cancels immediately`() = runBlocking {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val id = Uuid.random()
+        val session = ConversationSession(id, Conversation.ofId(id), scope, {})
+        try {
+            var saved = false
+            val first = scope.launch(start = CoroutineStart.LAZY) { awaitCancellation() }
+            session.setJob(first)
+            val second = scope.launch(start = CoroutineStart.LAZY) {
+                afterPreviousGeneration(first) { saved = true }
+            }
+            session.setJob(second, cancelPrevious = false)
+            session.cancelJobs().forEach { it.join() }
+            assertFalse(saved)
+            assertTrue(first.isCancelled)
+            assertTrue(second.isCancelled)
+        } finally {
+            session.cleanup()
+            scope.cancel()
+        }
+    }
+
+    @Test
+    fun `queued approvals preserve a decision while its save is suspended`() = runBlocking {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val id = Uuid.random()
+        val completions = mutableListOf<Throwable?>()
+        val session = ConversationSession(id, Conversation.ofId(id), scope, {},
+            { _, cause -> completions.add(cause) })
+        try {
+            val save = CompletableDeferred<Unit>()
+            val decisions = mutableListOf<String>()
+            val first = scope.launch(start = CoroutineStart.LAZY) {
+                afterPreviousGeneration(null) {
+                    save.await()
+                    decisions.add("A")
+                }
+            }
+            session.setJob(first, cancelPrevious = false)
+            val second = scope.launch(start = CoroutineStart.LAZY) {
+                afterPreviousGeneration(first) { decisions.add("B") }
+            }
+            session.setJob(second, cancelPrevious = false)
+            assertTrue(first.isActive)
+            assertTrue(decisions.isEmpty())
+            save.complete(Unit)
+            second.join()
+            assertEquals(listOf("A", "B"), decisions)
+            assertEquals(listOf<Throwable?>(null), completions)
+            assertNull(session.getJob())
+        } finally {
+            session.cleanup()
+            scope.cancel()
+        }
+    }
+
+    @Test
+    fun `stopping queued approvals waits for all predecessors to stop`() = runBlocking {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val id = Uuid.random()
+        val session = ConversationSession(id, Conversation.ofId(id), scope, {})
+        try {
+            val cleanup = CompletableDeferred<Unit>()
+            val first = scope.launch(start = CoroutineStart.LAZY) {
+                afterPreviousGeneration(null) {
+                    try {
+                        awaitCancellation()
+                    } finally {
+                        withContext(NonCancellable) { cleanup.await() }
+                    }
+                }
+            }
+            session.setJob(first, cancelPrevious = false)
+            val second = scope.launch(start = CoroutineStart.LAZY) {
+                afterPreviousGeneration(first) { error("Must not execute") }
+            }
+            session.setJob(second, cancelPrevious = false)
+            val third = scope.launch(start = CoroutineStart.LAZY) {
+                afterPreviousGeneration(second) { error("Must not execute") }
+            }
+            session.setJob(third, cancelPrevious = false)
+            val stopped = session.cancelJobs()
+            assertTrue(first.isCancelled)
+            assertTrue(second.isCancelled)
+            assertFalse(third.isCompleted)
+            cleanup.complete(Unit)
+            stopped.forEach { it.join() }
+            assertTrue(third.isCompleted)
+            assertTrue(first.isCompleted)
+            assertTrue(second.isCompleted)
+            assertNull(session.getJob())
+        } finally {
+            session.cleanup()
+            scope.cancel()
+        }
+    }
+
+    @Test
     fun `replaced job finishing late cannot clear successor or advance queue`() = runBlocking {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         val completions = mutableListOf<Throwable?>()

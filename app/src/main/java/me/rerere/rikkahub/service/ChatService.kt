@@ -594,48 +594,53 @@ class ChatService(
             keepAliveInBackground = !hasOtherPendingTools,
         ) {
             try {
-                previousJob?.join()
-                val conversation = session.state.value
-                val newApprovalState = when {
-                    answer != null -> ToolApprovalState.Answered(answer)
-                    approved -> ToolApprovalState.Approved
-                    else -> ToolApprovalState.Denied(reason)
-                }
-
-                // Update the tool approval state
-                val updatedNodes = conversation.messageNodes.map { node ->
-                    node.copy(
-                        messages = node.messages.map { msg ->
-                            msg.copy(
-                                parts = msg.parts.map { part ->
-                                    when {
-                                        part is UIMessagePart.Tool && part.toolCallId == toolCallId -> {
-                                            part.copy(approvalState = newApprovalState)
-                                        }
-
-                                        else -> part
-                                    }
-                                }
-                            )
-                        }
-                    )
-                }
-                val updatedConversation = conversation.copy(messageNodes = updatedNodes)
-                saveConversation(conversationId, updatedConversation)
-
-                // Check if there are still pending tools
-                val hasPendingTools = updatedNodes.any { node ->
-                    node.currentMessage.parts.any { part ->
-                        part is UIMessagePart.Tool && part.isPending
+                afterPreviousGeneration(previousJob) {
+                    val conversation = session.state.value
+                    // Ignore double taps and stale approvals for completed or inactive tools.
+                    if (conversation.currentMessages.none { message ->
+                            message.getTools().any { it.toolCallId == toolCallId && it.isPending }
+                        }) return@afterPreviousGeneration
+                    val newApprovalState = when {
+                        answer != null -> ToolApprovalState.Answered(answer)
+                        approved -> ToolApprovalState.Approved
+                        else -> ToolApprovalState.Denied(reason)
                     }
-                }
 
-                // Only continue generation when all pending tools are handled
-                if (!hasPendingTools) {
-                    handleMessageComplete(conversationId)
-                }
+                    // Update the tool approval state
+                    val updatedNodes = conversation.messageNodes.map { node ->
+                        node.copy(
+                            messages = node.messages.map { msg ->
+                                msg.copy(
+                                    parts = msg.parts.map { part ->
+                                        when {
+                                            part is UIMessagePart.Tool && part.toolCallId == toolCallId -> {
+                                                part.copy(approvalState = newApprovalState)
+                                            }
 
-                _generationDoneFlow.emit(conversationId)
+                                            else -> part
+                                        }
+                                    }
+                                )
+                            }
+                        )
+                    }
+                    val updatedConversation = conversation.copy(messageNodes = updatedNodes)
+                    saveConversation(conversationId, updatedConversation)
+
+                    // Check if there are still pending tools
+                    val hasPendingTools = updatedNodes.any { node ->
+                        node.currentMessage.parts.any { part ->
+                            part is UIMessagePart.Tool && part.isPending
+                        }
+                    }
+
+                    // Only continue generation when all pending tools are handled
+                    if (!hasPendingTools) {
+                        handleMessageComplete(conversationId)
+                    }
+
+                    _generationDoneFlow.emit(conversationId)
+                }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 session.messageQueue.pause()
@@ -643,7 +648,7 @@ class ChatService(
             }
         }
 
-        session.setJob(job)
+        session.setJob(job, cancelPrevious = false)
     }
 
     // ---- 处理消息补全 ----
@@ -853,8 +858,7 @@ class ChatService(
                 UIMessagePart.Text(
                     """{"status":"cancelled","error":"Generation cancelled by user before tool execution completed."}"""
                 )
-            ),
-            approvalState = ToolApprovalState.Denied("Generation cancelled by user")
+            )
         )
     }
 
@@ -1411,11 +1415,12 @@ class ChatService(
     // 停止当前会话生成任务（不清理会话缓存）
     suspend fun stopGeneration(conversationId: Uuid) {
         val session = sessions[conversationId] ?: return
-        val job = synchronized(session) {
+        val jobs = synchronized(session) {
             session.messageQueue.pause()
-            session.getJob()?.also { it.cancel() }
-        } ?: return
-        runCatching { job.join() }
+            session.cancelJobs()
+        }
+        if (jobs.isEmpty()) return
+        jobs.forEach { it.join() }
         finishInterruptedPendingTools(conversationId)
     }
 }
