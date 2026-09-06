@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,6 +36,7 @@ import me.rerere.hugeicons.stroke.Settings03
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.model.*
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.ai.transformers.PlaceholderTransformer
 import me.rerere.rikkahub.service.ChatService
 import me.rerere.rikkahub.ui.components.ai.ChatInput
 import me.rerere.rikkahub.ui.components.ai.ModelSelector
@@ -265,6 +267,7 @@ fun GroupChatPage(groupId: String) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val scope = rememberCoroutineScope()
     val navController = me.rerere.rikkahub.ui.context.LocalNavController.current
+    val context = LocalContext.current
 
     val gcId = Uuid.parse(groupId)
     val gc = settings.groupChats.find { it.id == gcId } ?: return
@@ -286,7 +289,14 @@ fun GroupChatPage(groupId: String) {
                 val texts = listOfNotNull(tav.firstMessage.takeIf { it.isNotBlank() }) +
                     tav.alternateGreetings.filter { it.isNotBlank() }
                 val chosen = texts.randomOrNull() ?: return@mapNotNull null
-                val node = UIMessage.assistant(chosen).toMessageNode()
+                // 开场白里的宏（{{user}} 等）在插入前替换
+                val processed = PlaceholderTransformer.substituteGreetingMacros(
+                    context = context,
+                    settings = settings,
+                    assistant = m,
+                    text = chosen,
+                )
+                val node = UIMessage.assistant(processed).toMessageNode()
                 node to m.id
             }
             val conv = Conversation(

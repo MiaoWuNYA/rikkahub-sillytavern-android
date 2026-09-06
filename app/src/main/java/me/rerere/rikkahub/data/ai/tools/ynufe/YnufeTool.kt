@@ -30,12 +30,13 @@ import java.time.LocalDate
  *  - grade         查成绩（GPA / 总学分 / 明细）
  *  - exam          查考试安排（可选 semester / type: 期初|期中|期末，默认期末）
  *  - announcement  查教务公告列表
+ *  - classroom     查空闲教室（可指定校区/教室类型/周次/星期/节次）
  *  - help          返回使用说明
  */
 fun createYnufeTool(context: Context): Tool = Tool(
     name = "ynufe",
     description = "云南财经大学教务系统查询工具（强智教务）。" +
-        "用于查询课表(schedule)、成绩(grade)、考试安排(exam)、教务公告(announcement)，" +
+        "用于查询课表(schedule)、成绩(grade)、考试安排(exam)、教务公告(announcement)、空闲教室(classroom)，" +
         "以及登录状态(status)、登录(login)、退出(logout)。" +
         "账号密码已在设置页保存，无需向用户索要；仅在返回 need_login/need_captcha 时按提示引导用户。" +
         "登录失败返回 captcha_image 时：把图片用 markdown 展示给用户，请用户读出 4 位验证码，" +
@@ -45,7 +46,7 @@ fun createYnufeTool(context: Context): Tool = Tool(
             properties = buildJsonObject {
                 put("action", buildJsonObject {
                     put("type", "string")
-                    put("description", "操作: status | login | logout | schedule | grade | exam | announcement | help")
+                    put("description", "操作: status | login | logout | schedule | grade | exam | announcement | classroom | help")
                 })
                 put("account", buildJsonObject {
                     put("type", "string")
@@ -71,6 +72,30 @@ fun createYnufeTool(context: Context): Tool = Tool(
                     put("type", "boolean")
                     put("description", "logout 时是否同时清除保存的账号密码（默认 false 只清会话）")
                 })
+                put("campus", buildJsonObject {
+                    put("type", "string")
+                    put("description", "classroom 用：南院 | 北院 | 呈贡 | 安宁（默认南院）")
+                })
+                put("room_type", buildJsonObject {
+                    put("type", "string")
+                    put("description", "classroom 用：全部 | 普通教室 | 多媒体教室 | 实验室 | 机房（默认全部）")
+                })
+                put("week", buildJsonObject {
+                    put("type", "string")
+                    put("description", "classroom 用：周次，数字 1-20（默认第 1 周）")
+                })
+                put("day", buildJsonObject {
+                    put("type", "string")
+                    put("description", "classroom 用：星期几，1=周一 ... 7=周日（默认今天）")
+                })
+                put("session_start", buildJsonObject {
+                    put("type", "string")
+                    put("description", "classroom 用：起始节次 1-10（默认 1）")
+                })
+                put("session_end", buildJsonObject {
+                    put("type", "string")
+                    put("description", "classroom 用：结束节次 1-10（默认 2），不能小于起始节次")
+                })
             },
             required = listOf("action")
         )
@@ -85,6 +110,12 @@ fun createYnufeTool(context: Context): Tool = Tool(
         val semesterArg = json["semester"]?.jsonPrimitive?.contentOrNull
         val typeArg = json["type"]?.jsonPrimitive?.contentOrNull
         val clearCreds = json.boolField("clear_credentials")
+        val campusArg = json["campus"]?.jsonPrimitive?.contentOrNull
+        val roomTypeArg = json["room_type"]?.jsonPrimitive?.contentOrNull
+        val weekArg = json["week"]?.jsonPrimitive?.contentOrNull
+        val dayArg = json["day"]?.jsonPrimitive?.contentOrNull
+        val sessionStartArg = json["session_start"]?.jsonPrimitive?.contentOrNull
+        val sessionEndArg = json["session_end"]?.jsonPrimitive?.contentOrNull
 
         val result = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             val store = YnufeStore(context)
@@ -102,12 +133,12 @@ fun createYnufeTool(context: Context): Tool = Tool(
                         put("message", if (clearCreds) "已退出并清除保存的账号密码" else "已退出登录（凭据仍保存在设置中）")
                     }
                 }
-                "schedule", "grade", "exam", "announcement" ->
-                    dataJson(store, client, context, action, semesterArg, typeArg)
+                "schedule", "grade", "exam", "announcement", "classroom" ->
+                    dataJson(store, client, context, action, semesterArg, typeArg, campusArg, roomTypeArg, weekArg, dayArg, sessionStartArg, sessionEndArg)
                 else -> buildJsonObject {
                     put("success", false)
                     put("error", "未知 action: $action")
-                    put("allowed", "status | login | logout | schedule | grade | exam | announcement | help")
+                    put("allowed", "status | login | logout | schedule | grade | exam | announcement | classroom | help")
                 }
             }
         }
@@ -166,6 +197,12 @@ private suspend fun dataJson(
     action: String,
     semesterArg: String?,
     typeArg: String?,
+    campusArg: String? = null,
+    roomTypeArg: String? = null,
+    weekArg: String? = null,
+    dayArg: String? = null,
+    sessionStartArg: String? = null,
+    sessionEndArg: String? = null,
 ): JsonObject {
     val auth = store.snapshot()
     if (!verifySession(client)) {
@@ -221,6 +258,64 @@ private suspend fun dataJson(
                 put("announcements", YnufeParsers.parseAnnouncementsJson(
                     client.getHtml("/jsxsd/ggly/ysgg_query")
                 ))
+            }
+            "classroom" -> {
+                // 校区：南院/北院/呈贡/安宁（安宁的教务编号是固定 GUID）
+                val campusCode = when {
+                    campusArg == null -> "1"
+                    campusArg.contains("南") -> "1"
+                    campusArg.contains("北") -> "2"
+                    campusArg.contains("呈贡") -> "3"
+                    campusArg.contains("安宁") -> "E298641275B7471181C291FA9BC76452"
+                    else -> campusArg // 已是编号则透传
+                }
+                val roomTypeCode = when {
+                    roomTypeArg == null || roomTypeArg.isBlank() || roomTypeArg.contains("全部") -> ""
+                    roomTypeArg.contains("普通") || roomTypeArg == "01" -> "01"
+                    roomTypeArg.contains("多媒体") || roomTypeArg == "02" -> "02"
+                    roomTypeArg.contains("实验") || roomTypeArg == "03" -> "03"
+                    roomTypeArg.contains("机房") || roomTypeArg == "04" -> "04"
+                    else -> roomTypeArg
+                }
+                val week = (weekArg?.toIntOrNull() ?: 1).coerceIn(1, 30).toString()
+                val today = LocalDate.now().dayOfWeek.value // 1=周一 ... 7=周日
+                val day = (dayArg?.toIntOrNull() ?: today).coerceIn(1, 7).toString()
+                val jcStart = (sessionStartArg?.toIntOrNull() ?: 1).coerceIn(1, 10)
+                val jcEnd = (sessionEndArg?.toIntOrNull() ?: 2).coerceIn(1, 10)
+                if (jcStart > jcEnd) {
+                    return buildJsonObject {
+                        put("action", action)
+                        put("success", false)
+                        put("error", "开始节次($jcStart)不能大于结束节次($jcEnd)")
+                    }
+                }
+                val html = client.postForm(
+                    "/jsxsd/kbxx/jsjy_query2",
+                    mapOf(
+                        "typewhere" to "jszq",
+                        "xnxqh" to sem,
+                        "xqbh" to campusCode,
+                        "jslx" to roomTypeCode,
+                        "zc" to week,
+                        "zc2" to week,
+                        "xq" to day,
+                        "xq2" to day,
+                        "jc" to jcStart.toString(),
+                        "jc2" to jcEnd.toString(),
+                        // 学校教务配置的作息表模板固定 GUID，若学校重新配置需抓包更新
+                        "kbjcmsid" to "C8B3C60AE20444B499A15ABFA3ECFF9D",
+                    ),
+                )
+                buildJsonObject {
+                    val data = YnufeParsers.parseClassroomsJson(html)
+                    data.forEach { (k, v) -> put(k, v) }
+                    put("semester", sem)
+                    put("campus", campusCode)
+                    put("roomType", roomTypeCode.ifEmpty { "全部" })
+                    put("week", week)
+                    put("day", day)
+                    put("sessionRange", "$jcStart-$jcEnd")
+                }
             }
             else -> buildJsonObject { put("error", "unknown action $action") }
         }
@@ -374,6 +469,8 @@ internal suspend fun doLogin(
 
 private fun helpJson(): JsonObject = buildJsonObject {
     put("tool", "ynufe")
-    put("actions", "status | login | logout | schedule | grade | exam | announcement | help")
-    put("notes", "账号密码在 设置 → 教务系统账号 保存后自动复用；schedule/grade/exam/announcement 未登录时会自动尝试静默登录")
+    put("actions", "status | login | logout | schedule | grade | exam | announcement | classroom | help")
+    put("notes", "账号密码在 设置 → 教务系统账号 保存后自动复用；" +
+        "schedule/grade/exam/announcement/classroom 未登录时会自动尝试静默登录；" +
+        "classroom 可传 campus(南院/北院/呈贡/安宁)、room_type(普通教室/多媒体教室/实验室/机房)、week(周次)、day(星期 1-7)、session_start/session_end(节次) 查询指定时段的空闲教室")
 }

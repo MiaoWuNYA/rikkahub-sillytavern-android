@@ -280,4 +280,55 @@ object YnufeParsers {
 
         return buildJsonArray { rows.forEach { add(it) } }
     }
+
+    // ===================== 空教室 =====================
+    /**
+     * 解析空教室查询响应（/jsxsd/kbxx/jsjy_query2）。
+     * 返回"教室 × 节次"占用矩阵：首行是节次分组表头（"0102"、"030405"...），
+     * 数据行首格是教室名（如 "汇新101(50/30)"），其余格有内容（◆）即该节次被占用。
+     * 「空闲」= 所有节次列均无占用标记。
+     * 注意：页面存在多个同 id="dataList" 的表格（靠前的是空壳），必须挑数据行最多的那张。
+     */
+    fun parseClassroomsJson(html: String): JsonObject {
+        val doc = Jsoup.parse(html)
+
+        // pickRichestTable：在候选选择器中挑出实际含数据行最多的表格
+        var best: Element? = null
+        var maxRows = 0
+        for (sel in listOf("table#dataList", "table#Table1", "table.Nsb_r_list")) {
+            for (t in doc.select(sel)) {
+                val n = t.select("tr").size
+                if (n > maxRows) {
+                    maxRows = n
+                    best = t
+                }
+            }
+        }
+
+        val freeRooms = buildJsonArray {
+            val table = best ?: return@buildJsonArray
+            val rows = table.select("tr")
+            // 首行为节次表头，从第 1 行开始才是教室数据
+            for (i in 1 until rows.size) {
+                val tds = rows[i].select("td")
+                if (tds.size < 2) continue
+                val name = tds[0].text().replace(' ', ' ').trim()
+                if (name.isEmpty() || name == "暂无数据" || name == "未查询到数据" || name == "教室名称") continue
+                var occupied = false
+                for (c in 1 until tds.size) {
+                    val mark = tds[c].text().replace(" ", "").trim()
+                    if (mark.isNotEmpty()) {
+                        occupied = true
+                        break
+                    }
+                }
+                if (!occupied) add(JsonPrimitive(name))
+            }
+        }
+
+        return buildJsonObject {
+            put("freeRooms", freeRooms)
+            put("count", freeRooms.size)
+        }
+    }
 }

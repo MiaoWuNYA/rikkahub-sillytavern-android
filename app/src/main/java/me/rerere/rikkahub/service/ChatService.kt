@@ -393,11 +393,28 @@ class ChatService(
             // 新建对话, 并添加预设消息
             val currentSettings = settingsStore.settingsFlowRaw.first()
             val assistant = currentSettings.getCurrentAssistant()
+            // 开场白不经过生成管线，插入前先替换宏（{{user}}/{{char}} 等），否则界面显示原文
+            val presetMessages = assistant.presetMessages.map { msg ->
+                msg.copy(parts = msg.parts.map { part ->
+                    if (part is UIMessagePart.Text) {
+                        part.copy(
+                            text = PlaceholderTransformer.substituteGreetingMacros(
+                                context = context,
+                                settings = currentSettings,
+                                assistant = assistant,
+                                text = part.text,
+                            )
+                        )
+                    } else {
+                        part
+                    }
+                })
+            }
             val newConversation = Conversation.ofId(
                 id = conversationId,
                 assistantId = assistant.id,
                 newConversation = true
-            ).updateCurrentMessages(assistant.presetMessages)
+            ).updateCurrentMessages(presetMessages)
             updateConversation(conversationId, newConversation)
         }
     }

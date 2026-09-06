@@ -373,6 +373,37 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
         return result
     }
 
+    /**
+     * 开场白等直接写入对话的消息不经过生成管线（PlaceholderTransformer.transform），
+     * {{user}} / {{char}} / 变量宏等不会被替换，界面上会显示原文。
+     * 在插入对话前调用本函数完成宏替换（宏引擎与生成管线完全一致）。
+     */
+    suspend fun substituteGreetingMacros(
+        context: Context,
+        settings: Settings,
+        assistant: Assistant,
+        text: String,
+    ): String {
+        if (!text.contains("{{")) return text
+        return try {
+            val settingsStore = get<SettingsStore>()
+            val ctx = PlaceholderCtx(
+                context = context,
+                settingsStore = settingsStore,
+                settings = settings,
+                model = Model(),
+                assistant = assistant,
+            )
+            val vars = SettingsMacroVars(settingsStore, settings)
+            val engine = MacroEngine(defaultProvider.placeholders, vars)
+            val result = engine.substitute(text, ctx)
+            // 非作用域 {{trim}} 后处理，与生成管线保持一致
+            result.replace(trimRegex) { "" }.also { vars.flush() }
+        } catch (_: Exception) {
+            text
+        }
+    }
+
     private fun replacePlaceholders(
         text: String,
         ctx: TransformerContext,

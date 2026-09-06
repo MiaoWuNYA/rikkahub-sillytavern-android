@@ -672,8 +672,6 @@
   <string name="setting_display_page_show_thinking_content_title">思考内容を表示</string>
   <string name="setting_display_page_show_token_usage_desc">トークン使用量とメッセージ数を表示</string>
   <string name="setting_display_page_show_token_usage_title">トークンとコンテキスト統計を表示</string>
-  <string name="setting_display_page_show_updates_desc">アプリのアップデート通知を表示するかどうか</string>
-  <string name="setting_display_page_show_updates_title">アップデートを表示</string>
   <string name="setting_display_page_show_user_avatar_desc">チャットメッセージにユーザーアバターを表示するかどうか</string>
   <string name="setting_display_page_show_user_avatar_title">ユーザーアバターを表示</string>
   <string name="setting_display_page_skip_crop_image_desc">画像をインポートするか写真を撮影した後、クロップ画面をスキップ</string>
@@ -1277,12 +1275,6 @@ mDNSアドレス: .localホスト名を使用し、IPを知らなくても同じ
   <string name="search_picker_model_description">モデルプロバイダー内蔵のクラウド検索</string>
   <string name="search_picker_select_provider">検索プロバイダを選択</string>
   <string name="search_picker_turn_off">検索をオフにする</string>
-  <string name="setting_update_reminder_enabled">アップデート通知が有効になっています</string>
-  <string name="setting_update_reminder_paused_until">%1$sまで一時停止</string>
-  <string name="setting_update_reminder_pause_title">更新リマインダーを一時停止</string>
-  <string name="setting_update_reminder_pause_description">更新リマインダーを一時停止する期間を選択してください。自動的に再開されます。</string>
-  <string name="setting_update_reminder_pause_days">%1$d日間</string>
-  <string name="setting_update_reminder_resume_now">今すぐ再開</string>
   <string name="reasoning_max">最大</string>
   <string name="backup_page_import_overwrite_confirm">バックアップをインポートするとアプリデータが上書きされます。続行しますか？</string>
   <string name="setting_page_preferences_network">ネットワーク</string>

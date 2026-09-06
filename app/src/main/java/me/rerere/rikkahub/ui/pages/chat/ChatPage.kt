@@ -241,14 +241,21 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
                 ?.firstOrNull { it.role == me.rerere.ai.core.MessageRole.ASSISTANT }
                 ?.toText() ?: "",
             onSelect = { greeting ->
-                val updatedAssistant = assistant?.copy(
-                    presetMessages = listOf(UIMessage.assistant(greeting))
-                )
-                if (updatedAssistant != null) {
-                    val newConv = conversation.copy(
-                        messageNodes = listOf()
-                    ).updateCurrentMessages(updatedAssistant.presetMessages)
-                    vm.updateConversation(newConv)
+                scope.launch {
+                    // 开场白里的宏（{{user}} 等）在此替换，避免界面显示原文
+                    val processed = assistant?.let {
+                        me.rerere.rikkahub.data.ai.transformers.PlaceholderTransformer
+                            .substituteGreetingMacros(context, setting, it, greeting)
+                    } ?: greeting
+                    val updatedAssistant = assistant?.copy(
+                        presetMessages = listOf(UIMessage.assistant(processed))
+                    )
+                    if (updatedAssistant != null) {
+                        val newConv = conversation.copy(
+                            messageNodes = listOf()
+                        ).updateCurrentMessages(updatedAssistant.presetMessages)
+                        vm.updateConversation(newConv)
+                    }
                 }
                 greetingPicked = true
                 showGreetingPicker = false
