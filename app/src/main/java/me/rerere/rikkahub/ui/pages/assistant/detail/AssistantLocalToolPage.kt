@@ -341,6 +341,16 @@ private fun AssistantLocalToolContent(
                 }
             )
             item(
+                headlineContent = { Text("教务系统工具(YNUFE)") },
+                supportingContent = { Text("启用云南财经教务查询（课表/成绩/考试/公告），账号在 设置 → 教务系统账号 保存") },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.enableYnufeTools,
+                        onCheckedChange = { onUpdate(assistant.copy(enableYnufeTools = it)) }
+                    )
+                }
+            )
+            item(
                 headlineContent = { Text("Shell 命令") },
                 supportingContent = { Text("允许 AI 执行 shell 命令") },
                 trailingContent = {

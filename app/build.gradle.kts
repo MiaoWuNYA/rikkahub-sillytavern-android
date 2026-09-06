@@ -255,6 +255,8 @@ dependencies {
     implementation(libs.androidx.paging.compose)
     // Apache Commons Text
     implementation(libs.commons.text)
+    // Jsoup (HTML parsing for 教务 parsing)
+    implementation(libs.jsoup)
     // Toast (Sonner)
     implementation(libs.sonner)
     // Reorderable (https://github.com/Calvin-LL/Reorderable/)

@@ -84,6 +84,7 @@ import me.rerere.rikkahub.data.ai.tools.createTaskTools
 import me.rerere.rikkahub.data.ai.tools.createConversationTools
 import me.rerere.rikkahub.data.ai.tools.local.createMingliTool
 import me.rerere.rikkahub.data.ai.tools.local.createMingliGuideTool
+import me.rerere.rikkahub.data.ai.tools.ynufe.createYnufeTool
 import me.rerere.rikkahub.data.files.SkillManager
 import me.rerere.rikkahub.data.ai.transformers.Base64ImageToLocalFileTransformer
 import me.rerere.rikkahub.data.ai.transformers.DocumentAsPromptTransformer
@@ -1184,6 +1185,10 @@ class ChatService(
                     if (assistant.enableMingliTools) {
                         add(createMingliTool(context))
                         add(createMingliGuideTool(context))
+                    }
+                    // 云南财经教务系统工具（课表/成绩/考试/公告）
+                    if (assistant.enableYnufeTools) {
+                        add(createYnufeTool(context))
                     }
                     if (assistant.localTools.contains(LocalToolOption.DatabaseQuery)) {
                         add(createDatabaseQueryTool(database))

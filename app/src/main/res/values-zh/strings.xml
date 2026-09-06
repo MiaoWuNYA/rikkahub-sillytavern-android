@@ -919,6 +919,8 @@
   <string name="setting_page_persona_desc">定义用户角色，注入到提示词中</string>
   <string name="setting_page_authors_note">导演备注</string>
   <string name="setting_page_authors_note_desc">控制 AI 输出方向</string>
+  <string name="setting_page_ynufe">教务系统账号</string>
+  <string name="setting_page_ynufe_desc">保存教务系统学号密码，AI 自动查询课表/成绩</string>
   <string name="setting_page_group_chat">群聊</string>
   <string name="setting_page_group_chat_desc">多人角色群聊</string>
   <string name="setting_page_general_settings">通用设置</string>

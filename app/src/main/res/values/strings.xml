@@ -947,6 +947,8 @@
   <string name="setting_page_persona_desc">Define user role to inject into prompts</string>
   <string name="setting_page_authors_note">Author\'s Note</string>
   <string name="setting_page_authors_note_desc">Control AI output direction with director notes</string>
+  <string name="setting_page_ynufe">Academic System Account</string>
+  <string name="setting_page_ynufe_desc">Save YNUFE academic credentials for AI schedule/grade queries</string>
   <string name="setting_page_group_chat">Group Chat</string>
   <string name="setting_page_group_chat_desc">Multi-character group chat</string>
   <string name="setting_page_general_settings">General Settings</string>

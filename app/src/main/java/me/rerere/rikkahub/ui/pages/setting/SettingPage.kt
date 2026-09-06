@@ -65,6 +65,7 @@ import me.rerere.hugeicons.stroke.LookTop
 import me.rerere.hugeicons.stroke.Edit01
 import me.rerere.hugeicons.stroke.GlobalSearch
 import me.rerere.hugeicons.stroke.Notebook
+import me.rerere.hugeicons.stroke.GraduationCap
 import me.rerere.hugeicons.stroke.MessageMultiple01
 import me.rerere.hugeicons.stroke.McpServer
 import me.rerere.hugeicons.stroke.Megaphone01
@@ -226,6 +227,12 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         leadingContent = { Icon(HugeIcons.Notebook, null) },
                         supportingContent = { Text(stringResource(R.string.setting_page_authors_note_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_authors_note)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.YnufeAccount) },
+                        leadingContent = { Icon(HugeIcons.GraduationCap, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_ynufe_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_ynufe)) },
                     )
                     item(
                         onClick = { navController.navigate(Screen.GroupChatList) },

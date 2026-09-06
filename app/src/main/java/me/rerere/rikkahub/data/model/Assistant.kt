@@ -54,6 +54,8 @@ data class Assistant(
     ),
     // 命理工具总开关（mingli + mingli_guide），默认开启保持存量行为
     val enableMingliTools: Boolean = true,
+    // 云南财经教务系统工具（课表/成绩/考试/公告），默认关闭
+    val enableYnufeTools: Boolean = false,
     val enableWebSearch: Boolean = false, // 网络搜索开关(每个助手独立)
     val workspaceId: Uuid? = null,
     val background: String? = null, // 聊天页背景图地址(本地文件 URI 或网络 URL), 为 null 时无背景
