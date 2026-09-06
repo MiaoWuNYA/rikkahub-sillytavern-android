@@ -117,6 +117,9 @@
   <string name="assistant_page_regex_affecting_scopes">影响范围：</string>
   <string name="assistant_page_regex_desc">定义正则表达式模式，在发送/接收消息前对其进行转换</string>
   <string name="assistant_page_regex_find_regex">查找正则表达式</string>
+  <string name="assistant_page_regex_import">导入酒馆正则脚本</string>
+  <string name="assistant_page_regex_imported">已导入 %d 条正则</string>
+  <string name="assistant_page_regex_import_failed">未识别到酒馆正则脚本（缺少 scriptName/findRegex 字段）</string>
   <string name="assistant_page_regex_name">名称</string>
   <string name="assistant_page_regex_replace_string">替换字符串</string>
   <string name="assistant_page_regex_title">消息正则表达式</string>

@@ -116,6 +116,9 @@
   <string name="assistant_page_regex_affecting_scopes">Affecting Scopes:</string>
   <string name="assistant_page_regex_desc">Define regex patterns to transform messages before sending/receiving</string>
   <string name="assistant_page_regex_find_regex">Find Regex</string>
+  <string name="assistant_page_regex_import">Import SillyTavern Regex Script</string>
+  <string name="assistant_page_regex_imported">Imported %d regex scripts</string>
+  <string name="assistant_page_regex_import_failed">Not a SillyTavern regex script (scriptName/findRegex missing)</string>
   <string name="assistant_page_regex_name">Name</string>
   <string name="assistant_page_regex_replace_string">Replace String</string>
   <string name="assistant_page_regex_title">Message Regexes</string>

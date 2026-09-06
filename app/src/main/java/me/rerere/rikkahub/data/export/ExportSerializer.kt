@@ -3,15 +3,20 @@ package me.rerere.rikkahub.data.export
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import me.rerere.rikkahub.data.model.AssistantAffectScope
+import me.rerere.rikkahub.data.model.AssistantRegex
 import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.model.PromptInjection
@@ -123,10 +128,15 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
     override fun import(context: Context, uri: Uri): Result<Lorebook> {
         return runCatching {
             val json = readUri(context, uri)
+            val fileName = getUriFileName(context, uri)?.removeSuffix(".json")
             // 首先尝试解析为自己的格式
             tryImportNative(json)
-            // 然后尝试解析为 SillyTavern 格式
-                ?: tryImportSillyTavern(json, getUriFileName(context, uri)?.removeSuffix(".json"))
+            // 然后尝试解析为 SillyTavern 世界书
+                ?: tryImportSillyTavern(json, fileName)
+                // 酒馆 Chat Completion 预设（main_prompt/jailbreak_prompt 等）→ 转成 constant 条目的世界书
+                ?: tryImportSillyTavernPreset(json, fileName)
+                // 正则脚本不在这里导入，给出明确指引而不是静默生成空世界书
+                ?: throwSillyTavernRegexScriptError(json)
                 ?: throw IllegalArgumentException("Unsupported format")
         }
     }
@@ -155,6 +165,9 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
                 SillyTavernLorebook.serializer(),
                 json
             )
+            // entries 有默认值，预设/正则脚本等其他 JSON 会"成功"解码成空世界书，
+            // 必须判空让后续格式识别接管
+            if (stLorebook.entries.isEmpty()) return null
             Lorebook(
                 id = Uuid.random(),
                 name = fileName ?: LocalDateTime.now().toLocalString(),
@@ -211,6 +224,135 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
         }.getOrNull()
     }
 
+    /**
+     * 酒馆 Chat Completion 预设 → constant 条目的世界书。
+     * 两种格式：
+     * - 新版：prompts 数组 + prompt_order（character_id 100001 是当前生效顺序），
+     *   自定义条目 injection_position=0 为相对深度注入 → AT_DEPTH 条目
+     * - 旧版：main_prompt/nsfw_prompt/jailbreak_prompt 平铺字段
+     * 采样参数（temperature 等）本地由模型设置管理，忽略。
+     */
+    private fun tryImportSillyTavernPreset(json: String, fileName: String?): Lorebook? {
+        return runCatching {
+            val entries = tryImportPresetOrdered(json) ?: tryImportPresetFlat(json)
+            if (entries == null || entries.isEmpty()) return null
+            Lorebook(
+                id = Uuid.random(),
+                name = fileName ?: LocalDateTime.now().toLocalString(),
+                description = "SillyTavern 预设导入",
+                enabled = true,
+                entries = entries,
+            )
+        }.getOrNull()
+    }
+
+    /** 新版预设（prompts + prompt_order）解析 */
+    private fun tryImportPresetOrdered(json: String): List<PromptInjection.RegexInjection>? {
+        val obj = runCatching { ExportSerializer.DefaultJson.parseToJsonElement(json) }.getOrNull() as? JsonObject
+        val promptsArray = obj?.get("prompts") as? kotlinx.serialization.json.JsonArray ?: return null
+        if (promptsArray.isEmpty()) return null
+        val preset = ExportSerializer.DefaultJson.decodeFromJsonElement(SillyTavernPresetOrdered.serializer(), obj)
+        val promptsById = preset.prompts.associateBy { it.identifier }
+        // 官方用 dummy character 100001 的顺序作为当前生效列表；缺失时取条目最多的
+        val order = preset.promptOrder.firstOrNull { it.characterId == 100001L }?.order
+            ?: preset.promptOrder.maxByOrNull { it.order.size }?.order
+            ?: return null
+
+        // chatHistory 标记位置：绝对定位条目在它之前/之后决定落点
+        val chatHistoryIndex = order.indexOfFirst { promptsById[it.identifier]?.marker == true && it.identifier == "chatHistory" }
+
+        return order.mapIndexedNotNull { index, entry ->
+            val prompt = promptsById[entry.identifier] ?: return@mapIndexedNotNull null
+            if (prompt.marker) return@mapIndexedNotNull null
+            if (!entry.enabled) return@mapIndexedNotNull null
+            if (prompt.content.isBlank()) return@mapIndexedNotNull null
+            val role = when (prompt.role?.lowercase()) {
+                "user", "1" -> me.rerere.ai.core.MessageRole.USER
+                "assistant", "2" -> me.rerere.ai.core.MessageRole.ASSISTANT
+                else -> me.rerere.ai.core.MessageRole.SYSTEM
+            }
+            val position = when {
+                prompt.identifier == "main" -> InjectionPosition.BEFORE_SYSTEM_PROMPT
+                prompt.identifier == "nsfw" -> InjectionPosition.AFTER_SYSTEM_PROMPT
+                prompt.identifier == "jailbreak" -> InjectionPosition.BOTTOM_OF_CHAT
+                // 相对深度注入：injection_depth=0 表示聊天最末尾，与本地 AT_DEPTH 语义一致
+                prompt.injectionPosition == 0 -> InjectionPosition.AT_DEPTH
+                // 绝对定位：chatHistory 之前 → 角色卡区，之后 → 聊天末尾
+                chatHistoryIndex < 0 || index < chatHistoryIndex -> InjectionPosition.AFTER_SYSTEM_PROMPT
+                else -> InjectionPosition.BOTTOM_OF_CHAT
+            }
+            PromptInjection.RegexInjection(
+                id = Uuid.random(),
+                name = prompt.name.ifBlank { prompt.identifier },
+                enabled = true,
+                position = position,
+                injectDepth = prompt.injectionDepth ?: 4,
+                content = prompt.content,
+                role = role,
+                constantActive = true, // 预设条目无条件注入
+            )
+        }
+    }
+
+    /** 旧版预设（main_prompt 平铺字段）解析 */
+    private fun tryImportPresetFlat(json: String): List<PromptInjection.RegexInjection>? {
+        val preset = runCatching {
+            ExportSerializer.DefaultJson.decodeFromString(SillyTavernPresetFlat.serializer(), json)
+        }.getOrNull() ?: return null
+        if (preset.mainPrompt.isBlank() && preset.nsfwPrompt.isBlank() && preset.jailbreakPrompt.isBlank()) return null
+        fun presetEntry(
+            name: String,
+            content: String,
+            position: InjectionPosition,
+            role: me.rerere.ai.core.MessageRole,
+            enabled: Boolean = true,
+        ) = PromptInjection.RegexInjection(
+            id = Uuid.random(),
+            name = name,
+            enabled = enabled,
+            position = position,
+            content = content,
+            role = role,
+            constantActive = true,
+        )
+        return buildList {
+                preset.mainPrompt.takeIf { it.isNotBlank() }?.let {
+                    add(presetEntry("Main Prompt", it, InjectionPosition.BEFORE_SYSTEM_PROMPT, me.rerere.ai.core.MessageRole.SYSTEM))
+                }
+                preset.nsfwPrompt.takeIf { it.isNotBlank() }?.let {
+                    // nsfw_toggle=false 时导入但默认关闭，用户可手动开
+                    add(
+                        presetEntry(
+                            "NSFW Prompt",
+                            it,
+                            if (preset.nsfwFirst) InjectionPosition.BEFORE_SYSTEM_PROMPT else InjectionPosition.AFTER_SYSTEM_PROMPT,
+                            me.rerere.ai.core.MessageRole.SYSTEM,
+                            enabled = preset.nsfwToggle,
+                        )
+                    )
+                }
+                preset.jailbreakPrompt.takeIf { it.isNotBlank() }?.let {
+                    add(
+                        presetEntry(
+                            "Jailbreak",
+                            it,
+                            InjectionPosition.BOTTOM_OF_CHAT, // 官方 post-history：聊天末尾
+                            if (preset.jailbreakSystem) me.rerere.ai.core.MessageRole.SYSTEM else me.rerere.ai.core.MessageRole.USER,
+                        )
+                    )
+                }
+        }
+    }
+
+    /** 酒馆正则脚本走助手详情-消息正则导入，这里明确报错而不是生成空世界书 */
+    private fun throwSillyTavernRegexScriptError(json: String): Lorebook? {
+        val obj = runCatching { ExportSerializer.DefaultJson.parseToJsonElement(json) }.getOrNull() as? JsonObject
+        if (obj != null && obj.containsKey("scriptName") && obj.containsKey("findRegex")) {
+            throw IllegalArgumentException("检测到酒馆正则脚本，请在 助手详情 → 消息正则 区域导入")
+        }
+        return null
+    }
+
     /** 官方 world_info_position：0=before 1=after 2=ANTop 3=ANBottom 4=atDepth 5=EMTop 6=EMBottom 7=outlet */
     private fun mapSillyTavernPosition(position: Int): InjectionPosition {
         return when (position) {
@@ -249,6 +391,90 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
 private data class SillyTavernLorebook(
     val entries: Map<String, SillyTavernEntry> = emptyMap(),
 )
+
+/** 酒馆新版 Chat Completion 预设（prompts 数组 + prompt_order） */
+@Serializable
+private data class SillyTavernPresetOrdered(
+    val prompts: List<StPresetPrompt> = emptyList(),
+    @SerialName("prompt_order") val promptOrder: List<StPromptOrder> = emptyList(),
+)
+
+@Serializable
+private data class StPresetPrompt(
+    val identifier: String = "",
+    val name: String = "",
+    val content: String = "",
+    val marker: Boolean = false,
+    val role: String? = null,
+    @SerialName("injection_position") val injectionPosition: Int? = null,
+    @SerialName("injection_depth") val injectionDepth: Int? = null,
+)
+
+@Serializable
+private data class StPromptOrder(
+    @SerialName("character_id") val characterId: Long = 0,
+    val order: List<StOrderEntry> = emptyList(),
+)
+
+@Serializable
+private data class StOrderEntry(
+    val identifier: String = "",
+    val enabled: Boolean = false,
+)
+
+/** 酒馆旧版 Chat Completion 预设（main_prompt 平铺字段） */
+@Serializable
+private data class SillyTavernPresetFlat(
+    @SerialName("main_prompt") val mainPrompt: String = "",
+    @SerialName("nsfw_prompt") val nsfwPrompt: String = "",
+    @SerialName("nsfw_toggle") val nsfwToggle: Boolean = false,
+    @SerialName("nsfw_first") val nsfwFirst: Boolean = false,
+    @SerialName("jailbreak_prompt") val jailbreakPrompt: String = "",
+    @SerialName("jailbreak_system") val jailbreakSystem: Boolean = true,
+)
+
+/**
+ * 酒馆正则脚本（Regex Script）解析：
+ * 单对象或数组（酒馆"导出全部"为数组），映射为 AssistantRegex。
+ * placement：1=用户输入 2=AI输出 3=Slash命令 4=世界信息 5=推理（3-5 本地不适用，忽略）；
+ * markdownOnly=仅影响显示 → visualOnly；promptOnly=仅影响发送给 AI 的提示。
+ */
+object SillyTavernRegexImporter {
+    fun parse(json: String): List<AssistantRegex> = runCatching {
+        when (val element = kotlinx.serialization.json.Json.parseToJsonElement(json)) {
+            is kotlinx.serialization.json.JsonArray -> element.filterIsInstance<JsonObject>()
+            is JsonObject -> listOf(element)
+            else -> emptyList()
+        }.mapNotNull(::parseRegex)
+    }.getOrDefault(emptyList())
+
+    private fun parseRegex(obj: JsonObject): AssistantRegex? {
+        val name = obj["scriptName"]?.jsonPrimitive?.contentOrNull ?: return null
+        val findRegex = obj["findRegex"]?.jsonPrimitive?.contentOrNull ?: return null
+        if (findRegex.isBlank()) return null
+        val placement = obj["placement"]?.let {
+            (it as? kotlinx.serialization.json.JsonArray)
+                ?.mapNotNull { p -> (p as? kotlinx.serialization.json.JsonPrimitive)?.intOrNull }
+                .orEmpty()
+        }.orEmpty()
+        // 官方未勾选任何位置时不生效；导入时保守地映射为两者，用户可在 UI 里再收窄
+        val scopes = buildSet {
+            if (placement.isEmpty() || 1 in placement) add(AssistantAffectScope.USER)
+            if (placement.isEmpty() || 2 in placement) add(AssistantAffectScope.ASSISTANT)
+        }
+        val markdownOnly = obj["markdownOnly"]?.jsonPrimitive?.booleanOrNull ?: false
+        val promptOnly = obj["promptOnly"]?.jsonPrimitive?.booleanOrNull ?: false
+        return AssistantRegex(
+            id = Uuid.random(),
+            name = name,
+            enabled = !(obj["disabled"]?.jsonPrimitive?.booleanOrNull ?: false),
+            findRegex = findRegex,
+            replaceString = obj["replaceString"]?.jsonPrimitive?.contentOrNull ?: "",
+            affectingScope = scopes,
+            visualOnly = markdownOnly && !promptOnly,
+        )
+    }
+}
 
 @Serializable
 private data class SillyTavernEntry(

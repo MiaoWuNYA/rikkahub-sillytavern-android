@@ -167,6 +167,12 @@ internal fun transformMessages(
 
     // 应用注入
     val result = applyInjections(messages, byPosition)
+    android.util.Log.d(
+        "WorldInfo",
+        "applied: msgs ${messages.size} -> ${result.size} " +
+            "(+${result.count { it.isSynthetic }} synthetic), " +
+            "injected content ~${injections.sumOf { estimateTokens(it.content) }} tokens",
+    )
 
     // 推进粘性和冷却
     tickSticky(activeStickyEntries, cooldownEntries, injections.filterIsInstance<PromptInjection.RegexInjection>())
@@ -224,6 +230,13 @@ internal fun collectInjections(
     val enabledLorebooks = lorebooks.filter {
         it.enabled && effectiveLorebookIds.contains(it.id)
     }
+    android.util.Log.d(
+        "WorldInfo",
+        "assistant=${assistant.name}(${assistant.id}) allowConv=${assistant.allowConversationPromptInjection} " +
+            "assistantBooks=${assistant.lorebookIds.size} convBooks=${conversationLorebookIds.size} " +
+            "effective=${effectiveLorebookIds.size} allBooks=${lorebooks.size} " +
+            "enabledBooks=${enabledLorebooks.map { it.name to it.entries.size }}",
+    )
     if (enabledLorebooks.isNotEmpty()) {
         // 提取上下文用于匹配（只取非 SYSTEM 消息）
         val nonSystemMessages = messages.filter { it.role != MessageRole.SYSTEM }
@@ -281,8 +294,14 @@ internal fun collectInjections(
             .sorted()
             .toMutableList()
         // 官方预算：budget = round(world_info_budget% × maxContext / 100) || 1；cap > 0 时封顶。
-        // maxContext 本地无独立上下文预算字段，用当前消息总 token 估算
-        val maxContext = estimateTokens(messages.joinToString("\n") { it.toText() })
+        // 官方 maxContext 是模型上下文窗口大小，本地 Model 无该字段。若用当前消息 token 估算，
+        // 新/短对话的预算会极小（几百 token），条目全部溢出被丢弃，表现为世界书"随缘生效"。
+        // 兜底取 64k（现代模型主流窗口下限）：默认 25% → 16384 token 预算，
+        // 酒馆重型书（越狱+状态栏 26 条以上）的 constant 条目在 2k 预算下会把后续条目全部挤掉
+        val maxContext = maxOf(
+            estimateTokens(messages.joinToString("\n") { it.toText() }),
+            65536,
+        )
         val budget = ((worldInfoBudget * maxContext) / 100.0).roundToInt().coerceAtLeast(1)
             .let { if (worldInfoBudgetCap > 0 && it > worldInfoBudgetCap) worldInfoBudgetCap else it }
 
@@ -452,6 +471,12 @@ internal fun collectInjections(
             injections.add(entry)
             handleStickyCooldown(entry, activeStickyEntries, cooldownEntries)
         }
+        android.util.Log.d(
+            "WorldInfo",
+            "scan done: activated=${activatedEntries.size} entries, " +
+                "tokens=${activatedEntries.sumOf { estimateTokens(it.content) }} " +
+                "budget=$budget overflowed=$overflowed msgs=${messages.size}",
+        )
     }
 
     return injections

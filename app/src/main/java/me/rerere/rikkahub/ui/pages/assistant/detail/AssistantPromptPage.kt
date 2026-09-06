@@ -7,6 +7,7 @@ import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.DragDropVertical
+import me.rerere.hugeicons.stroke.FileImport
 import me.rerere.hugeicons.stroke.Refresh03
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
@@ -49,9 +50,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.key
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,6 +73,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.provider.Model
@@ -81,6 +86,7 @@ import me.rerere.rikkahub.data.ai.transformers.MacroEngine
 import me.rerere.rikkahub.data.ai.transformers.TemplateTransformer
 import me.rerere.rikkahub.data.ai.transformers.TransformerContext
 import me.rerere.rikkahub.data.datastore.Settings
+import me.rerere.rikkahub.data.export.SillyTavernRegexImporter
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantAffectScope
 import me.rerere.rikkahub.data.model.AssistantRegex
@@ -92,6 +98,7 @@ import me.rerere.rikkahub.ui.components.ui.FormItem
 import me.rerere.rikkahub.ui.components.ui.Select
 import me.rerere.rikkahub.ui.components.ui.Tag
 import me.rerere.rikkahub.ui.components.ui.TextArea
+import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.theme.ChatFontProvider
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.ui.theme.JetbrainsMono
@@ -103,6 +110,9 @@ import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import sh.calvin.reorderable.ReorderableColumn
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.uuid.Uuid
 
 @Composable
@@ -150,6 +160,36 @@ private fun AssistantPromptContent(
 ) {
     val context = LocalContext.current
     val templateTransformer = koinInject<TemplateTransformer>()
+    val toaster = LocalToaster.current
+    val scope = rememberCoroutineScope()
+    val currentAssistant by rememberUpdatedState(assistant)
+    val regexImportedMsg = stringResource(R.string.assistant_page_regex_imported)
+    val regexImportFailedMsg = stringResource(R.string.assistant_page_regex_import_failed)
+    val regexImportErrorMsg = stringResource(R.string.export_import_failed)
+    // 酒馆正则脚本导入（scriptName/findRegex 格式，单对象或数组）
+    val regexImportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    val text = context.contentResolver.openInputStream(uri)
+                        ?.bufferedReader()?.use { it.readText() }
+                        ?: error(regexImportErrorMsg)
+                    val parsed = SillyTavernRegexImporter.parse(text)
+                    if (parsed.isEmpty()) error(regexImportFailedMsg)
+                    parsed
+                }
+            }
+            result.onSuccess { parsed ->
+                onUpdate(currentAssistant.copy(regexes = currentAssistant.regexes + parsed))
+                toaster.show(regexImportedMsg.format(parsed.size))
+            }.onFailure {
+                toaster.show(regexImportErrorMsg.format(it.message))
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -540,6 +580,16 @@ private fun AssistantPromptContent(
                 },
                 description = {
                     Text(stringResource(R.string.assistant_page_regex_desc))
+                },
+                tail = {
+                    IconButton(
+                        onClick = { regexImportLauncher.launch(arrayOf("*/*")) },
+                    ) {
+                        Icon(
+                            HugeIcons.FileImport,
+                            contentDescription = stringResource(R.string.assistant_page_regex_import),
+                        )
+                    }
                 }
             )
             Column(
