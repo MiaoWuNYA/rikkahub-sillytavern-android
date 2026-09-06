@@ -6,6 +6,7 @@ import android.provider.OpenableColumns
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
@@ -20,6 +21,7 @@ import me.rerere.rikkahub.data.model.AssistantRegex
 import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.model.PromptInjection
+import me.rerere.rikkahub.data.model.QuickMessage
 import me.rerere.rikkahub.ui.pages.assistant.detail.mapSelectiveLogic
 import me.rerere.rikkahub.ui.pages.assistant.detail.parseDelayUntilRecursionInt
 import me.rerere.rikkahub.ui.pages.assistant.detail.mapTavernRole
@@ -211,6 +213,8 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
                         displayPosition = extInt(entry.extensions, "display_position"),
                         useGroupScoring = extBool(entry.extensions, "use_group_scoring"),
                         ignoreBudget = extBool(entry.extensions, "ignore_budget"),
+                        // 官方 v2 世界书条目的顶层 vectorized 字段（向量检索激活）
+                        vectorized = entry.vectorized ?: false,
                         triggers = extStringArray(entry.extensions, "triggers"),
                         matchPersonaDescription = extBool(entry.extensions, "match_persona_description"),
                         matchCharacterDescription = extBool(entry.extensions, "match_character_description"),
@@ -464,6 +468,9 @@ object SillyTavernRegexImporter {
         }
         val markdownOnly = obj["markdownOnly"]?.jsonPrimitive?.booleanOrNull ?: false
         val promptOnly = obj["promptOnly"]?.jsonPrimitive?.booleanOrNull ?: false
+        // 官方深度过滤：minDepth/maxDepth 为 null 时不限制（本地 0 表示不限制）
+        val minDepth = obj["minDepth"]?.jsonPrimitive?.intOrNull ?: 0
+        val maxDepth = obj["maxDepth"]?.jsonPrimitive?.intOrNull ?: 0
         return AssistantRegex(
             id = Uuid.random(),
             name = name,
@@ -472,8 +479,36 @@ object SillyTavernRegexImporter {
             replaceString = obj["replaceString"]?.jsonPrimitive?.contentOrNull ?: "",
             affectingScope = scopes,
             visualOnly = markdownOnly && !promptOnly,
+            minDepth = minDepth,
+            maxDepth = maxDepth,
         )
     }
+}
+
+/**
+ * 酒馆快速回复（Quick Replies）导入：
+ * - v2 格式：{"version":2,"name":"...","qrList":[{"label":"...","message":"...",...}]}
+ * - v1 格式：{"name":"...","quickReplies":[...]} 或直接 [{"label":"...","message":"..."}]
+ * 占位符参数（{{arg:1}} 等）由宏引擎在发送时处理，导入不展开。
+ */
+object SillyTavernQuickRepliesImporter {
+    fun parse(json: String): List<QuickMessage> = runCatching {
+        val element = Json.parseToJsonElement(json)
+        val qrArray: JsonArray = when (element) {
+            is JsonArray -> element
+            is JsonObject -> (element["qrList"] ?: element["quickReplies"]) as? JsonArray ?: return emptyList()
+            else -> return emptyList()
+        }
+        qrArray.mapNotNull { item ->
+            val obj = item as? JsonObject ?: return@mapNotNull null
+            val message = obj["message"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+            if (message.isBlank()) return@mapNotNull null
+            QuickMessage(
+                title = obj["label"]?.jsonPrimitive?.contentOrNull ?: "",
+                content = message,
+            )
+        }
+    }.getOrDefault(emptyList())
 }
 
 @Serializable
@@ -496,6 +531,7 @@ private data class SillyTavernEntry(
     val group: String? = null,
     val groupWeight: Int? = 100,
     val groupOverride: Boolean? = null,
+    val vectorized: Boolean? = null,
     val role: JsonElement? = null,
     val sticky: Int? = null,
     val cooldown: Int? = null,

@@ -157,6 +157,10 @@ class SettingsStore(
         val WORLD_INFO_CHARACTER_STRATEGY = intPreferencesKey("world_info_character_strategy")
         val WORLD_INFO_OVERFLOW_ALERT = booleanPreferencesKey("world_info_overflow_alert")
         val WORLD_INFO_USE_GROUP_SCORING = booleanPreferencesKey("world_info_use_group_scoring")
+        val VECTOR_STORAGE_ENABLED = booleanPreferencesKey("vector_storage_enabled")
+        val VECTOR_STORAGE_MODEL_ID = stringPreferencesKey("vector_storage_model_id")
+        val VECTOR_STORAGE_THRESHOLD = floatPreferencesKey("vector_storage_threshold")
+        val VECTOR_STORAGE_SCAN_DEPTH = intPreferencesKey("vector_storage_scan_depth")
         val QUICK_MESSAGES = stringPreferencesKey("quick_messages")
         // 宏引擎变量（酒馆 Macro 2.0 变量持久化）
         val MACRO_GLOBAL_VARIABLES = stringPreferencesKey("macro_global_variables")
@@ -344,6 +348,10 @@ class SettingsStore(
                 worldInfoCharacterStrategy = preferences[WORLD_INFO_CHARACTER_STRATEGY] ?: 1,
                 worldInfoOverflowAlert = preferences[WORLD_INFO_OVERFLOW_ALERT] ?: false,
                 worldInfoUseGroupScoring = preferences[WORLD_INFO_USE_GROUP_SCORING] ?: false,
+                vectorStorageEnabled = preferences[VECTOR_STORAGE_ENABLED] ?: false,
+                vectorStorageModelId = preferences[VECTOR_STORAGE_MODEL_ID]?.let { Uuid.parse(it) },
+                vectorStorageThreshold = preferences[VECTOR_STORAGE_THRESHOLD] ?: 0.25f,
+                vectorStorageScanDepth = preferences[VECTOR_STORAGE_SCAN_DEPTH] ?: 2,
                 quickMessages = preferences[QUICK_MESSAGES]?.let {
                     JsonInstant.decodeFromString(it)
                 } ?: emptyList(),
@@ -536,6 +544,12 @@ class SettingsStore(
             preferences[WORLD_INFO_CHARACTER_STRATEGY] = settings.worldInfoCharacterStrategy
             preferences[WORLD_INFO_OVERFLOW_ALERT] = settings.worldInfoOverflowAlert
             preferences[WORLD_INFO_USE_GROUP_SCORING] = settings.worldInfoUseGroupScoring
+            preferences[VECTOR_STORAGE_ENABLED] = settings.vectorStorageEnabled
+            settings.vectorStorageModelId?.let {
+                preferences[VECTOR_STORAGE_MODEL_ID] = it.toString()
+            } ?: preferences.remove(VECTOR_STORAGE_MODEL_ID)
+            preferences[VECTOR_STORAGE_THRESHOLD] = settings.vectorStorageThreshold
+            preferences[VECTOR_STORAGE_SCAN_DEPTH] = settings.vectorStorageScanDepth
             preferences[QUICK_MESSAGES] = JsonInstant.encodeToString(settings.quickMessages)
             preferences[WEB_SERVER_ENABLED] = settings.webServerEnabled
             preferences[WEB_SERVER_PORT] = settings.webServerPort
@@ -704,6 +718,10 @@ data class Settings(
     val worldInfoCharacterStrategy: Int = 1,        // 官方 world_info_character_strategy：0=均匀 1=角色卡优先 2=全局优先
     val worldInfoOverflowAlert: Boolean = false,    // 官方 world_info_overflow_alert：预算溢出时提示
     val worldInfoUseGroupScoring: Boolean = false,  // 官方 world_info_use_group_scoring：组评分全局默认        // 递归最大层数（0=不限制，酒馆 max_recursion_steps）
+    val vectorStorageEnabled: Boolean = false,      // 向量检索（Vector Storage）总开关
+    val vectorStorageModelId: Uuid? = null,         // 嵌入模型（仅 EMBEDDING 类型模型可选）
+    val vectorStorageThreshold: Float = 0.25f,      // 相似度阈值（官方 Vector Storage 默认约 0.25）
+    val vectorStorageScanDepth: Int = 2,            // 用最近 N 条非系统消息作为检索查询
     val quickMessages: List<QuickMessage> = emptyList(),
     val personas: List<Persona> = DEFAULT_PERSONAS,
     val activePersonaId: Uuid? = null,             // 当前激活的 Persona

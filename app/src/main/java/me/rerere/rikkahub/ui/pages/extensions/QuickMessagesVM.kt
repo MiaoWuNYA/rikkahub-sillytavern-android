@@ -25,6 +25,29 @@ class QuickMessagesVM(
         )
     }
 
+    /**
+     * 批量导入（酒馆 QR 集）：除追加到全局列表外，同时绑定到当前助手，
+     * 与酒馆"导入即启用"的行为一致，省去手动勾选。
+     */
+    fun importQuickMessages(imported: List<QuickMessage>) {
+        if (imported.isEmpty()) return
+        viewModelScope.launch {
+            settingsStore.update { settings ->
+                val newIds = imported.map { it.id }.toSet()
+                settings.copy(
+                    quickMessages = settings.quickMessages + imported,
+                    assistants = settings.assistants.map { assistant ->
+                        if (assistant.id == settings.assistantId) {
+                            assistant.copy(quickMessageIds = assistant.quickMessageIds + newIds)
+                        } else {
+                            assistant
+                        }
+                    }
+                )
+            }
+        }
+    }
+
     fun updateQuickMessage(updated: QuickMessage) {
         updateQuickMessages(
             settings.value.quickMessages.map { quickMessage ->

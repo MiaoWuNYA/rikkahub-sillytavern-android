@@ -1,9 +1,16 @@
 package me.rerere.rikkahub.data.ai.transformers
 
+import android.content.Context
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import me.rerere.ai.core.MessageRole
+import me.rerere.ai.provider.EmbeddingGenerationParams
+import me.rerere.ai.provider.Model
+import me.rerere.ai.provider.ProviderManager
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.ai.ui.UIMessageAnnotation
+import me.rerere.rikkahub.data.ai.VectorStoreCache
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AuthorNotePosition
 import me.rerere.rikkahub.data.model.InjectionPosition
@@ -12,6 +19,8 @@ import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.model.extractContextForMatching
 import me.rerere.rikkahub.data.model.isTriggered
 import me.rerere.rikkahub.data.model.matchedKeyScore
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import kotlin.uuid.Uuid
 import kotlin.random.Random
 import kotlin.math.roundToInt
@@ -21,7 +30,9 @@ import kotlin.math.roundToInt
  *
  * 根据 Assistant 关联的 ModeInjection 和 Lorebook 进行提示词注入
  */
-object PromptInjectionTransformer : InputMessageTransformer {
+object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
+
+    private val providerManager: ProviderManager by inject()
 
     // 粘性追踪：assistantId:conversationId → (injectionId → 剩余轮数)
     private val stickyTracker = mutableMapOf<String, MutableMap<Uuid, Int>>()
@@ -37,6 +48,9 @@ object PromptInjectionTransformer : InputMessageTransformer {
         val key = "${ctx.assistant.id}:${ctx.conversationId ?: "no-conversation"}"
         val activeSticky = stickyTracker.getOrPut(key) { mutableMapOf() }
         val cooldowns = cooldownTracker.getOrPut(key) { mutableMapOf() }
+
+        // 官方 Vector Storage：vectorized 条目按语义相似度激活，批量算好命中集合再进扫描循环
+        val vectorActivatedIds = resolveVectorActivations(ctx.context, ctx, messages)
 
         val result = transformMessages(
             messages = messages,
@@ -64,10 +78,79 @@ object PromptInjectionTransformer : InputMessageTransformer {
             personaDescription = ctx.settings.personas
                 .firstOrNull { p -> p.id == ctx.settings.activePersonaId && p.enabled }
                 ?.description ?: "",
+            vectorActivatedIds = vectorActivatedIds,
         )
 
         return result
     }
+
+    /**
+     * 官方 Vector Storage 检索：
+     * - 查询向量 = 最近 N 条非系统消息文本（官方用聊天记录做检索）
+     * - vectorized 条目按 (嵌入模型, 内容) 缓存向量，内容不变不重复调用嵌入接口
+     * - 余弦相似度 >= 阈值即激活
+     * 任一环节失败（未配置模型/接口不支持/请求失败）静默降级为空集合，不影响关键词路径。
+     */
+    private suspend fun resolveVectorActivations(
+        context: Context,
+        ctx: TransformerContext,
+        messages: List<UIMessage>,
+    ): Set<Uuid> = withContext(Dispatchers.IO) {
+        runCatching {
+            val settings = ctx.settings
+            if (!settings.vectorStorageEnabled) return@runCatching emptySet<Uuid>()
+            val modelId = settings.vectorStorageModelId ?: return@runCatching emptySet()
+            val providerSetting = settings.providers.firstOrNull { p -> p.models.any { it.id == modelId } }
+                ?: return@runCatching emptySet()
+            val model = providerSetting.models.first { it.id == modelId }
+
+            // 与 collectInjections 相同的书绑定过滤，只检索已绑定的书
+            val effectiveLorebookIds = if (ctx.assistant.allowConversationPromptInjection) {
+                ctx.conversationLorebookIds
+            } else {
+                ctx.assistant.lorebookIds
+            }
+            val vectorizedEntries = settings.lorebooks
+                .filter { it.enabled && it.id in effectiveLorebookIds }
+                .flatMap { it.entries }
+                .filter { it.enabled && it.vectorized }
+            if (vectorizedEntries.isEmpty()) return@runCatching emptySet()
+
+            val query = messages.filter { it.role != MessageRole.SYSTEM }
+                .takeLast(settings.vectorStorageScanDepth.coerceAtLeast(1))
+                .joinToString("\n") { it.toText() }
+            if (query.isBlank()) return@runCatching emptySet()
+
+            val providerHandler = providerManager.getProviderByType(providerSetting)
+            // 批量嵌入：[query] + 未缓存的条目内容，一次请求
+            val uncached = vectorizedEntries.filter { VectorStoreCache.get(context, cacheKey(modelId, it.content)) == null }
+            val inputs = listOf(query) + uncached.map { it.content }
+            val result = providerHandler.generateEmbedding(
+                providerSetting = providerSetting,
+                params = EmbeddingGenerationParams(model = model, input = inputs),
+            )
+            val queryVector = result.embeddings.firstOrNull()?.toFloatArray()
+                ?: return@runCatching emptySet()
+            uncached.forEachIndexed { index, entry ->
+                result.embeddings.getOrNull(index + 1)?.let {
+                    VectorStoreCache.put(context, cacheKey(modelId, entry.content), it.toFloatArray())
+                }
+            }
+
+            vectorizedEntries.mapNotNull { entry ->
+                val entryVector = VectorStoreCache.get(context, cacheKey(modelId, entry.content))
+                    ?: return@mapNotNull null
+                val similarity = VectorStoreCache.cosineSimilarity(queryVector, entryVector)
+                if (similarity >= settings.vectorStorageThreshold) entry.id else null
+            }.toSet()
+        }.getOrElse { emptySet() }.also {
+            if (it.isNotEmpty()) {
+                android.util.Log.d("WorldInfo", "vector storage activated ${it.size} entries")
+            }
+        }
+    }
+
+    private fun cacheKey(modelId: Uuid, content: String): String = "$modelId\n${content.trim()}"
 }
 
 /**
@@ -97,6 +180,7 @@ internal fun transformMessages(
     generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
     personaDescription: String = "",
     onOverflow: () -> Unit = {},
+    vectorActivatedIds: Set<Uuid> = emptySet(),
 ): List<UIMessage> {
     // 收集所有需要注入的内容
     val injections = collectInjections(
@@ -121,6 +205,7 @@ internal fun transformMessages(
         generationType = generationType,
         personaDescription = personaDescription,
         onOverflow = onOverflow,
+        vectorActivatedIds = vectorActivatedIds,
     )
 
     if (injections.isEmpty()) {
@@ -206,6 +291,7 @@ internal fun collectInjections(
     generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
     personaDescription: String = "",
     onOverflow: () -> Unit = {},
+    vectorActivatedIds: Set<Uuid> = emptySet(),
 ): List<PromptInjection> {
     val injections = mutableListOf<PromptInjection>()
     val effectiveModeInjectionIds = if (assistant.allowConversationPromptInjection) {
@@ -355,6 +441,16 @@ internal fun collectInjections(
                 if (entry.constantActive || activeStickyEntries.containsKey(entry.id)) {
                     newlyTriggered.add(entry)
                     continue
+                }
+
+                // 官方 vectorized：向量检索命中的条目直接激活；未命中但有主关键词的条目仍走关键词匹配
+                if (entry.vectorized) {
+                    if (entry.id in vectorActivatedIds) {
+                        newlyTriggered.add(entry)
+                        triggeredScores[entry.id] = 1
+                        continue
+                    }
+                    if (entry.keywords.isEmpty()) continue
                 }
 
                 // 官方 WorldInfoBuffer.get：条目 scanDepth 优先，否则全局深度 + skew；

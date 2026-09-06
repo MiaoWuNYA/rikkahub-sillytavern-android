@@ -102,7 +102,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import me.rerere.ai.core.MessageRole
+import me.rerere.ai.provider.ModelType
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.export.LorebookSerializer
 import me.rerere.rikkahub.data.export.ModeInjectionSerializer
@@ -119,6 +121,7 @@ import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.IntTextField
 import me.rerere.rikkahub.ui.components.ui.NullableIntTextField
 import me.rerere.rikkahub.ui.components.ui.InsertionStrategySelector
+import me.rerere.rikkahub.ui.components.ai.ModelSelector
 import me.rerere.rikkahub.ui.components.ui.FormItem
 import me.rerere.rikkahub.ui.components.ui.Select
 import me.rerere.rikkahub.ui.components.ui.Tag
@@ -699,6 +702,14 @@ private fun LorebookTab(
                     .fillMaxWidth()
                     .padding(top = 4.dp),
             ) {
+            // 限高 + 可滚动：设置项多（尤其向量存储展开后）会超出视口，
+            // 不限高会把下方列表挤没且自身无法滚动，表现为"卡死"
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 420.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
             CardGroup(
                 modifier = Modifier.animateContentSize(animationSpec = tween(durationMillis = 200)),
                 title = {
@@ -928,6 +939,88 @@ private fun LorebookTab(
                         )
                     }
                 }
+                item {
+                    // 向量检索（Vector Storage）：vectorized 条目按语义相似度激活
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.prompt_page_vector_storage_title), style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                stringResource(R.string.prompt_page_vector_storage_desc),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(
+                            checked = settings.vectorStorageEnabled,
+                            onCheckedChange = { onSettingsUpdate(settings.copy(vectorStorageEnabled = it)) },
+                        )
+                    }
+                }
+                if (settings.vectorStorageEnabled) {
+                    item {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.prompt_page_vector_storage_model),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                            Text(
+                                text = stringResource(R.string.prompt_page_vector_storage_model_desc),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            ModelSelector(
+                                modelId = settings.vectorStorageModelId,
+                                providers = settings.providers,
+                                type = ModelType.EMBEDDING,
+                                onSelect = { onSettingsUpdate(settings.copy(vectorStorageModelId = it.id)) },
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(stringResource(R.string.prompt_page_vector_storage_scan_depth), style = MaterialTheme.typography.bodyLarge)
+                                    Text(
+                                        stringResource(R.string.prompt_page_vector_storage_scan_depth_desc),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                IntTextField(
+                                    value = settings.vectorStorageScanDepth,
+                                    onValueChange = { onSettingsUpdate(settings.copy(vectorStorageScanDepth = it.coerceIn(1, 100))) },
+                                    modifier = Modifier.width(84.dp),
+                                )
+                            }
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = stringResource(R.string.prompt_page_vector_storage_threshold, (settings.vectorStorageThreshold * 100).roundToInt()),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                                Text(
+                                    text = stringResource(R.string.prompt_page_vector_storage_threshold_desc),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Slider(
+                                    value = settings.vectorStorageThreshold,
+                                    onValueChange = { onSettingsUpdate(settings.copy(vectorStorageThreshold = (it * 100).roundToInt() / 100f)) },
+                                    valueRange = 0.05f..0.95f,
+                                    steps = 17,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
             }
             }
         LazyColumn(
@@ -2435,6 +2528,18 @@ private fun RegexInjectionEditDialog(
                     }
                 )
 
+                // 向量检索激活（官方 vectorized）：开启后按语义相似度激活，无关键词也可
+                FormItem(
+                    label = { Text(stringResource(R.string.prompt_page_vectorized)) },
+                    description = { Text(stringResource(R.string.prompt_page_vectorized_desc)) },
+                    tail = {
+                        Switch(
+                            checked = entry.vectorized,
+                            onCheckedChange = { onEdit(entry.copy(vectorized = it)) }
+                        )
+                    }
+                )
+
                 NullableIntTextField(
                     value = entry.scanDepth,
                     onValueChange = { onEdit(entry.copy(scanDepth = it)) },
@@ -2442,6 +2547,79 @@ private fun RegexInjectionEditDialog(
                     placeholder = { Text(stringResource(R.string.prompt_page_scan_depth_global)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
+
+                // 条目级组评分开关（官方 extensions.use_group_scoring）
+                FormItem(
+                    label = { Text(stringResource(R.string.prompt_page_use_group_scoring)) },
+                    description = { Text(stringResource(R.string.prompt_page_use_group_scoring_desc)) },
+                    tail = {
+                        Switch(
+                            checked = entry.useGroupScoring,
+                            onCheckedChange = { onEdit(entry.copy(useGroupScoring = it)) }
+                        )
+                    }
+                )
+
+                // 忽略预算（官方 extensions.ignore_budget）：溢出时仍注入
+                FormItem(
+                    label = { Text(stringResource(R.string.prompt_page_ignore_budget)) },
+                    description = { Text(stringResource(R.string.prompt_page_ignore_budget_desc)) },
+                    tail = {
+                        Switch(
+                            checked = entry.ignoreBudget,
+                            onCheckedChange = { onEdit(entry.copy(ignoreBudget = it)) }
+                        )
+                    }
+                )
+
+                // Automation ID（官方 extensions.automation_id，仅保存透传）
+                OutlinedTextField(
+                    value = entry.automationId,
+                    onValueChange = { onEdit(entry.copy(automationId = it)) },
+                    label = { Text(stringResource(R.string.prompt_page_automation_id)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                // 扫描范围（官方 extensions.match_*：把角色卡/人设字段纳入关键词扫描源）
+                Text(stringResource(R.string.prompt_page_match_scope), style = MaterialTheme.typography.titleSmall)
+                listOf(
+                    "matchPersonaDescription" to stringResource(R.string.prompt_page_match_persona),
+                    "matchCharacterDescription" to stringResource(R.string.prompt_page_match_char_description),
+                    "matchCharacterPersonality" to stringResource(R.string.prompt_page_match_char_personality),
+                    "matchCharacterDepthPrompt" to stringResource(R.string.prompt_page_match_char_depth_prompt),
+                    "matchScenario" to stringResource(R.string.prompt_page_match_scenario),
+                    "matchCreatorNotes" to stringResource(R.string.prompt_page_match_creator_notes),
+                ).forEach { (field, label) ->
+                    val checked = when (field) {
+                        "matchPersonaDescription" -> entry.matchPersonaDescription
+                        "matchCharacterDescription" -> entry.matchCharacterDescription
+                        "matchCharacterPersonality" -> entry.matchCharacterPersonality
+                        "matchCharacterDepthPrompt" -> entry.matchCharacterDepthPrompt
+                        "matchScenario" -> entry.matchScenario
+                        else -> entry.matchCreatorNotes
+                    }
+                    FormItem(
+                        label = { Text(label) },
+                        tail = {
+                            Switch(
+                                checked = checked,
+                                onCheckedChange = {
+                                    onEdit(
+                                        when (field) {
+                                            "matchPersonaDescription" -> entry.copy(matchPersonaDescription = it)
+                                            "matchCharacterDescription" -> entry.copy(matchCharacterDescription = it)
+                                            "matchCharacterPersonality" -> entry.copy(matchCharacterPersonality = it)
+                                            "matchCharacterDepthPrompt" -> entry.copy(matchCharacterDepthPrompt = it)
+                                            "matchScenario" -> entry.copy(matchScenario = it)
+                                            else -> entry.copy(matchCreatorNotes = it)
+                                        }
+                                    )
+                                }
+                            )
+                        }
+                    )
+                }
 
                 AnimatedVisibility(visible = entry.position.usesStandaloneMessage()) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -2468,7 +2646,7 @@ private fun RegexInjectionEditDialog(
             }
         },
         confirmButton = {
-            val canSave = entry.keywords.isNotEmpty() || entry.constantActive
+            val canSave = entry.keywords.isNotEmpty() || entry.constantActive || entry.vectorized
             TextButton(
                 onClick = onConfirm,
                 enabled = canSave
