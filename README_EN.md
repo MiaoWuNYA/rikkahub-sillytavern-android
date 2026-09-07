@@ -1,4 +1,4 @@
-# RikkaHub Plus — A 100% SillyTavern-Compatible Android AI Chat Client
+# RikkaHub Plus
 
 [**English**](README_EN.md) | [**简体中文**](README.md)
 
@@ -13,13 +13,13 @@
 An AI chat client that runs on your phone (Kotlin + Jetpack Compose + Material You):
 
 - **Multi-provider**: OpenAI / Claude / Gemini / DeepSeek — any OpenAI-, Anthropic-, or Google-compatible API
-- **100% SillyTavern-compatible**: character cards, lorebooks, presets, regex scripts, quick replies (QR), HTML cards, multiple greetings — all imported/exported losslessly with official semantics
+- **Deep SillyTavern compatibility**: character cards, lorebooks, presets, regex scripts, quick replies (QR), HTML cards, multiple greetings — all imported/exported losslessly with official semantics
 - **Programmable prompts**: Macro Engine 2.0, 20+ slash commands, personas, author's note, group chats
 - **Memory & long conversations**: semantic memory RAG + rolling context compression — long chats no longer forget or blow the context window
 
 ---
 
-## 🍺 Tavern System (the fork's main battleground, aligned rule-by-rule with official SillyTavern)
+## 🍺 Tavern System (aligned rule-by-rule with official SillyTavern)
 
 ### 1. Character Cards: Import → Structure → Inject → Export → Edit
 
@@ -72,7 +72,7 @@ The complete official Macro 2.0 syntax:
 - **Conversation-aware**: `{{lastUserMessage}}` `{{lastCharMessage}}` `{{idleDuration}}` `{{charFirstMessage::N}}` `{{original}}` — 60+ official macros supported
 - Unknown macros pass through untouched
 
-### 6. Slash Commands (absent upstream)
+### 6. Slash Commands
 
 Type them in the input box; `/help` lists everything with descriptions. 20+ built-in commands:
 
@@ -82,12 +82,12 @@ Type them in the input box; `/help` lists everything with descriptions. 20+ buil
 - **Injection**: `/inject` (position/depth/role), `/prompt`
 - Skill-provided commands appear automatically in the popup
 
-### 7. Personas & Author's Note (absent upstream)
+### 7. Personas & Author's Note
 
 - Personas: official five-position injection (IN_PROMPT / TOP / BOTTOM / AT_DEPTH / NONE), per-character binding, standalone SYSTEM-message injection, one-tap disable.
 - Author's note: official interval semantics (every / every N user messages), injection depth & role, master switch.
 
-### 8. Group Chats (absent upstream)
+### 8. Group Chats
 
 Multi-character conversations with independent prompts / personas / models per member; 4 speaker-selection strategies (NATURAL AI-picked / list / weighted random / manual) + 5 extended modes; auto-reply (1–10 configurable rounds & delay, interrupted by user messages); live speaker status; full persistence.
 

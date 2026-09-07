@@ -1,9 +1,9 @@
-# RikkaHub Plus — 100% SillyTavern 兼容的 Android AI 聊天客户端
+# RikkaHub Plus
 
 [**简体中文**](README.md) | [**English**](README_EN.md)
 
 > 本项目是 [RikkaHub](https://github.com/rikkahub/rikkahub) 的深度定制分支，已合入上游最新版本（v2.5.0）。
-> 上游全部功能原样保留，在此基础上新增了**完整的 SillyTavern（酒馆）兼容层**、**记忆系统**与**上下文滚动压缩**等大量功能。
+> 上游全部功能原样保留，在此基础上增强了 SillyTavern（酒馆）兼容能力，并新增记忆系统、上下文滚动压缩等功能。
 > 逐文件差异与上游合并手册见 [DIVERGENCE.md](DIVERGENCE.md)。
 
 ---
@@ -13,13 +13,13 @@
 一个跑在手机上的 AI 聊天客户端（Kotlin + Jetpack Compose + Material You）：
 
 - **多供应商**：OpenAI / Claude / Gemini / DeepSeek 等一切 OpenAI、Anthropic、Google 兼容 API
-- **100% 兼容酒馆（SillyTavern）**：角色卡、世界书、预设、正则脚本、快速回复（QR）、HTML 卡片、多开场白 —— 全部按官方语义无损导入导出
+- **深度兼容酒馆（SillyTavern）**：角色卡、世界书、预设、正则脚本、快速回复（QR）、HTML 卡片、多开场白 —— 全部按官方语义无损导入导出
 - **可编程提示词**：宏引擎 2.0、20+ 斜杠命令、人设 Persona、作者注释、群聊
 - **记忆与长对话**：语义记忆 RAG + 上下文滚动压缩，长对话不再失忆、不再爆上下文
 
 ---
 
-## 🍺 酒馆系统（本分支的主战场，100% 对齐 SillyTavern 官方语义）
+## 🍺 酒馆系统（对齐 SillyTavern 官方语义）
 
 ### 1. 角色卡：导入 → 结构化 → 注入 → 导出 → 编辑
 
@@ -72,7 +72,7 @@
 - **对话感知**：`{{lastUserMessage}}` `{{lastCharMessage}}` `{{idleDuration}}` `{{charFirstMessage::N}}` `{{original}}` 等 60+ 官方宏全量支持
 - 未知宏原样保留，不破坏提示词
 
-### 6. 斜杠命令（上游没有）
+### 6. 斜杠命令
 
 输入框直接敲，`/help` 列出全部命令与中文说明。20+ 内置命令：
 
@@ -82,12 +82,12 @@
 - **注入**：`/inject`（按位置/深度/角色注入提示词）、`/prompt`
 - 技能提供的命令自动出现在面板中
 
-### 7. 人设 Persona 与作者注释 Author's Note（上游没有）
+### 7. 人设 Persona 与作者注释 Author's Note
 
 - 人设：官方五档注入位置（IN_PROMPT / TOP / BOTTOM / AT_DEPTH / NONE）、按角色绑定、独立 SYSTEM 消息注入、一键禁用
 - 作者注释（导演备注）：官方间隔语义（每次 / 每 N 条用户消息）、注入深度与角色、总开关
 
-### 8. 群聊（上游没有）
+### 8. 群聊
 
 多角色同场对话，每个成员有独立提示词 / 人设 / 模型；4 种发言策略（NATURAL AI 选人 / 列表 / 加权随机 / 手动）+ 5 种扩展模式；自动接话（轮数 1-10 可设、延迟可设、被用户消息打断）；发言者实时状态；群聊持久化。
 
