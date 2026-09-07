@@ -19,6 +19,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.core.Tool
 import me.rerere.ai.provider.Model
@@ -41,6 +42,7 @@ import me.rerere.rikkahub.data.files.FileFolders
 import me.rerere.rikkahub.data.ai.transformers.onGenerationFinish
 import me.rerere.rikkahub.data.ai.transformers.transforms
 import me.rerere.rikkahub.data.ai.PromptDebugCache
+import me.rerere.rikkahub.data.ai.tools.buildMemoryTools
 import me.rerere.rikkahub.data.ai.transformers.visualTransforms
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.findProvider
@@ -398,7 +400,7 @@ class GenerationLoop(
 
                 // 1. Deduplicate tools: same (toolName, input) only execute once
                 val seenTools = mutableSetOf<Pair<String, String>>()
-                val uniqueTools = tools.filter { tool ->
+                val uniqueTools = toolCalls.filter { tool ->
                     val key = tool.toolName to tool.input
                     if (key in seenTools) {
                         Log.w(TAG, "Deduplicated duplicate tool call: ${tool.toolName}")
