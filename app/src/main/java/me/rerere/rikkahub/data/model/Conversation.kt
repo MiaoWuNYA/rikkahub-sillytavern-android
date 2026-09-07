@@ -32,6 +32,8 @@ data class Conversation(
     val workspaceCwd: String? = null,
     // 所属文件夹 ID（null = 未归类）
     val folderId: Uuid? = null,
+    // 上下文滚动压缩摘要（覆盖 sourceMessageIds 对应的前缀，生成请求时替换前缀发送）
+    val rollingContextSummary: me.rerere.rikkahub.data.ai.context.RollingContextSummary? = null,
     @Transient
     val newConversation: Boolean = false
 ) {

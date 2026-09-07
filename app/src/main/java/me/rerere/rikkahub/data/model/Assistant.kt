@@ -36,6 +36,10 @@ data class Assistant(
     val enableMemoryRag: Boolean = false,
     // 允许 episodic（情节）记忆：模型可记录具体事件，检索时按时间衰减加权
     val enableEpisodicMemory: Boolean = false,
+    // 上下文滚动压缩：达到阈值后自动把早期对话压缩为摘要（保留原文，仅请求时替换前缀）
+    val enableRollingContextCompression: Boolean = false,
+    // 触发压缩的 token 阈值；0 表示按模型上下文窗口自动计算
+    val rollingContextCompressionThresholdTokens: Int = 0,
     val enableRecentChatsReference: Boolean = false,
     val messageTemplate: String = "{{ message }}",
     val contextTemplate: String = DEFAULT_CONTEXT_TEMPLATE, // 上下文组装模板（ADF风格）

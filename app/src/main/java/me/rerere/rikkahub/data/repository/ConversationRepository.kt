@@ -348,6 +348,8 @@ class ConversationRepository(
             lorebookIds = JsonInstant.encodeToString(conversation.lorebookIds),
             workspaceCwd = conversation.workspaceCwd ?: "",
             folderId = conversation.folderId?.toString() ?: "",
+            rollingContextSummary = conversation.rollingContextSummary
+                ?.let { JsonInstant.encodeToString(it) } ?: "",
         )
     }
 
@@ -369,6 +371,9 @@ class ConversationRepository(
             lorebookIds = JsonInstant.decodeFromString(conversationEntity.lorebookIds),
             workspaceCwd = conversationEntity.workspaceCwd.ifEmpty { null },
             folderId = conversationEntity.folderId.ifEmpty { null }?.let { Uuid.parse(it) },
+            rollingContextSummary = conversationEntity.rollingContextSummary
+                .takeIf(String::isNotEmpty)
+                ?.let { runCatching { JsonInstant.decodeFromString<me.rerere.rikkahub.data.ai.context.RollingContextSummary>(it) }.getOrNull() },
         )
     }
 
@@ -396,6 +401,19 @@ class ConversationRepository(
         conversationDAO.updateFolderId(
             id = conversationId.toString(),
             folderId = folderId?.toString() ?: ""
+        )
+    }
+
+    /**
+     * 单列更新会话的滚动压缩摘要，summary 为 null 表示清除。
+     */
+    suspend fun updateRollingContextSummary(
+        conversationId: Uuid,
+        summary: me.rerere.rikkahub.data.ai.context.RollingContextSummary?,
+    ) {
+        conversationDAO.updateRollingContextSummary(
+            id = conversationId.toString(),
+            summary = summary?.let { JsonInstant.encodeToString(it) } ?: ""
         )
     }
 

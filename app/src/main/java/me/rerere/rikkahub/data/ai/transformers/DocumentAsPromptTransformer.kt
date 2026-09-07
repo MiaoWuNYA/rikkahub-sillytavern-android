@@ -16,7 +16,12 @@ object DocumentAsPromptTransformer : InputMessageTransformer {
     override suspend fun transform(
         ctx: TransformerContext,
         messages: List<UIMessage>,
-    ): List<UIMessage> {
+    ): List<UIMessage> = transformDocumentContents(messages)
+
+    /**
+     * 将消息中的 Document 部分读出并转为提示词文本（供上下文压缩等后台流程复用）
+     */
+    suspend fun transformDocumentContents(messages: List<UIMessage>): List<UIMessage> {
         return withContext(Dispatchers.IO) {
             messages.map { message ->
                 message.copy(

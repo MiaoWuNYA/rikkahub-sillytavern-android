@@ -268,6 +268,26 @@ private fun AssistantMemoryContent(
                 }
             )
             item(
+                headlineContent = { Text(stringResource(R.string.assistant_page_rolling_context)) },
+                supportingContent = {
+                    Text(
+                        text = stringResource(R.string.assistant_page_rolling_context_desc),
+                    )
+                },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.enableRollingContextCompression,
+                        onCheckedChange = {
+                            onUpdateAssistant(
+                                assistant.copy(
+                                    enableRollingContextCompression = it
+                                )
+                            )
+                        }
+                    )
+                }
+            )
+            item(
                 headlineContent = { Text(stringResource(R.string.assistant_page_recent_chats)) },
                 supportingContent = {
                     Text(

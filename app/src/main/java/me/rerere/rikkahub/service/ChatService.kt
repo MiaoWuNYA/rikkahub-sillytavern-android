@@ -93,6 +93,13 @@ import me.rerere.rikkahub.data.ai.tools.ChatToolFactory
 import me.rerere.rikkahub.data.ai.tools.InvalidMcpServerNamesException
 import me.rerere.rikkahub.data.files.SkillManager
 import me.rerere.rikkahub.data.ai.transformers.Base64ImageToLocalFileTransformer
+import me.rerere.rikkahub.data.ai.context.RollingContextSummary
+import me.rerere.rikkahub.data.ai.context.automaticRollingContextThreshold
+import me.rerere.rikkahub.data.ai.context.coveredMessageCount
+import me.rerere.rikkahub.data.ai.context.createRollingContextPlan
+import me.rerere.rikkahub.data.ai.context.isStillApplicableTo
+import me.rerere.rikkahub.data.ai.context.rollingContextWindowStartIndex
+import me.rerere.rikkahub.data.ai.context.splitTextForTokenBudget
 import me.rerere.rikkahub.data.ai.transformers.DocumentAsPromptTransformer
 import me.rerere.rikkahub.data.ai.transformers.OcrTransformer
 import me.rerere.rikkahub.data.ai.transformers.PlaceholderTransformer
@@ -1313,6 +1320,46 @@ class ChatService(
             // start generating
             val session = getOrCreateSession(conversationId)
 
+            // ── 上下文滚动压缩（移植自 Rikkahub-Revised）：达到阈值时先生成/刷新摘要 ──
+            val generationMessages = conversation.currentMessages.let {
+                if (messageRange != null) {
+                    it.subList(messageRange.start, messageRange.endInclusive + 1)
+                } else {
+                    it
+                }
+            }
+            val rollingSummary = if (messageRange == null) {
+                prepareRollingContextForGeneration(
+                    conversationId = conversationId,
+                    conversation = conversation,
+                    assistant = assistant,
+                    model = model,
+                    settings = settings,
+                    processingStatus = session.processingStatus,
+                )?.takeIf { it.coveredMessageCount(generationMessages) > 0 }
+            } else {
+                null
+            }
+            val rollingSummaryMessageCount = rollingSummary?.coveredMessageCount(generationMessages) ?: 0
+            val rollingThresholdTokens = automaticRollingContextThreshold(
+                enabled = assistant.enableRollingContextCompression,
+                configuredThresholdTokens = assistant.rollingContextCompressionThresholdTokens,
+                modelContextWindowTokens = model.contextWindowTokens,
+                maxOutputTokens = assistant.maxTokens,
+            )
+            // 摘要无法刷新时的兜底：直接把请求窗口裁剪到最近的对话窗口
+            val fallbackWindowStartIndex = rollingThresholdTokens?.takeIf { threshold ->
+                messageRange == null &&
+                    createRollingContextPlan(
+                        messages = generationMessages,
+                        storedSummary = conversation.rollingContextSummary,
+                        thresholdTokens = threshold,
+                    ) != null
+            }?.let { threshold ->
+                rollingContextWindowStartIndex(generationMessages, threshold)
+            } ?: 0
+            val requestMessageStartIndex = maxOf(rollingSummaryMessageCount, fallbackWindowStartIndex)
+
             // 如果不在前台，提前启动前台 Service：异步启动 + 失败兜底，绝不让 Service 启动阻塞/中断生成
             if (!isForeground.value && settings.displaySetting.enableNotificationOnMessageGeneration) {
                 appScope.launch {
@@ -1339,13 +1386,9 @@ class ChatService(
                 model = model,
                 generationType = generationType,
                 processingStatus = session.processingStatus,
-                messages = conversation.currentMessages.let {
-                    if (messageRange != null) {
-                        it.subList(messageRange.start, messageRange.endInclusive + 1)
-                    } else {
-                        it
-                    }
-                },
+                messages = generationMessages,
+                rollingContextSummary = rollingSummary?.content,
+                requestMessageStartIndex = requestMessageStartIndex,
                 assistant = assistant,
                 maxSteps = assistant.totalStepsLimit,
                 conversationSystemPrompt = conversation.customSystemPrompt,
@@ -1907,6 +1950,175 @@ class ChatService(
         )
 
         saveConversation(conversationId, newConversation)
+    }
+
+    // ---- 上下文滚动压缩（移植自 Rikkahub-Revised） ----
+
+    /**
+     * 生成前检查是否需要刷新滚动压缩摘要；需要时同步生成并写回会话（非破坏式，原文保留）。
+     * 返回生成请求可用的滚动摘要（可能为 null）。
+     */
+    private suspend fun prepareRollingContextForGeneration(
+        conversationId: Uuid,
+        conversation: Conversation,
+        assistant: Assistant,
+        model: Model,
+        settings: Settings,
+        processingStatus: MutableStateFlow<String?>,
+    ): RollingContextSummary? {
+        if (!assistant.enableRollingContextCompression) return null
+        val thresholdTokens = automaticRollingContextThreshold(
+            enabled = true,
+            configuredThresholdTokens = assistant.rollingContextCompressionThresholdTokens,
+            modelContextWindowTokens = model.contextWindowTokens,
+            maxOutputTokens = assistant.maxTokens,
+        ) ?: return null
+        val contextMessages = DocumentAsPromptTransformer.transformDocumentContents(conversation.currentMessages)
+        if (
+            createRollingContextPlan(
+                messages = contextMessages,
+                storedSummary = conversation.rollingContextSummary,
+                thresholdTokens = thresholdTokens,
+            ) == null
+        ) {
+            return conversation.rollingContextSummary
+        }
+
+        val previousStatus = processingStatus.value
+        return try {
+            processingStatus.value = context.getString(R.string.chat_page_rolling_context_compressing)
+            refreshRollingContextSummary(
+                conversationId = conversationId,
+                conversation = conversation,
+                settings = settings,
+                thresholdTokens = thresholdTokens,
+                force = false,
+                planningMessages = contextMessages,
+            )
+            getConversationFlow(conversationId).value.rollingContextSummary
+        } catch (error: kotlinx.coroutines.CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            addError(
+                error = error,
+                conversationId = conversationId,
+                title = context.getString(R.string.error_title_compress_conversation),
+            )
+            conversation.rollingContextSummary
+        } finally {
+            processingStatus.value = previousStatus
+        }
+    }
+
+    private suspend fun refreshRollingContextSummary(
+        conversationId: Uuid,
+        conversation: Conversation,
+        settings: Settings,
+        thresholdTokens: Int,
+        force: Boolean,
+        targetTokensOverride: Int? = null,
+        additionalPrompt: String = "",
+        planningMessages: List<UIMessage>? = null,
+    ): Conversation? {
+        val messagesForPlanning = planningMessages
+            ?: DocumentAsPromptTransformer.transformDocumentContents(conversation.currentMessages)
+        val plan = createRollingContextPlan(
+            messages = messagesForPlanning,
+            storedSummary = conversation.rollingContextSummary,
+            thresholdTokens = thresholdTokens,
+            force = force,
+            targetTokensOverride = targetTokensOverride,
+        ) ?: return null
+        val assistant = settings.getAssistantById(conversation.assistantId)
+            ?: settings.getCurrentAssistant()
+        val summary = generateRollingSummary(
+            settings = settings,
+            content = plan.toCompressionContent(),
+            targetTokens = plan.targetTokens,
+            additionalPrompt = additionalPrompt,
+        )
+        val latestConversation = getConversationFlow(conversationId).value
+        val latestPlanningMessages = DocumentAsPromptTransformer.transformDocumentContents(
+            latestConversation.currentMessages,
+        )
+        if (
+            latestConversation.rollingContextSummary != conversation.rollingContextSummary ||
+            !plan.isStillApplicableTo(latestPlanningMessages)
+        ) {
+            throw IllegalStateException("Conversation changed while compression was running")
+        }
+        val newSummary = RollingContextSummary(
+            content = summary,
+            sourceMessageIds = plan.sourceMessageIds,
+            updatedAtMillis = System.currentTimeMillis(),
+        )
+        val updatedConversation = latestConversation.copy(rollingContextSummary = newSummary)
+        updateConversation(conversationId, updatedConversation)
+        conversationRepo.updateRollingContextSummary(conversationId, newSummary)
+        return updatedConversation
+    }
+
+    /**
+     * 生成滚动摘要：单次调用压缩模型；输入超预算时按 token 分段先做中间摘要再汇总（最多两层）。
+     */
+    private suspend fun generateRollingSummary(
+        settings: Settings,
+        content: String,
+        targetTokens: Int,
+        additionalPrompt: String,
+    ): String {
+        val model = settings.findModelById(settings.compressModelId)
+            ?: settings.getCurrentChatModel()
+            ?: throw IllegalStateException("No model available for compression")
+        val provider = model.findProvider(settings.providers)
+            ?: throw IllegalStateException("Provider not found")
+        val providerHandler = providerManager.getProviderByType(provider)
+
+        fun buildPrompt(input: String, requestedTokens: Int): String =
+            settings.compressPrompt.applyPlaceholders(
+                "content" to input,
+                "target_tokens" to requestedTokens.toString(),
+                "additional_context" to if (additionalPrompt.isNotBlank()) {
+                    "Additional instructions from user: $additionalPrompt"
+                } else "",
+                "locale" to Locale.getDefault().displayName,
+            )
+
+        suspend fun requestSummary(input: String, requestedTokens: Int): String {
+            val result = providerHandler.generateText(
+                providerSetting = provider,
+                messages = listOf(UIMessage.user(buildPrompt(input, requestedTokens))),
+                params = backgroundTextGenerationParams(model),
+            )
+            return result.message.toText().trim().takeIf { it.isNotBlank() }
+                ?: throw IllegalStateException("Failed to generate rolling summary")
+        }
+
+        // 压缩输入预算：以压缩模型上下文窗口为基准，预留输出空间
+        val compressionInputBudget = (model.contextWindowTokens ?: 32_000) / 2
+        var segments = splitTextForTokenBudget(content, compressionInputBudget)
+        var depth = 0
+        while (segments.size > 1 && depth < 2) {
+            val intermediateTarget = targetTokens.coerceAtLeast(512)
+            val combined = segments.mapIndexed { index, segment ->
+                "[Segment ${index + 1}/${segments.size}]\n" + requestSummary(segment, intermediateTarget)
+            }.joinToString("\n\n")
+            segments = splitTextForTokenBudget(combined, compressionInputBudget)
+            depth++
+        }
+        if (segments.size != 1) {
+            throw IllegalStateException("Rolling summary hierarchy did not converge")
+        }
+        return requestSummary(segments.single(), targetTokens)
+    }
+
+    private fun me.rerere.rikkahub.data.ai.context.RollingContextPlan.toCompressionContent(): String = buildString {
+        previousSummary?.let { summary ->
+            appendLine("[Previous rolling summary]")
+            appendLine(summary.content)
+            appendLine()
+        }
+        append(messagesToSummarize.joinToString("\n\n") { it.summaryAsText() })
     }
 
     // 通知已迁移至 ChatNotificationManager（通过 AppEventBus 通信）

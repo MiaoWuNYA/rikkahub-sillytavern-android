@@ -15,6 +15,8 @@ data class Model(
     val inputModalities: List<Modality> = listOf(Modality.TEXT),
     val outputModalities: List<Modality> = listOf(Modality.TEXT),
     val abilities: List<ModelAbility> = emptyList(),
+    // 上下文窗口大小（tokens），null 时可通过 inferContextWindowTokens 按 modelId 推断
+    val contextWindowTokens: Int? = null,
     val tools: Set<BuiltInTools> = emptySet(),
     val providerOverwrite: ProviderSetting? = null,
 )

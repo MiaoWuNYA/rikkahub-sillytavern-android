@@ -277,6 +277,9 @@
   <string name="chat_page_compress_context_desc">Compress the conversation into a summary to save tokens</string>
   <string name="chat_page_compress_context_title">Compress Conversation History</string>
   <string name="chat_page_compress_keep_recent">Keep recent messages</string>
+  <string name="chat_page_rolling_context_compressing">Compressing earlier conversation…</string>
+  <string name="assistant_page_rolling_context">Rolling context compression</string>
+  <string name="assistant_page_rolling_context_desc">Automatically summarize earlier conversation when the context exceeds the threshold, keeping replies aware of the full history without sending every message (uses the compression model)</string>
   <string name="chat_page_compress_not_enough_messages">Not enough messages to compress. Reduce the number of messages to keep or add more messages.</string>
   <string name="chat_page_compress_target_tokens">Target Token Size</string>
   <string name="chat_page_compress_warning">⚠️ Compressing context will reset all messages in the current conversation</string>
