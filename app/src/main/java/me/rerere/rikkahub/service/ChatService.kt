@@ -103,6 +103,7 @@ import me.rerere.rikkahub.data.ai.transformers.ThinkTagTransformer
 import me.rerere.rikkahub.data.ai.transformers.TimeReminderTransformer
 import me.rerere.rikkahub.data.ai.transformers.WorkspaceReminderTransformer
 import me.rerere.rikkahub.data.ai.transformers.AuthorsNoteTransformer
+import me.rerere.rikkahub.data.ai.transformers.MemoryRetrievalTransformer
 import me.rerere.rikkahub.data.ai.transformers.SkillAutoTriggerTransformer
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.Settings
@@ -216,9 +217,12 @@ class ChatService(
     private val filesManager: FilesManager,
     private val skillManager: SkillManager,
     private val folderRepository: FolderRepository,
+    private val memoryRetrievalTransformer: MemoryRetrievalTransformer,
 ) {
     // workspace 系统提示注入 (依赖 workspaceRepository, 故在类内构造)
     private val workspaceReminderTransformer = WorkspaceReminderTransformer(workspaceRepository)
+
+
 
     // 统一会话管理
     private val sessions = ConcurrentHashMap<Uuid, ConversationSession>()
@@ -1358,6 +1362,7 @@ class ChatService(
                     addAll(inputTransformers)
                     add(templateTransformer)
                     add(workspaceReminderTransformer)
+                    add(memoryRetrievalTransformer)
                 },
                 outputTransformers = outputTransformers,
                 tools = buildList {
@@ -1799,6 +1804,7 @@ class ChatService(
             inputTransformers = buildList {
                 addAll(inputTransformers)
                 add(templateTransformer)
+                add(memoryRetrievalTransformer)
             },
             outputTransformers = outputTransformers,
             // 官方 /gen length=：临时覆盖响应长度（TempResponseLength 语义），用完即弃

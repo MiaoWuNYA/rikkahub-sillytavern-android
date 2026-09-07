@@ -270,14 +270,16 @@ class AssistantDetailVM(
             }
             memoryRepository.addMemory(
                 assistantId = memoryAssistantId,
-                content = memory.content
+                content = memory.content,
+                type = memory.type,
+                sourceConversationId = memory.sourceConversationId,
             )
         }
     }
 
     fun updateMemory(memory: AssistantMemory) {
         viewModelScope.launch {
-            memoryRepository.updateContent(id = memory.id, content = memory.content)
+            memoryRepository.updateMemory(id = memory.id, content = memory.content, type = memory.type)
         }
     }
 

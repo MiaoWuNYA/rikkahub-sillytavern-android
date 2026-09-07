@@ -79,6 +79,12 @@
   <string name="assistant_page_enter_image_url">Enter Image URL</string>
   <string name="assistant_page_global_memory">Global Memory</string>
   <string name="assistant_page_global_memory_desc">Use global shared memory instead of assistant-isolated memory. When enabled, all assistants share the same memory storage</string>
+  <string name="assistant_page_memory_rag">Memory RAG Retrieval</string>
+  <string name="assistant_page_memory_rag_desc">Retrieve only the memories relevant to the current conversation using embeddings (falls back to lexical search). Requires an embedding model selected in world info settings</string>
+  <string name="assistant_page_episodic_memory">Episodic Memory</string>
+  <string name="assistant_page_episodic_memory_desc">Allow the model to record concrete events and experiences; retrieved memories get a recency boost</string>
+  <string name="memory_type_fact">Fact</string>
+  <string name="memory_type_episodic">Episodic</string>
   <string name="assistant_page_header_name">Header Name</string>
   <string name="assistant_page_header_value">Header Value</string>
   <string name="assistant_page_image_url">Image URL</string>

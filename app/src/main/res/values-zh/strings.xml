@@ -80,6 +80,12 @@
   <string name="assistant_page_enter_image_url">输入图片URL</string>
   <string name="assistant_page_global_memory">全局记忆</string>
   <string name="assistant_page_global_memory_desc">使用全局共享内存而非助手隔离内存。启用后，所有助手共享同一内存存储</string>
+  <string name="assistant_page_memory_rag">记忆 RAG 检索</string>
+  <string name="assistant_page_memory_rag_desc">基于嵌入向量只检索与当前对话相关的记忆（向量不可用时自动退回词法检索）。需要在世界书设置中选择嵌入模型</string>
+  <string name="assistant_page_episodic_memory">情节记忆</string>
+  <string name="assistant_page_episodic_memory_desc">允许模型记录具体事件与经历；检索时情节记忆会获得时间新鲜度加权</string>
+  <string name="memory_type_fact">事实</string>
+  <string name="memory_type_episodic">情节</string>
   <string name="assistant_page_header_name">Header 名称</string>
   <string name="assistant_page_header_value">Header 值</string>
   <string name="assistant_page_image_url">图片URL</string>

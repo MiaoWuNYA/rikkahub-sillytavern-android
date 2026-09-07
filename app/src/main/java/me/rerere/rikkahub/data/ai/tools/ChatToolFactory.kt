@@ -33,6 +33,7 @@ class ChatToolFactory(
     private val mcpManager: McpManager,
     private val skillManager: SkillManager,
     private val workspaceRepository: WorkspaceRepository,
+    private val memoryEmbeddingService: me.rerere.rikkahub.data.memory.MemoryEmbeddingService,
 ) {
     suspend fun createTools(
         settings: Settings,
@@ -49,9 +50,25 @@ class ChatToolFactory(
             addAll(
                 buildMemoryTools(
                     json = json,
-                    onCreation = { content -> memoryRepository.addMemory(memoryAssistantId, content) },
-                    onUpdate = { id, content -> memoryRepository.updateContent(id, content) },
+                    allowEpisodicMemory = assistant.enableEpisodicMemory,
+                    onCreation = { content, type ->
+                        memoryEmbeddingService.addMemory(
+                            assistantId = memoryAssistantId,
+                            content = content,
+                            settings = settings,
+                            type = type,
+                        )
+                    },
+                    onUpdate = { id, content, type ->
+                        memoryEmbeddingService.updateMemory(
+                            id = id,
+                            content = content,
+                            settings = settings,
+                            type = type,
+                        )
+                    },
                     onDelete = { id -> memoryRepository.deleteMemory(id) },
+                    onList = { memoryRepository.getMemoriesOfAssistant(memoryAssistantId) },
                 )
             )
         }

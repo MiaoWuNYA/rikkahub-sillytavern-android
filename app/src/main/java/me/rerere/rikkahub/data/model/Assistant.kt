@@ -32,6 +32,10 @@ data class Assistant(
     val streamOutput: Boolean = true,
     val enableMemory: Boolean = false,
     val useGlobalMemory: Boolean = false, // 使用全局共享记忆而非助手隔离记忆
+    // 记忆 RAG：基于嵌入向量对记忆做语义检索（词法兜底），只注入与当前对话相关的记忆
+    val enableMemoryRag: Boolean = false,
+    // 允许 episodic（情节）记忆：模型可记录具体事件，检索时按时间衰减加权
+    val enableEpisodicMemory: Boolean = false,
     val enableRecentChatsReference: Boolean = false,
     val messageTemplate: String = "{{ message }}",
     val contextTemplate: String = DEFAULT_CONTEXT_TEMPLATE, // 上下文组装模板（ADF风格）
@@ -87,10 +91,31 @@ data class QuickMessage(
     val content: String = "",
 )
 
+// 记忆类别：fact 为长期事实/偏好，episodic 为具体事件经历（检索时带时间衰减加权）
+@Serializable
+enum class MemoryType {
+    @SerialName("fact")
+    FACT,
+
+    @SerialName("episodic")
+    EPISODIC,
+    ;
+
+    companion object {
+        fun fromWireName(value: String?): MemoryType = when (value?.lowercase()) {
+            "episodic" -> EPISODIC
+            else -> FACT
+        }
+    }
+}
+
 @Serializable
 data class AssistantMemory(
     val id: Int,
     val content: String = "",
+    val type: MemoryType = MemoryType.FACT,
+    val createdAt: Long = 0L,
+    val sourceConversationId: String? = null,
 )
 
 @Serializable

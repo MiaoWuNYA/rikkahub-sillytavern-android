@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,6 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantMemory
+import me.rerere.rikkahub.data.model.MemoryType
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.RikkaConfirmDialog
@@ -133,6 +135,23 @@ private fun AssistantMemoryContent(
                     minLines = 2,
                     maxLines = 8
                 )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    FilterChip(
+                        selected = memory.type == MemoryType.FACT,
+                        onClick = { update(memory.copy(type = MemoryType.FACT)) },
+                        label = { Text(stringResource(R.string.memory_type_fact)) },
+                    )
+                    FilterChip(
+                        selected = memory.type == MemoryType.EPISODIC,
+                        onClick = { update(memory.copy(type = MemoryType.EPISODIC)) },
+                        label = { Text(stringResource(R.string.memory_type_episodic)) },
+                    )
+                }
             },
             confirmButton = {
                 TextButton(
@@ -199,6 +218,48 @@ private fun AssistantMemoryContent(
                             onUpdateAssistant(
                                 assistant.copy(
                                     useGlobalMemory = it
+                                )
+                            )
+                        },
+                        enabled = assistant.enableMemory
+                    )
+                }
+            )
+            item(
+                headlineContent = { Text(stringResource(R.string.assistant_page_memory_rag)) },
+                supportingContent = {
+                    Text(
+                        text = stringResource(R.string.assistant_page_memory_rag_desc),
+                    )
+                },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.enableMemoryRag,
+                        onCheckedChange = {
+                            onUpdateAssistant(
+                                assistant.copy(
+                                    enableMemoryRag = it
+                                )
+                            )
+                        },
+                        enabled = assistant.enableMemory
+                    )
+                }
+            )
+            item(
+                headlineContent = { Text(stringResource(R.string.assistant_page_episodic_memory)) },
+                supportingContent = {
+                    Text(
+                        text = stringResource(R.string.assistant_page_episodic_memory_desc),
+                    )
+                },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.enableEpisodicMemory,
+                        onCheckedChange = {
+                            onUpdateAssistant(
+                                assistant.copy(
+                                    enableEpisodicMemory = it
                                 )
                             )
                         },
@@ -336,6 +397,22 @@ private fun MemoryItem(
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall,
                 )
+                if (memory.type == MemoryType.EPISODIC || memory.createdAt > 0L) {
+                    Text(
+                        text = buildString {
+                            if (memory.type == MemoryType.EPISODIC) {
+                                append(stringResource(R.string.memory_type_episodic))
+                                append(" · ")
+                            }
+                            if (memory.createdAt > 0L) {
+                                append(java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date(memory.createdAt)))
+                            }
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
             }
             IconButton(
                 onClick = { onEditMemory(memory) }

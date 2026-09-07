@@ -84,6 +84,7 @@ class GenerationLoop(
     private val json: Json,
     private val memoryRepo: MemoryRepository,
     private val conversationRepo: ConversationRepository,
+    private val memoryEmbeddingService: me.rerere.rikkahub.data.memory.MemoryEmbeddingService,
 ) {
     fun generateText(
         settings: Settings,
@@ -280,14 +281,29 @@ class GenerationLoop(
             }
             buildMemoryTools(
                 json = json,
-                onCreation = { content ->
-                    memoryRepo.addMemory(memoryAssistantId, content)
+                allowEpisodicMemory = assistant.enableEpisodicMemory,
+                onCreation = { content, type ->
+                    memoryEmbeddingService.addMemory(
+                        assistantId = memoryAssistantId,
+                        content = content,
+                        settings = settings,
+                        type = type,
+                        sourceConversationId = conversationId?.toString(),
+                    )
                 },
-                onUpdate = { id, content ->
-                    memoryRepo.updateContent(id, content)
+                onUpdate = { id, content, type ->
+                    memoryEmbeddingService.updateMemory(
+                        id = id,
+                        content = content,
+                        settings = settings,
+                        type = type,
+                    )
                 },
                 onDelete = { id ->
                     memoryRepo.deleteMemory(id)
+                },
+                onList = {
+                    memoryRepo.getMemoriesOfAssistant(memoryAssistantId)
                 }
             ).let(this::addAll)
         }
@@ -1008,7 +1024,8 @@ private fun buildUserContext(
     val contextMap = linkedMapOf<String, String>()
 
     // 对标 CC getUserContext: claudeMd (CLAUDE.md content)
-    if (assistant.enableMemory && memories.isNotEmpty()) {
+    // RAG 模式下不全量注入记忆，改由 MemoryRetrievalTransformer 按相关性注入
+    if (assistant.enableMemory && !assistant.enableMemoryRag && memories.isNotEmpty()) {
         val memoryText = memories.joinToString("\n") { memory ->
             "- ${memory.content.take(200)}"
         }

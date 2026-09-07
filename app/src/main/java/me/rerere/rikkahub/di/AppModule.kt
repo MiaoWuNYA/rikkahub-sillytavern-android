@@ -78,6 +78,7 @@ single {
             mcpManager = get(),
             skillManager = get(),
             workspaceRepository = get(),
+            memoryEmbeddingService = get(),
         )
     }
 
@@ -100,6 +101,7 @@ single {
             workspaceRepository = get(),
             skillManager = get(),
             folderRepository = get(),
+            memoryRetrievalTransformer = get(),
         )
     }
 
