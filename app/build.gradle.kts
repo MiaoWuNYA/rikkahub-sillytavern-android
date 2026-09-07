@@ -3,15 +3,27 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.FileInputStream
 import java.util.Properties
+
+// Firebase 遥测默认关闭（移植自 Rikkahub-Revised）：
+// 仅当以 -Prikkahub.enableFirebase=true 构建时才启用 Google 服务与 Crashlytics
+val enableFirebase = providers.gradleProperty("rikkahub.enableFirebase")
+    .map { it.equals("true", ignoreCase = true) }
+    .getOrElse(false)
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.google.services)
-    alias(libs.plugins.firebase.crashlytics)
+    alias(libs.plugins.google.services) apply false
+    alias(libs.plugins.firebase.crashlytics) apply false
     alias(libs.plugins.baselineprofile)
     id("com.chaquo.python")
+}
+
+if (enableFirebase) {
+    apply(plugin = "com.google.gms.google-services")
+    apply(plugin = "com.google.firebase.crashlytics")
 }
 // Python 引擎配置 — Chaquopy 新 DSL
 chaquopy {
@@ -48,6 +60,8 @@ android {
         versionName = "2.5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("boolean", "ENABLE_FIREBASE", enableFirebase.toString())
 
         ndk {
             abiFilters += listOf("arm64-v8a")

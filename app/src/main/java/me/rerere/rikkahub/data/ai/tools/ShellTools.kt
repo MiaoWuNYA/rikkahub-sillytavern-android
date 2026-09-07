@@ -30,7 +30,8 @@ fun createShellTools(): List<Tool> {
                 Use for: logcat, device info, grep, zip.
                 Avoid: interactive commands (they will hang), long-running commands (30s timeout).
             """.trimIndent().replace("\n", " "),
-            needsApproval = { false },
+            // 设备 Shell 每次执行都需用户审批（移植自 Rikkahub-Revised 的工具审批边界）
+            needsApproval = { true },
             parameters = {
                 InputSchema.Obj(
                     properties = buildJsonObject {

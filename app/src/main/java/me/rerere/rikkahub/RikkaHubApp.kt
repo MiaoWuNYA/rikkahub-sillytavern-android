@@ -102,6 +102,10 @@ class RikkaHubApp : Application() {
         syncManagedFiles()
         trace("sync done")
 
+        // 按保留天数清理旧附件与生成图片（移植自 Rikkahub-Revised 的按日文件清理）
+        cleanupExpiredFiles()
+        trace("cleanup done")
+
         // Start WebServer if enabled in settings
         startWebServerIfEnabled()
         trace("webserver done")
@@ -141,6 +145,20 @@ class RikkaHubApp : Application() {
                 get<FilesManager>().syncFolder()
             }.onFailure {
                 Log.e(TAG, "syncManagedFiles failed", it)
+            }
+        }
+    }
+
+    private fun cleanupExpiredFiles() {
+        get<AppScope>().launch(Dispatchers.IO) {
+            runCatching {
+                val retentionDays = get<SettingsStore>().settingsFlowRaw.first().fileRetentionDays
+                if (retentionDays > 0) {
+                    val result = get<FilesManager>().deleteFilesOlderThan(retentionDays)
+                    Log.i(TAG, "cleanupExpiredFiles: deleted ${result.totalDeleted}, failed ${result.failedFiles}")
+                }
+            }.onFailure {
+                Log.e(TAG, "cleanupExpiredFiles failed", it)
             }
         }
     }

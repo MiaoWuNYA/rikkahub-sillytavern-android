@@ -40,7 +40,7 @@ val repositoryModule = module {
 
     single {
         val context: Context = get()
-        FilesManager(get(), get(), get())
+        FilesManager(get(), get(), get(), get())
     }
 
     single {

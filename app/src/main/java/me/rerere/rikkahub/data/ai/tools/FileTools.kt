@@ -35,6 +35,11 @@ fun createFileTools(workspaceDir: String = "/storage/emulated/0/Download"): List
     return listOf(
         Tool(
             name = "file",
+            // 只读操作免审批，写入/移动/删除类操作需用户审批（移植自 Rikkahub-Revised 的工具审批边界）
+            needsApproval = { args ->
+                val action = args.jsonObject["action"]?.jsonPrimitive?.contentOrNull
+                action != null && action !in setOf("read", "list", "search")
+            },
             description = buildString {
                 appendLine("File operations: read, write, patch, list, search, copy, move, mkdir, delete.")
                 appendLine()

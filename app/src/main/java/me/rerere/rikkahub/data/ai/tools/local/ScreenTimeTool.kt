@@ -6,9 +6,11 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import kotlinx.serialization.json.add
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -25,17 +27,23 @@ import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
+internal const val MAX_SCREEN_TIME_RANGE_DAYS = 7L
+internal const val MAX_SCREEN_TIME_APP_DETAILS = 5
+
 internal fun buildScreenTimeTool(context: Context, eventBus: AppEventBus): Tool = Tool(
     name = "get_screen_time",
     description = """
         Get the user's app screen usage (screen time) over a time range.
         Specify a custom interval with 'begin'/'end', or use the 'range' preset (today/week).
-        Returns the total foreground time and a per-app breakdown sorted by usage time (descending).
+        Returns only the total foreground time by default. Set include_apps to true only when the
+        user explicitly requests a per-app breakdown; that breakdown is limited to five displayed
+        app names and never includes package names. The time range is limited to seven days.
         The device timezone is '${ZoneId.systemDefault()}' (UTC offset ${OffsetDateTime.now().offset});
         times without an explicit offset are interpreted in this timezone.
         Requires the 'Usage access' special permission; if it is not granted, the device's usage
         access settings page is opened automatically and an error is returned.
     """.trimIndent().replace("\n", " "),
+    needsApproval = { true },
     parameters = {
         InputSchema.Obj(
             properties = buildJsonObject {
@@ -71,7 +79,17 @@ internal fun buildScreenTimeTool(context: Context, eventBus: AppEventBus): Tool 
                 })
                 put("top", buildJsonObject {
                     put("type", "integer")
-                    put("description", "Maximum number of top apps to return, sorted by usage time. Default 10.")
+                    put(
+                        "description",
+                        "Maximum app details to return when include_apps is true. Default and maximum 5."
+                    )
+                })
+                put("include_apps", buildJsonObject {
+                    put("type", "boolean")
+                    put(
+                        "description",
+                        "Return a limited per-app breakdown only when the user explicitly requests it. Default false."
+                    )
                 })
             }
         )
@@ -91,7 +109,8 @@ internal fun buildScreenTimeTool(context: Context, eventBus: AppEventBus): Tool 
         }
 
         val params = it.jsonObject
-        val top = params["top"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()?.coerceIn(1, 50) ?: 10
+        val includeApps = screenTimeIncludesAppDetails(params)
+        val top = screenTimeAppDetailsLimit(params)
 
         val now = ZonedDateTime.now()
         val zone = now.zone
@@ -124,6 +143,13 @@ internal fun buildScreenTimeTool(context: Context, eventBus: AppEventBus): Tool 
             }
             return@Tool listOf(UIMessagePart.Text(payload.toString()))
         }
+        if (!isScreenTimeRangeAllowed(startTime, endTime)) {
+            val payload = buildJsonObject {
+                put("error", "RANGE_TOO_LARGE")
+                put("message", "The screen-time range must not exceed $MAX_SCREEN_TIME_RANGE_DAYS days.")
+            }
+            return@Tool listOf(UIMessagePart.Text(payload.toString()))
+        }
 
         val isCustom = beginRaw != null || endRaw != null
         val endMs = endTime.toInstant().toEpochMilli()
@@ -143,7 +169,16 @@ internal fun buildScreenTimeTool(context: Context, eventBus: AppEventBus): Tool 
             .sortedByDescending { entry -> entry.value }
 
         val totalMs = sorted.sumOf { entry -> entry.value }
-        val apps = sorted.take(top)
+        val appDetails = if (includeApps) {
+            sorted.asSequence()
+                .mapNotNull { entry ->
+                    resolveAppName(pm, entry.key)?.let { appName -> appName to entry.value }
+                }
+                .take(top)
+                .toList()
+        } else {
+            emptyList()
+        }
 
         val payload = buildJsonObject {
             put("range", if (isCustom) "custom" else rangePreset)
@@ -151,16 +186,18 @@ internal fun buildScreenTimeTool(context: Context, eventBus: AppEventBus): Tool 
             put("end", endTime.withNano(0).toString())
             put("total_ms", totalMs)
             put("total_minutes", totalMs / 60000)
-            put("apps", buildJsonArray {
-                apps.forEach { entry ->
-                    add(buildJsonObject {
-                        put("package", entry.key)
-                        put("app_name", resolveAppName(pm, entry.key))
-                        put("total_ms", entry.value)
-                        put("total_minutes", entry.value / 60000)
-                    })
-                }
-            })
+            put("app_details_included", includeApps)
+            if (includeApps) {
+                put("apps", buildJsonArray {
+                    appDetails.forEach { (appName, durationMs) ->
+                        add(buildJsonObject {
+                            put("app_name", appName)
+                            put("total_ms", durationMs)
+                            put("total_minutes", durationMs / 60000)
+                        })
+                    }
+                })
+            }
         }
         listOf(UIMessagePart.Text(payload.toString()))
     }
@@ -255,11 +292,22 @@ private fun resolveLauncherPackages(pm: PackageManager): Set<String> {
     }.getOrDefault(emptySet())
 }
 
-private fun resolveAppName(pm: PackageManager, packageName: String): String {
+private fun resolveAppName(pm: PackageManager, packageName: String): String? {
     return runCatching {
         pm.getApplicationLabel(pm.getApplicationInfo(packageName, 0)).toString()
-    }.getOrDefault(packageName)
+    }.getOrNull()
 }
+
+internal fun screenTimeIncludesAppDetails(params: JsonObject): Boolean =
+    params["include_apps"]?.jsonPrimitive?.booleanOrNull ?: false
+
+internal fun screenTimeAppDetailsLimit(params: JsonObject): Int =
+    params["top"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
+        ?.coerceIn(1, MAX_SCREEN_TIME_APP_DETAILS)
+        ?: MAX_SCREEN_TIME_APP_DETAILS
+
+internal fun isScreenTimeRangeAllowed(start: ZonedDateTime, end: ZonedDateTime): Boolean =
+    !start.plusDays(MAX_SCREEN_TIME_RANGE_DAYS).isBefore(end)
 
 /**
  * 解析 begin/end 时间参数, 依次尝试: epoch 毫秒 -> 带偏移日期时间 -> Instant ->

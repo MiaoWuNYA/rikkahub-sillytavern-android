@@ -84,9 +84,12 @@ class BackupManager(
                     val seen = mutableSetOf<String>()
                     var restoredEntries = 0
                     ZipFile(archive).use { zip ->
+                        // 恢复资源预算（移植自 Rikkahub-Revised）：防御异常/恶意归档的 zip 炸弹
+                        val budget = BackupRestoreBudget()
                         for (entry in zip.entries()) {
                             currentCoroutineContext().ensureActive()
                             if (entry.isDirectory) continue
+                            budget.consume(entry)
                             val target = when (entry.name) {
                                 "settings.json" -> File(staging, "settings.json")
                                 DatabaseBackup.ARCHIVE_DATABASE -> if (includeDatabase) stagedDatabase else null
@@ -145,6 +148,30 @@ class BackupManager(
         require(relative.isNotBlank()) { "Invalid backup attachment: $name" }
         require(folder == FileFolders.SKILLS || '/' !in relative) { "Invalid backup attachment: $name" }
         return true
+    }
+
+    /**
+     * 备份恢复资源预算（移植自 Rikkahub-Revised BackupRestoreBudget）：
+     * 限制条目数、单条目大小与总解压大小，防止恶意或损坏的归档耗尽磁盘/内存。
+     */
+    private class BackupRestoreBudget(
+        private val maxEntries: Int = 100_000,
+        private val maxEntryBytes: Long = 2L * 1024 * 1024 * 1024,
+        private val maxTotalBytes: Long = 8L * 1024 * 1024 * 1024,
+    ) {
+        private var entries = 0
+        private var totalBytes = 0L
+
+        fun consume(entry: ZipEntry) {
+            entries += 1
+            require(entries <= maxEntries) { "Backup archive has too many entries" }
+            val size = entry.size
+            if (size >= 0) {
+                require(size <= maxEntryBytes) { "Backup entry too large: ${entry.name}" }
+                totalBytes += size
+                require(totalBytes <= maxTotalBytes) { "Backup archive too large to restore" }
+            }
+        }
     }
 
     private fun addFile(zip: ZipOutputStream, file: File, name: String) {

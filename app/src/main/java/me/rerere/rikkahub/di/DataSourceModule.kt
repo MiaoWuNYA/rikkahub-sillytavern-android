@@ -262,6 +262,7 @@ Room.databaseBuilder(context, AppDatabase::class.java, "rikka_hub")
             .connectTimeout(20, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.MINUTES)
             .writeTimeout(120, TimeUnit.SECONDS)
+            .pingInterval(30, TimeUnit.SECONDS) // HTTP/2 PING 保活长连接事件流（移植自 Rikkahub-Revised）
             .followSslRedirects(true)
             .followRedirects(true)
             .retryOnConnectionFailure(true)
@@ -285,6 +286,15 @@ Room.databaseBuilder(context, AppDatabase::class.java, "rikka_hub")
                         .trim()
                         .ifEmpty { "RikkaHub-Android/${BuildConfig.VERSION_NAME}" }
                     requestBuilder.addHeader(HttpHeaders.UserAgent, userAgent)
+                }
+
+                // SSE 事件流：禁用缓存与压缩，避免代理缓冲破坏流式输出（移植自 Rikkahub-Revised）
+                if (originalRequest.header(HttpHeaders.Accept)
+                        ?.contains("text/event-stream", ignoreCase = true) == true
+                ) {
+                    requestBuilder
+                        .header(HttpHeaders.CacheControl, "no-cache")
+                        .header(HttpHeaders.AcceptEncoding, "identity")
                 }
 
                 chain.proceed(requestBuilder.build())

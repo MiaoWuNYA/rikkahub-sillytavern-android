@@ -42,12 +42,15 @@ val appModule = module {
         TTSManager(get())
     }
 
-    single {
-        Firebase.crashlytics
-    }
+    // Firebase 遥测默认关闭（移植自 Rikkahub-Revised）：仅 -Prikkahub.enableFirebase=true 构建时注册
+    if (me.rerere.rikkahub.BuildConfig.ENABLE_FIREBASE) {
+        single {
+            Firebase.crashlytics
+        }
 
-    single {
-        Firebase.analytics
+        single {
+            Firebase.analytics
+        }
     }
 
     single {
