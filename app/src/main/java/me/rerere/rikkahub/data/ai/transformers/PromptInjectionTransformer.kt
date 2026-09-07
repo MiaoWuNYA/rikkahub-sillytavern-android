@@ -392,11 +392,11 @@ internal fun collectInjections(
             .let { if (worldInfoBudgetCap > 0 && it > worldInfoBudgetCap) worldInfoBudgetCap else it }
 
         // 官方 while (scanState)：INITIAL → (RECURSION / MIN_ACTIVATIONS / 层级开放) 循环
-        // max_recursion_steps 语义（官方）：每轮开头检查 count >= 上限则停止，count 从 0 起算，
-        // 即总扫描轮数上限 = max_recursion_steps；0 = 不限制
+        // max_recursion_steps 语义（官方）：只对 RECURSION 轮计数，循环开头检查 count >= 上限则停止
+        // （INITIAL 轮不占步数）；0 = 不限制
         while (worldInfoMaxRecursionSteps <= 0 || count < worldInfoMaxRecursionSteps) {
-            count++
             val isRecursion = scanState == 1
+            if (isRecursion) count++
             val newlyTriggered = mutableListOf<PromptInjection.RegexInjection>()
             // 触发时的关键词匹配分（酒馆 use_group_scoring 用）
             val triggeredScores = mutableMapOf<Uuid, Int>()
@@ -533,18 +533,24 @@ internal fun collectInjections(
             }
 
             // 官方状态机：
-            // 1. 本轮有成功新条目（不含 prevent_recursion）且未溢出 → 递归扫描
+            // 1. 还有未开放的 delay_until_recursion 层级 → 先开放下一级，本轮递归扫描即按新层级放行
+            //    （官方要求全局递归开关开启，delay_until_recursion 才生效）
             var nextScanState = -1 // -1 = 无下一步（停止）
-            if (worldInfoRecursive && !overflowed && newRecursionText.isNotBlank()) {
+            if (worldInfoRecursive && availableLevels.isNotEmpty()) {
+                nextScanState = 1
+                currentLevel = availableLevels.removeAt(0)
+            }
+            // 2. 本轮有成功新条目（不含 prevent_recursion）且未溢出 → 递归扫描
+            if (nextScanState == -1 && worldInfoRecursive && !overflowed && newRecursionText.isNotBlank()) {
                 nextScanState = 1
             }
-            // 2. min_activations 扫描中且有递归缓冲 → 先递归一次（官方 buffer.hasRecurse() 分支）
+            // 3. min_activations 扫描中且有递归缓冲 → 先递归一次（官方 buffer.hasRecurse() 分支）
             if (nextScanState == -1 && worldInfoRecursive && !overflowed &&
                 scanState == 2 && recursionContext.isNotBlank()
             ) {
                 nextScanState = 1
             }
-            // 3. min_activations 未满足 → 扫描深度 +1 重扫（官方 buffer.advanceScan），
+            // 4. min_activations 未满足 → 扫描深度 +1 重扫（官方 buffer.advanceScan），
             //    深度超限（min_activations_depth_max 或全部消息）才停；min 扫描不带递归缓冲
             val minNotSatisfied = worldInfoMinActivations > 0 && activatedEntries.size < worldInfoMinActivations
             val overMaxDepth = (worldInfoMinActivationsDepthMax > 0 &&
@@ -553,11 +559,6 @@ internal fun collectInjections(
             if (nextScanState == -1 && !overflowed && minNotSatisfied && !overMaxDepth) {
                 nextScanState = 2
                 skew++
-            }
-            // 4. 还有未开放的 delay_until_recursion 层级 → 开放下一级继续扫描
-            if (nextScanState == -1 && availableLevels.isNotEmpty()) {
-                nextScanState = 1
-                currentLevel = availableLevels.removeAt(0)
             }
             if (nextScanState == -1) break
             scanState = nextScanState

@@ -56,8 +56,8 @@ android {
         applicationId = "me.rerere.rikkahub"
         minSdk = 26
         targetSdk = 37
-        versionCode = 185
-        versionName = "2.5.0"
+        versionCode = 186
+        versionName = "2.5.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -121,6 +121,12 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    testOptions {
+        unitTests {
+            // 纯 JVM 单元测试中 android.util.Log 等调用返回默认值而非抛异常
+            isReturnDefaultValues = true
+        }
     }
     sourceSets {
         getByName("androidTest").assets.srcDirs("$projectDir/schemas")

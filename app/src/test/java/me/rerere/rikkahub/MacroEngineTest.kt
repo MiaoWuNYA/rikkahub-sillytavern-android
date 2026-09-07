@@ -133,6 +133,64 @@ class MacroEngineTest {
         assertEquals("阿丽娜 2026-08-03", e.substitute("{{char}} {{cur_date}}", c))
     }
 
+    @Test
+    fun legacySingleBraceMacrosStillWork() {
+        val legacy = mapOf(
+            "char" to me.rerere.rikkahub.data.ai.transformers.PlaceholderInfo(
+                displayName = {},
+                resolver = { it.assistant.name },
+            ),
+            "cur_date" to me.rerere.rikkahub.data.ai.transformers.PlaceholderInfo(
+                displayName = {},
+                resolver = { "2026-08-03" },
+            ),
+        )
+        val e = engine(legacy = legacy)
+        val c = ctx(assistant = Assistant(name = "阿丽娜"))
+        assertEquals("阿丽娜 2026-08-03", e.substitute("{char} {cur_date}", c))
+        // 单花括号与双花括号宏相邻时互不干扰
+        assertEquals("阿丽娜 2026-08-03", e.substitute("{char} {{cur_date}}", c))
+    }
+
+    // ---------- 自引用放大保护（粘贴宏文档场景） ----------
+
+    @Test
+    fun selfReferentialMacroValuesAreNotRescanned() {
+        // 把宏文档粘贴进消息：{{lastUserMessage}} / {{original}} 的值就是整段原文（含字面宏）。
+        // 展开必须单遍：值里的 {{...}} 不再展开、替换输出不再重扫，
+        // 否则旧实现对结果逐 key replace 会把原文指数级复制后发给模型
+        val doc = "DOC {{lastUserMessage}} {{original}} END"
+        val legacy = mapOf(
+            "lastUserMessage" to me.rerere.rikkahub.data.ai.transformers.PlaceholderInfo(
+                displayName = {},
+                resolver = { doc },
+            ),
+            "original" to me.rerere.rikkahub.data.ai.transformers.PlaceholderInfo(
+                displayName = {},
+                resolver = { doc },
+            ),
+        )
+        val e = engine(legacy = legacy)
+        assertEquals("A $doc $doc B", e.substitute("A {{lastUserMessage}} {{original}} B", ctx()))
+    }
+
+    @Test
+    fun legacyValueContainingMacroIsKeptLiteral() {
+        // 单花括号兼容同样单遍：值里的 {cur_date} 不再展开
+        val legacy = mapOf(
+            "char" to me.rerere.rikkahub.data.ai.transformers.PlaceholderInfo(
+                displayName = {},
+                resolver = { "{cur_date}" },
+            ),
+            "cur_date" to me.rerere.rikkahub.data.ai.transformers.PlaceholderInfo(
+                displayName = {},
+                resolver = { "X" },
+            ),
+        )
+        val e = engine(legacy = legacy)
+        assertEquals("{cur_date}", e.substitute("{char}", ctx()))
+    }
+
     // ---------- {{if}} 条件 ----------
 
     @Test
@@ -250,7 +308,8 @@ class MacroEngineTest {
         assertEquals("1", e.substitute("{{incvar::n}}", c))
         assertEquals("2", e.substitute("{{incvar::n}}", c))
         assertEquals("1", e.substitute("{{decvar::n}}", c))
-        assertEquals("5", e.substitute("{{addvar::n::5}}{{getvar::n}}", c))
+        // addvar 在现有值上累加：1 + 5 = 6
+        assertEquals("6", e.substitute("{{addvar::n::5}}{{getvar::n}}", c))
         // 字符串拼接
         assertEquals("ab", e.substitute("{{setvar::s::a}}{{addvar::s::b}}{{getvar::s}}", c))
     }
@@ -295,7 +354,7 @@ class MacroEngineTest {
         assertEquals("", e.substitute("{{.missing}}", c))
         assertEquals("", e.substitute("{{.name = 小明}}", c))
         assertEquals("小明", e.substitute("{{.name}}", c))
-        assertEquals("9", e.substitute("{{$g = 9}}{{$g}}", c))
+        assertEquals("9", e.substitute("{{\$g = 9}}{{\$g}}", c))
     }
 
     @Test
@@ -385,8 +444,9 @@ class MacroEngineTest {
     @Test
     fun escapedMacrosAreLiteral() {
         val e = engine()
+        // \{{ 转义后宏不展开，反斜杠消耗掉，输出字面 {{...}}
         assertEquals("{{notAMacro}}", e.substitute("\\{{notAMacro}}", ctx()))
-        assertEquals("前 \\{{char}} 后", e.substitute("前 \\{{char}} 后", ctx()))
+        assertEquals("前 {{char}} 后", e.substitute("前 \\{{char}} 后", ctx()))
     }
 
     @Test
@@ -538,6 +598,7 @@ class MacroEngineTest {
         val a2 = Assistant(name = "凯")
         val a3 = Assistant(name = "默者")
         val settings = Settings(
+            assistants = listOf(a1, a2, a3),
             groupChats = listOf(
                 GroupChat(
                     name = "小队",
@@ -570,8 +631,10 @@ class MacroEngineTest {
     @Test
     fun preserveWhitespaceFlag() {
         val e = engine()
-        // # 标志：不 trim 分支结果
-        assertEquals("  a  ", e.substitute("{{if::#::true::  a  {{else}}x}}", ctx()))
+        // # 标志：块形式不 trim/dedent 分支内容
+        assertEquals("  a  ", e.substitute("{{if # true}}  a  {{/if}}", ctx()))
+        assertEquals("a", e.substitute("{{if true}}  a  {{/if}}", ctx()))
+        // 行内形式参数经 :: 分割时已 trim，# 无法恢复被分割去掉的空白
         assertEquals("a", e.substitute("{{if::true::  a  {{else}}x}}", ctx()))
     }
 }

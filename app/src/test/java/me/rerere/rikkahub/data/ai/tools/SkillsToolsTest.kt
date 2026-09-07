@@ -43,6 +43,7 @@ class SkillsToolsTest {
             }
         )
 
-        assertEquals("Skill instructions", (result.single() as UIMessagePart.Text).text)
+        // execute 用 appendLine(body) 拼接（无 linked_files 时也保留结尾换行）
+        assertEquals("Skill instructions\n", (result.single() as UIMessagePart.Text).text)
     }
 }

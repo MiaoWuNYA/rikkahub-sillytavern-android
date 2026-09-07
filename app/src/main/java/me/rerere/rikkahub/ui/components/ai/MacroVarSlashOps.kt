@@ -21,6 +21,9 @@ enum class SlashVarOp {
 /**
  * 应用变量命令到 Settings 快照。
  *
+ * context 仅用于结果文案的本地化，可为 null（纯 JVM 单元测试环境），
+ * 此时回退到内置中文文案。
+ *
  * @return (新 Settings, 结果文本)。未发生写入时返回原 Settings。
  * 语义对齐官方：
  *  - set：写入变量，返回 "name = value"
@@ -31,7 +34,7 @@ enum class SlashVarOp {
  *  - list：列出本对话变量
  */
 fun applyMacroVarSlash(
-    context: Context,
+    context: Context?,
     settings: Settings,
     op: SlashVarOp,
     name: String,
@@ -45,13 +48,22 @@ fun applyMacroVarSlash(
 
     fun store(): MutableMap<String, String> = chat
 
+    fun str(id: Int, vararg args: Any): String = context?.getString(id, *args) ?: when (id) {
+        R.string.slash_var_unset -> "（未设置）"
+        R.string.slash_var_deleted -> "已删除 ${args.getOrNull(0) ?: ""}"
+        R.string.slash_var_empty -> "（暂无变量）"
+        R.string.slash_var_list_prefix -> "本对话: "
+        R.string.slash_field_sep -> "、"
+        else -> ""
+    }
+
     val result = when (op) {
         SlashVarOp.SET -> {
             store()[name] = value
             "$name = $value"
         }
 
-        SlashVarOp.GET -> current() ?: context.getString(R.string.slash_var_unset)
+        SlashVarOp.GET -> current() ?: str(R.string.slash_var_unset)
 
         SlashVarOp.ADD -> {
             // 官方 Number() 语义：小数也按数值相加（10.5+1.5=12），结果整数时去掉 .0
@@ -83,20 +95,21 @@ fun applyMacroVarSlash(
 
         SlashVarOp.FLUSH -> {
             store().remove(name)
-            context.getString(R.string.slash_var_deleted, name)
+            str(R.string.slash_var_deleted, name)
         }
 
         SlashVarOp.LIST -> {
             if (chat.isEmpty()) {
-                context.getString(R.string.slash_var_empty)
+                str(R.string.slash_var_empty)
             } else {
-                context.getString(R.string.slash_var_list_prefix) + chat.entries.joinToString(context.getString(R.string.slash_field_sep)) { "${it.key}=${it.value}" }
+                str(R.string.slash_var_list_prefix) + chat.entries.joinToString(str(R.string.slash_field_sep)) { "${it.key}=${it.value}" }
             }
         }
     }
 
+    // GET/LIST 不写入，返回原 Settings 实例（调用方用引用相等判断是否需要持久化）
     val newSettings = when {
-        op == SlashVarOp.LIST -> settings
+        op == SlashVarOp.LIST || op == SlashVarOp.GET -> settings
         else -> settings.copy(macroChatVariables = chatVars.apply { put(chatKey, chat) })
     }
     return newSettings to result

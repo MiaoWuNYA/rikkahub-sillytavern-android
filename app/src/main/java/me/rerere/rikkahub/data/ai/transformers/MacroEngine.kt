@@ -38,16 +38,50 @@ class MacroEngine(
 
     /** 解析并求值整段文本。任何解析失败都会原样返回输入，绝不吞文本。 */
     fun substitute(text: String, ctx: PlaceholderCtx): String {
-        if (!text.contains("{{")) return text
+        if (!text.contains("{")) return text
         return try {
             // \{{ 转义：先换成哨兵，解析完再还原为字面 {{
             val escaped = text.replace("\\{{", ESCAPE_SENTINEL)
-            val nodes = parse(escaped)
-            val seedSource = escaped
-            val out = evaluate(nodes, EvalState(ctx, seedSource), 0)
+            // 旧单花括号兼容：{cur_date} {char} 等。必须在 parse 之前做，
+            // 且单遍扫描、替换值不再重扫——否则把宏文档粘贴进消息时
+            // （值里含字面 {{lastUserMessage}} 等自引用宏）会把原文反复展开复制
+            val preReplaced = legacyPlaceholderRegex?.replace(escaped) { match ->
+                resolveLegacyKey(match.groupValues[1], ctx) ?: match.value
+            } ?: escaped
+            var out = if (preReplaced.contains("{{")) {
+                val nodes = parse(preReplaced)
+                val seedSource = preReplaced
+                evaluate(nodes, EvalState(ctx, seedSource), 0)
+            } else {
+                preReplaced
+            }
+            // 非作用域 {{trim}} 后处理：去除周围的换行（对齐酒馆格式宏）
+            out = trimRegex.replace(out) { "" }
             out.replace(ESCAPE_SENTINEL, "{{")
         } catch (_: Exception) {
             text
+        }
+    }
+
+    /** 非作用域 {{trim}} 后处理：去除周围的换行（对齐酒馆格式宏） */
+    private val trimRegex = Regex("""(?:\r?\n)?\s*\{\{?trim\}\}?\s*(?:\r?\n)?""", RegexOption.IGNORE_CASE)
+
+    /** 旧单花括号 key 匹配：前后不能紧邻花括号，避免吃掉 {{char}} 的内层 */
+    private val legacyPlaceholderRegex: Regex? by lazy {
+        if (legacy.isEmpty()) {
+            null
+        } else {
+            val names = legacy.keys.joinToString("|") { Regex.escape(it) }
+            Regex("(?<!\\{)\\{($names)\\}(?!\\})", RegexOption.IGNORE_CASE)
+        }
+    }
+
+    private fun resolveLegacyKey(key: String, ctx: PlaceholderCtx): String? {
+        val info = legacy.entries.firstOrNull { it.key.equals(key, ignoreCase = true) } ?: return null
+        return try {
+            info.value.resolver(ctx)
+        } catch (_: Exception) {
+            ""
         }
     }
 
@@ -353,9 +387,15 @@ class MacroEngine(
     /** 变量简写：{{.var}} {{$var}} 及运算符（官方 Variable Shorthands 全套语义）。 */
     private fun evalVarShorthand(node: Node.Macro, state: EvalState): String {
         val global = node.name.startsWith("$")
-        val varName = node.name.drop(1)
+        var varName = node.name.drop(1)
         val chatKey = if (global) null else state.ctx.conversationId?.toString()
-        val raw = node.args.map { evaluate(it, state, 1) }.firstOrNull()?.trim() ?: ""
+        var raw = node.args.map { evaluate(it, state, 1) }.firstOrNull()?.trim() ?: ""
+        // '-' 属于宏名字符集，{{.counter--}} 会被解析成名为 ".counter--" 的变量；
+        // 参数为空时把粘连在名字尾部的运算符拆出来（仅 "--" 可能发生，++ 不在名字字符集内）
+        if (raw.isEmpty() && varName.endsWith("--")) {
+            raw = "--"
+            varName = varName.removeSuffix("--")
+        }
         if (raw.isEmpty()) return vars.get(chatKey, varName) ?: ""
 
         for (op in VAR_SHORTHAND_OPS) {
@@ -471,11 +511,12 @@ class MacroEngine(
     ): String? {
         // 新官方宏带参数时优先：旧宏忽略参数，避免 {{random::A::B}} / {{time::UTC}} /
         // {{charFirstMessage::n}} 被同名旧宏遮蔽后永远取不到参数语义
+        // 注意：name 在 parse 时已统一转小写，分支标签必须用小写
         if (args.isNotEmpty()) {
             when (name) {
                 "random" -> return randomPick(parseListArg(args))
                 "time" -> return timeMacro(args[0])
-                "charFirstMessage" -> return greetingMacro(args[0], state.ctx)
+                "charfirstmessage" -> return greetingMacro(args[0], state.ctx)
             }
         }
         // 旧宏（35 个现有宏，大小写不敏感，与官方引擎一致）
@@ -496,14 +537,14 @@ class MacroEngine(
             "roll" -> rollDice(args.firstOrNull() ?: "") ?: ""
             "datetimeformat" -> formatDateTime(args.firstOrNull() ?: "")
             "time" -> timeMacro(args.firstOrNull())
-            "timeDiff" -> timeDiff(args.getOrNull(0), args.getOrNull(1))
-            "greeting", "charFirstMessage" -> greetingMacro(args.firstOrNull(), state.ctx)
-            "maxResponse", "maxResponseTokens" -> state.ctx.assistant.maxTokens?.toString() ?: ""
-            "allChatRange" -> if (state.ctx.messages.isEmpty()) "" else "0-${state.ctx.messages.lastIndex}"
-            "groupNotMuted" -> groupNames(state.ctx, includeMuted = false)
-            "notChar" -> groupNames(state.ctx, includeMuted = true, excludeSelf = true)
-            "isMobile" -> "true"
-            "lastGenerationType" -> state.ctx.generationType?.value ?: ""
+            "timediff" -> timeDiff(args.getOrNull(0), args.getOrNull(1))
+            "greeting", "charfirstmessage" -> greetingMacro(args.firstOrNull(), state.ctx)
+            "maxresponse", "maxresponsetokens" -> state.ctx.assistant.maxTokens?.toString() ?: ""
+            "allchatrange" -> if (state.ctx.messages.isEmpty()) "" else "0-${state.ctx.messages.lastIndex}"
+            "groupnotmuted" -> groupNames(state.ctx, includeMuted = false)
+            "notchar" -> groupNames(state.ctx, includeMuted = true, excludeSelf = true)
+            "ismobile" -> "true"
+            "lastgenerationtype" -> state.ctx.generationType?.value ?: ""
             else -> null
         }
     }

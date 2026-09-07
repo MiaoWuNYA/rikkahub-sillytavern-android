@@ -8,6 +8,7 @@ import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.model.SelectiveLogic
+import me.rerere.rikkahub.data.model.isTriggered
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -663,14 +664,14 @@ class PromptInjectionTransformerTest {
         val injectedText = getMessageText(result[1])
         assertTrue(injectedText.contains("Higher priority"))
         assertTrue(injectedText.contains("Lower priority"))
-        // Higher priority should come first
-        assertTrue(injectedText.indexOf("Higher priority") < injectedText.indexOf("Lower priority"))
+        // 官方语义：最终文本顺序 = order/priority 升序（低值在前）
+        assertTrue(injectedText.indexOf("Lower priority") < injectedText.indexOf("Higher priority"))
     }
     // endregion
 
     // region Priority tests
     @Test
-    fun `injections should be ordered by priority descending`() {
+    fun `injections should be ordered by priority ascending`() {
         val id1 = Uuid.random()
         val id2 = Uuid.random()
         val id3 = Uuid.random()
@@ -694,10 +695,10 @@ class PromptInjectionTransformerTest {
         )
 
         val systemText = getMessageText(result[0])
-        // Higher priority should come first when joining
-        assertTrue(systemText.contains("Priority 3"))
-        assertTrue(systemText.indexOf("Priority 3") < systemText.indexOf("Priority 2"))
-        assertTrue(systemText.indexOf("Priority 2") < systemText.indexOf("Priority 1"))
+        // 官方语义：最终文本顺序 = order/priority 升序（低值在前）
+        assertTrue(systemText.contains("Priority 1"))
+        assertTrue(systemText.indexOf("Priority 1") < systemText.indexOf("Priority 2"))
+        assertTrue(systemText.indexOf("Priority 2") < systemText.indexOf("Priority 3"))
     }
     // endregion
 

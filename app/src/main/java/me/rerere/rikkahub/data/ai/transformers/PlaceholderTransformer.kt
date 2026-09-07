@@ -35,9 +35,10 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.uuid.Uuid
 
+// context/settingsStore 允许为 null：仅供纯 JVM 单元测试构造（真实管线始终传入非空值）
 data class PlaceholderCtx(
-    val context: Context,
-    val settingsStore: SettingsStore,
+    val context: Context?,
+    val settingsStore: SettingsStore?,
     val settings: Settings = Settings(),
     val model: Model,
     val assistant: Assistant,
@@ -104,11 +105,11 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
         }
 
         placeholder("battery_level", { Text(stringResource(R.string.placeholder_battery_level)) }) {
-            it.context.batteryLevel().toString()
+            (it.context?.batteryLevel() ?: 0).toString()
         }
 
         placeholder("nickname", { Text(stringResource(R.string.placeholder_nickname)) }) {
-            it.settingsStore.settingsFlow.value.displaySetting.userNickname.ifBlank { "user" }
+            it.settingsStore?.settingsFlow?.value?.displaySetting?.userNickname?.ifBlank { "user" } ?: "user"
         }
 
         placeholder("char", { Text(stringResource(R.string.placeholder_char)) }) {
@@ -116,7 +117,7 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
         }
 
         placeholder("user", { Text(stringResource(R.string.placeholder_user)) }) {
-            it.settingsStore.settingsFlow.value.displaySetting.userNickname.ifBlank { "user" }
+            it.settingsStore?.settingsFlow?.value?.displaySetting?.userNickname?.ifBlank { "user" } ?: "user"
         }
 
         // 角色卡字段（用于世界书注入内容）
@@ -170,7 +171,7 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
 
         // ── 对齐酒馆官方实用宏（第二批）──
         placeholder("persona", { Text(stringResource(R.string.placeholder_persona)) }) {
-            val s = it.settingsStore.settingsFlow.value
+            val s = it.settingsStore?.settingsFlow?.value ?: Settings()
             s.personas.firstOrNull { p -> p.id == s.activePersonaId && p.enabled }?.description ?: ""
         }
 
@@ -262,7 +263,7 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
         }
 
         placeholder("authorNote", { Text(stringResource(R.string.placeholder_author_note)) }) {
-            it.settingsStore.settingsFlow.value.authorNote
+            it.settingsStore?.settingsFlow?.value?.authorNote ?: ""
         }
 
         // 注意：{{newline}} 由 MacroEngine 处理（支持 {{newline::N}} 重复 N 次）；
@@ -274,10 +275,10 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
     }
 
     private fun PlaceholderCtx.groupMembers(): String {
-        val groups = settingsStore.settingsFlow.value.groupChats
+        val groups = settingsStore?.settingsFlow?.value?.groupChats ?: emptyList()
         val group = groups.firstOrNull { g -> assistant.id in g.memberIds }
         val members = group?.memberIds?.mapNotNull { memberId ->
-            settingsStore.settingsFlow.value.assistants
+            (settingsStore?.settingsFlow?.value?.assistants ?: emptyList())
                 .firstOrNull { a -> a.id == memberId }?.name
         }?.joinToString(", ")
         // 官方：单聊时 {{group}} / {{charIfNotGroup}} 返回角色名本身
@@ -339,8 +340,6 @@ private fun stripInjectedMarker(text: String): String =
 object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
     private val defaultProvider = DefaultPlaceholderProvider
 
-    private val trimRegex = Regex("""(?:\r?\n)?\s*\{\{?trim\}\}?\s*(?:\r?\n)?""", RegexOption.IGNORE_CASE)
-
     override suspend fun transform(
         ctx: TransformerContext,
         messages: List<UIMessage>,
@@ -396,9 +395,8 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
             )
             val vars = SettingsMacroVars(settingsStore, settings)
             val engine = MacroEngine(defaultProvider.placeholders, vars)
-            val result = engine.substitute(text, ctx)
-            // 非作用域 {{trim}} 后处理，与生成管线保持一致
-            result.replace(trimRegex) { "" }.also { vars.flush() }
+            // 非作用域 {{trim}} 后处理与旧单花括号兼容均由引擎内部完成，与生成管线保持一致
+            engine.substitute(text, ctx).also { vars.flush() }
         } catch (_: Exception) {
             text
         }
@@ -425,20 +423,10 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
         )
         result = engine.substitute(result, placeholderCtx)
 
-        // 非作用域 {{trim}} 后处理：去除周围的换行（对齐酒馆格式宏）
-        result = result.replace(trimRegex) { "" }
-
-        // 旧单花括号兼容：{cur_date} {char} 等
-        defaultProvider.placeholders.forEach { (key, placeholderInfo) ->
-            val value = try {
-                placeholderInfo.resolver(placeholderCtx)
-            } catch (_: Exception) {
-                ""
-            }
-            result = result
-                .replace(oldValue = "{{$key}}", newValue = value, ignoreCase = true)
-                .replace(oldValue = "{$key}", newValue = value, ignoreCase = true)
-        }
+        // 旧单花括号兼容（{cur_date} {char} 等）由引擎在 substitute 内单遍完成；
+        // 切勿在这里对替换结果再逐 key replace——宏的值可能包含整段原文
+        // （把宏文档粘贴进消息时 {{lastUserMessage}}/{{original}} 即自引用），
+        // 重复扫描会把原文指数级复制后发给模型。
 
         return result
     }
