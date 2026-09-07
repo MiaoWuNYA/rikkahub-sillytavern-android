@@ -86,8 +86,6 @@ import me.rerere.rikkahub.data.ai.tools.createCalculatorTool
 import me.rerere.rikkahub.data.ai.tools.createWebFetchTool
 import me.rerere.rikkahub.data.ai.tools.createTaskTools
 import me.rerere.rikkahub.data.ai.tools.createConversationTools
-import me.rerere.rikkahub.data.ai.tools.local.createMingliTool
-import me.rerere.rikkahub.data.ai.tools.local.createMingliGuideTool
 import me.rerere.rikkahub.data.ai.tools.ynufe.createYnufeTool
 import me.rerere.rikkahub.data.ai.tools.ChatToolFactory
 import me.rerere.rikkahub.data.ai.tools.InvalidMcpServerNamesException
@@ -1425,11 +1423,6 @@ class ChatService(
                     }
                     if (assistant.localTools.contains(LocalToolOption.PythonEngine)) {
                         add(createPythonTool(context, assistant.toolExecTimeout))
-                    }
-                    // 命理工具: 一个开关控制两个工具（mingli + mingli_guide）
-                    if (assistant.enableMingliTools) {
-                        add(createMingliTool(context))
-                        add(createMingliGuideTool(context))
                     }
                     // 云南财经教务系统工具（课表/成绩/考试/公告）
                     if (assistant.enableYnufeTools) {

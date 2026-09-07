@@ -209,25 +209,4 @@ class PythonBridge(
         appendLine("FilesDir: ${context.filesDir.absolutePath}")
         appendLine("SkillsDir: ${context.filesDir.resolve("skills").absolutePath}")
     }
-
-    // ============================================================
-    // JS 引擎桥接 (供 mingli_router.py 调用)
-    // ============================================================
-
-    fun evalJavascript(library: String, code: String): String = runBlocking {
-        try {
-            val localTools = KoinJavaComponent.get<me.rerere.rikkahub.data.ai.tools.LocalTools>(me.rerere.rikkahub.data.ai.tools.LocalTools::class.java)
-            val tool = localTools.javascriptTool
-            val actualAction = if (code.isEmpty()) "load" else "eval"
-            val args = kotlinx.serialization.json.buildJsonObject {
-                put("action", JsonPrimitive(actualAction))
-                put("library", JsonPrimitive(library))
-                put("code", JsonPrimitive(code))
-            }
-            val parts = tool.execute(args)
-            parts.joinToString("\n") { (it as? me.rerere.ai.ui.UIMessagePart.Text)?.text ?: it.toString() }
-        } catch (e: Exception) {
-            "Error: ${e.message}"
-        }
-    }
 }

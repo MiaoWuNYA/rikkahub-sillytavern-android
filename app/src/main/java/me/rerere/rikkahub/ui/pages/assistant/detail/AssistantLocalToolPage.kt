@@ -331,16 +331,6 @@ private fun AssistantLocalToolContent(
                 }
             )
             item(
-                headlineContent = { Text("命理工具(Mingli Tools)") },
-                supportingContent = { Text("启用命理排盘工具（mingli + mingli_guide）") },
-                trailingContent = {
-                    Switch(
-                        checked = assistant.enableMingliTools,
-                        onCheckedChange = { onUpdate(assistant.copy(enableMingliTools = it)) }
-                    )
-                }
-            )
-            item(
                 headlineContent = { Text("教务系统工具(YNUFE)") },
                 supportingContent = { Text("启用云南财经教务查询（课表/成绩/考试/公告），账号在 设置 → 教务系统账号 保存") },
                 trailingContent = {

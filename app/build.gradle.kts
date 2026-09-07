@@ -31,16 +31,9 @@ chaquopy {
             install("geopy")
             install("pytz")
             install("timezonefinder")
-            // === 命理子项依赖：仅保留 chaquo.com/pypi-13.1 镜像可解析 + 本地离线轮子的部分 ===
-            // 其余子项(八字 lunar_python / 六爻 ichingshifa / 六壬 kinliuren / 太玄 taixuanshifa / 荆诀 jingjue /
-            // 塔罗·雷诺曼 arcanite 及其依赖 pydantic+jinja2+attrs+cattrs+platformdirs+url_normalize+urllib3+cn2an+proces)
-            // 在镜像无包且本地无离线轮子，装不上。对应路由代码保留，运行时缺包降级报错，但不阻碍编译。
-            // 若要恢复：提供离线 wheel 到 offline_pkgs/ 并改回 install(file(...))。
             install("pyyaml")
             install("markupsafe")
             install("setuptools")
-            // === 深度古典占星 (stellium, 组件化引擎, Hellenistic/Medieval全栈) — 离线轮子, 零运行时依赖 ===
-            install(file("offline_pkgs/stellium-0.22.0-py3-none-any.whl").absolutePath)
         }
     }
 }

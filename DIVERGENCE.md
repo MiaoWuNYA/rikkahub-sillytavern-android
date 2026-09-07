@@ -34,11 +34,11 @@
 | 文件 | 改动量 | 本地改了什么 | 合并建议 |
 |---|---|---|---|
 | `service/ChatService.kt` | +509/-55 | 工具构建、前台服务、群聊生成、斜杠注入、发送链路 | 上游更新先合，再叠本地逻辑 |
-| `data/ai/GenerationHandler.kt` | +638/-185 | 系统提示组装（命理工作流）、transform 链、预构建 system | 同上 |
+| `data/ai/GenerationHandler.kt` | +638/-185 | 系统提示组装、transform 链、预构建 system | 同上 |
 | `data/ai/transformers/PromptInjectionTransformer.kt` | +540/-11 | 世界书官方对齐（选择性逻辑/分组/递归/粘性/预算） | 本地逻辑已对照酒馆官方，合时保留 |
 | `data/ai/transformers/PlaceholderTransformer.kt` | +358/-6 | 宏引擎 2.0 接入、`{{original}}` 等修正 | 保留本地 |
 | `data/ai/transformers/Transformer.kt` | +36/-2 | TransformerContext 扩展字段 | 保留 |
-| `data/model/Assistant.kt` | +382/-22 | 工具/技能/群聊/酒馆/命理/宏/知识库(已删) 字段 | 合时保留本地字段 |
+| `data/model/Assistant.kt` | +382/-22 | 工具/技能/群聊/酒馆/宏/记忆/滚动压缩 字段 | 合时保留本地字段 |
 | `data/model/Conversation.kt` | +3 | 小改 | 低风险 |
 | `data/datastore/PreferencesStore.kt` | +105/-1 | 本地设置（群聊/酒馆/工具/压缩等） | 保留本地设置项 |
 | `data/ai/GenerationPrompts.kt` | +33 | 本地提示词 | 保留 |
@@ -121,7 +121,7 @@ Web 相关只有小改（`web/routes/ConversationRoutes.kt` +47/-25、`SettingsR
 
 ## 6. 冲突处理速查
 
-1. `ChatService.kt` / `GenerationHandler.kt`：上游改动先收，本地功能块（工具构建、transform 链、命理系统提示）重新叠上去。
+1. `ChatService.kt` / `GenerationHandler.kt`：上游改动先收，本地功能块（工具构建、transform 链）重新叠上去。
 2. `RouteActivity.kt`：各页面 entry 是追加式，冲突通常可两边都留。
 3. `Assistant.kt` / `PreferencesStore.kt`：字段是追加式，上游删字段时检查本地是否在用。
 4. 数据库：上游加 migration 时，注意本地版本号（当前 26）与迁移链；不要在本地重写已发布的迁移。

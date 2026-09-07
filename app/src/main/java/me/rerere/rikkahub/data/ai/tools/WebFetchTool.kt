@@ -16,7 +16,7 @@ import java.net.URL
  * 通用 HTTP 工具，支持所有 HTTP 方法 + body + 自定义 Header。
  *
  * GET 请求直接返回纯文本，POST/PUT/PATCH 可带 JSON body。
- * 用于调 REST API、抓网页、调命理服务等一切 HTTP 交互。
+ * 用于调 REST API、抓网页等一切 HTTP 交互。
  */
 fun createWebFetchTool(): Tool = Tool(
     name = "web_fetch",

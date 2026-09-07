@@ -35,7 +35,6 @@ fun createPythonTool(context: Context, timeoutSec: Int = 30): Tool = Tool(
         "- Simple math (use calculator)\n" +
         "- Shell commands (use execute_command)\n" +
         "- File operations (use file tools)\n\n" +
-        "*** 命理排盘见系统提示词 <mingli_routing> 段（不虚构数据）***\n" +
         "Args:\n" +
         "- code: Python code to execute. Last expression value returned. Use print() for debugging.\n" +
         "Code runs in an isolated Python environment on the device.",

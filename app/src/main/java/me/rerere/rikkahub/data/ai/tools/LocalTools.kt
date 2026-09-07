@@ -201,19 +201,12 @@ class LocalTools(
                 "The JS context persists between calls — libraries loaded via action='load' stay available.\n" +
                 "⚠️ NOTE: Eval runs in a block scope — `const`/`let` are local to each call (no redeclaration errors).\n" +
                 "Use `var` for variables that need to persist across multiple calls.\n\n" +
-                "Use this tool for calculations, text processing, or divination engines.\n\n" +
+                "Use this tool for calculations or text processing.\n\n" +
                 "When to use:\n" +
                 "- Run JavaScript for calculations, text processing, or prototyping\n" +
-                "- Load a JS engine: action='load', library='qimen-engine' (loads once, cached)\n" +
-                "- Call engine: action='eval', code='QimenEngine.generate({...})'\n" +
+                "- Load a JS library: action='load', library='<asset filename without .js>' (loads once, cached)\n" +
+                "- Call code: action='eval', code='<javascript>'\n" +
                 "- Reset context: action='reset' (clears all loaded libraries)\n\n" +
-                "Available JS engines (action='load', library=...):\n" +
-                "  qimen-engine (QiMen) | ziwei-nihai (ZiweiNihai) | iching-shifa-engine (IchingShifa) | taixuan-engine (TaixuanLib)\n" +
-                "  lunar-engine (Lunar) | astronomy-engine (Astronomy) | horoscope-engine (HoroscopeJS) | kaabalah-engine (Kaabalah)\n" +
-                "  caelus-engine (Caelus: Western+Vedic astrology) | caelus-birth (CaelusBirth: timezone→UT)\n" +
-                "  iztro-engine (Iztro: 紫微斗数) | natalengine-engine (NatalEngine: 人类图/基因钥匙)\n" +
-                "  node-jhora-engine (NodeJhora: 印度占星深度版, DE440/Shadbala/Ashtakavarga/Jaimini/KP)\n\n" +
-
                 "- action: 'eval' (default) | 'load' | 'reset'\n" +
                 "- library: asset filename without .js (for action='load') — loads once, cached\n" +
                 "- function: (optional) call a global function by name with JSON args\n" +
@@ -284,12 +277,6 @@ class LocalTools(
                                 val lib = library ?: throw IllegalArgumentException("library is required for action='load'")
                                 val ctx = getOrCreateJSContext()
                                 if (lib !in loadedLibraries) {
-                                    // NodeJhora: inject 32MB de440s.bsp as Uint8Array before loading engine
-                                    if (lib == "node-jhora-engine") {
-                                        val bspBytes = context.assets.open("de440s.bsp").readBytes()
-                                        ctx.globalObject.setProperty("__nodejhora_bsp", bspBytes)
-                                        logs.add("[INFO] Injected de440s.bsp (${bspBytes.size} bytes) for NodeJhora")
-                                    }
                                     val engineCode = context.assets.open("$lib.js").bufferedReader().readText()
                                     ctx.evaluate(engineCode)
                                     loadedLibraries.add(lib)
