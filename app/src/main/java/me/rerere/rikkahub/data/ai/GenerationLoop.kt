@@ -19,7 +19,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.core.Tool
 import me.rerere.ai.provider.Model
@@ -43,7 +42,6 @@ import me.rerere.rikkahub.data.ai.transformers.onGenerationFinish
 import me.rerere.rikkahub.data.ai.transformers.transforms
 import me.rerere.rikkahub.data.ai.PromptDebugCache
 import me.rerere.rikkahub.data.ai.transformers.visualTransforms
-import me.rerere.rikkahub.data.ai.tools.buildMemoryTools
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.model.Assistant
@@ -78,7 +76,7 @@ sealed interface GenerationChunk {
     ) : GenerationChunk
 }
 
-class GenerationHandler(
+class GenerationLoop(
     private val context: Context,
     private val providerManager: ProviderManager,
     private val json: Json,
@@ -392,8 +390,8 @@ class GenerationHandler(
                 )
                 emit(GenerationChunk.Messages(messages))
 
-                val tools = messages.last().getTools().filter { !it.isExecuted }
-                if (tools.isEmpty()) {
+                val toolCalls = messages.last().getTools().filter { !it.isExecuted }
+                if (toolCalls.isEmpty()) {
                     // no tool calls, break
                     break
                 }

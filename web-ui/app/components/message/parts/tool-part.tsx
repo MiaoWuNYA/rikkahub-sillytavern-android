@@ -280,7 +280,7 @@ function AskUserToolStep({
   const questions = React.useMemo(() => parseAskUserQuestions(args), [args]);
   const [answers, setAnswers] = React.useState<Record<string, string>>({});
 
-  const isPending = tool.approvalState.type === "pending";
+  const isPending = tool.output.length === 0 && tool.approvalState.type === "pending";
   const isAnswered = tool.approvalState.type === "answered";
 
   const firstQuestion = questions[0]?.question ?? "...";
@@ -439,7 +439,7 @@ export function ToolPart({
 
   const memoryAction = getStringField(args, "action");
   const title = getToolTitle(tool.toolName, args, t);
-  const isPending = tool.approvalState.type === "pending";
+  const isPending = tool.output.length === 0 && tool.approvalState.type === "pending";
   const isDenied = tool.approvalState.type === "denied";
   const deniedReason =
     tool.approvalState.type === "denied" ? (tool.approvalState.reason ?? "") : "";

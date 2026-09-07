@@ -91,6 +91,7 @@ import me.rerere.ai.core.MessageRole
 import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.ModelAbility
 import me.rerere.ai.provider.ModelType
+import me.rerere.ai.ui.UIMessagePart
 import me.rerere.asr.ASRStatus
 import com.composables.icons.lucide.ChevronDown
 import com.composables.icons.lucide.ChevronUp
@@ -113,6 +114,8 @@ import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.model.QuickMessage
 import me.rerere.rikkahub.service.ChatService
+import me.rerere.rikkahub.service.MessageQueueState
+import me.rerere.rikkahub.service.QueuedMessage
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionContext
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionItem
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionList
@@ -131,6 +134,9 @@ import me.rerere.rikkahub.ui.hooks.ChatInputState
 import me.rerere.rikkahub.utils.SoundEffectPlayer
 import org.koin.compose.koinInject
 import kotlin.time.Duration.Companion.seconds
+import me.rerere.rikkahub.ui.pages.chat.VoicePhase
+import me.rerere.rikkahub.ui.pages.chat.VoiceSessionState
+import kotlin.uuid.Uuid
 
 @Composable
 fun ChatInput(
@@ -161,6 +167,14 @@ fun ChatInput(
     onSlashImpersonate: ((String) -> Unit)? = null,
     onSlashRerollPick: ((String) -> Unit)? = null,
     onSlashGen: ((ChatService.GenArgs, (String) -> Unit) -> Unit)? = null,
+    messageQueue: MessageQueueState = MessageQueueState(),
+    onRemoveQueuedMessage: (Uuid) -> Unit = {},
+    onBeginEditQueuedMessage: (Uuid) -> QueuedMessage? = { null },
+    onFinishEditQueuedMessage: (Uuid, List<UIMessagePart>?) -> Unit = { _, _ -> },
+    onResumeMessageQueue: () -> Unit = {},
+    onStartVoiceMode: (() -> Unit)? = null,
+    voiceState: VoiceSessionState = VoiceSessionState(),
+    onStopVoiceMode: () -> Unit = {},
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
@@ -258,7 +272,7 @@ fun ChatInput(
     fun sendMessageWithoutAnswer() {
         focusManager.clearFocus(force = true)
         keyboardController?.hide()
-        if (loading) onCancelClick() else onLongSendClick()
+        if (loading && state.isEmpty()) onCancelClick() else onLongSendClick()
     }
 
     val asr = LocalASRState.current
@@ -303,6 +317,13 @@ fun ChatInput(
                 .padding(bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            MessageQueuePanel(
+                state = messageQueue,
+                onRemove = onRemoveQueuedMessage,
+                onBeginEdit = onBeginEditQueuedMessage,
+                onFinishEdit = onFinishEditQueuedMessage,
+                onResume = onResumeMessageQueue,
+            )
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -323,6 +344,16 @@ fun ChatInput(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
+                    if (voiceState.phase != VoicePhase.Off) {
+                        VoiceModeRow(
+                            state = voiceState,
+                            onStop = onStopVoiceMode,
+                            onRetry = { onStartVoiceMode?.invoke() },
+                        )
+                        androidx.compose.material3.HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        )
+                    }
                     if (state.messageContent.isNotEmpty()) {
                         MediaFileInputRow(state = state)
                     }
@@ -415,7 +446,7 @@ fun ChatInput(
                             )
                         }
 
-                        if (asrState.isAvailable || asrState.isRecording) {
+                        if (!voiceState.isActive && (asrState.isAvailable || asrState.isRecording)) {
                             AsrButton(
                                 state = asrState,
                                 onClick = {
@@ -438,6 +469,10 @@ fun ChatInput(
                                     }
                                 }
                             )
+                        }
+
+                        if (loading) {
+                            KeepScreenOn()
                         }
 
                         AnimatedVisibility(
@@ -473,13 +508,14 @@ private fun SendButton(
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val showStop = loading && empty
     val containerColor = when {
-        loading -> MaterialTheme.colorScheme.errorContainer
+        showStop -> MaterialTheme.colorScheme.errorContainer
         empty -> MaterialTheme.colorScheme.surfaceContainerHigh
         else -> MaterialTheme.colorScheme.primary
     }
     val contentColor = when {
-        loading -> MaterialTheme.colorScheme.onErrorContainer
+        showStop -> MaterialTheme.colorScheme.onErrorContainer
         empty -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
         else -> MaterialTheme.colorScheme.onPrimary
     }
@@ -490,7 +526,7 @@ private fun SendButton(
             .testTag("chat_send_button")
             .clip(CircleShape)
             .combinedClickable(
-                enabled = loading || !empty,
+                enabled = showStop || !empty,
                 onClick = onClick,
                 onLongClick = onLongClick,
             )
@@ -501,22 +537,12 @@ private fun SendButton(
             color = containerColor,
             content = {},
         )
-        if (loading) {
-            KeepScreenOn()
-            Icon(
-                imageVector = HugeIcons.Cancel01,
-                contentDescription = stringResource(R.string.stop),
-                tint = contentColor,
-                modifier = Modifier.size(18.dp)
-            )
-        } else {
-            Icon(
-                imageVector = HugeIcons.ArrowUp02,
-                contentDescription = stringResource(R.string.send),
-                tint = contentColor,
-                modifier = Modifier.size(18.dp)
-            )
-        }
+        Icon(
+            imageVector = if (showStop) HugeIcons.Cancel01 else HugeIcons.ArrowUp02,
+            contentDescription = stringResource(if (showStop) R.string.stop else R.string.send),
+            tint = contentColor,
+            modifier = Modifier.size(18.dp)
+        )
     }
 }
 
