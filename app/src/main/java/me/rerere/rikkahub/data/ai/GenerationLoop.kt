@@ -616,23 +616,16 @@ class GenerationLoop(
                 )
             }
 
-            // ── s10: getUserContext — 用户上下文通过 <system-reminder> UserMessage 注入 ──
-            // 对标 Claude Code context.ts → prependUserContext()
-            // getUserContext 返回 { claudeMd, currentDate }，此处映射为 memories + currentDate
-            val userContext = buildUserContext(memories, assistant, settings)
-            if (userContext.isNotBlank()) {
-                add(UIMessage.user(prompt = userContext))
-            }
-
             addAll(limitedChat.withMessageNames())
 
-            // 提示词缓存：日期按天变化，注入到上下文尾部（历史消息之后），
-            // 避免跨天时打断整个静态前缀（system prompt + 角色卡 + 世界书锚点区）
-            add(
-                UIMessage.system(
-                    "<system-reminder>Current date: ${java.time.LocalDate.now()}.</system-reminder>"
-                )
-            )
+            // ── 提示词缓存：动态上下文（记忆全量 + 日期）统一注入历史之后的尾部 ──
+            // 记忆由自动提取周期性变化、日期每天变化，若放在前缀区（历史之前）会
+            // 打断整个静态前缀（system prompt + 角色卡 + 世界书锚点区）的缓存；
+            // 放在尾部只失效尾部。s10 原设计（对标 CC getUserContext）已按缓存原则调整。
+            val userContext = buildUserContext(memories, assistant, settings)
+            if (userContext.isNotBlank()) {
+                add(UIMessage.system(prompt = userContext))
+            }
         }.let { base ->
             val persona = settings.personas.find { it.id == settings.activePersonaId }
             if (persona != null && persona.enabled && persona.description.isNotBlank() &&
@@ -1008,19 +1001,16 @@ private fun buildUserContext(
 ): String {
     val contextMap = linkedMapOf<String, String>()
 
-    // 对标 CC getUserContext: claudeMd (CLAUDE.md content)
-    // RAG 模式下不全量注入记忆，改由 MemoryRetrievalTransformer 按相关性注入
+    // 对标 CC getUserContext: currentDate
+    // 提示词缓存：本函数整体注入上下文尾部（generateInternal 的 base buildList 末尾），
+    // 记忆（自动提取周期变化）与日期（每天变化）都不再进入前缀区
     if (assistant.enableMemory && !assistant.enableMemoryRag && memories.isNotEmpty()) {
         val memoryText = memories.joinToString("\n") { memory ->
             "- ${memory.content.take(200)}"
         }
         contextMap["memories"] = memoryText
     }
-
-    // 对标 CC getUserContext: currentDate
-    // 提示词缓存：日期已改为注入上下文尾部（generateInternal 的 buildList），
-    // 不再放进历史消息之前的前缀区，避免跨天打断整个静态前缀
-    // contextMap["currentDate"] = "Today's date is ${java.time.LocalDate.now()}."
+    contextMap["currentDate"] = "Current date: ${java.time.LocalDate.now()}."
 
     if (contextMap.isEmpty()) return ""
 
