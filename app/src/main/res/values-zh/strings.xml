@@ -47,6 +47,8 @@
   <string name="assistant_page_add">添加</string>
   <string name="assistant_page_add_body">添加 Body</string>
   <string name="assistant_page_add_header">添加 Header</string>
+  <string name="assistant_page_anti_empty_response">防空回复（Gemini）</string>
+  <string name="assistant_page_anti_empty_response_desc">将系统提示词移入对话流（以假 user/model 历史轮承载，世界书等注入位置保持不变），并在检测到空回复时自动微扰末条消息重试。推荐 Gemini 使用</string>
   <string name="assistant_page_allow_conversation_system_prompt">独立对话系统提示</string>
   <string name="assistant_page_allow_conversation_system_prompt_desc">允许每个对话单独设置系统提示词</string>
   <string name="assistant_page_allow_conversation_prompt_injection">独立对话提示词注入</string>
@@ -1870,6 +1872,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="workspace_terminal_close_confirm_title">关闭终端 %1$d？</string>
   <string name="workspace_terminal_close_confirm_message">关闭此标签页将终止其中仍在运行的任何进程。</string>
   <string name="workspace_terminal_close">关闭</string>
+    <string name="chat_generation_empty_retrying">检测到空回复，自动微扰重试（%1$d/%2$d）…</string>
     <string name="chat_generation_network_retrying">%1$s，正在重试（%2$d/%3$d）…</string>
     <string name="chat_generation_network_unknown_host">无法解析服务器地址</string>
     <string name="chat_generation_network_timeout">连接超时</string>

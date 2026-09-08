@@ -64,6 +64,7 @@ import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 private const val TAG = "GenerationHandler"
+private const val MAX_EMPTY_RESPONSE_RETRIES = 3
 private const val ROLLING_CONTEXT_SYSTEM_PROMPT =
     "The following is a rolling summary of earlier conversation turns. Use it as context, " +
         "but follow the latest messages when they differ:\n<rolling_context_summary>"
@@ -739,6 +740,7 @@ class GenerationLoop(
                 addAll(model.customBodies)
             },
             sessionId = conversationId?.toString(),
+            systemPromptInChat = assistant.enableAntiEmptyResponse,
         )
         try {
             if (stream) {
@@ -756,18 +758,23 @@ class GenerationLoop(
                         )
                     }
                 var retryCount = 0
+                var emptyRetryCount = 0
 
                 while (true) {
                     val streamChunkHandler = StreamChunkHandler(model)
                     var attemptMessages = responseBaseMessages
+                    // 防空回复：重试时对请求副本的末条用户消息做微扰（历史消息不动）
+                    val requestMessages =
+                        if (emptyRetryCount > 0) internalMessages.perturbForEmptyRetry(emptyRetryCount)
+                        else internalMessages
                     try {
                         providerImpl.streamText(
                             providerSetting = provider,
-                            messages = internalMessages,
+                            messages = requestMessages,
                             params = params
                         ).collect { chunk ->
                             try {
-                                if (retryCount > 0) {
+                                if (retryCount > 0 || emptyRetryCount > 0) {
                                     processingStatus.value = null
                                 }
                                 attemptMessages = streamChunkHandler.handle(attemptMessages, chunk)
@@ -780,6 +787,20 @@ class GenerationLoop(
                             }
                         }
                         messages = attemptMessages
+                        // 防空回复：无文本、无工具调用的空回复自动微扰重试（Gemini 常见）
+                        if (assistant.enableAntiEmptyResponse &&
+                            emptyRetryCount < MAX_EMPTY_RESPONSE_RETRIES &&
+                            messages.lastOrNull().isBlankAssistantReply()
+                        ) {
+                            emptyRetryCount++
+                            processingStatus.value = context.getString(
+                                R.string.chat_generation_empty_retrying,
+                                emptyRetryCount,
+                                MAX_EMPTY_RESPONSE_RETRIES,
+                            )
+                            Log.w(TAG, "Empty assistant reply, perturbing and retrying ($emptyRetryCount/$MAX_EMPTY_RESPONSE_RETRIES)")
+                            continue
+                        }
                         break
                     } catch (error: Throwable) {
                         if (error is StreamChunkHandlingException) {
@@ -794,17 +815,38 @@ class GenerationLoop(
                     }
                 }
             } else {
-                val result = executeProviderRequestWithRetry(
-                    processingStatus = processingStatus,
-                    enabled = settings.networkSetting.enableAutoRetry,
-                ) {
-                    providerImpl.generateText(
-                        providerSetting = provider,
-                        messages = internalMessages,
-                        params = params,
-                    )
+                var emptyRetryCount = 0
+                // 每次空回复重试都基于同一快照合并结果，避免把空回复消息残留在历史里
+                val baseMessages = messages
+                while (true) {
+                    val requestMessages =
+                        if (emptyRetryCount > 0) internalMessages.perturbForEmptyRetry(emptyRetryCount)
+                        else internalMessages
+                    val result = executeProviderRequestWithRetry(
+                        processingStatus = processingStatus,
+                        enabled = settings.networkSetting.enableAutoRetry,
+                    ) {
+                        providerImpl.generateText(
+                            providerSetting = provider,
+                            messages = requestMessages,
+                            params = params,
+                        )
+                    }
+                    messages = baseMessages.handleTextGenerationResult(result = result, model = model)
+                    if (assistant.enableAntiEmptyResponse &&
+                        emptyRetryCount < MAX_EMPTY_RESPONSE_RETRIES &&
+                        messages.lastOrNull().isBlankAssistantReply()
+                    ) {
+                        emptyRetryCount++
+                        processingStatus.value = context.getString(
+                            R.string.chat_generation_empty_retrying,
+                            emptyRetryCount,
+                            MAX_EMPTY_RESPONSE_RETRIES,
+                        )
+                        continue
+                    }
+                    break
                 }
-                messages = messages.handleTextGenerationResult(result = result, model = model)
                 onUpdateMessages(messages)
             }
         } finally {
@@ -1087,6 +1129,43 @@ private fun buildUserContext(
     _lastUserContextKey = key
     _lastUserContext = result
     return result
+}
+
+/**
+ * 防空回复：判断最后一条消息是否为"空回复"——
+ * 没有任何文本、工具调用的助手消息（仅 Reasoning 也算空，用户看不到可用内容）。
+ */
+private fun UIMessage?.isBlankAssistantReply(): Boolean {
+    if (this == null || role != MessageRole.ASSISTANT) return false
+    return parts.none { part ->
+        part is UIMessagePart.Tool || (part is UIMessagePart.Text && part.text.isNotBlank())
+    }
+}
+
+/**
+ * 防空回复：对请求副本的末条用户消息做微扰后重发。
+ * 既然标点能翻转结果说明离失败边界很近，多个变体轮着试命中率高得多。
+ * 只改请求副本，不触碰历史消息（UI/存储保持原样）。
+ */
+private fun List<UIMessage>.perturbForEmptyRetry(attempt: Int): List<UIMessage> {
+    val index = indexOfLast { it.role == MessageRole.USER }
+    if (index < 0) return this
+    val message = this[index]
+    val partIndex = message.parts.indexOfFirst { it is UIMessagePart.Text && it.text.isNotBlank() }
+    if (partIndex < 0) return this
+    val part = message.parts[partIndex] as UIMessagePart.Text
+    val base = part.text.trimEnd()
+    val perturbed = when (attempt % 4) {
+        1 -> if (base.endsWith(".")) base.dropLast(1) else "$base."   // 删/加句号
+        2 -> "$base ."                                                // 加 " ."
+        3 -> if (base.endsWith("。")) base.dropLast(1) else "$base。"  // 删/加中文句号
+        else -> "$base "                                              // 加空格
+    }.let { if (it == part.text) "$base.." else it }                  // 兜底保证有实际变化
+    return toMutableList().apply {
+        set(index, message.copy(parts = message.parts.toMutableList().also {
+            it[partIndex] = part.copy(text = perturbed)
+        }))
+    }
 }
 
 /**

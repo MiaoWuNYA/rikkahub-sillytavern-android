@@ -33,13 +33,67 @@ class GoogleRequestMessageTest {
     }
 
     // Helper to invoke private buildContents method via reflection
-    private fun invokeBuildContents(messages: List<UIMessage>): JsonArray {
+    private fun invokeBuildContents(
+        messages: List<UIMessage>,
+        systemPromptInChat: Boolean = false,
+        imageOutput: Boolean = false,
+    ): JsonArray {
         val method = GoogleProvider::class.java.getDeclaredMethod(
             "buildContents",
-            List::class.java
+            List::class.java,
+            Boolean::class.java,
+            Boolean::class.java,
         )
         method.isAccessible = true
-        return method.invoke(provider, messages) as JsonArray
+        return method.invoke(provider, messages, systemPromptInChat, imageOutput) as JsonArray
+    }
+
+    @Test
+    fun `systemPromptInChat converts system messages to user turns in place with model ack`() {
+        // 防空回复：系统提示词进对话流。SYSTEM 消息原位转 user 轮（世界书 AT_DEPTH 注入位置不变），
+        // 首个系统块后插入假 model 确认轮
+        val messages = listOf(
+            UIMessage.system("You are a roleplay character"),
+            UIMessage.user("Hello"),
+            UIMessage.assistant("Hi!"),
+            UIMessage.system("[World info entry triggered at depth]"),
+            UIMessage.user("Continue"),
+        )
+
+        val result = invokeBuildContents(messages, systemPromptInChat = true)
+
+        assertEquals(6, result.size)
+        assertEquals("user", result[0].jsonObject["role"]?.jsonPrimitive?.content)
+        val sysText = result[0].jsonObject["parts"]!!.jsonArray[0].jsonObject["text"]?.jsonPrimitive?.content
+        assertEquals("You are a roleplay character", sysText)
+        // 假 model 确认轮
+        assertEquals("model", result[1].jsonObject["role"]?.jsonPrimitive?.content)
+        assertEquals(
+            "Understood.",
+            result[1].jsonObject["parts"]!!.jsonArray[0].jsonObject["text"]?.jsonPrimitive?.content
+        )
+        assertEquals("user", result[2].jsonObject["role"]?.jsonPrimitive?.content)
+        assertEquals("model", result[3].jsonObject["role"]?.jsonPrimitive?.content)
+        // 第二个 SYSTEM 消息（世界书深度注入）原位保留为 user 轮，无第二条确认
+        assertEquals("user", result[4].jsonObject["role"]?.jsonPrimitive?.content)
+        assertEquals(
+            "[World info entry triggered at depth]",
+            result[4].jsonObject["parts"]!!.jsonArray[0].jsonObject["text"]?.jsonPrimitive?.content
+        )
+        assertEquals("user", result[5].jsonObject["role"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `systemPromptInChat off keeps legacy behavior of dropping system messages`() {
+        val messages = listOf(
+            UIMessage.system("You are a roleplay character"),
+            UIMessage.user("Hello"),
+        )
+
+        val result = invokeBuildContents(messages, systemPromptInChat = false)
+
+        assertEquals(1, result.size)
+        assertEquals("user", result[0].jsonObject["role"]?.jsonPrimitive?.content)
     }
 
     @Test

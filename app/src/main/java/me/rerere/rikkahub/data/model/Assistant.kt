@@ -30,6 +30,8 @@ data class Assistant(
     // 上下文消息条数上限, 超出后阶梯式截断; 0 表示不限制
     val contextMessageLimit: Int = 0,
     val streamOutput: Boolean = true,
+    // 防空回复（针对 Gemini）：系统提示词移入对话流 + 空回复自动微扰重试，默认关闭
+    val enableAntiEmptyResponse: Boolean = false,
     val enableMemory: Boolean = false,
     val useGlobalMemory: Boolean = false, // 使用全局共享记忆而非助手隔离记忆
     // 记忆 RAG：基于嵌入向量对记忆做语义检索（词法兜底），只注入与当前对话相关的记忆

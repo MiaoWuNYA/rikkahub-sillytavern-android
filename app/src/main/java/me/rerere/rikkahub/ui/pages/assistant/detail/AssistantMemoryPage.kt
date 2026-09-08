@@ -308,6 +308,26 @@ private fun AssistantMemoryContent(
                 }
             )
             item(
+                headlineContent = { Text(stringResource(R.string.assistant_page_anti_empty_response)) },
+                supportingContent = {
+                    Text(
+                        text = stringResource(R.string.assistant_page_anti_empty_response_desc),
+                    )
+                },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.enableAntiEmptyResponse,
+                        onCheckedChange = {
+                            onUpdateAssistant(
+                                assistant.copy(
+                                    enableAntiEmptyResponse = it
+                                )
+                            )
+                        }
+                    )
+                }
+            )
+            item(
                 headlineContent = { Text(stringResource(R.string.assistant_page_time_reminder)) },
                 supportingContent = {
                     Text(

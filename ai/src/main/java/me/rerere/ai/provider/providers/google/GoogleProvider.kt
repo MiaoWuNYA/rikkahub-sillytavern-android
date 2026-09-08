@@ -324,8 +324,13 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
         params: TextGenerationParams
     ): JsonObject = buildJsonObject {
         // System message if available
+        // 防空回复（systemPromptInChat）：不走 systemInstruction，系统提示词改为进对话流（见 buildContents），
+        // 论坛验证的 Gemini 空回复 workaround：以假 user/model 历史轮承载系统提示，长上下文更稳
         val systemMessage = messages.firstOrNull { it.role == MessageRole.SYSTEM }
-        if (systemMessage != null && !params.model.outputModalities.contains(Modality.IMAGE)) {
+        if (systemMessage != null &&
+            !params.model.outputModalities.contains(Modality.IMAGE) &&
+            !params.systemPromptInChat
+        ) {
             put("systemInstruction", buildJsonObject {
                 putJsonArray("parts") {
                     add(buildJsonObject {
@@ -387,7 +392,11 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
         // Contents (user messages)
         put(
             "contents",
-            buildContents(messages)
+            buildContents(
+                messages = messages,
+                systemPromptInChat = params.systemPromptInChat,
+                imageOutput = params.model.outputModalities.contains(Modality.IMAGE),
+            )
         )
 
         // Client function tools and model built-in tools share the same array.
@@ -646,17 +655,41 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
         }
     }
 
-    private fun buildContents(messages: List<UIMessage>): JsonArray {
+    private fun buildContents(messages: List<UIMessage>, systemPromptInChat: Boolean = false, imageOutput: Boolean = false): JsonArray {
         return buildJsonArray {
-            messages
-                .filter { it.role != MessageRole.SYSTEM && it.isValidToUpload() }
-                .forEach { message ->
-                    if (message.role == MessageRole.ASSISTANT) {
-                        addModelMessage(message)
-                    } else {
-                        addUserMessage(message)
+            var ackInserted = false
+            messages.forEach { message ->
+                if (message.role == MessageRole.SYSTEM) {
+                    // 防空回复：系统提示词进对话流 —— SYSTEM 消息原位转为 user 轮，
+                    // 保留位置（世界书 AT_DEPTH / 人设 / 冻结锚点等注入不丢、不挪），
+                    // 首个系统块后跟一条假 model 确认轮，避免模型把系统内容当成用户提问
+                    if (!systemPromptInChat || imageOutput) return@forEach
+                    add(buildJsonObject {
+                        put("role", "user")
+                        putJsonArray("parts") {
+                            message.parts.filterIsInstance<UIMessagePart.Text>().forEach { part ->
+                                add(buildJsonObject { put("text", part.text) })
+                            }
+                        }
+                    })
+                    if (!ackInserted) {
+                        ackInserted = true
+                        add(buildJsonObject {
+                            put("role", "model")
+                            putJsonArray("parts") {
+                                add(buildJsonObject { put("text", "Understood.") })
+                            }
+                        })
                     }
+                    return@forEach
                 }
+                if (!message.isValidToUpload()) return@forEach
+                if (message.role == MessageRole.ASSISTANT) {
+                    addModelMessage(message)
+                } else {
+                    addUserMessage(message)
+                }
+            }
         }
     }
 

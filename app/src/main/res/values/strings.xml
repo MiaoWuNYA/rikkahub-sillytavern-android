@@ -46,6 +46,8 @@
   <string name="assistant_page_add">Add</string>
   <string name="assistant_page_add_body">Add Body</string>
   <string name="assistant_page_add_header">Add Header</string>
+  <string name="assistant_page_anti_empty_response">Anti Empty Reply (Gemini)</string>
+  <string name="assistant_page_anti_empty_response_desc">Moves the system prompt into the conversation flow (fake user/model turns) and automatically perturbs the last message and retries when the model returns an empty reply. Recommended for Gemini</string>
   <string name="assistant_page_allow_conversation_system_prompt">Per-Conversation System Prompt</string>
   <string name="assistant_page_allow_conversation_system_prompt_desc">Allow each conversation to override the assistant\'s system prompt</string>
   <string name="assistant_page_allow_conversation_prompt_injection">Per-Conversation Prompt Injections</string>
@@ -1872,6 +1874,7 @@
   <string name="setting_provider_page_test_tool_call">Tool Call</string>
   <string name="setting_provider_page_test_tool_called">Called: %1$s  Args: %2$s</string>
   <string name="setting_provider_page_test_tool_not_called">Tool not called, response: %s</string>
+  <string name="chat_generation_empty_retrying">Empty reply detected, retrying with perturbation (%1$d/%2$d)…</string>
   <string name="chat_generation_network_retrying">%1$s. Retrying (%2$d/%3$d)…</string>
   <string name="chat_generation_network_unknown_host">Unable to resolve server address</string>
   <string name="chat_generation_network_timeout">Connection timed out</string>
