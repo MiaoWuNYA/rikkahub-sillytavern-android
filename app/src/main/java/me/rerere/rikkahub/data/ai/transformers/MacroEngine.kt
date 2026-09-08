@@ -512,9 +512,14 @@ class MacroEngine(
         // 新官方宏带参数时优先：旧宏忽略参数，避免 {{random::A::B}} / {{time::UTC}} /
         // {{charFirstMessage::n}} 被同名旧宏遮蔽后永远取不到参数语义
         // 注意：name 在 parse 时已统一转小写，分支标签必须用小写
+        // 提示词缓存：无参旧宏 {{random}}（1~100 随机数）在缓存友好模式下按稳定种子取值，
+        // 避免历史消息里的随机宏每轮重新掷导致前缀分叉
+        if (name == "random" && args.isEmpty() && state.ctx.assistant.cacheFriendlyRandomMacros) {
+            return (Math.floorMod(stableSeed(state, "random"), 100L) + 1).toString()
+        }
         if (args.isNotEmpty()) {
             when (name) {
-                "random" -> return randomPick(parseListArg(args))
+                "random" -> return randomPick(parseListArg(args), state)
                 "time" -> return timeMacro(args[0])
                 "charfirstmessage" -> return greetingMacro(args[0], state.ctx)
             }
@@ -532,9 +537,9 @@ class MacroEngine(
             "newline" -> "\n".repeat(args.firstOrNull()?.toIntOrNull()?.coerceIn(0, 100) ?: 1)
             "noop" -> ""
             "reverse" -> args.firstOrNull()?.reversed() ?: ""
-            "random" -> randomPick(parseListArg(args))
+            "random" -> randomPick(parseListArg(args), state)
             "pick" -> stablePick(parseListArg(args), state)
-            "roll" -> rollDice(args.firstOrNull() ?: "") ?: ""
+            "roll" -> rollDice(args.firstOrNull() ?: "", state) ?: ""
             "datetimeformat" -> formatDateTime(args.firstOrNull() ?: "")
             "time" -> timeMacro(args.firstOrNull())
             "timediff" -> timeDiff(args.getOrNull(0), args.getOrNull(1))
@@ -803,20 +808,33 @@ class MacroEngine(
         }
     }
 
-    private fun randomPick(list: List<String>): String {
+    private fun randomPick(list: List<String>, state: EvalState): String {
         if (list.isEmpty()) return ""
-        return list[Random.nextInt(list.size)]
+        // 提示词缓存：缓存友好模式下 random 与 pick 一样按（对话+内容+位置）稳定取值，
+        // 同一条消息每轮请求渲染结果一致，不打断前缀缓存；关闭后恢复每次随机
+        return if (state.ctx.assistant.cacheFriendlyRandomMacros) {
+            list[stableIndex(state, list.size, "random")]
+        } else {
+            list[Random.nextInt(list.size)]
+        }
     }
 
     /** 官方 pick：同一聊天 + 同一位置结果稳定（种子 = chat + 重掷种子 + 内容 hash + 位置）。 */
     private fun stablePick(list: List<String>, state: EvalState): String {
         if (list.isEmpty()) return ""
-        // /reroll-pick 修改本对话保留变量 __pick_reroll_seed，从而让所有 {{pick}} 换一批结果
+        return list[stableIndex(state, list.size, "pick")]
+    }
+
+    /**
+     * 稳定随机种子：同一对话 + 同一消息内容 + 同一位置 → 同一结果。
+     * /reroll-pick 修改本对话保留变量 __pick_reroll_seed，从而让所有随机宏换一批结果。
+     */
+    private fun stableSeed(state: EvalState, macro: String): Long {
         val rerollSeed = vars.get(state.ctx.conversationId?.toString(), "__pick_reroll_seed")?.toLongOrNull() ?: 0L
-        val seed = "${state.ctx.conversationId ?: "global"}|$rerollSeed|${state.contentHash}|${state.position}"
+        val seed = "${state.ctx.conversationId ?: "global"}|$rerollSeed|${state.contentHash}|${state.position}|$macro"
         state.position++
         val hash = MessageDigest.getInstance("MD5").digest(seed.toByteArray())
-        val longSeed = ((hash[0].toLong() and 0xff) shl 56) or
+        return ((hash[0].toLong() and 0xff) shl 56) or
             ((hash[1].toLong() and 0xff) shl 48) or
             ((hash[2].toLong() and 0xff) shl 40) or
             ((hash[3].toLong() and 0xff) shl 32) or
@@ -824,15 +842,23 @@ class MacroEngine(
             ((hash[5].toLong() and 0xff) shl 16) or
             ((hash[6].toLong() and 0xff) shl 8) or
             (hash[7].toLong() and 0xff)
-        return list[Math.floorMod(longSeed, list.size.toLong()).toInt()]
     }
 
+    private fun stableIndex(state: EvalState, size: Int, macro: String): Int =
+        Math.floorMod(stableSeed(state, macro), size.toLong()).toInt()
+
     /** 骰子：NdM±K / NdM（与现有 rollDice 同语义）。 */
-    private fun rollDice(expr: String): String? {
+    private fun rollDice(expr: String, state: EvalState): String? {
         val text = expr.trim().replace(" ", "")
         if (text.isEmpty()) return null
         val tokens = Regex("([+-]?\\d*d\\d+|[+-]?\\d+)", RegexOption.IGNORE_CASE).findAll(text).toList()
         if (tokens.isEmpty() || tokens.joinToString("") { it.value } != text) return null
+        // 提示词缓存：缓存友好模式下同一消息的同一处骰子结果稳定（见 stableSeed）
+        val rng = if (state.ctx.assistant.cacheFriendlyRandomMacros) {
+            Random(stableSeed(state, "roll"))
+        } else {
+            Random
+        }
         var total = 0
         for (token in tokens) {
             val raw = token.value
@@ -843,7 +869,7 @@ class MacroEngine(
                 val count = parts.getOrNull(0)?.toIntOrNull() ?: 1
                 val sides = parts.getOrNull(1)?.toIntOrNull() ?: return null
                 if (count <= 0 || sides <= 0 || count > 1000 || sides > 100000) return null
-                repeat(count) { total += sign * (Random.nextInt(sides) + 1) }
+                repeat(count) { total += sign * (rng.nextInt(sides) + 1) }
             } else {
                 total += sign * (body.toIntOrNull() ?: return null)
             }
@@ -960,7 +986,7 @@ class MacroEngine(
             MacroEntry("// 注释", "注释（不发送）", "随机与工具"),
             MacroEntry("pick::A::B::C", "稳定随机选一", "随机与工具"),
             MacroEntry("roll::2d6+1", "掷骰子", "随机与工具"),
-            MacroEntry("random::A::B::C", "随机选一（每次不同）", "随机与工具"),
+            MacroEntry("random::A::B::C", "随机选一（缓存友好时按消息稳定）", "随机与工具"),
             MacroEntry("space::N", "N个空格", "随机与工具"),
             MacroEntry("newline::N", "N个换行", "随机与工具"),
             MacroEntry("noop", "空", "随机与工具"),

@@ -147,6 +147,8 @@
   <string name="assistant_page_time_reminder_desc">시간 간격이 큰 메시지 앞에 자동으로 시간 알림을 삽입하여 AI가 대화 간격을 이해할 수 있도록 도와줍니다</string>
   <string name="assistant_page_cache_friendly_time">캐시 친화 시간 매크로</string>
   <string name="assistant_page_cache_friendly_time_desc">{{time}} 등 시간 매크로를 5분 단위로 맞춰 프롬프트 접두사 캐시를 유지합니다. 끄면 실시간 정밀도로 돌아갑니다</string>
+  <string name="assistant_page_cache_friendly_random">캐시 친화적 랜덤 매크로</string>
+  <string name="assistant_page_cache_friendly_random_desc">{{random}}/{{roll}} 등 랜덤 매크로를 메시지별로 고정하여 프롬프트 접두사 캐시를 유지합니다. 끄면 매번 랜덤으로 복원</string>
   <string name="assistant_page_title">어시스턴트 설정</string>
   <string name="assistant_page_top_p">Top P</string>
   <string name="assistant_page_top_p_value">Top P: %s</string>

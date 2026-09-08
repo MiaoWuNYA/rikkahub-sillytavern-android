@@ -347,6 +347,26 @@ private fun AssistantMemoryContent(
                     )
                 }
             )
+            item(
+                headlineContent = { Text(stringResource(R.string.assistant_page_cache_friendly_random)) },
+                supportingContent = {
+                    Text(
+                        text = stringResource(R.string.assistant_page_cache_friendly_random_desc),
+                    )
+                },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.cacheFriendlyRandomMacros,
+                        onCheckedChange = {
+                            onUpdateAssistant(
+                                assistant.copy(
+                                    cacheFriendlyRandomMacros = it
+                                )
+                            )
+                        }
+                    )
+                }
+            )
         }
 
         Box(

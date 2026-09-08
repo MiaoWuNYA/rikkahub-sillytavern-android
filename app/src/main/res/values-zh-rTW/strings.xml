@@ -147,6 +147,8 @@
   <string name="assistant_page_time_reminder_desc">自動在時間間隔較大的訊息前插入時間提醒，幫助 AI 理解對話間隔</string>
   <string name="assistant_page_cache_friendly_time">快取友好時間巨集</string>
   <string name="assistant_page_cache_friendly_time_desc">{{time}} 等時間巨集按 5 分鐘粒度取值，保持提示詞前綴快取有效；關閉後恢復即時精度</string>
+  <string name="assistant_page_cache_friendly_random">快取友善隨機巨集</string>
+  <string name="assistant_page_cache_friendly_random_desc">{{random}}/{{roll}} 等隨機巨集按訊息穩定取值，保持提示詞前綴快取有效；關閉後恢復每次隨機</string>
   <string name="assistant_page_title">助手設定</string>
   <string name="assistant_page_top_p">Top P</string>
   <string name="assistant_page_top_p_value">Top P: %s</string>

@@ -147,6 +147,8 @@
   <string name="assistant_page_time_reminder_desc">Автоматически добавлять напоминания о времени перед сообщениями с большими интервалами, чтобы помочь ИИ понимать паузы в разговоре</string>
   <string name="assistant_page_cache_friendly_time">Кэш-дружественные макросы времени</string>
   <string name="assistant_page_cache_friendly_time_desc">Макросы {{time}} и другие округляются до 5 минут, чтобы сохранить кэширование префикса промпта. Выключите для точного времени</string>
+  <string name="assistant_page_cache_friendly_random">Кэширование случайных макросов</string>
+  <string name="assistant_page_cache_friendly_random_desc">Макросы {{random}}/{{roll}} фиксируются для каждого сообщения, сохраняя кэш префикса промпта. Выключите, чтобы вернуть полную случайность</string>
   <string name="assistant_page_title">Настройки ассистента</string>
   <string name="assistant_page_top_p">Top P</string>
   <string name="assistant_page_top_p_value">Top P: %s</string>

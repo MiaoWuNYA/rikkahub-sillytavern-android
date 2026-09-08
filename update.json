@@ -1,11 +1,11 @@
 {
-  "version": "2.5.2fix3",
-  "publishedAt": "2026-09-08T04:10:00Z",
-  "changelog": "基于上游 2.5.2，保留酒馆/群聊等自定义功能。\n\n- Recent Chats 移出系统提示前缀区，改为尾部注入，系统提示完全静态\n- 前缀分叉诊断升级：字符级差异定位（首个差异位置 + 上下文窗口）\n- 发布包仅 arm64-v8a 单一 APK",
+  "version": "2.5.2fix4",
+  "publishedAt": "2026-09-08T04:25:00Z",
+  "changelog": "基于上游 2.5.2，保留酒馆/群聊等自定义功能。\n\n- {{random}}/{{roll}} 随机宏按消息稳定取值，历史消息不再每轮重新掷随机数，前缀缓存不再被打断\n- 新增「缓存友好随机宏」开关（默认开）",
   "downloads": [
     {
-      "name": "rikkahub-plus-2.5.2fix3-arm64-v8a.apk",
-      "url": "https://github.com/MiaoWuNYA/rikkahub-plus/releases/download/v2.5.2fix3/rikkahub-plus-2.5.2fix3-arm64-v8a.apk",
+      "name": "rikkahub-plus-2.5.2fix4-arm64-v8a.apk",
+      "url": "https://github.com/MiaoWuNYA/rikkahub-plus/releases/download/v2.5.2fix4/rikkahub-plus-2.5.2fix4-arm64-v8a.apk",
       "size": "约 110 MB"
     }
   ]

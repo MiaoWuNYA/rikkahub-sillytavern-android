@@ -522,9 +522,14 @@ class MacroEngineTest {
             "带参数 time 被旧宏遮蔽",
             e.substitute("{{time::UTC+8}}", ctx()).matches(Regex("\\d{2}:\\d{2}"))
         )
-        // 无参数时旧宏语义保留
-        assertEquals("LEGACY_RANDOM", e.substitute("{{random}}", ctx()))
         assertEquals("LEGACY_TIME", e.substitute("{{time}}", ctx()))
+        // 无参数 {{random}}：缓存友好模式（默认开）下按稳定种子取 1~100，同一内容两次求值一致
+        val cacheFriendlyOut = e.substitute("{{random}}", ctx())
+        assertTrue("缓存友好 random 应为 1~100: $cacheFriendlyOut", cacheFriendlyOut.toInt() in 1..100)
+        assertEquals(cacheFriendlyOut, e.substitute("{{random}}", ctx()))
+        // 关闭缓存友好开关后旧宏语义保留
+        val legacyAssistant = Assistant(cacheFriendlyRandomMacros = false)
+        assertEquals("LEGACY_RANDOM", e.substitute("{{random}}", ctx(assistant = legacyAssistant)))
     }
 
     @Test
