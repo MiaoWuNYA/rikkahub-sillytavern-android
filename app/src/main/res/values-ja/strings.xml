@@ -145,6 +145,8 @@
   <string name="assistant_page_thinking_budget">思考バジェット</string>
   <string name="assistant_page_time_reminder">時間リマインダー</string>
   <string name="assistant_page_time_reminder_desc">会話の間隔が大きいメッセージの前に自動で時刻リマインダーを挿入し、AIが会話の間隔を理解しやすくします</string>
+  <string name="assistant_page_cache_friendly_time">キャッシュ対応時間マクロ</string>
+  <string name="assistant_page_cache_friendly_time_desc">{{time}} などの時間マクロを5分単位で丸め、プロンプトのプレフィックスキャッシュを有効に保ちます。オフでリアルタイム精度に戻ります</string>
   <string name="assistant_page_title">アシスタント設定</string>
   <string name="assistant_page_top_p">Top P</string>
   <string name="assistant_page_top_p_value">Top P: %s</string>

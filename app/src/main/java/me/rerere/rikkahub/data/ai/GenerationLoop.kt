@@ -625,6 +625,14 @@ class GenerationLoop(
             }
 
             addAll(limitedChat.withMessageNames())
+
+            // 提示词缓存：日期按天变化，注入到上下文尾部（历史消息之后），
+            // 避免跨天时打断整个静态前缀（system prompt + 角色卡 + 世界书锚点区）
+            add(
+                UIMessage.system(
+                    "<system-reminder>Current date: ${java.time.LocalDate.now()}.</system-reminder>"
+                )
+            )
         }.let { base ->
             val persona = settings.personas.find { it.id == settings.activePersonaId }
             if (persona != null && persona.enabled && persona.description.isNotBlank() &&
@@ -1010,7 +1018,9 @@ private fun buildUserContext(
     }
 
     // 对标 CC getUserContext: currentDate
-    contextMap["currentDate"] = "Today's date is ${java.time.LocalDate.now()}."
+    // 提示词缓存：日期已改为注入上下文尾部（generateInternal 的 buildList），
+    // 不再放进历史消息之前的前缀区，避免跨天打断整个静态前缀
+    // contextMap["currentDate"] = "Today's date is ${java.time.LocalDate.now()}."
 
     if (contextMap.isEmpty()) return ""
 

@@ -33,6 +33,7 @@ import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 // context/settingsStore 允许为 null：仅供纯 JVM 单元测试构造（真实管线始终传入非空值）
@@ -133,7 +134,7 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
 
         // 对齐酒馆核心宏
         placeholder("time", { Text(stringResource(R.string.placeholder_time)) }) {
-            LocalTime.now().format(
+            cacheFriendlyNow(it.assistant.cacheFriendlyTimeMacros).format(
                 DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
                     .withLocale(Locale.getDefault())
             )
@@ -190,7 +191,13 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
         placeholder("idleDuration", { Text(stringResource(R.string.placeholder_idle_duration)) }) {
             val lastUser = it.lastRealMessage(MessageRole.USER) ?: return@placeholder ""
             val instant = lastUser.createdAt.toInstant(KtzTimeZone.currentSystemDefault())
-            val diff = Clock.System.now() - instant
+            // 缓存友好模式：取值对齐 5 分钟边界，避免每分钟变化打断前缀缓存
+            val now = if (it.assistant.cacheFriendlyTimeMacros) {
+                Clock.System.now() - (Clock.System.now().epochSeconds % 300).seconds
+            } else {
+                Clock.System.now()
+            }
+            val diff = now - instant
             when {
                 diff < 1.minutes -> "刚刚"
                 diff < 60.minutes -> "${diff.inWholeMinutes} 分钟前"
@@ -254,7 +261,7 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
         }
         placeholder("isotime", { Text("ISO时间") }) {
             // 官方 macro-time-macros.js：{{isotime}} = HH:mm
-            LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
+            cacheFriendlyNow(it.assistant.cacheFriendlyTimeMacros).format(DateTimeFormatter.ofPattern("HH:mm"))
         }
 
         placeholder("original", { Text(stringResource(R.string.placeholder_original)) }) {
@@ -323,6 +330,18 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
         .ofLocalizedDate(FormatStyle.MEDIUM)
         .withLocale(Locale.getDefault())
         .format(this)
+
+    /**
+     * 提示词缓存优化：时间宏取值对齐 5 分钟边界。
+     * {{time}}/{{isotime}} 若按实时取值，每分钟都会改写提示词前缀，打断 LLM 供应商的
+     * 前缀缓存；对齐到 5 分钟窗口后，同一窗口内的请求共享同一取值，只在窗口翻转时失效。
+     * 关闭（cacheFriendlyTimeMacros=false）时保持实时精度。
+     */
+    private fun cacheFriendlyNow(cacheFriendly: Boolean): LocalTime {
+        if (!cacheFriendly) return LocalTime.now()
+        val now = LocalTime.now()
+        return now.minusMinutes((now.minute % 5).toLong()).withSecond(0).withNano(0)
+    }
 
     private fun Context.batteryLevel(): Int {
         val batteryManager = getSystemService(Context.BATTERY_SERVICE) as BatteryManager

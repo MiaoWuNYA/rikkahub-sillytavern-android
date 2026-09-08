@@ -25,6 +25,7 @@ import me.rerere.hugeicons.stroke.Upload02
 import me.rerere.hugeicons.stroke.Zap
 import me.rerere.rikkahub.ui.context.LocalSettings
 import me.rerere.rikkahub.utils.formatNumber
+import kotlin.math.roundToInt
 import me.rerere.rikkahub.utils.toFixed
 import java.time.Duration
 
@@ -60,10 +61,13 @@ fun ChatMessageNerdLine(
                         },
                         content = {
                             Text(text = "${usage.promptTokens.formatNumber()} tokens")
-                            // Cached tokens
+                            // Cached tokens（DeepSeek prompt_cache_hit_tokens 等）；总量有效时附带命中率
                             if (usage.cachedTokens > 0) {
+                                val hitRate = if (usage.promptTokens > 0) {
+                                    " / ${(usage.cachedTokens * 100f / usage.promptTokens).roundToInt()}%"
+                                } else ""
                                 Text(
-                                    text = "(${message.usage?.cachedTokens?.formatNumber() ?: "0"} cached)"
+                                    text = "(${message.usage?.cachedTokens?.formatNumber() ?: "0"} cached$hitRate)"
                                 )
                             }
                         }

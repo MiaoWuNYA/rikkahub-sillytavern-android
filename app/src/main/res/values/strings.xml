@@ -158,6 +158,8 @@
   <string name="assistant_page_thinking_budget">Thinking Budget</string>
   <string name="assistant_page_time_reminder">Time Reminder</string>
   <string name="assistant_page_time_reminder_desc">Automatically inject time reminders before messages with large time gaps to help AI understand conversation intervals</string>
+  <string name="assistant_page_cache_friendly_time">Cache-Friendly Time Macros</string>
+  <string name="assistant_page_cache_friendly_time_desc">Snap {{time}} and other time macros to 5-minute granularity so prompt prefix caching stays effective. Turn off for real-time precision</string>
   <string name="assistant_page_title">Assistant Settings</string>
   <string name="assistant_page_top_p">Top P</string>
   <string name="assistant_page_top_p_value">Top P: %s</string>

@@ -7,7 +7,6 @@ import me.rerere.ai.provider.EmbeddingGenerationParams
 import me.rerere.ai.provider.ModelType
 import me.rerere.ai.provider.ProviderManager
 import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.ai.buildMemoryPrompt
 import me.rerere.rikkahub.data.model.MemoryType
 import me.rerere.rikkahub.data.repository.MemoryRepository
@@ -77,19 +76,10 @@ class MemoryRetrievalTransformer(
             maxChars = RAG_MEMORY_PROMPT_CHAR_BUDGET,
         )
         if (contextPrompt.isBlank()) return@withContext messages
-        val systemIndex = messages.indexOfFirst { it.role == me.rerere.ai.core.MessageRole.SYSTEM }
-        if (systemIndex >= 0) {
-            val system = messages[systemIndex]
-            val originalText = system.parts.filterIsInstance<UIMessagePart.Text>()
-                .joinToString("\n") { it.text }
-            messages.toMutableList().apply {
-                this[systemIndex] = system.copy(
-                    parts = listOf(UIMessagePart.Text("$originalText\n\n$contextPrompt")),
-                )
-            }
-        } else {
-            listOf(UIMessage.system(contextPrompt)) + messages
-        }
+        // 提示词缓存：检索结果每轮随查询变化，必须注入上下文尾部（本 transformer 在
+        // 注入链最后执行，追加即落在最后一条消息之后），只失效尾部前缀。
+        // 旧实现改写第 0 条 system 消息（前缀最顶部），缓存率直接归零。
+        messages + UIMessage.system(contextPrompt)
     }
 
     private suspend fun semanticSearch(

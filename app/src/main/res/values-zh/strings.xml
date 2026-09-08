@@ -159,6 +159,8 @@
   <string name="assistant_page_thinking_budget">思考预算</string>
   <string name="assistant_page_time_reminder">时间提醒</string>
   <string name="assistant_page_time_reminder_desc">在间隔较大的消息前自动插入时间提醒，帮助 AI 理解对话间隔</string>
+  <string name="assistant_page_cache_friendly_time">缓存友好时间宏</string>
+  <string name="assistant_page_cache_friendly_time_desc">{{time}} 等时间宏按 5 分钟粒度取值，保持提示词前缀缓存有效；关闭后恢复实时精度</string>
   <string name="assistant_page_title">助手设置</string>
   <string name="assistant_page_top_p">Top P</string>
   <string name="assistant_page_top_p_value">Top P: %s</string>

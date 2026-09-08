@@ -327,6 +327,26 @@ private fun AssistantMemoryContent(
                     )
                 }
             )
+            item(
+                headlineContent = { Text(stringResource(R.string.assistant_page_cache_friendly_time)) },
+                supportingContent = {
+                    Text(
+                        text = stringResource(R.string.assistant_page_cache_friendly_time_desc),
+                    )
+                },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.cacheFriendlyTimeMacros,
+                        onCheckedChange = {
+                            onUpdateAssistant(
+                                assistant.copy(
+                                    cacheFriendlyTimeMacros = it
+                                )
+                            )
+                        }
+                    )
+                }
+            )
         }
 
         Box(
