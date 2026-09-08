@@ -98,6 +98,8 @@ import me.rerere.rikkahub.data.ai.context.createRollingContextPlan
 import me.rerere.rikkahub.data.ai.context.isStillApplicableTo
 import me.rerere.rikkahub.data.ai.context.rollingContextWindowStartIndex
 import me.rerere.rikkahub.data.ai.context.splitTextForTokenBudget
+import me.rerere.rikkahub.data.ai.context.estimateTextTokens
+import me.rerere.rikkahub.data.ai.context.MAX_SUMMARY_TOKENS
 import me.rerere.rikkahub.data.ai.transformers.DocumentAsPromptTransformer
 import me.rerere.rikkahub.data.ai.transformers.OcrTransformer
 import me.rerere.rikkahub.data.ai.transformers.PlaceholderTransformer
@@ -2040,8 +2042,16 @@ class ChatService(
         ) {
             throw IllegalStateException("Conversation changed while compression was running")
         }
+        // 提示词缓存：摘要采用追加式——旧摘要文本字节级冻结（由代码拼接，不依赖模型复述），
+        // 新摘要追加在其后。重新压缩时 token 前缀在旧摘要结束前保持一致，不再清零缓存。
+        // 仅当旧摘要超出承载上限（或用户手动强制压缩）时才整体重写（一次性缓存失效）。
+        val carried = plan.previousSummary?.content.orEmpty()
+        val appendCarried = !force &&
+            carried.isNotBlank() &&
+            estimateTextTokens(carried) + estimateTextTokens(summary) < MAX_SUMMARY_TOKENS
+        val finalContent = if (appendCarried) "$carried\n\n$summary" else summary
         val newSummary = RollingContextSummary(
-            content = summary,
+            content = finalContent,
             sourceMessageIds = plan.sourceMessageIds,
             updatedAtMillis = System.currentTimeMillis(),
         )
@@ -2107,7 +2117,9 @@ class ChatService(
 
     private fun me.rerere.rikkahub.data.ai.context.RollingContextPlan.toCompressionContent(): String = buildString {
         previousSummary?.let { summary ->
-            appendLine("[Previous rolling summary]")
+            // 追加式摘要：旧摘要仅作为参考上下文，模型输出只覆盖新增消息；
+            // 旧文本由调用方代码原样拼接，不经模型复述（保证前缀缓存字节级稳定）
+            appendLine("[Existing summary for reference only — do NOT repeat it in your output]")
             appendLine(summary.content)
             appendLine()
         }

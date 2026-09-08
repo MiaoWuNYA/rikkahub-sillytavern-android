@@ -1,16 +1,11 @@
 {
-  "version": "2.5.0",
-  "publishedAt": "2026-09-07T21:40:00Z",
-  "changelog": "基于上游 2.5.0，保留酒馆/群聊等自定义功能。\n\n- 合入上游最新版本 rikkahub v2.5.0\n- 移植 Rikkahub-Revised 记忆系统增强（语义记忆 RAG）与上下文滚动压缩\n- 彻底移除命理工具\n- 更新源已切换到本仓库",
+  "version": "2.5.2fix2",
+  "publishedAt": "2026-09-08T04:00:00Z",
+  "changelog": "基于上游 2.5.2，保留酒馆/群聊等自定义功能。\n\n- 滚动压缩摘要改为追加式：旧摘要文本字节级冻结，压缩不再清零前缀缓存\n- 前缀分叉诊断增强：显示分叉消息角色、识别「前缀追加」形态",
   "downloads": [
     {
-      "name": "rikkahub-plus-2.5.0-arm64-v8a.apk",
-      "url": "https://github.com/MiaoWuNYA/rikkahub-plus/releases/download/v2.5.0/rikkahub-plus-2.5.0-arm64-v8a.apk",
-      "size": "约 107 MB"
-    },
-    {
-      "name": "rikkahub-plus-2.5.0-universal.apk",
-      "url": "https://github.com/MiaoWuNYA/rikkahub-plus/releases/download/v2.5.0/rikkahub-plus-2.5.0-universal.apk",
+      "name": "rikkahub-plus-2.5.2fix2-arm64-v8a.apk",
+      "url": "https://github.com/MiaoWuNYA/rikkahub-plus/releases/download/v2.5.2fix2/rikkahub-plus-2.5.2fix2-arm64-v8a.apk",
       "size": "约 107 MB"
     }
   ]

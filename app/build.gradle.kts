@@ -56,8 +56,8 @@ android {
         applicationId = "me.rerere.rikkahub"
         minSdk = 26
         targetSdk = 37
-        versionCode = 188
-        versionName = "2.5.2fix1"
+        versionCode = 189
+        versionName = "2.5.2fix2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -75,7 +75,7 @@ android {
             isEnable = !isBuildingBundle
             reset()
             include("arm64-v8a")
-            isUniversalApk = true
+            isUniversalApk = false
         }
     }
     signingConfigs {

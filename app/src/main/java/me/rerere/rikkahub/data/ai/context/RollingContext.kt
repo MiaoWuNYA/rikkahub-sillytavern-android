@@ -294,4 +294,4 @@ private const val MIN_RECENT_MESSAGE_COUNT = 1
 private const val RECENT_WINDOW_RATIO = 0.55f
 private const val SUMMARY_TARGET_DIVISOR = 4
 private const val MIN_SUMMARY_TOKENS = 512
-private const val MAX_SUMMARY_TOKENS = 8_000
+internal const val MAX_SUMMARY_TOKENS = 8_000

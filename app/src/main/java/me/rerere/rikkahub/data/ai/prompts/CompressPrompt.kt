@@ -1,7 +1,7 @@
 package me.rerere.rikkahub.data.ai.prompts
 
 internal val DEFAULT_COMPRESS_PROMPT = """
-    You are a conversation compression assistant. Compress the following conversation into a concise summary.
+    You are a conversation compression assistant. Compress the conversation into a concise summary.
 
     Requirements:
     1. Preserve key facts, decisions, and important context that would be needed to continue the conversation
@@ -11,6 +11,7 @@ internal val DEFAULT_COMPRESS_PROMPT = """
     5. Format the summary as context information that can be used to continue the conversation
     6. Use {locale} language
     7. Start the output with a clear indicator that this is a summary (e.g., "[Summary of previous conversation]" or equivalent in the target language)
+    8. If the input contains an "[Existing summary ...]" section, treat it as reference context ONLY: do NOT repeat, rewrite, or rephrase it. Your output must cover only the NEW conversation that follows it
 
     {additional_context}
 
