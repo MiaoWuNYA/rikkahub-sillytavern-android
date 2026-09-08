@@ -12,7 +12,7 @@
 
 An AI chat client that runs on your phone (Kotlin + Jetpack Compose + Material You):
 
-- **Prompt prefix caching**: modeled on the DeepSeek Harness prefix-stability design — long-conversation token costs can drop by up to 90%
+- **Prompt prefix caching**: drawing on the DeepSeek Harness prefix-stability design — can significantly reduce long-conversation token costs
 - **Memory & long conversations**: semantic memory RAG + rolling context compression — long chats no longer forget or blow the context window
 - **Multi-provider**: OpenAI / Claude / Gemini / DeepSeek — any OpenAI-, Anthropic-, or Google-compatible API (with a built-in OrcaRouter aggregation gateway, disabled by default)
 - **Deep SillyTavern compatibility**: character cards, lorebooks, presets, regex scripts, quick replies (QR), HTML cards, multiple greetings — all imported/exported losslessly with official semantics
@@ -23,9 +23,9 @@ An AI chat client that runs on your phone (Kotlin + Jetpack Compose + Material Y
 
 ## ⚡ Prompt Prefix Cache
 
-Major providers (DeepSeek / Kimi / Claude, etc.) offer automatic prefix caching: if a request's prefix is byte-identical to the previous one, it's a cache hit and tokens cost roughly 1/10. But in chat, a lot of content **changes every turn** (timestamps, recent chats, memories, random numbers, rolling summaries) — once the prefix diverges, the whole cache is dead.
+Major providers (DeepSeek / Kimi / Claude, etc.) offer automatic prefix caching: if a request's prefix is byte-identical to the previous one, it's a cache hit, and the cached portion is billed far below the normal rate. But in chat, a lot of content **changes every turn** (timestamps, recent chats, memories, random numbers, rolling summaries) — once the prefix diverges, the whole cache is dead.
 
-Modeled on the DeepSeek Harness prefix-stability design, this fork systematically eliminates those divergence points:
+Drawing on the DeepSeek Harness prefix-stability design, this fork targets those common divergence points:
 
 - **Frozen anchors for dynamic context**: when injected dynamic content (recent chats, memory references, …) changes, the old block stays **frozen in place** and the new block is appended at the tail — dynamic content no longer drifts backward with history, so divergence only happens near the tail
 - **Per-message-stable random macros**: `{{random}}` / `{{pick}}` and other random macros resolve deterministically per message — history no longer re-rolls its dice every turn
@@ -33,7 +33,7 @@ Modeled on the DeepSeek Harness prefix-stability design, this fork systematicall
 - **Injection-position hygiene**: full memory injection moved to the tail of the context, Recent Chats moved out of the prefix zone — no volatile content left on the hot path
 - **Prefix divergence diagnostics**: a built-in diagnostic view compares consecutive requests message by message, showing the common prefix and estimated hit rate, with **character-level diff location** — you can always see exactly why the cache missed
 
-Result: 90%+ hit rates in steady chat, long-conversation token costs close to one-tenth.
+Actual results vary by conversation shape: in steady, append-only chats the cache hit rate and long-conversation costs improve noticeably — the exact hit rate and savings depend on how often content changes and on each provider's cache pricing.
 
 ---
 
