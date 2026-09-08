@@ -246,6 +246,7 @@ class ChatCompletionsAPI(
                     includeHistoryReasoning = providerSetting.includeHistoryReasoning,
                     includeOpenRouterReasoningDetails = isOpenRouter,
                     supportInputModalities = params.model.inputModalities,
+                    systemPromptInChat = params.systemPromptInChat,
                 )
             )
 
@@ -462,10 +463,27 @@ class ChatCompletionsAPI(
         includeHistoryReasoning: Boolean = true,
         includeOpenRouterReasoningDetails: Boolean = false,
         supportInputModalities: List<Modality> = listOf(Modality.TEXT, Modality.IMAGE),
+        systemPromptInChat: Boolean = false,
     ) = buildJsonArray {
         val filteredMessages = messages.filter { it.isValidToUpload() }
+        var ackInserted = false
 
         filteredMessages.forEach { message ->
+            if (message.role == MessageRole.SYSTEM) {
+                // 防空回复：系统提示词进对话流（Gemini 经 OpenAI 兼容中转/映射场景）——
+                // SYSTEM 消息原位转为 user 轮（世界书等深度注入位置不变），
+                // 首个系统块后跟一条假 assistant 确认轮，避免模型把系统内容当用户提问
+                if (!systemPromptInChat) return@forEach
+                addNonAssistantMessage(message, asUserRole = true)
+                if (!ackInserted) {
+                    ackInserted = true
+                    add(buildJsonObject {
+                        put("role", "assistant")
+                        put("content", "Understood.")
+                    })
+                }
+                return@forEach
+            }
             if (message.role == MessageRole.ASSISTANT) {
                 addAssistantMessages(
                     message = message,
@@ -638,9 +656,13 @@ class ChatCompletionsAPI(
         }
     }
 
-    private fun JsonArrayBuilder.addNonAssistantMessage(message: UIMessage) {
+    private fun JsonArrayBuilder.addNonAssistantMessage(message: UIMessage, asUserRole: Boolean = false) {
         add(buildJsonObject {
-            put("role", JsonPrimitive(message.role.name.lowercase()))
+            if (asUserRole) {
+                put("role", "user")
+            } else {
+                put("role", JsonPrimitive(message.role.name.lowercase()))
+            }
             // 官方 openai.js:610 始终携带 name 字段（/sendas 角色名、/sys 旁白名等），模型据此识别消息归属
             message.name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
 

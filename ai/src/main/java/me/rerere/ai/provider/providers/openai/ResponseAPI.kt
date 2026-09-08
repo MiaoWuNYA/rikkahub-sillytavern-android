@@ -223,7 +223,8 @@ class ResponseAPI(
             if (params.maxTokens != null) put("max_output_tokens", params.maxTokens)
 
             // system instructions
-            if (messages.any { it.role == MessageRole.SYSTEM }) {
+            // 防空回复（systemPromptInChat）：不走 instructions，系统提示词由 buildMessages 进对话流
+            if (messages.any { it.role == MessageRole.SYSTEM } && !params.systemPromptInChat) {
                 val parts = messages.first { it.role == MessageRole.SYSTEM }.parts
                 put(
                     "instructions",
@@ -231,7 +232,7 @@ class ResponseAPI(
             }
 
             // messages
-            put("input", buildMessages(messages))
+            put("input", buildMessages(messages, params.systemPromptInChat))
 
             // reasoning
             if (params.model.abilities.contains(ModelAbility.REASONING)) {
@@ -297,17 +298,29 @@ class ResponseAPI(
         }.mergeCustomBody(params.customBody)
     }
 
-    internal fun buildMessages(messages: List<UIMessage>) = buildJsonArray {
+    internal fun buildMessages(messages: List<UIMessage>, systemPromptInChat: Boolean = false) = buildJsonArray {
+        var ackInserted = false
         messages
             .filter { message ->
-                message.role != MessageRole.SYSTEM && (
-                    message.isValidToUpload() || message.parts.any { part ->
-                        part is UIMessagePart.Reasoning &&
-                            part.metadataAs<OpenAIReasoningMetadata>()?.encryptedContent != null
-                    }
-                )
+                message.role != MessageRole.SYSTEM || systemPromptInChat
+            }
+            .filter { message ->
+                message.isValidToUpload() || message.parts.any { part ->
+                    part is UIMessagePart.Reasoning &&
+                        part.metadataAs<OpenAIReasoningMetadata>()?.encryptedContent != null
+                }
             }
             .forEach { message ->
+                if (message.role == MessageRole.SYSTEM) {
+                    // 防空回复：SYSTEM 消息原位转 user 轮（世界书等深度注入位置不变），
+                    // 首个系统块后跟一条假 assistant 确认轮
+                    addContentItem(MessageRole.USER, message.parts.filterIsInstance<UIMessagePart.Text>())
+                    if (!ackInserted) {
+                        ackInserted = true
+                        addContentItem(MessageRole.ASSISTANT, listOf(UIMessagePart.Text("Understood.")))
+                    }
+                    return@forEach
+                }
                 if (message.role == MessageRole.ASSISTANT) {
                     addAssistantItems(message)
                 } else {

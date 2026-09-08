@@ -49,7 +49,8 @@ class ChatCompletionsRequestMessageTest {
             List::class.java,
             Boolean::class.javaPrimitiveType,
             Boolean::class.javaPrimitiveType,
-            List::class.java
+            List::class.java,
+            Boolean::class.javaPrimitiveType,
         )
         method.isAccessible = true
         return method.invoke(
@@ -57,7 +58,8 @@ class ChatCompletionsRequestMessageTest {
             messages,
             includeHistoryReasoning,
             includeOpenRouterReasoningDetails,
-            listOf(Modality.TEXT, Modality.IMAGE)
+            listOf(Modality.TEXT, Modality.IMAGE),
+            false,
         ) as JsonArray
     }
 
