@@ -205,12 +205,9 @@ class GenerationLoop(
                 appendLine()
             },
             workspaceDescription = "Working directory: ${context.filesDir?.absolutePath ?: "."}",
-            extraInstructions = buildString {
-                if (assistant.enableRecentChatsReference) {
-                    appendLine()
-                    append(buildRecentChatsPrompt(assistant, conversationRepo))
-                }
-            },
+            extraInstructions = "",
+            // 提示词缓存：Recent Chats 每天变化且列表随其他会话活动移动，
+            // 放在系统提示（前缀最顶部）会打断全部缓存，已挪到上下文尾部（buildUserContext）
             constraints = emptyList(),
         )
         val system = me.rerere.rikkahub.data.ai.prompts.SystemPromptAssembler.assemble(assemblerContext)
@@ -579,12 +576,8 @@ class GenerationLoop(
                     appendLine("- If you need clarification, ask the user directly")
                 },
                 workspaceDescription = "Working directory: ${context.filesDir?.absolutePath ?: "."}",
-                extraInstructions = buildString {
-                    if (assistant.enableRecentChatsReference) {
-                        appendLine()
-                        append(buildRecentChatsPrompt(assistant, conversationRepo))
-                    }
-                },
+                extraInstructions = "",
+                // 提示词缓存：Recent Chats 已挪到上下文尾部（buildUserContext）
                 constraints = emptyList(),
             )
             val system = me.rerere.rikkahub.data.ai.prompts.SystemPromptAssembler.assemble(assemblerContext)
@@ -622,7 +615,12 @@ class GenerationLoop(
             // 记忆由自动提取周期性变化、日期每天变化，若放在前缀区（历史之前）会
             // 打断整个静态前缀（system prompt + 角色卡 + 世界书锚点区）的缓存；
             // 放在尾部只失效尾部。s10 原设计（对标 CC getUserContext）已按缓存原则调整。
-            val userContext = buildUserContext(memories, assistant, settings)
+            // Recent Chats 虽然低频变化（日期粒度 + 列表移动），但放前缀区会打断整段静态前缀，
+            // 一并注入尾部
+            val recentChats = if (assistant.enableRecentChatsReference) {
+                buildRecentChatsPrompt(assistant, conversationRepo)
+            } else ""
+            val userContext = buildUserContext(memories, assistant, settings, recentChats)
             if (userContext.isNotBlank()) {
                 add(UIMessage.system(prompt = userContext))
             }
@@ -998,6 +996,7 @@ private fun buildUserContext(
     memories: List<AssistantMemory>,
     assistant: Assistant,
     settings: Settings,
+    recentChats: String = "",
 ): String {
     val contextMap = linkedMapOf<String, String>()
 
@@ -1011,6 +1010,9 @@ private fun buildUserContext(
         contextMap["memories"] = memoryText
     }
     contextMap["currentDate"] = "Current date: ${java.time.LocalDate.now()}."
+    if (recentChats.isNotBlank()) {
+        contextMap["recentChats"] = recentChats.trim()
+    }
 
     if (contextMap.isEmpty()) return ""
 

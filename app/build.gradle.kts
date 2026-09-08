@@ -56,26 +56,16 @@ android {
         applicationId = "me.rerere.rikkahub"
         minSdk = 26
         targetSdk = 37
-        versionCode = 189
-        versionName = "2.5.2fix2"
+        versionCode = 190
+        versionName = "2.5.2fix3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("boolean", "ENABLE_FIREBASE", enableFirebase.toString())
 
         ndk {
+            // 只出 arm64-v8a 单一 APK（Chaquopy 要求 ndk.abiFilters，故不再用 splits abi）
             abiFilters += listOf("arm64-v8a")
-        }
-    }
-    splits {
-        abi {
-            // AppBundle tasks usually contain "bundle" in their name
-            //noinspection WrongGradleMethod
-            val isBuildingBundle = gradle.startParameter.taskNames.any { it.lowercase().contains("bundle") }
-            isEnable = !isBuildingBundle
-            reset()
-            include("arm64-v8a")
-            isUniversalApk = false
         }
     }
     signingConfigs {
