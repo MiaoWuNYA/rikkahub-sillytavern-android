@@ -1,11 +1,11 @@
 {
-  "version": "2.5.2fix4",
-  "publishedAt": "2026-09-08T04:25:00Z",
-  "changelog": "基于上游 2.5.2，保留酒馆/群聊等自定义功能。\n\n- {{random}}/{{roll}} 随机宏按消息稳定取值，历史消息不再每轮重新掷随机数，前缀缓存不再被打断\n- 新增「缓存友好随机宏」开关（默认开）",
+  "version": "2.5.2fix5",
+  "publishedAt": "2026-09-08T05:00:00Z",
+  "changelog": "基于上游 2.5.2，保留酒馆/群聊等自定义功能。\n\n- userContext（记忆+日期+Recent Chats）改为冻结锚点注入：内容不变时钉在首次出现的位置，不再随历史追加而后移，前缀缓存全额命中\n- 内容变化时旧块原位保留、新块追加尾部，缓存不清零",
   "downloads": [
     {
-      "name": "rikkahub-plus-2.5.2fix4-arm64-v8a.apk",
-      "url": "https://github.com/MiaoWuNYA/rikkahub-plus/releases/download/v2.5.2fix4/rikkahub-plus-2.5.2fix4-arm64-v8a.apk",
+      "name": "rikkahub-plus-2.5.2fix5-arm64-v8a.apk",
+      "url": "https://github.com/MiaoWuNYA/rikkahub-plus/releases/download/v2.5.2fix5/rikkahub-plus-2.5.2fix5-arm64-v8a.apk",
       "size": "约 110 MB"
     }
   ]

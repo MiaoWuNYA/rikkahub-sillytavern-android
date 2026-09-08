@@ -609,20 +609,48 @@ class GenerationLoop(
                 )
             }
 
-            addAll(limitedChat.withMessageNames())
-
-            // ── 提示词缓存：动态上下文（记忆全量 + 日期）统一注入历史之后的尾部 ──
-            // 记忆由自动提取周期性变化、日期每天变化，若放在前缀区（历史之前）会
-            // 打断整个静态前缀（system prompt + 角色卡 + 世界书锚点区）的缓存；
-            // 放在尾部只失效尾部。s10 原设计（对标 CC getUserContext）已按缓存原则调整。
-            // Recent Chats 虽然低频变化（日期粒度 + 列表移动），但放前缀区会打断整段静态前缀，
-            // 一并注入尾部
+            // ── 提示词缓存：动态上下文（记忆全量 + 日期 + Recent Chats）冻结锚点注入 ──
+            // 记忆/日期/Recent Chats 放前缀区会打断静态前缀；放尾部又会随历史追加而后移
+            // （位置移动 = token 流在它上次出现的位置分叉）。冻结策略见 UserContextAnchorCache：
+            // 内容不变时钉在首次出现的位置，历史纯追加；内容变化时旧块原位保留、新块追加尾部，
+            // token 前缀仍然可命中。临时会话（无 conversationId）退化为尾部注入。
             val recentChats = if (assistant.enableRecentChatsReference) {
                 buildRecentChatsPrompt(assistant, conversationRepo)
             } else ""
             val userContext = buildUserContext(memories, assistant, settings, recentChats)
-            if (userContext.isNotBlank()) {
-                add(UIMessage.system(prompt = userContext))
+            val namedChat = limitedChat.withMessageNames()
+            val anchor = conversationId?.let { UserContextAnchorCache.getOrCreate(it) }
+            if (anchor != null) {
+                // 锚点消息全部还在窗口内才冻结；被截断/分支切换则重置（与截断同一事件失效）
+                val anchorsValid = anchor.blocks.all { block ->
+                    block.afterMessageId == null || namedChat.any { it.id == block.afterMessageId }
+                }
+                if (!anchorsValid) anchor.blocks.clear()
+                if (userContext.isNotBlank() && anchor.blocks.lastOrNull()?.text != userContext) {
+                    anchor.blocks += UserContextAnchorCache.Block(userContext, namedChat.lastOrNull()?.id)
+                }
+                var blockIndex = 0
+                for (message in namedChat) {
+                    add(message)
+                    while (blockIndex < anchor.blocks.size &&
+                        anchor.blocks[blockIndex].afterMessageId == message.id
+                    ) {
+                        add(UIMessage.system(prompt = anchor.blocks[blockIndex].text))
+                        blockIndex++
+                    }
+                }
+                // 无锚点消息的块（空历史时创建）兜底放最后
+                while (blockIndex < anchor.blocks.size) {
+                    val block = anchor.blocks[blockIndex++]
+                    if (block.afterMessageId == null) {
+                        add(UIMessage.system(prompt = block.text))
+                    }
+                }
+            } else {
+                addAll(namedChat)
+                if (userContext.isNotBlank()) {
+                    add(UIMessage.system(prompt = userContext))
+                }
             }
         }.let { base ->
             val persona = settings.personas.find { it.id == settings.activePersonaId }
@@ -991,6 +1019,28 @@ private fun addToolResult(
  */
 private var _lastUserContextKey: String? = null
 private var _lastUserContext: String? = null
+
+/**
+ * userContext（记忆 + 日期 + Recent Chats）冻结锚点缓存（按对话隔离，进程内）。
+ *
+ * 尾部注入的问题：上下文块排在历史之后，历史每追加一条它的位置就后移一位，
+ * token 流在它上一次出现的位置必然分叉。冻结策略：
+ * - 内容不变 → 注入在首次出现的位置（锚点消息之后），历史追加在其后，token 前缀纯追加；
+ * - 内容变化 → 旧块原位保留（内容已冻结不再重渲染），新块追加在当前尾部并更新锚点，
+ *   前缀仍然命中到旧块末尾；
+ * - 锚点消息被上下文窗口截断/分支切换 → 清空重置，按尾部注入重新锚定（该事件本身已破坏前缀）。
+ * 块数量随内容变化次数增长，由滚动压缩整体重建时自然收敛。
+ */
+private object UserContextAnchorCache {
+    data class Block(val text: String, val afterMessageId: Uuid?)
+
+    class Anchor(val blocks: MutableList<Block> = mutableListOf())
+
+    private val cache = java.util.concurrent.ConcurrentHashMap<String, Anchor>()
+
+    fun getOrCreate(conversationId: Uuid): Anchor =
+        cache.getOrPut(conversationId.toString()) { Anchor() }
+}
 
 private fun buildUserContext(
     memories: List<AssistantMemory>,
