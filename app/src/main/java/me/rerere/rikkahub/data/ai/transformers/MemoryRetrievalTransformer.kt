@@ -7,6 +7,7 @@ import me.rerere.ai.provider.EmbeddingGenerationParams
 import me.rerere.ai.provider.ModelType
 import me.rerere.ai.provider.ProviderManager
 import me.rerere.ai.ui.UIMessage
+import me.rerere.rikkahub.data.ai.ThreeLayerMemoryPolicy
 import me.rerere.rikkahub.data.ai.buildMemoryPrompt
 import me.rerere.rikkahub.data.model.MemoryType
 import me.rerere.rikkahub.data.repository.MemoryRepository
@@ -57,6 +58,23 @@ class MemoryRetrievalTransformer(
                     (ctx.assistant.enableEpisodicMemory || record.memory.type == MemoryType.FACT)
             }
         if (records.isEmpty()) return@withContext messages
+
+        // 首轮启动记忆：对话第一轮历史为空、没有相关性检索可用，自动注入最近的记忆，
+        // 让模型开局就读懂用户；后续轮次再按当前消息的相关性检索
+        val isFirstTurn = messages.none { it.role == me.rerere.ai.core.MessageRole.ASSISTANT }
+        if (isFirstTurn) {
+            val startup = ThreeLayerMemoryPolicy.selectStartupMemories(
+                memories = records.map { it.memory },
+                limit = RESULT_LIMIT,
+                maxChars = RAG_MEMORY_PROMPT_CHAR_BUDGET,
+            )
+            val startupPrompt = if (startup.isNotEmpty()) buildMemoryPrompt(
+                memories = startup,
+                includeEpisodic = true,
+                maxChars = RAG_MEMORY_PROMPT_CHAR_BUDGET,
+            ) else ""
+            if (startupPrompt.isNotBlank()) return@withContext messages + UIMessage.system(startupPrompt)
+        }
 
         val semanticMatches = semanticSearch(ctx, records, query)
             .filter { (_, score) -> score > 0f }

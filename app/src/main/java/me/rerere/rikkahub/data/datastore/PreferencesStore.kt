@@ -87,6 +87,11 @@ class SettingsStore(
         val CUSTOM_THEMES = stringPreferencesKey("custom_themes")
         val DISPLAY_SETTING = stringPreferencesKey("display_setting")
         val NETWORK_SETTING = stringPreferencesKey("network_setting")
+        val HUADENG_SETTINGS = stringPreferencesKey("huadeng_settings")
+        val WECHAT_BOT_SETTING = stringPreferencesKey("wechat_bot_setting")
+        val QQ_BOT_SETTING = stringPreferencesKey("qq_bot_setting")
+        val PROACTIVE_MESSAGE_SETTING = stringPreferencesKey("proactive_message_setting")
+        val SECURITY_SETTING = stringPreferencesKey("security_setting")
         val DEVELOPER_MODE = booleanPreferencesKey("developer_mode")
 
         // 模型选择
@@ -204,6 +209,11 @@ class SettingsStore(
                 preferences[DEVELOPER_MODE] = settings.developerMode
                 preferences[DISPLAY_SETTING] = JsonInstant.encodeToString(settings.displaySetting)
                 preferences[NETWORK_SETTING] = JsonInstant.encodeToString(settings.networkSetting)
+                preferences[HUADENG_SETTINGS] = JsonInstant.encodeToString(settings.huadengSettings)
+                preferences[WECHAT_BOT_SETTING] = JsonInstant.encodeToString(settings.wechatBotSetting)
+                preferences[QQ_BOT_SETTING] = JsonInstant.encodeToString(settings.qqBotSetting)
+                preferences[PROACTIVE_MESSAGE_SETTING] = JsonInstant.encodeToString(settings.proactiveMessageSetting)
+                preferences[SECURITY_SETTING] = JsonInstant.encodeToString(settings.securitySetting)
 
                 preferences[FAVORITE_MODELS] = JsonInstant.encodeToString(settings.favoriteModels)
                 preferences[SELECT_MODEL] = settings.chatModelId.toString()
@@ -337,6 +347,21 @@ class SettingsStore(
                 developerMode = preferences[DEVELOPER_MODE] == true,
                 displaySetting = JsonInstant.decodeFromString(preferences[DISPLAY_SETTING] ?: "{}"),
                 networkSetting = JsonInstant.decodeFromString(preferences[NETWORK_SETTING] ?: "{}"),
+                huadengSettings = preferences[HUADENG_SETTINGS]?.let {
+                    runCatching { JsonInstant.decodeFromString<HuaDengSettings>(it) }.getOrNull()
+                } ?: HuaDengSettings(),
+                wechatBotSetting = preferences[WECHAT_BOT_SETTING]?.let {
+                    runCatching { JsonInstant.decodeFromString<WechatBotSetting>(it) }.getOrNull()
+                } ?: WechatBotSetting(),
+                qqBotSetting = preferences[QQ_BOT_SETTING]?.let {
+                    runCatching { JsonInstant.decodeFromString<QqBotSetting>(it) }.getOrNull()
+                } ?: QqBotSetting(),
+                proactiveMessageSetting = preferences[PROACTIVE_MESSAGE_SETTING]?.let {
+                    runCatching { JsonInstant.decodeFromString<ProactiveMessageSetting>(it) }.getOrNull()
+                } ?: ProactiveMessageSetting(),
+                securitySetting = preferences[SECURITY_SETTING]?.let {
+                    runCatching { JsonInstant.decodeFromString<SecuritySetting>(it) }.getOrNull()
+                } ?: SecuritySetting(),
                 searchServices = preferences[SEARCH_SERVICES]?.let {
                     JsonInstant.decodeFromString(it)
                 } ?: listOf(SearchServiceOptions.DEFAULT),

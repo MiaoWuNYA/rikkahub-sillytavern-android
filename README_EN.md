@@ -153,6 +153,7 @@ Actual results vary by conversation shape: in steady, append-only chats the cach
 - **Recent chats reference**: optionally inject the assistant's recent conversation list for cross-session continuity.
 - **Transient-content pruning**: web-search results / images / audio / video older than two turns are dropped from requests automatically (with the message ID so the AI can retrieve the original via `read_history_message`) — token usage drops sharply on image- and search-heavy long chats.
 - Memory features (memory tool / RAG retrieval / three-layer memory / cross-window life stream) are **enabled by default** — memory helps the AI know the user better and is not sacrificed to save context; new assistants get it out of the box, existing assistants keep their settings, and everything can still be toggled per assistant.
+- **First-turn auto memory**: the first turn of a conversation automatically injects the most recent memories (there is no relevance query available at the start); later turns recall by relevance — the AI knows you from the very first message instead of only when a topic matches.
 
 ---
 

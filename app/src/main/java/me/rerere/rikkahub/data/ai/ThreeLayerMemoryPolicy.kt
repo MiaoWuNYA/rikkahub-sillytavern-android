@@ -8,6 +8,31 @@ import me.rerere.rikkahub.data.model.AssistantMemory
  * 跨窗口生活流保持增量注入，长期记忆按当前用户消息的相关性挑选召回。
  */
 internal object ThreeLayerMemoryPolicy {
+    /**
+     * 首轮启动记忆：对话第一轮没有可用的相关性查询（历史为空，词项重叠必然打空），
+     * 按新旧程度选取最近的记忆注入，让模型开局就读懂用户；后续轮次再按相关性召回。
+     */
+    fun selectStartupMemories(
+        memories: List<AssistantMemory>,
+        limit: Int,
+        maxChars: Int,
+    ): List<AssistantMemory> {
+        if (memories.isEmpty() || limit <= 0 || maxChars <= 0) return emptyList()
+        val ranked = memories
+            .filter { it.content.isNotBlank() }
+            .sortedByDescending { it.id }
+        val selected = mutableListOf<AssistantMemory>()
+        var chars = 0
+        for (memory in ranked) {
+            if (selected.size >= limit) break
+            val nextChars = memory.content.length
+            if (selected.isNotEmpty() && chars + nextChars > maxChars) break
+            selected += memory
+            chars += nextChars
+        }
+        return selected
+    }
+
     fun selectLongTermMemories(
         memories: List<AssistantMemory>,
         query: String,

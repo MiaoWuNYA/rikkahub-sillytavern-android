@@ -85,4 +85,45 @@ class ThreeLayerMemoryPolicyTest {
         assertEquals(1, selected.size)
         assertEquals(30, selected.first().content.length)
     }
+
+    // ---- selectStartupMemories（首轮自动读取记忆） ----
+
+    @Test
+    fun `startup memories pick newest first without any query`() {
+        val memories = listOf(
+            memory(1, "用户喜欢咖啡"),
+            memory(3, "用户住在上海"),
+            memory(2, "用户养了一只猫"),
+        )
+        val selected = ThreeLayerMemoryPolicy.selectStartupMemories(memories, limit = 6, maxChars = 3000)
+        // 无需查询词，按新旧程度注入，最新优先
+        assertEquals(listOf(3, 2, 1), selected.map { it.id })
+    }
+
+    @Test
+    fun `startup memories respect limit and char budget`() {
+        val memories = listOf(
+            memory(1, "a".repeat(100)),
+            memory(2, "b".repeat(100)),
+            memory(3, "c".repeat(100)),
+        )
+        val limited = ThreeLayerMemoryPolicy.selectStartupMemories(memories, limit = 2, maxChars = 3000)
+        assertEquals(listOf(3, 2), limited.map { it.id })
+
+        val charCapped = ThreeLayerMemoryPolicy.selectStartupMemories(memories, limit = 10, maxChars = 150)
+        // 第一条 100 字符 + 第二条 100 超出 150 预算 → 只装得下最新一条
+        assertEquals(listOf(3), charCapped.map { it.id })
+    }
+
+    @Test
+    fun `startup memories skip blank content and handle empty input`() {
+        assertTrue(ThreeLayerMemoryPolicy.selectStartupMemories(emptyList(), 6, 3000).isEmpty())
+        assertTrue(
+            ThreeLayerMemoryPolicy.selectStartupMemories(
+                listOf(memory(1, "  "), memory(2, "有效记忆")),
+                6,
+                3000,
+            ).map { it.id } == listOf(2)
+        )
+    }
 }

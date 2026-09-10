@@ -1452,17 +1452,27 @@ class ChatService(
                     } else {
                         memoryRepository.getMemoriesOfAssistant(assistant.id.toString())
                     }
-                    // 三层记忆：长期记忆按当前用户消息相关性召回（RAG 模式已自带检索，不再筛选）
+                    // 三层记忆：首轮自动读取最近的记忆（开局没有相关性查询可用），
+                    // 之后按当前用户消息相关性召回（RAG 模式已自带检索，不再筛选）
                     if (assistant.enableMemory && assistant.enableThreeLayerMemory && !assistant.enableMemoryRag) {
                         val recallQuery = generationMessages
                             .lastOrNull { it.role == MessageRole.USER }
                             ?.toText()?.trim().orEmpty()
-                        ThreeLayerMemoryPolicy.selectLongTermMemories(
-                            memories = allMemories,
-                            query = recallQuery,
-                            limit = assistant.longTermMemoryRecallCount,
-                            maxChars = assistant.longTermMemoryMaxChars,
-                        )
+                        val isFirstTurn = generationMessages.none { it.role == MessageRole.ASSISTANT }
+                        if (isFirstTurn || recallQuery.isBlank()) {
+                            ThreeLayerMemoryPolicy.selectStartupMemories(
+                                memories = allMemories,
+                                limit = assistant.longTermMemoryRecallCount,
+                                maxChars = assistant.longTermMemoryMaxChars,
+                            )
+                        } else {
+                            ThreeLayerMemoryPolicy.selectLongTermMemories(
+                                memories = allMemories,
+                                query = recallQuery,
+                                limit = assistant.longTermMemoryRecallCount,
+                                maxChars = assistant.longTermMemoryMaxChars,
+                            )
+                        }
                     } else {
                         allMemories
                     }
