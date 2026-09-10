@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import me.rerere.rikkahub.data.model.Conversation
 import java.util.concurrent.atomic.AtomicInteger
@@ -39,6 +40,11 @@ class ConversationSession(
 
     // 处理状态（如 OCR 识别中）
     val processingStatus = MutableStateFlow<String?>(null)
+
+    // 会话保存互斥锁：后台触发源（AI 主动消息）与用户操作并发"读-改-存"同一会话时，
+    // 用它序列化保存动作，防止后写入者覆盖先写入者的消息。
+    // 只包裹读-改-存本身，不包裹耗时的 AI 生成过程。
+    val saveMutex = Mutex()
 
     // 生成任务（内聚在 session 中）
     private val _generationJob = MutableStateFlow<Job?>(null)

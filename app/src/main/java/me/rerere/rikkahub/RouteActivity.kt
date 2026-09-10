@@ -120,12 +120,15 @@ import me.rerere.rikkahub.ui.pages.setting.SettingFilesPage
 import me.rerere.rikkahub.ui.pages.setting.SettingMcpPage
 import me.rerere.rikkahub.ui.pages.setting.SettingModelPage
 import me.rerere.rikkahub.ui.pages.setting.SettingPage
+import me.rerere.rikkahub.ui.pages.setting.SettingProactiveMessagePage
 import me.rerere.rikkahub.ui.pages.setting.SettingProviderDetailPage
 import me.rerere.rikkahub.ui.pages.setting.SettingProviderPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSearchDetailPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSearchPage
+import me.rerere.rikkahub.ui.pages.setting.SettingQqBotPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSpeechPage
 import me.rerere.rikkahub.ui.pages.setting.SettingWebPage
+import me.rerere.rikkahub.ui.pages.setting.SettingWeixinBotPage
 import me.rerere.rikkahub.ui.pages.setting.SettingHuaDengPage
 import me.rerere.rikkahub.ui.pages.share.handler.ShareHandlerPage
 import me.rerere.rikkahub.ui.pages.stats.StatsPage
@@ -501,6 +504,18 @@ class RouteActivity : ComponentActivity() {
                                 SettingHuaDengPage()
                             }
 
+                            entry<Screen.SettingWeixinBot> {
+                                SettingWeixinBotPage()
+                            }
+
+                            entry<Screen.SettingQqBot> {
+                                SettingQqBotPage()
+                            }
+
+                            entry<Screen.SettingProactiveMessage> {
+                                SettingProactiveMessagePage()
+                            }
+
 
                             entry<Screen.Debug> {
                                 DebugPage()
@@ -744,6 +759,15 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingHuaDeng : Screen
+
+    @Serializable
+    data object SettingWeixinBot : Screen
+
+    @Serializable
+    data object SettingQqBot : Screen
+
+    @Serializable
+    data object SettingProactiveMessage : Screen
 
     @Serializable
     data object Debug : Screen

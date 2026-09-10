@@ -7,6 +7,7 @@ import android.content.Intent
 import android.util.Log
 import me.rerere.rikkahub.data.db.AppDatabase
 import me.rerere.rikkahub.data.event.AppEvent
+import me.rerere.rikkahub.data.service.ProactiveMessageService
 import me.rerere.rikkahub.data.event.AppEventBus
 import org.koin.java.KoinJavaComponent
 import androidx.core.app.NotificationCompat
@@ -562,6 +563,16 @@ class ChatService(
 
                 val currentConversation = session.state.value
                 val settings = settingsStore.settingsFlow.first()
+
+                // 用户发消息即视为"回复"：重置主动消息计时器（异步执行，不阻塞发送主流程）
+                if (settings.proactiveMessageSetting.enabled) {
+                    appScope.launch {
+                        runCatching {
+                            ProactiveMessageService.resetTimer(context, settings.proactiveMessageSetting)
+                        }
+                    }
+                }
+
                 val assistant = settings.getAssistantById(currentConversation.assistantId)
                     ?: settings.getCurrentAssistant()
                 val processedContent = preprocessUserInputParts(content, assistant)
@@ -2547,5 +2558,37 @@ class ChatService(
         if (jobs.isEmpty()) return
         jobs.forEach { it.join() }
         finishInterruptedPendingTools(conversationId)
+    }
+
+    // ---- 后台触发源辅助接口（微信/QQ Bot、AI 主动发消息） ----
+
+    /**
+     * 后台触发源（Bot 服务 / 主动消息触发器）获取或创建会话缓存。
+     * 用途：确保会话在内存中有 session，后台流式更新才不会与数据库状态错位覆盖历史。
+     * 调用方应配合 addConversationReference/removeConversationReference 持有引用，
+     * 防止生成期间 session 被 idle 清除。
+     */
+    fun acquireSessionForBackground(conversationId: Uuid): ConversationSession {
+        return getOrCreateSession(conversationId)
+    }
+
+    /**
+     * 低优先级生成源（如主动消息）"礼貌性"抢占会话生成权：
+     * 仅当当前没有生成任务且消息队列空闲时才注册 [job]；否则返回 false，
+     * 调用方应放弃本次触发（不排队等待、不打断用户正在进行的生成）。
+     * 与 sendMessage/setJob 的"抢占式"语义（无条件取消旧生成）相反。
+     */
+    fun tryClaimGeneration(conversationId: Uuid, job: Job): Boolean {
+        val session = getOrCreateSession(conversationId)
+        return synchronized(session) {
+            val busy = session.getJob()?.isActive == true ||
+                session.messageQueue.state.value.messages.isNotEmpty()
+            if (busy) {
+                false
+            } else {
+                session.setJob(job, cancelPrevious = false)
+                true
+            }
+        }
     }
 }

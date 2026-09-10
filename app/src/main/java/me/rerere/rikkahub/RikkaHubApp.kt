@@ -110,6 +110,10 @@ class RikkaHubApp : Application() {
         startWebServerIfEnabled()
         trace("webserver done")
 
+        // AI 主动发消息：进程被杀后重启时重新排程（开机场景由 ProactiveMessageReceiver 处理）
+        rescheduleProactiveMessageIfEnabled()
+        trace("proactive done")
+
         // Increment launch count
         incrementLaunchCount()
         trace("onCreate complete")
@@ -159,6 +163,23 @@ class RikkaHubApp : Application() {
                 }
             }.onFailure {
                 Log.e(TAG, "cleanupExpiredFiles failed", it)
+            }
+        }
+    }
+
+    private fun rescheduleProactiveMessageIfEnabled() {
+        get<AppScope>().launch {
+            runCatching {
+                val settings = get<SettingsStore>().settingsFlowRaw.first()
+                if (settings.proactiveMessageSetting.enabled) {
+                    me.rerere.rikkahub.data.service.ProactiveMessageService.scheduleNext(
+                        this@RikkaHubApp,
+                        settings.proactiveMessageSetting
+                    )
+                    Log.i(TAG, "Rescheduled proactive message alarm on app start")
+                }
+            }.onFailure {
+                Log.e(TAG, "rescheduleProactiveMessageIfEnabled failed", it)
             }
         }
     }

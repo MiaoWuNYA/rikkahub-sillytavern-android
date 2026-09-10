@@ -690,6 +690,9 @@ data class Settings(
     val githubToken: String = "",
     val launchCount: Int = 0,
     val sponsorAlertDismissedAt: Int = 0,
+    val wechatBotSetting: WechatBotSetting = WechatBotSetting(),        // 微信 Bot（iLink 长轮询）
+    val qqBotSetting: QqBotSetting = QqBotSetting(),                    // QQ Bot（开放平台 WebSocket）
+    val proactiveMessageSetting: ProactiveMessageSetting = ProactiveMessageSetting(), // AI 主动发消息
 ) {
     companion object {
         // 构造一个用于初始化的settings, 但它不能用于保存，防止使用初始值存储

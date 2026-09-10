@@ -29,6 +29,8 @@
   <uses-permission android:name="android.permission.SET_ALARM" />
   <uses-permission android:name="android.permission.SET_WALLPAPER" />
   <uses-permission android:name="android.permission.WAKE_LOCK" />
+  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
   <uses-permission android:name="android.permission.READ_SMS" />
   <uses-permission android:name="android.permission.READ_CONTACTS" />
   <uses-permission android:name="android.permission.READ_CALL_LOG" />
@@ -149,6 +151,46 @@
       android:exported="false"
       android:foregroundServiceType="dataSync">
     </service>
+
+    <!-- 微信 Bot (iLink 协议): 长轮询收微信消息, 转给关联助手处理, 回复发回微信 -->
+    <service
+      android:name=".service.WeixinBotService"
+      android:exported="false"
+      android:foregroundServiceType="specialUse">
+      <property
+        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+        android:value="weixin bot message polling" />
+    </service>
+
+    <!-- QQ Bot (开放平台 API v2): WebSocket 网关收 QQ 私聊消息, 转给当前助手处理, 回复发回 QQ -->
+    <service
+      android:name=".service.QqBotService"
+      android:exported="false"
+      android:foregroundServiceType="specialUse">
+      <property
+        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+        android:value="qq bot websocket message polling" />
+    </service>
+
+    <!-- AI 主动发消息: 前台服务生成主动消息 -->
+    <service
+      android:name=".data.service.ProactiveMessageTriggerService"
+      android:exported="false"
+      android:foregroundServiceType="specialUse">
+      <property
+        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+        android:value="proactive AI message generation" />
+    </service>
+
+    <!-- AI 主动发消息: 闹钟触发 / 开机重新排程 -->
+    <receiver
+      android:name=".data.service.ProactiveMessageReceiver"
+      android:exported="false">
+      <intent-filter>
+        <action android:name="me.rerere.rikkahub.PROACTIVE_MESSAGE" />
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+      </intent-filter>
+    </receiver>
 
     <provider
       android:name="androidx.core.content.FileProvider"

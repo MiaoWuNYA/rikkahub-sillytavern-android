@@ -69,6 +69,8 @@ import me.rerere.hugeicons.stroke.GraduationCap
 import me.rerere.hugeicons.stroke.MessageMultiple01
 import me.rerere.hugeicons.stroke.McpServer
 import me.rerere.hugeicons.stroke.Megaphone01
+import me.rerere.hugeicons.stroke.Message01
+import me.rerere.hugeicons.stroke.AlarmClock
 import me.rerere.hugeicons.stroke.Package
 import me.rerere.hugeicons.stroke.ServerStack01
 import me.rerere.hugeicons.stroke.Settings03
@@ -239,6 +241,24 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         leadingContent = { Icon(HugeIcons.MessageMultiple01, null) },
                         supportingContent = { Text(stringResource(R.string.setting_page_group_chat_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_group_chat)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingWeixinBot) },
+                        leadingContent = { Icon(HugeIcons.Message01, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_weixin_bot_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_weixin_bot)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingQqBot) },
+                        leadingContent = { Icon(HugeIcons.MessageMultiple01, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_qq_bot_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_qq_bot)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingProactiveMessage) },
+                        leadingContent = { Icon(HugeIcons.AlarmClock, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_proactive_message_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_proactive_message)) },
                     )
                 }
             }
