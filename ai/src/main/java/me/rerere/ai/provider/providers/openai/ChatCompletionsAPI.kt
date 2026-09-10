@@ -73,6 +73,9 @@ import kotlin.time.Clock
 
 private const val TAG = "ChatCompletionsAPI"
 
+/** 中转站 response 前缀：要求其后紧跟空白/冒号/结尾/中日韩字符，避免误伤 "responses" 等英文单词。 */
+private val RESPONSE_PREFIX_REGEX = Regex("(?i)^response(?=\\s|:|\$|[\\u4e00-\\u9fff\\u3040-\\u30ff])\\s*:?\\s*")
+
 class ChatCompletionsAPI(
     private val client: OkHttpClient,
     private val keyRoulette: KeyRoulette
@@ -847,14 +850,15 @@ class ChatCompletionsAPI(
         val reasoning = reasoningParts.joinToString("") { it.reasoning }
         if (reasoning.isEmpty()) return message
 
-        // 剥离 "Response:" / "response" 前缀
-        val prefix = Regex("(?i)^response\\s*:?\\s*")
+        // 剥离 "Response:" / "response" 前缀（后面须跟空白/冒号/结尾/中日韩字符，避免误伤英文词）
+        val prefix = RESPONSE_PREFIX_REGEX
         val cleanedText = if (prefix.containsMatchIn(text)) prefix.replace(text, "").trimStart() else text
 
-        // content 极短且 reasoning 有实质内容 → 提升 reasoning 为正文
+        // content 极短且 reasoning 有实质内容 → 提升 reasoning 为正文（提升出的正文同样剥离前缀）
         if (reasoning.length > cleanedText.length * 2 && cleanedText.length < 200) {
+            val cleanedReasoning = prefix.replace(reasoning, "").trimStart()
             return message.copy(
-                parts = listOf(UIMessagePart.Text(reasoning)) +
+                parts = listOf(UIMessagePart.Text(cleanedReasoning)) +
                     message.parts.filter { it !is UIMessagePart.Text && it !is UIMessagePart.Reasoning }
             )
         }
