@@ -187,4 +187,7 @@ sealed class ASRProviderSetting {
     }
 }
 
-const val VOLCENGINE_ASR_WEBSOCKET_URL = "wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_async"
+// 火山 Agent Plan 专属路径 (ark-xxx Key 只在此路径可用);
+// 标准控制台 Key 用 wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_async
+const val VOLCENGINE_ASR_WEBSOCKET_URL = "wss://openspeech.bytedance.com/api/v3/plan/sauc/bigmodel_async"
+const val VOLCENGINE_ASR_STANDARD_WEBSOCKET_URL = "wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_async"

@@ -4,6 +4,7 @@ import android.content.Context
 import kotlinx.coroutines.flow.Flow
 import me.rerere.tts.model.AudioChunk
 import me.rerere.tts.model.TTSRequest
+import me.rerere.tts.provider.providers.DoubaoTTSProvider
 import me.rerere.tts.provider.providers.ElevenLabsTTSProvider
 import me.rerere.tts.provider.providers.FishAudioTTSProvider
 import me.rerere.tts.provider.providers.GeminiTTSProvider
@@ -28,6 +29,7 @@ class TTSManager(private val context: Context) {
     private val stepProvider = StepTTSProvider()
     private val elevenLabsProvider = ElevenLabsTTSProvider()
     private val fishAudioProvider = FishAudioTTSProvider()
+    private val doubaoProvider = DoubaoTTSProvider()
 
     fun generateSpeech(
         providerSetting: TTSProviderSetting,
@@ -45,6 +47,7 @@ class TTSManager(private val context: Context) {
             is TTSProviderSetting.ElevenLabs -> elevenLabsProvider.generateSpeech(context, providerSetting, request)
             is TTSProviderSetting.FishAudio -> fishAudioProvider.generateSpeech(context, providerSetting, request)
             is TTSProviderSetting.Step -> stepProvider.generateSpeech(context, providerSetting, request)
+            is TTSProviderSetting.Doubao -> doubaoProvider.generateSpeech(context, providerSetting, request)
         }
     }
 
@@ -65,6 +68,7 @@ class TTSManager(private val context: Context) {
             is TTSProviderSetting.ElevenLabs -> elevenLabsProvider.promptGuidance
             is TTSProviderSetting.FishAudio -> fishAudioProvider.promptGuidance
             is TTSProviderSetting.Step -> stepProvider.promptGuidance
+            is TTSProviderSetting.Doubao -> doubaoProvider.promptGuidance
         }
     }
 }

@@ -7,7 +7,7 @@ import org.junit.Test
 class ASRProviderSettingVolcengineTest {
     @Test fun `defaults select bidirectional API with server VAD`() {
         val provider = ASRProviderSetting.Volcengine()
-        assertEquals("wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_async", provider.websocketUrl)
+        assertEquals("wss://openspeech.bytedance.com/api/v3/plan/sauc/bigmodel_async", provider.websocketUrl)
         assertEquals("volc.seedasr.sauc.duration", provider.resourceId)
         assertEquals(800, provider.silenceDurationMs)
         assertTrue(provider.supportsServerVadVoiceMode)

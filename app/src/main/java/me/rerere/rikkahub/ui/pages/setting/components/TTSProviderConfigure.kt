@@ -48,6 +48,7 @@ fun TTSProviderConfigure(
                     is TTSProviderSetting.Step -> "Step"
                     is TTSProviderSetting.ElevenLabs -> "ElevenLabs"
                     is TTSProviderSetting.FishAudio -> "Fish Audio"
+                    is TTSProviderSetting.Doubao -> "Doubao"
                 },
                 options = providers,
                 readOnly = true,
@@ -65,6 +66,7 @@ fun TTSProviderConfigure(
                         TTSProviderSetting.ElevenLabs::class -> "ElevenLabs"
                         TTSProviderSetting.FishAudio::class -> "Fish Audio"
                         TTSProviderSetting.Step::class -> "Step"
+                        TTSProviderSetting.Doubao::class -> "Doubao"
                         else -> providerClass.simpleName ?: "Unknown"
                     }
                 },
@@ -125,6 +127,11 @@ fun TTSProviderConfigure(
                             name = "Step TTS"
                         )
 
+                        TTSProviderSetting.Doubao::class -> TTSProviderSetting.Doubao(
+                            id = setting.id,
+                            name = "Doubao TTS"
+                        )
+
                         else -> setting
                     }
                     onValueChange(newSetting)
@@ -160,6 +167,7 @@ fun TTSProviderConfigure(
             is TTSProviderSetting.ElevenLabs -> ElevenLabsTTSConfiguration(setting, onValueChange)
             is TTSProviderSetting.FishAudio -> FishAudioTTSConfiguration(setting, onValueChange)
             is TTSProviderSetting.Step -> StepTTSConfiguration(setting, onValueChange)
+            is TTSProviderSetting.Doubao -> DoubaoTTSConfiguration(setting, onValueChange)
         }
     }
 }
@@ -1247,6 +1255,152 @@ private fun StepTTSConfiguration(
             placeholder = { Text("例如: 语气温柔, 语速偏慢") },
             minLines = 2,
             maxLines = 4,
+        )
+    }
+}
+
+@Composable
+private fun DoubaoTTSConfiguration(
+    setting: TTSProviderSetting.Doubao,
+    onValueChange: (TTSProviderSetting) -> Unit
+) {
+    // API Key
+    FormItem(
+        label = { Text(stringResource(R.string.setting_tts_page_api_key)) },
+        description = { Text("火山引擎 API Key (Agent Plan 的 ark-xxx 或新版控制台 Key)") }
+    ) {
+        OutlinedTextField(
+            value = setting.apiKey,
+            onValueChange = { newApiKey ->
+                onValueChange(setting.copy(apiKey = newApiKey))
+            },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("ark-xxx") },
+        )
+    }
+
+    // Base URL (完整接口地址)
+    FormItem(
+        label = { Text(stringResource(R.string.setting_tts_page_base_url)) },
+        description = { Text("Agent Plan 须用 /api/v3/plan/tts/unidirectional; 标准控制台用 /api/v3/tts/unidirectional") }
+    ) {
+        OutlinedTextField(
+            value = setting.baseUrl,
+            onValueChange = { newBaseUrl ->
+                onValueChange(setting.copy(baseUrl = newBaseUrl))
+            },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("https://openspeech.bytedance.com/api/v3/plan/tts/unidirectional") }
+        )
+    }
+
+    // Resource ID
+    FormItem(
+        label = { Text("Resource ID") },
+        description = { Text("决定模型版本与计费; 音色版本必须与之一致") }
+    ) {
+        SelectTextField(
+            value = setting.resourceId,
+            options = listOf("seed-tts-2.0", "seed-tts-1.0"),
+            onValueChange = { newId ->
+                onValueChange(setting.copy(resourceId = newId))
+            },
+            onOptionSelected = { newId ->
+                onValueChange(setting.copy(resourceId = newId))
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+
+    // Speaker (音色)
+    // 2.0 音色 (_uranus/_saturn_bigtts) 配 seed-tts-2.0, 1.0 音色 (_mars_bigtts) 配 seed-tts-1.0
+    val speakers = listOf(
+        "zh_male_kuailexiaodong_uranus_bigtts" to "快乐小东 2.0 (豆包同款)",
+        "zh_female_cancan_uranus_bigtts" to "灿灿 2.0",
+        "zh_female_tianmeitaozi_uranus_bigtts" to "甜美桃子 2.0",
+        "zh_female_tianmeixiaoyuan_uranus_bigtts" to "甜美小媛 2.0",
+        "zh_female_qingxinnvsheng_uranus_bigtts" to "清新女声 2.0",
+        "zh_female_gaolengyujie_uranus_bigtts" to "高冷御姐 2.0",
+        "zh_female_shuangkuaisisi_uranus_bigtts" to "爽快思思 2.0",
+        "zh_female_sajiaoxuemei_uranus_bigtts" to "撒娇学妹 2.0",
+        "zh_female_qiaopinv_uranus_bigtts" to "俏皮贫女 2.0",
+        "zh_female_popo_uranus_bigtts" to "婆婆 2.0",
+        "zh_female_peiqi_uranus_bigtts" to "佩琪 2.0",
+        "zh_female_sophie_uranus_bigtts" to "Sofie 2.0",
+        "zh_female_jitangnv_uranus_bigtts" to "鸡汤女 2.0",
+        "zh_female_mizai_saturn_bigtts" to "米仔 2.0",
+        "zh_female_cancan_mars_bigtts" to "灿灿 1.0 (需 seed-tts-1.0)",
+        "zh_female_shengnan_mars_bigtts" to "笙男 1.0 (需 seed-tts-1.0)",
+    )
+
+    FormItem(
+        label = { Text(stringResource(R.string.setting_tts_page_voice)) },
+        description = { Text("音色与 Resource ID 版本必须匹配, 否则报 55000000; 也可手动输入任意音色 ID") }
+    ) {
+        OutlinedTextField(
+            value = setting.speaker,
+            onValueChange = { newSpeaker ->
+                onValueChange(setting.copy(speaker = newSpeaker))
+            },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("zh_male_kuailexiaodong_uranus_bigtts") },
+            supportingText = { Text(speakers.firstOrNull { it.first == setting.speaker }?.second.orEmpty()) }
+        )
+    }
+
+    // Format
+    val formats = listOf("mp3", "wav", "pcm", "ogg", "opus")
+
+    FormItem(
+        label = { Text("Audio Format") },
+        description = { Text("音频编码格式") }
+    ) {
+        SelectTextField(
+            value = setting.format,
+            options = formats,
+            onValueChange = { newFormat ->
+                onValueChange(setting.copy(format = newFormat))
+            },
+            onOptionSelected = { format ->
+                onValueChange(setting.copy(format = format))
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+
+    // Sample Rate
+    val sampleRates = listOf(8000, 16000, 22050, 24000, 32000, 44100, 48000)
+
+    FormItem(
+        label = { Text("Sample Rate") },
+        description = { Text("采样率 (Hz)") }
+    ) {
+        SelectTextField(
+            value = setting.sampleRate.toString(),
+            options = sampleRates,
+            readOnly = true,
+            onOptionSelected = { rate ->
+                onValueChange(setting.copy(sampleRate = rate))
+            },
+            optionToString = { rate -> "$rate Hz" },
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+
+    // Speech Rate
+    FormItem(
+        label = { Text(stringResource(R.string.setting_tts_page_speech_rate)) },
+        description = { Text("语速 (0.2 - 2.0, 1.0 为正常)") }
+    ) {
+        OutlinedNumberInput(
+            value = setting.speechRate,
+            onValueChange = { newRate ->
+                if (newRate in 0.2f..2.0f) {
+                    onValueChange(setting.copy(speechRate = newRate))
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            label = stringResource(R.string.setting_tts_page_speech_rate)
         )
     }
 }

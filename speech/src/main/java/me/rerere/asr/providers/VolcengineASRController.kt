@@ -18,6 +18,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import me.rerere.asr.VOLCENGINE_ASR_STANDARD_WEBSOCKET_URL
 import me.rerere.asr.VOLCENGINE_ASR_WEBSOCKET_URL
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,7 +63,10 @@ class VolcengineASRController(
     override fun start(onTranscriptChange: (String) -> Unit) {
         if (state.value.isRecording) return
         if (provider.websocketUrl.trim().trimEnd('/') == "wss://openspeech.bytedance.com/api/v3/sauc/bigmodel") {
-            setError("The Volcengine ASR endpoint is outdated. Change the WebSocket URL to $VOLCENGINE_ASR_WEBSOCKET_URL in settings.")
+            setError(
+                "The Volcengine ASR endpoint is outdated. Use the Agent Plan URL $VOLCENGINE_ASR_WEBSOCKET_URL " +
+                    "(ark-xxx key) or the standard URL $VOLCENGINE_ASR_STANDARD_WEBSOCKET_URL (console key)."
+            )
             return
         }
         if (ContextCompat.checkSelfPermission(
