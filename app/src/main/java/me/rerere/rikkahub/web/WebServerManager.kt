@@ -81,6 +81,13 @@ class WebServerManager(
                 _state.value = baseState.copy(isRunning = true)
                 // 仅局域网模式注册 mDNS
                 if (!localhostOnly) {
+                    // 先用网卡直连地址兜底展示（热点下 mDNS 常不可用也能拿到地址）
+                    runCatching { nsdRegistrar.resolveLocalAddress() }
+                        .getOrNull()
+                        ?.hostAddress
+                        ?.let { ip ->
+                            _state.value = _state.value.copy(address = ip)
+                        }
                     runCatching {
                         nsdRegistrar.register(
                             port = port,

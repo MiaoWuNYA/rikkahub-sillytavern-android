@@ -786,7 +786,12 @@ function ConversationsPageInner() {
   }, [activeConversation?.title, t]);
   const isNewChat = isHomeRoute && !activeId;
   const showSuggestions =
-    Boolean(activeId) && !detailLoading && !detailError && chatSuggestions.length > 0;
+    Boolean(activeId) &&
+    !detailLoading &&
+    !detailError &&
+    chatSuggestions.length > 0 &&
+    // 与手机端一致：聊天建议关闭时不显示（含历史遗留的旧建议）
+    settings?.enableSuggestion !== false;
   const displaySuggestions = showSuggestions ? chatSuggestions : EMPTY_SUGGESTIONS;
 
   const handleSelect = React.useCallback(

@@ -171,14 +171,16 @@ class SillyTavernThemeTest {
         // 气泡色调叠在聊天背景上，合成后不透明
         assertEquals(0xFFFEFFFEL, patched.userBubbleColor)
         assertEquals(0xFFFEFFFEL, patched.assistantBubbleColor)
-        // 半透明的引用/斜体色无法在应用中忠实呈现，保持 base 原值
-        assertEquals("", patched.quoteColor)
-        assertEquals("", patched.italicsColor)
-        assertEquals(0.92f, patched.fontSizeRatio)
+        // 引用/斜体色叠在聊天背景上合成不透明色，深浅背景下都可见
+        assertEquals("#90A798", patched.quoteColor)
+        assertEquals("#97C2A5", patched.italicsColor)
+        // font_scale 0.92 → 偏差减半 0.96
+        assertEquals(0.96f, patched.fontSizeRatio)
+        // 无背景图时从 blur_tint 推导输入框颜色
+        assertEquals(0xFFF8FBF9L, patched.inputFieldColor)
         // 未映射字段不受影响
         assertNull(patched.primaryColor)
         assertNull(patched.thinkingBubbleColor)
-        assertNull(patched.inputFieldColor)
         assertEquals(1.0f, patched.bubbleOpacity)
         assertEquals(16f, patched.bubbleCornerRadius)
         assertEquals("", patched.userBubbleImagePath)
@@ -233,9 +235,9 @@ class SillyTavernThemeTest {
         val chatBg = patched.chatBackgroundColor
         assertEquals(0xFFL, (chatBg ?: 0L) ushr 24)
         assertTrue("聊天背景应接近纯黑: $chatBg", ((chatBg ?: 0L) and 0xFFFFFFL) < 0x202020L)
-        // 气泡色调全透明 → 气泡与背景同色（对应酒馆里文字直接浮在背景上的效果）
-        assertEquals(chatBg, patched.userBubbleColor)
-        assertEquals(chatBg, patched.assistantBubbleColor)
+        // 气泡色调全透明（酒馆里靠 CSS 背景图呈现）→ 保留应用原气泡色，避免气泡隐形
+        assertNull(patched.userBubbleColor)
+        assertNull(patched.assistantBubbleColor)
     }
 
     @Test
@@ -263,14 +265,14 @@ class SillyTavernThemeTest {
         assertNull(patched.assistantBubbleColor)
         assertEquals("#E18A24", patched.quoteColor)
         assertEquals("", patched.italicsColor)
-        assertEquals(1.25f, patched.fontSizeRatio)
+        assertEquals(1.125f, patched.fontSizeRatio)
     }
 
     @Test
     fun `applyTo clamps font scale to app supported range`() {
         val base = DisplaySetting()
-        assertEquals(2.0f, parseSillyTavernTheme("""{"font_scale": 3.0}""").applyTo(base).fontSizeRatio)
-        assertEquals(0.5f, parseSillyTavernTheme("""{"font_scale": 0.1}""").applyTo(base).fontSizeRatio)
+        assertEquals(1.6f, parseSillyTavernTheme("""{"font_scale": 3.0}""").applyTo(base).fontSizeRatio)
+        assertEquals(0.85f, parseSillyTavernTheme("""{"font_scale": 0.1}""").applyTo(base).fontSizeRatio)
         // 缺省/非法字号保持原值
         assertEquals(1.0f, parseSillyTavernTheme("""{"name": "X"}""").applyTo(base).fontSizeRatio)
     }
@@ -306,11 +308,24 @@ class SillyTavernThemeTest {
         val base = DisplaySetting(showAssistantBubble = false)
         assertTrue(parseSillyTavernTheme("""{"chat_display": 1}""").applyTo(base).showAssistantBubble)
         val baseWithBubble = DisplaySetting(showAssistantBubble = true)
-        // 0=默认平铺 / 2=文档模式 → 关闭气泡
-        assertEquals(false, parseSillyTavernTheme("""{"chat_display": 0}""").applyTo(baseWithBubble).showAssistantBubble)
-        assertEquals(false, parseSillyTavernTheme("""{"chat_display": 2}""").applyTo(baseWithBubble).showAssistantBubble)
+        // 平铺/文档模式不强制关闭用户的气泡设置（此前强制关闭导致"导入主题后气泡消失"）
+        assertEquals(true, parseSillyTavernTheme("""{"chat_display": 0}""").applyTo(baseWithBubble).showAssistantBubble)
+        assertEquals(true, parseSillyTavernTheme("""{"chat_display": 2}""").applyTo(baseWithBubble).showAssistantBubble)
         // 缺省保持原值
         assertEquals(true, parseSillyTavernTheme("""{"name": "X"}""").applyTo(baseWithBubble).showAssistantBubble)
+    }
+
+    @Test
+    fun `applyTo damps font scale deviation to avoid tiny text`() {
+        val base = DisplaySetting()
+        // 主题 font_scale 普遍 0.8-0.9（中位 0.9），直接映射会明显偏小；偏差减半
+        assertEquals(0.9f, parseSillyTavernTheme("""{"font_scale": 0.8}""").applyTo(base).fontSizeRatio)
+        assertEquals(0.95f, parseSillyTavernTheme("""{"font_scale": 0.9}""").applyTo(base).fontSizeRatio)
+        assertEquals(1.0f, parseSillyTavernTheme("""{"font_scale": 1.0}""").applyTo(base).fontSizeRatio)
+        assertEquals(1.1f, parseSillyTavernTheme("""{"font_scale": 1.2}""").applyTo(base).fontSizeRatio)
+        // 极端值 clamp
+        assertEquals(0.85f, parseSillyTavernTheme("""{"font_scale": 0.1}""").applyTo(base).fontSizeRatio)
+        assertEquals(1.6f, parseSillyTavernTheme("""{"font_scale": 3.0}""").applyTo(base).fontSizeRatio)
     }
 
     @Test

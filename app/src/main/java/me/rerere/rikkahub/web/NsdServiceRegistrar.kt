@@ -111,7 +111,17 @@ class NsdServiceRegistrar(
         Log.i(TAG, "Service unregistered")
     }
 
+    /** 供 WebServerManager 在启动时直接获取局域网/热点地址展示（不依赖 mDNS 注册结果） */
+    fun resolveLocalAddress(): InetAddress? = getLocalIpAddress()
+
     private fun getLocalIpAddress(): InetAddress? {
+        // 优先走 WifiManager（普通 Wi-Fi 最准）；热点模式下 WifiManager 拿到 0，
+        // 回退到枚举网卡（热点 ap/swlan 接口、有线等都能覆盖），保证热点场景也能拿到正确地址
+        getWifiIpAddress()?.let { return it }
+        return getInterfaceIpAddress()
+    }
+
+    private fun getWifiIpAddress(): InetAddress? {
         return try {
             val wifiManager = context.applicationContext
                 .getSystemService(Context.WIFI_SERVICE) as? WifiManager
@@ -131,5 +141,30 @@ class NsdServiceRegistrar(
             Log.e(TAG, "Failed to get local IP address", e)
             null
         }
+    }
+
+    private fun getInterfaceIpAddress(): InetAddress? {
+        return runCatching {
+            java.net.NetworkInterface.getNetworkInterfaces().asSequence()
+                .filter { it.isUp && !it.isLoopback }
+                .flatMap { it.inetAddresses.asSequence() }
+                .filter { it is java.net.Inet4Address && it.isSiteLocalAddress }
+                .toList()
+                .mapNotNull { addr ->
+                    val name = java.net.NetworkInterface.getByInetAddress(addr)?.name.orEmpty()
+                    // wlan > swlan/ap（热点）> eth > 其他
+                    val priority = when {
+                        name.startsWith("wlan") -> 0
+                        name.startsWith("swlan") || name.startsWith("ap") -> 1
+                        name.startsWith("eth") -> 2
+                        else -> 3
+                    }
+                    addr to priority
+                }
+                .minByOrNull { it.second }
+                ?.first
+        }.onFailure {
+            Log.e(TAG, "Failed to resolve local IP from interfaces", it)
+        }.getOrNull()
     }
 }

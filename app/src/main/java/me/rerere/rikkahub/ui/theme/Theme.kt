@@ -48,10 +48,19 @@ fun RikkahubTheme(
 ) {
     val settings by rememberUserSettingsState()
 
-    val darkTheme = when (colorMode) {
+    val systemDark = when (colorMode) {
         ColorMode.SYSTEM -> isSystemInDarkTheme()
         ColorMode.LIGHT -> false
         ColorMode.DARK -> true
+    }
+    // 聊天外观自定义了聊天背景色时，全局深浅色跟随主题背景亮度，
+    // 避免系统暗黑模式下顶栏/抽屉/菜单是深色而聊天区是浅色主题的错乱
+    val chatBg = settings.displaySetting.chatBackgroundColor?.toComposeColor()
+    val darkTheme = if (chatBg != null) {
+        val luminance = 0.299f * chatBg.red + 0.587f * chatBg.green + 0.114f * chatBg.blue
+        luminance < 0.5f
+    } else {
+        systemDark
     }
     val amoledDarkMode by rememberAmoledDarkMode()
 

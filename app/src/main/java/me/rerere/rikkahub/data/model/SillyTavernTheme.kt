@@ -246,11 +246,12 @@ private fun Long.opaqueHexOrNull(): String? =
  * 映射关系（颜色按酒馆的叠层语义合成为不透明近似色）：
  * - main_text_color → globalTextColor
  * - blur_tint_color + chat_tint_color（叠在按主文字亮度推断的底色上）→ chatBackgroundColor
- * - user/bot_mes_blur_tint_color 叠在聊天背景上 → user/assistantBubbleColor
- * - quote/italics_text_color → quoteColor/italicsColor（仅不透明色）
- * - font_scale → fontSizeRatio（clamp 到应用支持的 0.5-2.0）
- * - chat_display=1（气泡模式）→ showAssistantBubble
+ * - user/bot_mes_blur_tint_color 叠在聊天背景上 → user/assistantBubbleColor（色调几乎全透明时保留原气泡色，避免气泡隐形）
+ * - quote/italics_text_color 叠在聊天背景上 → quoteColor/italicsColor（合成后不透明，保证可见）
+ * - font_scale → fontSizeRatio（偏差减半 + clamp，酒馆与app基准字号不同，直接映射会明显偏小）
+ * - chat_display=1（气泡模式）→ 开启 AI 气泡；其余值不动用户设置
  * - custom_css 中 .mes/#chat 的 border-radius → bubbleCornerRadius
+ * - 无背景图时 blur_tint 推导输入框颜色 → inputFieldColor
  */
 fun SillyTavernTheme.applyTo(base: DisplaySetting): DisplaySetting {
     val text = parseCssColor(mainTextColor)
@@ -272,29 +273,74 @@ fun SillyTavernTheme.applyTo(base: DisplaySetting): DisplaySetting {
         acc.toArgbLong()
     } else null
 
-    // 气泡 = 消息色调叠在聊天背景上
+    // 气泡 = 消息色调叠在聊天背景上。
+    // 酒馆里全透明的气泡色调意味着"文字直接浮在背景上"（背景图由 CSS 提供），
+    // 应用没有该背景图时合成结果与聊天背景同色 → 气泡隐形。
+    // 色调 alpha 过低或合成结果与背景同色时，保留应用原气泡色。
     val bubbleBottom = (chatBackground ?: base.chatBackgroundColor ?: LIGHT_BASE).toCssColor()
-    val userBubble = userTint?.let { over(it.toCssColor(), bubbleBottom).toArgbLong() }
-    val botBubble = botTint?.let { over(it.toCssColor(), bubbleBottom).toArgbLong() }
+    fun bubbleColor(tint: Long?): Long? = tint
+        ?.takeIf { it.toCssColor().a / 255.0 >= BUBBLE_MIN_VISIBLE_ALPHA }
+        ?.let { over(it.toCssColor(), bubbleBottom).toArgbLong() }
+        ?.takeIf { chatBackground == null || it != chatBackground }
+    val userBubble = bubbleColor(userTint)
+    val botBubble = bubbleColor(botTint)
+
+    // 引用/斜体等文字特效色：叠在聊天背景上合成不透明色再导入，
+    // 保证深浅背景下都可见（酒馆里这些色常带 alpha）
+    val accentBottom = (chatBackground ?: base.chatBackgroundColor ?: LIGHT_BASE).toCssColor()
+    val quoteColor = parseCssColor(quoteTextColor)
+        ?.let { over(it.toCssColor(), accentBottom).toArgbLong() }
+        ?.opaqueHexOrNull()?.takeIf { base.quoteColor != it }
+        ?: base.quoteColor
+    val italicsColor = parseCssColor(italicsTextColor)
+        ?.let { over(it.toCssColor(), accentBottom).toArgbLong() }
+        ?.opaqueHexOrNull()?.takeIf { base.italicsColor != it }
+        ?: base.italicsColor
+
+    // 输入框：酒馆输入区用 blur_tint 叠层；无背景图时推导一个比聊天背景略亮/略暗的输入框色，
+    // 有背景图时输入框保持用户原设置（纯色输入框压在图上会很突兀）
+    val hasBackgroundImage = !extractBackgroundImageUrl(customCss).isNullOrBlank()
+    val inputFieldColor = if (!hasBackgroundImage && (chatBackground != null || blurTint != null)) {
+        val inputBg = blurTint?.let { over(it.toCssColor(), bottomBaseForInput(base, text).toCssColor()).toArgbLong() }
+            ?: chatBackground
+            ?: base.inputFieldColor
+        inputBg?.let { mixTowardWhite(it, 0.06f) }
+    } else {
+        base.inputFieldColor
+    }
 
     return base.copy(
         globalTextColor = text ?: base.globalTextColor,
         chatBackgroundColor = chatBackground ?: base.chatBackgroundColor,
         userBubbleColor = userBubble ?: base.userBubbleColor,
         assistantBubbleColor = botBubble ?: base.assistantBubbleColor,
-        quoteColor = parseCssColor(quoteTextColor)?.opaqueHexOrNull()?.takeIf { base.quoteColor != it }
-            ?: base.quoteColor,
-        italicsColor = parseCssColor(italicsTextColor)?.opaqueHexOrNull()?.takeIf { base.italicsColor != it }
-            ?: base.italicsColor,
-        fontSizeRatio = fontScale?.takeIf { it > 0.0 }?.toFloat()?.coerceIn(0.5f, 2.0f)
+        quoteColor = quoteColor,
+        italicsColor = italicsColor,
+        inputFieldColor = inputFieldColor,
+        // 酒馆基准字号与应用不同且主题普遍偏小（中位 0.9），直接映射会明显偏小：
+        // 偏差减半并 clamp，保留"偏大/偏小"的意图但防止过小
+        fontSizeRatio = fontScale?.takeIf { it > 0.0 }
+            ?.let { 1.0 + (it - 1.0) * 0.5 }
+            ?.toFloat()?.coerceIn(0.85f, 1.6f)
             ?: base.fontSizeRatio,
-        showAssistantBubble = when (chatDisplay) {
-            1 -> true
-            0, 2 -> false
-            else -> base.showAssistantBubble
-        },
+        // 仅气泡模式开启 AI 气泡；平铺/文档模式不强制关闭用户的气泡设置
+        showAssistantBubble = if (chatDisplay == 1) true else base.showAssistantBubble,
         bubbleCornerRadius = extractBubbleCornerRadius(customCss) ?: base.bubbleCornerRadius,
     )
+}
+
+private const val BUBBLE_MIN_VISIBLE_ALPHA = 0.08
+
+/** 输入框底色：无文字色时回退聊天背景或浅色底 */
+private fun bottomBaseForInput(base: DisplaySetting, text: Long?): Long =
+    base.chatBackgroundColor ?: if (text != null && relativeLuminance(text) <= 0.5) LIGHT_BASE else DARK_BASE
+
+/** 向白色混合（提升亮度），用于输入框与聊天背景的层次感 */
+private fun mixTowardWhite(color: Long, ratio: Float): Long {
+    val c = color.toCssColor()
+    val white = 255.0
+    fun mix(v: Double) = v + (white - v) * ratio
+    return CssColor(c.a, mix(c.r), mix(c.g), mix(c.b)).toArgbLong()
 }
 
 // ── custom_css 提取 ──

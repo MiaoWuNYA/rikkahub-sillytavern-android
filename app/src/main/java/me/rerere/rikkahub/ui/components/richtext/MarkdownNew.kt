@@ -400,7 +400,9 @@ private fun HtmlHeading(element: Element, onClickCitation: (String) -> Unit) {
     val level = element.tagName().removePrefix("h").toIntOrNull() ?: 1
     val headingStyle = HeaderStyle.fromLevel(
         level = level,
-        fontSizeRatio = LocalSettings.current.displaySetting.fontSizeRatio,
+        // 消息级 LocalTextStyle 已在 ChatMessage 应用过 fontSizeRatio，
+        // 这里再乘会双重缩放（主题导入后标题明显过小），固定为 1
+        fontSizeRatio = 1f,
     )
     val verticalPadding = HeaderStyle.verticalPadding(level)
     ProvideTextStyle(LocalTextStyle.current.merge(headingStyle)) {
