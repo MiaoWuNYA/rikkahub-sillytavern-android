@@ -229,12 +229,6 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         headlineContent = { Text(stringResource(R.string.setting_page_authors_note)) },
                     )
                     item(
-                        onClick = { navController.navigate(Screen.YnufeAccount) },
-                        leadingContent = { Icon(HugeIcons.GraduationCap, null) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_ynufe_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_ynufe)) },
-                    )
-                    item(
                         onClick = { navController.navigate(Screen.SettingHuaDeng) },
                         leadingContent = { Icon(HugeIcons.Settings03, null) },
                         supportingContent = { Text(stringResource(R.string.setting_page_huadeng_desc)) },

@@ -771,8 +771,6 @@ data class HuaDengSettings(
     val enableProxyFix: Boolean = false,
     // 防空回复（全局）：系统提示词入对话流 + 空回复微扰重试，针对 Gemini
     val enableAntiEmptyResponse: Boolean = false,
-    // 云财教务系统集成总开关（学生工具 AI 自动查成绩/课表等）
-    val enableYnufeTools: Boolean = false,
 )
 
 @Serializable

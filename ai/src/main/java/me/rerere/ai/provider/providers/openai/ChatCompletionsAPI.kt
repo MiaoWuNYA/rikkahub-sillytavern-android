@@ -847,9 +847,9 @@ class ChatCompletionsAPI(
         val reasoning = reasoningParts.joinToString("") { it.reasoning }
         if (reasoning.isEmpty()) return message
 
-        // 剥离 "Response:" 前缀
-        val prefix = Regex("(?i)^response\\s*:\\s*")
-        val cleanedText = if (prefix.containsMatchIn(text)) prefix.replace(text, "") else text
+        // 剥离 "Response:" / "response" 前缀
+        val prefix = Regex("(?i)^response\\s*:?\\s*")
+        val cleanedText = if (prefix.containsMatchIn(text)) prefix.replace(text, "").trimStart() else text
 
         // content 极短且 reasoning 有实质内容 → 提升 reasoning 为正文
         if (reasoning.length > cleanedText.length * 2 && cleanedText.length < 200) {

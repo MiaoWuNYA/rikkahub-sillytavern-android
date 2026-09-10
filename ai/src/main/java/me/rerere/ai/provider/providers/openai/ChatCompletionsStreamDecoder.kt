@@ -109,12 +109,12 @@ internal class ChatCompletionsStreamDecoder(
         val images = payload["images"] as? JsonArray ?: JsonArray(emptyList())
 
         // 中转站兼容：Gemini 经 OpenAI 兼容中转时，有时会把实际回复塞进 reasoning_content，
-        // content 字段以 "Response:" 前缀开头且正文被截断，或 content 为空。
+        // content 字段以 "Response:" / "response" 前缀开头且正文被截断，或 content 为空。
         if (enableProxyFix && role == MessageRole.ASSISTANT) {
-            // 情况 1: content 以 "Response:" 前缀开头 → 剥离前缀
-            val responsePrefixRegex = Regex("(?i)^response\\s*:\\s*")
+            // 情况 1: content 以 "Response:" / "response" 前缀开头 → 剥离前缀
+            val responsePrefixRegex = Regex("(?i)^response\\s*:?\\s*")
             if (content.isNotEmpty() && responsePrefixRegex.containsMatchIn(content)) {
-                content = responsePrefixRegex.replace(content, "")
+                content = responsePrefixRegex.replace(content, "").trimStart()
             }
             // 情况 2: content 为空/极短且 reasoning 有实质内容 → 将 reasoning 提升为正文
             if (reasoning.orEmpty().length > content.length * 2 && content.length < 200) {
