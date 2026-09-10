@@ -82,6 +82,8 @@ import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.LeftToRightListBullet
 import me.rerere.hugeicons.stroke.Menu03
 import me.rerere.hugeicons.stroke.MessageAdd01
+import me.rerere.hugeicons.stroke.Telephone
+import me.rerere.hugeicons.stroke.Video01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.getAssistantById
@@ -90,11 +92,14 @@ import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.datastore.getCurrentChatModel
 import me.rerere.rikkahub.data.datastore.getSelectedASRProvider
+import me.rerere.rikkahub.data.datastore.getSelectedTTSProvider
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.repository.WorkspaceRepository
+import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.service.ChatError
+import me.rerere.rikkahub.service.VoiceCallService
 import me.rerere.rikkahub.ui.components.ai.ChatAttachmentPickerActions
 import me.rerere.rikkahub.ui.components.ai.ChatInput
 import me.rerere.rikkahub.ui.components.ai.FilesPicker
@@ -414,7 +419,24 @@ private fun ChatPageContent(
                     },
                     onUpdateTitle = {
                         vm.updateTitle(it)
-                    }
+                    },
+                    onVoiceCall = {
+                        val activeId = VoiceCallService.activeConversationId.value
+                        when {
+                            activeId == null || activeId == conversation.id.toString() -> {
+                                navController.navigate(Screen.VoiceCall(conversation.id.toString()))
+                            }
+                            else -> toaster.show("当前有通话进行中，请先挂断", type = ToastType.Warning)
+                        }
+                    },
+                    onVideoCall = {
+                        val activeId = VoiceCallService.activeConversationId.value
+                        if (activeId == null || activeId == conversation.id.toString()) {
+                            navController.navigate(Screen.VideoCall(conversation.id.toString()))
+                        } else {
+                            toaster.show("当前有通话进行中，请先挂断", type = ToastType.Warning)
+                        }
+                    },
                 )
             },
             bottomBar = {
@@ -854,6 +876,8 @@ private fun TopBar(
     onNewChat: () -> Unit,
     onClickMenu: () -> Unit,
     onUpdateTitle: (String) -> Unit,
+    onVoiceCall: () -> Unit = {},
+    onVideoCall: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
@@ -907,6 +931,17 @@ private fun TopBar(
             }
         },
         actions = {
+            // 语音 / 视频通话：仅在 TTS 与 ASR 均已配置时显示
+            val ttsReady = settings.getSelectedTTSProvider() != null
+            val asrReady = settings.getSelectedASRProvider() != null
+            if (ttsReady && asrReady) {
+                IconButton(onClick = onVideoCall) {
+                    Icon(HugeIcons.Video01, contentDescription = "视频通话")
+                }
+                IconButton(onClick = onVoiceCall) {
+                    Icon(HugeIcons.Telephone, contentDescription = "语音通话")
+                }
+            }
             IconButton(onClick = onClickMenu) {
                 Icon(
                     if (previewMode) HugeIcons.Cancel01 else HugeIcons.LeftToRightListBullet,

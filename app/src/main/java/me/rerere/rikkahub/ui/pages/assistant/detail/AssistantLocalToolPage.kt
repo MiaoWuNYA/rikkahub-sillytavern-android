@@ -398,6 +398,16 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            item(
+                headlineContent = { Text("生活空间") },
+                supportingContent = { Text("生活备忘、日历提醒、共读书架、一起听歌等 AI 工具（情侣空间绑定时还会加入共读日记与纪念册）") },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.LifeCompanion),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.LifeCompanion, it) }
+                    )
+                }
+            )
         }
     }
 }

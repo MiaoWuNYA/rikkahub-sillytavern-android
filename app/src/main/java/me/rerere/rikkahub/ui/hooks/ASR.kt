@@ -57,6 +57,19 @@ interface CustomAsrState {
     fun cleanup()
 }
 
+/**
+ * 非 Compose 环境的前台服务用工厂：按当前设置构建 ASR 状态并应用所选 provider。
+ */
+fun createCustomAsrState(
+    context: Context,
+    httpClient: OkHttpClient,
+    settingsStore: SettingsStore,
+): CustomAsrState {
+    val impl = CustomAsrStateImpl(context.applicationContext, httpClient)
+    impl.updateProvider(settingsStore.settingsFlow.value.getSelectedASRProvider())
+    return impl
+}
+
 private class CustomAsrStateImpl(
     private val context: Context,
     private val httpClient: OkHttpClient

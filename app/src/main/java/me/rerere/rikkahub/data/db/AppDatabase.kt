@@ -7,6 +7,7 @@ import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import me.rerere.ai.core.TokenUsage
 import me.rerere.rikkahub.data.db.dao.ConversationDAO
+import me.rerere.rikkahub.data.db.dao.CoupleDAO
 import me.rerere.rikkahub.data.db.dao.FavoriteDAO
 import me.rerere.rikkahub.data.db.dao.GenMediaDAO
 import me.rerere.rikkahub.data.db.dao.ManagedFileDAO
@@ -15,6 +16,12 @@ import me.rerere.rikkahub.data.db.dao.WorkspaceDAO
 import me.rerere.rikkahub.data.db.dao.FolderDAO
 import me.rerere.rikkahub.data.db.dao.MessageNodeDAO
 import me.rerere.rikkahub.data.db.entity.ConversationEntity
+import me.rerere.rikkahub.data.db.entity.CoupleAnniversaryEntity
+import me.rerere.rikkahub.data.db.entity.CoupleCommentEntity
+import me.rerere.rikkahub.data.db.entity.CoupleDiaryEntity
+import me.rerere.rikkahub.data.db.entity.CoupleDiaryFolderEntity
+import me.rerere.rikkahub.data.db.entity.CouplePostEntity
+import me.rerere.rikkahub.data.db.entity.CoupleRelationshipEntity
 import me.rerere.rikkahub.data.db.entity.FavoriteEntity
 import me.rerere.rikkahub.data.db.entity.GenMediaEntity
 import me.rerere.rikkahub.data.db.entity.ManagedFileEntity
@@ -23,6 +30,7 @@ import me.rerere.rikkahub.data.db.entity.MessageNodeEntity
 import me.rerere.rikkahub.data.db.entity.WorkspaceEntity
 import me.rerere.rikkahub.data.db.entity.FolderEntity
 import me.rerere.rikkahub.data.db.migrations.Migration_16_17
+import me.rerere.rikkahub.data.db.migrations.Migration_29_30
 import me.rerere.rikkahub.data.db.migrations.Migration_8_9
 import me.rerere.rikkahub.utils.JsonInstant
 
@@ -36,8 +44,14 @@ import me.rerere.rikkahub.utils.JsonInstant
     FolderEntity::class,
         ManagedFileEntity::class,
         FavoriteEntity::class,
+        CoupleRelationshipEntity::class,
+        CouplePostEntity::class,
+        CoupleCommentEntity::class,
+        CoupleDiaryEntity::class,
+        CoupleDiaryFolderEntity::class,
+        CoupleAnniversaryEntity::class,
     ],
-    version = 29,
+    version = 30,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3),
@@ -73,6 +87,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun workspaceDao(): WorkspaceDAO
 
     abstract fun folderDao(): FolderDAO
+
+    abstract fun coupleDao(): CoupleDAO
 }
 
 object TokenUsageConverter {

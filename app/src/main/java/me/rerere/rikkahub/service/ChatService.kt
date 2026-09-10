@@ -96,6 +96,8 @@ import me.rerere.rikkahub.data.ai.context.RollingContextSummary
 import me.rerere.rikkahub.data.ai.context.automaticRollingContextThreshold
 import me.rerere.rikkahub.data.ai.context.coveredMessageCount
 import me.rerere.rikkahub.data.ai.tools.createHistoryMessageTool
+import me.rerere.rikkahub.data.ai.tools.createLifeCompanionTools
+import me.rerere.rikkahub.data.ai.tools.createCoupleSpaceTools
 import me.rerere.rikkahub.data.ai.context.createRollingContextPlan
 import me.rerere.rikkahub.data.ai.context.isStillApplicableTo
 import me.rerere.rikkahub.data.ai.context.rollingContextWindowStartIndex
@@ -131,6 +133,7 @@ import me.rerere.rikkahub.data.model.replaceRegexes
 import me.rerere.rikkahub.data.model.GenerationType
 import me.rerere.rikkahub.data.model.toMessageNode
 import me.rerere.rikkahub.data.repository.ConversationRepository
+import me.rerere.rikkahub.data.repository.CoupleRepository
 import me.rerere.rikkahub.data.repository.MemoryRepository
 import me.rerere.rikkahub.data.repository.WorkspaceRepository
 import me.rerere.rikkahub.data.repository.FolderRepository
@@ -227,6 +230,7 @@ class ChatService(
     private val skillManager: SkillManager,
     private val folderRepository: FolderRepository,
     private val memoryRetrievalTransformer: MemoryRetrievalTransformer,
+    private val coupleRepository: CoupleRepository,
 ) {
     // workspace 系统提示注入 (依赖 workspaceRepository, 故在类内构造)
     private val workspaceReminderTransformer = WorkspaceReminderTransformer(workspaceRepository)
@@ -1398,6 +1402,23 @@ class ChatService(
                 }
             } else null
 
+            // ── 生活 / 情侣空间工具 ──
+            // 生活空间 6 个工具：助手开启“生活空间”开关时加入
+            val lifeCompanionTools = if (assistant.localTools.contains(LocalToolOption.LifeCompanion)) {
+                runCatching {
+                    createLifeCompanionTools(context, coupleRepository, assistant.id.toString())
+                }.getOrDefault(emptyList())
+            } else emptyList()
+            // 情侣空间 4 个工具：仅当情侣空间已绑定且绑定角色是当前助手时加入
+            val coupleSpaceTools = runCatching {
+                val relationship = coupleRepository.relationship.first()
+                if (relationship != null && relationship.assistantId == assistant.id.toString()) {
+                    createCoupleSpaceTools(coupleRepository, relationship.assistantId)
+                } else {
+                    emptyList()
+                }
+            }.getOrDefault(emptyList())
+
             generationHandler.generateText(
                 settings = settings,
                 model = model,
@@ -1470,6 +1491,9 @@ class ChatService(
                             )
                         )
                     }
+                    // 生活空间 / 情侣空间工具
+                    addAll(lifeCompanionTools)
+                    addAll(coupleSpaceTools)
                     // 对齐上游：MCP 工具名带服务器名前缀，且校验服务器名（仅字母数字），非法名直接报错返回
                     mcpManager.getAllAvailableTools().also { allTools ->
                         val invalidNames = allTools

@@ -88,6 +88,8 @@ import me.rerere.rikkahub.ui.components.ui.Favicon
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.modifier.shimmer
 import me.rerere.rikkahub.ui.context.LocalSettings
+import me.rerere.rikkahub.ui.components.message.extractVideoCallArchiveSessionId
+import me.rerere.rikkahub.ui.components.message.VideoCallArchiveCard
 import me.rerere.rikkahub.ui.theme.LocalChatFontFamily
 import me.rerere.rikkahub.ui.theme.rememberChatFontFamily
 import me.rerere.rikkahub.ui.theme.extendColors
@@ -433,7 +435,13 @@ private fun MessagePartsBlock(
                         // 内部可选择的 Text 会频繁注册/注销，与 Compose 选择工具栏在绘制阶段
                         // 对 selectable 列表的排序产生并发修改，导致 ConcurrentModificationException。
                         // 生成结束后内容稳定，再启用文本选择。
-                        if (loading) {
+                        // 视频通话存档卡片：[VIDEO_CALL_ARCHIVE:<id>] 标记用专用卡片渲染
+                        val archiveSessionId = remember(part.text) {
+                            extractVideoCallArchiveSessionId(part.text)
+                        }
+                        if (archiveSessionId != null) {
+                            VideoCallArchiveCard(sessionId = archiveSessionId)
+                        } else if (loading) {
                             textContent()
                         } else {
                             SelectionContainer {

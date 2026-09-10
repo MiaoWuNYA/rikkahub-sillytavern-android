@@ -123,6 +123,10 @@ sealed class LocalToolOption {
     @Serializable
     @SerialName("device_toolbox")
     data object DeviceToolbox : LocalToolOption()
+
+    @Serializable
+    @SerialName("life_companion")
+    data object LifeCompanion : LocalToolOption()
 }
 
 class LocalTools(

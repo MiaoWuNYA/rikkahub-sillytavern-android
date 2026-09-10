@@ -14,6 +14,7 @@
   <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
   <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -151,6 +152,12 @@
       android:exported="false"
       android:foregroundServiceType="dataSync">
     </service>
+
+    <!-- 语音/视频通话前台服务：ASR→LLM→TTS 本地通话循环 -->
+    <service
+      android:name=".service.VoiceCallService"
+      android:exported="false"
+      android:foregroundServiceType="microphone" />
 
     <!-- 微信 Bot (iLink 协议): 长轮询收微信消息, 转给关联助手处理, 回复发回微信 -->
     <service

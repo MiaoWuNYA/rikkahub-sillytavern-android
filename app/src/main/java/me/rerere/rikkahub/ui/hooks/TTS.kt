@@ -118,6 +118,22 @@ interface CustomTtsState {
 }
 
 /**
+ * 非 Compose 环境的前台服务用工厂：按当前设置构建 TTS 状态并应用所选 provider。
+ */
+fun createCustomTtsState(
+    context: Context,
+    settingsStore: SettingsStore,
+): CustomTtsState {
+    val impl = CustomTtsStateImpl(
+        context = context.applicationContext,
+        settingsStore = settingsStore,
+    )
+    impl.updateProvider(settingsStore.settingsFlow.value.getSelectedTTSProvider())
+    impl.setSpeed(settingsStore.settingsFlow.value.defaultTTSPlaybackSpeed)
+    return impl
+}
+
+/**
  * Internal implementation of CustomTtsState.
  */
 private class CustomTtsStateImpl(

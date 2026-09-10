@@ -87,6 +87,13 @@ import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantPromptPage
 import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantRequestPage
 import me.rerere.rikkahub.ui.pages.backup.BackupPage
 import me.rerere.rikkahub.ui.pages.chat.ChatPage
+import me.rerere.rikkahub.ui.pages.couple.CoupleAnniversaryBookPage
+import me.rerere.rikkahub.ui.pages.couple.CoupleDiaryPage
+import me.rerere.rikkahub.ui.pages.couple.CoupleMomentsPage
+import me.rerere.rikkahub.ui.pages.couple.CoupleSpacePage
+import me.rerere.rikkahub.ui.pages.life.LifeHubPage
+import me.rerere.rikkahub.ui.pages.voice.VideoCallPage
+import me.rerere.rikkahub.ui.pages.voice.VoiceCallPage
 import me.rerere.rikkahub.ui.pages.chat.GroupChatListPage
 import me.rerere.rikkahub.ui.pages.chat.GroupChatPage
 import me.rerere.rikkahub.ui.pages.setting.PersonaPage
@@ -593,6 +600,34 @@ class RouteActivity : ComponentActivity() {
                                 GroupChatPage(groupId = key.id)
                             }
 
+                            entry<Screen.CoupleSpace> {
+                                CoupleSpacePage()
+                            }
+
+                            entry<Screen.CoupleMoments> {
+                                CoupleMomentsPage()
+                            }
+
+                            entry<Screen.CoupleDiary> {
+                                CoupleDiaryPage()
+                            }
+
+                            entry<Screen.CoupleAnniversaries> {
+                                CoupleAnniversaryBookPage()
+                            }
+
+                            entry<Screen.LifeHub> {
+                                LifeHubPage()
+                            }
+
+                            entry<Screen.VoiceCall> { key ->
+                                VoiceCallPage(conversationId = Uuid.parse(key.conversationId), onBack = { backStack.removeLastOrNull() })
+                            }
+
+                            entry<Screen.VideoCall> { key ->
+                                VideoCallPage(conversationId = Uuid.parse(key.conversationId), onBack = { backStack.removeLastOrNull() })
+                            }
+
                         }
                     )
                     if (BuildConfig.DEBUG) {
@@ -822,4 +857,25 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object GroupChatList : Screen
+
+    @Serializable
+    data object CoupleSpace : Screen
+
+    @Serializable
+    data object CoupleMoments : Screen
+
+    @Serializable
+    data object CoupleDiary : Screen
+
+    @Serializable
+    data object CoupleAnniversaries : Screen
+
+    @Serializable
+    data object LifeHub : Screen
+
+    @Serializable
+    data class VoiceCall(val conversationId: String) : Screen
+
+    @Serializable
+    data class VideoCall(val conversationId: String) : Screen
 }

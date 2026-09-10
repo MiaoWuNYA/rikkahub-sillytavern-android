@@ -117,6 +117,7 @@ val appModule = module {
             skillManager = get(),
             folderRepository = get(),
             memoryRetrievalTransformer = get(),
+            coupleRepository = get(),
         )
     }
 
