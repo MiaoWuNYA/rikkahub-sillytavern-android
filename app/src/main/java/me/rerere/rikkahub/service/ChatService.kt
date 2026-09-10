@@ -1806,7 +1806,9 @@ class ChatService(
 
         runCatching {
             val settings = settingsStore.settingsFlow.first()
-            val model = settings.findModelById(settings.fastModelId)
+            // 标题模型未设置时跟随快速模型
+            val model = settings.findModelById(settings.titleModelId)
+                ?: settings.findModelById(settings.fastModelId)
                 ?: return@runCatching
             val provider = model.findProvider(settings.providers) ?: return@runCatching
 

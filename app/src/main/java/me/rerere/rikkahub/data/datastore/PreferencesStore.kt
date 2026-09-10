@@ -93,6 +93,7 @@ class SettingsStore(
         val FAVORITE_MODELS = stringPreferencesKey("favorite_models")
         val SELECT_MODEL = stringPreferencesKey("chat_model")
         val FAST_MODEL = stringPreferencesKey("fast_model")
+        val TITLE_MODEL = stringPreferencesKey("title_model")
         val FAST_MODEL_REASONING_LEVEL = stringPreferencesKey("fast_model_reasoning_level")
         val TRANSLATE_MODEL = stringPreferencesKey("translate_model")
         val ENABLE_SUGGESTION = booleanPreferencesKey("enable_suggestion")
@@ -207,6 +208,7 @@ class SettingsStore(
                 preferences[FAVORITE_MODELS] = JsonInstant.encodeToString(settings.favoriteModels)
                 preferences[SELECT_MODEL] = settings.chatModelId.toString()
                 preferences[FAST_MODEL] = settings.fastModelId.toString()
+                preferences[TITLE_MODEL] = settings.titleModelId?.toString() ?: ""
                 preferences[FAST_MODEL_REASONING_LEVEL] = settings.fastModelReasoningLevel.name
                 preferences[TRANSLATE_MODEL] = settings.translateModeId.toString()
                 preferences[ENABLE_SUGGESTION] = settings.enableSuggestion
@@ -304,6 +306,7 @@ class SettingsStore(
                     ?: DEFAULT_AUTO_MODEL_ID,
                 fastModelId = preferences[FAST_MODEL]?.let { Uuid.parse(it) }
                     ?: DEFAULT_AUTO_MODEL_ID,
+                titleModelId = preferences[TITLE_MODEL]?.takeIf { it.isNotBlank() }?.let { Uuid.parse(it) },
                 fastModelReasoningLevel = preferences[FAST_MODEL_REASONING_LEVEL]
                     ?.let { value -> ReasoningLevel.entries.find { it.name == value } }
                     ?: ReasoningLevel.AUTO,
@@ -625,6 +628,8 @@ data class Settings(
     val favoriteModels: List<Uuid> = emptyList(),
     val chatModelId: Uuid = Uuid.random(),
     val fastModelId: Uuid = Uuid.random(),
+    // 标题总结模型：null = 跟随快速模型
+    val titleModelId: Uuid? = null,
     val fastModelReasoningLevel: ReasoningLevel = ReasoningLevel.AUTO,
     val imageGenerationModelId: Uuid = Uuid.random(),
     val titlePrompt: String = DEFAULT_TITLE_PROMPT,
