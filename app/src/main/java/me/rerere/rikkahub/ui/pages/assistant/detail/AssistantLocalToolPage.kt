@@ -388,6 +388,16 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            item(
+                headlineContent = { Text("设备工具箱") },
+                supportingContent = { Text("手机设备控制：手电筒、震动、音量、亮度、短信、联系人、定位等（AI 先查询目录再按需调用）") },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.DeviceToolbox),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.DeviceToolbox, it) }
+                    )
+                }
+            )
         }
     }
 }

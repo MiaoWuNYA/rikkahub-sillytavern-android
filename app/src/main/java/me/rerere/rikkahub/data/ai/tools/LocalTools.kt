@@ -119,6 +119,10 @@ sealed class LocalToolOption {
     @Serializable
     @SerialName("calendar")
     data object Calendar : LocalToolOption()
+
+    @Serializable
+    @SerialName("device_toolbox")
+    data object DeviceToolbox : LocalToolOption()
 }
 
 class LocalTools(
@@ -430,6 +434,9 @@ class LocalTools(
 
     val calendarCreateTool by lazy { buildCalendarCreateTool(context) }
 
+    // 设备工具箱元工具：懒发现模式，内部工具不直接注册
+    val deviceToolboxTool by lazy { createDeviceToolboxTool(context) }
+
     fun getTools(options: List<LocalToolOption>): List<Tool> {
         val tools = mutableListOf<Tool>()
         if (options.contains(LocalToolOption.JavascriptEngine)) {
@@ -456,6 +463,9 @@ class LocalTools(
         if (options.contains(LocalToolOption.Calendar)) {
             tools.add(calendarQueryTool)
             tools.add(calendarCreateTool)
+        }
+        if (options.contains(LocalToolOption.DeviceToolbox)) {
+            tools.add(deviceToolboxTool)
         }
         return tools
     }
