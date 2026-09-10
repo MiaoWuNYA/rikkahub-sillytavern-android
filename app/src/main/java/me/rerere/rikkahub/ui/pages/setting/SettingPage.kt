@@ -50,11 +50,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.AiMagic
 import me.rerere.hugeicons.stroke.Alert01
+import me.rerere.hugeicons.stroke.Shield01
 import me.rerere.hugeicons.stroke.Book01
 import me.rerere.hugeicons.stroke.Book03
 import me.rerere.hugeicons.stroke.BookOpen02
 import me.rerere.hugeicons.stroke.BookmarkAdd01
 import me.rerere.hugeicons.stroke.Bookshelf01
+import me.rerere.hugeicons.stroke.Puzzle
 import me.rerere.hugeicons.stroke.Brain02
 import me.rerere.hugeicons.stroke.Clapping01
 import me.rerere.hugeicons.stroke.Database02
@@ -217,6 +219,18 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         leadingContent = { Icon(HugeIcons.Package, null) },
                         supportingContent = { Text(stringResource(R.string.setting_page_extensions_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_extensions)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.Plugins) },
+                        leadingContent = { Icon(HugeIcons.Puzzle, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_plugins_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_plugins)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingSecurity) },
+                        leadingContent = { Icon(HugeIcons.Shield01, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_security_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_security)) },
                     )
                     item(
                         onClick = { navController.navigate(Screen.Persona) },

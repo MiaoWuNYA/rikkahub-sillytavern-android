@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -39,14 +41,19 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dokar.sonner.ToastType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.rerere.rikkahub.data.datastore.DisplaySetting
+import me.rerere.rikkahub.data.model.SillyTavernTheme
+import me.rerere.rikkahub.data.model.applyTo
+import me.rerere.rikkahub.data.model.parseSillyTavernTheme
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.ColorPickerDialog
 import me.rerere.rikkahub.ui.components.ui.toComposeColor
+import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.plus
 import org.koin.androidx.compose.koinViewModel
@@ -97,6 +104,29 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
     }
     val assistantBubbleImagePicker = rememberImageImporter { path ->
         updateDisplaySetting(displaySetting.copy(assistantBubbleImagePath = path))
+    }
+
+    // 酒馆（SillyTavern）主题导入：选 JSON → 解析 → 确认对话框预览覆盖项 → 应用
+    val toaster = LocalToaster.current
+    var pendingTheme by remember { mutableStateOf<SillyTavernTheme?>(null) }
+    val themePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            runCatching {
+                val text = withContext(Dispatchers.IO) {
+                    context.contentResolver.openInputStream(uri)?.use { stream ->
+                        stream.readBytes().toString(Charsets.UTF_8)
+                    } ?: error("无法读取所选文件")
+                }
+                parseSillyTavernTheme(text)
+            }.onSuccess { theme ->
+                pendingTheme = theme
+            }.onFailure { error ->
+                toaster.show("主题解析失败：${error.message.orEmpty()}", type = ToastType.Error)
+            }
+        }
     }
 
     if (showGlobalTextColorPicker) {
@@ -156,6 +186,40 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
         )
     }
 
+    pendingTheme?.let { theme ->
+        val changeLabels = themeChangeLabels(theme, displaySetting)
+        AlertDialog(
+            onDismissRequest = { pendingTheme = null },
+            title = { Text("应用酒馆主题") },
+            text = {
+                Text(
+                    buildString {
+                        append("主题「${theme.name ?: "未命名"}」将覆盖以下外观设置：\n")
+                        if (changeLabels.isEmpty()) {
+                            append("\n未能识别出可应用的字段（应用后设置不会有变化）")
+                        } else {
+                            changeLabels.forEach { label -> append("\n· $label") }
+                        }
+                        append("\n\n其余显示设置保持不变，自定义 CSS 不会被导入")
+                    }
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    updateDisplaySetting(theme.applyTo(displaySetting))
+                    toaster.show(
+                        "已应用主题：${theme.name ?: "未命名"}；未能识别的字段已忽略",
+                        type = ToastType.Success
+                    )
+                    pendingTheme = null
+                }) { Text("应用") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingTheme = null }) { Text("取消") }
+            },
+        )
+    }
+
     Scaffold(
         topBar = {
             LargeFlexibleTopAppBar(
@@ -173,6 +237,23 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
             contentPadding = contentPadding + PaddingValues(8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            item("import") {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text("导入") },
+                ) {
+                    item(
+                        headlineContent = { Text("导入酒馆（SillyTavern）主题") },
+                        supportingContent = { Text("选择酒馆主题 JSON，应用其配色与字号设置") },
+                        trailingContent = {
+                            TextButton(onClick = { themePickerLauncher.launch("application/json") }) {
+                                Text("导入")
+                            }
+                        },
+                    )
+                }
+            }
+
             item("colors") {
                 CardGroup(
                     modifier = Modifier.padding(horizontal = 8.dp),
@@ -379,6 +460,20 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
             }
         }
     }
+}
+
+/** 计算酒馆主题将覆盖的设置项名称（用于导入前预览） */
+private fun themeChangeLabels(theme: SillyTavernTheme, base: DisplaySetting): List<String> {
+    val patched = theme.applyTo(base)
+    val labels = mutableListOf<String>()
+    if (patched.globalTextColor != base.globalTextColor) labels.add("全局字体颜色")
+    if (patched.chatBackgroundColor != base.chatBackgroundColor) labels.add("聊天背景色")
+    if (patched.userBubbleColor != base.userBubbleColor) labels.add("用户气泡颜色")
+    if (patched.assistantBubbleColor != base.assistantBubbleColor) labels.add("AI气泡颜色")
+    if (patched.quoteColor != base.quoteColor) labels.add("引用颜色")
+    if (patched.italicsColor != base.italicsColor) labels.add("斜体颜色")
+    if (patched.fontSizeRatio != base.fontSizeRatio) labels.add("字号比例")
+    return labels
 }
 
 @Composable

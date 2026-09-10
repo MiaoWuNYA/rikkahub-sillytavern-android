@@ -1,0 +1,53 @@
+{
+  "id": "com.orangechat.plugin.weather",
+  "name": "天气查询",
+  "description": "查询指定城市的天气信息，包括当前天气和未来天气预报",
+  "version": "1.1.0",
+  "author": "Silas",
+  "icon": "🌤️",
+  "entry": "main.js",
+  "tools": [
+    {
+      "name": "get_weather",
+      "description": "查询指定城市的当前详细天气信息，包括温度、体感温度、湿度、风速风向、能见度、气压、紫外线指数、云量、降水量等",
+      "parameters": [
+        {
+          "name": "city",
+          "type": "string",
+          "required": true,
+          "description": "要查询天气的城市名称，如 Beijing、Shanghai、New York、Tokyo"
+        }
+      ]
+    },
+    {
+      "name": "get_weather_brief",
+      "description": "查询指定城市的简要天气信息，返回一行简短的天气描述",
+      "parameters": [
+        {
+          "name": "city",
+          "type": "string",
+          "required": false,
+          "description": "要查询天气的城市名称"
+        }
+      ]
+    },
+    {
+      "name": "get_weather_forecast",
+      "description": "查询指定城市未来1-3天的天气预报，包含每日最高最低温度、降雨降雪概率、日出日落、月相以及逐小时天气详情",
+      "parameters": [
+        {
+          "name": "city",
+          "type": "string",
+          "required": true,
+          "description": "要查询天气预报的城市名称"
+        },
+        {
+          "name": "days",
+          "type": "integer",
+          "required": false,
+          "description": "预报天数，1-3天，默认3天"
+        }
+      ]
+    }
+  ]
+}

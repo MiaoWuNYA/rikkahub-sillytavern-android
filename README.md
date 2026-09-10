@@ -3,7 +3,7 @@
 [**简体中文**](README.md) | [**English**](README_EN.md)
 
 > 本项目是 [RikkaHub](https://github.com/rikkahub/rikkahub) 的深度定制分支，已合入上游最新版本（**v2.5.1**）。
-> 上游全部功能原样保留，在此基础上重点强化了 **⚡提示词前缀缓存**、**🧠记忆与长对话**、**🍺酒馆（SillyTavern）兼容**、**🗼中转站兼容**、**🛡隐私与稳定性** 五大方向。
+> 上游全部功能原样保留，在此基础上重点强化了 **⚡提示词前缀缓存**、**🧠记忆与长对话**、**🍺酒馆（SillyTavern）兼容**、**🗼中转站兼容**、**📱手机增强**、**🛡隐私与稳定性** 六大方向。
 > 逐文件差异与上游合并手册见 [DIVERGENCE.md](DIVERGENCE.md)。
 
 ---
@@ -13,14 +13,17 @@
 一个跑在手机上的 AI 聊天客户端（Kotlin + Jetpack Compose + Material You）：
 
 - **提示词前缀缓存**：借鉴 DeepSeek Harness 的前缀稳定性设计，可显著降低长对话的 token 费用
-- **记忆与长对话**：语义记忆 RAG + 上下文滚动压缩，长对话不再失忆、不再爆上下文
+- **记忆与长对话**：语义记忆 RAG + 三层记忆 + 上下文滚动压缩，长对话不再失忆、不再爆上下文
 - **多供应商**：OpenAI / Claude / Gemini / DeepSeek 等一切 OpenAI、Anthropic、Google 兼容 API（内置 OrcaRouter 聚合网关，默认停用）
 - **中转站兼容**：Gemini 经 OpenAI 兼容中转时正文被吞、被截断、"response" 前缀伪影，一键修复
 - **防空回复**：Gemini 经典空回复自动微扰重试，系统提示词移入对话流（世界书注入位置保持不变）
-- **豆包语音全家桶**：语音合成 2.0（Doubao TTS）+ 火山 ASR，一个 Agent Plan Key 全搞定
-- **深度兼容酒馆（SillyTavern）**：角色卡、世界书、预设、正则脚本、快速回复（QR）、HTML 卡片、多开场白 —— 全部按官方语义无损导入导出
+- **豆包语音全家桶**：语音合成 2.0（Doubao TTS）+ 火山 ASR，一个 Agent Plan Key 全搞定，并支撑应用内语音/视频通话
+- **深度兼容酒馆（SillyTavern）**：角色卡、世界书、预设、正则脚本、快速回复（QR）、HTML 卡片、多开场白、**美化主题导入** —— 全部按官方语义无损导入导出
+- **插件系统**：QuickJS 沙箱插件，ZIP 一键导入，AI 可直接调用插件工具
+- **设备工具箱**：手电筒、音量、短信、联系人、定位等 30 个手机工具，懒发现元工具模式省 token
+- **微信 / QQ Bot**：把某个助手接入微信或 QQ，随时随地继续对话；支持 AI 主动发消息
 - **可编程提示词**：宏引擎 2.0、20+ 斜杠命令、人设 Persona、作者注释、群聊
-- **隐私加固**：请求日志脱敏、工具审批边界、遥测默认关闭
+- **隐私加固**：请求日志脱敏、工具审批边界、全局安全设置、遥测默认关闭
 
 ---
 
@@ -68,6 +71,58 @@ Gemini 经 OpenAI 兼容中转站（newapi 等）接入时的三类经典病态�
 
 ---
 
+## 📱 手机增强
+
+### 设备工具箱
+
+助手工具页开启「设备工具箱」后，AI 可调用 30 个手机系统工具：手电筒、震动、音量/亮度（读+写）、Toast、电量、存储、Wi-Fi/音频/电话/传感器信息、分享、壁纸、系统通知、闹钟/计时器、音乐控制、短信读取、联系人、通话记录、定位、应用启动、媒体扫描、文件下载、打开文件等。
+
+为节约 token，这里采用**懒发现元工具**设计：上下文里只注册一个 `device_toolbox` 工具位，AI 先 `action=list` 拉取工具目录（含参数说明与权限授予状态），再 `action=run` 调用具体工具。改状态/隐私类工具执行前需审批，纯读取工具免审批。
+
+### 微信 Bot / QQ Bot
+
+把某个已有助手接入消息通道（AI、记忆、工具全部复用该助手）：
+
+- **微信 Bot**：扫码登录自己的微信号（iLink 协议），HTTP 长轮询收消息 → 自动回复；token 过期自动停服并通知
+- **QQ Bot**：QQ 开放平台官方 API，填入 AppID + AppSecret 即可，WebSocket 网关实时收发，token 自动刷新
+- 两者默认关闭，开启前有隐私风险确认弹窗
+
+### AI 主动发消息
+
+- AlarmManager 精确闹钟 + WorkManager 兜底双通道，随机间隔（可设范围）主动找你聊天
+- 生成时注入上下文（上次聊天距今、当前时间、电量），正在生成时礼貌放弃不冲突
+- 全部默认关闭
+
+### 语音 / 视频通话
+
+聊天页顶栏一键进入通话界面（**仅在 TTS 与 ASR 均已配置时显示**）：本地静音检测 → ASR 增量转写 → 自动发送 → 回复流式朗读，支持随时打断，挂断后通话内容折叠成存档卡片留在会话里。豆包 TTS/火山 ASR 配好即用。
+
+### 安全设置
+
+设置 → 安全设置：全局工具调用审批策略——**强制确认所有工具调用**（每次执行前都要确认）或**自动批准所有工具调用**（跳过审批，谨慎开启），两项互斥。
+
+---
+
+## 🧩 插件系统（源自 orangechat/Tumin）
+
+QuickJS 沙箱插件：插件 = ZIP 包（`manifest.json` + `main.js`），设置 → 插件管理一键导入（两段式预览确认 + SHA-256 完整性校验 + Zip Slip 防护）。
+
+- manifest 声明的 tools 自动转成 AI 可调用的工具（统一 `plugin_` 前缀，执行需审批）
+- JS 沙箱：单线程、30 秒超时、`fetch` 域名白名单（fail-closed）、每插件独立 KV 存储
+- 支持文件夹归类、启用/停用、per-插件配置表单（文本/密码/开关/下拉/模型选择）
+- 示例插件见 `docs/plugins/example/weather/`，插件开发指南见 [docs/PLUGINS_GUIDE.md](docs/PLUGINS_GUIDE.md)
+
+---
+
+## 🎨 聊天外观自定义与主题
+
+- **颜色覆盖**：主色、全局文字、用户/AI/思维链气泡、聊天背景、输入框 7 项自定义颜色（ARGB）
+- **气泡美化**：用户/AI 气泡背景图 + 圆角 + 主题色遮罩，抽屉背景图
+- **酒馆美化主题导入**：SillyTavern 美化主题 JSON（`main_text_color` / `chat_tint_color` / `user_mes_blur_tint_color` / `bot_mes_blur_tint_color` / `font_scale` 等）直接导入并映射到以上颜色体系（聊天外观自定义页一键导入，CSS 类字段自动忽略）
+- 预设色板 + HCT 自定义主题 + 动态取色保持不变
+
+---
+
 ## ⚡ 提示词前缀缓存（Prompt Cache）
 
 主流供应商（DeepSeek / Kimi / Claude 等）都提供自动前缀缓存：只要本次请求的前缀与上次完全一致即可命中，命中部分的计费远低于正常价。但聊天场景里大量内容**每轮都在变**（时间戳、最近会话、记忆、随机数、滚动摘要），前缀一动缓存全废。
@@ -84,13 +139,15 @@ Gemini 经 OpenAI 兼容中转站（newapi 等）接入时的三类经典病态�
 
 ---
 
-## 🧠 记忆系统与长对话（移植自 [Rikkahub-Revised](https://github.com/YaeNovin/Rikkahub-Revised)）
+## 🧠 记忆系统与长对话
 
-- **语义记忆 RAG**：记忆分 FACT（事实）/ EPISODIC（情节）两类，用向量模型做嵌入 + 余弦相似度检索（附中文分词大词 + CJK 二元组词法兜底），情节记忆带时间衰减加权，检索结果按预算注入系统提示词
+- **语义记忆 RAG**（移植自 [Rikkahub-Revised](https://github.com/YaeNovin/Rikkahub-Revised)）：记忆分 FACT（事实）/ EPISODIC（情节）两类，用向量模型做嵌入 + 余弦相似度检索（附中文分词大词 + CJK 二元组词法兜底），情节记忆带时间衰减加权，检索结果按预算注入系统提示词
+- **三层记忆**（源自 orangechat/Tumin）：固定记忆区（独立编辑、不覆盖角色卡）+ 近期生活流（跨会话记忆当前对话，其他对话的未读事件自动注入）+ 长期记忆词项重叠打分召回；生活流超过阈值自动用压缩模型后台摘要
 - **memory_tool 增强**：新增 `list` 读取操作与 fact / episodic 类型区分，模型可先查看已有记忆再决定写入或更新；情节记忆可按助手独立开关
 - **记忆管理页**：按助手独立查看 / 编辑 / 删除记忆条目
 - **上下文滚动压缩**：长对话超过阈值（按模型上下文窗口自动计算或手动指定）时，用压缩模型把早期对话滚动摘要为非破坏性摘要（原文保留、仅请求时替换前缀），摘要以系统消息注入，突破上下文窗口限制而不丢人设与伏笔
 - **最近对话引用**：可选把该助手最近的对话列表注入提示词，跨会话连续性
+- **瞬态内容裁剪**：超过两轮的网页搜索结果 / 图片 / 音视频自动从请求中剔除（附消息 ID，AI 可用 `read_history_message` 取回原文），图片与搜索类长对话 token 大幅下降
 - 全部按助手独立开关，默认关闭，不影响存量行为
 
 ---
@@ -135,6 +192,7 @@ Gemini 经 OpenAI 兼容中转站（newapi 等）接入时的三类经典病态�
 
 - **预设（Preset）导入**：酒馆 JSON 预设按官方提示词管理器结构导入
 - **正则脚本（Regex）导入**：Find/Replace/_ALT、OnlyFormat、宏支持、注入深度（minDepth/maxDepth）、排序与缓存，作用于展示与提示词两层
+- **美化主题导入**：酒馆美化主题 JSON 直接导入聊天外观（见「聊天外观自定义与主题」）
 
 ### 4. 快速回复（Quick Replies, QR）
 
@@ -208,8 +266,9 @@ Gemini 经 OpenAI 兼容中转站（newapi 等）接入时的三类经典病态�
 ## ✅ 与上游的关系
 
 - **上游功能全部保留**：Material You 主题、多供应商、流式生成、会话分叉与重新生成、消息编辑/删除/翻译、全文搜索（jieba）、收藏、图片生成、TTS / ASR（含火山引擎双向流式与豆包语音合成）、MCP、工作区沙箱（终端多 Tab + Shell 兼容模式）、备份（S3 / WebDAV）、网络对话端、聊天导出等一切照旧
-- **已合入上游最新版本**：rikkahub/rikkahub master（**v2.5.1**），本次合入的亮点：语音模式与消息队列、翻译快捷入口、工作区 Shell 兼容模式与 HTML/SVG 预览、自定义时间提醒间隔、自定义 Response API 路径、DeepSeek V4.1 Flash、`ask_user` 自定义文本回复、图片生成页多选等。上游更新可随时通过 `git fetch rikkahub && git merge rikkahub/master` 拉入（冲突手册见 [DIVERGENCE.md](DIVERGENCE.md)）
-- **相对 mingli2 分支**：除酒馆增强外，主要新增提示词前缀缓存、语义记忆 RAG 与上下文滚动压缩、中转站兼容与防空回复、豆包语音、隐私加固、云南财经教务系统工具等（酒馆部分的增量见「酒馆系统」开头的注记）
+- **已合入上游最新版本**：rikkahub/rikkahub master（**v2.5.1**），语音模式与消息队列、翻译快捷入口、工作区 Shell 兼容模式与 HTML/SVG 预览、DeepSeek V4.1 Flash 等
+- **相对 mingli2 分支**：除酒馆增强外，新增提示词前缀缓存、语义记忆 RAG 与上下文滚动压缩、中转站兼容与防空回复、豆包语音、隐私加固、云南财经教务系统工具等（酒馆部分的增量见「酒馆系统」开头的注记）
+- **v2.5.3 新增**：设备工具箱（懒发现）、微信 / QQ Bot、AI 主动发消息、语音 / 视频通话、情侣空间 / 生活空间、QuickJS 插件系统、三层记忆、聊天外观自定义与酒馆美化主题导入、全局安全设置、清爽简洁模式、上下文瞬态内容裁剪与压缩循环修复
 
 ## 📦 下载
 
@@ -227,6 +286,9 @@ Gemini 经 OpenAI 兼容中转站（newapi 等）接入时的三类经典病态�
 |---|---|---|
 | [rikkahub/rikkahub](https://github.com/rikkahub/rikkahub) | **原始上游项目**，本仓库的全部基础功能来自它 | AGPL-3.0 |
 | [heikeyangle-code/rikkahub-plus](https://github.com/heikeyangle-code/rikkahub-plus) | **直接上游（中间分支）**，酒馆系统、宏引擎、斜杠命令、群聊等核心增强的开发者 | AGPL-3.0 |
+| [sue1231513/orangechat](https://github.com/sue1231513/orangechat) | 同源分支，本项目从它与其下游 Tumin 引入了**情侣空间 / 生活空间 / 三层记忆 / 聊天外观自定义 / QuickJS 插件系统**等特色功能 | AGPL-3.0 |
+| [lingwangshu018/Tumin](https://github.com/lingwangshu018/Tumin) | orangechat 的下游分支，同上 | AGPL-3.0 |
+| [ExTV/rikkahub-agent](https://github.com/ExTV/rikkahub-agent) | 同源分支，设备工具箱的部分工具实现参考 | AGPL-3.0 |
 | [YaeNovin/Rikkahub-Revised](https://github.com/YaeNovin/Rikkahub-Revised) | 同源分支，本项目从中移植了**语义记忆 RAG** 与**上下文滚动压缩** | AGPL-3.0 |
 | [SillyTavern/SillyTavern](https://github.com/SillyTavern/SillyTavern) | 酒馆系统的兼容目标；角色卡 / 世界书 / 宏 / 斜杠命令的**语义与格式规范**参考其官方实现（AGPL-3.0），本项目未复制其代码 | AGPL-3.0 |
 

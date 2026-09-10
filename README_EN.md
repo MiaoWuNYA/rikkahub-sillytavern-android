@@ -3,7 +3,7 @@
 [**English**](README_EN.md) | [**简体中文**](README.md)
 
 > A deeply customized fork of [RikkaHub](https://github.com/rikkahub/rikkahub), already merged with the latest upstream (**v2.5.1**).
-> Every upstream capability is preserved as-is; on top of it this fork strengthens five areas: **⚡ prompt prefix caching**, **🧠 memory & long conversations**, **🍺 SillyTavern compatibility**, **🗼 proxy-station compatibility**, and **🛡 privacy & stability**.
+> Every upstream capability is preserved as-is; on top of it this fork strengthens six areas: **⚡ prompt prefix caching**, **🧠 memory & long conversations**, **🍺 SillyTavern compatibility**, **🗼 proxy-station compatibility**, **📱 on-device augmentation**, and **🛡 privacy & stability**.
 > Per-file differences and the upstream merge workflow live in [DIVERGENCE.md](DIVERGENCE.md).
 
 ---
@@ -13,14 +13,17 @@
 An AI chat client that runs on your phone (Kotlin + Jetpack Compose + Material You):
 
 - **Prompt prefix caching**: drawing on the DeepSeek Harness prefix-stability design — can significantly reduce long-conversation token costs
-- **Memory & long conversations**: semantic memory RAG + rolling context compression — long chats no longer forget or blow the context window
+- **Memory & long conversations**: semantic memory RAG + three-layer memory + rolling context compression — long chats no longer forget or blow the context window
 - **Multi-provider**: OpenAI / Claude / Gemini / DeepSeek — any OpenAI-, Anthropic-, or Google-compatible API (with a built-in OrcaRouter aggregation gateway, disabled by default)
 - **Proxy-station compatibility**: fixes Gemini-via-OpenAI-proxy pathologies — body swallowed by reasoning_content, truncation, "response" prefix artifacts — with one switch
 - **Anti-empty-reply**: auto-perturb-and-retry for Gemini's classic empty replies; system prompt moved into the conversation flow (world-book injection positions untouched)
-- **Doubao voice**: speech synthesis 2.0 (Doubao TTS) + Volcengine ASR, one Agent Plan API key drives both
-- **Deep SillyTavern compatibility**: character cards, lorebooks, presets, regex scripts, quick replies (QR), HTML cards, multiple greetings — all imported/exported losslessly with official semantics
+- **Doubao voice**: speech synthesis 2.0 (Doubao TTS) + Volcengine ASR, one Agent Plan API key drives both — and powers in-app voice/video calls
+- **Deep SillyTavern compatibility**: character cards, lorebooks, presets, regex scripts, quick replies (QR), HTML cards, multiple greetings, **beautification theme import** — all imported/exported losslessly with official semantics
+- **Plugin system**: QuickJS-sandboxed plugins, one-tap ZIP import, AI can call plugin tools directly
+- **Device toolbox**: 30 phone tools (torch, volume, SMS, contacts, location, …) behind a token-saving lazy-discovery meta-tool
+- **WeChat / QQ Bot**: connect an assistant to WeChat or QQ and keep chatting anywhere; AI proactive messaging supported
 - **Programmable prompts**: Macro Engine 2.0, 20+ slash commands, personas, author's note, group chats
-- **Privacy hardening**: sanitized request logging, tool-approval boundaries, telemetry off by default
+- **Privacy hardening**: sanitized request logging, tool-approval boundaries, global security settings, telemetry off by default
 
 ---
 
@@ -68,6 +71,58 @@ The full YNUFE (StrongZhi) account management is embedded in HuaDeng Settings:
 
 ---
 
+## 📱 On-Device Augmentation
+
+### Device toolbox
+
+Enable "Device toolbox" on an assistant and the AI can call 30 phone system tools: torch, vibrate, volume/brightness (read+write), toast, battery, storage, Wi-Fi / audio / telephony / sensor info, share, wallpaper, notifications, alarm/timer, music control, SMS reading, contacts, call log, location, app launching, media scanning, file download, open file, and more.
+
+To save tokens this uses a **lazy-discovery meta-tool**: only one `device_toolbox` slot is registered in the context. The AI first calls `action=list` to fetch the tool catalog (parameter schemas + granted-permission status), then `action=run` to invoke a specific tool. State-changing / privacy-sensitive tools require approval before execution; pure readers are approval-free.
+
+### WeChat Bot / QQ Bot
+
+Connect an existing assistant to a messaging channel (AI, memories, and tools are all reused from that assistant):
+
+- **WeChat Bot**: scan a QR code to log in with your own WeChat account (iLink protocol), HTTP long-polling receives messages → auto reply; expired tokens stop the service with a notification
+- **QQ Bot**: official QQ Open Platform API — just enter AppID + AppSecret; WebSocket gateway for real-time send/receive with automatic token refresh
+- Both are off by default with a privacy risk-confirmation dialog before enabling
+
+### AI proactive messaging
+
+- AlarmManager exact alarms + WorkManager fallback dual-channel; the assistant reaches out at random intervals (configurable range)
+- Generation injects context (time since last chat, current time, battery); politely skips a trigger while a generation is already running
+- Off by default
+
+### Voice / video calls
+
+One tap on the chat top bar enters the call screen (**shown only when both TTS and ASR are configured**): local voice-activity detection → ASR incremental transcription → auto-send → streaming TTS of the reply, interruptible at any time; on hang-up the call is folded into an archive card in the conversation. Works out of the box with Doubao TTS / Volcengine ASR.
+
+### Security settings
+
+Settings → Security: global tool-call approval policy — **force-confirm all tool calls** (confirm before every execution) or **auto-approve all tool calls** (skip approval; use with caution). The two are mutually exclusive.
+
+---
+
+## 🧩 Plugin System (from orangechat/Tumin)
+
+QuickJS-sandboxed plugins: a plugin is a ZIP package (`manifest.json` + `main.js`); import it in Settings → Plugins (two-stage preview confirmation + SHA-256 integrity check + Zip-Slip protection).
+
+- Tools declared in the manifest become AI-callable tools (unified `plugin_` prefix, approval required to execute)
+- The JS sandbox is single-threaded with a 30s timeout, `fetch` domain allowlist (fail-closed), and per-plugin key-value storage
+- Folders, enable/disable, and per-plugin config forms (text / password / boolean / select / model picker) are supported
+- See `docs/plugins/example/weather/` for a sample plugin and [docs/PLUGINS_GUIDE.md](docs/PLUGINS_GUIDE.md) for the development guide
+
+---
+
+## 🎨 Chat Appearance & Themes
+
+- **Color overrides**: 7 custom colors (primary, global text, user/AI/thinking bubbles, chat background, input field, ARGB)
+- **Bubble beautification**: user/AI bubble background images + corner radius + theme-color overlay, drawer background image
+- **SillyTavern theme import**: SillyTavern beautification theme JSONs (`main_text_color` / `chat_tint_color` / `user_mes_blur_tint_color` / `bot_mes_blur_tint_color` / `font_scale`, …) import directly into the color system above (one-tap import on the chat-appearance page; CSS-only fields are ignored)
+- Preset palettes + HCT custom themes + dynamic color remain unchanged
+
+---
+
 ## ⚡ Prompt Prefix Cache
 
 Major providers (DeepSeek / Kimi / Claude, etc.) offer automatic prefix caching: if a request's prefix is byte-identical to the previous one, it's a cache hit, and the cached portion is billed far below the normal rate. But in chat, a lot of content **changes every turn** (timestamps, recent chats, memories, random numbers, rolling summaries) — once the prefix diverges, the whole cache is dead.
@@ -84,13 +139,15 @@ Actual results vary by conversation shape: in steady, append-only chats the cach
 
 ---
 
-## 🧠 Memory & Long Conversations (ported from [Rikkahub-Revised](https://github.com/YaeNovin/Rikkahub-Revised))
+## 🧠 Memory & Long Conversations
 
-- **Semantic memory RAG**: memories split into FACT / EPISODIC types, embedded with the vector model and retrieved via cosine similarity (with a lexical fallback of word terms + CJK bigrams), episodic memories get recency weighting, and results are injected into the system prompt within a budget.
+- **Semantic memory RAG** (ported from [Rikkahub-Revised](https://github.com/YaeNovin/Rikkahub-Revised)): memories split into FACT / EPISODIC types, embedded with the vector model and retrieved via cosine similarity (with a lexical fallback of word terms + CJK bigrams), episodic memories get recency weighting, and results are injected into the system prompt within a budget.
+- **Three-layer memory** (from orangechat/Tumin): a fixed-memory section (independently editable without touching the character card) + a recent-life stream (cross-conversation memory of the current chat; unread events from other conversations are injected automatically) + long-term memory recall via lexical-overlap scoring; the stream is summarized in the background by the compression model once over a threshold.
 - **Enhanced memory_tool**: a new `list` read operation plus fact / episodic type distinction — the model can review existing memories before writing or updating; episodic memory can be toggled per assistant.
 - **Memory management page**: view / edit / delete memory entries per assistant.
 - **Rolling context compression**: when a conversation exceeds the threshold (auto-computed from the model's context window or set manually), a compression model rolls earlier turns into a non-destructive summary (original messages preserved, replaced only at request time), injected as a system message — long chats stay in-window without losing persona or foreshadowing.
 - **Recent chats reference**: optionally inject the assistant's recent conversation list for cross-session continuity.
+- **Transient-content pruning**: web-search results / images / audio / video older than two turns are dropped from requests automatically (with the message ID so the AI can retrieve the original via `read_history_message`) — token usage drops sharply on image- and search-heavy long chats.
 - All per-assistant switches, off by default; existing behavior unchanged.
 
 ---
@@ -135,6 +192,7 @@ Aligned rule by rule with the official SillyTavern world-info.js; entry fields g
 
 - **Preset import**: SillyTavern JSON presets imported under the official prompt-manager structure.
 - **Regex script import**: Find/Replace/_ALT, OnlyFormat, macros, injection depth (minDepth/maxDepth), ordering and caching — applied at both display and prompt layers.
+- **Beautification theme import**: SillyTavern theme JSONs import directly into the chat appearance (see "Chat Appearance & Themes").
 
 ### 4. Quick Replies (QR)
 
@@ -210,6 +268,7 @@ On top of upstream: file operations, shell, task tools, calculator, database que
 - **Everything preserved**: Material You theming, multi-provider support, streaming, conversation forking & regeneration, message edit / delete / translate, full-text search (jieba), favorites, image generation, TTS / ASR (incl. Volcengine bidirectional streaming and Doubao TTS), MCP, workspace sandbox (multi-tab terminal + shell compatibility mode), backup (S3 / WebDAV), web chat endpoint, and chat export all work as before.
 - **Already merged with the latest upstream**: rikkahub/rikkahub master (**v2.5.1**); highlights of this merge: voice mode & message queue, translator shortcut, workspace shell compatibility mode & HTML/SVG preview, custom time-reminder interval, custom Response API path, DeepSeek V4.1 Flash, `ask_user` free-text replies, image-generation multi-select, and more. Pull upstream anytime via `git fetch rikkahub && git merge rikkahub/master` (conflict handbook: [DIVERGENCE.md](DIVERGENCE.md)).
 - **Versus the mingli2 branch**: beyond the tavern enhancements, this branch mainly adds prompt prefix caching, semantic memory RAG & rolling context compression, proxy-station compatibility & anti-empty-reply, Doubao voice, privacy hardening, and the YNUFE academic-system tools (tavern-level deltas are noted at the top of the "Tavern System" section).
+- **New in v2.5.3**: device toolbox (lazy discovery), WeChat / QQ Bots, AI proactive messaging, voice / video calls, couples space / life hub, QuickJS plugin system, three-layer memory, chat-appearance customization with SillyTavern theme import, global security settings, a clean-simple mode, transient-content pruning, and the compression-loop fix.
 
 ## 📦 Download
 
@@ -227,6 +286,9 @@ This project stands on the shoulders of others:
 |---|---|---|
 | [rikkahub/rikkahub](https://github.com/rikkahub/rikkahub) | **Original upstream** — all base functionality comes from it | AGPL-3.0 |
 | [heikeyangle-code/rikkahub-plus](https://github.com/heikeyangle-code/rikkahub-plus) | **Direct upstream (intermediate fork)** — author of the tavern system, macro engine, slash commands, group chats, and other core enhancements | AGPL-3.0 |
+| [sue1231513/orangechat](https://github.com/sue1231513/orangechat) | Same-origin fork — this project introduced signature features such as the **couples space / life hub / three-layer memory / chat appearance customization / QuickJS plugin system** from it and its downstream Tumin | AGPL-3.0 |
+| [lingwangshu018/Tumin](https://github.com/lingwangshu018/Tumin) | Downstream fork of orangechat — see above | AGPL-3.0 |
+| [ExTV/rikkahub-agent](https://github.com/ExTV/rikkahub-agent) | Same-origin fork — reference for some device-toolbox tool implementations | AGPL-3.0 |
 | [YaeNovin/Rikkahub-Revised](https://github.com/YaeNovin/Rikkahub-Revised) | Same-origin fork — this project ported the **semantic memory RAG** and **rolling context compression** from it | AGPL-3.0 |
 | [SillyTavern/SillyTavern](https://github.com/SillyTavern/SillyTavern) | The compatibility target of the tavern system; the **semantics and format specs** of cards / lorebooks / macros / slash commands follow its official implementation (AGPL-3.0). No code was copied from it. | AGPL-3.0 |
 

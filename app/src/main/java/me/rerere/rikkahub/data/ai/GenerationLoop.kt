@@ -396,8 +396,13 @@ class GenerationLoop(
                 val updatedTools = uniqueTools.map { tool ->
                     val toolDef = statusTrackedTools.find { it.name == tool.toolName }
                     when {
+                        // 安全设置：自动批准所有工具调用（绕过单工具审批判定）
+                        settings.securitySetting.autoApproveAllTools &&
+                            tool.approvalState is ToolApprovalState.Auto -> tool
                         // Tool needs approval and state is Auto -> set to Pending
-                        toolDef?.needsApproval(tool.inputAsJson()) == true && tool.approvalState is ToolApprovalState.Auto -> {
+                        // 安全设置：强制确认所有工具调用（无视单工具的 needsApproval）
+                        (toolDef?.needsApproval(tool.inputAsJson()) == true || settings.securitySetting.forceConfirmToolCalls) &&
+                            tool.approvalState is ToolApprovalState.Auto -> {
                             hasPendingApproval = true
                             tool.copy(approvalState = ToolApprovalState.Pending)
                         }

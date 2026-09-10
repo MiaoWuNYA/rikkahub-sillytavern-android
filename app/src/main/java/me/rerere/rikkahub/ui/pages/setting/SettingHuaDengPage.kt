@@ -147,6 +147,26 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                             )
                         },
                     )
+                    item(
+                        headlineContent = { Text("清爽简洁模式") },
+                        supportingContent = {
+                            Text("开启后隐藏情侣空间、生活空间等娱乐功能入口，并且不再向 AI 注册对应工具，界面更简洁、上下文更省 token")
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = settings.huadengSettings.enableCleanMode,
+                                onCheckedChange = { enabled ->
+                                    vm.updateSettings(
+                                        settings.copy(
+                                            huadengSettings = settings.huadengSettings.copy(
+                                                enableCleanMode = enabled,
+                                            ),
+                                        )
+                                    )
+                                },
+                            )
+                        },
+                    )
                 }
             }
 

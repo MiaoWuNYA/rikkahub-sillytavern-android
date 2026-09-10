@@ -109,6 +109,9 @@ import me.rerere.rikkahub.ui.pages.extensions.PromptPage
 import me.rerere.rikkahub.ui.pages.extensions.QuickMessagesPage
 import me.rerere.rikkahub.ui.pages.extensions.SkillDetailPage
 import me.rerere.rikkahub.ui.pages.extensions.SkillsPage
+import me.rerere.rikkahub.plugin.ui.PluginDetailPage
+import me.rerere.rikkahub.plugin.ui.PluginFolderPage
+import me.rerere.rikkahub.plugin.ui.PluginManagePage
 import me.rerere.rikkahub.ui.pages.favorite.FavoritePage
 import me.rerere.rikkahub.ui.pages.history.HistoryPage
 import me.rerere.rikkahub.ui.pages.imggen.ImageGenPage
@@ -139,6 +142,7 @@ import me.rerere.rikkahub.ui.pages.setting.SettingSpeechPage
 import me.rerere.rikkahub.ui.pages.setting.SettingWebPage
 import me.rerere.rikkahub.ui.pages.setting.SettingWeixinBotPage
 import me.rerere.rikkahub.ui.pages.setting.SettingHuaDengPage
+import me.rerere.rikkahub.ui.pages.setting.SettingSecurityPage
 import me.rerere.rikkahub.ui.pages.share.handler.ShareHandlerPage
 import me.rerere.rikkahub.ui.pages.stats.StatsPage
 import me.rerere.rikkahub.ui.pages.translator.TranslatorPage
@@ -521,6 +525,10 @@ class RouteActivity : ComponentActivity() {
                                 SettingHuaDengPage()
                             }
 
+                            entry<Screen.SettingSecurity> {
+                                SettingSecurityPage()
+                            }
+
                             entry<Screen.SettingWeixinBot> {
                                 SettingWeixinBotPage()
                             }
@@ -560,6 +568,34 @@ class RouteActivity : ComponentActivity() {
 
                             entry<Screen.SkillDetail> { key ->
                                 SkillDetailPage(skillName = key.skillName)
+                            }
+
+                            entry<Screen.Plugins> {
+                                PluginManagePage(
+                                    onNavigateToFolder = { folderId ->
+                                        backStack.add(Screen.PluginFolder(folderId))
+                                    },
+                                    onNavigateToDetail = { pluginId ->
+                                        backStack.add(Screen.PluginDetail(pluginId))
+                                    },
+                                )
+                            }
+
+                            entry<Screen.PluginFolder> { key ->
+                                PluginFolderPage(
+                                    folderId = key.folderId,
+                                    onNavigateBack = { backStack.removeLastOrNull() },
+                                    onNavigateToDetail = { pluginId ->
+                                        backStack.add(Screen.PluginDetail(pluginId))
+                                    },
+                                )
+                            }
+
+                            entry<Screen.PluginDetail> { key ->
+                                PluginDetailPage(
+                                    pluginId = key.pluginId,
+                                    onNavigateBack = { backStack.removeLastOrNull() },
+                                )
                             }
 
                             entry<Screen.WorkspaceFileEditor> { key ->
@@ -810,6 +846,7 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingHuaDeng : Screen
+    data object SettingSecurity : Screen
 
     @Serializable
     data object SettingWeixinBot : Screen
@@ -840,6 +877,15 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data class SkillDetail(val skillName: String) : Screen
+
+    @Serializable
+    data object Plugins : Screen
+
+    @Serializable
+    data class PluginFolder(val folderId: String) : Screen
+
+    @Serializable
+    data class PluginDetail(val pluginId: String) : Screen
 
     @Serializable
     data class WorkspaceFileEditor(val id: String, val area: String, val path: String) : Screen

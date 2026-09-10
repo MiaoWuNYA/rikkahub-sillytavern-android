@@ -74,6 +74,7 @@ import me.rerere.rikkahub.data.ai.GenerationChunk
 import me.rerere.rikkahub.data.ai.GenerationLoop
 import me.rerere.rikkahub.data.ai.TranslationHandler
 import me.rerere.rikkahub.data.ai.mcp.McpManager
+import me.rerere.rikkahub.plugin.provider.PluginToolProvider
 import me.rerere.rikkahub.data.ai.tools.LocalTools
 import me.rerere.rikkahub.data.ai.tools.LocalToolOption
 import me.rerere.rikkahub.data.ai.tools.createSearchTools
@@ -236,6 +237,7 @@ class ChatService(
     private val crossWindowMemoryTransformer: CrossWindowMemoryTransformer,
     private val crossWindowMemoryStore: CrossWindowMemoryStore,
     private val coupleRepository: CoupleRepository,
+    private val pluginToolProvider: PluginToolProvider,
 ) {
     // workspace 系统提示注入 (依赖 workspaceRepository, 故在类内构造)
     private val workspaceReminderTransformer = WorkspaceReminderTransformer(workspaceRepository)
@@ -1408,14 +1410,19 @@ class ChatService(
             } else null
 
             // ── 生活 / 情侣空间工具 ──
+            // 清爽简洁模式开启时不注册娱乐类工具
             // 生活空间 6 个工具：助手开启“生活空间”开关时加入
-            val lifeCompanionTools = if (assistant.localTools.contains(LocalToolOption.LifeCompanion)) {
+            val lifeCompanionTools = if (assistant.localTools.contains(LocalToolOption.LifeCompanion) &&
+                !settings.huadengSettings.enableCleanMode
+            ) {
                 runCatching {
                     createLifeCompanionTools(context, coupleRepository, assistant.id.toString())
                 }.getOrDefault(emptyList())
             } else emptyList()
             // 情侣空间 4 个工具：仅当情侣空间已绑定且绑定角色是当前助手时加入
-            val coupleSpaceTools = runCatching {
+            val coupleSpaceTools = if (settings.huadengSettings.enableCleanMode) {
+                emptyList()
+            } else runCatching {
                 val relationship = coupleRepository.relationship.first()
                 if (relationship != null && relationship.assistantId == assistant.id.toString()) {
                     createCoupleSpaceTools(coupleRepository, relationship.assistantId)
@@ -1519,6 +1526,8 @@ class ChatService(
                     // 生活空间 / 情侣空间工具
                     addAll(lifeCompanionTools)
                     addAll(coupleSpaceTools)
+                    // 插件工具（QuickJS 沙箱；插件代码不受信任，needsApproval 强制 true）
+                    addAll(pluginToolProvider.getTools())
                     // 对齐上游：MCP 工具名带服务器名前缀，且校验服务器名（仅字母数字），非法名直接报错返回
                     mcpManager.getAllAvailableTools().also { allTools ->
                         val invalidNames = allTools
@@ -1975,6 +1984,8 @@ class ChatService(
                         )
                     )
                 }
+                // 插件工具（QuickJS 沙箱）
+                addAll(pluginToolProvider.getTools())
                 mcpTools.forEach { (serverId, serverName, tool) ->
                     add(
                         Tool(

@@ -693,6 +693,7 @@ data class Settings(
     val wechatBotSetting: WechatBotSetting = WechatBotSetting(),        // 微信 Bot（iLink 长轮询）
     val qqBotSetting: QqBotSetting = QqBotSetting(),                    // QQ Bot（开放平台 WebSocket）
     val proactiveMessageSetting: ProactiveMessageSetting = ProactiveMessageSetting(), // AI 主动发消息
+    val securitySetting: SecuritySetting = SecuritySetting(),           // 安全设置（工具调用审批策略）
 ) {
     companion object {
         // 构造一个用于初始化的settings, 但它不能用于保存，防止使用初始值存储
@@ -722,6 +723,19 @@ data class HuaDengSettings(
     // 上下文瞬态内容裁剪：超过两轮之前的网页搜索结果/图片/音视频不随请求发送（AI 可用
     // read_history_message 按消息 ID 取回），大幅减少图片与搜索类长对话的 token 消耗
     val enableTransientContentPrune: Boolean = true,
+    // 清爽简洁模式：隐藏情侣空间/生活空间等娱乐功能入口，并不再注册对应 AI 工具
+    val enableCleanMode: Boolean = false,
+)
+
+/**
+ * 安全设置：工具调用审批策略（全局）。
+ */
+@Serializable
+data class SecuritySetting(
+    // 强制确认所有工具调用：无视单工具的 needsApproval，每次执行前都要用户确认
+    val forceConfirmToolCalls: Boolean = false,
+    // 自动批准所有工具调用：跳过审批直接执行（优先级高于强制确认，谨慎开启）
+    val autoApproveAllTools: Boolean = false,
 )
 
 @Serializable

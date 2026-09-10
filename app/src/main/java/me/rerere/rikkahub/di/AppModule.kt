@@ -120,6 +120,7 @@ val appModule = module {
             crossWindowMemoryTransformer = get(),
             crossWindowMemoryStore = get(),
             coupleRepository = get(),
+            pluginToolProvider = get(),
         )
     }
 

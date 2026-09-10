@@ -248,7 +248,7 @@ fun ChatDrawerContent(
                 }
             }
 
-            DrawerActions(navController = navController)
+            DrawerActions(navController = navController, settings = settings)
 
             FolderBar(
                 folders = folders,
@@ -697,7 +697,10 @@ fun ChatDrawerContent(
 }
 
 @Composable
-private fun DrawerActions(navController: Navigator) {
+private fun DrawerActions(
+    navController: Navigator,
+    settings: Settings,
+) {
     Column {
         // 搜索入口
         Surface(
@@ -759,63 +762,66 @@ private fun DrawerActions(navController: Navigator) {
             }
         }
 
-        // 情侣空间入口
-        Surface(
-            onClick = { navController.navigate(Screen.CoupleSpace) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp),
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-        ) {
-            Row(
+        // 清爽简洁模式：隐藏情侣空间/生活空间等娱乐功能入口
+        if (!settings.huadengSettings.enableCleanMode) {
+            // 情侣空间入口
+            Surface(
+                onClick = { navController.navigate(Screen.CoupleSpace) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(horizontal = 4.dp),
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
             ) {
-                Icon(
-                    imageVector = HugeIcons.InLove,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = "情侣空间",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Icon(
+                        imageVector = HugeIcons.InLove,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = "情侣空间",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
             }
-        }
 
-        // 生活空间入口
-        Surface(
-            onClick = { navController.navigate(Screen.LifeHub) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp),
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-        ) {
-            Row(
+            // 生活空间入口
+            Surface(
+                onClick = { navController.navigate(Screen.LifeHub) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(horizontal = 4.dp),
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
             ) {
-                Icon(
-                    imageVector = HugeIcons.Rocket01,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = "生活空间",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Icon(
+                        imageVector = HugeIcons.Rocket01,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = "生活空间",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
             }
         }
     }
