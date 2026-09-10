@@ -1295,13 +1295,16 @@ private fun DoubaoTTSConfiguration(
     }
 
     // Resource ID
+    // 预设只列 seed-tts-2.0：Agent Plan Key 只开通 2.0，选 1.0 会报
+    // 45000030 [resource_id=volc.service_type.10029] not granted；
+    // 标准控制台 1.0 用户可手动输入
     FormItem(
         label = { Text("Resource ID") },
-        description = { Text("决定模型版本与计费; 音色版本必须与之一致") }
+        description = { Text("Agent Plan 用户保持 seed-tts-2.0（1.0 未开通会报 45000030）; 音色版本必须与之一致") }
     ) {
         SelectTextField(
             value = setting.resourceId,
-            options = listOf("seed-tts-2.0", "seed-tts-1.0"),
+            options = listOf("seed-tts-2.0"),
             onValueChange = { newId ->
                 onValueChange(setting.copy(resourceId = newId))
             },

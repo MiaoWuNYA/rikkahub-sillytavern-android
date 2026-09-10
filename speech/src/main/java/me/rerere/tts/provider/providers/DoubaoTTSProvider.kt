@@ -107,11 +107,15 @@ class DoubaoTTSProvider : TTSProvider<TTSProviderSetting.Doubao> {
         }
 
         if (finalCode != 0 && finalCode != 20000000) {
-            // 55000000: 音色与 Resource ID 版本不匹配（高频误配置）
-            val hint = if (finalCode == 55000000) {
-                " —— 音色与 Resource ID 版本不匹配：seed-tts-2.0 需用 _uranus/_saturn 结尾的 2.0 音色，" +
-                    "seed-tts-1.0 需用 _mars 结尾的 1.0 音色"
-            } else ""
+            // 高频误配置的自解释提示
+            val hint = when (finalCode) {
+                55000000 ->
+                    " —— 音色与 Resource ID 版本不匹配：seed-tts-2.0 需用 _uranus/_saturn 结尾的 2.0 音色，" +
+                        "seed-tts-1.0 需用 _mars 结尾的 1.0 音色"
+                45000030 ->
+                    " —— 该 Key 未开通此资源：Agent Plan 只开通 seed-tts-2.0，Resource ID 请勿选 seed-tts-1.0"
+                else -> ""
+            }
             throw TTSProviderException(
                 message = "Doubao TTS error: code=$finalCode message=$finalMessage$hint"
                     .let { if (audio.isEmpty()) it else "$it (partial audio discarded)" },
