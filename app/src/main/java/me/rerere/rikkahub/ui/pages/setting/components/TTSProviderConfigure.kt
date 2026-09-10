@@ -1329,8 +1329,8 @@ private fun DoubaoTTSConfiguration(
         "zh_female_sophie_uranus_bigtts" to "Sofie 2.0",
         "zh_female_jitangnv_uranus_bigtts" to "鸡汤女 2.0",
         "zh_female_mizai_saturn_bigtts" to "米仔 2.0",
-        "zh_female_cancan_mars_bigtts" to "灿灿 1.0 (需 seed-tts-1.0)",
-        "zh_female_shengnan_mars_bigtts" to "笙男 1.0 (需 seed-tts-1.0)",
+        // 1.0 音色 (_mars_bigtts) 需把 Resource ID 改成 seed-tts-1.0 后手动输入，预设不再列出，
+        // 避免与默认 seed-tts-2.0 混用报 55000000
     )
 
     FormItem(
@@ -1343,7 +1343,7 @@ private fun DoubaoTTSConfiguration(
                 onValueChange(setting.copy(speaker = newSpeaker))
             },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("zh_male_kuailexiaodong_uranus_bigtts") },
+            placeholder = { Text("zh_female_cancan_uranus_bigtts") },
             supportingText = { Text(speakers.firstOrNull { it.first == setting.speaker }?.second.orEmpty()) }
         )
     }

@@ -297,7 +297,7 @@ sealed class TTSProviderSetting {
         val resourceId: String = "seed-tts-2.0",
         // 音色: 2.0 音色以 _uranus_bigtts/_saturn_bigtts 结尾, 1.0 音色为 _mars_bigtts;
         // resourceId 与音色版本必须匹配, 否则报 55000000
-        val speaker: String = "zh_male_kuailexiaodong_uranus_bigtts",
+        val speaker: String = "zh_female_cancan_uranus_bigtts",
         val format: String = "mp3",
         val sampleRate: Int = 24000,
         // 语速 0.2 - 2.0, 1.0 为正常; 仅在非 1.0 时下发
