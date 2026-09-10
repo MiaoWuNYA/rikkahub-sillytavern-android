@@ -676,6 +676,7 @@ data class Settings(
     val developerMode: Boolean = false,
     val displaySetting: DisplaySetting = DisplaySetting(),
     val networkSetting: NetworkSetting = NetworkSetting(),
+    val huadengSettings: HuaDengSettings = HuaDengSettings(),
     val favoriteModels: List<Uuid> = emptyList(),
     val chatModelId: Uuid = Uuid.random(),
     val fastModelId: Uuid = Uuid.random(),
@@ -758,6 +759,20 @@ data class NetworkSetting(
     val proxyUsername: String = "",
     val proxyPassword: String = "",
     val enableAutoRetry: Boolean = true,
+)
+
+/**
+ * 华灯设置：全局兼容/辅助功能开关。
+ * 作为所有助手的默认值；助手级开关可单独覆盖。
+ */
+@Serializable
+data class HuaDengSettings(
+    // 中转站兼容：修复 Gemini 经 OpenAI 兼容中转时 reasoning_content 吞掉正文的问题
+    val enableProxyFix: Boolean = false,
+    // 防空回复（全局）：系统提示词入对话流 + 空回复微扰重试，针对 Gemini
+    val enableAntiEmptyResponse: Boolean = false,
+    // 云财教务系统集成总开关（学生工具 AI 自动查成绩/课表等）
+    val enableYnufeTools: Boolean = false,
 )
 
 @Serializable

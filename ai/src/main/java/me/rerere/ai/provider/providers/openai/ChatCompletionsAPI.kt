@@ -124,10 +124,16 @@ class ChatCompletionsAPI(
             ?: "unknown"
         val usage = parseTokenUsage(bodyJson["usage"] as? JsonObject)
 
+        var parsedMessage = parseMessage(message)
+        // 中转站兼容：修复 Gemini reasoning_content 吞掉正文
+        if (params.enableProxyFix) {
+            parsedMessage = fixProxyGeminiContent(parsedMessage)
+        }
+
         TextGenerationResult(
             id = id,
             model = model,
-            message = parseMessage(message),
+            message = parsedMessage,
             finishReason = finishReason,
             usage = usage
         )
@@ -164,7 +170,7 @@ class ChatCompletionsAPI(
         // just for debugging response body
         // println(client.newCall(request).await().body?.string())
 
-        val decoder = ChatCompletionsStreamDecoder()
+        val decoder = ChatCompletionsStreamDecoder(enableProxyFix = params.enableProxyFix)
 
         fun sendChunks(chunks: Iterable<StreamChunk>) {
             chunks.forEach { chunk ->
@@ -817,6 +823,50 @@ class ChatCompletionsAPI(
                 )
             ),
         )
+    }
+
+    /**
+     * 中转站兼容：修复 Gemini 经 OpenAI 兼容中转时 reasoning_content 吞掉正文的问题。
+     *
+     * 某些中转站（将 Gemini 映射为 OpenAI 协议）在启用 extended thinking 时会把实际回复
+     * 塞进 reasoning_content 字段，导致：
+     * - content 字段以 "Response:" 前缀开头且正文被截断
+     * - 或 content 为空，全部内容都在 reasoning 中
+     *
+     * 修复策略：
+     * 1. 剥离 content 开头的 "Response:" / "response:" 前缀
+     * 2. 当 content 极短而 reasoning 有实质内容时，将 reasoning 提升为正文
+     */
+    private fun fixProxyGeminiContent(message: UIMessage): UIMessage {
+        if (message.role != MessageRole.ASSISTANT) return message
+        val textParts = message.parts.filterIsInstance<UIMessagePart.Text>()
+        val reasoningParts = message.parts.filterIsInstance<UIMessagePart.Reasoning>()
+        if (textParts.isEmpty() || reasoningParts.isEmpty()) return message
+
+        val text = textParts.first().text
+        val reasoning = reasoningParts.joinToString("") { it.reasoning }
+        if (reasoning.isEmpty()) return message
+
+        // 剥离 "Response:" 前缀
+        val prefix = Regex("(?i)^response\\s*:\\s*")
+        val cleanedText = if (prefix.containsMatchIn(text)) prefix.replace(text, "") else text
+
+        // content 极短且 reasoning 有实质内容 → 提升 reasoning 为正文
+        if (reasoning.length > cleanedText.length * 2 && cleanedText.length < 200) {
+            return message.copy(
+                parts = listOf(UIMessagePart.Text(reasoning)) +
+                    message.parts.filter { it !is UIMessagePart.Text && it !is UIMessagePart.Reasoning }
+            )
+        }
+        // 仅需剥离前缀
+        if (cleanedText != text) {
+            return message.copy(
+                parts = message.parts.map { part ->
+                    if (part is UIMessagePart.Text) part.copy(text = cleanedText) else part
+                }
+            )
+        }
+        return message
     }
 
     private fun parseAnnotations(jsonArray: JsonArray): List<UIMessageAnnotation> {

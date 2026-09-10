@@ -328,6 +328,26 @@ private fun AssistantMemoryContent(
                 }
             )
             item(
+                headlineContent = { Text(stringResource(R.string.assistant_page_proxy_fix)) },
+                supportingContent = {
+                    Text(
+                        text = stringResource(R.string.assistant_page_proxy_fix_desc),
+                    )
+                },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.enableProxyFix,
+                        onCheckedChange = {
+                            onUpdateAssistant(
+                                assistant.copy(
+                                    enableProxyFix = it
+                                )
+                            )
+                        }
+                    )
+                }
+            )
+            item(
                 headlineContent = { Text(stringResource(R.string.assistant_page_time_reminder)) },
                 supportingContent = {
                     Text(

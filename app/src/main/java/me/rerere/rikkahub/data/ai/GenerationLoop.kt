@@ -740,7 +740,8 @@ class GenerationLoop(
                 addAll(model.customBodies)
             },
             sessionId = conversationId?.toString(),
-            systemPromptInChat = assistant.enableAntiEmptyResponse,
+            systemPromptInChat = assistant.enableAntiEmptyResponse || settings.huadengSettings.enableAntiEmptyResponse,
+            enableProxyFix = assistant.enableProxyFix || settings.huadengSettings.enableProxyFix,
         )
         try {
             if (stream) {
@@ -788,7 +789,7 @@ class GenerationLoop(
                         }
                         messages = attemptMessages
                         // 防空回复：无文本、无工具调用的空回复自动微扰重试（Gemini 常见）
-                        if (assistant.enableAntiEmptyResponse &&
+                        if ((assistant.enableAntiEmptyResponse || settings.huadengSettings.enableAntiEmptyResponse) &&
                             emptyRetryCount < MAX_EMPTY_RESPONSE_RETRIES &&
                             messages.lastOrNull().isBlankAssistantReply()
                         ) {
@@ -833,7 +834,7 @@ class GenerationLoop(
                         )
                     }
                     messages = baseMessages.handleTextGenerationResult(result = result, model = model)
-                    if (assistant.enableAntiEmptyResponse &&
+                    if ((assistant.enableAntiEmptyResponse || settings.huadengSettings.enableAntiEmptyResponse) &&
                         emptyRetryCount < MAX_EMPTY_RESPONSE_RETRIES &&
                         messages.lastOrNull().isBlankAssistantReply()
                     ) {

@@ -77,6 +77,8 @@ data class TextGenerationParams(
     // 防空回复（Gemini）：系统提示词不走 systemInstruction，而是作为对话流中的
     // user/model 假历史轮注入（SYSTEM 消息原位转为 user 轮，保留世界书等深度注入位置）
     val systemPromptInChat: Boolean = false,
+    // 中转站兼容：修复 Gemini 经 OpenAI 兼容中转时 reasoning_content 吞掉正文的问题
+    val enableProxyFix: Boolean = false,
 )
 
 @Serializable

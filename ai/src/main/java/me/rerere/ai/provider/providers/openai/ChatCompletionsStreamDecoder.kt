@@ -27,7 +27,9 @@ import me.rerere.common.http.jsonObjectOrNull
 import me.rerere.common.http.jsonPrimitiveOrNull
 import kotlin.time.Clock
 
-internal class ChatCompletionsStreamDecoder : StreamChunkDecoder {
+internal class ChatCompletionsStreamDecoder(
+    private val enableProxyFix: Boolean = false,
+) : StreamChunkDecoder {
     private val streamState = ChatCompletionsStreamState()
     private val toolIdsByIndex = mutableMapOf<Int, String>()
     private val reasoningDetailsByIndex = linkedMapOf<Int, JsonObject>()
@@ -95,8 +97,8 @@ internal class ChatCompletionsStreamDecoder : StreamChunkDecoder {
         val role = MessageRole.valueOf(
             payload["role"]?.jsonPrimitive?.contentOrNull?.uppercase() ?: "ASSISTANT"
         )
-        val content = payload["content"]?.jsonPrimitiveOrNull?.contentOrNull ?: ""
-        val reasoning = payload["reasoning_content"]?.jsonPrimitiveOrNull?.contentOrNull
+        var content = payload["content"]?.jsonPrimitiveOrNull?.contentOrNull ?: ""
+        var reasoning = payload["reasoning_content"]?.jsonPrimitiveOrNull?.contentOrNull
             ?: payload["reasoning"]?.jsonPrimitiveOrNull?.contentOrNull
             ?: payload["content"]?.takeIf { it is JsonArray }?.let { array ->
                 array.jsonArrayOrNull?.getOrNull(0)?.jsonObjectOrNull
@@ -105,6 +107,21 @@ internal class ChatCompletionsStreamDecoder : StreamChunkDecoder {
             }
         val reasoningMetadata = accumulateReasoningDetails(payload["reasoning_details"]?.jsonArrayOrNull)
         val images = payload["images"] as? JsonArray ?: JsonArray(emptyList())
+
+        // 中转站兼容：Gemini 经 OpenAI 兼容中转时，有时会把实际回复塞进 reasoning_content，
+        // content 字段以 "Response:" 前缀开头且正文被截断，或 content 为空。
+        if (enableProxyFix && role == MessageRole.ASSISTANT) {
+            // 情况 1: content 以 "Response:" 前缀开头 → 剥离前缀
+            val responsePrefixRegex = Regex("(?i)^response\\s*:\\s*")
+            if (content.isNotEmpty() && responsePrefixRegex.containsMatchIn(content)) {
+                content = responsePrefixRegex.replace(content, "")
+            }
+            // 情况 2: content 为空/极短且 reasoning 有实质内容 → 将 reasoning 提升为正文
+            if (reasoning.orEmpty().length > content.length * 2 && content.length < 200) {
+                content = reasoning.orEmpty()
+                reasoning = null
+            }
+        }
 
         return UIMessage(
             role = role,

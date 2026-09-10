@@ -235,6 +235,12 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         headlineContent = { Text(stringResource(R.string.setting_page_ynufe)) },
                     )
                     item(
+                        onClick = { navController.navigate(Screen.SettingHuaDeng) },
+                        leadingContent = { Icon(HugeIcons.Settings03, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_huadeng_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_huadeng)) },
+                    )
+                    item(
                         onClick = { navController.navigate(Screen.GroupChatList) },
                         leadingContent = { Icon(HugeIcons.MessageMultiple01, null) },
                         supportingContent = { Text(stringResource(R.string.setting_page_group_chat_desc)) },

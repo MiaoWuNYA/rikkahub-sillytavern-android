@@ -49,6 +49,11 @@
   <string name="assistant_page_add_header">添加 Header</string>
   <string name="assistant_page_anti_empty_response">防空回复（Gemini）</string>
   <string name="assistant_page_anti_empty_response_desc">将系统提示词移入对话流（以假 user/model 历史轮承载，世界书等注入位置保持不变），并在检测到空回复时自动微扰末条消息重试。推荐 Gemini 使用</string>
+  <string name="assistant_page_proxy_fix">中转站兼容</string>
+  <string name="assistant_page_proxy_fix_desc">修复 Gemini 经 OpenAI 兼容中转站时 reasoning_content 吞掉正文的问题：自动将误放入推理字段的内容恢复为正文，剥离 "Response:" 前缀伪影，防止回复被截断</string>
+  <string name="setting_page_huadeng">华灯设置</string>
+  <string name="setting_page_huadeng_desc">全局中转站兼容、防空回复、云财教务系统</string>
+  <string name="setting_page_huadeng_title">兼容与辅助</string>
   <string name="assistant_page_allow_conversation_system_prompt">独立对话系统提示</string>
   <string name="assistant_page_allow_conversation_system_prompt_desc">允许每个对话单独设置系统提示词</string>
   <string name="assistant_page_allow_conversation_prompt_injection">独立对话提示词注入</string>

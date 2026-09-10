@@ -32,6 +32,8 @@ data class Assistant(
     val streamOutput: Boolean = true,
     // 防空回复（针对 Gemini）：系统提示词移入对话流 + 空回复自动微扰重试，默认关闭
     val enableAntiEmptyResponse: Boolean = false,
+    // 中转站兼容：修复 Gemini 经 OpenAI 兼容中转时 reasoning_content 吞掉正文的问题
+    val enableProxyFix: Boolean = false,
     val enableMemory: Boolean = false,
     val useGlobalMemory: Boolean = false, // 使用全局共享记忆而非助手隔离记忆
     // 记忆 RAG：基于嵌入向量对记忆做语义检索（词法兜底），只注入与当前对话相关的记忆

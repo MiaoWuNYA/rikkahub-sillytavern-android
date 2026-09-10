@@ -488,6 +488,10 @@ class RouteActivity : ComponentActivity() {
                                 SettingWebPage()
                             }
 
+                            entry<Screen.SettingHuaDeng> {
+                                SettingHuaDengPage()
+                            }
+
 
                             entry<Screen.Debug> {
                                 DebugPage()
@@ -728,6 +732,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingWeb : Screen
+
+    @Serializable
+    data object SettingHuaDeng : Screen
 
     @Serializable
     data object Debug : Screen
