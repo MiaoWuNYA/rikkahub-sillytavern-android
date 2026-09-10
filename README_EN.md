@@ -2,8 +2,8 @@
 
 [**English**](README_EN.md) | [**简体中文**](README.md)
 
-> A deeply customized fork of [RikkaHub](https://github.com/rikkahub/rikkahub), already merged with the latest upstream (v2.5.0).
-> Every upstream capability is preserved as-is; on top of it this fork strengthens four areas: **⚡ prompt prefix caching**, **🧠 memory & long conversations**, **🍺 SillyTavern compatibility**, and **🛡 privacy & stability**.
+> A deeply customized fork of [RikkaHub](https://github.com/rikkahub/rikkahub), already merged with the latest upstream (**v2.5.1**).
+> Every upstream capability is preserved as-is; on top of it this fork strengthens five areas: **⚡ prompt prefix caching**, **🧠 memory & long conversations**, **🍺 SillyTavern compatibility**, **🗼 proxy-station compatibility**, and **🛡 privacy & stability**.
 > Per-file differences and the upstream merge workflow live in [DIVERGENCE.md](DIVERGENCE.md).
 
 ---
@@ -15,9 +15,56 @@ An AI chat client that runs on your phone (Kotlin + Jetpack Compose + Material Y
 - **Prompt prefix caching**: drawing on the DeepSeek Harness prefix-stability design — can significantly reduce long-conversation token costs
 - **Memory & long conversations**: semantic memory RAG + rolling context compression — long chats no longer forget or blow the context window
 - **Multi-provider**: OpenAI / Claude / Gemini / DeepSeek — any OpenAI-, Anthropic-, or Google-compatible API (with a built-in OrcaRouter aggregation gateway, disabled by default)
+- **Proxy-station compatibility**: fixes Gemini-via-OpenAI-proxy pathologies — body swallowed by reasoning_content, truncation, "response" prefix artifacts — with one switch
+- **Anti-empty-reply**: auto-perturb-and-retry for Gemini's classic empty replies; system prompt moved into the conversation flow (world-book injection positions untouched)
+- **Doubao voice**: speech synthesis 2.0 (Doubao TTS) + Volcengine ASR, one Agent Plan API key drives both
 - **Deep SillyTavern compatibility**: character cards, lorebooks, presets, regex scripts, quick replies (QR), HTML cards, multiple greetings — all imported/exported losslessly with official semantics
 - **Programmable prompts**: Macro Engine 2.0, 20+ slash commands, personas, author's note, group chats
 - **Privacy hardening**: sanitized request logging, tool-approval boundaries, telemetry off by default
+
+---
+
+## 🏮 HuaDeng Settings (fork-exclusive)
+
+Settings → **HuaDeng Settings** collects this fork's compatibility & helper features on one page. Global switches apply to all assistants (per-assistant switches can override).
+
+### 1. Proxy Fix (中转站兼容)
+
+Three classic pathologies when Gemini is accessed through OpenAI-compatible proxy stations (newapi etc.), fixed automatically:
+
+- **Body swallowed by reasoning_content**: some proxies put the actual reply into the reasoning field, leaving artifacts in `content` — after the stream ends, if the body is empty while reasoning has substance, the reasoning is promoted to the body (no false positives during the thinking phase; normal long-thinking + short-answer replies are untouched)
+- **"response" prefix artifacts**: stray `response` / `Response:` leftovers at the start of the body — stripped on both streaming and non-streaming paths, even when the prefix is split across multiple deltas; boundary checks avoid mangling English words like "responses"
+- **Truncation**: promotion + stripping logic presents the reply in full instead of "answer in the thinking block, half a reply in the body"
+
+Both streaming and non-streaming paths covered; off by default, enable in HuaDeng Settings or per assistant.
+
+### 2. Anti-Empty-Reply (global)
+
+- **System prompt into the conversation flow**: SYSTEM messages are converted in place to user turns (with a model-acknowledgment turn after the first); world-book / persona / rolling-summary injection positions and content stay untouched — bypassing Gemini's safety blocking of systemInstruction
+- **Auto-perturb retry on empty replies**: when a reply arrives with no text and no tool calls, the last user message is perturbed (add/remove periods, add space — 4 rotating variants) and retried up to 3 times
+- The per-assistant switch and the global switch work in OR
+
+### 3. YNUFE Academic System (云南财经大学)
+
+The full YNUFE (StrongZhi) account management is embedded in HuaDeng Settings:
+
+- Student ID / password stored obfuscated on-device; the AI logs in automatically when querying timetable / grades / exams / notices / empty classrooms
+- Built-in OCR for captchas, with a manual-input fallback showing the image
+- Session status display and one-tap credential clearing
+
+---
+
+## 🔊 Doubao Voice (Volcengine Agent Plan)
+
+- **Doubao TTS (new)**: Doubao speech-synthesis large model 2.0
+  - `seed-tts-2.0` resource with 16 field-tested voice presets (Cancan 2.0 — the Doubao-app default — Tianmei Taozi, Kuaile Xiaodong, …), or type any voice ID manually
+  - Speech-rate control, audio format (mp3/wav/pcm/ogg/opus) and sample rate selectable
+  - Fully parses Volcengine's concatenated-JSON chunked streaming responses; long-audio synthesis verified
+  - The Agent Plan dedicated endpoint is built in as the default; standard-console users can switch back to the official path
+- **Volcengine ASR (fixed)**: Agent Plan `ark-xxx` keys are only valid on the dedicated `/api/v3/plan/` path — the default WebSocket URL now points there; standard-console users can change it back in settings
+- One Agent Plan API key drives both voice input and voice output
+
+> The upstream 2.5.1 voice mode (queued messages, voice replies, tool-approval interruption guards) is included as well.
 
 ---
 
@@ -135,7 +182,7 @@ Multi-character conversations with independent prompts / personas / models per m
 
 ### Tools
 
-On top of upstream: file operations, shell, task tools, calculator, database query, Python engine (Chaquopy), web scraping, and a YNUFE academic-system query tool (timetable/grades/exams/notices/empty classrooms, with its own account settings page); plus a **system-prompt assembler** (tool-selection guide / work ethics).
+On top of upstream: file operations, shell, task tools, calculator, database query, Python engine (Chaquopy), web scraping, and a YNUFE academic-system query tool (timetable/grades/exams/notices/empty classrooms; account management lives in HuaDeng Settings); plus a **system-prompt assembler** (tool-selection guide / work ethics).
 
 ---
 
@@ -153,19 +200,21 @@ On top of upstream: file operations, shell, task tools, calculator, database que
 
 - **Foreground-service keep-alive**: generation survives app switching.
 - **SSE long-connection hardening**: OkHttp 30s PING keep-alive; event-stream requests disable caching and compression so proxies no longer buffer streaming output.
+- **Smooth database upgrades**: every schema change ships as an explicit migration — existing data upgrades losslessly.
 - Consistent-snapshot backup import with safe startup recovery, PickVisualMedia image picking, and many fixes.
 
 ---
 
 ## ✅ Relationship to upstream
 
-- **Everything preserved**: Material You theming, multi-provider support, streaming, conversation forking & regeneration, message edit / delete / translate, full-text search (jieba), favorites, image generation, TTS / ASR (incl. Volcengine bidirectional streaming), MCP, workspace sandbox (multi-tab terminal), backup (S3 / WebDAV), web chat endpoint, and chat export all work as before.
-- **Already merged with the latest upstream**: rikkahub/rikkahub master (v2.5.0); pull upstream anytime via `git fetch rikkahub && git merge rikkahub/master` (conflict handbook: [DIVERGENCE.md](DIVERGENCE.md)).
-- **Versus the mingli2 branch**: beyond the tavern enhancements, this branch mainly adds prompt prefix caching, semantic memory RAG & rolling context compression, privacy hardening, and the YNUFE academic-system tools (tavern-level deltas are noted at the top of the "Tavern System" section).
+- **Everything preserved**: Material You theming, multi-provider support, streaming, conversation forking & regeneration, message edit / delete / translate, full-text search (jieba), favorites, image generation, TTS / ASR (incl. Volcengine bidirectional streaming and Doubao TTS), MCP, workspace sandbox (multi-tab terminal + shell compatibility mode), backup (S3 / WebDAV), web chat endpoint, and chat export all work as before.
+- **Already merged with the latest upstream**: rikkahub/rikkahub master (**v2.5.1**); highlights of this merge: voice mode & message queue, translator shortcut, workspace shell compatibility mode & HTML/SVG preview, custom time-reminder interval, custom Response API path, DeepSeek V4.1 Flash, `ask_user` free-text replies, image-generation multi-select, and more. Pull upstream anytime via `git fetch rikkahub && git merge rikkahub/master` (conflict handbook: [DIVERGENCE.md](DIVERGENCE.md)).
+- **Versus the mingli2 branch**: beyond the tavern enhancements, this branch mainly adds prompt prefix caching, semantic memory RAG & rolling context compression, proxy-station compatibility & anti-empty-reply, Doubao voice, privacy hardening, and the YNUFE academic-system tools (tavern-level deltas are noted at the top of the "Tavern System" section).
 
 ## 📦 Download
 
 - **Nightly prerelease**: Actions build daily and publish to [Releases](https://github.com/MiaoWuNYA/rikkahub-plus/releases/tag/nightly) (tag `nightly`, overwritten with the latest each night).
+- **Stable releases**: versioned releases (`2.5.2fixN`) on [Releases](https://github.com/MiaoWuNYA/rikkahub-plus/releases).
 - **Manual builds**: every push builds an APK artifact (`rikkahub-plus-fresh`) on [Actions](https://github.com/MiaoWuNYA/rikkahub-plus/actions).
 
 ---
