@@ -117,8 +117,12 @@ QuickJS-sandboxed plugins: a plugin is a ZIP package (`manifest.json` + `main.js
 ## 🎨 Chat Appearance & Themes
 
 - **Color overrides**: 7 custom colors (primary, global text, user/AI/thinking bubbles, chat background, input field, ARGB)
-- **Bubble beautification**: user/AI bubble background images + corner radius + theme-color overlay, drawer background image
-- **SillyTavern theme import**: SillyTavern beautification theme JSONs (`main_text_color` / `chat_tint_color` / `user_mes_blur_tint_color` / `bot_mes_blur_tint_color` / `font_scale`, …) import directly into the color system above (one-tap import on the chat-appearance page; CSS-only fields are ignored)
+- **Bubble beautification**: user/AI bubble background images + corner radius + theme-color overlay, drawer background image and **chat background image** (tinted with the chat background color)
+- **SillyTavern theme import**: one-tap import of SillyTavern beautification theme JSONs, bulk-verified against 500+ real themes (537/537 parse successfully):
+  - **Layered color compositing**: theme tints (`blur_tint` → `chat_tint` → message bubble tints → background image) are composited source-over into opaque approximations following SillyTavern's render stack, so transparent-bubble themes no longer collapse into flat color blocks; 8-digit hex parsed per CSS spec as `#RRGGBBAA`
+  - **Background image**: `background-image` on `#bg1` / `body` / `#chat` detected from `custom_css` (URLs auto-downloaded, data URIs decoded) and shown as the chat background
+  - **Bubble styling**: `border-radius` on `.mes` / `#chat` maps to bubble corner radius; `chat_display=1` (bubble mode) enables assistant bubbles automatically
+  - Also: `main_text_color` → global text, `quote/italics_text_color` → quote/italics colors (opaque only), `font_scale` → font scale
 - Preset palettes + HCT custom themes + dynamic color remain unchanged
 
 ---
@@ -148,7 +152,7 @@ Actual results vary by conversation shape: in steady, append-only chats the cach
 - **Rolling context compression**: when a conversation exceeds the threshold (auto-computed from the model's context window or set manually), a compression model rolls earlier turns into a non-destructive summary (original messages preserved, replaced only at request time), injected as a system message — long chats stay in-window without losing persona or foreshadowing.
 - **Recent chats reference**: optionally inject the assistant's recent conversation list for cross-session continuity.
 - **Transient-content pruning**: web-search results / images / audio / video older than two turns are dropped from requests automatically (with the message ID so the AI can retrieve the original via `read_history_message`) — token usage drops sharply on image- and search-heavy long chats.
-- All per-assistant switches, off by default; existing behavior unchanged.
+- Memory features (memory tool / RAG retrieval / three-layer memory / cross-window life stream) are **enabled by default** — memory helps the AI know the user better and is not sacrificed to save context; new assistants get it out of the box, existing assistants keep their settings, and everything can still be toggled per assistant.
 
 ---
 

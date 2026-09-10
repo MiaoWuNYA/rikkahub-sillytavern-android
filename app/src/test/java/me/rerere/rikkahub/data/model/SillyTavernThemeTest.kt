@@ -30,10 +30,18 @@ class SillyTavernThemeTest {
     fun `parseCssColor handles hex variants`() {
         assertEquals(0xFFFF8000L, parseCssColor("#FF8000"))
         assertEquals(0xFFFF8000L, parseCssColor("ff8000")) // # 可省略
-        assertEquals(0x80FF8000L, parseCssColor("#80FF8000")) // #AARRGGBB
         assertEquals(0xFFFF8800L, parseCssColor("#F80")) // #RGB
-        assertEquals(0x88FF8800L, parseCssColor("#8F80")) // #ARGB
         assertEquals(0xFFFFFFFFL, parseCssColor("#FFFFFF"))
+    }
+
+    @Test
+    fun `parseCssColor interprets 8-digit hex as RRGGBBAA per CSS spec`() {
+        // 酒馆主题大量使用 CSS 规范的 #RRGGBBAA（如真实主题里的 #fbc4c450）
+        assertEquals(0x50FBC4C4L, parseCssColor("#fbc4c450"))
+        assertEquals(0xB59F9F9FL, parseCssColor("#9f9f9fb5"))
+        // 4 位是 #RGBA
+        assertEquals(0x00FF8844L, parseCssColor("#F840"))
+        assertEquals(0x88FF8800L, parseCssColor("#F808"))
     }
 
     @Test
@@ -144,6 +152,7 @@ class SillyTavernThemeTest {
             {
               "name": "薄荷马卡龙",
               "main_text_color": "rgba(88, 112, 92, 0.75)",
+              "blur_tint_color": "rgba(245, 252, 248, 0.4)",
               "chat_tint_color": "rgba(250, 255, 252, 0.55)",
               "user_mes_blur_tint_color": "rgba(255, 255, 255, 0.85)",
               "bot_mes_blur_tint_color": "rgba(255, 255, 255, 0.85)",
@@ -157,11 +166,14 @@ class SillyTavernThemeTest {
         val patched = theme.applyTo(base)
 
         assertEquals(0xBF58705CL, patched.globalTextColor)
-        assertEquals(0x8CFAFFFCL, patched.chatBackgroundColor)
-        assertEquals(0xD9FFFFFFL, patched.userBubbleColor)
-        assertEquals(0xD9FFFFFFL, patched.assistantBubbleColor)
-        assertEquals("#B364826E", patched.quoteColor)
-        assertEquals("#E68CBC9C", patched.italicsColor)
+        // chat_tint 叠 blur_tint 叠浅色底（深色文字 → 浅底）合成不透明近似色
+        assertEquals(0xFFF9FDFBL, patched.chatBackgroundColor)
+        // 气泡色调叠在聊天背景上，合成后不透明
+        assertEquals(0xFFFEFFFEL, patched.userBubbleColor)
+        assertEquals(0xFFFEFFFEL, patched.assistantBubbleColor)
+        // 半透明的引用/斜体色无法在应用中忠实呈现，保持 base 原值
+        assertEquals("", patched.quoteColor)
+        assertEquals("", patched.italicsColor)
         assertEquals(0.92f, patched.fontSizeRatio)
         // 未映射字段不受影响
         assertNull(patched.primaryColor)
@@ -170,6 +182,60 @@ class SillyTavernThemeTest {
         assertEquals(1.0f, patched.bubbleOpacity)
         assertEquals(16f, patched.bubbleCornerRadius)
         assertEquals("", patched.userBubbleImagePath)
+    }
+
+    @Test
+    fun `applyTo composites overlay-style dark bubble tints over light base`() {
+        // 精简自真实主题 黑白糯米酒.json：低透明度气泡色调叠在深色 chat_tint 上
+        val theme = themeFromJson(
+            """
+            {
+              "name": "黑白糯米酒",
+              "main_text_color": "rgba(0, 0, 0, 1)",
+              "blur_tint_color": "rgba(255, 255, 255, 0.57)",
+              "chat_tint_color": "rgba(0, 0, 0, 0.69)",
+              "user_mes_blur_tint_color": "rgba(0, 0, 0, 0.11)",
+              "bot_mes_blur_tint_color": "rgba(0, 0, 0, 0.22)"
+            }
+            """
+        )
+
+        val patched = theme.applyTo(DisplaySetting())
+
+        // 250 底 → blur 后 (253,253,253) → chat 后 (78,78,78)
+        assertEquals(0xFF4E4E4EL, patched.chatBackgroundColor)
+        // 气泡 = 消息色调叠在 (78,78,78) 上
+        assertEquals(0xFF454545L, patched.userBubbleColor)
+        assertEquals(0xFF3D3D3DL, patched.assistantBubbleColor)
+        assertEquals(0xFF000000L, patched.globalTextColor)
+    }
+
+    @Test
+    fun `applyTo handles fully transparent bubble tints without crashing`() {
+        // 精简自真实主题 蝶_桃花劫·画中仙：气泡/聊天色调 alpha 全为 0
+        val theme = themeFromJson(
+            """
+            {
+              "name": "画中仙",
+              "main_text_color": "rgba(255, 255, 255, 1)",
+              "blur_tint_color": "rgba(0, 0, 0, 0.91)",
+              "chat_tint_color": "rgba(140, 120, 128, 0)",
+              "user_mes_blur_tint_color": "rgba(255, 255, 255, 0)",
+              "bot_mes_blur_tint_color": "rgba(255, 255, 255, 0)"
+            }
+            """
+        )
+
+        val patched = theme.applyTo(DisplaySetting())
+
+        // 浅色文字 → 深色底；chat_tint 全透明 → 背景即 blur_tint 合成结果（接近纯黑）
+        assertEquals(0xFFFFFFFFL, patched.globalTextColor)
+        val chatBg = patched.chatBackgroundColor
+        assertEquals(0xFFL, (chatBg ?: 0L) ushr 24)
+        assertTrue("聊天背景应接近纯黑: $chatBg", ((chatBg ?: 0L) and 0xFFFFFFL) < 0x202020L)
+        // 气泡色调全透明 → 气泡与背景同色（对应酒馆里文字直接浮在背景上的效果）
+        assertEquals(chatBg, patched.userBubbleColor)
+        assertEquals(chatBg, patched.assistantBubbleColor)
     }
 
     @Test
@@ -233,5 +299,92 @@ class SillyTavernThemeTest {
         ).applyTo(base)
         assertEquals("#CB8E16", patched.quoteColor)
         assertEquals("#0E607A", patched.italicsColor)
+    }
+
+    @Test
+    fun `applyTo maps chat_display bubble mode to assistant bubble visibility`() {
+        val base = DisplaySetting(showAssistantBubble = false)
+        assertTrue(parseSillyTavernTheme("""{"chat_display": 1}""").applyTo(base).showAssistantBubble)
+        val baseWithBubble = DisplaySetting(showAssistantBubble = true)
+        // 0=默认平铺 / 2=文档模式 → 关闭气泡
+        assertEquals(false, parseSillyTavernTheme("""{"chat_display": 0}""").applyTo(baseWithBubble).showAssistantBubble)
+        assertEquals(false, parseSillyTavernTheme("""{"chat_display": 2}""").applyTo(baseWithBubble).showAssistantBubble)
+        // 缺省保持原值
+        assertEquals(true, parseSillyTavernTheme("""{"name": "X"}""").applyTo(baseWithBubble).showAssistantBubble)
+    }
+
+    @Test
+    fun `applyTo extracts bubble corner radius from custom css`() {
+        val base = DisplaySetting()
+        val theme = parseSillyTavernTheme(
+            """
+            {
+              "name": "X",
+              "custom_css": ".mes { border-radius: 12px !important; background: blue; } #chat_form { border-radius: 99px; }"
+            }
+            """.trimIndent()
+        )
+        assertEquals(12f, theme.applyTo(base).bubbleCornerRadius)
+        // 多值取最大，.mes_text / #chat_form 不算消息气泡
+        val theme2 = parseSillyTavernTheme(
+            """{"custom_css": ".mes { border-radius: 0 8px 8px 0; }"}"""
+        )
+        assertEquals(8f, theme2.applyTo(base).bubbleCornerRadius)
+        // 超范围 clamp 到滑条上限
+        val theme3 = parseSillyTavernTheme("""{"custom_css": ".mes_block { border-radius: 50px; }"}""")
+        assertEquals(28f, theme3.applyTo(base).bubbleCornerRadius)
+        // 只有百分比 / 没有 px → 保持原值
+        val theme4 = parseSillyTavernTheme("""{"custom_css": ".mes { border-radius: 50%; }"}""")
+        assertEquals(16f, theme4.applyTo(base).bubbleCornerRadius)
+    }
+
+    @Test
+    fun `extractBackgroundImageUrl finds chat background from theme css`() {
+        // body 上的背景图
+        assertEquals(
+            "https://i.postimg.cc/a.png",
+            extractBackgroundImageUrl("""body { background-image: url("https://i.postimg.cc/a.png") fixed center/cover; }""")
+        )
+        // #bg1 优先于 body
+        assertEquals(
+            "data:image/png;base64,AAAA",
+            extractBackgroundImageUrl(
+                """body { background-image: url(https://x/b.png); } #bg1 { background: url(data:image/png;base64,AAAA) no-repeat; }"""
+            )
+        )
+        // 头像框等装饰图不误抓
+        assertNull(extractBackgroundImageUrl(""".mes_avatar { background: url(https://x/avatar.png); }"""))
+        // 没有背景图
+        assertNull(extractBackgroundImageUrl("""body { color: red; }"""))
+        assertNull(extractBackgroundImageUrl(null))
+    }
+
+    @Test
+    fun `extractThemeFont picks ttf or otf fonts from font-face`() {
+        // 精简自真实主题：URL 以 .ttf 结尾，format 为 truetype
+        val font = extractThemeFont(
+            """
+            @font-face {
+              font-family: 'cattie';
+              src: url('https://x.example/%E4%B8%B9%E3%81%AE%E5%B0%8F%E5%90%90%E5%8F%B8-9.ttf') format('truetype');
+              font-weight: normal;
+            }
+            """.trimIndent()
+        )
+        assertEquals("cattie", font?.family)
+        assertEquals("https://x.example/%E4%B8%B9%E3%81%AE%E5%B0%8F%E5%90%90%E5%8F%B8-9.ttf", font?.url)
+        // URL 以 .otf 结尾但 format 写成 WOFF2（真实主题常见错标），按扩展名采纳
+        val font2 = extractThemeFont(
+            """@font-face { font-family: "ZiTi"; src: url("http://x.example/SongSC-SemiBold.otf") format("WOFF2"); }"""
+        )
+        assertEquals("ZiTi", font2?.family)
+        // 纯 woff/woff2 无法被 Android 原生加载 → 忽略
+        val font3 = extractThemeFont(
+            """@font-face { font-family: "W"; src: url("https://x.example/f.woff2") format("woff2"); }"""
+        )
+        assertNull(font3)
+        // 没有 @font-face
+        assertNull(extractThemeFont("""body { font-family: sans-serif; }"""))
+        assertNull(extractThemeFont(null))
     }
 }

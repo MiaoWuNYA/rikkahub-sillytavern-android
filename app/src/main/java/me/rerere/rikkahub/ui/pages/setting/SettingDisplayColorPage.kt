@@ -45,9 +45,14 @@ import com.dokar.sonner.ToastType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import me.rerere.rikkahub.data.datastore.ChatFontFamily
 import me.rerere.rikkahub.data.datastore.DisplaySetting
+import me.rerere.rikkahub.data.files.FileFolders
 import me.rerere.rikkahub.data.model.SillyTavernTheme
+import me.rerere.rikkahub.data.model.ThemeFont
 import me.rerere.rikkahub.data.model.applyTo
+import me.rerere.rikkahub.data.model.extractBackgroundImageUrl
+import me.rerere.rikkahub.data.model.extractThemeFont
 import me.rerere.rikkahub.data.model.parseSillyTavernTheme
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
@@ -56,8 +61,11 @@ import me.rerere.rikkahub.ui.components.ui.toComposeColor
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.plus
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.koin.androidx.compose.koinViewModel
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 @Composable
 fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
@@ -98,6 +106,10 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
 
     val drawerImagePicker = rememberImageImporter { path ->
         updateDisplaySetting(displaySetting.copy(drawerBackgroundPath = path))
+    }
+    val chatBackgroundImagePicker = rememberImageImporter { path ->
+        deleteThemeFileIfOwned(context, displaySetting.chatBackgroundImagePath, path)
+        updateDisplaySetting(displaySetting.copy(chatBackgroundImagePath = path))
     }
     val userBubbleImagePicker = rememberImageImporter { path ->
         updateDisplaySetting(displaySetting.copy(userBubbleImagePath = path))
@@ -200,18 +212,50 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                         } else {
                             changeLabels.forEach { label -> append("\n· $label") }
                         }
-                        append("\n\n其余显示设置保持不变，自定义 CSS 不会被导入")
+                        append("\n\n其余显示设置保持不变；自定义 CSS 仅提取聊天背景图、气泡圆角与主题字体")
                     }
                 )
             },
             confirmButton = {
                 Button(onClick = {
-                    updateDisplaySetting(theme.applyTo(displaySetting))
-                    toaster.show(
-                        "已应用主题：${theme.name ?: "未命名"}；未能识别的字段已忽略",
-                        type = ToastType.Success
-                    )
                     pendingTheme = null
+                    scope.launch {
+                        var patched = theme.applyTo(displaySetting)
+                        var bgNote = ""
+                        // 背景图：从 custom_css 提取地址并下载到应用私有目录
+                        val bgUrl = extractBackgroundImageUrl(theme.customCss)
+                        if (bgUrl != null) {
+                            runCatching {
+                                withContext(Dispatchers.IO) { storeThemeBackground(context, bgUrl) }
+                            }.onSuccess { path ->
+                                deleteThemeFileIfOwned(context, displaySetting.chatBackgroundImagePath, path)
+                                patched = patched.copy(chatBackgroundImagePath = path)
+                            }.onFailure {
+                                bgNote = "；背景图获取失败（${it.message ?: "未知错误"}），已跳过"
+                            }
+                        }
+                        // 主题字体：@font-face 里的 ttf/otf 自动下载并设为聊天字体
+                        val themeFont = extractThemeFont(theme.customCss)
+                        if (themeFont != null) {
+                            runCatching {
+                                withContext(Dispatchers.IO) { storeThemeFont(context, themeFont) }
+                            }.onSuccess { relativePath ->
+                                deleteThemeFontIfOwned(context, displaySetting.chatCustomFontPath, relativePath)
+                                patched = patched.copy(
+                                    chatFontFamily = ChatFontFamily.CUSTOM,
+                                    chatCustomFontPath = relativePath,
+                                    chatCustomFontName = themeFont.family ?: "酒馆主题字体",
+                                )
+                            }.onFailure {
+                                bgNote += "；主题字体获取失败（${it.message ?: "未知错误"}），已跳过"
+                            }
+                        }
+                        updateDisplaySetting(patched)
+                        toaster.show(
+                            "已应用主题：${theme.name ?: "未命名"}$bgNote",
+                            type = if (bgNote.isEmpty()) ToastType.Success else ToastType.Warning
+                        )
+                    }
                 }) { Text("应用") }
             },
             dismissButton = {
@@ -244,7 +288,9 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                 ) {
                     item(
                         headlineContent = { Text("导入酒馆（SillyTavern）主题") },
-                        supportingContent = { Text("选择酒馆主题 JSON，应用其配色与字号设置") },
+                        supportingContent = {
+                            Text("选择酒馆主题 JSON，按酒馆叠层语义应用配色、字号、气泡圆角、背景图与主题字体")
+                        },
                         trailingContent = {
                             TextButton(onClick = { themePickerLauncher.launch("application/json") }) {
                                 Text("导入")
@@ -441,6 +487,26 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                     title = { Text("背景") },
                 ) {
                     item(
+                        headlineContent = { Text("聊天背景图") },
+                        supportingContent = {
+                            Text(
+                                if (displaySetting.chatBackgroundImagePath.isBlank()) "未设置（优先于助手背景，叠加聊天背景色遮罩）"
+                                else "已设置"
+                            )
+                        },
+                        trailingContent = {
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                TextButton(onClick = { chatBackgroundImagePicker.launch("image/*") }) { Text("选择") }
+                                if (displaySetting.chatBackgroundImagePath.isNotBlank()) {
+                                    TextButton(onClick = {
+                                        deleteThemeFileIfOwned(context, displaySetting.chatBackgroundImagePath, null)
+                                        updateDisplaySetting(displaySetting.copy(chatBackgroundImagePath = ""))
+                                    }) { Text("重置") }
+                                }
+                            }
+                        },
+                    )
+                    item(
                         headlineContent = { Text("抽屉（侧边栏）背景图") },
                         supportingContent = {
                             Text(if (displaySetting.drawerBackgroundPath.isBlank()) "未设置" else "已设置")
@@ -473,6 +539,10 @@ private fun themeChangeLabels(theme: SillyTavernTheme, base: DisplaySetting): Li
     if (patched.quoteColor != base.quoteColor) labels.add("引用颜色")
     if (patched.italicsColor != base.italicsColor) labels.add("斜体颜色")
     if (patched.fontSizeRatio != base.fontSizeRatio) labels.add("字号比例")
+    if (patched.showAssistantBubble != base.showAssistantBubble) labels.add("AI 气泡显示")
+    if (patched.bubbleCornerRadius != base.bubbleCornerRadius) labels.add("气泡圆角")
+    if (extractBackgroundImageUrl(theme.customCss) != null) labels.add("聊天背景图（自动下载）")
+    if (extractThemeFont(theme.customCss) != null) labels.add("主题字体（自动下载）")
     return labels
 }
 
@@ -511,4 +581,83 @@ private fun importThemeImage(context: Context, uri: Uri): String {
         targetFile.outputStream().use { output -> input.copyTo(output) }
     } ?: error("无法读取所选图片")
     return Uri.fromFile(targetFile).toString()
+}
+
+/** 酒馆主题远程资源抓取结果 */
+private class ThemeFileBytes(val bytes: ByteArray, val extension: String)
+
+/** 下载 http(s) URL / 解码 data URI，扩展名优先取 URL 路径上的，其次 Content-Type / MIME */
+private fun fetchThemeFile(url: String): ThemeFileBytes {
+    if (url.startsWith("data:", ignoreCase = true)) {
+        val marker = ";base64,"
+        val idx = url.indexOf(marker, ignoreCase = true)
+        require(idx > 0) { "不支持的 data URI" }
+        val mime = url.substringAfter("data:", "").substringBefore(";").lowercase()
+        val bytes = android.util.Base64.decode(url.substring(idx + marker.length), android.util.Base64.DEFAULT)
+        val extension = mime.substringAfter('/', "").filter { it.isLetterOrDigit() }.takeIf { it.length in 2..5 } ?: ""
+        return ThemeFileBytes(bytes, extension)
+    }
+    require(url.startsWith("http://") || url.startsWith("https://")) { "不支持的资源地址" }
+    val client = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .followRedirects(true)
+        .build()
+    val request = Request.Builder()
+        .url(url)
+        .header("User-Agent", "Mozilla/5.0 (Linux; Android) rikkahub-theme-import")
+        .build()
+    client.newCall(request).execute().use { response ->
+        check(response.isSuccessful) { "HTTP ${response.code}" }
+        val bytes = response.body.bytes()
+        val urlExt = url.substringBefore('?').substringAfterLast('/')
+            .substringAfterLast('.', "").filter { it.isLetterOrDigit() }
+        val extension = urlExt.takeIf { it.length in 2..5 }
+            ?: response.header("Content-Type")
+                ?.substringAfter('/')?.substringBefore(';')
+                ?.filter { it.isLetterOrDigit() }
+                ?.takeIf { it.length in 2..5 }
+            ?: ""
+        return ThemeFileBytes(bytes, extension)
+    }
+}
+
+/** 把酒馆主题里的背景图（http URL 或 data URI）保存到应用私有目录，返回文件 URI */
+private fun storeThemeBackground(context: Context, url: String): String {
+    val fetched = fetchThemeFile(url)
+    check(fetched.bytes.size <= 25_000_000) { "背景图过大（>25MB）" }
+    val imageDir = File(context.filesDir, "images/theme").apply { mkdirs() }
+    val targetFile = File(imageDir, "theme_bg_${System.currentTimeMillis()}.${fetched.extension.ifBlank { "png" }}")
+    targetFile.writeBytes(fetched.bytes)
+    return Uri.fromFile(targetFile).toString()
+}
+
+/** 把 @font-face 里的主题字体下载为应用聊天字体，返回 filesDir 相对路径（并验证可被 Android 加载） */
+private fun storeThemeFont(context: Context, font: ThemeFont): String {
+    val fetched = fetchThemeFile(font.url)
+    check(fetched.bytes.size <= 30_000_000) { "字体文件过大（>30MB）" }
+    val fontDir = File(context.filesDir, FileFolders.FONTS).apply { mkdirs() }
+    val targetFile = File(fontDir, "theme_font_${System.currentTimeMillis()}.${fetched.extension.ifBlank { "ttf" }}")
+    targetFile.writeBytes(fetched.bytes)
+    runCatching { android.graphics.Typeface.createFromFile(targetFile) }
+        .onFailure {
+            targetFile.delete()
+            throw IllegalArgumentException("字体文件无法被系统加载", it)
+        }
+    return "${FileFolders.FONTS}/${targetFile.name}"
+}
+
+/** 删除被替换/重置的旧主题背景文件（仅限应用私有 images/theme 目录内的文件） */
+private fun deleteThemeFileIfOwned(context: Context, path: String?, keep: String?) {
+    if (path.isNullOrBlank() || path == keep) return
+    val owned = File(context.filesDir, "images/theme").absolutePath
+    val file = Uri.parse(path).path?.let(::File) ?: return
+    if (file.absolutePath.startsWith(owned)) file.delete()
+}
+
+/** 删除被替换的旧主题字体（只动本功能写入的 theme_font_* 文件，不碰用户手动导入的字体） */
+private fun deleteThemeFontIfOwned(context: Context, relativePath: String?, keep: String?) {
+    if (relativePath.isNullOrBlank() || relativePath == keep) return
+    if (!File(relativePath).name.startsWith("theme_font_")) return
+    File(context.filesDir, relativePath).takeIf { it.isFile }?.delete()
 }

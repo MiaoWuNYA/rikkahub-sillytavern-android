@@ -34,12 +34,13 @@ data class Assistant(
     val enableAntiEmptyResponse: Boolean = false,
     // 中转站兼容：修复 Gemini 经 OpenAI 兼容中转时 reasoning_content 吞掉正文的问题
     val enableProxyFix: Boolean = false,
-    val enableMemory: Boolean = false,
+    // 记忆功能默认开启：记忆让 AI 更了解用户，不为省上下文牺牲体验（旧助手保留原设置）
+    val enableMemory: Boolean = true,
     val useGlobalMemory: Boolean = false, // 使用全局共享记忆而非助手隔离记忆
     // 记忆 RAG：基于嵌入向量对记忆做语义检索（词法兜底），只注入与当前对话相关的记忆
-    val enableMemoryRag: Boolean = false,
+    val enableMemoryRag: Boolean = true,
     // 允许 episodic（情节）记忆：模型可记录具体事件，检索时按时间衰减加权
-    val enableEpisodicMemory: Boolean = false,
+    val enableEpisodicMemory: Boolean = true,
     // 上下文滚动压缩：达到阈值后自动把早期对话压缩为摘要（保留原文，仅请求时替换前缀）
     val enableRollingContextCompression: Boolean = false,
     // 触发压缩的 token 阈值；0 表示按模型上下文窗口自动计算
@@ -92,10 +93,10 @@ data class Assistant(
     val enableAutoMemoryExtract: Boolean = true,          // [新增] 自动从对话提取记忆（独立开关，不依赖 enableMemory）
     val autoMemoryExtractInterval: Int = 5,                // 每 N 轮对话提取一次记忆
     // ---- 三层记忆（固定记忆 + 跨窗口生活流 + 长期记忆按需召回） ----
-    // 按相关性召回长期记忆（词项重叠打分），替代全量注入
-    val enableThreeLayerMemory: Boolean = false,
+    // 按相关性召回长期记忆（词项重叠打分），替代全量注入；默认开启
+    val enableThreeLayerMemory: Boolean = true,
     // 跨窗口生活流：同一助手在不同对话间的近期经历共享（SharedPreferences 存储）
-    val enableCrossWindowMemory: Boolean = false,
+    val enableCrossWindowMemory: Boolean = true,
     // 超过阈值字符后后台压缩旧的生活流前缀为摘要
     val enableCrossWindowMemoryCompression: Boolean = true,
     val crossWindowMemoryCompressionThresholdChars: Int = 12000,

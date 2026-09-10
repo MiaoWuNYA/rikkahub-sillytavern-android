@@ -10,12 +10,33 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
+import me.rerere.rikkahub.ui.components.ui.toComposeColor
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 
 @Composable
 fun AssistantBackground(setting: Settings, modifier: Modifier) {
     val assistant = setting.getCurrentAssistant()
+    // 全局聊天背景图（酒馆主题导入或外观自定义页设置），优先于助手背景
+    if (setting.displaySetting.chatBackgroundImagePath.isNotBlank()) {
+        val scrimColor = setting.displaySetting.chatBackgroundColor?.toComposeColor()
+            ?: MaterialTheme.colorScheme.background
+        Box(modifier = modifier) {
+            AsyncImage(
+                model = setting.displaySetting.chatBackgroundImagePath,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            // 聊天背景色作为遮罩，模拟酒馆 chat_tint 叠层
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(scrimColor.copy(alpha = 0.45f))
+            )
+        }
+        return
+    }
     if (assistant.useGradientBackground) {
         MeshGradientBackground(modifier = modifier)
         return

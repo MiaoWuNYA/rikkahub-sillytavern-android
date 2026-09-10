@@ -813,6 +813,8 @@ data class DisplaySetting(
     val bubbleCornerRadius: Float = 16f,
     // 抽屉（侧边栏）背景图路径
     val drawerBackgroundPath: String = "",
+    // 聊天背景图路径（酒馆主题导入或手动设置），优先于助手背景；叠加聊天背景色遮罩
+    val chatBackgroundImagePath: String = "",
 )
 
 @Serializable
