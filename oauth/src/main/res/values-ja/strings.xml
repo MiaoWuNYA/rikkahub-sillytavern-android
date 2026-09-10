@@ -16,3 +16,4 @@
   <string name="oauth_callback_handled_message">この認可コールバックは既に処理されています。</string>
   <string name="oauth_callback_handled_hint">このタブは安全に閉じて、RikkaHubに戻ることができます。</string>
 </resources>
+

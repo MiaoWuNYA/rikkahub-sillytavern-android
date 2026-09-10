@@ -16,3 +16,4 @@
   <string name="oauth_callback_handled_message">此授权回调已被处理。</string>
   <string name="oauth_callback_handled_hint">你可以安全地关闭此标签页并返回 RikkaHub。</string>
 </resources>
+

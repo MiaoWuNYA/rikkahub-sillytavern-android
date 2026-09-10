@@ -16,3 +16,4 @@
   <string name="oauth_callback_handled_message">인증 콜백이 이미 처리되었습니다.</string>
   <string name="oauth_callback_handled_hint">이 탭을 안전하게 닫고 RikkaHub로 돌아가도 됩니다.</string>
 </resources>
+

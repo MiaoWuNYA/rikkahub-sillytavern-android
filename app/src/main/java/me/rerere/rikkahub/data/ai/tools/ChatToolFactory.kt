@@ -7,6 +7,7 @@ import me.rerere.ai.core.Tool
 import me.rerere.ai.provider.BuiltInTools
 import me.rerere.ai.provider.Model
 import me.rerere.rikkahub.data.ai.mcp.McpManager
+import me.rerere.rikkahub.data.ai.tools.LocalTools
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.files.SkillManager
 import me.rerere.rikkahub.data.model.Assistant

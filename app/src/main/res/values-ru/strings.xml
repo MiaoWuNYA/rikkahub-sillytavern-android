@@ -1269,7 +1269,7 @@
   <string name="setting_display_page_tts_read_outside_brackets_title">TTS не читает текст в скобках</string>
   <string name="setting_display_page_tts_read_outside_brackets_desc">Если включено, TTS не будет читать содержимое в скобках</string>
   <string name="assistant_page_context_message_limit">Лимит контекстных сообщений</string>
-  <string name="assistant_page_context_message_limit_desc">Ограничивает количество последних сообщений, отправляемых модели. Когда лимит превышен, контекст сокращается примерно вдвое за один шаг, вместо удаления одного сообщения за каждый оборот, благодаря чему префикс запроса остаётся стабильным, и кэширование промптов продолжает работать на протяжении многих оборотов.</string>
+  <string name="assistant_page_context_message_limit_desc">Ограничивает количество последних сообщений, отправляемых модели.</string>
   <string name="assistant_page_context_message_limit_count">Лимит сообщений контекста: %d</string>
   <string name="assistant_page_context_message_limit_unlimited">Неограниченные сообщения контекста</string>
   <string name="assistant_page_context_message_limit_warning">Ограничение контекста аннулирует кэш промпта каждый раз, когда контекст усекается. Больший лимит усекает реже; безлимитный не усекает никогда и сохраняет кэш полностью нетронутым.</string>
@@ -1279,6 +1279,12 @@
   <string name="search_picker_model_description">Облачный поиск, встроенный в провайдера моделей</string>
   <string name="search_picker_select_provider">Выберите провайдера поиска</string>
   <string name="search_picker_turn_off">Отключить поиск</string>
+  <string name="setting_update_reminder_enabled">Напоминания об обновлениях включены</string>
+  <string name="setting_update_reminder_paused_until">Приостановлено до %1$s</string>
+  <string name="setting_update_reminder_pause_title">Приостановить напоминания об обновлениях</string>
+  <string name="setting_update_reminder_pause_description">Выберите, как долго приостановить напоминания об обновлениях. Они возобновятся автоматически.</string>
+  <string name="setting_update_reminder_pause_days">%1$d дн.</string>
+  <string name="setting_update_reminder_resume_now">Возобновить сейчас</string>
   <string name="reasoning_max">Максимум</string>
   <string name="backup_page_import_overwrite_confirm">Импорт резервной копии перезапишет данные приложения. Продолжить?</string>
   <string name="setting_page_preferences_network">Сеть</string>
@@ -1346,4 +1352,20 @@
   <string name="setting_page_asr_silence_duration">Длительность паузы окончания высказывания</string>
   <string name="setting_page_asr_silence_duration_desc">Высказывание завершается после непрерывной паузы указанной длительности. Рекомендуется: 800–1000 мс.</string>
   <string name="setting_page_asr_milliseconds">мс</string>
+  <string name="assistant_page_time_reminder_interval">Интервал напоминания о времени</string>
+  <string name="assistant_page_time_reminder_interval_label">Интервал (минуты)</string>
+  <string name="assistant_page_time_reminder_interval_hint">Введите целое положительное число. Напоминание вставляется, когда промежуток между сообщениями превышает этот интервал.</string>
+  <string name="assistant_page_time_reminder_interval_desc">Вставлять напоминание, когда промежуток между сообщениями превышает этот интервал. Всегда напоминать перед первым сообщением пользователя.</string>
+  <string name="assistant_page_time_reminder_interval_value">%1$d мин</string>
+  <string name="assistant_page_context_message_limit_hint">Введите 0 для безлимита; в противном случае чем больше значения, тем лучше. Рекомендуется установить значение 0 или не менее 20.</string>
+  <string name="imggen_page_delete_images_title">Удалить изображения</string>
+  <string name="imggen_page_delete_images_message">Удалить выбранные изображения (%1$d)? Это действие необратимо.</string>
+  <string name="imggen_page_delete_images_success">Изображения удалены: %1$d</string>
+  <string name="imggen_page_delete_images_failed">Удалено: %1$d. Не удалось: %2$d. Попробуйте ещё раз.</string>
+  <string name="imggen_page_deleting">Удаление…</string>
+  <string name="imggen_page_selected_count">Выбрано: %1$d</string>
+  <string name="imggen_page_select_image">Выбрать изображение</string>
+  <string name="workspace_detail_compatibility_mode">Режим совместимости</string>
+  <string name="workspace_detail_compatibility_mode_desc">Попробуйте включить это, если терминал не запускается. Это может снизить производительность. Применяется к новым вкладкам терминала и последующим командам.</string>
+  <string name="workspace_detail_settings_save_failed">Не удалось сохранить настройки</string>
 </resources>

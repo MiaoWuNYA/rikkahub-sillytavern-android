@@ -70,7 +70,7 @@ class QwenTTSProvider : TTSProvider<TTSProviderSetting.Qwen> {
                 )
             }
 
-response.body.byteStream().bufferedReader().use { reader ->
+            response.body.byteStream().bufferedReader().use { reader ->
                 var currentData = StringBuilder()
 
                 reader.lineSequence().forEach { line ->

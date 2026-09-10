@@ -50,6 +50,7 @@ import me.rerere.ai.ui.metadataAs
 import me.rerere.ai.ui.toMetadata
 import me.rerere.ai.util.KeyRoulette
 import me.rerere.ai.util.configureReferHeaders
+import me.rerere.ai.util.configureSessionHeaders
 import me.rerere.ai.util.encodeBase64
 import me.rerere.ai.util.json
 import me.rerere.ai.util.mergeCustomBody
@@ -98,11 +99,7 @@ class ChatCompletionsAPI(
             .post(json.encodeToString(requestBody).toRequestBody("application/json".toMediaType()))
             .addHeader("Authorization", "Bearer ${keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString())}")
             .configureReferHeaders(providerSetting.baseUrl)
-            .apply {
-                if (providerSetting.baseUrl.toHttpUrl().host == "opencode.ai") {
-                    params.sessionId?.let { header("x-opencode-session", it) }
-                }
-            }
+            .configureSessionHeaders(providerSetting.baseUrl, params.sessionId)
             .build()
 
         Log.i(TAG, "generateText: ${json.encodeToString(requestBody)}")
@@ -161,11 +158,7 @@ class ChatCompletionsAPI(
             .addHeader("Authorization", "Bearer ${keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString())}")
             .addHeader("Content-Type", "application/json")
             .configureReferHeaders(providerSetting.baseUrl)
-            .apply {
-                if (providerSetting.baseUrl.toHttpUrl().host == "opencode.ai") {
-                    params.sessionId?.let { header("x-opencode-session", it) }
-                }
-            }
+            .configureSessionHeaders(providerSetting.baseUrl, params.sessionId)
             .build()
 
         Log.i(TAG, "streamText: ${json.encodeToString(requestBody)}")
@@ -852,10 +845,11 @@ class ChatCompletionsAPI(
 
         // 剥离 "Response:" / "response" 前缀（后面须跟空白/冒号/结尾/中日韩字符，避免误伤英文词）
         val prefix = RESPONSE_PREFIX_REGEX
-        val cleanedText = if (prefix.containsMatchIn(text)) prefix.replace(text, "").trimStart() else text
+        val cleanedText = prefix.replace(text, "").trimStart()
 
-        // content 极短且 reasoning 有实质内容 → 提升 reasoning 为正文（提升出的正文同样剥离前缀）
-        if (reasoning.length > cleanedText.length * 2 && cleanedText.length < 200) {
+        // 仅当正文剥离前缀后为空（正文不存在）时才提升 reasoning 为正文；
+        // 不能用"reasoning 远长于正文"判断——正常模型长思考 + 短回答会被误伤
+        if (cleanedText.isEmpty()) {
             val cleanedReasoning = prefix.replace(reasoning, "").trimStart()
             return message.copy(
                 parts = listOf(UIMessagePart.Text(cleanedReasoning)) +

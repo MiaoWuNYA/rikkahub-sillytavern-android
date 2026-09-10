@@ -32,6 +32,7 @@ import me.rerere.ai.ui.UIMessagePart
 import me.rerere.ai.ui.ToolApprovalState
 import me.rerere.ai.ui.StreamChunkHandler
 import me.rerere.ai.ui.handleTextGenerationResult
+import me.rerere.ai.ui.fixProxyPromotedReply
 import me.rerere.ai.ui.limitContext
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.ai.transformers.InputMessageTransformer
@@ -788,6 +789,11 @@ class GenerationLoop(
                             }
                         }
                         messages = attemptMessages
+                        // 中转站兼容：流结束后评估整条回复，正文为空而推理有实质内容时
+                        // 把推理提升为正文（中转站把回复塞进 reasoning_content 的病态情形）
+                        if (params.enableProxyFix) {
+                            messages = messages.fixProxyPromotedReply()
+                        }
                         // 防空回复：无文本、无工具调用的空回复自动微扰重试（Gemini 常见）
                         if ((assistant.enableAntiEmptyResponse || settings.huadengSettings.enableAntiEmptyResponse) &&
                             emptyRetryCount < MAX_EMPTY_RESPONSE_RETRIES &&

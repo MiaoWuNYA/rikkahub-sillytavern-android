@@ -370,7 +370,7 @@ private fun ChatPageContent(
     val hazeState = rememberHazeState()
     val assistant = setting.getCurrentAssistant()
     var showFilesSheet by remember { mutableStateOf(false) }
-val attachmentPickerActions = rememberChatAttachmentPickerActions(
+    val attachmentPickerActions = rememberChatAttachmentPickerActions(
         inputState = inputState,
         setting = setting,
         onAttachmentAdded = { showFilesSheet = false },

@@ -16,3 +16,4 @@
   <string name="oauth_callback_handled_message">Этот обратный вызов авторизации уже был обработан.</string>
   <string name="oauth_callback_handled_hint">Вы можете безопасно закрыть эту вкладку и вернуться в RikkaHub.</string>
 </resources>
+

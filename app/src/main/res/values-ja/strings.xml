@@ -1269,7 +1269,7 @@ mDNSアドレス: .localホスト名を使用し、IPを知らなくても同じ
   <string name="setting_display_page_tts_read_outside_brackets_title">TTS 括弧内を読み上げない</string>
   <string name="setting_display_page_tts_read_outside_brackets_desc">有効にすると、TTS は括弧内の内容を読み上げません</string>
   <string name="assistant_page_context_message_limit">コンテキストメッセージ上限</string>
-  <string name="assistant_page_context_message_limit_desc">モデルに送信する直近のメッセージ数の上限を設定します。上限を超えた場合、ターンごとに1件ずつ削除するのではなく、一度にコンテキストを約半分まで切り詰めます。これによりリクエストのプレフィックスが安定し、プロンプトキャッシュが多くのターンにわたって有効に働きます。</string>
+  <string name="assistant_page_context_message_limit_desc">モデルに送信する最近のメッセージ数を制限します。</string>
   <string name="assistant_page_context_message_limit_count">コンテキストメッセージ制限: %d</string>
   <string name="assistant_page_context_message_limit_unlimited">コンテキストメッセージ無制限</string>
   <string name="assistant_page_context_message_limit_warning">コンテキストの制限は、コンテキストが切り詰められるたびにプロンプトキャッシュを無効化します。制限が大きいほど切り詰めの頻度が減り、無制限なら切り詰めが発生せず、キャッシュは完全に保持されます。</string>
@@ -1279,6 +1279,12 @@ mDNSアドレス: .localホスト名を使用し、IPを知らなくても同じ
   <string name="search_picker_model_description">モデルプロバイダー内蔵のクラウド検索</string>
   <string name="search_picker_select_provider">検索プロバイダを選択</string>
   <string name="search_picker_turn_off">検索をオフにする</string>
+  <string name="setting_update_reminder_enabled">アップデート通知が有効になっています</string>
+  <string name="setting_update_reminder_paused_until">%1$sまで一時停止</string>
+  <string name="setting_update_reminder_pause_title">更新リマインダーを一時停止</string>
+  <string name="setting_update_reminder_pause_description">更新リマインダーを一時停止する期間を選択してください。自動的に再開されます。</string>
+  <string name="setting_update_reminder_pause_days">%1$d日間</string>
+  <string name="setting_update_reminder_resume_now">今すぐ再開</string>
   <string name="reasoning_max">最大</string>
   <string name="backup_page_import_overwrite_confirm">バックアップをインポートするとアプリデータが上書きされます。続行しますか？</string>
   <string name="setting_page_preferences_network">ネットワーク</string>
@@ -1346,4 +1352,20 @@ mDNSアドレス: .localホスト名を使用し、IPを知らなくても同じ
   <string name="setting_page_asr_silence_duration">発話終了の無音時間</string>
   <string name="setting_page_asr_silence_duration_desc">無音がこの時間続いたら発話を終了します。推奨: 800〜1000 ms。</string>
   <string name="setting_page_asr_milliseconds">ミリ秒</string>
+  <string name="assistant_page_time_reminder_interval">時間リマインダー間隔</string>
+  <string name="assistant_page_time_reminder_interval_label">間隔（分）</string>
+  <string name="assistant_page_time_reminder_interval_hint">正の整数を入力してください。メッセージ間隔がこの値を超えると、リマインダーが挿入されます。</string>
+  <string name="assistant_page_time_reminder_interval_desc">メッセージ間隔がこの間隔を超えた場合にリマインダーを挿入します。最初のユーザーメッセージの前には常にリマインドします。</string>
+  <string name="assistant_page_time_reminder_interval_value">%1$d 分</string>
+  <string name="assistant_page_context_message_limit_hint">0を入力すると無制限になります。それ以外の場合、値は大きいほど良いです。0または20以上に設定することをお勧めします。</string>
+  <string name="imggen_page_delete_images_title">画像を削除</string>
+  <string name="imggen_page_delete_images_message">選択した画像 (%1$d) を削除しますか？この操作は元に戻せません。</string>
+  <string name="imggen_page_delete_images_success">画像を%1$d件削除しました</string>
+  <string name="imggen_page_delete_images_failed">削除：%1$d件、失敗：%2$d件。もう一度お試しください。</string>
+  <string name="imggen_page_deleting">削除中…</string>
+  <string name="imggen_page_selected_count">選択中: %1$d</string>
+  <string name="imggen_page_select_image">画像を選択</string>
+  <string name="workspace_detail_compatibility_mode">互換モード</string>
+  <string name="workspace_detail_compatibility_mode_desc">ターミナルが起動しない場合、これを有効にしてみてください。パフォーマンスが低下する可能性があります。新しいターミナルタブとその後のコマンドに適用されます。</string>
+  <string name="workspace_detail_settings_save_failed">設定の保存に失敗しました</string>
 </resources>

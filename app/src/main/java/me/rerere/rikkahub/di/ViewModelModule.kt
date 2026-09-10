@@ -69,5 +69,11 @@ val viewModelModule = module {
     viewModelOf(::SearchVM)
     viewModelOf(::StatsVM)
     viewModelOf(::WorkspaceVM)
-    viewModelOf(::WorkspaceDetailVM)
+    viewModel<WorkspaceDetailVM> {
+        WorkspaceDetailVM(
+            id = it.get(),
+            repository = get(),
+            terminalSessionManager = get(),
+        )
+    }
 }

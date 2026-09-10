@@ -57,7 +57,7 @@ val appModule = module {
         SoundEffectPlayer(get())
     }
 
-single {
+    single {
         WorkspaceTerminalSessionManager(get(), get())
     }
 

@@ -250,9 +250,38 @@ class SettingsStore(
                 preferences[WEB_SERVER_JWT_ENABLED] = settings.webServerJwtEnabled
                 preferences[WEB_SERVER_ACCESS_PASSWORD] = settings.webServerAccessPassword
                 preferences[WEB_SERVER_LOCALHOST_ONLY] = settings.webServerLocalhostOnly
+                preferences[GITHUB_TOKEN] = settings.githubToken
                 preferences[BACKUP_REMINDER_CONFIG] = JsonInstant.encodeToString(settings.backupReminderConfig)
                 preferences[LAUNCH_COUNT] = settings.launchCount
                 preferences[SPONSOR_ALERT_DISMISSED_AT] = settings.sponsorAlertDismissedAt
+                preferences[WORLD_INFO_BUDGET] = settings.worldInfoBudget
+                preferences[WORLD_INFO_BUDGET_CAP] = settings.worldInfoBudgetCap
+                preferences[WORLD_INFO_MIN_ACTIVATIONS] = settings.worldInfoMinActivations
+                preferences[WORLD_INFO_MIN_ACTIVATIONS_DEPTH_MAX] = settings.worldInfoMinActivationsDepthMax
+                preferences[WORLD_INFO_RECURSIVE] = settings.worldInfoRecursive
+                preferences[WORLD_INFO_MAX_RECURSION_STEPS] = settings.worldInfoMaxRecursionSteps
+                preferences[WORLD_INFO_DEPTH] = settings.worldInfoDepth
+                preferences[WORLD_INFO_CHARACTER_STRATEGY] = settings.worldInfoCharacterStrategy
+                preferences[WORLD_INFO_OVERFLOW_ALERT] = settings.worldInfoOverflowAlert
+                preferences[WORLD_INFO_USE_GROUP_SCORING] = settings.worldInfoUseGroupScoring
+                preferences[VECTOR_STORAGE_ENABLED] = settings.vectorStorageEnabled
+                settings.vectorStorageModelId?.let {
+                    preferences[VECTOR_STORAGE_MODEL_ID] = it.toString()
+                } ?: preferences.remove(VECTOR_STORAGE_MODEL_ID)
+                preferences[VECTOR_STORAGE_THRESHOLD] = settings.vectorStorageThreshold
+                preferences[VECTOR_STORAGE_SCAN_DEPTH] = settings.vectorStorageScanDepth
+                preferences[PERSONAS] = JsonInstant.encodeToString(settings.personas)
+                settings.activePersonaId?.let { preferences[ACTIVE_PERSONA_ID] = it.toString() }
+                    ?: preferences.remove(ACTIVE_PERSONA_ID)
+                preferences[AUTHOR_NOTE] = settings.authorNote
+                preferences[AUTHOR_NOTE_ENABLED] = settings.authorNoteEnabled
+                preferences[AUTHOR_NOTE_POSITION] = settings.authorNotePosition.name
+                preferences[AUTHOR_NOTE_DEPTH] = settings.authorNoteDepth
+                preferences[AUTHOR_NOTE_ROLE] = settings.authorNoteRole.name
+                preferences[AUTHOR_NOTE_INTERVAL] = settings.authorNoteInterval
+                preferences[GROUP_CHATS] = JsonInstant.encodeToString(settings.groupChats)
+                preferences[MACRO_GLOBAL_VARIABLES] = JsonInstant.encodeToString(settings.macroGlobalVariables)
+                preferences[MACRO_CHAT_VARIABLES] = JsonInstant.encodeToString(settings.macroChatVariables)
             }
         }
     }
@@ -488,91 +517,7 @@ class SettingsStore(
             return
         }
         settingsFlow.value = settings
-        dataStore.edit { preferences ->
-            preferences[DYNAMIC_COLOR] = settings.dynamicColor
-            preferences[THEME_ID] = settings.themeId
-            preferences[CUSTOM_THEMES] = JsonInstant.encodeToString(settings.customThemes)
-            preferences[DEVELOPER_MODE] = settings.developerMode
-            preferences[DISPLAY_SETTING] = JsonInstant.encodeToString(settings.displaySetting)
-
-            preferences[FAVORITE_MODELS] = JsonInstant.encodeToString(settings.favoriteModels)
-            preferences[SELECT_MODEL] = settings.chatModelId.toString()
-            preferences[FAST_MODEL] = settings.fastModelId.toString()
-            preferences[TRANSLATE_MODEL] = settings.translateModeId.toString()
-            preferences[ENABLE_SUGGESTION] = settings.enableSuggestion
-            preferences[IMAGE_GENERATION_MODEL] = settings.imageGenerationModelId.toString()
-            preferences[TITLE_PROMPT] = settings.titlePrompt
-            preferences[TRANSLATION_PROMPT] = settings.translatePrompt
-            preferences[TRANSLATE_THINKING_BUDGET] = settings.translateThinkingBudget
-            preferences[SUGGESTION_PROMPT] = settings.suggestionPrompt
-            preferences[OCR_MODEL] = settings.ocrModelId.toString()
-            preferences[OCR_PROMPT] = settings.ocrPrompt
-            preferences[COMPRESS_MODEL] = settings.compressModelId.toString()
-            preferences[COMPRESS_PROMPT] = settings.compressPrompt
-
-            preferences[PROVIDERS] = JsonInstant.encodeToString(settings.providers)
-
-            preferences[ASSISTANTS] = JsonInstant.encodeToString(settings.assistants)
-            preferences[SELECT_ASSISTANT] = settings.assistantId.toString()
-            preferences[ASSISTANT_TAGS] = JsonInstant.encodeToString(settings.assistantTags)
-
-            preferences[SEARCH_SERVICES] = JsonInstant.encodeToString(settings.searchServices)
-            preferences[SEARCH_COMMON] = JsonInstant.encodeToString(settings.searchCommonOptions)
-            preferences[SEARCH_SELECTED] = settings.searchServiceSelected.coerceIn(0, settings.searchServices.size - 1)
-
-            preferences[MCP_SERVERS] = JsonInstant.encodeToString(settings.mcpServers)
-            preferences[WEBDAV_CONFIG] = JsonInstant.encodeToString(settings.webDavConfig)
-            preferences[S3_CONFIG] = JsonInstant.encodeToString(settings.s3Config)
-            preferences[TTS_PROVIDERS] = JsonInstant.encodeToString(settings.ttsProviders)
-            settings.selectedTTSProviderId?.let {
-                preferences[SELECTED_TTS_PROVIDER] = it.toString()
-            } ?: preferences.remove(SELECTED_TTS_PROVIDER)
-            preferences[DEFAULT_TTS_PLAYBACK_SPEED] = settings.defaultTTSPlaybackSpeed.coerceIn(0.5f, 2.0f)
-            preferences[ASR_PROVIDERS] = JsonInstant.encodeToString(settings.asrProviders)
-            settings.selectedASRProviderId?.let {
-                preferences[SELECTED_ASR_PROVIDER] = it.toString()
-            } ?: preferences.remove(SELECTED_ASR_PROVIDER)
-            preferences[MODE_INJECTIONS] = JsonInstant.encodeToString(settings.modeInjections)
-            preferences[LOREBOOKS] = JsonInstant.encodeToString(settings.lorebooks)
-            preferences[WORLD_INFO_BUDGET] = settings.worldInfoBudget
-            preferences[WORLD_INFO_BUDGET_CAP] = settings.worldInfoBudgetCap
-            preferences[WORLD_INFO_MIN_ACTIVATIONS] = settings.worldInfoMinActivations
-            preferences[WORLD_INFO_MIN_ACTIVATIONS_DEPTH_MAX] = settings.worldInfoMinActivationsDepthMax
-            preferences[WORLD_INFO_RECURSIVE] = settings.worldInfoRecursive
-            preferences[WORLD_INFO_MAX_RECURSION_STEPS] = settings.worldInfoMaxRecursionSteps
-            preferences[WORLD_INFO_DEPTH] = settings.worldInfoDepth
-            preferences[WORLD_INFO_CHARACTER_STRATEGY] = settings.worldInfoCharacterStrategy
-            preferences[WORLD_INFO_OVERFLOW_ALERT] = settings.worldInfoOverflowAlert
-            preferences[WORLD_INFO_USE_GROUP_SCORING] = settings.worldInfoUseGroupScoring
-            preferences[VECTOR_STORAGE_ENABLED] = settings.vectorStorageEnabled
-            settings.vectorStorageModelId?.let {
-                preferences[VECTOR_STORAGE_MODEL_ID] = it.toString()
-            } ?: preferences.remove(VECTOR_STORAGE_MODEL_ID)
-            preferences[VECTOR_STORAGE_THRESHOLD] = settings.vectorStorageThreshold
-            preferences[VECTOR_STORAGE_SCAN_DEPTH] = settings.vectorStorageScanDepth
-            preferences[QUICK_MESSAGES] = JsonInstant.encodeToString(settings.quickMessages)
-            preferences[WEB_SERVER_ENABLED] = settings.webServerEnabled
-            preferences[WEB_SERVER_PORT] = settings.webServerPort
-            preferences[WEB_SERVER_JWT_ENABLED] = settings.webServerJwtEnabled
-            preferences[WEB_SERVER_ACCESS_PASSWORD] = settings.webServerAccessPassword
-            preferences[WEB_SERVER_LOCALHOST_ONLY] = settings.webServerLocalhostOnly
-            preferences[GITHUB_TOKEN] = settings.githubToken
-            preferences[BACKUP_REMINDER_CONFIG] = JsonInstant.encodeToString(settings.backupReminderConfig)
-            preferences[LAUNCH_COUNT] = settings.launchCount
-            preferences[SPONSOR_ALERT_DISMISSED_AT] = settings.sponsorAlertDismissedAt
-            preferences[PERSONAS] = JsonInstant.encodeToString(settings.personas)
-            settings.activePersonaId?.let { preferences[ACTIVE_PERSONA_ID] = it.toString() }
-                ?: preferences.remove(ACTIVE_PERSONA_ID)
-            preferences[AUTHOR_NOTE] = settings.authorNote
-            preferences[AUTHOR_NOTE_ENABLED] = settings.authorNoteEnabled
-            preferences[AUTHOR_NOTE_POSITION] = settings.authorNotePosition.name
-            preferences[AUTHOR_NOTE_DEPTH] = settings.authorNoteDepth
-            preferences[AUTHOR_NOTE_ROLE] = settings.authorNoteRole.name
-            preferences[AUTHOR_NOTE_INTERVAL] = settings.authorNoteInterval
-            preferences[GROUP_CHATS] = JsonInstant.encodeToString(settings.groupChats)
-            preferences[MACRO_GLOBAL_VARIABLES] = JsonInstant.encodeToString(settings.macroGlobalVariables)
-            preferences[MACRO_CHAT_VARIABLES] = JsonInstant.encodeToString(settings.macroChatVariables)
-        }
+        persistSettings(dataStore, settings)
     }
 
     suspend fun update(fn: (Settings) -> Settings) {

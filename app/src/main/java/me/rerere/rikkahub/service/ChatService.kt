@@ -2203,6 +2203,18 @@ class ChatService(
     }
 
     /**
+     * 移动会话到文件夹（上游 2.5.1 语义；folderId 为 null 表示移出到未归类）。
+     * 若该会话当前有活跃 session，先同步内存态再落库，
+     * 避免后续整对象保存把旧 folderId 覆盖回去。
+     */
+    suspend fun moveConversationToFolder(conversationId: Uuid, folderId: Uuid?) {
+        if (sessions.containsKey(conversationId)) {
+            updateConversationState(conversationId) { it.copy(folderId = folderId) }
+        }
+        conversationRepo.updateConversationFolderId(conversationId, folderId)
+    }
+
+    /**
      * 文件夹内是否存在正在生成回复的会话（对齐上游行为）。
      * 仅活跃 session 可能在生成；内存态 folderId 为权威。
      */

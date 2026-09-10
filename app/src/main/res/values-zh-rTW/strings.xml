@@ -1267,7 +1267,7 @@
   <string name="setting_display_page_tts_read_outside_brackets_title">TTS 不朗讀括號內的內容</string>
   <string name="setting_display_page_tts_read_outside_brackets_desc">啟用後，TTS 將不朗讀括號內的內容</string>
   <string name="assistant_page_context_message_limit">上下文訊息限制</string>
-  <string name="assistant_page_context_message_limit_desc">限制發送給模型的最近訊息數量。當超出限制時，上下文會一次性修剪到大約一半，而不是每次輪次刪除一條訊息，這樣請求前綴保持穩定，提示詞緩存可以在多次輪次中繼續運作。</string>
+  <string name="assistant_page_context_message_limit_desc">限制傳送給模型的最近訊息數量</string>
   <string name="assistant_page_context_message_limit_count">上下文訊息限制：%d</string>
   <string name="assistant_page_context_message_limit_unlimited">無限上下文訊息</string>
   <string name="assistant_page_context_message_limit_warning">限制上下文會在每次上下文被裁減時使提示詞快取失效。較大的限制裁減頻率較低；無限則永不裁減並保持快取完整。</string>
@@ -1277,6 +1277,12 @@
   <string name="search_picker_model_description">模型提供者內建的雲端搜尋</string>
   <string name="search_picker_select_provider">選擇搜尋提供者</string>
   <string name="search_picker_turn_off">關閉搜尋</string>
+  <string name="setting_update_reminder_enabled">更新提醒已啟用</string>
+  <string name="setting_update_reminder_paused_until">已暫停至 %1$s</string>
+  <string name="setting_update_reminder_pause_title">暫停更新提醒</string>
+  <string name="setting_update_reminder_pause_description">選擇暫停更新提醒的時長。它們會自動恢復。</string>
+  <string name="setting_update_reminder_pause_days">%1$d 天</string>
+  <string name="setting_update_reminder_resume_now">立即恢復</string>
   <string name="reasoning_max">最大</string>
   <string name="backup_page_import_overwrite_confirm">匯入備份將覆寫應用程式資料。是否繼續？</string>
   <string name="setting_page_preferences_network">網路</string>
@@ -1344,4 +1350,20 @@
   <string name="chat_page_voice_end">結束</string>
   <string name="chat_page_voice_configure_asr">請先在語音設定中設定 ASR</string>
   <string name="chat_page_voice_unsupported_asr">此 ASR 提供者不支援伺服器端語音端點偵測。請使用 OpenAI Realtime、DashScope 或 Volcengine。</string>
+  <string name="assistant_page_time_reminder_interval">時間提醒間隔</string>
+  <string name="assistant_page_time_reminder_interval_label">間隔 (分鐘)</string>
+  <string name="assistant_page_time_reminder_interval_hint">輸入正整數。當訊息間隔超過此時間間隔時，會插入提醒。</string>
+  <string name="assistant_page_time_reminder_interval_desc">當訊息間隔超過此時間間隔時插入提醒。第一則使用者訊息前一律提醒。</string>
+  <string name="assistant_page_time_reminder_interval_value">%1$d 分</string>
+  <string name="assistant_page_context_message_limit_hint">輸入 0 表示無限制；否則，數值越大越好。建議設為 0 或至少 20。</string>
+  <string name="imggen_page_delete_images_title">刪除圖片</string>
+  <string name="imggen_page_delete_images_message">刪除選取的圖片（%1$d）？此操作無法復原。</string>
+  <string name="imggen_page_delete_images_success">已刪除 %1$d 張圖片</string>
+  <string name="imggen_page_delete_images_failed">已刪除：%1$d。失敗：%2$d。請再試一次。</string>
+  <string name="imggen_page_deleting">刪除中…</string>
+  <string name="imggen_page_selected_count">已選取：%1$d</string>
+  <string name="imggen_page_select_image">選擇圖片</string>
+  <string name="workspace_detail_compatibility_mode">相容模式</string>
+  <string name="workspace_detail_compatibility_mode_desc">如果終端機無法啟動，請嘗試啟用此選項。這可能會降低效能。適用於新的終端機分頁和後續指令。</string>
+  <string name="workspace_detail_settings_save_failed">儲存設定失敗</string>
 </resources>
