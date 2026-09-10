@@ -124,6 +124,7 @@ import me.rerere.rikkahub.ui.components.ai.SlashCommand
 import me.rerere.rikkahub.ui.components.ai.collectSlashCommands
 import me.rerere.rikkahub.ui.components.ai.matchSlashCommand
 import me.rerere.rikkahub.ui.components.ui.KeepScreenOn
+import me.rerere.rikkahub.ui.components.ui.toComposeColor
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionManager
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionRecordAudio
 import me.rerere.rikkahub.ui.components.ui.permission.rememberPermissionState
@@ -185,7 +186,9 @@ fun ChatInput(
         val enabledSkills = allSkills.filter { it.name in assistant.enabledSkills }
         collectSlashCommands(enabledSkills, slashContext)
     }
-    val hazeTintColor = MaterialTheme.colorScheme.surfaceContainerLow
+    // 输入框背景颜色（聊天外观自定义），未设置时跟随主题
+    val hazeTintColor = settings.displaySetting.inputFieldColor?.toComposeColor()
+        ?: MaterialTheme.colorScheme.surfaceContainerLow
     val inputHazeStyle = HazeBlurStyle.Material3 {
         blurRadius(12.dp)
     }

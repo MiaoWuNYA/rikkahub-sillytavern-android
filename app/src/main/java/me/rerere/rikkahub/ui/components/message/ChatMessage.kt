@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
@@ -85,6 +86,7 @@ import me.rerere.rikkahub.ui.components.richtext.buildMarkdownPreviewHtml
 import me.rerere.rikkahub.ui.components.webview.WebViewContentCache
 import me.rerere.rikkahub.ui.components.ui.ChainOfThought
 import me.rerere.rikkahub.ui.components.ui.Favicon
+import me.rerere.rikkahub.ui.components.ui.toComposeColor
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.modifier.shimmer
 import me.rerere.rikkahub.ui.context.LocalSettings
@@ -98,6 +100,7 @@ import me.rerere.rikkahub.utils.openUrl
 import me.rerere.rikkahub.utils.toMessageTimeString
 import me.rerere.rikkahub.utils.urlDecode
 import kotlinx.datetime.toJavaLocalDateTime
+import coil3.compose.AsyncImage
 import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -340,7 +343,11 @@ private fun MessagePartsBlock(
                         steps = block.steps,
                         collapsedAdaptiveWidth = isReasoningOnlyBlock,
                         cardColors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = settings.displaySetting.bubbleOpacity),
+                            containerColor = customBubbleColor(
+                                custom = settings.displaySetting.thinkingBubbleColor,
+                                fallback = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                alpha = settings.displaySetting.bubbleOpacity,
+                            ),
                         ),
                     ) { step ->
                         when (step) {
@@ -383,37 +390,71 @@ private fun MessagePartsBlock(
                             if (role == MessageRole.USER) {
                                 Surface(
                                     modifier = Modifier.animateContentSize(),
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = settings.displaySetting.bubbleOpacity),
+                                    shape = RoundedCornerShape(settings.displaySetting.bubbleCornerRadius.dp),
+                                    color = customBubbleColor(
+                                        custom = settings.displaySetting.userBubbleColor,
+                                        fallback = MaterialTheme.colorScheme.primaryContainer,
+                                        alpha = settings.displaySetting.bubbleOpacity,
+                                    ),
                                     onClick = { onUserMessageClick?.invoke() },
                                 ) {
-                                    Column(modifier = Modifier.padding(8.dp)) {
-                                        MarkdownBlock(
-                                            content = part.text.replaceRegexes(
-                                                assistant = assistant,
-                                                scope = AssistantAffectScope.USER,
-                                                visual = true,
-                                            ),
-                                            onClickCitation = handleClickCitation
+                                    Box {
+                                        BubbleBackgroundImage(
+                                            path = settings.displaySetting.userBubbleImagePath,
+                                            overlayColor = if (settings.displaySetting.bubbleImageOverlayEnabled) {
+                                                customBubbleColor(
+                                                    custom = settings.displaySetting.userBubbleColor,
+                                                    fallback = MaterialTheme.colorScheme.primaryContainer,
+                                                    alpha = 0.55f,
+                                                )
+                                            } else null,
+                                            modifier = Modifier.matchParentSize(),
                                         )
+                                        Column(modifier = Modifier.padding(8.dp)) {
+                                            MarkdownBlock(
+                                                content = part.text.replaceRegexes(
+                                                    assistant = assistant,
+                                                    scope = AssistantAffectScope.USER,
+                                                    visual = true,
+                                                ),
+                                                onClickCitation = handleClickCitation
+                                            )
+                                        }
                                     }
                                 }
                             } else {
                                 if (settings.displaySetting.showAssistantBubble) {
                                     Surface(
                                         modifier = Modifier.animateContentSize(),
-                                        shape = RoundedCornerShape(16.dp),
-                                        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = settings.displaySetting.bubbleOpacity),
+                                        shape = RoundedCornerShape(settings.displaySetting.bubbleCornerRadius.dp),
+                                        color = customBubbleColor(
+                                            custom = settings.displaySetting.assistantBubbleColor,
+                                            fallback = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                            alpha = settings.displaySetting.bubbleOpacity,
+                                        ),
                                     ) {
-                                        Column(modifier = Modifier.padding(8.dp)) {
-                                            MarkdownBlock(
-                                                content = part.text.replaceRegexes(
-                                                    assistant = assistant,
-                                                    scope = AssistantAffectScope.ASSISTANT,
-                                                    visual = true,
-                                                ),
-                                                onClickCitation = handleClickCitation,
+                                        Box {
+                                            BubbleBackgroundImage(
+                                                path = settings.displaySetting.assistantBubbleImagePath,
+                                                overlayColor = if (settings.displaySetting.bubbleImageOverlayEnabled) {
+                                                    customBubbleColor(
+                                                        custom = settings.displaySetting.assistantBubbleColor,
+                                                        fallback = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                                        alpha = 0.55f,
+                                                    )
+                                                } else null,
+                                                modifier = Modifier.matchParentSize(),
                                             )
+                                            Column(modifier = Modifier.padding(8.dp)) {
+                                                MarkdownBlock(
+                                                    content = part.text.replaceRegexes(
+                                                        assistant = assistant,
+                                                        scope = AssistantAffectScope.ASSISTANT,
+                                                        visual = true,
+                                                    ),
+                                                    onClickCitation = handleClickCitation,
+                                                )
+                                            }
                                         }
                                     }
                                 } else {
@@ -656,5 +697,37 @@ private fun MessagePartsBlock(
                 Text(stringResource(R.string.citations_count, annotations.size))
             }
         }
+    }
+}
+
+/**
+ * 聊天外观自定义：气泡颜色覆盖（未设置时回退主题色，统一叠加气泡不透明度）。
+ */
+@Composable
+private fun customBubbleColor(
+    custom: Long?,
+    fallback: Color,
+    alpha: Float,
+): Color = (custom?.toComposeColor() ?: fallback).copy(alpha = alpha)
+
+/**
+ * 气泡背景图：路径为空时不绘制；叠加遮罩颜色可空。
+ * 放在 [BoxScope.matchParentSize] 内，不影响气泡按内容测量尺寸。
+ */
+@Composable
+private fun BubbleBackgroundImage(
+    path: String,
+    overlayColor: Color?,
+    modifier: Modifier = Modifier,
+) {
+    if (path.isBlank()) return
+    AsyncImage(
+        model = path,
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        modifier = modifier,
+    )
+    if (overlayColor != null) {
+        Box(modifier = modifier.background(overlayColor))
     }
 }

@@ -779,6 +779,26 @@ data class DisplaySetting(
     val enableTextColor: Boolean = true,
     val quoteColor: String = "",  // empty = theme-follow, otherwise hex like "#E18A24"
     val italicsColor: String = "",  // empty = default (#919191), otherwise hex
+    // ---- 聊天外观自定义覆盖层（null/空串 = 跟随主题） ----
+    // 主色调（按钮/链接等强调色），覆盖 colorScheme.primary
+    val primaryColor: Long? = null,
+    // 全局字体颜色，覆盖 onBackground/onSurface/onSurfaceVariant
+    val globalTextColor: Long? = null,
+    // 气泡/背景颜色（ARGB Long）
+    val userBubbleColor: Long? = null,
+    val assistantBubbleColor: Long? = null,
+    val thinkingBubbleColor: Long? = null,
+    val chatBackgroundColor: Long? = null,
+    val inputFieldColor: Long? = null,
+    // 气泡背景图路径（本地文件路径或 URI），空串 = 不使用
+    val userBubbleImagePath: String = "",
+    val assistantBubbleImagePath: String = "",
+    // 气泡背景图上是否叠加原气泡颜色遮罩（关 = 纯图片）
+    val bubbleImageOverlayEnabled: Boolean = false,
+    // 气泡圆角半径（dp）
+    val bubbleCornerRadius: Float = 16f,
+    // 抽屉（侧边栏）背景图路径
+    val drawerBackgroundPath: String = "",
 )
 
 @Serializable

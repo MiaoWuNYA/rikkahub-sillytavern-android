@@ -54,6 +54,10 @@
   <string name="setting_page_huadeng">华灯设置</string>
   <string name="setting_page_huadeng_desc">全局中转站兼容、防空回复、云财教务系统</string>
   <string name="setting_page_huadeng_title">兼容与辅助</string>
+  <string name="setting_page_memory">记忆</string>
+  <string name="setting_page_memory_desc">固定记忆、跨窗口生活流、长期记忆按需召回</string>
+  <string name="setting_page_display_color">聊天外观自定义</string>
+  <string name="setting_page_display_color_desc">颜色、气泡、透明度、背景图</string>
   <string name="assistant_page_allow_conversation_system_prompt">独立对话系统提示</string>
   <string name="assistant_page_allow_conversation_system_prompt_desc">允许每个对话单独设置系统提示词</string>
   <string name="assistant_page_allow_conversation_prompt_injection">独立对话提示词注入</string>

@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import kotlinx.serialization.Serializable
+import me.rerere.rikkahub.ui.components.ui.toComposeColor
 import me.rerere.rikkahub.ui.hooks.rememberAmoledDarkMode
 import me.rerere.rikkahub.ui.hooks.rememberCurrentColorMode
 import me.rerere.rikkahub.ui.hooks.rememberUserSettingsState
@@ -77,6 +78,33 @@ fun RikkahubTheme(
     }
     val extendColors = if (darkTheme) ExtendDarkColors else ExtendLightColors
 
+    // 聊天外观自定义覆盖层：在 dynamicColor/themeId 色板之上最后 copy() 覆盖
+    val finalColorScheme = remember(
+        colorSchemeConverted,
+        settings.displaySetting.primaryColor,
+        settings.displaySetting.globalTextColor,
+    ) {
+        var scheme = colorSchemeConverted
+        settings.displaySetting.primaryColor?.let { pc ->
+            val primaryColor = pc.toComposeColor()
+            val luminance = 0.299f * primaryColor.red + 0.587f * primaryColor.green + 0.114f * primaryColor.blue
+            val onPrimary = if (luminance > 0.5f) Color.Black else Color.White
+            scheme = scheme.copy(
+                primary = primaryColor,
+                onPrimary = onPrimary,
+            )
+        }
+        settings.displaySetting.globalTextColor?.let { gtc ->
+            val textColor = gtc.toComposeColor()
+            scheme = scheme.copy(
+                onBackground = textColor,
+                onSurface = textColor,
+                onSurfaceVariant = textColor,
+            )
+        }
+        scheme
+    }
+
     // 更新状态栏图标颜色
     val view = LocalView.current
     if (!view.isInEditMode) {
@@ -103,7 +131,7 @@ fun RikkahubTheme(
         LocalOverscrollFactory provides null
     ) {
         MaterialExpressiveTheme(
-            colorScheme = colorSchemeConverted,
+            colorScheme = finalColorScheme,
             typography = Typography,
             content = content,
             motionScheme = MotionScheme.expressive()

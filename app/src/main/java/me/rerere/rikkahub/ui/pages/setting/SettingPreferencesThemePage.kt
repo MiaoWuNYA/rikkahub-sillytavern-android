@@ -86,6 +86,12 @@ fun SettingPreferencesThemePage(vm: SettingVM = koinViewModel()) {
                         trailingContent = { Icon(HugeIcons.ArrowRight01, contentDescription = null) },
                     )
                     item(
+                        onClick = { navController.navigate(Screen.SettingDisplayColor) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_display_color)) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_display_color_desc)) },
+                        trailingContent = { Icon(HugeIcons.ArrowRight01, contentDescription = null) },
+                    )
+                    item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_amoled_dark_mode_title)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_page_amoled_dark_mode_desc)) },
                         trailingContent = {

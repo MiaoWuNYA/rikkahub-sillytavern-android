@@ -91,6 +91,19 @@ data class Assistant(
     val enableAutoCompact: Boolean = true,               // 自动压缩对话历史（token过多时）
     val enableAutoMemoryExtract: Boolean = true,          // [新增] 自动从对话提取记忆（独立开关，不依赖 enableMemory）
     val autoMemoryExtractInterval: Int = 5,                // 每 N 轮对话提取一次记忆
+    // ---- 三层记忆（固定记忆 + 跨窗口生活流 + 长期记忆按需召回） ----
+    // 按相关性召回长期记忆（词项重叠打分），替代全量注入
+    val enableThreeLayerMemory: Boolean = false,
+    // 跨窗口生活流：同一助手在不同对话间的近期经历共享（SharedPreferences 存储）
+    val enableCrossWindowMemory: Boolean = false,
+    // 超过阈值字符后后台压缩旧的生活流前缀为摘要
+    val enableCrossWindowMemoryCompression: Boolean = true,
+    val crossWindowMemoryCompressionThresholdChars: Int = 12000,
+    // 压缩时保留的最近原文条数
+    val crossWindowMemoryTailEntries: Int = 16,
+    // 每轮最多召回的长期记忆条数 / 最大字符数
+    val longTermMemoryRecallCount: Int = 6,
+    val longTermMemoryMaxChars: Int = 3000,
 )
 
 @Serializable

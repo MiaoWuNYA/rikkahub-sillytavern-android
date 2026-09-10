@@ -234,6 +234,16 @@ val dataSourceModule = module {
     }
 
     single {
+        me.rerere.rikkahub.data.memory.CrossWindowMemoryStore(get())
+    }
+
+    single {
+        me.rerere.rikkahub.data.ai.transformers.CrossWindowMemoryTransformer(
+            store = get(),
+        )
+    }
+
+    single {
         GenerationLoop(
             context = get(),
             providerManager = get(),

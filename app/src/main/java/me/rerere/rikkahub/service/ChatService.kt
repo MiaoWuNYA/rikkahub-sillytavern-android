@@ -115,6 +115,8 @@ import me.rerere.rikkahub.data.ai.transformers.TimeReminderTransformer
 import me.rerere.rikkahub.data.ai.transformers.WorkspaceReminderTransformer
 import me.rerere.rikkahub.data.ai.transformers.AuthorsNoteTransformer
 import me.rerere.rikkahub.data.ai.transformers.MemoryRetrievalTransformer
+import me.rerere.rikkahub.data.ai.ThreeLayerMemoryPolicy
+import me.rerere.rikkahub.data.ai.transformers.CrossWindowMemoryTransformer
 import me.rerere.rikkahub.data.ai.transformers.SkillAutoTriggerTransformer
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.Settings
@@ -124,6 +126,7 @@ import me.rerere.rikkahub.data.datastore.getAssistantById
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.datastore.getCurrentChatModel
 import me.rerere.rikkahub.data.files.FilesManager
+import me.rerere.rikkahub.data.memory.CrossWindowMemoryStore
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantAffectScope
@@ -230,6 +233,8 @@ class ChatService(
     private val skillManager: SkillManager,
     private val folderRepository: FolderRepository,
     private val memoryRetrievalTransformer: MemoryRetrievalTransformer,
+    private val crossWindowMemoryTransformer: CrossWindowMemoryTransformer,
+    private val crossWindowMemoryStore: CrossWindowMemoryStore,
     private val coupleRepository: CoupleRepository,
 ) {
     // workspace 系统提示注入 (依赖 workspaceRepository, 故在类内构造)
@@ -1434,16 +1439,36 @@ class ChatService(
                 conversationLorebookIds = conversation.lorebookIds,
                 workspaceCwd = conversation.workspaceCwd,
                 conversationId = conversation.id,
-                memories = if (assistant.useGlobalMemory) {
-                    memoryRepository.getGlobalMemories()
-                } else {
-                    memoryRepository.getMemoriesOfAssistant(assistant.id.toString())
+                memories = run {
+                    val allMemories = if (assistant.useGlobalMemory) {
+                        memoryRepository.getGlobalMemories()
+                    } else {
+                        memoryRepository.getMemoriesOfAssistant(assistant.id.toString())
+                    }
+                    // 三层记忆：长期记忆按当前用户消息相关性召回（RAG 模式已自带检索，不再筛选）
+                    if (assistant.enableMemory && assistant.enableThreeLayerMemory && !assistant.enableMemoryRag) {
+                        val recallQuery = generationMessages
+                            .lastOrNull { it.role == MessageRole.USER }
+                            ?.toText()?.trim().orEmpty()
+                        ThreeLayerMemoryPolicy.selectLongTermMemories(
+                            memories = allMemories,
+                            query = recallQuery,
+                            limit = assistant.longTermMemoryRecallCount,
+                            maxChars = assistant.longTermMemoryMaxChars,
+                        )
+                    } else {
+                        allMemories
+                    }
                 },
                 inputTransformers = buildList {
                     addAll(inputTransformers)
                     add(templateTransformer)
                     add(workspaceReminderTransformer)
                     add(memoryRetrievalTransformer)
+                    // 跨窗口生活流：注入到最新 user 消息之前（不进 system，保前缀缓存）
+                    if (assistant.enableCrossWindowMemory) {
+                        add(crossWindowMemoryTransformer)
+                    }
                 },
                 outputTransformers = outputTransformers,
                 tools = buildList {
@@ -1594,6 +1619,12 @@ class ChatService(
             launchWithConversationReference(conversationId) {
                 generateSuggestion(conversationId, finalConversation)
             }
+            // 跨窗口生活流：fire-and-forget 记录本轮可见正文，超阈值时后台压缩旧前缀
+            if (assistant.enableCrossWindowMemory) {
+                launchWithConversationReference(conversationId) {
+                    recordCrossWindowMemory(conversationId, assistant)
+                }
+            }
         }
     }
 
@@ -1674,6 +1705,80 @@ class ChatService(
             )
         )
         saveConversation(conversationId, updatedConversation)
+    }
+
+    // ---- 跨窗口生活流 ----
+
+    /**
+     * 生成完成后把本轮 user/assistant 的可见正文写入跨窗口生活流（按 messageId 幂等），
+     * 若累计字符超过阈值则认领旧前缀并后台压缩为摘要（不阻塞后续生成）。
+     */
+    private suspend fun recordCrossWindowMemory(conversationId: Uuid, assistant: Assistant) {
+        runCatching {
+            val conversation = getConversationFlow(conversationId).value
+            val assistantId = assistant.id.toString()
+            val conversationKey = conversationId.toString()
+            val messages = conversation.currentMessages
+
+            messages.lastOrNull { it.role == MessageRole.USER }?.let { userMessage ->
+                val text = userMessage.toText().trim()
+                if (text.isNotBlank()) {
+                    crossWindowMemoryStore.append(assistantId, conversationKey, userMessage.id.toString(), "user", text)
+                }
+            }
+            messages.lastOrNull { it.role == MessageRole.ASSISTANT }?.let { assistantMessage ->
+                val text = assistantMessage.toText().trim()
+                if (text.isNotBlank()) {
+                    crossWindowMemoryStore.append(assistantId, conversationKey, assistantMessage.id.toString(), "assistant", text)
+                }
+            }
+
+            if (assistant.enableCrossWindowMemoryCompression) {
+                launchCrossWindowCompression(assistant)
+            }
+        }.onFailure {
+            Logging.log(TAG, "recordCrossWindowMemory: $it")
+        }
+    }
+
+    private fun launchCrossWindowCompression(assistant: Assistant) {
+        val work = crossWindowMemoryStore.claimCompression(
+            assistantId = assistant.id.toString(),
+            thresholdChars = assistant.crossWindowMemoryCompressionThresholdChars,
+            tailEntries = assistant.crossWindowMemoryTailEntries,
+        ) ?: return
+
+        appScope.launch(Dispatchers.IO) {
+            runCatching {
+                val settings = settingsStore.settingsFlow.first()
+                val compressionModel = settings.findModelById(settings.compressModelId)
+                    ?: assistant.chatModelId?.let { settings.findModelById(it) }
+                    ?: error("No model available for cross-window memory compression")
+                val compressionProvider = compressionModel.findProvider(settings.providers)
+                    ?: error("Compression provider not found")
+                val prompt = buildString {
+                    appendLine("Compress this continuous relationship context into a concise factual memory.")
+                    appendLine("Keep decisions, commitments, preferences, emotions, and unresolved threads.")
+                    appendLine("Use the source language. Do not mention compression, logs, tools, reasoning, or chat windows.")
+                    appendLine("Output only the memory summary.")
+                    appendLine()
+                    append(work.plainText())
+                }
+                val result = providerManager.getProviderByType(compressionProvider).generateText(
+                    providerSetting = compressionProvider,
+                    messages = listOf(UIMessage.user(prompt)),
+                    params = backgroundTextGenerationParams(compressionModel, ReasoningLevel.OFF),
+                )
+                result.message.toText().trim().takeIf { it.isNotBlank() }
+                    ?: error("Compression model returned no visible text")
+            }.onSuccess { summary ->
+                crossWindowMemoryStore.completeCompression(work, summary)
+                Logging.log(TAG, "Cross-window memory compressed through ${work.throughEntryId}")
+            }.onFailure { error ->
+                crossWindowMemoryStore.failCompression(work)
+                Logging.log(TAG, "Cross-window memory compression failed; raw tail remains available: $error")
+            }
+        }
     }
 
     // ---- 生成标题 ----

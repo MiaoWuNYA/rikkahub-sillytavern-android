@@ -105,6 +105,7 @@ import me.rerere.rikkahub.ui.components.ai.ChatInput
 import me.rerere.rikkahub.ui.components.ai.FilesPicker
 import me.rerere.rikkahub.ui.components.ai.SearchMode
 import me.rerere.rikkahub.ui.components.ai.SlashVarOp
+import me.rerere.rikkahub.ui.components.ui.toComposeColor
 import me.rerere.rikkahub.ui.components.ai.applyMacroVarSlash
 import me.rerere.rikkahub.ui.components.ai.completion.WorkspaceCompletionProvider
 import me.rerere.rikkahub.ui.components.ai.rememberChatAttachmentPickerActions
@@ -398,7 +399,8 @@ private fun ChatPageContent(
     TTSAutoPlay(vm = vm, setting = setting, conversation = conversation)
 
     Surface(
-        color = MaterialTheme.colorScheme.background,
+        color = setting.displaySetting.chatBackgroundColor?.toComposeColor()
+            ?: MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize()
     ) {
         AssistantBackground(setting = setting, modifier = Modifier.hazeSource(hazeState))
