@@ -108,19 +108,12 @@ internal class ChatCompletionsStreamDecoder(
         val reasoningMetadata = accumulateReasoningDetails(payload["reasoning_details"]?.jsonArrayOrNull)
         val images = payload["images"] as? JsonArray ?: JsonArray(emptyList())
 
-        // 中转站兼容：Gemini 经 OpenAI 兼容中转时，有时会把实际回复塞进 reasoning_content，
-        // content 字段以 "Response:" / "response" 前缀开头且正文被截断，或 content 为空。
-        if (enableProxyFix && role == MessageRole.ASSISTANT) {
-            // 情况 1: content 为空/极短且 reasoning 有实质内容 → 将 reasoning 提升为正文
-            // （先提升后剥离：提升出的正文自身也可能带 response 前缀）
-            if (reasoning.orEmpty().length > content.length * 2 && content.length < 200) {
-                content = reasoning.orEmpty()
-                reasoning = null
-            }
-            // 情况 2: 剥离 "response" 前缀（后面须跟空白/冒号/结尾/中日韩字符，避免误伤 "responses" 等英文词）
-            if (content.isNotEmpty()) {
-                content = RESPONSE_PREFIX_REGEX.replace(content, "").trimStart()
-            }
+        // 中转站兼容：剥离 content 开头的 "response" 前缀伪影。
+        // 注意：不能在这里做 reasoning→content 提升——流式思考阶段每条 delta 的 content
+        // 本来就为空，逐条提升会把正常思考全部误判为正文；整体提升在流结束时统一处理
+        // （见 fixProxyPromotedReply）。
+        if (enableProxyFix && role == MessageRole.ASSISTANT && content.isNotEmpty()) {
+            content = RESPONSE_PREFIX_REGEX.replace(content, "").trimStart()
         }
 
         return UIMessage(

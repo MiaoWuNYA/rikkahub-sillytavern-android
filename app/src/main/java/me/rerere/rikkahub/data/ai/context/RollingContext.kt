@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
+import me.rerere.ai.ui.pruneOldTransientContent
 import kotlin.uuid.Uuid
 
 /** A persisted summary of a stable prefix of the active conversation branch. */
@@ -86,6 +87,7 @@ fun createRollingContextPlan(
     thresholdTokens: Int,
     force: Boolean = false,
     targetTokensOverride: Int? = null,
+    pruneTransient: Boolean = false,
 ): RollingContextPlan? {
     if (messages.size <= MIN_ROLLING_CONTEXT_MESSAGES) return null
 
@@ -94,14 +96,23 @@ fun createRollingContextPlan(
     val coveredCount = storedSummary?.coveredMessageCount(messages) ?: 0
     val previousSummary = storedSummary?.takeIf { coveredCount > 0 }
     val unsummarizedMessages = messages.drop(coveredCount)
-    val workingTokens = estimateActiveContextTokens(messages, previousSummary)
+    val workingTokens = estimateActiveContextTokens(messages, previousSummary, pruneTransient)
     if (!force && workingTokens < effectiveThreshold) return null
 
     val keepCount = unsummarizedMessages.recentWindowCount(
         tokenBudget = if (force) 0 else (effectiveThreshold * RECENT_WINDOW_RATIO).toInt(),
+        pruneTransient = pruneTransient,
     )
     val messagesToSummarize = unsummarizedMessages.dropLast(keepCount)
     if (messagesToSummarize.isEmpty()) return null
+    // 滞后阈值：本次可压缩的内容太少（例如上一轮刚压缩完，只新增了一两条小消息）时不压缩。
+    // 否则固定开销（系统提示词/工具 schema）会让估算长期贴着阈值，造成"每发一条新消息就压一遍、
+    // 每次只压掉几条"的循环压缩，同时把长文本反复发给压缩模型。
+    if (!force &&
+        estimateContextTokens(messagesToSummarize) < effectiveThreshold / COMPRESSION_HYSTERESIS_DIVISOR
+    ) {
+        return null
+    }
 
     return RollingContextPlan(
         previousSummary = previousSummary,
@@ -112,7 +123,20 @@ fun createRollingContextPlan(
     )
 }
 
-fun estimateContextTokens(messages: List<UIMessage>): Int = messages.sumOf(::estimateMessageTokens)
+fun estimateContextTokens(messages: List<UIMessage>): Int =
+    messages.sumOf(::estimateMessageTokens)
+
+/**
+ * 估算"实际会发送"的消息 token：与请求构建一致地先做瞬态内容裁剪
+ * （旧图片/搜索结果被占位文本替换后不再计入多模态大块 token）。
+ */
+fun estimateSentContextTokens(
+    messages: List<UIMessage>,
+    pruneEnabled: Boolean,
+): Int {
+    val effective = if (pruneEnabled) messages.pruneOldTransientContent() else messages
+    return estimateContextTokens(effective)
+}
 
 /**
  * Estimates every token-bearing part retained in a message. Provider completion usage is used as
@@ -129,24 +153,37 @@ fun estimateMessageTokens(message: UIMessage): Int {
  * Token estimate for the next provider request. A valid summary replaces its covered prefix; the
  * latest provider prompt usage calibrates system prompts, documents and tool schemas that local
  * tokenization may underestimate.
+ *
+ * 校准只提取"不可压缩的固定开销"（系统提示词 + 工具 schema + 协议框架）：
+ * usage.promptTokens 计的是整次请求，其中系统提示词/工具部分压缩消息无法减少——若直接把
+ * promptTokens 与阈值比较，压缩后估算值仍会超阈值，导致每条新消息都重复压缩（循环压缩）。
+ * 这里反推固定开销后，只有会话消息内容本身驱动阈值，压缩才能真正把估算值压到阈值以下。
  */
 fun estimateActiveContextTokens(
     messages: List<UIMessage>,
     storedSummary: RollingContextSummary?,
+    pruneTransient: Boolean = false,
 ): Int {
     val coveredCount = storedSummary?.coveredMessageCount(messages) ?: 0
     val validSummary = storedSummary?.takeIf { coveredCount > 0 }
-    val localEstimate = validSummary.orEmptySummaryTokens() +
-        estimateContextTokens(messages.drop(coveredCount))
+    val summaryTokens = validSummary.orEmptySummaryTokens()
+    val activeMessages = messages.drop(coveredCount)
+    val localEstimate = summaryTokens + estimateSentContextTokens(activeMessages, pruneTransient)
+
     val measuredMessageIndex = messages.indexOfLast { message ->
         message.usage?.promptTokens?.let { it > 0 } == true &&
             message.id !in validSummary?.sourceMessageIds.orEmpty()
     }
-    val measuredEstimate = measuredMessageIndex.takeIf { it >= 0 }?.let { index ->
+    val fixedOverhead = measuredMessageIndex.takeIf { it >= 0 }?.let { index ->
+        // 被测量的助手消息是那次请求的输出；请求输入 = 摘要 + 窗口内它之前的消息
         val usage = messages[index].usage ?: return@let null
-        usage.promptTokens + usage.completionTokens + estimateContextTokens(messages.drop(index + 1))
-    }
-    return maxOf(localEstimate, measuredEstimate ?: 0)
+        val measuredWindowTokens = estimateSentContextTokens(
+            messages.drop(coveredCount).take((index - coveredCount).coerceAtLeast(0)),
+            pruneTransient,
+        )
+        (usage.promptTokens - summaryTokens - measuredWindowTokens).coerceAtLeast(0)
+    } ?: 0
+    return fixedOverhead + summaryTokens + estimateSentContextTokens(activeMessages, pruneTransient)
 }
 
 fun estimateTextTokens(text: String): Int {
@@ -255,16 +292,26 @@ private fun estimatePartTokens(part: UIMessagePart): Int = when (part) {
 fun rollingContextWindowStartIndex(
     messages: List<UIMessage>,
     thresholdTokens: Int,
+    pruneTransient: Boolean = false,
 ): Int {
     val tokenBudget = (effectiveRollingContextThreshold(thresholdTokens) * RECENT_WINDOW_RATIO).toInt()
-    return messages.size - messages.recentWindowCount(tokenBudget)
+    return messages.size - messages.recentWindowCount(tokenBudget, pruneTransient)
 }
 
-private fun List<UIMessage>.recentWindowCount(tokenBudget: Int): Int {
+private fun List<UIMessage>.recentWindowCount(tokenBudget: Int, pruneTransient: Boolean = false): Int {
     var count = 0
     var tokens = 0
+    val windowEstimates = if (pruneTransient) {
+        // 裁剪估算按窗口整体计算：单条消息的瞬态部分是否被裁掉取决于它相对窗口边界的位置，
+        // 这里用保守近似——整窗裁剪后的总量均摊到每条消息
+        val pruned = estimateSentContextTokens(this, pruneTransient).toFloat()
+        val raw = estimateContextTokens(this).coerceAtLeast(1)
+        map { estimateMessageTokens(it) * pruned / raw }
+    } else {
+        map { estimateMessageTokens(it).toFloat() }
+    }
     for (index in lastIndex downTo 0) {
-        val nextTokens = estimateMessageTokens(this[index])
+        val nextTokens = windowEstimates[index].toInt().coerceAtLeast(1)
         if (count >= MIN_RECENT_MESSAGE_COUNT && tokens + nextTokens > tokenBudget) break
         count += 1
         tokens += nextTokens
@@ -295,3 +342,4 @@ private const val RECENT_WINDOW_RATIO = 0.55f
 private const val SUMMARY_TARGET_DIVISOR = 4
 private const val MIN_SUMMARY_TOKENS = 512
 internal const val MAX_SUMMARY_TOKENS = 8_000
+private const val COMPRESSION_HYSTERESIS_DIVISOR = 10

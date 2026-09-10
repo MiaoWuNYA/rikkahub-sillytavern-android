@@ -94,6 +94,7 @@ import me.rerere.rikkahub.data.ai.transformers.Base64ImageToLocalFileTransformer
 import me.rerere.rikkahub.data.ai.context.RollingContextSummary
 import me.rerere.rikkahub.data.ai.context.automaticRollingContextThreshold
 import me.rerere.rikkahub.data.ai.context.coveredMessageCount
+import me.rerere.rikkahub.data.ai.tools.createHistoryMessageTool
 import me.rerere.rikkahub.data.ai.context.createRollingContextPlan
 import me.rerere.rikkahub.data.ai.context.isStillApplicableTo
 import me.rerere.rikkahub.data.ai.context.rollingContextWindowStartIndex
@@ -1354,9 +1355,14 @@ class ChatService(
                         messages = generationMessages,
                         storedSummary = conversation.rollingContextSummary,
                         thresholdTokens = threshold,
+                        pruneTransient = settings.huadengSettings.enableTransientContentPrune,
                     ) != null
             }?.let { threshold ->
-                rollingContextWindowStartIndex(generationMessages, threshold)
+                rollingContextWindowStartIndex(
+                    messages = generationMessages,
+                    thresholdTokens = threshold,
+                    pruneTransient = settings.huadengSettings.enableTransientContentPrune,
+                )
             } ?: 0
             val requestMessageStartIndex = maxOf(rollingSummaryMessageCount, fallbackWindowStartIndex)
 
@@ -1417,6 +1423,10 @@ class ChatService(
                     }
                     if (assistant.enableRecentChatsReference) {
                         addAll(createConversationTools(conversationRepo, assistant.id))
+                    }
+                    // 华灯：瞬态内容裁剪的配套取回工具——占位说明里带消息 ID，AI 按需取回原文
+                    if (settings.huadengSettings.enableTransientContentPrune) {
+                        add(createHistoryMessageTool(conversationRepo, conversation.id))
                     }
                     addAll(createWorkspaceToolsIfReady(assistant.workspaceId?.toString(), conversation.workspaceCwd))
                     addAll(localTools.getTools(assistant.localTools))
@@ -1974,6 +1984,7 @@ class ChatService(
                 messages = contextMessages,
                 storedSummary = conversation.rollingContextSummary,
                 thresholdTokens = thresholdTokens,
+                pruneTransient = settings.huadengSettings.enableTransientContentPrune,
             ) == null
         ) {
             return conversation.rollingContextSummary
@@ -2023,6 +2034,7 @@ class ChatService(
             thresholdTokens = thresholdTokens,
             force = force,
             targetTokensOverride = targetTokensOverride,
+            pruneTransient = settings.huadengSettings.enableTransientContentPrune,
         ) ?: return null
         val assistant = settings.getAssistantById(conversation.assistantId)
             ?: settings.getCurrentAssistant()

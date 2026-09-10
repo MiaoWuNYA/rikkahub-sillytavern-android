@@ -109,3 +109,89 @@ fun createConversationTools(
         }
     )
 )
+
+/**
+ * 取回被上下文裁剪省略的历史消息原文（瞬态内容裁剪的配套工具）。
+ * 占位说明里带有消息 ID，AI 需要原文时按 ID 调用本工具。
+ */
+fun createHistoryMessageTool(
+    conversationRepo: ConversationRepository,
+    conversationId: Uuid,
+): Tool = Tool(
+    name = "read_history_message",
+    description = """
+        Retrieve the original content of a past message in the current conversation by its message ID.
+        Use it when a placeholder in the history says content was omitted (omitted images, web search
+        results, media attachments) and you need the original text/content again.
+    """.trimIndent(),
+    parameters = {
+        InputSchema.Obj(
+            properties = buildJsonObject {
+                put("message_id", buildJsonObject {
+                    put("type", "string")
+                    put("description", "The message ID shown in the omission placeholder")
+                })
+            },
+            required = listOf("message_id")
+        )
+    },
+    execute = { args ->
+        val messageId = args.jsonObject["message_id"]?.jsonPrimitive?.contentOrNull
+            ?: error("message_id is required")
+        val targetId = runCatching { Uuid.parse(messageId) }
+            .getOrElse { error("invalid message_id: $messageId") }
+        val conversation = conversationRepo.getConversationById(conversationId)
+            ?: error("conversation not found")
+        val message = conversation.currentMessages.firstOrNull { it.id == targetId }
+            ?: error("message not found in current conversation: $messageId")
+        val payload = buildJsonObject {
+            put("message_id", messageId)
+            put("role", message.role.name)
+            if (message.name != null) put("name", message.name.orEmpty())
+            put("parts", buildJsonArray {
+                message.parts.forEach { part ->
+                    when (part) {
+                        is UIMessagePart.Text -> add(buildJsonObject {
+                            put("type", "text")
+                            put("text", part.text)
+                        })
+                        is UIMessagePart.Image -> add(buildJsonObject {
+                            put("type", "image")
+                            put("url", part.url)
+                        })
+                        is UIMessagePart.Video -> add(buildJsonObject {
+                            put("type", "video")
+                            put("url", part.url)
+                        })
+                        is UIMessagePart.Audio -> add(buildJsonObject {
+                            put("type", "audio")
+                            put("url", part.url)
+                        })
+                        is UIMessagePart.Document -> add(buildJsonObject {
+                            put("type", "document")
+                            put("file_name", part.fileName)
+                            put("url", part.url)
+                        })
+                        is UIMessagePart.Tool -> add(buildJsonObject {
+                            put("type", "tool_result")
+                            put("tool_name", part.toolName)
+                            put("tool_input", part.input)
+                            put("output", part.output.joinToString("\n") { outputPart ->
+                                (outputPart as? UIMessagePart.Text)?.text.orEmpty()
+                            })
+                        })
+                        is UIMessagePart.ServerTool -> add(buildJsonObject {
+                            put("type", "server_tool_result")
+                            put("tool_name", part.toolName)
+                            put("output", part.output?.toString().orEmpty())
+                        })
+                        else -> add(buildJsonObject {
+                            put("type", part::class.simpleName?.lowercase().orEmpty())
+                        })
+                    }
+                }
+            })
+        }
+        listOf(UIMessagePart.Text(JsonInstantPretty.encodeToString(payload)))
+    }
+)

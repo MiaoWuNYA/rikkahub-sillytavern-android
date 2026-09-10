@@ -716,6 +716,9 @@ data class HuaDengSettings(
     val enableProxyFix: Boolean = false,
     // 防空回复（全局）：系统提示词入对话流 + 空回复微扰重试，针对 Gemini
     val enableAntiEmptyResponse: Boolean = false,
+    // 上下文瞬态内容裁剪：超过两轮之前的网页搜索结果/图片/音视频不随请求发送（AI 可用
+    // read_history_message 按消息 ID 取回），大幅减少图片与搜索类长对话的 token 消耗
+    val enableTransientContentPrune: Boolean = true,
 )
 
 @Serializable

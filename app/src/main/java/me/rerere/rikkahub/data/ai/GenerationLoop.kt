@@ -34,6 +34,7 @@ import me.rerere.ai.ui.StreamChunkHandler
 import me.rerere.ai.ui.handleTextGenerationResult
 import me.rerere.ai.ui.fixProxyPromotedReply
 import me.rerere.ai.ui.limitContext
+import me.rerere.ai.ui.pruneOldTransientContent
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.ai.transformers.InputMessageTransformer
 import me.rerere.rikkahub.data.ai.transformers.MessageTransformer
@@ -620,7 +621,14 @@ class GenerationLoop(
                 buildRecentChatsPrompt(assistant, conversationRepo)
             } else ""
             val userContext = buildUserContext(memories, assistant, settings, recentChats)
-            val namedChat = limitedChat.withMessageNames()
+            // 华灯：上下文瞬态内容裁剪——两轮之前的网页搜索结果/图片/音视频不再随请求发送
+            //（占位说明带消息 ID，AI 可用 read_history_message 取回），存储与 UI 不受影响
+            val requestChat = if (settings.huadengSettings.enableTransientContentPrune) {
+                limitedChat.pruneOldTransientContent()
+            } else {
+                limitedChat
+            }
+            val namedChat = requestChat.withMessageNames()
             val anchor = conversationId?.let { UserContextAnchorCache.getOrCreate(it) }
             if (anchor != null) {
                 // 锚点消息全部还在窗口内才冻结；被截断/分支切换则重置（与截断同一事件失效）

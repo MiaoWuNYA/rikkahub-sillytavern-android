@@ -127,6 +127,26 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                             )
                         },
                     )
+                    item(
+                        headlineContent = { Text("上下文瞬态内容裁剪") },
+                        supportingContent = {
+                            Text("超过两轮对话之前的网页搜索结果、图片、音视频不再随每次请求发送（占位说明附带消息 ID，AI 可通过 read_history_message 工具按需取回原文），大幅减少图片与搜索类长对话的 token 消耗；消息存储与聊天记录显示不受影响")
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = settings.huadengSettings.enableTransientContentPrune,
+                                onCheckedChange = { enabled ->
+                                    vm.updateSettings(
+                                        settings.copy(
+                                            huadengSettings = settings.huadengSettings.copy(
+                                                enableTransientContentPrune = enabled,
+                                            ),
+                                        )
+                                    )
+                                },
+                            )
+                        },
+                    )
                 }
             }
 
