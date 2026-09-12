@@ -472,10 +472,16 @@ class ChatCompletionsAPI(
 
         filteredMessages.forEach { message ->
             if (message.role == MessageRole.SYSTEM) {
-                // 防空回复：系统提示词进对话流（Gemini 经 OpenAI 兼容中转/映射场景）——
-                // SYSTEM 消息原位转为 user 轮（世界书等深度注入位置不变），
-                // 首个系统块后跟一条假 assistant 确认轮，避免模型把系统内容当用户提问
-                if (!systemPromptInChat) return@forEach
+                // 防空回复（systemPromptInChat）：SYSTEM 消息原位转为 user 轮
+                // （Gemini 经 OpenAI 兼容中转/映射场景不支持 system role），
+                // 首个系统块后跟一条假 assistant 确认轮，避免模型把系统内容当用户提问。
+                // 默认路径必须原位保留 system role：主系统提示词、记忆注入、userContext、
+                // 世界书 system 注入全走 SYSTEM 消息（2026-09-08 曾在此整体丢弃，导致
+                // 记忆/人设静默失效，勿回退）
+                if (!systemPromptInChat) {
+                    addNonAssistantMessage(message)
+                    return@forEach
+                }
                 addNonAssistantMessage(message, asUserRole = true)
                 if (!ackInserted) {
                     ackInserted = true

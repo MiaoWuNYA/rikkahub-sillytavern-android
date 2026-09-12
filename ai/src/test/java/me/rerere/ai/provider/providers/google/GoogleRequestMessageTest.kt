@@ -62,7 +62,8 @@ class GoogleRequestMessageTest {
 
         val result = invokeBuildContents(messages, systemPromptInChat = true)
 
-        assertEquals(6, result.size)
+        // 末尾的深度注入 user 轮与提问 user 轮被合并（Gemini 要求 user/model 交替），共 5 轮
+        assertEquals(5, result.size)
         assertEquals("user", result[0].jsonObject["role"]?.jsonPrimitive?.content)
         val sysText = result[0].jsonObject["parts"]!!.jsonArray[0].jsonObject["text"]?.jsonPrimitive?.content
         assertEquals("You are a roleplay character", sysText)
@@ -74,17 +75,18 @@ class GoogleRequestMessageTest {
         )
         assertEquals("user", result[2].jsonObject["role"]?.jsonPrimitive?.content)
         assertEquals("model", result[3].jsonObject["role"]?.jsonPrimitive?.content)
-        // 第二个 SYSTEM 消息（世界书深度注入）原位保留为 user 轮，无第二条确认
-        assertEquals("user", result[4].jsonObject["role"]?.jsonPrimitive?.content)
+        // 第二个 SYSTEM 消息（世界书深度注入）原位保留为 user 轮（无第二条确认），
+        // 与紧随的提问 user 轮合并
+        val lastUserTexts = result[4].jsonObject["parts"]!!.jsonArray
+            .mapNotNull { it.jsonObject["text"]?.jsonPrimitive?.content }
         assertEquals(
-            "[World info entry triggered at depth]",
-            result[4].jsonObject["parts"]!!.jsonArray[0].jsonObject["text"]?.jsonPrimitive?.content
+            listOf("[World info entry triggered at depth]", "Continue"),
+            lastUserTexts,
         )
-        assertEquals("user", result[5].jsonObject["role"]?.jsonPrimitive?.content)
     }
 
     @Test
-    fun `systemPromptInChat off keeps legacy behavior of dropping system messages`() {
+    fun `systemPromptInChat off keeps first system in systemInstruction`() {
         val messages = listOf(
             UIMessage.system("You are a roleplay character"),
             UIMessage.user("Hello"),
@@ -94,6 +96,50 @@ class GoogleRequestMessageTest {
 
         assertEquals(1, result.size)
         assertEquals("user", result[0].jsonObject["role"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `systemPromptInChat off converts mid system messages to user turns without dropping`() {
+        // 默认路径：首条 system 走 systemInstruction（此处跳过），中部 SYSTEM
+        // （记忆注入/userContext/世界书等）转 user 轮原位保留——曾被整体丢弃导致注入失效。
+        // 相邻 user 轮合并（Gemini 要求 user/model 严格交替）
+        val messages = listOf(
+            UIMessage.system("You are a roleplay character"),
+            UIMessage.user("Hello"),
+            UIMessage.assistant("Hi!"),
+            UIMessage.system("memory: user likes cats"),
+            UIMessage.user("What do I like?"),
+        )
+
+        val result = invokeBuildContents(messages, systemPromptInChat = false)
+
+        val roles = result.map { it.jsonObject["role"]?.jsonPrimitive?.content }
+        // 记忆注入 user 轮与紧随的提问 user 轮合并（Gemini 要求 user/model 交替）
+        assertEquals(listOf("user", "model", "user"), roles)
+        // 记忆注入保留（原位 user 轮）
+        val texts = result.flatMap {
+            (it.jsonObject["parts"]?.jsonArray ?: kotlinx.serialization.json.JsonArray(emptyList()))
+                .mapNotNull { part -> part.jsonObject["text"]?.jsonPrimitive?.content }
+        }
+        assertTrue("memory injection should be kept", texts.any { it.contains("user likes cats") })
+    }
+
+    @Test
+    fun `systemPromptInChat off merges trailing anchor block into preceding user turn`() {
+        // 冻结锚点块紧跟末条 user 消息：转 user 轮后与相邻 user 合并，避免连续 user 触发 400
+        val messages = listOf(
+            UIMessage.system("You are a roleplay character"),
+            UIMessage.user("Hello"),
+            UIMessage.system("Current date: 2026-09-12."),
+        )
+
+        val result = invokeBuildContents(messages, systemPromptInChat = false)
+
+        assertEquals(1, result.size)
+        assertEquals("user", result[0].jsonObject["role"]?.jsonPrimitive?.content)
+        val texts = result[0].jsonObject["parts"]!!.jsonArray
+            .mapNotNull { it.jsonObject["text"]?.jsonPrimitive?.content }
+        assertEquals(listOf("Hello", "Current date: 2026-09-12."), texts)
     }
 
     @Test

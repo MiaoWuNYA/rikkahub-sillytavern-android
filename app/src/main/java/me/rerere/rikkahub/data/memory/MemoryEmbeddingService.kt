@@ -4,6 +4,7 @@ import android.util.Log
 import me.rerere.ai.provider.EmbeddingGenerationParams
 import me.rerere.ai.provider.ProviderManager
 import me.rerere.rikkahub.data.datastore.Settings
+import me.rerere.rikkahub.data.ai.resolveEmbeddingModel
 import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.model.AssistantMemory
 import me.rerere.rikkahub.data.model.MemoryType
@@ -52,11 +53,8 @@ class MemoryEmbeddingService(
     private suspend fun index(memory: AssistantMemory, settings: Settings) {
         if (memory.content.isBlank()) return
         runCatching {
-            val modelId = settings.vectorStorageModelId ?: return
-            val providerSetting = settings.providers.firstOrNull { p ->
-                p.models.any { it.id == modelId && it.type == me.rerere.ai.provider.ModelType.EMBEDDING }
-            } ?: return
-            val model = providerSetting.models.first { it.id == modelId }
+            // 未显式配置嵌入模型时自动回退（快速模型所在提供商优先）；无可用嵌入模型则跳过索引
+            val (providerSetting, model) = settings.resolveEmbeddingModel() ?: return
             val result = providerManager.getProviderByType(providerSetting).generateEmbedding(
                 providerSetting = providerSetting,
                 params = EmbeddingGenerationParams(

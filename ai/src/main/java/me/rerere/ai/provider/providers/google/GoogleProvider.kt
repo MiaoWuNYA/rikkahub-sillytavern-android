@@ -661,12 +661,31 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
     private fun buildContents(messages: List<UIMessage>, systemPromptInChat: Boolean = false, imageOutput: Boolean = false): JsonArray {
         return buildJsonArray {
             var ackInserted = false
+            var firstSystemSeen = false
             messages.forEach { message ->
                 if (message.role == MessageRole.SYSTEM) {
-                    // 防空回复：系统提示词进对话流 —— SYSTEM 消息原位转为 user 轮，
-                    // 保留位置（世界书 AT_DEPTH / 人设 / 冻结锚点等注入不丢、不挪），
-                    // 首个系统块后跟一条假 model 确认轮，避免模型把系统内容当成用户提问
-                    if (!systemPromptInChat || imageOutput) return@forEach
+                    // 防空回复（systemPromptInChat）：系统提示词进对话流 —— SYSTEM 消息原位转为
+                    // user 轮，保留位置（世界书 AT_DEPTH / 人设 / 冻结锚点等注入不丢、不挪），
+                    // 首个系统块后跟一条假 model 确认轮，避免模型把系统内容当成用户提问。
+                    // 默认路径：首条 system 已进 systemInstruction，这里跳过；中部 SYSTEM
+                    // （记忆注入/userContext/世界书等）转 user 轮原位保留（曾随防空回复
+                    // 改造被整体丢弃，导致注入静默失效）
+                    if (imageOutput) return@forEach
+                    if (!systemPromptInChat) {
+                        if (!firstSystemSeen) {
+                            firstSystemSeen = true
+                            return@forEach
+                        }
+                        add(buildJsonObject {
+                            put("role", "user")
+                            putJsonArray("parts") {
+                                message.parts.filterIsInstance<UIMessagePart.Text>().forEach { part ->
+                                    add(buildJsonObject { put("text", part.text) })
+                                }
+                            }
+                        })
+                        return@forEach
+                    }
                     add(buildJsonObject {
                         put("role", "user")
                         putJsonArray("parts") {
@@ -693,7 +712,37 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                     addUserMessage(message)
                 }
             }
+        }.let(::mergeConsecutiveUserTurns)
+    }
+
+    /**
+     * Gemini 要求 contents 严格 user/model 交替，连续 user 轮会 400。
+     * SYSTEM 注入转为 user 轮后可能与相邻 user 轮相接（如冻结锚点在末条 user 之后），
+     * 把「后一轮是纯文本 user」的相邻对合并（parts 拼接），保证请求合法。
+     */
+    private fun mergeConsecutiveUserTurns(contents: JsonArray): JsonArray {
+        val items = contents.map { it.jsonObject }.toMutableList()
+        var index = 1
+        while (index < items.size) {
+            val current = items[index]
+            val previous = items[index - 1]
+            val isMergeablePair = previous["role"]?.jsonPrimitive?.contentOrNull == "user" &&
+                current["role"]?.jsonPrimitive?.contentOrNull == "user" &&
+                current["parts"]?.jsonArray?.all { it.jsonObject.containsKey("text") } == true
+            if (!isMergeablePair) {
+                index++
+                continue
+            }
+            items[index - 1] = buildJsonObject {
+                put("role", "user")
+                putJsonArray("parts") {
+                    previous["parts"]?.jsonArray?.forEach { add(it) }
+                    current["parts"]?.jsonArray?.forEach { add(it) }
+                }
+            }
+            items.removeAt(index)
         }
+        return JsonArray(items)
     }
 
     private fun JsonArrayBuilder.addModelMessage(message: UIMessage) {

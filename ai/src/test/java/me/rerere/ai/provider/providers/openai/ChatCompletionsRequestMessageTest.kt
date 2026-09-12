@@ -43,6 +43,7 @@ class ChatCompletionsRequestMessageTest {
         messages: List<UIMessage>,
         includeHistoryReasoning: Boolean = true,
         includeOpenRouterReasoningDetails: Boolean = false,
+        systemPromptInChat: Boolean = false,
     ): JsonArray {
         val method = ChatCompletionsAPI::class.java.getDeclaredMethod(
             "buildMessages",
@@ -59,7 +60,7 @@ class ChatCompletionsRequestMessageTest {
             includeHistoryReasoning,
             includeOpenRouterReasoningDetails,
             listOf(Modality.TEXT, Modality.IMAGE),
-            false,
+            systemPromptInChat,
         ) as JsonArray
     }
 
@@ -510,6 +511,51 @@ class ChatCompletionsRequestMessageTest {
 
         assertFalse(assistant.containsKey("reasoning_details"))
         assertEquals("thinking", assistant["reasoning_content"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `system messages should be preserved in place by default`() {
+        // 默认路径（systemPromptInChat=false）：SYSTEM 消息原位保留 system role。
+        // 主系统提示词 / 记忆注入 / userContext / 世界书 system 注入都走 SYSTEM 消息，
+        // 曾被整体丢弃导致静默失效——此测试防止回归
+        val messages = listOf(
+            UIMessage.system("You are a helpful assistant."),
+            UIMessage.user("Hello"),
+            UIMessage.system("memory: user likes cats"),
+            UIMessage.user("What do I like?"),
+        )
+
+        val result = invokeBuildMessages(messages)
+
+        assertEquals(4, result.size)
+        assertEquals("system", result[0].jsonObject["role"]?.jsonPrimitive?.content)
+        assertEquals("user", result[1].jsonObject["role"]?.jsonPrimitive?.content)
+        assertEquals("system", result[2].jsonObject["role"]?.jsonPrimitive?.content)
+        assertEquals(
+            "memory: user likes cats",
+            result[2].jsonObject["content"]?.jsonPrimitive?.content,
+        )
+        assertEquals("user", result[3].jsonObject["role"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `system messages should become user turns with ack when systemPromptInChat enabled`() {
+        val messages = listOf(
+            UIMessage.system("You are a helpful assistant."),
+            UIMessage.user("Hello"),
+            UIMessage.system("memory: user likes cats"),
+            UIMessage.user("What do I like?"),
+        )
+
+        val result = invokeBuildMessages(messages, systemPromptInChat = true)
+
+        val roles = result.map { it.jsonObject["role"]?.jsonPrimitive?.content }
+        // SYSTEM → user 轮，首个系统块后跟一条假 assistant 确认轮
+        assertEquals(listOf("user", "assistant", "user", "user", "user"), roles)
+        assertEquals(
+            "Understood.",
+            result[1].jsonObject["content"]?.jsonPrimitive?.content,
+        )
     }
 
     // ==================== Helper Functions ====================

@@ -553,18 +553,61 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
         promptCaching: Boolean,
         promptCacheTtl: ClaudePromptCacheTtl
     ) = buildJsonArray {
+        var firstSystemSeen = false
         messages
-            .filter { it.isValidToUpload() && it.role != MessageRole.SYSTEM }
+            .filter { it.isValidToUpload() }
             .forEach { message ->
+                if (message.role == MessageRole.SYSTEM) {
+                    // 首条 system 走顶层 system 参数；中部 SYSTEM（记忆注入/userContext/
+                    // 世界书等）转 user 轮原位保留（Anthropic messages 不支持 system role，
+                    // 此前被直接丢弃导致注入静默失效）
+                    if (!firstSystemSeen) {
+                        firstSystemSeen = true
+                        return@forEach
+                    }
+                    addUserMessage(message.copy(role = MessageRole.USER))
+                    return@forEach
+                }
                 if (message.role == MessageRole.ASSISTANT) {
                     addAssistantMessage(message)
                 } else {
                     addUserMessage(message)
                 }
             }
-    }.let { messagesArray ->
-        if (!promptCaching) return@let messagesArray
-        insertMessagesCacheControl(messagesArray, promptCacheTtl)
+    }
+        .let(::mergeConsecutiveUserTurns)
+        .let { messagesArray ->
+            if (!promptCaching) return@let messagesArray
+            insertMessagesCacheControl(messagesArray, promptCacheTtl)
+        }
+
+    /**
+     * Anthropic messages 要求 user/assistant 严格交替；SYSTEM 注入转 user 轮后可能与
+     * 相邻 user 轮相接（如冻结锚点在末条 user 之后），合并相邻 user 轮的 content blocks。
+     */
+    private fun mergeConsecutiveUserTurns(messages: JsonArray): JsonArray {
+        val items = messages.map { it.jsonObject }.toMutableList()
+        var index = 1
+        while (index < items.size) {
+            val current = items[index]
+            val previous = items[index - 1]
+            val isMergeablePair = previous["role"]?.jsonPrimitive?.contentOrNull == "user" &&
+                current["role"]?.jsonPrimitive?.contentOrNull == "user" &&
+                previous["name"] == null && current["name"] == null
+            if (!isMergeablePair) {
+                index++
+                continue
+            }
+            items[index - 1] = buildJsonObject {
+                put("role", "user")
+                putJsonArray("content") {
+                    previous["content"]?.jsonArray?.forEach { add(it) }
+                    current["content"]?.jsonArray?.forEach { add(it) }
+                }
+            }
+            items.removeAt(index)
+        }
+        return JsonArray(items)
     }
 
     /**

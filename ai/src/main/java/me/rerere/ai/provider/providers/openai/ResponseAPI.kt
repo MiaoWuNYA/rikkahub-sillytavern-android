@@ -303,10 +303,8 @@ class ResponseAPI(
 
     internal fun buildMessages(messages: List<UIMessage>, systemPromptInChat: Boolean = false) = buildJsonArray {
         var ackInserted = false
+        var firstSystemSeen = false
         messages
-            .filter { message ->
-                message.role != MessageRole.SYSTEM || systemPromptInChat
-            }
             .filter { message ->
                 message.isValidToUpload() || message.parts.any { part ->
                     part is UIMessagePart.Reasoning &&
@@ -315,6 +313,17 @@ class ResponseAPI(
             }
             .forEach { message ->
                 if (message.role == MessageRole.SYSTEM) {
+                    if (!systemPromptInChat) {
+                        // 默认路径：首条 system 已放进顶层 instructions，这里跳过避免重复；
+                        // 中部 SYSTEM（记忆注入/userContext/世界书等）原位保留 system item
+                        // （曾随防空回复改造被整体丢弃，导致注入静默失效）
+                        if (!firstSystemSeen) {
+                            firstSystemSeen = true
+                            return@forEach
+                        }
+                        addContentItem(MessageRole.SYSTEM, message.parts.filterIsInstance<UIMessagePart.Text>())
+                        return@forEach
+                    }
                     // 防空回复：SYSTEM 消息原位转 user 轮（世界书等深度注入位置不变），
                     // 首个系统块后跟一条假 assistant 确认轮
                     addContentItem(MessageRole.USER, message.parts.filterIsInstance<UIMessagePart.Text>())
@@ -528,7 +537,7 @@ class ResponseAPI(
                         when (part) {
                             is UIMessagePart.Text -> {
                                 add(buildJsonObject {
-                                    put("type", if (role == MessageRole.USER) "input_text" else "output_text")
+                                    put("type", if (role == MessageRole.ASSISTANT) "output_text" else "input_text")
                                     put("text", part.text)
                                 })
                             }

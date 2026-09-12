@@ -4,11 +4,11 @@ import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import me.rerere.ai.provider.EmbeddingGenerationParams
-import me.rerere.ai.provider.ModelType
 import me.rerere.ai.provider.ProviderManager
 import me.rerere.ai.ui.UIMessage
 import me.rerere.rikkahub.data.ai.ThreeLayerMemoryPolicy
 import me.rerere.rikkahub.data.ai.buildMemoryPrompt
+import me.rerere.rikkahub.data.ai.resolveEmbeddingModel
 import me.rerere.rikkahub.data.model.MemoryType
 import me.rerere.rikkahub.data.repository.MemoryRepository
 import me.rerere.rikkahub.data.repository.MemorySearchRecord
@@ -59,9 +59,11 @@ class MemoryRetrievalTransformer(
             }
         if (records.isEmpty()) return@withContext messages
 
-        // 首轮启动记忆：对话第一轮历史为空、没有相关性检索可用，自动注入最近的记忆，
-        // 让模型开局就读懂用户；后续轮次再按当前消息的相关性检索
-        val isFirstTurn = messages.none { it.role == me.rerere.ai.core.MessageRole.ASSISTANT }
+        // 首轮启动记忆：还没有用户消息得到过回复、没有相关性检索可用，自动注入最近的记忆，
+        // 让模型开局就读懂用户；后续轮次再按当前消息的相关性检索。
+        // 判定按用户消息数（<=1）：角色卡开场白是 ASSISTANT 消息，若按"无 ASSISTANT"
+        // 判定，酒馆对话的第一轮会被误判为后续轮次而跳过启动记忆
+        val isFirstTurn = messages.count { it.role == me.rerere.ai.core.MessageRole.USER } <= 1
         if (isFirstTurn) {
             val startup = ThreeLayerMemoryPolicy.selectStartupMemories(
                 memories = records.map { it.memory },
@@ -105,11 +107,8 @@ class MemoryRetrievalTransformer(
         records: List<MemorySearchRecord>,
         query: String,
     ): List<Pair<MemorySearchRecord, Float>> {
-        val modelId = ctx.settings.vectorStorageModelId ?: return emptyList()
-        val providerSetting = ctx.settings.providers.firstOrNull { p ->
-            p.models.any { it.id == modelId && it.type == ModelType.EMBEDDING }
-        } ?: return emptyList()
-        val model = providerSetting.models.first { it.id == modelId }
+        // 未显式配置嵌入模型时自动回退（快速模型所在提供商优先）；仍无可用嵌入模型则退回词法检索
+        val (providerSetting, model) = ctx.settings.resolveEmbeddingModel() ?: return emptyList()
         return runCatching {
             val queryVector = providerManager.getProviderByType(providerSetting).generateEmbedding(
                 providerSetting = providerSetting,

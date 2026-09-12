@@ -11,6 +11,7 @@ import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.ai.ui.UIMessageAnnotation
 import me.rerere.rikkahub.data.ai.VectorStoreCache
+import me.rerere.rikkahub.data.ai.resolveEmbeddingModel
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AuthorNotePosition
 import me.rerere.rikkahub.data.model.InjectionPosition
@@ -99,10 +100,9 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
         runCatching {
             val settings = ctx.settings
             if (!settings.vectorStorageEnabled) return@runCatching emptySet<Uuid>()
-            val modelId = settings.vectorStorageModelId ?: return@runCatching emptySet()
-            val providerSetting = settings.providers.firstOrNull { p -> p.models.any { it.id == modelId } }
+            // 未显式配置嵌入模型时自动回退（快速模型所在提供商优先）
+            val (providerSetting, model) = settings.resolveEmbeddingModel()
                 ?: return@runCatching emptySet()
-            val model = providerSetting.models.first { it.id == modelId }
 
             // 与 collectInjections 相同的书绑定过滤，只检索已绑定的书
             val effectiveLorebookIds = if (ctx.assistant.allowConversationPromptInjection) {
@@ -123,7 +123,7 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
 
             val providerHandler = providerManager.getProviderByType(providerSetting)
             // 批量嵌入：[query] + 未缓存的条目内容，一次请求
-            val uncached = vectorizedEntries.filter { VectorStoreCache.get(context, cacheKey(modelId, it.content)) == null }
+            val uncached = vectorizedEntries.filter { VectorStoreCache.get(context, cacheKey(model.id, it.content)) == null }
             val inputs = listOf(query) + uncached.map { it.content }
             val result = providerHandler.generateEmbedding(
                 providerSetting = providerSetting,
@@ -133,12 +133,12 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
                 ?: return@runCatching emptySet()
             uncached.forEachIndexed { index, entry ->
                 result.embeddings.getOrNull(index + 1)?.let {
-                    VectorStoreCache.put(context, cacheKey(modelId, entry.content), it.toFloatArray())
+                    VectorStoreCache.put(context, cacheKey(model.id, entry.content), it.toFloatArray())
                 }
             }
 
             vectorizedEntries.mapNotNull { entry ->
-                val entryVector = VectorStoreCache.get(context, cacheKey(modelId, entry.content))
+                val entryVector = VectorStoreCache.get(context, cacheKey(model.id, entry.content))
                     ?: return@mapNotNull null
                 val similarity = VectorStoreCache.cosineSimilarity(queryVector, entryVector)
                 if (similarity >= settings.vectorStorageThreshold) entry.id else null

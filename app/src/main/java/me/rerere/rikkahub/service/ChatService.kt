@@ -1458,7 +1458,9 @@ class ChatService(
                         val recallQuery = generationMessages
                             .lastOrNull { it.role == MessageRole.USER }
                             ?.toText()?.trim().orEmpty()
-                        val isFirstTurn = generationMessages.none { it.role == MessageRole.ASSISTANT }
+                        // 按用户消息数判定首轮：角色卡开场白是 ASSISTANT 消息，按"无 ASSISTANT"
+                        // 判定会把酒馆对话的第一轮误判为后续轮次而跳过启动记忆
+                        val isFirstTurn = generationMessages.count { it.role == MessageRole.USER } <= 1
                         if (isFirstTurn || recallQuery.isBlank()) {
                             ThreeLayerMemoryPolicy.selectStartupMemories(
                                 memories = allMemories,

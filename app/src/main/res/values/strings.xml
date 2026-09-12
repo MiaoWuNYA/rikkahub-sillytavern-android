@@ -329,7 +329,7 @@
   <string name="prompt_page_vector_storage_title">Vector Storage</string>
   <string name="prompt_page_vector_storage_desc">Vectorized entries activate by semantic similarity instead of keywords</string>
   <string name="prompt_page_vector_storage_model">Embedding Model</string>
-  <string name="prompt_page_vector_storage_model_desc">Used to embed entry contents and chat query; entry vectors are cached locally</string>
+  <string name="prompt_page_vector_storage_model_desc">Used to embed entry contents and chat query; entry vectors are cached locally. If unset, an available embedding model is picked automatically (fast model provider first); also used by memory RAG</string>
   <string name="prompt_page_vector_storage_scan_depth">Query Depth</string>
   <string name="prompt_page_vector_storage_scan_depth_desc">Use the last N non-system messages as the retrieval query</string>
   <string name="prompt_page_vector_storage_threshold">Similarity Threshold: %d%%</string>

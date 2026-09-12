@@ -54,6 +54,49 @@ class ClaudeRequestMessageTest {
     }
 
     @Test
+    fun `mid system messages should become user turns merged into adjacent user turn`() {
+        // Anthropic messages 不支持 system role：首条 system 走顶层 system 参数（此处不出现），
+        // 中部 SYSTEM（记忆注入/userContext/冻结锚点等）转 user 轮原位保留——此前被直接
+        // 丢弃导致注入静默失效。相邻 user 轮合并（Anthropic 要求 user/assistant 严格交替）
+        val messages = listOf(
+            UIMessage.system("You are a roleplay character"),
+            UIMessage.user("Hello"),
+            UIMessage.assistant("Hi!"),
+            UIMessage.system("memory: user likes cats"),
+            UIMessage.user("What do I like?"),
+        )
+
+        val result = invokeBuildMessages(messages)
+
+        val roles = result.map { it.jsonObject["role"]?.jsonPrimitive?.content }
+        // 记忆注入 user 轮与紧随的提问 user 轮被合并为一条（保持 user/assistant 交替）
+        assertEquals(listOf("user", "assistant", "user"), roles)
+        val lastUserTexts = result[2].jsonObject["content"]!!.jsonArray
+            .mapNotNull { it.jsonObject["text"]?.jsonPrimitive?.content }
+        assertEquals(
+            listOf("memory: user likes cats", "What do I like?"),
+            lastUserTexts,
+        )
+    }
+
+    @Test
+    fun `trailing system anchor block should merge into preceding user turn`() {
+        // 冻结锚点块紧跟末条 user 消息：转 user 轮后与相邻 user 合并，避免连续 user 轮 400
+        val messages = listOf(
+            UIMessage.system("You are a roleplay character"),
+            UIMessage.user("Hello"),
+            UIMessage.system("Current date: 2026-09-12."),
+        )
+
+        val result = invokeBuildMessages(messages)
+
+        assertEquals(1, result.size)
+        val texts = result[0].jsonObject["content"]!!.jsonArray
+            .mapNotNull { it.jsonObject["text"]?.jsonPrimitive?.content }
+        assertEquals(listOf("Hello", "Current date: 2026-09-12."), texts)
+    }
+
+    @Test
     fun `multi-round tool calls should produce tool_use followed by tool_result`() {
         // Scenario: Multiple rounds of tool calls
         val assistantMessage = UIMessage(
