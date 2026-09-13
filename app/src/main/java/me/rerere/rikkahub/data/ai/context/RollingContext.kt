@@ -159,6 +159,14 @@ fun estimateMessageTokens(message: UIMessage): Int {
  * promptTokens 与阈值比较，压缩后估算值仍会超阈值，导致每条新消息都重复压缩（循环压缩）。
  * 这里反推固定开销后，只有会话消息内容本身驱动阈值，压缩才能真正把估算值压到阈值以下。
  */
+/**
+ * 压缩后首轮的 fixedOverhead 兜底：压缩刚发生时所有带 usage 的消息都被摘要覆盖，
+ * 现场反推会得到 0，估算值少算整个系统提示词+工具 schema（数 K tokens）——恰是最需要
+ * 余量的一轮。跨对话复用上次测得的固定开销作下限（量级正确，方向安全）。
+ */
+@Volatile
+private var lastMeasuredFixedOverhead = 0
+
 fun estimateActiveContextTokens(
     messages: List<UIMessage>,
     storedSummary: RollingContextSummary?,
@@ -168,13 +176,12 @@ fun estimateActiveContextTokens(
     val validSummary = storedSummary?.takeIf { coveredCount > 0 }
     val summaryTokens = validSummary.orEmptySummaryTokens()
     val activeMessages = messages.drop(coveredCount)
-    val localEstimate = summaryTokens + estimateSentContextTokens(activeMessages, pruneTransient)
 
     val measuredMessageIndex = messages.indexOfLast { message ->
         message.usage?.promptTokens?.let { it > 0 } == true &&
             message.id !in validSummary?.sourceMessageIds.orEmpty()
     }
-    val fixedOverhead = measuredMessageIndex.takeIf { it >= 0 }?.let { index ->
+    val measuredOverhead = measuredMessageIndex.takeIf { it >= 0 }?.let { index ->
         // 被测量的助手消息是那次请求的输出；请求输入 = 摘要 + 窗口内它之前的消息
         val usage = messages[index].usage ?: return@let null
         val measuredWindowTokens = estimateSentContextTokens(
@@ -182,7 +189,9 @@ fun estimateActiveContextTokens(
             pruneTransient,
         )
         (usage.promptTokens - summaryTokens - measuredWindowTokens).coerceAtLeast(0)
-    } ?: 0
+    }
+    if (measuredOverhead != null) lastMeasuredFixedOverhead = measuredOverhead
+    val fixedOverhead = measuredOverhead ?: lastMeasuredFixedOverhead
     return fixedOverhead + summaryTokens + estimateSentContextTokens(activeMessages, pruneTransient)
 }
 

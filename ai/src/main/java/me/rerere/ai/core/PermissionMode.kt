@@ -23,6 +23,7 @@ enum class PermissionMode {
     DANGER_FULL_ACCESS;
 
     companion object {
-        val DEFAULT = DANGER_FULL_ACCESS
+        // 默认最小权限：全开放只应在用户显式选择时出现，作为默认值是安全陷阱
+        val DEFAULT = READ_ONLY
     }
 }

@@ -53,11 +53,12 @@ private fun UIMessage.pruneTransientParts(): UIMessage {
             is UIMessagePart.Video -> transientPlaceholder("视频附件", id)
             is UIMessagePart.Audio -> transientPlaceholder("音频附件", id)
             is UIMessagePart.ServerTool ->
-                // 保留 ServerTool 结构，只把结果换成占位（协议层需要调用记录完整）
+                // ServerTool 必须整体替换为占位文本：三家 provider 多轮请求都从
+                // metadata.call/result 原始协议块重放（不读 output），只改 output 等于没裁剪。
+                // 整体移除 call+result 配对是协议安全的（不会留下无 result 的 server_tool_use），
+                // 存储与 UI 不受影响，AI 需要原文时可用 read_history_message 取回
                 if (isWebContentTool(part.toolName)) {
-                    part.copy(output = kotlinx.serialization.json.JsonPrimitive(
-                        transientPlaceholder("网页内容（${part.toolName}）", id).text
-                    ))
+                    transientPlaceholder("网页内容（${part.toolName}）", id)
                 } else null
             is UIMessagePart.Tool ->
                 // 保留 tool_call 结构，只把工具结果换成占位（否则 provider 端 tool_calls 与

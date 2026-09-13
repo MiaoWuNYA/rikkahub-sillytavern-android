@@ -18,6 +18,7 @@ import kotlinx.serialization.json.put
 import me.rerere.ai.core.InputSchema
 import me.rerere.ai.core.Tool
 import me.rerere.ai.ui.UIMessagePart
+import me.rerere.rikkahub.RouteActivity
 
 private fun getAppName(context: Context, packageName: String): String = try {
     context.packageManager.getApplicationLabel(
@@ -107,7 +108,8 @@ internal fun buildMusicTool(context: Context): Tool = Tool(
                 ?: return@Tool listOf(UIMessagePart.Text(deviceError("MediaSessionManager unavailable").toString()))
             // 用本应用自身的组件名占位；未授予通知监听权限时 getActiveSessions 会抛 SecurityException
             val controllers = try {
-                msm.getActiveSessions(ComponentName(context, "me.rerere.rikkahub.RouteActivity"))
+                // 用类引用而不是字符串字面量：重命名包/类时编译器能兜住，字符串则静默失效
+                msm.getActiveSessions(ComponentName(context, RouteActivity::class.java))
             } catch (_: Exception) {
                 return@Tool listOf(UIMessagePart.Text(deviceError(
                     "Media session access not granted. Enable Notification access for this app in system settings to control playback.",

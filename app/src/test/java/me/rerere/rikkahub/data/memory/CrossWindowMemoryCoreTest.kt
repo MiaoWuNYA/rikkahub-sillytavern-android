@@ -25,9 +25,11 @@ class CrossWindowMemoryCoreTest {
     fun `append is idempotent on messageId and ignores blank input`() {
         val c = core()
         c.append("a1", "conv1", "m1", "user", "第一版")
+        // 同一 messageId 再次写入 = 消息被编辑/重新生成：原位更新文本（不新增条目，
+        // 也不让生活流里残留编辑前的旧文本）
         c.append("a1", "conv1", "m1", "user", "重试后不同内容")
         assertEquals(1, c.peekRecent("a1").size)
-        assertEquals("第一版", c.peekRecent("a1").first().text)
+        assertEquals("重试后不同内容", c.peekRecent("a1").first().text)
 
         c.append("a1", "conv1", "m2", "user", "   ")
         c.append("", "conv1", "m3", "user", "无助手ID")

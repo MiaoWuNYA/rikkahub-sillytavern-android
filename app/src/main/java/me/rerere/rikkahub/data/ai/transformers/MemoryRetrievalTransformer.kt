@@ -2,6 +2,8 @@ package me.rerere.rikkahub.data.ai.transformers
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.rerere.ai.provider.EmbeddingGenerationParams
 import me.rerere.ai.provider.Model
@@ -45,6 +47,7 @@ private const val MILLIS_PER_DAY = 86_400_000.0
 class MemoryRetrievalTransformer(
     private val repository: MemoryRepository,
     private val providerManager: ProviderManager,
+    private val memoryEmbeddingService: me.rerere.rikkahub.data.memory.MemoryEmbeddingService,
 ) : InputMessageTransformer {
     override suspend fun transform(
         ctx: TransformerContext,
@@ -124,7 +127,11 @@ class MemoryRetrievalTransformer(
         val (providerSetting, model) = ctx.settings.resolveEmbeddingModel() ?: return emptyList()
 
         // 没有任何与当前模型匹配的向量记录时，这次付费 embedding 调用不可能产生结果，直接跳过
-        if (records.none { it.embeddingModelId == model.id.toString() && it.embedding != null }) {
+        val matchedRecords = records.any { it.embeddingModelId == model.id.toString() && it.embedding != null }
+        if (!matchedRecords) {
+            // 全部记忆与当前模型不匹配（如换过嵌入模型）：后台用新模型重建索引，
+            // 否则语义检索永远静默退化为词法检索。每 (assistant, model) 只触发一次
+            maybeScheduleReindex(ctx, records.isNotEmpty())
             return emptyList()
         }
         return runCatching {
@@ -143,6 +150,21 @@ class MemoryRetrievalTransformer(
             emptyList()
         }
     }
+
+    private fun maybeScheduleReindex(ctx: TransformerContext, hasRecords: Boolean) {
+        if (!hasRecords) return
+        val modelId = ctx.settings.resolveEmbeddingModel()?.second?.id?.toString() ?: return
+        val key = "${ctx.assistant.id}:$modelId"
+        if (!reindexTriggered.add(key)) return
+        reindexScope.launch {
+            runCatching {
+                memoryEmbeddingService.reindexAssistant(ctx.assistant.id.toString(), ctx.settings)
+            }.onFailure { Log.w(TAG, "Background memory reindex failed", it) }
+        }
+    }
+
+    private val reindexTriggered = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
+    private val reindexScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
 
     private suspend fun getOrEmbedQuery(
         providerSetting: ProviderSetting,

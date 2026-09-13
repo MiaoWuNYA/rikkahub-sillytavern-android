@@ -50,6 +50,55 @@ class MemoryEmbeddingService(
         return memory
     }
 
+    /**
+     * 重建某助手全部记忆的向量索引。
+     * 触发场景：解析出的嵌入模型发生变化（如更换快速模型/嵌入模型），旧向量与新模型
+     * 不匹配会被检索层硬过滤，语义 RAG 会静默退化为词法检索——必须用新模型重建。
+     */
+    suspend fun reindexAssistant(assistantId: String, settings: Settings): Int {
+        val (providerSetting, model) = settings.resolveEmbeddingModel() ?: return 0
+        val targetModelId = model.id.toString()
+        val records = repository.getMemoryRecordsOfAssistant(assistantId)
+            .filter { it.memory.content.isNotBlank() && it.embeddingModelId != targetModelId }
+        if (records.isEmpty()) return 0
+        var indexed = 0
+        // 分批：一次请求嵌入一批，失败只影响该批
+        records.chunked(EMBED_BATCH_SIZE).forEach { batch ->
+            runCatching {
+                providerManager.getProviderByType(providerSetting).generateEmbedding(
+                    providerSetting = providerSetting,
+                    params = EmbeddingGenerationParams(
+                        model = model,
+                        input = batch.map { it.memory.content },
+                        customHeaders = model.customHeaders,
+                        customBody = model.customBodies,
+                    ),
+                )
+            }.onSuccess { result ->
+                batch.forEachIndexed { i, record ->
+                    result.embeddings.getOrNull(i)?.takeIf { it.isNotEmpty() && it.all(Float::isFinite) }
+                        ?.let { vector ->
+                            repository.updateEmbedding(
+                                id = record.memory.id,
+                                embedding = vector.toByteArray(),
+                                modelId = targetModelId,
+                                dimension = vector.size,
+                            )
+                            indexed++
+                        }
+                }
+            }.onFailure { error ->
+                Log.w(TAG, "Reindex batch failed (${batch.size} records)", error)
+            }
+        }
+        Log.i(TAG, "Reindexed $indexed/${records.size} memories of $assistantId with model $targetModelId")
+        return indexed
+    }
+
+    private companion object {
+        private const val EMBED_BATCH_SIZE = 64
+    }
+
     private suspend fun index(memory: AssistantMemory, settings: Settings) {
         if (memory.content.isBlank()) return
         runCatching {

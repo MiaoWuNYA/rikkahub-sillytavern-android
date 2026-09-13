@@ -40,6 +40,8 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
     private val stickyTracker = java.util.concurrent.ConcurrentHashMap<String, MutableMap<Uuid, Int>>()
     // 冷却追踪：assistantId:conversationId → (injectionId → 剩余冷却轮数)
     private val cooldownTracker = java.util.concurrent.ConcurrentHashMap<String, MutableMap<Uuid, Int>>()
+    // 已推进过的用户轮（agentic 步骤去重）
+    private val lastTickedUserTurn = java.util.concurrent.ConcurrentHashMap<String, String>()
 
     override suspend fun transform(
         ctx: TransformerContext,
@@ -53,6 +55,12 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
 
         // 官方 Vector Storage：vectorized 条目按语义相似度激活，批量算好命中集合再进扫描循环
         val vectorActivatedIds = resolveVectorActivations(ctx.context, ctx, messages)
+
+        // sticky/cooldown 按用户轮推进（对齐酒馆 chat_metadata 语义）。agentic 工具循环每步
+        // 都会重跑本 transformer，不按轮去重的话 sticky=3 一轮就走完 3 步
+        val lastUserMsgId = messages.lastOrNull { it.role == MessageRole.USER }?.id?.toString()
+        val alreadyTicked = lastUserMsgId != null &&
+            lastTickedUserTurn.put(key, lastUserMsgId) == lastUserMsgId
 
         val result = transformMessages(
             messages = messages,
@@ -81,6 +89,7 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
                 .firstOrNull { p -> p.id == ctx.settings.activePersonaId && p.enabled }
                 ?.description ?: "",
             vectorActivatedIds = vectorActivatedIds,
+            tickState = !alreadyTicked,
         )
 
         return result
@@ -123,23 +132,46 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
             if (query.isBlank()) return@runCatching emptySet()
 
             val providerHandler = providerManager.getProviderByType(providerSetting)
-            // 批量嵌入：[query] + 未缓存的条目内容，一次请求
-            val uncached = vectorizedEntries.filter { VectorStoreCache.get(context, cacheKey(model.id, it.content)) == null }
-            val inputs = listOf(query) + uncached.map { it.content }
-            val result = providerHandler.generateEmbedding(
-                providerSetting = providerSetting,
-                params = EmbeddingGenerationParams(model = model, input = inputs),
-            )
-            val queryVector = result.embeddings.firstOrNull()?.toFloatArray()
-                ?: return@runCatching emptySet()
-            uncached.forEachIndexed { index, entry ->
-                result.embeddings.getOrNull(index + 1)?.let {
-                    VectorStoreCache.put(context, cacheKey(model.id, entry.content), it.toFloatArray())
+            // 单次读取：每条目一次磁盘 IO（get 两次 ×几百条目 = 每轮几百次读）
+            val vectorsByKey = vectorizedEntries.associate {
+                cacheKey(model.id, it.content) to VectorStoreCache.get(context, cacheKey(model.id, it.content))
+            }
+            val uncached = vectorizedEntries.filter { vectorsByKey[cacheKey(model.id, it.content)] == null }
+            // 查询向量
+            val queryVector = runCatching {
+                providerHandler.generateEmbedding(
+                    providerSetting = providerSetting,
+                    params = EmbeddingGenerationParams(model = model, input = listOf(query)),
+                ).embeddings.firstOrNull()?.toFloatArray()
+            }.getOrElse {
+                // 负缓存：请求超限/失败时短 TTL 内不再重发同一批（否则每轮重复付费且永远失败）
+                embedFailureUntil = System.currentTimeMillis() + EMBED_FAILURE_TTL_MS
+                null
+            } ?: return@runCatching emptySet()
+            // 分批嵌入未缓存条目：一次塞几百条会超供应商单请求上限，整批失败且什么都缓存不了；
+            // 分批可让部分成功先落盘
+            if (System.currentTimeMillis() >= embedFailureUntil) {
+                uncached.chunked(EMBED_BATCH_SIZE).forEach { batch ->
+                    runCatching {
+                        providerHandler.generateEmbedding(
+                            providerSetting = providerSetting,
+                            params = EmbeddingGenerationParams(
+                                model = model,
+                                input = batch.map { it.content },
+                            ),
+                        )
+                    }.onSuccess { result ->
+                        batch.forEachIndexed { index, entry ->
+                            result.embeddings.getOrNull(index)?.let {
+                                VectorStoreCache.put(context, cacheKey(model.id, entry.content), it.toFloatArray())
+                            }
+                        }
+                    }.onFailure { embedFailureUntil = System.currentTimeMillis() + EMBED_FAILURE_TTL_MS }
                 }
             }
 
             vectorizedEntries.mapNotNull { entry ->
-                val entryVector = VectorStoreCache.get(context, cacheKey(model.id, entry.content))
+                val entryVector = vectorsByKey[cacheKey(model.id, entry.content)]
                     ?: return@mapNotNull null
                 val similarity = VectorStoreCache.cosineSimilarity(queryVector, entryVector)
                 if (similarity >= settings.vectorStorageThreshold) entry.id else null
@@ -152,6 +184,15 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
     }
 
     private fun cacheKey(modelId: Uuid, content: String): String = "$modelId\n${content.trim()}"
+
+    /** 单次嵌入请求的条目上限：部分供应商对 input 数组有条数/token 限制 */
+    private const val EMBED_BATCH_SIZE = 64
+
+    /** 嵌入请求失败后的负缓存窗口，窗口内不再重发（避免每轮重复失败+重复计费） */
+    private const val EMBED_FAILURE_TTL_MS = 60_000L
+
+    @Volatile
+    private var embedFailureUntil = 0L
 }
 
 /**
@@ -168,6 +209,7 @@ internal fun transformMessages(
     cooldownEntries: MutableMap<Uuid, Int> = mutableMapOf(),
     authorNotePosition: AuthorNotePosition = AuthorNotePosition.IN_CHAT,
     authorNoteDepth: Int = 4,
+    tickState: Boolean = true,
     worldInfoBudget: Int = 25,
     worldInfoBudgetCap: Int = 0,
     worldInfoMinActivations: Int = 0,
@@ -211,8 +253,10 @@ internal fun transformMessages(
 
     if (injections.isEmpty()) {
         // 无注入时仍要推进粘性和冷却状态
-        tickSticky(activeStickyEntries, cooldownEntries, emptyList())
-        tickCooldowns(cooldownEntries)
+        if (tickState) {
+            tickSticky(activeStickyEntries, cooldownEntries, emptyList())
+            tickCooldowns(cooldownEntries)
+        }
         return messages
     }
 
@@ -261,8 +305,10 @@ internal fun transformMessages(
     )
 
     // 推进粘性和冷却
-    tickSticky(activeStickyEntries, cooldownEntries, injections.filterIsInstance<PromptInjection.RegexInjection>())
-    tickCooldowns(cooldownEntries)
+    if (tickState) {
+        tickSticky(activeStickyEntries, cooldownEntries, injections.filterIsInstance<PromptInjection.RegexInjection>())
+        tickCooldowns(cooldownEntries)
+    }
 
     return result
 }

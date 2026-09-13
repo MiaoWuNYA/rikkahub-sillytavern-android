@@ -857,8 +857,11 @@ class ChatCompletionsAPI(
         // 不能用"reasoning 远长于正文"判断——正常模型长思考 + 短回答会被误伤
         if (cleanedText.isEmpty()) {
             val cleanedReasoning = prefix.replace(reasoning, "").trimStart()
+            // 保留其余 Text part（如 "Response:" 单独成 part 时第二部分是真正文，不能丢）
+            val otherTexts = message.parts.filterIsInstance<UIMessagePart.Text>().drop(1)
             return message.copy(
-                parts = listOf(UIMessagePart.Text(cleanedReasoning)) +
+                parts = listOf(UIMessagePart.Text((listOf(cleanedReasoning) + otherTexts.map { it.text })
+                    .joinToString(""))) +
                     message.parts.filter { it !is UIMessagePart.Text && it !is UIMessagePart.Reasoning }
             )
         }
@@ -866,7 +869,7 @@ class ChatCompletionsAPI(
         if (cleanedText != text) {
             return message.copy(
                 parts = message.parts.map { part ->
-                    if (part is UIMessagePart.Text) part.copy(text = cleanedText) else part
+                    if (part is UIMessagePart.Text && part.text == text) part.copy(text = cleanedText) else part
                 }
             )
         }

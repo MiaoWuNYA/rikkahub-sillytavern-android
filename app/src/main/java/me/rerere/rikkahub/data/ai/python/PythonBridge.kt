@@ -41,7 +41,8 @@ class PythonBridge(
 
     fun listConversations(limit: Int = 10): String = runBlocking {
         try {
-            db.conversationDao().getAll().first().take(limit).joinToString("\n") {
+            // 轻量投影只取 id/title，不用 getAll()（那会把每个会话的完整实体都拉一遍）
+            db.conversationDao().getRecentTitlesAnyAssistant(limit).joinToString("\n") {
                 "[${it.id}] ${it.title.ifEmpty { "无标题" }}"
             }
         } catch (e: Exception) { "Error: ${e.message}" }
@@ -52,7 +53,11 @@ class PythonBridge(
             val conv = conversationRepo.getConversationById(Uuid.parse(conversationId))
                 ?: return@runBlocking "Error: 对话 $conversationId 不存在"
             conv.currentMessages.take(limit).joinToString("\n---\n") {
-                "${it.role}: ${it.parts.filterIsInstance<UIMessagePart.Text>().joinToString("") { it.text }.take(300) ?: "(工具调用)"}"
+                val text = it.parts.filterIsInstance<UIMessagePart.Text>()
+                    .joinToString("") { part -> part.text }
+                // take(300) 永不返回 null，?: 分支不可达导致空消息渲染成 "null"；
+                // 空文本（纯工具调用轮）显式给占位
+                "${it.role}: ${text.take(300).ifEmpty { "(工具调用)" }}"
             }
         } catch (e: Exception) { "Error: ${e.message}" }
     }

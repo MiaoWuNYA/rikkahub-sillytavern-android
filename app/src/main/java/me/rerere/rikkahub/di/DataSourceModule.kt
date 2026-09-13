@@ -230,6 +230,7 @@ val dataSourceModule = module {
         me.rerere.rikkahub.data.ai.transformers.MemoryRetrievalTransformer(
             repository = get(),
             providerManager = get(),
+            memoryEmbeddingService = get(),
         )
     }
 

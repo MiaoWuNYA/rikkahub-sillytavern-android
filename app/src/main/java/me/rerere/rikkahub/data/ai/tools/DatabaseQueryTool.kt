@@ -202,21 +202,15 @@ fun createDatabaseQueryTool(database: AppDatabase): Tool = Tool(
                     ftsCursor.close()
                 } catch (_: Exception) { /* FTS table might not exist */ }
 
-                // LIKE search on other tables
+                // LIKE search on other tables（knowledge_* 表已在迁移 25→26 删除，世界书存
+                // DataStore 不在 Room；表名以 schema 为准，查不存在的表只会白跑一遍 try/catch）
                 val tablesToSearch = listOf(
-                    "knowledge_chunks" to "text",
-                    "knowledge_base_entries" to listOf("title", "content"),
-                    "assistant_memories" to "content",
-                    "conversations" to listOf("title"),
-                    "lorebook_entries" to listOf("name", "content"),
+                    "MemoryEntity" to listOf("content"),
+                    "ConversationEntity" to listOf("title"),
                 )
 
                 for ((table, columns) in tablesToSearch) {
-                    val colList = when (columns) {
-                        is String -> listOf(columns)
-                        is List<*> -> @Suppress("UNCHECKED_CAST") columns as List<String>
-                        else -> continue
-                    }
+                    val colList = columns
                     val whereClause = colList.joinToString(" OR ") { "\"$it\" LIKE ?" }
                     val placeholders = colList.map { searchPattern }.toTypedArray<Any?>()
                     try {

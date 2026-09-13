@@ -88,6 +88,15 @@ class RikkaHubApp : Application() {
         DatabaseUtil.setCursorWindowSize(32 * 1024 * 1024)
         trace("cursor done")
 
+        // TaskManager 持久化：此前 setPersistenceDir 无任何调用方，任务状态只存在内存里，
+        // 进程被杀即全部丢失（.tasks/{id}.json 的注释形同虚设）
+        runCatching {
+            me.rerere.rikkahub.data.ai.tools.TaskManager.setPersistenceDir(
+                java.io.File(filesDir, ".tasks")
+            )
+        }
+        trace("taskmanager done")
+
         // install crash handler
         CrashHandler.install(this)
         trace("crashhandler done")

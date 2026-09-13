@@ -10,6 +10,7 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import me.rerere.rikkahub.utils.jsonPrimitiveOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import me.rerere.ai.core.InputSchema
@@ -90,18 +91,18 @@ fun createPythonTool(context: Context, timeoutSec: Int = 30): Tool = Tool(
         // Build structured response with files
         val parts = mutableListOf<UIMessagePart>()
 
-        // Collect output text
+        // Collect output text（safe access：stdout 非字符串类型时 jsonPrimitive 会直接抛异常）
         val output = buildString {
-            resultJson["stdout"]?.jsonPrimitive?.content?.let {
+            resultJson["stdout"]?.jsonPrimitiveOrNull?.content?.let {
                 if (it.isNotBlank()) appendLine("Output:\n$it")
             }
-            resultJson["result"]?.jsonPrimitive?.content?.let {
+            resultJson["result"]?.jsonPrimitiveOrNull?.content?.let {
                 if (it.isNotBlank()) appendLine("Result: $it")
             }
-            resultJson["error"]?.jsonPrimitive?.content?.let {
+            resultJson["error"]?.jsonPrimitiveOrNull?.content?.let {
                 appendLine("Error: $it")
             }
-        }
+        }.truncateForToolResult()
         if (output.isNotBlank()) {
             parts.add(UIMessagePart.Text(output.trimEnd()))
         }

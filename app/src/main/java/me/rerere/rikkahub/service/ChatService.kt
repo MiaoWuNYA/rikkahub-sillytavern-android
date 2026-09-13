@@ -1736,7 +1736,9 @@ class ChatService(
      */
     private suspend fun recordCrossWindowMemory(conversationId: Uuid, assistant: Assistant) {
         runCatching {
-            val conversation = getConversationFlow(conversationId).value
+            // 直接读取刚保存完成的会话：再读 flow 会与保存路径竞态，可能记录到旧一轮的文本
+            val conversation = conversationRepo.getConversationById(conversationId)
+                ?: getConversationFlow(conversationId).value
             val assistantId = assistant.id.toString()
             val conversationKey = conversationId.toString()
             val messages = conversation.currentMessages

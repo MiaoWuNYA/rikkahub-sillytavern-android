@@ -33,6 +33,14 @@ interface ConversationDAO {
     @Query("SELECT * FROM conversationentity WHERE assistant_id = :assistantId ORDER BY is_pinned DESC, update_at DESC LIMIT :limit")
     suspend fun getRecentConversationsOfAssistant(assistantId: String, limit: Int): List<ConversationEntity>
 
+    /** 轻量投影：Recent Chats 注入只要 id/title/update_at，避免反序列化全部消息节点 */
+    @Query("SELECT id, assistant_id as assistantId, title, is_pinned as isPinned, create_at as createAt, update_at as updateAt, folder_id as folderId FROM conversationentity WHERE assistant_id = :assistantId ORDER BY is_pinned DESC, update_at DESC LIMIT :limit")
+    suspend fun getRecentConversationTitles(assistantId: String, limit: Int): List<LightConversationEntity>
+
+    /** 轻量投影（跨助手，Python 桥接用） */
+    @Query("SELECT id, assistant_id as assistantId, title, is_pinned as isPinned, create_at as createAt, update_at as updateAt, folder_id as folderId FROM conversationentity ORDER BY is_pinned DESC, update_at DESC LIMIT :limit")
+    suspend fun getRecentTitlesAnyAssistant(limit: Int): List<LightConversationEntity>
+
     @Query("SELECT * FROM conversationentity WHERE title LIKE '%' || :searchText || '%' ORDER BY is_pinned DESC, update_at DESC")
     fun searchConversations(searchText: String): Flow<List<ConversationEntity>>
 

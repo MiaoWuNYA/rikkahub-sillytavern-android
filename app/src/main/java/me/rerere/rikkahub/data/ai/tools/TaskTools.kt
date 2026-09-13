@@ -82,6 +82,8 @@ object TaskManager {
             metadata = metadata ?: t.metadata,
             blockedBy = t.blockedBy + (addBlockedBy ?: emptyList()),
         )
+        // 状态/依赖变更同样落盘（此前只有 createTask 持久化，进程被杀丢全部进度）
+        saveToDisk(tasks[id]!!)
         return tasks[id]
     }
 
@@ -355,7 +357,7 @@ fun createTaskTools(): List<Tool> = buildList {
                 put("owner", buildJsonObject { put("type", "string"); put("description", "Assign to agent (used by: update)") })
                 put("description", buildJsonObject { put("type", "string"); put("description", "Updated description (used by: update)") })
                 put("active_form", buildJsonObject { put("type", "string"); put("description", "Progress text (used by: update)") })
-                put("depends_on", buildJsonObject { put("type", "string"); put("description", "Comma-separated task IDs this blocks (used by: update)") })
+                put("depends_on", buildJsonObject { put("type", "string"); put("description", "Comma-separated task IDs this task depends on (used by: update)") })
                 put("blocked_by", buildJsonObject { put("type", "string"); put("description", "Comma-separated task IDs blocking this (used by: update)") })
                 put("metadata", buildJsonObject { put("type", "string"); put("description", "JSON key=value pairs (used by: update)") })
                 put("todos", buildJsonObject {
@@ -385,7 +387,11 @@ fun createTaskTools(): List<Tool> = buildList {
                     val id = obj["id"]?.jsonPrimitive?.contentOrNull ?: error("id required")
                     val meta = obj["metadata"]?.jsonPrimitive?.contentOrNull?.split(",")?.mapNotNull { it.trim().split("=", limit=2).let { if (it.size == 2) it[0].trim() to it[1].trim() else null } }?.toMap()
                     val task = TaskManager.updateTask(id = id,
-                        status = obj["status"]?.jsonPrimitive?.contentOrNull?.let { TaskStatus.valueOf(it.uppercase()) },
+                        // 非法状态字符串给友好报错而不是裸 valueOf 崩
+                        status = obj["status"]?.jsonPrimitive?.contentOrNull?.let { raw ->
+                            runCatching { TaskStatus.valueOf(raw.uppercase()) }
+                                .getOrElse { error("invalid status '$raw': use pending|in_progress|completed|failed|cancelled") }
+                        },
                         owner = obj["owner"]?.jsonPrimitive?.contentOrNull,
                         description = obj["description"]?.jsonPrimitive?.contentOrNull,
                         dependsOn = obj["depends_on"]?.jsonPrimitive?.contentOrNull?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() },

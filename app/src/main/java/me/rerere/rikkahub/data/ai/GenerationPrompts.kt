@@ -66,11 +66,13 @@ internal suspend fun buildRecentChatsPrompt(
     excludeConversationId: kotlin.uuid.Uuid? = null,
 ): String {
     // 必须排除当前会话：注入文本声称"这是其他会话"，混入当前会话会自相矛盾，
-    // 也是锚点缓存内容每轮变化的诱因之一（当前会话总是最近更新）
-    val recentConversations = conversationRepo.getRecentConversations(
+    // 也是锚点缓存内容每轮变化的诱因之一（当前会话总是最近更新）。
+    // 用轻量查询只取 title/update_at，不加载消息节点
+    val recentConversations = conversationRepo.getRecentConversationTitles(
         assistantId = assistant.id,
         limit = 10,
-    ).filter { it.id != excludeConversationId }
+        excludeConversationId = excludeConversationId,
+    )
     if (recentConversations.isNotEmpty()) {
         return buildString {
             appendLine()
@@ -82,7 +84,7 @@ internal suspend fun buildRecentChatsPrompt(
                 recentConversations.forEach { conversation ->
                     add(buildJsonObject {
                         put("title", conversation.title)
-                        put("last_chat", conversation.updateAt.toLocalDate())
+                        put("last_chat", java.time.Instant.ofEpochMilli(conversation.updateAt).toLocalDate())
                     })
                 }
             }

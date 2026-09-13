@@ -183,31 +183,46 @@ class GenerationLoop(
             assistant.systemPrompt
         }
 
+        // 工具路由说明按实际注册的工具裁剪：纯聊天助手（角色卡/记忆场景，无任何工具）
+        // 不该背 ~230 tokens 的工具指引，还会被误导去调用不存在的 web_search/execute_python
+        val toolNames = tools.map { it.name }.toSet()
+        fun hasTool(vararg prefixes: String) = toolNames.any { name -> prefixes.any { name.startsWith(it) } }
+        val hasShell = hasTool("execute_command", "workspace_shell")
+        val hasPython = hasTool("execute_python")
+        val hasCalculator = hasTool("calculator")
+        val routingLines = buildList {
+            if (hasTool("workspace_read", "workspace_write")) add("Workspace files → workspace_read/write/edit (/workspace/...)")
+            if (hasTool("workspace_shell")) add("Workspace shell → workspace_shell (git, builds, Unix tools in sandbox)")
+            if (hasTool("file")) add("Device files → file action=\"read/write/patch/list/search/copy/move/delete\" (Download/skills dirs)")
+            if (hasTool("execute_command")) add("Device shell → execute_command (logcat, device info only)")
+            if (hasPython) add("Python → execute_python (data processing, API)")
+            if (hasCalculator) add("Math → calculator${if (hasPython) " (NOT execute_python)" else ""}")
+            if (hasTool("web_search", "search_", "scrape_")) add("Web → web_search / web_fetch")
+            if (hasTool("memory_tool", "memory_")) add("Memory → memory_tool")
+        }
+        val ethicLines = buildList {
+            add("❌ Do NOT describe what you will do — just do it")
+            add("❌ Do NOT stop after writing a stub — complete then report")
+            add("❌ Do NOT fabricate results — if a tool fails, say so")
+            if (hasShell) add("❌ Do NOT use shell when a dedicated tool exists")
+            if (hasPython && hasCalculator) add("❌ Do NOT use execute_python for math (use calculator)")
+            if (hasTool("ask_user")) add("✅ If you need user input, use ask_user directly")
+        }
         val assemblerContext = me.rerere.rikkahub.data.ai.prompts.PromptContext(
             identitySection = mainIdentity,
-            leadInInstructions = buildString {
+            leadInInstructions = if (routingLines.isEmpty()) "" else buildString {
                 appendLine("<tool_selection>")
-                appendLine("Workspace files → workspace_read/write/edit (/workspace/...)")
-                appendLine("Workspace shell → workspace_shell (git, builds, Unix tools in sandbox)")
-                appendLine("Device files → file action=\"read/write/patch/list/search/copy/move/delete\" (Download/skills dirs)")
-                appendLine("Device shell → execute_command (logcat, device info only)")
-                appendLine("Python → execute_python (data processing, API)")
-                appendLine("Math → calculator (NOT execute_python)")
-                appendLine("Web → web_search / web_fetch")
-                appendLine("Memory → memory_tool")
+                routingLines.forEach { appendLine(it) }
                 appendLine("</tool_selection>")
                 appendLine()
                 appendLine("<work_ethic>")
-                appendLine("❌ Do NOT describe what you will do — just do it")
-                appendLine("❌ Do NOT stop after writing a stub — complete then report")
-                appendLine("❌ Do NOT fabricate results — if a tool fails, say so")
-                appendLine("❌ Do NOT use shell when a dedicated tool exists")
-                appendLine("❌ Do NOT use execute_python for math (use calculator)")
-                appendLine("✅ If you need user input, use ask_user directly")
+                ethicLines.forEach { appendLine(it) }
                 appendLine("</work_ethic>")
                 appendLine()
             },
-            workspaceDescription = "Working directory: ${context.filesDir?.absolutePath ?: "."}",
+            workspaceDescription = if (hasTool("workspace_read", "workspace_write", "workspace_shell")) {
+                "Working directory: ${context.filesDir?.absolutePath ?: "."}"
+            } else "",
             extraInstructions = "",
             // 提示词缓存：Recent Chats 每天变化且列表随其他会话活动移动，
             // 放在系统提示（前缀最顶部）会打断全部缓存，已挪到上下文尾部（buildUserContext）
@@ -560,7 +575,8 @@ class GenerationLoop(
         }
         val limitedChat = requestMessages.limitContext(assistant.contextMessageLimit)
         val internalMessages = buildList {
-            val fallbackSystem = buildString {
+            // 延迟构建：prebuiltSystemMessages 几乎总是非空，fallback 每步白算一遍是纯浪费
+            val fallbackSystem = { buildString {
                 // ── s10: 使用 SystemPromptAssembler 替代硬编码 ──
                 val assemblerContext = me.rerere.rikkahub.data.ai.prompts.PromptContext(
                 identitySection = buildString {
@@ -609,10 +625,11 @@ class GenerationLoop(
                 append(tool.systemPrompt(model, messages))
             }
             }
+            }
             if (prebuiltSystemMessages.isNotEmpty()) {
                 addAll(prebuiltSystemMessages)
-            } else if (fallbackSystem.isNotBlank()) {
-                add(UIMessage.system(prompt = fallbackSystem))
+            } else if (fallbackSystem().isNotBlank()) {
+                add(UIMessage.system(prompt = fallbackSystem()))
             }
 
             // ── 上下文滚动压缩摘要：作为 system 消息注入，替代被覆盖的早期前缀 ──

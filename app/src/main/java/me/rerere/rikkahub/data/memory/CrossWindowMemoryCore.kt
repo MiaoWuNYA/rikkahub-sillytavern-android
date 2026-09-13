@@ -85,7 +85,15 @@ class CrossWindowMemoryCore(
         if (assistantId.isBlank() || conversationId.isBlank() || messageId.isBlank() || cleanText.isBlank()) return
 
         val current = state
-        if (current.entries.any { it.assistantId == assistantId && it.messageId == messageId }) return
+        // 编辑过的消息会以同一 messageId 再来：原位更新文本而不是丢弃（否则生活流里
+        // 永远是编辑前的旧文本）
+        val existingIndex = current.entries.indexOfLast { it.assistantId == assistantId && it.messageId == messageId }
+        if (existingIndex >= 0) {
+            val updated = current.entries[existingIndex].copy(role = role, text = cleanText, timestamp = clock())
+            val newEntries = current.entries.toMutableList().also { it[existingIndex] = updated }
+            state = current.copy(entries = newEntries)
+            return
+        }
 
         val newEntry = Entry(
             id = current.nextId,
@@ -180,7 +188,12 @@ class CrossWindowMemoryCore(
             .filter { it.assistantId == assistantId && it.id > (previous?.throughEntryId ?: 0L) }
             .sortedBy { it.id }
         val totalChars = uncompressed.sumOf { it.text.length }
-        if (totalChars < thresholdChars.coerceAtLeast(1) || uncompressed.size <= tailEntries.coerceAtLeast(1)) {
+        // 条目数逼近存储上限时强制压缩（绕过字符阈值）：否则关闭压缩开关的用户会
+        // 静默丢掉最旧的前缀——恰是生活流要保留的东西
+        val nearCap = uncompressed.size >= MAX_STORED_ENTRIES - MAX_STORED_ENTRIES / 10
+        if (!nearCap &&
+            (totalChars < thresholdChars.coerceAtLeast(1) || uncompressed.size <= tailEntries.coerceAtLeast(1))
+        ) {
             return null
         }
         val prefix = uncompressed.dropLast(tailEntries.coerceAtLeast(1))

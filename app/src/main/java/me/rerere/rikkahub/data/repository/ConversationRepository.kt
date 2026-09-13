@@ -52,6 +52,21 @@ class ConversationRepository(
         }
     }
 
+    /**
+     * 轻量版：只取 id/title/update_at，不加载消息节点（Recent Chats 注入只要这两个字段，
+     * 完整反序列化 10 个会话的全部消息是纯浪费）。
+     */
+    suspend fun getRecentConversationTitles(
+        assistantId: Uuid,
+        limit: Int = 10,
+        excludeConversationId: Uuid? = null,
+    ): List<LightConversationEntity> {
+        return conversationDAO.getRecentConversationTitles(
+            assistantId = assistantId.toString(),
+            limit = if (excludeConversationId != null) limit + 1 else limit,
+        ).filter { Uuid.parse(it.id) != excludeConversationId }.take(limit)
+    }
+
     fun getConversationsOfAssistant(assistantId: Uuid): Flow<List<Conversation>> {
         return conversationDAO
             .getConversationsOfAssistant(assistantId.toString())
