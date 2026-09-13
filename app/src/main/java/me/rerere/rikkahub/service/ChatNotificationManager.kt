@@ -152,7 +152,7 @@ private fun getLiveUpdateNotificationId(conversationId: Uuid): Int {
         return when {
             // 正在执行工具
             lastTool != null && !lastTool.isExecuted -> {
-                val toolName = lastTool.toolName.substringAfterLast("__")
+                val toolName = me.rerere.rikkahub.ui.components.message.tools.toolDisplayName(lastTool.toolName)
                 Triple(
                     context.getString(R.string.notification_live_update_chip_tool),
                     context.getString(R.string.notification_live_update_tool, toolName),

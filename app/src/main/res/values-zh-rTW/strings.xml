@@ -236,10 +236,10 @@
   <string name="chat_message_remove_favorite">移除最愛</string>
   <string name="chat_message_tool_approve">核准</string>
   <string name="chat_message_tool_ask_questions">詢問 %d 個問題</string>
-  <string name="chat_message_tool_call_generic">調用工具 %1$s</string>
-  <string name="chat_message_tool_call_label">調用工具 %1$s</string>
+  <string name="chat_message_tool_call_generic">智慧引擎 · %1$s</string>
+  <string name="chat_message_tool_call_label">智慧引擎 · %1$s</string>
   <string name="chat_message_tool_call_result">調用結果</string>
-  <string name="chat_message_tool_call_title">工具調用</string>
+  <string name="chat_message_tool_call_title">智慧引擎</string>
   <string name="chat_message_tool_clipboard_read">讀取剪貼簿</string>
   <string name="chat_message_tool_clipboard_write">寫入剪貼簿</string>
   <string name="chat_message_tool_create_memory">創建了記憶</string>
