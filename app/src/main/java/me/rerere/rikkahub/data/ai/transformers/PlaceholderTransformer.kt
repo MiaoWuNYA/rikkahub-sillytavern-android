@@ -20,6 +20,7 @@ import me.rerere.rikkahub.data.model.GenerationType
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -46,6 +47,25 @@ data class PlaceholderCtx(
     val messages: List<UIMessage> = emptyList(),
     val conversationId: Uuid? = null,
     val generationType: GenerationType? = null,
+    /** 本轮快照（按用户轮冻结）：agentic 工具循环每步重跑 transformer 时，
+     *  时间族/位置族宏若每步重新取值会改写前缀、打断供应商缓存。为 null 表示不冻结。 */
+    val turnFrozen: TurnMacroSnapshot? = null,
+    /** 变量宏（setvar/incvar 等）是否允许执行副作用：本轮首步为 true，
+     *  复用冻结快照的后续步骤为 false（避免每步重复 inc/add 导致 {{getvar}} 逐步漂移） */
+    val allowVarMutations: Boolean = true,
+)
+
+/**
+ * 按用户轮冻结的宏取值快照（首步生成，后续步骤复用）：
+ * - frozenTime：时间族宏（{{datetimeformat}}/{{time}}）共用的冻结时间点
+ * - frozenLastIndex：{{allchatrange}} 冻结的 lastIndex（每步 +1 会改写前缀）
+ * - frozenLastCharText：{{lastMessage}}/{{lastCharMessage}} 冻结值
+ *   （第 2 步起 messages 末尾是本轮新生成的 assistant 消息，实时解析会变）
+ */
+class TurnMacroSnapshot(
+    val frozenTime: LocalDateTime,
+    val frozenLastIndex: Int,
+    val frozenLastCharText: String,
 )
 
 interface PlaceholderProvider {
@@ -359,6 +379,18 @@ private fun stripInjectedMarker(text: String): String =
 object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
     private val defaultProvider = DefaultPlaceholderProvider
 
+    /**
+     * 按用户轮冻结的宏快照缓存：key = assistantId:conversationId，value = (lastUserMsgId, 快照)。
+     * agentic 工具循环每步重跑本 transformer，时间/位置敏感宏（{{datetimeformat}}、
+     * {{allchatrange}}、{{lastMessage}}、{{lastCharMessage}}）若每步重新取值，
+     * 会改写前缀稳定区、打断供应商前缀缓存。首步冻结、整轮复用。
+     */
+    private val frozenTurnMacros =
+        java.util.concurrent.ConcurrentHashMap<String, Pair<String, TurnMacroSnapshot>>()
+
+    /** 冻结缓存上限：超出时淘汰最早写入的会话（防长期驻留内存） */
+    private const val MAX_FROZEN_TURNS = 64
+
     override suspend fun transform(
         ctx: TransformerContext,
         messages: List<UIMessage>,
@@ -366,6 +398,35 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
         val settingsStore = get<SettingsStore>()
         val vars = SettingsMacroVars(settingsStore, ctx.settings)
         val engine = MacroEngine(defaultProvider.placeholders, vars)
+
+        // 按用户轮冻结：首步建快照，后续步骤复用（见 frozenTurnMacros 注释）
+        val turnKey = "${ctx.assistant.id}:${ctx.conversationId ?: "no-conversation"}"
+        val lastUserMsgId = messages.lastOrNull { it.role == MessageRole.USER }?.id?.toString()
+        val cached = frozenTurnMacros[turnKey]?.takeIf { it.first == lastUserMsgId }?.second
+        val reusedFrozen = cached != null
+        val frozen = cached ?: run {
+                val now = java.time.LocalDateTime.now()
+                val aligned = if (ctx.assistant.cacheFriendlyTimeMacros) {
+                    now.minusMinutes((now.minute % 5).toLong()).withSecond(0).withNano(0)
+                } else now
+                val snapshot = TurnMacroSnapshot(
+                    frozenTime = aligned,
+                    frozenLastIndex = messages.lastIndex,
+                    frozenLastCharText = messages.lastOrNull { msg ->
+                        msg.role == MessageRole.ASSISTANT &&
+                            !msg.isInjectedBlock() &&
+                            msg.annotations.none { a -> a is UIMessageAnnotation.ExampleMessage }
+                    }?.let { msg ->
+                        msg.parts.filterIsInstance<UIMessagePart.Text>().joinToString("") { it.text }
+                    } ?: "",
+                )
+                if (lastUserMsgId != null) {
+                    if (frozenTurnMacros.size >= MAX_FROZEN_TURNS) frozenTurnMacros.clear()
+                    frozenTurnMacros[turnKey] = lastUserMsgId to snapshot
+                }
+                snapshot
+            }
+
         val result = messages.map {
             it.copy(
                 parts = it.parts.map { part ->
@@ -378,6 +439,8 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
                                     engine = engine,
                                     settingsStore = settingsStore,
                                     messages = messages,
+                                    frozen = frozen,
+                                    reusedFrozen = reusedFrozen,
                                 )
                             )
                         )
@@ -427,6 +490,8 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
         engine: MacroEngine,
         settingsStore: SettingsStore,
         messages: List<UIMessage>,
+        frozen: TurnMacroSnapshot,
+        reusedFrozen: Boolean,
     ): String {
         var result = text
 
@@ -439,6 +504,9 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
             messages = messages,
             conversationId = ctx.conversationId,
             generationType = ctx.generationType,
+            turnFrozen = frozen,
+            // 复用冻结快照的后续步骤不允许再执行变量副作用（首步已执行并 flush）
+            allowVarMutations = reusedFrozen,
         )
         result = engine.substitute(result, placeholderCtx)
 
@@ -466,11 +534,21 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
         override fun get(chatKey: String?, name: String): String? {
             if (chatKey == null) {
                 if (name in globalDeleted) return null
-                return globalDirty[name] ?: snapshot.macroGlobalVariables[name]
+                globalDirty[name]?.let { return it }
+            } else {
+                if (chatKey in chatDeleted && name in chatDeleted.getValue(chatKey)) return null
+                chatDirty[chatKey]?.get(name)?.let { return it }
             }
-            if (chatKey in chatDeleted && name in chatDeleted.getValue(chatKey)) return null
-            return chatDirty[chatKey]?.get(name)
-                ?: snapshot.macroChatVariables[chatKey]?.get(name)
+            // ctx.settings 是生成开始时的快照，看不到本轮前序步骤 flush 进 DataStore 的值；
+            // agentic 循环后续步骤必须读到首步已写入的变量（否则 {{getvar}} 渲染与前一步不一致，
+            // 前缀分叉打断缓存），故回退到实时 flow
+            val live = settingsStore.settingsFlow.value
+            return if (chatKey == null) {
+                live.macroGlobalVariables[name] ?: snapshot.macroGlobalVariables[name]
+            } else {
+                live.macroChatVariables[chatKey]?.get(name)
+                    ?: snapshot.macroChatVariables[chatKey]?.get(name)
+            }
         }
 
         override fun set(chatKey: String?, name: String, value: String) {

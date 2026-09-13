@@ -34,14 +34,16 @@
 -keep class me.rerere.rikkahub.data.ai.python.PythonBridge { *; }
 -keep class me.rerere.rikkahub.data.ai.python.JsBridge { *; }
 
-# 本地 Compose 自定义组件依赖
--keep class androidx.compose.animation.** { *; }
--keep class androidx.compose.runtime.** { *; }
+# 本地 Compose 自定义组件依赖：Compose 自带 consumer rules 已覆盖反射必需项，
+# 全量 keep 会阻止 R8 对最大两个依赖做删除/优化/合并（显著拖慢启动与帧率），
+# 仅保留历史上有真实崩溃的 Jackson/JWT 全量 keep。
+# -keep class androidx.compose.animation.** { *; }
+# -keep class androidx.compose.runtime.** { *; }
 
 # The embedded Ktor server signs and verifies JWTs through Auth0/Jackson at runtime.
 # Keep their implementation intact because R8 optimization can break JWT payload parsing.
 -keep class com.fasterxml.jackson.** { *; }
 -keep class com.auth0.jwt.** { *; }
 
-# Keep JlatexMath
--keep class org.scilab.forge.jlatexmath.** { *; }
+# JlatexMath：反射只触达上面两个精准 keep（已含 allowoptimization），
+# 旧的全量 keep 会抵消精准版的优化空间，故移除。

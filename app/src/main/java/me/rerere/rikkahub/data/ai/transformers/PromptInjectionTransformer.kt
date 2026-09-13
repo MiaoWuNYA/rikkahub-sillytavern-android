@@ -47,6 +47,8 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
     // key = assistantId:conversationId，value = (lastUserMsgId, 冻结数据)
     private val frozenTurnInjections =
         java.util.concurrent.ConcurrentHashMap<String, Pair<String, FrozenTurnInjection>>()
+    // 冻结缓存上限（超出清空，防长期驻留内存）：每条目只有几 KB，64 个会话绰绰有余
+    private const val MAX_FROZEN_TURNS = 64
 
     private class FrozenTurnInjection(
         val injections: List<PromptInjection>,
@@ -68,8 +70,10 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
 
         // sticky/cooldown 按用户轮推进（对齐酒馆 chat_metadata 语义）。agentic 工具循环每步
         // 都会重跑本 transformer，不按轮去重的话 sticky=3 一轮就走完 3 步
-        val alreadyTicked = lastUserMsgId != null &&
+        val alreadyTicked = lastUserMsgId != null && run {
+            if (lastTickedUserTurn.size >= MAX_FROZEN_TURNS) lastTickedUserTurn.clear()
             lastTickedUserTurn.put(key, lastUserMsgId) == lastUserMsgId
+        }
 
         // 激活集合已冻结时跳过向量检索（查询文本每步变化，重算只会白烧嵌入 API）
         val vectorActivatedIds = if (frozen != null) {
@@ -114,6 +118,7 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
             onResolved = { resolved ->
                 // 本轮首次计算：冻结激活集合与尾部锚点，供本轮后续 agentic 步骤复用
                 if (frozen == null && lastUserMsgId != null) {
+                    if (frozenTurnInjections.size >= MAX_FROZEN_TURNS) frozenTurnInjections.clear()
                     frozenTurnInjections[key] = lastUserMsgId to
                         FrozenTurnInjection(resolved, anchors.toMap())
                 }

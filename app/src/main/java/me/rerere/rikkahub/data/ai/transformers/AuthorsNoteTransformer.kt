@@ -6,6 +6,15 @@ import me.rerere.rikkahub.data.model.AuthorNotePosition
 import me.rerere.rikkahub.data.model.PersonaInjectionPosition
 
 object AuthorsNoteTransformer : InputMessageTransformer {
+    /**
+     * 按用户轮冻结的 In-chat @ Depth 注入锚点：
+     * key = assistantId:conversationId，value = (lastUserMsgId, "before:<消息id>")。
+     * agentic 工具循环每步在列表末尾追加消息，若每步按 messages.size 重算深度位置，
+     * 备注每步后移一格、脱离步骤 1 已缓存的前缀。首步记下锚点消息 id，后续步骤按 id 复位。
+     */
+    private val frozenInChatAnchors =
+        java.util.concurrent.ConcurrentHashMap<String, Pair<String, String>>()
+
     override suspend fun transform(
         ctx: TransformerContext,
         messages: List<UIMessage>,
@@ -65,12 +74,42 @@ object AuthorsNoteTransformer : InputMessageTransformer {
             AuthorNotePosition.IN_CHAT -> {
                 val chatSize = ctx.chatMessageCount ?: messages.size
                 val depth = settings.authorNoteDepth.coerceAtLeast(0)
-                val insertIdx = findSafeInsertIndex(
-                    messages,
-                    (messages.size - minOf(depth, chatSize))
-                        .coerceIn(messages.size - chatSize, messages.size),
-                )
-                messages.take(insertIdx) + noteMsg + messages.drop(insertIdx)
+                // 按用户轮冻结锚点：首步按深度计算插入点并记下锚点消息 id，
+                // 后续 agentic 步骤按 id 复位插入点（锚点消息被裁剪才退回动态计算）
+                val turnKey = "${ctx.assistant.id}:${ctx.conversationId ?: "no-conversation"}"
+                val lastUserMsgId = messages.lastOrNull { it.role == MessageRole.USER }?.id?.toString()
+                val cached = frozenInChatAnchors[turnKey]?.takeIf { it.first == lastUserMsgId }?.second
+                val insertIdx = when {
+                    cached != null -> {
+                        val mode = cached.substringBefore(':')
+                        val anchorId = cached.substringAfter(':')
+                        val anchorIdx = messages.indexOfFirst { it.id.toString() == anchorId }
+                        when {
+                            anchorIdx < 0 ->
+                                (messages.size - minOf(depth, chatSize))
+                                    .coerceIn(messages.size - chatSize, messages.size)
+                            mode == "after" -> anchorIdx + 1
+                            else -> anchorIdx
+                        }
+                    }
+                    else -> {
+                        val computed = (messages.size - minOf(depth, chatSize))
+                            .coerceIn(messages.size - chatSize, messages.size)
+                        if (lastUserMsgId != null && messages.isNotEmpty()) {
+                            // depth 0（对话最末尾）记 after 锚点，其余记 before 锚点
+                            val mode = if (computed >= messages.size) "after" else "before"
+                            val anchorIdx = if (mode == "after") messages.size - 1 else computed
+                            val anchor = messages.getOrNull(anchorIdx)?.id?.toString()
+                            if (anchor != null) {
+                                if (frozenInChatAnchors.size >= 64) frozenInChatAnchors.clear()
+                                frozenInChatAnchors[turnKey] = lastUserMsgId to "$mode:$anchor"
+                            }
+                        }
+                        computed
+                    }
+                }
+                val safeIdx = findSafeInsertIndex(messages, insertIdx)
+                messages.take(safeIdx) + noteMsg + messages.drop(safeIdx)
             }
         }
     }

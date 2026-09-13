@@ -53,6 +53,9 @@ const val VOICE_CALL_NOTIFICATION_CHANNEL_ID = "voice_call"
 
 class RikkaHubApp : Application() {
     private fun trace(msg: String) {
+        // 启动诊断打点：每次都是 /sdcard 主线程文件写入（FUSE IPC），release 下是纯启动开销，
+        // 仅 debug 构建保留
+        if (!BuildConfig.DEBUG) return
         try {
             java.io.File("/sdcard/rikkahub_trace.txt").appendText("${System.currentTimeMillis()} $msg\n")
         } catch (_: Exception) {}
@@ -75,7 +78,8 @@ class RikkaHubApp : Application() {
         }
         trace("koin config")
         startKoin {
-            androidLogger()
+            // Koin 日志在 release 下只产生日志字符串拼接开销
+            if (BuildConfig.DEBUG) androidLogger()
             androidContext(this@RikkaHubApp)
             workManagerFactory()
             modules(appModule, viewModelModule, dataSourceModule, repositoryModule, pluginModule)

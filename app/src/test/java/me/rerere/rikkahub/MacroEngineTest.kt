@@ -83,20 +83,16 @@ class MacroEngineTest {
         conversationId: Uuid? = null,
         generationType: GenerationType? = null,
         settings: Settings = Settings(),
-    ): PlaceholderCtx {
-        val ctor = PlaceholderCtx::class.java.declaredConstructors.first { it.parameterCount == 8 }
-        ctor.isAccessible = true
-        return ctor.newInstance(
-            null as Context?,
-            null as SettingsStore?,
-            settings,
-            Model(),
-            assistant,
-            messages,
-            conversationId,
-            generationType,
-        ) as PlaceholderCtx
-    }
+    ): PlaceholderCtx = PlaceholderCtx(
+        context = null,
+        settingsStore = null,
+        settings = settings,
+        model = Model(),
+        assistant = assistant,
+        messages = messages,
+        conversationId = conversationId,
+        generationType = generationType,
+    )
 
     // ---------- 未知宏保留（Pebble 保护） ----------
 

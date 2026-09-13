@@ -86,6 +86,13 @@ class MacroEngine(
     }
 
     private fun resolveLegacyKey(key: String, ctx: PlaceholderCtx): String? {
+        // 按用户轮冻结（见 TurnMacroSnapshot）：{{lastMessage}}/{{lastCharMessage}} 实时解析
+        // 会在 agentic 循环第 2 步起解析到本轮新生成的 assistant 消息，改写前缀打断缓存
+        if (ctx.turnFrozen != null &&
+            (key.equals("lastMessage", ignoreCase = true) || key.equals("lastCharMessage", ignoreCase = true))
+        ) {
+            return ctx.turnFrozen.frozenLastCharText
+        }
         val info = legacy.entries.firstOrNull { it.key.equals(key, ignoreCase = true) } ?: return null
         return try {
             info.value.resolver(ctx)
@@ -529,7 +536,7 @@ class MacroEngine(
         if (args.isNotEmpty()) {
             when (name) {
                 "random" -> return randomPick(parseListArg(args), state)
-                "time" -> return timeMacro(args[0])
+                "time" -> return timeMacro(args[0], state.ctx)
                 "charfirstmessage" -> return greetingMacro(args[0], state.ctx)
             }
         }
@@ -549,12 +556,17 @@ class MacroEngine(
             "random" -> randomPick(parseListArg(args), state)
             "pick" -> stablePick(parseListArg(args), state)
             "roll" -> rollDice(args.firstOrNull() ?: "", state) ?: ""
-            "datetimeformat" -> formatDateTime(args.firstOrNull() ?: "")
-            "time" -> timeMacro(args.firstOrNull())
+            "datetimeformat" -> formatDateTime(args.firstOrNull() ?: "", state.ctx)
+            "time" -> timeMacro(args.firstOrNull(), state.ctx)
             "timediff" -> timeDiff(args.getOrNull(0), args.getOrNull(1))
             "greeting", "charfirstmessage" -> greetingMacro(args.firstOrNull(), state.ctx)
             "maxresponse", "maxresponsetokens" -> state.ctx.assistant.maxTokens?.toString() ?: ""
-            "allchatrange" -> if (state.ctx.messages.isEmpty()) "" else "0-${state.ctx.messages.lastIndex}"
+            // {{allchatrange}} 若实时取 lastIndex，agentic 循环每步 +1 会改写前缀；冻结为本轮首步值
+            "allchatrange" -> when {
+                state.ctx.messages.isEmpty() -> ""
+                state.ctx.turnFrozen != null -> "0-${state.ctx.turnFrozen.frozenLastIndex}"
+                else -> "0-${state.ctx.messages.lastIndex}"
+            }
             "groupnotmuted" -> groupNames(state.ctx, includeMuted = false)
             "notchar" -> groupNames(state.ctx, includeMuted = true, excludeSelf = true)
             "ismobile" -> "true"
@@ -780,6 +792,18 @@ class MacroEngine(
         val varName = args.getOrNull(0) ?: ""
         val value = args.getOrNull(1) ?: ""
         val chatKey = if (global) null else state.ctx.conversationId?.toString()
+        // 按用户轮冻结：复用冻结快照的后续 agentic 步骤不再执行变量副作用，
+        // 否则 incvar/addvar 每步重复累加，{{getvar}} 渲染值逐步变化会改写前缀打断缓存
+        if (state.ctx.turnFrozen != null && !state.ctx.allowVarMutations) {
+            return when (name) {
+                "getvar", "getglobalvar" -> vars.get(chatKey, varName) ?: ""
+                "hasvar", "varexists", "hasglobalvar", "globalvarexists" ->
+                    vars.has(chatKey, varName).toString()
+                // inc/dec 首步已执行过，直接回读当前值（与首步渲染结果一致）
+                "incvar", "incglobalvar", "decvar", "decglobalvar" -> vars.get(chatKey, varName) ?: ""
+                else -> ""
+            }
+        }
         return when (name) {
             "setvar", "setglobalvar" -> {
                 vars.set(chatKey, varName, value)
@@ -903,7 +927,7 @@ class MacroEngine(
     }
 
     /** moment.js 格式 → java.time 格式（常见 token 映射）。 */
-    private fun formatDateTime(format: String): String {
+    private fun formatDateTime(format: String, ctx: PlaceholderCtx): String {
         if (format.isEmpty()) return ""
         val mapped = format
             .replace("YYYY", "yyyy")
@@ -920,21 +944,28 @@ class MacroEngine(
             .replace("LLL", "yyyy年M月d日")
             .replace("LL", "yyyy年M月d日")
         return try {
-            DateTimeFormatter.ofPattern(mapped, Locale.getDefault()).format(LocalDateTime.now())
+            // 精确到秒的实时时间在 agentic 循环每步都不同（改写前缀打断缓存）；
+            // 冻结为本轮首步的时间点（cacheFriendlyTimeMacros 开启时已对齐 5 分钟）
+            DateTimeFormatter.ofPattern(mapped, Locale.getDefault())
+                .format(ctx.turnFrozen?.frozenTime ?: LocalDateTime.now())
         } catch (_: Exception) {
             ""
         }
     }
 
-    private fun timeMacro(offsetSpec: String?): String {
+    private fun timeMacro(offsetSpec: String?, ctx: PlaceholderCtx): String {
         if (offsetSpec.isNullOrBlank()) {
-            return java.time.LocalTime.now().truncatedTo(ChronoUnit.MINUTES)
-                .format(DateTimeFormatter.ofPattern("HH:mm"))
+            // 无参 {{time}} 走冻结时间点，避免每步重取改写前缀
+            val base = ctx.turnFrozen?.frozenTime?.toLocalTime()
+                ?: java.time.LocalTime.now().truncatedTo(ChronoUnit.MINUTES)
+            return base.format(DateTimeFormatter.ofPattern("HH:mm"))
         }
         val match = Regex("^UTC([+-]\\d+)$", RegexOption.IGNORE_CASE).find(offsetSpec.trim())
-        if (match == null) return timeMacro(null)
-        val offset = match.groupValues[1].toIntOrNull() ?: return timeMacro(null)
-        val now = java.time.Instant.now()
+        if (match == null) return timeMacro(null, ctx)
+        val offset = match.groupValues[1].toIntOrNull() ?: return timeMacro(null, ctx)
+        val now = ctx.turnFrozen?.frozenTime
+            ?.atZone(java.time.ZoneId.systemDefault())?.toInstant()
+            ?: java.time.Instant.now()
         val zoned = now.atOffset(java.time.ZoneOffset.ofHours(offset))
         return zoned.format(DateTimeFormatter.ofPattern("HH:mm"))
     }

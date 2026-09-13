@@ -735,17 +735,46 @@ class GenerationLoop(
 
                     me.rerere.rikkahub.data.model.PersonaInjectionPosition.AT_DEPTH -> {
                         val depth = persona.depth.coerceAtLeast(0)
-                        val idx = findSafeInsertIndex(
-                            base,
-                            (base.size - minOf(depth, limitedChat.size))
-                                .coerceIn(base.size - limitedChat.size, base.size),
-                        )
+                        // 按用户轮冻结锚点：base 每步追加消息，若每步重算深度位置，
+                        // 人设注入点每步后移一格、脱离步骤 1 已缓存的前缀。
+                        // 首步记下锚点消息 id，后续步骤按 id 复位（锚点被裁剪才重算）
+                        val turnKey = "${assistant.id}:$conversationId"
+                        val lastUserMsgId = base.lastOrNull { it.role == MessageRole.USER }?.id?.toString()
+                        val cachedAnchor = personaDepthAnchors[turnKey]?.takeIf { it.first == lastUserMsgId }?.second
+                        val idx = when {
+                            cachedAnchor != null -> {
+                                val mode = cachedAnchor.substringBefore(':')
+                                val anchorId = cachedAnchor.substringAfter(':')
+                                val anchorIdx = base.indexOfFirst { it.id.toString() == anchorId }
+                                when {
+                                    anchorIdx < 0 ->
+                                        (base.size - minOf(depth, limitedChat.size))
+                                            .coerceIn(base.size - limitedChat.size, base.size)
+                                    mode == "after" -> anchorIdx + 1
+                                    else -> anchorIdx
+                                }
+                            }
+                            else -> {
+                                val computed = (base.size - minOf(depth, limitedChat.size))
+                                    .coerceIn(base.size - limitedChat.size, base.size)
+                                if (lastUserMsgId != null && base.isNotEmpty()) {
+                                    val mode = if (computed >= base.size) "after" else "before"
+                                    val anchorIdx = if (mode == "after") base.size - 1 else computed
+                                    base.getOrNull(anchorIdx)?.id?.toString()?.let { anchor ->
+                                        if (personaDepthAnchors.size >= 64) personaDepthAnchors.clear()
+                                        personaDepthAnchors[turnKey] = lastUserMsgId to "$mode:$anchor"
+                                    }
+                                }
+                                computed
+                            }
+                        }
                         val personaMsg = when (persona.role) {
                             MessageRole.ASSISTANT -> UIMessage.assistant(personaText)
                             MessageRole.USER -> UIMessage.user(personaText)
                             else -> UIMessage.system(personaText)
                         }
-                        base.take(idx) + personaMsg + base.drop(idx)
+                        val safeIdx = findSafeInsertIndex(base, idx)
+                        base.take(safeIdx) + personaMsg + base.drop(safeIdx)
                     }
 
                     else -> base
@@ -1146,8 +1175,17 @@ private object UserContextAnchorCache {
     private val cache = java.util.concurrent.ConcurrentHashMap<String, Anchor>()
 
     fun getOrCreate(conversationId: Uuid): Anchor =
-        cache.getOrPut(conversationId.toString()) { Anchor() }
+        cache.apply { if (size >= 256) clear() }.getOrPut(conversationId.toString()) { Anchor() }
 }
+
+/**
+ * Persona AT_DEPTH 按用户轮冻结的注入锚点：
+ * key = assistantId:conversationId，value = (lastUserMsgId, "before/after:<消息id>")。
+ * agentic 工具循环每步 base 都会追加消息，按列表长度重算深度位置会让注入点
+ * 每步后移一格、脱离步骤 1 已缓存的前缀；上限 64 会话，超出清空（防长期驻留）。
+ */
+private val personaDepthAnchors =
+    java.util.concurrent.ConcurrentHashMap<String, Pair<String, String>>()
 
 private fun buildUserContext(
     memories: List<AssistantMemory>,

@@ -39,6 +39,7 @@ class CrossWindowMemoryTransformer(
                     conversationId = conversationId,
                     maxEntries = ctx.assistant.crossWindowMemoryTailEntries.coerceAtLeast(1),
                 )
+                if (frozenDelta.size >= 64) frozenDelta.clear()
                 frozenDelta[turnKey] = lastUserMsgId to delta.prompt
                 delta.prompt
             }

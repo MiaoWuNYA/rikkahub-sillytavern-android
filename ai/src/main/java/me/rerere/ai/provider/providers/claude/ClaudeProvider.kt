@@ -301,7 +301,7 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
             .url("${providerSetting.baseUrl}/messages")
             .headers(params.customHeaders.toHeaders())
             .post(json.encodeToString(requestBody).toRequestBody("application/json".toMediaType()))
-            .addHeader("x-api-key", keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString()))
+            .addHeader("x-api-key", keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString(), params.sessionId))
             .addHeader("anthropic-version", ANTHROPIC_VERSION)
             .configureReferHeaders(providerSetting.baseUrl)
             .configureSessionHeaders(providerSetting.baseUrl, params.sessionId)
@@ -351,7 +351,7 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
             .url("${providerSetting.baseUrl}/messages")
             .headers(params.customHeaders.toHeaders())
             .post(json.encodeToString(requestBody).toRequestBody("application/json".toMediaType()))
-            .addHeader("x-api-key", keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString()))
+            .addHeader("x-api-key", keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString(), params.sessionId))
             .addHeader("anthropic-version", ANTHROPIC_VERSION)
             .addHeader("Content-Type", "application/json")
             .configureReferHeaders(providerSetting.baseUrl)
@@ -798,10 +798,22 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
             }
         }
 
-        is UIMessagePart.Reasoning -> buildJsonObject {
-            put("type", "thinking")
-            put("thinking", reasoning)
-            metadataAs<ClaudeReasoningMetadata>()?.signature?.let { put("signature", it) }
+        is UIMessagePart.Reasoning -> {
+            // redacted_thinking 必须原样回放（data 是加密内容），丢弃会导致
+            // Anthropic 校验失败 400 或上下文断裂，agentic 工具循环触发整轮重试
+            val redacted = metadataAs<ClaudeReasoningMetadata>()?.redacted
+            if (redacted != null) {
+                buildJsonObject {
+                    put("type", "redacted_thinking")
+                    put("data", redacted)
+                }
+            } else {
+                buildJsonObject {
+                    put("type", "thinking")
+                    put("thinking", reasoning)
+                    metadataAs<ClaudeReasoningMetadata>()?.signature?.let { put("signature", it) }
+                }
+            }
         }
 
         else -> null
@@ -855,8 +867,18 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
                 }
 
                 "redacted_thinking" -> {
-                    val data = block["data"]?.jsonPrimitiveOrNull?.contentOrNull
-                    println(data)
+                    // 保留为 Reasoning 部件（redacted 元数据），回传时原样还原，
+                    // 之前只 println 后丢弃，thinking+tool_use 下会 400/上下文断裂
+                    block["data"]?.jsonPrimitiveOrNull?.contentOrNull?.let { data ->
+                        parts.add(
+                            UIMessagePart.Reasoning(
+                                reasoning = "",
+                                createdAt = Clock.System.now(),
+                                finishedAt = Clock.System.now(),
+                                metadata = ClaudeReasoningMetadata(redacted = data).toMetadata(),
+                            )
+                        )
+                    }
                 }
 
                 "tool_use" -> {

@@ -78,6 +78,7 @@ object SkillAutoTriggerTransformer : InputMessageTransformer, KoinComponent {
             }
 
             if (lastUserMsgId != null) {
+                if (frozenMatches.size >= 64) frozenMatches.clear()
                 val anchorId = messages.lastOrNull()?.id?.toString()
                 frozenMatches[turnKey] = lastUserMsgId to FrozenSkillMatch(
                     before, after, inChatMatched, anchorId,

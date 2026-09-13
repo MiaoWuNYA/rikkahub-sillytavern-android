@@ -94,7 +94,7 @@ class ResponseAPI(
             .post(json.encodeToString(requestBody).toRequestBody("application/json".toMediaType()))
             .addHeader(
                 "Authorization",
-                "Bearer ${keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString())}"
+                "Bearer ${keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString(), params.sessionId)}"
             )
             .addHeader("Content-Type", "application/json")
             .configureReferHeaders(providerSetting.baseUrl)
@@ -133,7 +133,7 @@ class ResponseAPI(
             .post(json.encodeToString(requestBody).toRequestBody("application/json".toMediaType()))
             .addHeader(
                 "Authorization",
-                "Bearer ${keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString())}"
+                "Bearer ${keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString(), params.sessionId)}"
             )
             .configureReferHeaders(providerSetting.baseUrl)
             .configureSessionHeaders(providerSetting.baseUrl, params.sessionId)

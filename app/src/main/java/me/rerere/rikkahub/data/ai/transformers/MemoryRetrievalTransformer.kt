@@ -34,6 +34,9 @@ private var queryVectorKey: String? = null
 private var queryVectorValue: List<Float>? = null
 private var queryVectorAt: Long = 0L
 private const val RESULT_LIMIT = 6
+
+/** 按用户轮冻结的检索结果缓存上限（超出清空，防长期驻留） */
+private const val FROZEN_TURN_CAP = 64
 private const val RAG_MEMORY_PROMPT_CHAR_BUDGET = 3_600
 private const val EPISODIC_RECENCY_BOOST = 0.08f
 private const val EPISODIC_RECENCY_DECAY_DAYS = 30.0
@@ -56,6 +59,17 @@ class MemoryRetrievalTransformer(
         if (!ctx.assistant.enableMemory || !ctx.assistant.enableMemoryRag) {
             return@withContext messages
         }
+
+        // 按用户轮冻结：agentic 工具循环每步重跑本 transformer，检索/排序结果整轮复用，
+        // 避免排序微扰导致注入块内容步间变化（改写前缀打断缓存）
+        val turnKey = "${ctx.assistant.id}:${ctx.conversationId ?: "no-conversation"}"
+        val lastUserMsgId = messages.lastOrNull { it.role == me.rerere.ai.core.MessageRole.USER }
+            ?.id?.toString()
+        val frozen = frozenTurnPrompt[turnKey]?.takeIf { it.first == lastUserMsgId }
+        if (frozen != null) {
+            return@withContext insertAfterLastUserMessage(messages, frozen.second)
+        }
+
         val query = messages.asReversed()
             .firstOrNull { it.role == me.rerere.ai.core.MessageRole.USER }
             ?.toText()
@@ -91,7 +105,9 @@ class MemoryRetrievalTransformer(
                 includeEpisodic = true,
                 maxChars = RAG_MEMORY_PROMPT_CHAR_BUDGET,
             ) else ""
-            if (startupPrompt.isNotBlank()) return@withContext messages + UIMessage.system(startupPrompt)
+            if (startupPrompt.isNotBlank()) {
+                return@withContext storeFrozenAndInsert(turnKey, lastUserMsgId, messages, startupPrompt)
+            }
         }
 
         val semanticMatches = semanticSearch(ctx, records, query)
@@ -112,10 +128,36 @@ class MemoryRetrievalTransformer(
             maxChars = RAG_MEMORY_PROMPT_CHAR_BUDGET,
         )
         if (contextPrompt.isBlank()) return@withContext messages
-        // 提示词缓存：检索结果每轮随查询变化，必须注入上下文尾部（本 transformer 在
-        // 注入链最后执行，追加即落在最后一条消息之后），只失效尾部前缀。
-        // 旧实现改写第 0 条 system 消息（前缀最顶部），缓存率直接归零。
-        messages + UIMessage.system(contextPrompt)
+        // 提示词缓存：检索结果每轮随查询变化，必须注入上下文尾部（紧贴最后一条 USER 消息
+        // 之后），只失效尾部前缀。旧实现改写第 0 条 system 消息（前缀最顶部），缓存率直接归零。
+        storeFrozenAndInsert(turnKey, lastUserMsgId, messages, contextPrompt)
+    }
+
+    /** 按用户轮冻结检索结果：首步存储，后续 agentic 步骤直接复用 */
+    private fun storeFrozenAndInsert(
+        turnKey: String,
+        lastUserMsgId: String?,
+        messages: List<UIMessage>,
+        prompt: String,
+    ): List<UIMessage> {
+        if (lastUserMsgId != null) {
+            if (frozenTurnPrompt.size >= FROZEN_TURN_CAP) frozenTurnPrompt.clear()
+            frozenTurnPrompt[turnKey] = lastUserMsgId to prompt
+        }
+        return insertAfterLastUserMessage(messages, prompt)
+    }
+
+    /**
+     * 注入位置固定在最后一条 USER 消息之后：agentic 循环每步在列表末尾追加 assistant
+     * 消息，若追加到列表末尾，注入块位置每步后移一格，会脱离步骤 1 已缓存的前缀。
+     */
+    private fun insertAfterLastUserMessage(messages: List<UIMessage>, prompt: String): List<UIMessage> {
+        val idx = messages.indexOfLast { it.role == me.rerere.ai.core.MessageRole.USER } + 1
+        return if (idx <= 0) {
+            messages + UIMessage.system(prompt)
+        } else {
+            messages.take(idx) + UIMessage.system(prompt) + messages.drop(idx)
+        }
     }
 
     private suspend fun semanticSearch(
@@ -168,6 +210,9 @@ class MemoryRetrievalTransformer(
     }
 
     private val reindexTriggered = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
+    /** 按用户轮冻结的检索结果：key = assistantId:conversationId，value = (lastUserMsgId, 注入文本) */
+    private val frozenTurnPrompt =
+        java.util.concurrent.ConcurrentHashMap<String, Pair<String, String>>()
     private val reindexScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
 
     private suspend fun getOrEmbedQuery(

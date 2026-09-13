@@ -99,7 +99,8 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
 
     private suspend fun transformRequest(
         providerSetting: ProviderSetting.Google,
-        request: Request
+        request: Request,
+        sessionId: String? = null,
     ): Request {
         return if (providerSetting.vertexAI && providerSetting.useServiceAccount) {
             val accessToken = serviceAccountTokenProvider.fetchAccessToken(
@@ -110,7 +111,7 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                 .addHeader("Authorization", "Bearer $accessToken")
                 .build()
         } else {
-            val key = keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString())
+            val key = keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString(), sessionId)
             if (providerSetting.vertexAI) {
                 request.newBuilder()
                     .url(request.url.newBuilder().addQueryParameter("key", key).build())
@@ -188,7 +189,8 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                     json.encodeToString(requestBody).toRequestBody("application/json".toMediaType())
                 )
                 .configureReferHeaders(providerSetting.baseUrl)
-                .build()
+                .build(),
+            sessionId = params.sessionId,
         )
 
         val response = client.newCall(request).await()
@@ -236,7 +238,8 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                     json.encodeToString(requestBody).toRequestBody("application/json".toMediaType())
                 )
                 .configureReferHeaders(providerSetting.baseUrl)
-                .build()
+                .build(),
+            sessionId = params.sessionId,
         )
 
         Log.i(TAG, "streamText: ${json.encodeToString(requestBody)}")
