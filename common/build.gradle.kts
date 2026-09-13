@@ -30,7 +30,7 @@ dependencies {
 
     // floating
     // https://github.com/Petterpx/FloatingX
-    api(libs.floatingx)
+    api(libs.floatingx.app)
     api(libs.floatingx.compose)
 
     implementation(libs.androidx.core.ktx)
