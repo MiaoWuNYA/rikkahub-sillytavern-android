@@ -15,6 +15,11 @@ private const val TAG = "CrossWindowMemory"
 class CrossWindowMemoryTransformer(
     private val store: CrossWindowMemoryStore,
 ) : InputMessageTransformer {
+    // agentic 工具循环每步重跑本 transformer，而 consumeForeignDelta 取出即清空：
+    // 首步注入、后续步消失会让请求前缀每步分叉。按 (助手, 对话, 最新用户消息)
+    // 冻结首步取出的 delta，一轮内每步注入同一份
+    private val frozenDelta = java.util.concurrent.ConcurrentHashMap<String, Pair<String, String>>()
+
     override suspend fun transform(
         ctx: TransformerContext,
         messages: List<UIMessage>,
@@ -22,19 +27,36 @@ class CrossWindowMemoryTransformer(
         if (!ctx.assistant.enableCrossWindowMemory) return messages
         val conversationId = ctx.conversationId?.toString() ?: return messages
 
-        val delta = store.consumeForeignDelta(
-            assistantId = ctx.assistant.id.toString(),
-            conversationId = conversationId,
-            maxEntries = ctx.assistant.crossWindowMemoryTailEntries.coerceAtLeast(1),
-        )
-        if (delta.prompt.isBlank()) return messages
-        Log.d(TAG, "inject cross-window delta: entries=${delta.entryCount} chars=${delta.charCount}")
+        val turnKey = "${ctx.assistant.id}:$conversationId"
+        val lastUserMsgId = messages.lastOrNull { it.role == MessageRole.USER }?.id?.toString()
+        val prompt = if (lastUserMsgId != null) {
+            val frozen = frozenDelta[turnKey]?.takeIf { it.first == lastUserMsgId }
+            if (frozen != null) {
+                frozen.second
+            } else {
+                val delta = store.consumeForeignDelta(
+                    assistantId = ctx.assistant.id.toString(),
+                    conversationId = conversationId,
+                    maxEntries = ctx.assistant.crossWindowMemoryTailEntries.coerceAtLeast(1),
+                )
+                frozenDelta[turnKey] = lastUserMsgId to delta.prompt
+                delta.prompt
+            }
+        } else {
+            store.consumeForeignDelta(
+                assistantId = ctx.assistant.id.toString(),
+                conversationId = conversationId,
+                maxEntries = ctx.assistant.crossWindowMemoryTailEntries.coerceAtLeast(1),
+            ).prompt
+        }
+        if (prompt.isBlank()) return messages
+        Log.d(TAG, "inject cross-window delta: chars=${prompt.length}")
 
         val lastUserIndex = messages.indexOfLast { it.role == MessageRole.USER }
-        if (lastUserIndex < 0) return messages + UIMessage.system(delta.prompt)
+        if (lastUserIndex < 0) return messages + UIMessage.system(prompt)
         return buildList {
             addAll(messages)
-            add(lastUserIndex, UIMessage.system(delta.prompt))
+            add(lastUserIndex, UIMessage.system(prompt))
         }
     }
 }

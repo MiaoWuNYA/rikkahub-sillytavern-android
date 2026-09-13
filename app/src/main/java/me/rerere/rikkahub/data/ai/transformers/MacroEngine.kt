@@ -45,8 +45,17 @@ class MacroEngine(
             // 旧单花括号兼容：{cur_date} {char} 等。必须在 parse 之前做，
             // 且单遍扫描、替换值不再重扫——否则把宏文档粘贴进消息时
             // （值里含字面 {{lastUserMessage}} 等自引用宏）会把原文反复展开复制
+            var legacyRandomOccurrence = 0
             val preReplaced = legacyPlaceholderRegex?.replace(escaped) { match ->
-                resolveLegacyKey(match.groupValues[1], ctx) ?: match.value
+                val key = match.groupValues[1]
+                // 旧单花括号 {random} 走不到 {{random}} 的稳定种子路径（此前总是真随机，
+                // agentic 步循环每步重渲染都会改写前缀、缓存归零）；缓存友好模式下
+                // 对齐 {{random}} 的（对话+内容+位置）种子语义
+                if (key.equals("random", ignoreCase = true) && ctx.assistant.cacheFriendlyRandomMacros) {
+                    legacyStableRandom(ctx, escaped, legacyRandomOccurrence++)
+                } else {
+                    resolveLegacyKey(key, ctx) ?: match.value
+                }
             } ?: escaped
             var out = if (preReplaced.contains("{{")) {
                 val nodes = parse(preReplaced)
@@ -846,6 +855,22 @@ class MacroEngine(
 
     private fun stableIndex(state: EvalState, size: Int, macro: String): Int =
         Math.floorMod(stableSeed(state, macro), size.toLong()).toInt()
+
+    /**
+     * 旧单花括号 {random} 的缓存友好取值：与 {{random}} 对齐，
+     * 种子 = 对话 + 重掷种子 + 整段文本 hash + 出现序号。
+     * 同一条消息每步/每轮渲染结果一致，不打断前缀缓存。
+     */
+    private fun legacyStableRandom(ctx: PlaceholderCtx, text: String, occurrence: Int): String {
+        val rerollSeed = vars.get(ctx.conversationId?.toString(), "__pick_reroll_seed")?.toLongOrNull() ?: 0L
+        val seed = "${ctx.conversationId ?: "global"}|$rerollSeed|${text.hashCode()}|$occurrence|legacy_random"
+        val hash = MessageDigest.getInstance("MD5").digest(seed.toByteArray())
+        val value = ((hash[0].toLong() and 0xff) shl 24) or
+            ((hash[1].toLong() and 0xff) shl 16) or
+            ((hash[2].toLong() and 0xff) shl 8) or
+            (hash[3].toLong() and 0xff)
+        return (Math.floorMod(value, 100L) + 1).toString()
+    }
 
     /** 骰子：NdM±K / NdM（与现有 rollDice 同语义）。 */
     private fun rollDice(expr: String, state: EvalState): String? {

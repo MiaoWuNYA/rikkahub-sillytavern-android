@@ -41,6 +41,9 @@ class SkillManager(
                 if (!skillFile.exists()) return@mapNotNull null
                 parseSkillFile(skillFile, dir)
             }
+            // 文件系统顺序不保证稳定：skill 顺序会进 use_skill 工具的 systemPrompt，
+            // 乱序会让相同设置在不同进程/重启后前缀不同，打断提示词缓存
+            ?.sortedBy { it.name }
             ?: emptyList()
     }
 

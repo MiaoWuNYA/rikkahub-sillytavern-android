@@ -46,7 +46,10 @@ object LifeContextTransformer : InputMessageTransformer {
             appendLine("以下是用户在生活空间中主动记录的最近状态，可以在相关话题时自然使用，不要逐条复述这个区块：")
             append(text)
         }
-        return listOf(UIMessage.user(wrapped)) + messages
+        // 注入到上下文尾部而非消息列表最前：生活流内容（音乐播放进度、当日预测等）
+        // 每轮甚至每步都在变，放在前缀区会让缓存命中率归零；尾部注入只失效最小后缀。
+        // 与 MemoryRetrievalTransformer 的尾部 system 注入同一模式。
+        return messages + UIMessage.system(wrapped)
     }
 
     private fun buildLifeContext(context: Context): String {

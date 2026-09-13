@@ -181,25 +181,12 @@ class ProactiveMessageService : KoinComponent {
             Log.w(TAG, "Failed to get last message time", e)
         }
 
-        // 当前时间
-        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
-        sb.appendLine("当前时间: ${sdf.format(java.util.Date())}")
-
-        // 设备电量（无需任何权限，自包含信息源）
-        try {
-            val batteryIntent = context.registerReceiver(null, android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))
-            if (batteryIntent != null) {
-                val level = batteryIntent.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1)
-                val scale = batteryIntent.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1)
-                val pct = if (level >= 0 && scale > 0) (level * 100) / scale else -1
-                val status = batteryIntent.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1)
-                val isCharging = status == android.os.BatteryManager.BATTERY_STATUS_CHARGING ||
-                    status == android.os.BatteryManager.BATTERY_STATUS_FULL
-                sb.appendLine("设备电量: ${pct}%${if (isCharging) "（充电中）" else ""}")
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to get battery info", e)
-        }
+        // 当前时间：对齐 5 分钟边界。主动消息请求复用对话的消息历史，秒级时间戳会让
+        // 每次触发的请求前缀都不同，也和普通聊天的缓存前缀互相打架
+        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+        val nowMs = System.currentTimeMillis()
+        val rounded = nowMs - (nowMs % (5 * 60_000))
+        sb.appendLine("当前时间: ${sdf.format(java.util.Date(rounded))}")
 
         sb.appendLine()
         sb.appendLine("请根据以上上下文，以自然、关心、有趣的方式主动给用户发一条消息。")

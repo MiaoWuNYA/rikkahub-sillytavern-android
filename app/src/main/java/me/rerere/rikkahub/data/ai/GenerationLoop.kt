@@ -670,12 +670,14 @@ class GenerationLoop(
                 }
                 if (!anchorsValid) anchor.blocks.clear()
                 if (userContext.isNotBlank() && anchor.blocks.lastOrNull()?.text != userContext) {
-                    // 旧块无限累积会让请求同时携带多份互相矛盾的记忆/日期（三层记忆按查询
-                    // 选 memories，几乎每轮都变）——只保留紧邻的上一块作缓存前缀，其余丢弃
-                    if (anchor.blocks.size >= 2) {
-                        anchor.blocks.subList(0, anchor.blocks.size - 1).clear()
-                    }
                     anchor.blocks += UserContextAnchorCache.Block(userContext, namedChat.lastOrNull()?.id)
+                    // 块数上限：旧块原位冻结供后续请求命中前缀（每轮丢旧块 = 前缀每轮
+                    // 在锚点处分叉，缓存失效）。超限才丢最旧块：RAG 用户块只在日期/
+                    // Recent Chats 变化时追加，几乎不会触顶；非 RAG 用户每几轮一次
+                    // 深处分叉，好过每轮分叉
+                    while (anchor.blocks.size > MAX_ANCHOR_BLOCKS) {
+                        anchor.blocks.removeAt(0)
+                    }
                 }
                 var blockIndex = 0
                 for (message in namedChat) {
@@ -1132,8 +1134,10 @@ private var _lastUserContext: String? = null
  * - 内容变化 → 旧块原位保留（内容已冻结不再重渲染），新块追加在当前尾部并更新锚点，
  *   前缀仍然命中到旧块末尾；
  * - 锚点消息被上下文窗口截断/分支切换 → 清空重置，按尾部注入重新锚定（该事件本身已破坏前缀）。
- * 内容变化时只保留紧邻上一块（防止多份矛盾记忆/日期累积），新块追加尾部。
+ * 内容变化时旧块原位保留（最多 MAX_ANCHOR_BLOCKS 块，超限丢最旧），新块追加尾部。
  */
+private const val MAX_ANCHOR_BLOCKS = 4
+
 private object UserContextAnchorCache {
     data class Block(val text: String, val afterMessageId: Uuid?)
 

@@ -125,9 +125,13 @@ class PluginLoader(
 
     fun getLoadedPlugin(pluginId: String): LoadedPlugin? = loadedPlugins[pluginId]
 
-    fun getAllLoadedPlugins(): List<LoadedPlugin> = loadedPlugins.values.toList()
+    // 插件异步加载完成顺序不定：按 id 排序保证工具列表顺序稳定（工具 schema 进请求
+    // 前缀，乱序会打断供应商的前缀缓存）
+    fun getAllLoadedPlugins(): List<LoadedPlugin> = loadedPlugins.values.sortedBy { it.info.manifest.id }
 
-    fun getEnabledPlugins(): List<LoadedPlugin> = loadedPlugins.values.filter { it.info.isEnabled }
+    fun getEnabledPlugins(): List<LoadedPlugin> = loadedPlugins.values
+        .filter { it.info.isEnabled }
+        .sortedBy { it.info.manifest.id }
 
     /**
      * 调用插件工具（带超时保护）

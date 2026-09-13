@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.data.ai.transformers
 
+import me.rerere.ai.core.MessageRole
 import me.rerere.ai.ui.UIMessage
 import me.rerere.rikkahub.data.files.SkillManager
 import me.rerere.rikkahub.data.files.SkillMetadata
@@ -15,6 +16,22 @@ object SkillAutoTriggerTransformer : InputMessageTransformer, KoinComponent {
 
     private val skillManager: SkillManager by inject()
 
+    /**
+     * 按用户轮冻结匹配结果：agentic 工具循环每步重跑本 transformer，若每步重扫
+     * 增长的消息列表，工具输出里新出现的触发词会让 SKILL.md 在第 N 步突然出现在
+     * 前缀顶部，整条前缀缓存作废。匹配结果按 (助手, 对话, 最新用户消息) 冻结，
+     * 一轮内只算一次。
+     */
+    private val frozenMatches =
+        java.util.concurrent.ConcurrentHashMap<String, Pair<String, FrozenSkillMatch>>()
+
+    private class FrozenSkillMatch(
+        val beforeSystem: List<SkillMetadata>,
+        val afterSystem: List<SkillMetadata>,
+        val inChat: List<SkillMetadata>,
+        val anchorMsgId: String?,
+    )
+
     override suspend fun transform(
         ctx: TransformerContext,
         messages: List<UIMessage>,
@@ -26,29 +43,47 @@ object SkillAutoTriggerTransformer : InputMessageTransformer, KoinComponent {
         val enabledSkills = allSkills.filter { it.name in enabledNames }
         if (enabledSkills.isEmpty()) return messages
 
-        // 拼接上下文用于匹配
-        val context = messages.joinToString("\n") { it.toText() }
+        val turnKey = "${ctx.assistant.id}:${ctx.conversationId ?: "no-conversation"}"
+        val lastUserMsgId = messages.lastOrNull { it.role == MessageRole.USER }?.id?.toString()
+        val frozen = lastUserMsgId?.let { id ->
+            frozenMatches[turnKey]?.takeIf { it.first == id }?.second
+        }
 
-        // 分类 skill
-        val beforeSystem = mutableListOf<SkillMetadata>()
-        val afterSystem = mutableListOf<SkillMetadata>()
-        val inChat = mutableListOf<SkillMetadata>()
+        val (beforeSystem, afterSystem, inChat) = if (frozen != null) {
+            Triple(frozen.beforeSystem, frozen.afterSystem, frozen.inChat)
+        } else {
+            // 拼接上下文用于匹配
+            val context = messages.joinToString("\n") { it.toText() }
 
-        for (skill in enabledSkills) {
-            // 有触发词的：检测是否匹配
-            if (skill.triggers.isNotEmpty()) {
-                val matched = skill.triggers.any { trigger ->
-                    context.contains(trigger, ignoreCase = true)
-                }
-                if (matched) {
-                    when (skill.injectPosition) {
-                        "before_system" -> beforeSystem.add(skill)
-                        "in_chat" -> inChat.add(skill)
-                        else -> afterSystem.add(skill)
+            // 分类 skill
+            val before = mutableListOf<SkillMetadata>()
+            val after = mutableListOf<SkillMetadata>()
+            val inChatMatched = mutableListOf<SkillMetadata>()
+
+            for (skill in enabledSkills) {
+                // 有触发词的：检测是否匹配
+                if (skill.triggers.isNotEmpty()) {
+                    val matched = skill.triggers.any { trigger ->
+                        context.contains(trigger, ignoreCase = true)
+                    }
+                    if (matched) {
+                        when (skill.injectPosition) {
+                            "before_system" -> before.add(skill)
+                            "in_chat" -> inChatMatched.add(skill)
+                            else -> after.add(skill)
+                        }
                     }
                 }
+                // 无触发词的：由 use_skill 工具处理，不在此注入
             }
-            // 无触发词的：由 use_skill 工具处理，不在此注入
+
+            if (lastUserMsgId != null) {
+                val anchorId = messages.lastOrNull()?.id?.toString()
+                frozenMatches[turnKey] = lastUserMsgId to FrozenSkillMatch(
+                    before, after, inChatMatched, anchorId,
+                )
+            }
+            Triple(before, after, inChatMatched)
         }
 
         if (beforeSystem.isEmpty() && afterSystem.isEmpty() && inChat.isEmpty()) {
@@ -80,12 +115,16 @@ object SkillAutoTriggerTransformer : InputMessageTransformer, KoinComponent {
             result.addAll(messages.drop(1))
         }
 
-        // In-chat skills
+        // In-chat skills：插入点锚定本轮首步的最后一条消息（默认插在末尾前一格，
+        // 每步后移一格会让前缀每步分叉）
         if (inChat.isNotEmpty()) {
-            val insertIdx = (result.size - 1).coerceAtLeast(0)
+            val anchorId = frozen?.anchorMsgId ?: messages.lastOrNull()?.id?.toString()
+            val anchoredIdx = anchorId?.let { id -> result.indexOfFirst { it.id.toString() == id } }
+            var insertIdx = (anchoredIdx?.takeIf { it >= 0 } ?: (result.size - 1)).coerceAtLeast(0)
             inChat.forEach { skill ->
                 val body = skillManager.readSkillBody(skill.name) ?: return@forEach
                 result.add(insertIdx, UIMessage.user("[Skill: ${skill.name}]\n$body"))
+                insertIdx++
             }
         }
 

@@ -42,6 +42,16 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
     private val cooldownTracker = java.util.concurrent.ConcurrentHashMap<String, MutableMap<Uuid, Int>>()
     // 已推进过的用户轮（agentic 步骤去重）
     private val lastTickedUserTurn = java.util.concurrent.ConcurrentHashMap<String, String>()
+    // 按用户轮冻结的世界书注入：agentic 工具循环每步重跑本 transformer，若每步重扫
+    // 增长的消息列表，激活集合/概率掷点/尾部锚点都会漂移，前缀缓存每步归零。
+    // key = assistantId:conversationId，value = (lastUserMsgId, 冻结数据)
+    private val frozenTurnInjections =
+        java.util.concurrent.ConcurrentHashMap<String, Pair<String, FrozenTurnInjection>>()
+
+    private class FrozenTurnInjection(
+        val injections: List<PromptInjection>,
+        val anchors: Map<String, String>,
+    )
 
     override suspend fun transform(
         ctx: TransformerContext,
@@ -51,14 +61,25 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
         // 避免 A 对话的粘性/冷却泄漏到同一助手的 B 对话
         val key = "${ctx.assistant.id}:${ctx.conversationId ?: "no-conversation"}"
 
-        // 官方 Vector Storage：vectorized 条目按语义相似度激活，批量算好命中集合再进扫描循环
-        val vectorActivatedIds = resolveVectorActivations(ctx.context, ctx, messages)
+        val lastUserMsgId = messages.lastOrNull { it.role == MessageRole.USER }?.id?.toString()
+        val frozen = lastUserMsgId?.let { id ->
+            frozenTurnInjections[key]?.takeIf { it.first == id }?.second
+        }
 
         // sticky/cooldown 按用户轮推进（对齐酒馆 chat_metadata 语义）。agentic 工具循环每步
         // 都会重跑本 transformer，不按轮去重的话 sticky=3 一轮就走完 3 步
-        val lastUserMsgId = messages.lastOrNull { it.role == MessageRole.USER }?.id?.toString()
         val alreadyTicked = lastUserMsgId != null &&
             lastTickedUserTurn.put(key, lastUserMsgId) == lastUserMsgId
+
+        // 激活集合已冻结时跳过向量检索（查询文本每步变化，重算只会白烧嵌入 API）
+        val vectorActivatedIds = if (frozen != null) {
+            emptySet()
+        } else {
+            resolveVectorActivations(ctx.context, ctx, messages)
+        }
+
+        val anchors = java.util.concurrent.ConcurrentHashMap<String, String>()
+        if (frozen != null) anchors.putAll(frozen.anchors)
 
         val result = transformMessages(
             messages = messages,
@@ -88,6 +109,15 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
                 ?.description ?: "",
             vectorActivatedIds = vectorActivatedIds,
             tickState = !alreadyTicked,
+            frozenInjections = frozen?.injections,
+            anchors = anchors,
+            onResolved = { resolved ->
+                // 本轮首次计算：冻结激活集合与尾部锚点，供本轮后续 agentic 步骤复用
+                if (frozen == null && lastUserMsgId != null) {
+                    frozenTurnInjections[key] = lastUserMsgId to
+                        FrozenTurnInjection(resolved, anchors.toMap())
+                }
+            },
         )
 
         return result
@@ -224,9 +254,12 @@ internal fun transformMessages(
     personaDescription: String = "",
     onOverflow: () -> Unit = {},
     vectorActivatedIds: Set<Uuid> = emptySet(),
+    frozenInjections: List<PromptInjection>? = null,
+    anchors: java.util.concurrent.ConcurrentHashMap<String, String>? = null,
+    onResolved: ((List<PromptInjection>) -> Unit)? = null,
 ): List<UIMessage> {
-    // 收集所有需要注入的内容
-    val injections = collectInjections(
+    // 收集所有需要注入的内容（按用户轮冻结时直接复用首轮扫描结果）
+    val injections = frozenInjections ?: collectInjections(
         messages = messages,
         assistant = assistant,
         modeInjections = modeInjections,
@@ -260,7 +293,7 @@ internal fun transformMessages(
         return messages
     }
 
-    // 解析 AUTHOR_NOTE 到实际位置
+    // 解析 AUTHOR_NOTE 到实际位置（对已解析的冻结注入是幂等的）
     val resolvedInjections = injections.map { injection ->
         if (injection.position == InjectionPosition.AUTHOR_NOTE) {
             when (authorNotePosition) {
@@ -295,8 +328,9 @@ internal fun transformMessages(
         .sortedBy { it.priority }
         .groupBy { it.position }
 
-    // 应用注入
-    val result = applyInjections(messages, byPosition)
+    // 应用注入（尾部相对位置按锚点消息冻结，见 applyInjections 注释）
+    val result = applyInjections(messages, byPosition, anchors)
+    onResolved?.invoke(resolvedInjections)
     android.util.Log.d(
         "WorldInfo",
         "applied: msgs ${messages.size} -> ${result.size} " +
@@ -787,12 +821,39 @@ private fun tickCooldowns(cooldownEntries: MutableMap<Uuid, Int>) {
 
 /**
  * 应用注入到消息列表
+ *
+ * [anchors]：尾部相对位置（BOTTOM_OF_CHAT / AFTER_DIALOG / AT_DEPTH）的锚点缓存，
+ * 按 "before/after:消息id" 记录插入参照消息。这些位置按列表长度动态计算时，agentic
+ * 工具循环每步都会把注入点往后推移一格，token 流每步在注入点分叉、前缀缓存全灭；
+ * 首轮记录锚定消息 id，后续步骤按 id 复位插入点。锚点消息被裁剪时退回动态计算。
  */
 internal fun applyInjections(
     messages: List<UIMessage>,
-    byPosition: Map<InjectionPosition, List<PromptInjection>>
+    byPosition: Map<InjectionPosition, List<PromptInjection>>,
+    anchors: java.util.concurrent.ConcurrentHashMap<String, String>? = null,
 ): List<UIMessage> {
     val result = messages.toMutableList()
+
+    // 尾部相对位置解析：优先复用锚点，否则按动态计算结果记录锚点
+    fun resolveTailIndex(computedIndex: Int, positionKey: String): Int {
+        if (anchors == null) return computedIndex
+        val existing = anchors[positionKey]
+        if (existing != null) {
+            val mode = existing.substringBefore(':')
+            val id = existing.substringAfter(':')
+            val idx = result.indexOfFirst { it.id.toString() == id }
+            return if (idx >= 0) {
+                if (mode == "after") idx + 1 else idx
+            } else {
+                computedIndex // 锚点消息已被裁剪，退回动态计算
+            }
+        }
+        if (result.isEmpty()) return computedIndex
+        val mode = if (computedIndex >= result.size) "after" else "before"
+        val anchorIdx = if (mode == "after") result.size - 1 else computedIndex
+        result.getOrNull(anchorIdx)?.let { anchors[positionKey] = "$mode:${it.id}" }
+        return computedIndex
+    }
 
     // 示例消息索引（角色卡 mes_example 解析出的消息，带 ExampleMessage 标记）
     val exampleIndices = result.indices.filter { idx ->
@@ -942,7 +1003,7 @@ internal fun applyInjections(
     // 处理 BOTTOM_OF_CHAT：在最后一条消息之前插入
     val bottomInjections = byPosition[InjectionPosition.BOTTOM_OF_CHAT]
     if (!bottomInjections.isNullOrEmpty()) {
-        var insertIndex = (result.size - 1).coerceAtLeast(0)
+        var insertIndex = resolveTailIndex((result.size - 1).coerceAtLeast(0), "bottom_of_chat")
         insertIndex = findSafeInsertIndex(result, insertIndex)
         createMergedInjectionMessages(bottomInjections).forEach { message ->
             result.add(insertIndex, message)
@@ -954,7 +1015,8 @@ internal fun applyInjections(
     val afterDialogInjections = byPosition[InjectionPosition.AFTER_DIALOG]
     if (!afterDialogInjections.isNullOrEmpty()) {
         val lastAssistantIndex = result.indexOfLast { it.role == MessageRole.ASSISTANT }
-        var insertIndex = if (lastAssistantIndex >= 0) lastAssistantIndex + 1 else result.size
+        val computed = if (lastAssistantIndex >= 0) lastAssistantIndex + 1 else result.size
+        var insertIndex = resolveTailIndex(computed, "after_dialog")
         insertIndex = findSafeInsertIndex(result, insertIndex)
         createMergedInjectionMessages(afterDialogInjections).forEach { message ->
             result.add(insertIndex, message)
@@ -971,7 +1033,10 @@ internal fun applyInjections(
             val injections = byDepth[depth] ?: return@forEach
             // 计算插入位置：result.size - depth，但要确保在有效范围内
             // depth=1 表示在最后一条消息之前，depth=2 表示在倒数第二条之前...
-            var insertIndex = (result.size - depth).coerceIn(0, result.size)
+            var insertIndex = resolveTailIndex(
+                (result.size - depth).coerceIn(0, result.size),
+                "at_depth_$depth",
+            )
             insertIndex = findSafeInsertIndex(result, insertIndex)
             createMergedInjectionMessages(injections).forEach { message ->
                 result.add(insertIndex, message)
