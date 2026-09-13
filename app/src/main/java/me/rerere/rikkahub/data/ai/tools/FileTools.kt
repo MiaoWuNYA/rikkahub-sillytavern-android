@@ -185,15 +185,22 @@ fun createFileTools(workspaceDir: String = "/storage/emulated/0/Download"): List
                             val startIdx = (offset - 1).coerceIn(0, totalLines - 1)
                             val endIdx = (startIdx + limit).coerceAtMost(totalLines)
                             val selected = lines.subList(startIdx, endIdx)
+                            // 单行截断：minified JSON/JS/单行 base64 一行就是几 MB，防止单行撑爆上下文
+                            var truncatedLines = 0
                             val result = buildString {
                                 selected.forEachIndexed { idx, line ->
-                                    appendLine("${startIdx + idx + 1}|$line")
+                                    if (line.length > MAX_READ_LINE_CHARS) {
+                                        truncatedLines++
+                                        appendLine("${startIdx + idx + 1}|${line.take(MAX_READ_LINE_CHARS)}...[line truncated, ${line.length} chars]")
+                                    } else {
+                                        appendLine("${startIdx + idx + 1}|$line")
+                                    }
                                 }
                                 if (endIdx < totalLines) {
                                     appendLine("... (${totalLines - endIdx} more lines, total $totalLines)")
                                 }
                             }
-                            listOf(UIMessagePart.Text(result))
+                            listOf(UIMessagePart.Text(result.truncateForToolResult()))
                         }
                     }
                     "write" -> {
@@ -277,6 +284,7 @@ fun createFileTools(workspaceDir: String = "/storage/emulated/0/Download"): List
                     "patch" -> {
                         val path = obj["path"]?.jsonPrimitive?.content ?: error("path required")
                         val oldText = obj["old_string"]?.jsonPrimitive?.content ?: error("old_string required")
+                        if (oldText.isEmpty()) error("old_string cannot be empty")
                         val newText = obj["new_string"]?.jsonPrimitive?.content ?: ""
                         val replaceAll = obj["replace_all"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false
                         val file = resolveFile(path)

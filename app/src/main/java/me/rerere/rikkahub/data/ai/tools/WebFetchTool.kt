@@ -100,8 +100,9 @@ fun createWebFetchTool(): Tool = Tool(
         val text = if (responseCode in 200..399) {
             conn.inputStream.bufferedReader().use { it.readText() }
         } else {
+            // 注意优先级：?: 必须作用于 errorStream 整体，否则 errorStream 为 null 时会把字面量 "null" 拼进错误信息
             "HTTP $responseCode: ${conn.responseMessage}\n" +
-                conn.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
+                (conn.errorStream?.bufferedReader()?.use { it.readText() } ?: "")
         }
         val maxLen = 100 * 1024
         val truncated = if (text.length > maxLen) text.take(maxLen) + "\n\n...[truncated at 100KB]" else text

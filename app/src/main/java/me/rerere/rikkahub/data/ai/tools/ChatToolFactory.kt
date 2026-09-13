@@ -86,6 +86,8 @@ class ChatToolFactory(
                 createSkillTools(
                     enabledSkills = assistant.enabledSkills,
                     allSkills = skillManager.listSkills(),
+                    // 不传 skillManager 时 use_skill 只会回退读磁盘 skillFile，与 ChatService 行为不一致
+                    skillManager = skillManager,
                 )
             )
         }

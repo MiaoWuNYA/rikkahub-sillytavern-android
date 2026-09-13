@@ -436,9 +436,18 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
     ): JsonObject {
         return buildJsonObject {
             put("model", params.model.modelId)
+            // 首条 SYSTEM 以原始列表为准（不做 isValidToUpload 过滤），顶层 system 参数与
+            // buildMessages 的跳过必须指向同一条消息——否则首条为空白时，第一条有效 SYSTEM
+            // 会被 buildMessages 误当已处理而静默丢弃（记忆/人设丢失）
+            val firstSystemMessage = messages.firstOrNull { it.role == MessageRole.SYSTEM }
             put(
                 "messages",
-                buildMessages(messages, providerSetting.promptCaching, providerSetting.promptCacheTtl)
+                buildMessages(
+                    messages,
+                    firstSystemMessage,
+                    providerSetting.promptCaching,
+                    providerSetting.promptCacheTtl,
+                )
             )
             put("max_tokens", params.maxTokens ?: 64_000)
 
@@ -456,8 +465,7 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
             put("stream", stream)
 
             // system prompt
-            val systemMessage = messages.firstOrNull { it.role == MessageRole.SYSTEM }
-            val systemTextParts = systemMessage?.parts?.filterIsInstance<UIMessagePart.Text>().orEmpty()
+            val systemTextParts = firstSystemMessage?.parts?.filterIsInstance<UIMessagePart.Text>().orEmpty()
             if (systemTextParts.isNotEmpty()) {
                 put("system", buildJsonArray {
                     systemTextParts.forEachIndexed { index, part ->
@@ -550,19 +558,18 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
 
     private fun buildMessages(
         messages: List<UIMessage>,
+        firstSystemMessage: UIMessage?,
         promptCaching: Boolean,
         promptCacheTtl: ClaudePromptCacheTtl
     ) = buildJsonArray {
-        var firstSystemSeen = false
         messages
             .filter { it.isValidToUpload() }
             .forEach { message ->
                 if (message.role == MessageRole.SYSTEM) {
-                    // 首条 system 走顶层 system 参数；中部 SYSTEM（记忆注入/userContext/
-                    // 世界书等）转 user 轮原位保留（Anthropic messages 不支持 system role，
-                    // 此前被直接丢弃导致注入静默失效）
-                    if (!firstSystemSeen) {
-                        firstSystemSeen = true
+                    // 首条 system（按原始列表判定的同一条消息）走顶层 system 参数；
+                    // 中部 SYSTEM（记忆注入/userContext/世界书等）转 user 轮原位保留
+                    // （Anthropic messages 不支持 system role，此前被直接丢弃导致注入静默失效）
+                    if (message === firstSystemMessage) {
                         return@forEach
                     }
                     addUserMessage(message.copy(role = MessageRole.USER))
@@ -591,9 +598,9 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
         while (index < items.size) {
             val current = items[index]
             val previous = items[index - 1]
+            // name 不再写入 payload（Anthropic 会 400），无需为 name 跳过合并
             val isMergeablePair = previous["role"]?.jsonPrimitive?.contentOrNull == "user" &&
-                current["role"]?.jsonPrimitive?.contentOrNull == "user" &&
-                previous["name"] == null && current["name"] == null
+                current["role"]?.jsonPrimitive?.contentOrNull == "user"
             if (!isMergeablePair) {
                 index++
                 continue
@@ -668,7 +675,6 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
                     // 输出 assistant 消息
                     add(buildJsonObject {
                         put("role", "assistant")
-                        message.name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
                         putJsonArray("content") { contentBuffer.forEach { add(it) } }
                     })
                     contentBuffer.clear()
@@ -688,7 +694,6 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
         if (contentBuffer.isNotEmpty()) {
             add(buildJsonObject {
                 put("role", "assistant")
-                message.name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
                 putJsonArray("content") { contentBuffer.forEach { add(it) } }
             })
         }
@@ -697,7 +702,7 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
     private fun JsonArrayBuilder.addUserMessage(message: UIMessage) {
         add(buildJsonObject {
             put("role", message.role.name.lowercase())
-            message.name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
+            // Anthropic message 对象只接受 role/content；name 是 OpenAI 概念，会 400
             putJsonArray("content") {
                 message.parts.flatMap { it.toContentBlocks() }.forEach { add(it) }
             }

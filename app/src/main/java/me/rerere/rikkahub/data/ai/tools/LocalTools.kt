@@ -39,12 +39,14 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 /**
- * 清理 present_file 在 cache 目录留下的 shared_ 前缀缓存文件
+ * 清理 present_file 在 cache 目录留下的 shared_ 前缀缓存文件。
+ * keep: 当前正在分享的文件——chooser 是异步的，目标 App 稍后才会真正读取 URI，
+ * 提前删除会导致打开时 FileNotFoundException（分享静默失败）。
  */
-private fun cleanupPresentFileCache(cacheDir: File) {
+private fun cleanupPresentFileCache(cacheDir: File, keep: File? = null) {
     try {
         cacheDir.listFiles()
-            ?.filter { it.name.startsWith("shared_") }
+            ?.filter { it.name.startsWith("shared_") && it != keep }
             ?.forEach { it.delete() }
     } catch (_: Exception) { }
 }
@@ -419,8 +421,8 @@ class LocalTools(
                     }
                 )
 
-                // 清理旧缓存文件
-                cleanupPresentFileCache(context.cacheDir)
+                // 清理旧缓存文件（保留本次分享的文件，见 cleanupPresentFileCache 注释）
+                cleanupPresentFileCache(context.cacheDir, keep = cacheFile)
 
                 val payload = buildJsonObject {
                     put("success", true)

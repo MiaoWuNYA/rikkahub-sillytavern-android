@@ -36,9 +36,10 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
     private val providerManager: ProviderManager by inject()
 
     // 粘性追踪：assistantId:conversationId → (injectionId → 剩余轮数)
-    private val stickyTracker = mutableMapOf<String, MutableMap<Uuid, Int>>()
+    // ConcurrentHashMap：单例 transformer 被并发生成共享，普通 HashMap 会丢条目/CME
+    private val stickyTracker = java.util.concurrent.ConcurrentHashMap<String, MutableMap<Uuid, Int>>()
     // 冷却追踪：assistantId:conversationId → (injectionId → 剩余冷却轮数)
-    private val cooldownTracker = mutableMapOf<String, MutableMap<Uuid, Int>>()
+    private val cooldownTracker = java.util.concurrent.ConcurrentHashMap<String, MutableMap<Uuid, Int>>()
 
     override suspend fun transform(
         ctx: TransformerContext,

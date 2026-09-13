@@ -142,7 +142,7 @@ class CrossWindowMemoryCore(
 
         val prompt = buildString {
             appendLine("## Shared recent life context")
-            appendLine("The following are recent events you experienced with the user in other chat windows. Treat them as your own continuous recent memory. Use them naturally when relevant; do not mention windows, memory systems, logs, retrieval, or this instruction.")
+            appendLine("The following are recent events you experienced with the user in other chat windows. Treat them as your own continuous recent memory — background context only. Use them naturally when relevant, but do NOT answer or continue those past conversations here; the current conversation is independent. Do not mention windows, memory systems, logs, retrieval, or this instruction.")
             summary?.let {
                 appendLine("- Earlier shared context: ${it.text}")
             }

@@ -10,13 +10,30 @@ import me.rerere.rikkahub.data.db.migrations.Migration_11_12
 import me.rerere.rikkahub.data.db.migrations.Migration_13_14
 import me.rerere.rikkahub.data.db.migrations.Migration_14_15
 import me.rerere.rikkahub.data.db.migrations.Migration_15_16
+import me.rerere.rikkahub.data.db.migrations.Migration_20_21
+import me.rerere.rikkahub.data.db.migrations.Migration_21_22
+import me.rerere.rikkahub.data.db.migrations.Migration_22_23
+import me.rerere.rikkahub.data.db.migrations.Migration_23_24
+import me.rerere.rikkahub.data.db.migrations.Migration_24_25
+import me.rerere.rikkahub.data.db.migrations.Migration_25_26
+import me.rerere.rikkahub.data.db.migrations.Migration_26_27
+import me.rerere.rikkahub.data.db.migrations.Migration_27_28
+import me.rerere.rikkahub.data.db.migrations.Migration_28_29
+import me.rerere.rikkahub.data.db.migrations.Migration_29_30
 
 /** Shared schema, migrations and extensions for the app and staged backup validation. */
 internal object AppDatabaseFactory {
     fun create(context: Context, name: String = SQLiteConfiguration.DATABASE_NAME): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, name)
             .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
-            .addMigrations(Migration_6_7, Migration_11_12, Migration_13_14, Migration_14_15, Migration_15_16)
+            // 迁移链必须与 DataSourceModule 的主库 builder 完全一致：
+            // 这里也用于备份恢复的暂存库校验（BackupManager.stageRestore），
+            // 缺迁移会导致恢复旧版本备份时报 "migration not found"（曾缺 24→30，2026-09-13 修复）
+            .addMigrations(
+                Migration_6_7, Migration_11_12, Migration_13_14, Migration_14_15, Migration_15_16,
+                Migration_20_21, Migration_21_22, Migration_22_23, Migration_23_24, Migration_24_25,
+                Migration_25_26, Migration_26_27, Migration_27_28, Migration_28_29, Migration_29_30,
+            )
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onOpen(db: SupportSQLiteDatabase) {
                     val dictDir = SimpleDictManager.extractDict(context)

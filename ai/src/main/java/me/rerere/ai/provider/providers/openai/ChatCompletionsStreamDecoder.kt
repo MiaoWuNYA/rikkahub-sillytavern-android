@@ -108,13 +108,12 @@ internal class ChatCompletionsStreamDecoder(
         val reasoningMetadata = accumulateReasoningDetails(payload["reasoning_details"]?.jsonArrayOrNull)
         val images = payload["images"] as? JsonArray ?: JsonArray(emptyList())
 
-        // 中转站兼容：剥离 content 开头的 "response" 前缀伪影。
+        // 中转站兼容：不再在逐条 delta 上剥离 "response" 前缀——delta 恰好等于 "response"
+        // 时正则的 $ 前瞻会立即命中被剥空，后续 delta（": hi"）反而漏发；
+        // 流式剥离统一在 textHoldback 缓冲里做，非流式在 fixProxyGeminiContent 做。
         // 注意：不能在这里做 reasoning→content 提升——流式思考阶段每条 delta 的 content
         // 本来就为空，逐条提升会把正常思考全部误判为正文；整体提升在流结束时统一处理
         // （见 fixProxyPromotedReply）。
-        if (enableProxyFix && role == MessageRole.ASSISTANT && content.isNotEmpty()) {
-            content = RESPONSE_PREFIX_REGEX.replace(content, "").trimStart()
-        }
 
         return UIMessage(
             role = role,
@@ -212,7 +211,10 @@ internal class ChatCompletionsStreamDecoder(
                         val delta: String? = if (textHoldback != null) {
                             val buffer = textHoldback!!.append(part.text)
                             val lower = buffer.toString().lowercase()
-                            if (buffer.length >= RESPONSE_PREFIX_TAG.length || !RESPONSE_PREFIX_TAG.startsWith(lower)) {
+                            // 严格大于 tag 长度才判定：恰好等于 "response" 时正则 $ 前瞻会
+                            // 立即命中而漏掉分隔符，下一个 delta（如 ": hi"）就会原样漏发。
+                            // 流结束时 flushTextHoldback 会冲刷未判定的缓冲，不会丢文本。
+                            if (buffer.length > RESPONSE_PREFIX_TAG.length || !RESPONSE_PREFIX_TAG.startsWith(lower)) {
                                 val cleaned = RESPONSE_PREFIX_REGEX.replace(buffer.toString(), "").trimStart()
                                 textHoldback = null
                                 cleaned.ifEmpty { null }

@@ -227,15 +227,18 @@ class ResponseAPI(
 
             // system instructions
             // 防空回复（systemPromptInChat）：不走 instructions，系统提示词由 buildMessages 进对话流
-            if (messages.any { it.role == MessageRole.SYSTEM } && !params.systemPromptInChat) {
-                val parts = messages.first { it.role == MessageRole.SYSTEM }.parts
+            // 首条 SYSTEM 以原始列表为准，与 buildMessages 的跳过指向同一条消息（否则首条为空白时
+            // 第一条有效 SYSTEM 会被误跳过而静默丢失）
+            val firstSystemMessage = messages.firstOrNull { it.role == MessageRole.SYSTEM }
+            if (firstSystemMessage != null && !params.systemPromptInChat) {
+                val parts = firstSystemMessage.parts
                 put(
                     "instructions",
                     parts.filterIsInstance<UIMessagePart.Text>().joinToString("\n") { it.text })
             }
 
             // messages
-            put("input", buildMessages(messages, params.systemPromptInChat))
+            put("input", buildMessages(messages, params.systemPromptInChat, firstSystemMessage))
 
             // reasoning
             if (params.model.abilities.contains(ModelAbility.REASONING)) {
@@ -301,9 +304,12 @@ class ResponseAPI(
         }.mergeCustomBody(params.customBody)
     }
 
-    internal fun buildMessages(messages: List<UIMessage>, systemPromptInChat: Boolean = false) = buildJsonArray {
+    internal fun buildMessages(
+        messages: List<UIMessage>,
+        systemPromptInChat: Boolean = false,
+        firstSystemMessage: UIMessage? = null,
+    ) = buildJsonArray {
         var ackInserted = false
-        var firstSystemSeen = false
         messages
             .filter { message ->
                 message.isValidToUpload() || message.parts.any { part ->
@@ -314,11 +320,11 @@ class ResponseAPI(
             .forEach { message ->
                 if (message.role == MessageRole.SYSTEM) {
                     if (!systemPromptInChat) {
-                        // 默认路径：首条 system 已放进顶层 instructions，这里跳过避免重复；
-                        // 中部 SYSTEM（记忆注入/userContext/世界书等）原位保留 system item
+                        // 默认路径：首条 system（按原始列表判定的同一条消息）已放进顶层
+                        // instructions，跳过避免重复；中部 SYSTEM（记忆注入/userContext/
+                        // 世界书等）原位保留 system item
                         // （曾随防空回复改造被整体丢弃，导致注入静默失效）
-                        if (!firstSystemSeen) {
-                            firstSystemSeen = true
+                        if (message === firstSystemMessage) {
                             return@forEach
                         }
                         addContentItem(MessageRole.SYSTEM, message.parts.filterIsInstance<UIMessagePart.Text>())

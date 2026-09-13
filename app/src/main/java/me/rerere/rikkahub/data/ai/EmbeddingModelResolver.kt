@@ -18,12 +18,14 @@ import me.rerere.rikkahub.data.datastore.Settings
  * 调用方应退回词法（关键词）检索。
  */
 fun Settings.resolveEmbeddingModel(): Pair<ProviderSetting, Model>? {
+    // 禁用的提供商无法发起网络请求，必须过滤，否则检索/索引静默失败
+    val enabledProviders = providers.filter { it.enabled }
     vectorStorageModelId?.let { id ->
-        providers.firstOrNull { p -> p.models.any { it.id == id && it.type == ModelType.EMBEDDING } }
+        enabledProviders.firstOrNull { p -> p.models.any { it.id == id && it.type == ModelType.EMBEDDING } }
             ?.let { p -> return p to p.models.first { it.id == id } }
     }
-    val fastProvider = providers.firstOrNull { p -> p.models.any { it.id == fastModelId } }
-    val orderedProviders = if (fastProvider != null) listOf(fastProvider) + (providers - fastProvider) else providers
+    val fastProvider = enabledProviders.firstOrNull { p -> p.models.any { it.id == fastModelId } }
+    val orderedProviders = if (fastProvider != null) listOf(fastProvider) + (enabledProviders - fastProvider) else enabledProviders
     orderedProviders.forEach { provider ->
         provider.models.firstOrNull { it.type == ModelType.EMBEDDING }?.let { return provider to it }
     }

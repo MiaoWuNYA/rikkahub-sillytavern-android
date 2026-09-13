@@ -289,6 +289,12 @@ class GenerationLoop(
     // ── 预构建：system 消息列表（循环不变，移到外面）──
     val prebuiltSystemMessages = buildCachedSystemPrompt(assistant, settings, messages, memories ?: emptyList(), conversationSystemPrompt, tools, model, context, conversationRepo)
 
+    // Recent Chats 每轮只构建一次（agentic 循环每步复用）：底层查询会反序列化 10 个会话的
+    // 全部消息节点，每步重查是纯浪费；内容精度只到日期，单轮内复用完全安全
+    val prebuiltRecentChats = if (assistant.enableRecentChatsReference) {
+        buildRecentChatsPrompt(assistant, conversationRepo, excludeConversationId = conversationId)
+    } else ""
+
     for (stepIndex in 0 until maxSteps) {
             Log.i(TAG, "streamText: start step #$stepIndex (${model.id})")
 
@@ -342,6 +348,7 @@ class GenerationLoop(
                     conversationModeInjectionIds = conversationModeInjectionIds,
                     conversationLorebookIds = conversationLorebookIds,
                     prebuiltSystemMessages = prebuiltSystemMessages,
+                    prebuiltRecentChats = prebuiltRecentChats,
                     workspaceCwd = workspaceCwd,
                     generationType = generationType,
                     maxTokensOverride = maxTokensOverride,
@@ -456,6 +463,10 @@ class GenerationLoop(
             // Handle tools (execute approved tools, handle denied tools)
             val executedTools = arrayListOf<UIMessagePart.Tool>()
             val isParallel = assistant.enableParallelToolExecution && toolsToProcess.size > 1
+            // 工具结果进入历史后每轮重复计费：超长输出截断并落盘（shell 可用时模型可自行读取全文）
+            val hasShellAccess = toolsInternal.any { it.name == "execute_command" }
+            fun truncateToolResult(result: Result<UIMessagePart.Tool>): Result<UIMessagePart.Tool> =
+                result.map { it.copy(output = maybeTruncateToolOutput(it.toolCallId, it.output, hasShellAccess)) }
 
             if (isParallel) {
                 // 并行执行所有工具
@@ -471,7 +482,7 @@ class GenerationLoop(
                     }
                     deferreds.forEach { deferred ->
                         val (tool, result) = deferred.await()
-                        addToolResult(executedTools, tool, result, json)
+                        addToolResult(executedTools, tool, truncateToolResult(result), json)
                     }
                 }
             } else {
@@ -482,7 +493,7 @@ class GenerationLoop(
                             executeToolCall(tool, toolsInternal, json)
                         }
                     }
-                    addToolResult(executedTools, tool, result, json)
+                    addToolResult(executedTools, tool, truncateToolResult(result), json)
                 }
             }
 
@@ -539,6 +550,7 @@ class GenerationLoop(
         maxTokensOverride: Int? = null,
         requestMessageStartIndex: Int = 0,
         rollingContextSummary: String? = null,
+        prebuiltRecentChats: String = "",
     ) {
         // 滚动压缩：请求窗口从摘要覆盖范围之后开始；UI/工具循环仍使用完整消息列表
         val requestMessages = if (requestMessageStartIndex > 0) {
@@ -622,9 +634,7 @@ class GenerationLoop(
             // （位置移动 = token 流在它上次出现的位置分叉）。冻结策略见 UserContextAnchorCache：
             // 内容不变时钉在首次出现的位置，历史纯追加；内容变化时旧块原位保留、新块追加尾部，
             // token 前缀仍然可命中。临时会话（无 conversationId）退化为尾部注入。
-            val recentChats = if (assistant.enableRecentChatsReference) {
-                buildRecentChatsPrompt(assistant, conversationRepo)
-            } else ""
+            val recentChats = prebuiltRecentChats
             val userContext = buildUserContext(memories, assistant, settings, recentChats)
             // 华灯：上下文瞬态内容裁剪——两轮之前的网页搜索结果/图片/音视频不再随请求发送
             //（占位说明带消息 ID，AI 可用 read_history_message 取回），存储与 UI 不受影响
@@ -642,6 +652,11 @@ class GenerationLoop(
                 }
                 if (!anchorsValid) anchor.blocks.clear()
                 if (userContext.isNotBlank() && anchor.blocks.lastOrNull()?.text != userContext) {
+                    // 旧块无限累积会让请求同时携带多份互相矛盾的记忆/日期（三层记忆按查询
+                    // 选 memories，几乎每轮都变）——只保留紧邻的上一块作缓存前缀，其余丢弃
+                    if (anchor.blocks.size >= 2) {
+                        anchor.blocks.subList(0, anchor.blocks.size - 1).clear()
+                    }
                     anchor.blocks += UserContextAnchorCache.Block(userContext, namedChat.lastOrNull()?.id)
                 }
                 var blockIndex = 0
@@ -1046,8 +1061,9 @@ private fun addToolResult(
                                     put(
                                         "error",
                                         JsonPrimitive(buildString {
+                                            // 只给模型类型+消息：堆栈对模型无用还浪费 token、泄漏内部路径
+                                            //（完整堆栈已通过 printStackTrace 进日志）
                                             append("[${it.javaClass.name}] ${it.message}")
-                                            append("\n${it.stackTraceToString()}")
                                         })
                                     )
                                 }
@@ -1079,7 +1095,9 @@ private fun addToolResult(
  *
  * 记忆：整轮对话缓存（memoize），仅当记忆列表变化时重建
  */
+@kotlin.concurrent.Volatile
 private var _lastUserContextKey: String? = null
+@kotlin.concurrent.Volatile
 private var _lastUserContext: String? = null
 
 /**

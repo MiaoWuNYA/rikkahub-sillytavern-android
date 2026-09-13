@@ -10,21 +10,23 @@ import androidx.sqlite.db.SimpleSQLiteQuery
 fun createDatabaseQueryTool(database: AppDatabase): Tool = Tool(
     name = "database_query",
     description = "Query the Rikkahub local SQLite database (read-only access).\n\n" +
-        "Use this tool to inspect the app's internal data — configuration, conversations, messages, and settings.\n\n" +
+        "Use this tool to inspect the app's internal data — conversations, messages, and settings.\n\n" +
         "When to use:\n" +
-        "- list_tables: Show all database tables\n" +
-        "- schema: View table column definitions\n" +
-        "- sql: Run a custom SELECT query\n" +
-        "- search: Search across all tables for a term\n" +
-        "- export: Export table data as JSON\n\n" +
+        "- tables: Show all database tables with row counts\n" +
+        "- schema: View a table's column definitions\n" +
+        "- query: Run a custom SELECT/PRAGMA statement\n" +
+        "- search: Search messages and other content for a keyword\n" +
+        "- export: Export table data as JSON or CSV\n" +
+        "- peek: Show the first rows of a table\n\n" +
         "When NOT to use:\n" +
-        "- Modifying data (SELECT queries only — no INSERT/UPDATE/DELETE)\n\n" +
+        "- Modifying data (SELECT/PRAGMA only — no INSERT/UPDATE/DELETE)\n\n" +
         "Args:\n" +
-        "- action: list_tables | schema | sql | search | export\n" +
-        "- table: Table name (schema, export)\n" +
-        "- query: SQL SELECT statement (sql)\n" +
-        "- term: Search term (search)\n" +
-        "- limit: Max rows (default: 100)",
+        "- action: tables | schema | query | search | export | peek\n" +
+        "- table: Table name (schema, export, peek)\n" +
+        "- sql: SQL SELECT or PRAGMA statement (query)\n" +
+        "- keyword: Search keyword (search)\n" +
+        "- format: json | csv (export, default: json)\n" +
+        "- limit: Max rows (default: 50, max: 200)",
     parameters = {
         InputSchema.Obj(
             properties = buildJsonObject {
@@ -63,8 +65,13 @@ fun createDatabaseQueryTool(database: AppDatabase): Tool = Tool(
     execute = { args ->
         val obj = args.jsonObject
         val action = obj["action"]?.jsonPrimitive?.contentOrNull ?: error("action required")
-        val limit = obj["limit"]?.jsonPrimitive?.intOrNull ?: 50
+        val limit = (obj["limit"]?.jsonPrimitive?.intOrNull ?: 50).coerceIn(1, 200)
         val db = database.openHelper.writableDatabase
+
+        fun requireTable(name: String): String {
+            require(name.matches(Regex("[A-Za-z0-9_]+"))) { "invalid table name: $name" }
+            return name
+        }
 
         when (action) {
             "tables" -> {
@@ -111,7 +118,7 @@ fun createDatabaseQueryTool(database: AppDatabase): Tool = Tool(
                 }))
             }
             "schema" -> {
-                val table = obj["table"]?.jsonPrimitive?.contentOrNull ?: error("table required")
+                val table = requireTable(obj["table"]?.jsonPrimitive?.contentOrNull ?: error("table required"))
                 val cursor = try {
                     db.query(SimpleSQLiteQuery("PRAGMA table_info(\"$table\")"))
                 } catch (e: Exception) {
@@ -151,7 +158,7 @@ fun createDatabaseQueryTool(database: AppDatabase): Tool = Tool(
                                 android.database.Cursor.FIELD_TYPE_INTEGER -> put(col, JsonPrimitive(cursor.getLong(idx)))
                                 android.database.Cursor.FIELD_TYPE_FLOAT -> put(col, JsonPrimitive(cursor.getDouble(idx)))
                                 android.database.Cursor.FIELD_TYPE_BLOB -> put(col, JsonPrimitive("[BLOB ${cursor.getBlob(idx).size} bytes]"))
-                                else -> put(col, JsonPrimitive(cursor.getString(idx) ?: ""))
+                                else -> put(col, JsonPrimitive(cursor.getString(idx)?.take(500) ?: ""))
                             }
                         }
                     }
@@ -248,7 +255,7 @@ fun createDatabaseQueryTool(database: AppDatabase): Tool = Tool(
                 ))
             }
             "peek" -> {
-                val table = obj["table"]?.jsonPrimitive?.contentOrNull ?: error("table required")
+                val table = requireTable(obj["table"]?.jsonPrimitive?.contentOrNull ?: error("table required"))
                 val cursor = try {
                     db.query(SimpleSQLiteQuery("SELECT * FROM \"$table\" LIMIT $limit"))
                 } catch (e: Exception) {
@@ -279,7 +286,7 @@ fun createDatabaseQueryTool(database: AppDatabase): Tool = Tool(
                 }.toString()))
             }
             "export" -> {
-                val table = obj["table"]?.jsonPrimitive?.contentOrNull ?: error("table required")
+                val table = requireTable(obj["table"]?.jsonPrimitive?.contentOrNull ?: error("table required"))
                 val format = obj["format"]?.jsonPrimitive?.contentOrNull ?: "json"
                 val cursor = try {
                     db.query(SimpleSQLiteQuery("SELECT * FROM \"$table\" LIMIT $limit"))

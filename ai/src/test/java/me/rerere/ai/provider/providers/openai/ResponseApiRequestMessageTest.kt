@@ -51,7 +51,11 @@ class ResponseApiRequestMessageTest {
 
     // Helper to invoke buildMessages method
     private fun invokeBuildMessages(messages: List<UIMessage>): JsonArray {
-        return api.buildMessages(messages)
+        // 与真实请求一致：firstSystemMessage 取自未过滤的原始列表
+        return api.buildMessages(
+            messages,
+            firstSystemMessage = messages.firstOrNull { it.role == me.rerere.ai.core.MessageRole.SYSTEM },
+        )
     }
 
     private fun invokeBuildRequestBody(

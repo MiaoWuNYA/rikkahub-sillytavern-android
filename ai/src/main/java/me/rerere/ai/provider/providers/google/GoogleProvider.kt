@@ -676,24 +676,10 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                             firstSystemSeen = true
                             return@forEach
                         }
-                        add(buildJsonObject {
-                            put("role", "user")
-                            putJsonArray("parts") {
-                                message.parts.filterIsInstance<UIMessagePart.Text>().forEach { part ->
-                                    add(buildJsonObject { put("text", part.text) })
-                                }
-                            }
-                        })
+                        addSystemAsUserTurn(message)
                         return@forEach
                     }
-                    add(buildJsonObject {
-                        put("role", "user")
-                        putJsonArray("parts") {
-                            message.parts.filterIsInstance<UIMessagePart.Text>().forEach { part ->
-                                add(buildJsonObject { put("text", part.text) })
-                            }
-                        }
-                    })
+                    addSystemAsUserTurn(message)
                     if (!ackInserted) {
                         ackInserted = true
                         add(buildJsonObject {
@@ -762,7 +748,6 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                     // 输出 model 消息
                     add(buildJsonObject {
                         put("role", "model")
-                        message.name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
                         putJsonArray("parts") { partsBuffer.forEach { add(it) } }
                     })
                     partsBuffer.clear()
@@ -782,16 +767,32 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
         if (partsBuffer.isNotEmpty()) {
             add(buildJsonObject {
                 put("role", "model")
-                message.name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
-                putJsonArray("parts") { partsBuffer.forEach { add(it) } }
+                    putJsonArray("parts") { partsBuffer.forEach { add(it) } }
             })
         }
+    }
+
+    /**
+     * 中部 SYSTEM 消息转为 user 轮。空白/纯空 SYSTEM 跳过——
+     * 空的 parts 数组会被 Gemini 400 拒绝。
+     */
+    private fun JsonArrayBuilder.addSystemAsUserTurn(message: UIMessage) {
+        val textParts = message.parts.filterIsInstance<UIMessagePart.Text>()
+            .filter { it.text.isNotBlank() }
+        if (textParts.isEmpty()) return
+        add(buildJsonObject {
+            put("role", "user")
+            putJsonArray("parts") {
+                textParts.forEach { part ->
+                    add(buildJsonObject { put("text", part.text) })
+                }
+            }
+        })
     }
 
     private fun JsonArrayBuilder.addUserMessage(message: UIMessage) {
         add(buildJsonObject {
             put("role", commonRoleToGoogleRole(message.role))
-            message.name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
             putJsonArray("parts") {
                 message.parts.flatMap { it.toGoogleParts() }.forEach { add(it) }
             }

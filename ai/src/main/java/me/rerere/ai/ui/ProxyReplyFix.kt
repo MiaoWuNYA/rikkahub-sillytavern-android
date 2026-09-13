@@ -13,6 +13,9 @@ private val RESPONSE_PREFIX_REGEX =
 
 fun List<UIMessage>.fixProxyPromotedReply(): List<UIMessage> {
     val last = lastOrNull()?.takeIf { it.role == me.rerere.ai.core.MessageRole.ASSISTANT } ?: return this
+    // 工具调用轮次：思考模型一轮结束时只有思考+工具调用、正文为空是正常形态，
+    // 此时把思考提升为正文会把 CoT 变成持久化的假回复、丢失 reasoning 元数据
+    if (last.parts.any { it is UIMessagePart.Tool || it is UIMessagePart.ServerTool }) return this
     val reasoning = last.parts.filterIsInstance<UIMessagePart.Reasoning>()
         .joinToString("") { it.reasoning }
     if (reasoning.isBlank()) return this

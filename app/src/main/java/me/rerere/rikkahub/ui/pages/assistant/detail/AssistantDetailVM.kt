@@ -27,6 +27,7 @@ import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.SelectiveLogic
 import me.rerere.rikkahub.data.model.Tag
+import me.rerere.rikkahub.data.memory.MemoryEmbeddingService
 import me.rerere.rikkahub.data.repository.MemoryRepository
 import me.rerere.rikkahub.data.repository.WorkspaceRepository
 import kotlin.uuid.Uuid
@@ -37,6 +38,7 @@ class AssistantDetailVM(
     private val id: String,
     private val settingsStore: SettingsStore,
     private val memoryRepository: MemoryRepository,
+    private val memoryEmbeddingService: MemoryEmbeddingService,
     private val filesManager: FilesManager,
     private val skillManager: SkillManager,
     private val workspaceRepository: WorkspaceRepository,
@@ -268,9 +270,12 @@ class AssistantDetailVM(
             } else {
                 assistantId.toString()
             }
-            memoryRepository.addMemory(
+            // 必须走 MemoryEmbeddingService：直接写 repository 不会生成向量，
+            // 这条记忆将永远无法被语义 RAG 召回（embeddingModelId 为 null 会被过滤）
+            memoryEmbeddingService.addMemory(
                 assistantId = memoryAssistantId,
                 content = memory.content,
+                settings = settings.value,
                 type = memory.type,
                 sourceConversationId = memory.sourceConversationId,
             )
@@ -279,7 +284,12 @@ class AssistantDetailVM(
 
     fun updateMemory(memory: AssistantMemory) {
         viewModelScope.launch {
-            memoryRepository.updateMemory(id = memory.id, content = memory.content, type = memory.type)
+            memoryEmbeddingService.updateMemory(
+                id = memory.id,
+                content = memory.content,
+                settings = settings.value,
+                type = memory.type,
+            )
         }
     }
 

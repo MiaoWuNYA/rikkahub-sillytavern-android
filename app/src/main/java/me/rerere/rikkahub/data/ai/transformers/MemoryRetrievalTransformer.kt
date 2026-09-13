@@ -4,7 +4,9 @@ import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import me.rerere.ai.provider.EmbeddingGenerationParams
+import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.ProviderManager
+import me.rerere.ai.provider.ProviderSetting
 import me.rerere.ai.ui.UIMessage
 import me.rerere.rikkahub.data.ai.ThreeLayerMemoryPolicy
 import me.rerere.rikkahub.data.ai.buildMemoryPrompt
@@ -16,8 +18,19 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.exp
 import kotlin.math.sqrt
+import kotlin.uuid.Uuid
 
 private const val TAG = "MemoryRetrieval"
+
+/**
+ * 查询向量短 TTL 记忆化：agentic 工具循环每步都会重跑输入 transformer，
+ * 同一查询的 embedding 是付费 API 调用，单轮内（几秒内）复用同一结果即可。
+ */
+private const val QUERY_VECTOR_TTL_MS = 10_000L
+private val queryVectorLock = Any()
+private var queryVectorKey: String? = null
+private var queryVectorValue: List<Float>? = null
+private var queryVectorAt: Long = 0L
 private const val RESULT_LIMIT = 6
 private const val RAG_MEMORY_PROMPT_CHAR_BUDGET = 3_600
 private const val EPISODIC_RECENCY_BOOST = 0.08f
@@ -109,16 +122,14 @@ class MemoryRetrievalTransformer(
     ): List<Pair<MemorySearchRecord, Float>> {
         // 未显式配置嵌入模型时自动回退（快速模型所在提供商优先）；仍无可用嵌入模型则退回词法检索
         val (providerSetting, model) = ctx.settings.resolveEmbeddingModel() ?: return emptyList()
+
+        // 没有任何与当前模型匹配的向量记录时，这次付费 embedding 调用不可能产生结果，直接跳过
+        if (records.none { it.embeddingModelId == model.id.toString() && it.embedding != null }) {
+            return emptyList()
+        }
         return runCatching {
-            val queryVector = providerManager.getProviderByType(providerSetting).generateEmbedding(
-                providerSetting = providerSetting,
-                params = EmbeddingGenerationParams(
-                    model = model,
-                    input = listOf(query),
-                    customHeaders = model.customHeaders,
-                    customBody = model.customBodies,
-                )
-            ).embeddings.firstOrNull() ?: return@runCatching emptyList()
+            val queryVector = getOrEmbedQuery(providerSetting, model, ctx.assistant.id, query)
+                ?: return@runCatching emptyList()
 
             records.mapNotNull { record ->
                 if (record.embeddingModelId != model.id.toString()) return@mapNotNull null
@@ -131,6 +142,36 @@ class MemoryRetrievalTransformer(
             Log.w(TAG, "Embedding retrieval failed; using lexical fallback", error)
             emptyList()
         }
+    }
+
+    private suspend fun getOrEmbedQuery(
+        providerSetting: ProviderSetting,
+        model: Model,
+        assistantId: Uuid,
+        query: String,
+    ): List<Float>? {
+        val cacheKey = "${model.id}:${assistantId}:$query"
+        val nowMs = System.currentTimeMillis()
+        synchronized(queryVectorLock) {
+            if (cacheKey == queryVectorKey && nowMs - queryVectorAt < QUERY_VECTOR_TTL_MS) {
+                return queryVectorValue
+            }
+        }
+        val vector = providerManager.getProviderByType(providerSetting).generateEmbedding(
+            providerSetting = providerSetting,
+            params = EmbeddingGenerationParams(
+                model = model,
+                input = listOf(query),
+                customHeaders = model.customHeaders,
+                customBody = model.customBodies,
+            )
+        ).embeddings.firstOrNull() ?: return null
+        synchronized(queryVectorLock) {
+            queryVectorKey = cacheKey
+            queryVectorValue = vector
+            queryVectorAt = nowMs
+        }
+        return vector
     }
 
     private fun lexicalSearch(

@@ -66,6 +66,25 @@ class MessageFtsManager(private val database: AppDatabase) {
         sort: MessageSearchSort = MessageSearchSort.RELEVANCE,
         assistantId: String? = null,
     ): List<MessageSearchResult> = withContext(Dispatchers.IO) {
+        val results = queryOnce(keyword, sort, assistantId)
+        if (results.isNotEmpty() || keyword.isBlank()) return@withContext results
+
+        // FTS5 隐式 AND：整句多关键词（如"最近 天气 情况"）会 0 命中。
+        // 兜底：按空白拆词逐个检索再合并（按相关度去重），应用内搜索与 conversation_search 都受益。
+        val tokens = keyword.split(Regex("\\s+"))
+            .map { it.trim() }
+            .filter { it.isNotBlank() && it != keyword }
+        if (tokens.size <= 1) return@withContext results
+        tokens.flatMap { token -> queryOnce(token, sort, assistantId) }
+            .distinctBy { it.messageId }
+            .take(50)
+    }
+
+    private fun queryOnce(
+        keyword: String,
+        sort: MessageSearchSort,
+        assistantId: String?,
+    ): List<MessageSearchResult> {
         val results = mutableListOf<MessageSearchResult>()
         val assistantFilter = if (assistantId != null) {
             """
@@ -105,7 +124,7 @@ class MessageFtsManager(private val database: AppDatabase) {
                 )
             }
         }
-        results
+        return results
     }
 }
 

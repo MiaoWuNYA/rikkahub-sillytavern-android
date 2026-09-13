@@ -63,11 +63,13 @@ fun createShellTools(): List<Tool> {
                             }
                             stdoutDeferred.await() to stderrDeferred.await()
                         }
-                        process.waitFor(5, java.util.concurrent.TimeUnit.SECONDS)
-                        val exitCode = process.exitValue()
+                        // waitFor 返回 false 说明 5s 内没退出，exitValue() 会抛异常——先判断再取
+                        val exited = process.waitFor(5, java.util.concurrent.TimeUnit.SECONDS)
+                        val exitCode = if (exited) process.exitValue() else -1
+                        process.destroy()
                         val payload = buildJsonObject {
-                            put("stdout", kotlinx.serialization.json.JsonPrimitive(stdout))
-                            put("stderr", kotlinx.serialization.json.JsonPrimitive(stderr))
+                            put("stdout", kotlinx.serialization.json.JsonPrimitive(stdout.truncateForToolResult()))
+                            put("stderr", kotlinx.serialization.json.JsonPrimitive(stderr.truncateForToolResult()))
                             put("exit_code", kotlinx.serialization.json.JsonPrimitive(exitCode))
                         }
                         listOf(UIMessagePart.Text(payload.toString()))

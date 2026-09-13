@@ -12,7 +12,7 @@ import me.rerere.ai.core.Tool
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.db.fts.MessageSearchSort
 import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.utils.JsonInstantPretty
+import me.rerere.rikkahub.utils.JsonInstant
 import me.rerere.rikkahub.utils.toLocalDate
 import kotlin.uuid.Uuid
 
@@ -60,14 +60,16 @@ fun createConversationTools(
                     })
                 }
             }
-            listOf(UIMessagePart.Text(JsonInstantPretty.encodeToString(payload)))
+            listOf(UIMessagePart.Text(JsonInstant.encodeToString(payload)))
         }
     ),
     Tool(
         name = "conversation_search",
         description = """
             Full-text search across the user's past conversations to recall specific information they mentioned before.
-            Use focused keywords. Run multiple searches with different keywords if needed.
+            Use 1-3 focused keywords per query (e.g. "天气" rather than "最近 天气 情况"). Queries with multiple keywords
+            match messages containing ALL of them first; if nothing matches, each keyword is searched individually and merged.
+            Multiple searches with different keywords are fine.
             Each result includes the conversation title, a snippet with matched keywords wrapped in [brackets], and the date.
         """.trimIndent(),
         parameters = {
@@ -105,7 +107,7 @@ fun createConversationTools(
                     })
                 }
             }
-            listOf(UIMessagePart.Text(JsonInstantPretty.encodeToString(payload)))
+            listOf(UIMessagePart.Text(JsonInstant.encodeToString(payload)))
         }
     )
 )
@@ -153,37 +155,38 @@ fun createHistoryMessageTool(
                     when (part) {
                         is UIMessagePart.Text -> add(buildJsonObject {
                             put("type", "text")
-                            put("text", part.text)
+                            put("text", part.text.truncateForToolResult())
                         })
                         is UIMessagePart.Image -> add(buildJsonObject {
                             put("type", "image")
-                            put("url", part.url)
+                            // data: URI 是整段 base64（可达数 MB），回灌会吃掉裁剪省下的全部 token
+                            put("url", if (part.url.startsWith("data:")) "[inline base64 image omitted]" else part.url)
                         })
                         is UIMessagePart.Video -> add(buildJsonObject {
                             put("type", "video")
-                            put("url", part.url)
+                            put("url", if (part.url.startsWith("data:")) "[inline base64 video omitted]" else part.url)
                         })
                         is UIMessagePart.Audio -> add(buildJsonObject {
                             put("type", "audio")
-                            put("url", part.url)
+                            put("url", if (part.url.startsWith("data:")) "[inline base64 audio omitted]" else part.url)
                         })
                         is UIMessagePart.Document -> add(buildJsonObject {
                             put("type", "document")
                             put("file_name", part.fileName)
-                            put("url", part.url)
+                            put("url", if (part.url.startsWith("data:")) "[inline base64 document omitted]" else part.url)
                         })
                         is UIMessagePart.Tool -> add(buildJsonObject {
                             put("type", "tool_result")
                             put("tool_name", part.toolName)
-                            put("tool_input", part.input)
+                            put("tool_input", part.input.truncateForToolResult(2_000))
                             put("output", part.output.joinToString("\n") { outputPart ->
                                 (outputPart as? UIMessagePart.Text)?.text.orEmpty()
-                            })
+                            }.truncateForToolResult())
                         })
                         is UIMessagePart.ServerTool -> add(buildJsonObject {
                             put("type", "server_tool_result")
                             put("tool_name", part.toolName)
-                            put("output", part.output?.toString().orEmpty())
+                            put("output", part.output?.toString().orEmpty().truncateForToolResult())
                         })
                         else -> add(buildJsonObject {
                             put("type", part::class.simpleName?.lowercase().orEmpty())
@@ -192,6 +195,6 @@ fun createHistoryMessageTool(
                 }
             })
         }
-        listOf(UIMessagePart.Text(JsonInstantPretty.encodeToString(payload)))
+        listOf(UIMessagePart.Text(JsonInstant.encodeToString(payload)))
     }
 )

@@ -46,11 +46,14 @@ class ClaudeRequestMessageTest {
         val method = ClaudeProvider::class.java.getDeclaredMethod(
             "buildMessages",
             List::class.java,
+            UIMessage::class.java,
             Boolean::class.javaPrimitiveType,
             ClaudePromptCacheTtl::class.java
         )
         method.isAccessible = true
-        return method.invoke(provider, messages, false, ClaudePromptCacheTtl.FIVE_MINUTES) as JsonArray
+        // 与真实请求一致：firstSystemMessage 取自未过滤的原始列表
+        val firstSystem = messages.firstOrNull { it.role == me.rerere.ai.core.MessageRole.SYSTEM }
+        return method.invoke(provider, messages, firstSystem, false, ClaudePromptCacheTtl.FIVE_MINUTES) as JsonArray
     }
 
     @Test
