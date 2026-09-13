@@ -23,34 +23,15 @@ fun createSearchTools(settings: Settings): Set<Tool> {
             Tool(
                 name = "search_web",
                 description = """
-                    Search the web for up-to-date or specific information.
-                    Use this when the user asks for the latest news, current facts, or needs verification.
-                    Do not treat result order as proof of freshness. Prefer primary sources and inspect
-                    each result's title, URL, publication date, and content before making a current claim.
-                    Use the optional publication-date and domain filters only when they match the question.
-                    If a date or primary source is missing, or sources conflict, run another focused search
-                    or use scrape_web to verify the most relevant source before answering.
-                    Generate focused keywords and run multiple searches if needed.
+                    Search the web for up-to-date or specific information (latest news, current facts, verification).
+                    Inspect each result's title, URL, and date before making a current claim; if sources conflict or a
+                    primary source is missing, run another focused search or use scrape_web on the best source.
                     Today is ${LocalDate.now().toLocalString(true)}.
 
-                    Response format:
-                    - retrievedAt is the local retrieval time, never a publication date
-                    - items[].id (short id), index, title, url, publishedDate (if supplied), highlights (if supplied), text
-                    - images[]: image urls related to the query (may be empty)
-
-                    Citations:
-                    - After using results, add `[citation,domain](id)` after the sentence.
-                    - Multiple citations are allowed.
-                    - If no results are cited, omit citations.
-
-                    Images:
-                    - When images help the user understand the answer, embed relevant ones using Markdown: `![](url)`.
-                    - Embed 2 to 4 images, and only use urls from `images[]` (never fabricate or alter urls).
-                    - Usually place the images at the very beginning of your reply; skip them entirely if none are relevant.
-
-                    Example:
-                    The capital of France is Paris. [citation,example.com](abc123)
-                    The population is about 2.1 million. [citation,example.com](abc123) [citation,example2.com](def456)
+                    Results: items[].id, index, title, url, publishedDate/highlights (if supplied), text.
+                    retrievedAt is retrieval time, never a publication date.
+                    Citations: after using a result, add `[citation,domain](id)` after the sentence; omit if none cited.
+                    Images: embed 2-4 relevant ones as `![](url)` at the start of your reply, only urls from images[].
                     """.trimIndent(),
                 parameters = {
                     val options = settings.searchServices.getOrElse(
@@ -118,7 +99,8 @@ fun createSearchTools(settings: Settings): Set<Tool> {
                             serviceOptions = options,
                         ).getOrThrow().copy(retrievedAt = Clock.System.now().toString())
                         val payload = JsonInstantPretty.encodeToJsonElement(result).jsonObject
-                        listOf(UIMessagePart.Text(payload.toString()))
+                        // scrape 返回整页正文，必须截断（历史每轮重复计费）
+                        listOf(UIMessagePart.Text(payload.toString().truncateForToolResult()))
                     }
                 ))
         }

@@ -85,6 +85,7 @@ import me.rerere.rikkahub.data.datastore.findModelById
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.ui.components.message.MessagePartBlock
 import me.rerere.rikkahub.ui.components.message.ThinkingStep
+import me.rerere.rikkahub.ui.components.message.tools.toolDisplayName
 import me.rerere.rikkahub.ui.components.message.ChatMessageServerToolStep
 import me.rerere.rikkahub.ui.components.message.groupMessageParts
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
@@ -721,7 +722,7 @@ private fun ChainOfThoughtScope.ExportedToolStep(
             "create" -> stringResource(R.string.chat_message_tool_create_memory)
             "edit" -> stringResource(R.string.chat_message_tool_edit_memory)
             "delete" -> stringResource(R.string.chat_message_tool_delete_memory)
-            else -> stringResource(R.string.chat_message_tool_call_generic, tool.toolName)
+            else -> stringResource(R.string.chat_message_tool_call_generic, toolDisplayName(tool.toolName))
         }
 
         "search_web" -> {
@@ -732,7 +733,7 @@ private fun ChainOfThoughtScope.ExportedToolStep(
         }
 
         "scrape_web" -> stringResource(R.string.chat_message_tool_scrape_web)
-        else -> stringResource(R.string.chat_message_tool_call_generic, tool.toolName)
+        else -> stringResource(R.string.chat_message_tool_call_generic, toolDisplayName(tool.toolName))
     }
     ControlledChainOfThoughtStep(
         expanded = true,

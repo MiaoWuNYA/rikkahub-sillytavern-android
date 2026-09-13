@@ -107,7 +107,7 @@ object MemoryToolUI : ToolUIRenderer {
         ACTION_CREATE -> stringResource(R.string.chat_message_tool_create_memory)
         ACTION_EDIT -> stringResource(R.string.chat_message_tool_edit_memory)
         ACTION_DELETE -> stringResource(R.string.chat_message_tool_delete_memory)
-        else -> stringResource(R.string.chat_message_tool_call_generic, toolName)
+        else -> stringResource(R.string.chat_message_tool_call_generic, toolDisplayName(toolName))
     }
 
     override fun hasSummary(context: ToolUIContext): Boolean =
@@ -284,7 +284,7 @@ object ClipboardToolUI : ToolUIRenderer {
         when (context.arguments.getStringContent("action")) {
             ACTION_READ -> stringResource(R.string.chat_message_tool_clipboard_read)
             ACTION_WRITE -> stringResource(R.string.chat_message_tool_clipboard_write)
-            else -> stringResource(R.string.chat_message_tool_call_generic, toolName)
+            else -> stringResource(R.string.chat_message_tool_call_generic, toolDisplayName(toolName))
         }
 }
 

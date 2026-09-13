@@ -20,18 +20,10 @@ import java.net.URL
  */
 fun createWebFetchTool(): Tool = Tool(
     name = "web_fetch",
-    description = "Send HTTP requests to any URL. Supports GET, POST, PUT, PATCH, DELETE with optional body and custom headers.\n\n" +
-        "Use this to call REST APIs, submit data, fetch web pages, or integrate external services.\n\n" +
-        "Args:\n" +
-        "- url: Full URL including https:// (required)\n" +
-        "- method: HTTP method - GET, POST, PUT, PATCH, DELETE (default: GET)\n" +
-        "- body: JSON body string (required for POST/PUT/PATCH)\n" +
-        "- headers: JSON object of headers, e.g. {\"Authorization\":\"Bearer xxx\",\"X-API-Key\":\"yyy\"}\n" +
-        "- content_type: Content-Type header (default: application/json for POST/PUT/PATCH)\n\n" +
-        "Examples:\n" +
-        "- GET https://api.example.com/data\n" +
-        "- POST https://api.example.com/submit with body={\"key\":\"value\"}\n" +
-        "- Results truncated to 100KB for large responses",
+    description = "Send HTTP requests to any URL (call REST APIs, submit data, fetch pages).\n" +
+        "Methods: GET, POST, PUT, PATCH, DELETE (default GET). Large responses are truncated.\n" +
+        "url: full URL incl. https://; body: JSON string (POST/PUT/PATCH); headers: JSON object;\n" +
+        "content_type: Content-Type (default: application/json for POST/PUT/PATCH).",
     needsApproval = { false },
     parameters = {
         InputSchema.Obj(
@@ -104,9 +96,7 @@ fun createWebFetchTool(): Tool = Tool(
             "HTTP $responseCode: ${conn.responseMessage}\n" +
                 (conn.errorStream?.bufferedReader()?.use { it.readText() } ?: "")
         }
-        val maxLen = 100 * 1024
-        val truncated = if (text.length > maxLen) text.take(maxLen) + "\n\n...[truncated at 100KB]" else text
-
-        listOf(UIMessagePart.Text(truncated))
+        // 20K 字符头尾保留：整页塞给模型 ≈ 上万 token 且历史每轮重复计费，模型可用的部分远小于此
+        listOf(UIMessagePart.Text(text.truncateForToolResult()))
     },
 )

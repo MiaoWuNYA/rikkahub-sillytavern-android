@@ -25,20 +25,10 @@ import java.io.File
 
 fun createPythonTool(context: Context, timeoutSec: Int = 30): Tool = Tool(
     name = "execute_python",
-    description = "Execute Python code for data processing, API calls, or file generation.\n\n" +
-        "Use this tool when you need programmatic logic — loops, conditionals, API integration — that goes beyond simple math.\n\n" +
-        "When to use:\n" +
-        "- Data processing and transformation (CSV, JSON)\n" +
-        "- API calls to external services\n" +
-        "- File generation (CSV, JSON, images)\n" +
-        "- Complex computations that calculator cannot handle\n\n" +
-        "When NOT to use:\n" +
-        "- Simple math (use calculator)\n" +
-        "- Shell commands (use execute_command)\n" +
-        "- File operations (use file tools)\n\n" +
-        "Args:\n" +
-        "- code: Python code to execute. Last expression value returned. Use print() for debugging.\n" +
-        "Code runs in an isolated Python environment on the device.",
+    description = "Execute Python code on-device (isolated environment) for data processing, API calls,\n" +
+        "file generation, or programmatic logic beyond simple math (simple math → calculator;\n" +
+        "shell ops → execute_command; file ops → file tools).\n" +
+        "code: Python code to execute. Last expression value returned. Use print() for debugging.",
     needsApproval = { false },
     parameters = {
         InputSchema.Obj(

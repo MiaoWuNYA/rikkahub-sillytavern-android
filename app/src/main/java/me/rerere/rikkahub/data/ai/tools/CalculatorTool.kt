@@ -13,23 +13,10 @@ import java.util.concurrent.TimeUnit
 fun createCalculatorTool(context: Context): Tool = Tool(
     name = "calculator",
     description = "" +
-        "Mathematical calculator with 700+ functions. Use this tool for complex or multi-step computations that cannot be done mentally.\n" +
-        "Simple arithmetic should be answered directly without calling this tool.\n\n" +
-        "Use this tool when you need to:\n" +
-        "- Complex math: physics formulas, finance (NPV, IRR, Black-Scholes), statistics (ANOVA, PCA, regression)\n" +
-        "- Matrix operations: add, mul, det, inv, eigenvalues\n" +
-        "- Calculus: derivative, integral, ODE (RK4), gradient descent\n" +
-        "- Number theory: is_prime, factorize, gcd/lcm, CRT\n" +
-        "- Astronomy: stellar/coordinate/cosmology calculations\n" +
-        "- Physics: kinematics, relativity (Lorentz, time dilation), quantum, orbital mechanics\n" +
-        "- Geometry: area/volume for any shape\n" +
-        "- Unit conversion, combinatorics, financial calculations\n\n" +
-        "When NOT to use:\n" +
-        "- Simple arithmetic (2+2, percentages) — answer directly\n" +
-        "- Python execution for math (use calculator instead)\n\n" +
-        "Args:\n" +
-        "- expression: Math expression to evaluate. Supports multi-statement: a=1+2; a*3\n" +
-        "- timeout_ms: Max execution time (default: 5000)",
+        "Calculator with 700+ functions for complex or multi-step computations (simple arithmetic — answer directly).\n" +
+        "Covers: statistics, finance, matrices (det/inv/eigen), calculus (derivative/integral/ODE), number theory,\n" +
+        "astronomy, physics (relativity/quantum/orbital), geometry, unit conversion, combinatorics.\n\n" +
+        "expression: Math expression to evaluate. Supports multi-statement: a=1+2; a*3",
     parameters = {
         InputSchema.Obj(
             properties = buildJsonObject {

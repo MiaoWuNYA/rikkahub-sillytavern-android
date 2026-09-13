@@ -94,6 +94,7 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.event.AppEvent
 import me.rerere.rikkahub.data.event.AppEventBus
 import me.rerere.rikkahub.data.repository.MemoryRepository
+import me.rerere.rikkahub.ui.components.message.tools.toolDisplayName
 import me.rerere.rikkahub.ui.components.richtext.HighlightCodeBlock
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import me.rerere.rikkahub.ui.components.richtext.ZoomableAsyncImage
@@ -191,7 +192,7 @@ fun ChainOfThoughtScope.ChatMessageServerToolStep(tool: UIMessagePart.ServerTool
         },
         label = {
             Text(
-                text = stringResource(R.string.chat_message_tool_call_generic, tool.toolName),
+                text = stringResource(R.string.chat_message_tool_call_generic, toolDisplayName(tool.toolName)),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.shimmer(isLoading = loading),
@@ -240,7 +241,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
             MemoryActions.CREATE -> stringResource(R.string.chat_message_tool_create_memory)
             MemoryActions.EDIT -> stringResource(R.string.chat_message_tool_edit_memory)
             MemoryActions.DELETE -> stringResource(R.string.chat_message_tool_delete_memory)
-            else -> stringResource(R.string.chat_message_tool_call_generic, tool.toolName)
+            else -> stringResource(R.string.chat_message_tool_call_generic, toolDisplayName(tool.toolName))
         }
 
         ToolNames.SEARCH_WEB -> stringResource(
@@ -253,7 +254,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
         ToolNames.CLIPBOARD -> when (memoryAction) {
             ClipboardActions.READ -> stringResource(R.string.chat_message_tool_clipboard_read)
             ClipboardActions.WRITE -> stringResource(R.string.chat_message_tool_clipboard_write)
-            else -> stringResource(R.string.chat_message_tool_call_generic, tool.toolName)
+            else -> stringResource(R.string.chat_message_tool_call_generic, toolDisplayName(tool.toolName))
         }
 
         ToolNames.TTS -> {
@@ -362,7 +363,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
             }
         }
 
-        else -> stringResource(R.string.chat_message_tool_call_generic, tool.toolName)
+        else -> stringResource(R.string.chat_message_tool_call_generic, toolDisplayName(tool.toolName))
     }
 
     // 判断是否有额外内容需要显示

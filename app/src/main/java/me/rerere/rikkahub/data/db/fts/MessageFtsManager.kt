@@ -71,14 +71,23 @@ class MessageFtsManager(private val database: AppDatabase) {
 
         // FTS5 隐式 AND：整句多关键词（如"最近 天气 情况"）会 0 命中。
         // 兜底：按空白拆词逐个检索再合并（按相关度去重），应用内搜索与 conversation_search 都受益。
+        // 纯标点/符号 token 必须跳过：jieba 分不出词时 MATCH 空串会抛 SQLiteException
         val tokens = keyword.split(Regex("\\s+"))
             .map { it.trim() }
-            .filter { it.isNotBlank() && it != keyword }
+            .filter { it.isNotBlank() && it != keyword && hasWordCharacter(it) }
         if (tokens.size <= 1) return@withContext results
-        tokens.flatMap { token -> queryOnce(token, sort, assistantId) }
-            .distinctBy { it.messageId }
-            .take(50)
+        return@withContext runCatching {
+            tokens.flatMap { token -> queryOnce(token, sort, assistantId) }
+                .distinctBy { it.messageId }
+                .take(50)
+        }.getOrElse { error ->
+            Log.w(TAG, "per-token FTS fallback failed", error)
+            results
+        }
     }
+
+    private fun hasWordCharacter(token: String): Boolean =
+        token.any { it.isLetterOrDigit() || it.code in 0x4E00..0x9FFF || it.code in 0x3040..0x30FF }
 
     private fun queryOnce(
         keyword: String,

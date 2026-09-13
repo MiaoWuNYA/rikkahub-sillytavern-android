@@ -1319,7 +1319,9 @@ class ChatService(
             checkInvalidMessages(conversationId)
             val conversation = getConversationFlow(conversationId).value
 
-            val tools = try {
+            // 预构建工具列表只为提前校验（非法 MCP 服务名在此抛错暂停队列）；
+            // 实际请求的工具列表在生成时另行构建，此处的结果不使用
+            try {
                 chatToolFactory.createTools(
                     settings = settings,
                     assistant = assistant,

@@ -207,20 +207,13 @@ class LocalTools(
     val javascriptTool by lazy {
         Tool(
             name = "eval_javascript",
-            description = "Execute JavaScript code using QuickJS engine (ES2020, persistent context).\n\n" +
+            description = "Execute JavaScript via QuickJS (ES2020) for calculations or text processing.\n\n" +
                 "The JS context persists between calls — libraries loaded via action='load' stay available.\n" +
-                "⚠️ NOTE: Eval runs in a block scope — `const`/`let` are local to each call (no redeclaration errors).\n" +
-                "Use `var` for variables that need to persist across multiple calls.\n\n" +
-                "Use this tool for calculations or text processing.\n\n" +
-                "When to use:\n" +
-                "- Run JavaScript for calculations, text processing, or prototyping\n" +
-                "- Load a JS library: action='load', library='<asset filename without .js>' (loads once, cached)\n" +
-                "- Call code: action='eval', code='<javascript>'\n" +
-                "- Reset context: action='reset' (clears all loaded libraries)\n\n" +
+                "⚠️ Eval runs in a block scope: `const`/`let` are local to each call; use `var` to persist across calls.\n\n" +
                 "- action: 'eval' (default) | 'load' | 'reset'\n" +
                 "- library: asset filename without .js (for action='load') — loads once, cached\n" +
                 "- function: (optional) call a global function by name with JSON args\n" +
-                "- code: JavaScript code to execute (for action='eval')\n" +
+                "- code: JavaScript to execute (for action='eval')\n" +
                 "- timeout: (optional) seconds, default 60, max 60",
             parameters = {
                 InputSchema.Obj(

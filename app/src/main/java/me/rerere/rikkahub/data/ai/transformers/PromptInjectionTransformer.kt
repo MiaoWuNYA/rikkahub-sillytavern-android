@@ -50,8 +50,6 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
         // 官方把 sticky/cooldown 存在 chat_metadata（按对话），这里也必须按对话隔离，
         // 避免 A 对话的粘性/冷却泄漏到同一助手的 B 对话
         val key = "${ctx.assistant.id}:${ctx.conversationId ?: "no-conversation"}"
-        val activeSticky = stickyTracker.getOrPut(key) { mutableMapOf() }
-        val cooldowns = cooldownTracker.getOrPut(key) { mutableMapOf() }
 
         // 官方 Vector Storage：vectorized 条目按语义相似度激活，批量算好命中集合再进扫描循环
         val vectorActivatedIds = resolveVectorActivations(ctx.context, ctx, messages)
@@ -69,8 +67,8 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
             lorebooks = ctx.settings.lorebooks,
             conversationModeInjectionIds = ctx.conversationModeInjectionIds,
             conversationLorebookIds = ctx.conversationLorebookIds,
-            activeStickyEntries = activeSticky,
-            cooldownEntries = cooldowns,
+            activeStickyEntries = stickyTracker.getOrPut(key) { java.util.concurrent.ConcurrentHashMap() },
+            cooldownEntries = cooldownTracker.getOrPut(key) { java.util.concurrent.ConcurrentHashMap() },
             authorNotePosition = ctx.settings.authorNotePosition,
             authorNoteDepth = ctx.settings.authorNoteDepth,
             worldInfoBudget = ctx.settings.worldInfoBudget,
@@ -135,7 +133,7 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
             // 单次读取：每条目一次磁盘 IO（get 两次 ×几百条目 = 每轮几百次读）
             val vectorsByKey = vectorizedEntries.associate {
                 cacheKey(model.id, it.content) to VectorStoreCache.get(context, cacheKey(model.id, it.content))
-            }
+            }.toMutableMap()
             val uncached = vectorizedEntries.filter { vectorsByKey[cacheKey(model.id, it.content)] == null }
             // 查询向量
             val queryVector = runCatching {
@@ -164,6 +162,8 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
                         batch.forEachIndexed { index, entry ->
                             result.embeddings.getOrNull(index)?.let {
                                 VectorStoreCache.put(context, cacheKey(model.id, entry.content), it.toFloatArray())
+                                // 同轮写入快照：新嵌入的条目本轮即可参与激活，不用等下一轮
+                                vectorsByKey[cacheKey(model.id, entry.content)] = it.toFloatArray()
                             }
                         }
                     }.onFailure { embedFailureUntil = System.currentTimeMillis() + EMBED_FAILURE_TTL_MS }

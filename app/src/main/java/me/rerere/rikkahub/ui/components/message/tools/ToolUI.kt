@@ -63,7 +63,7 @@ interface ToolUIRenderer {
     /** 折叠步骤的标题 */
     @Composable
     fun title(context: ToolUIContext): String =
-        stringResource(R.string.chat_message_tool_call_generic, context.tool.toolName)
+        stringResource(R.string.chat_message_tool_call_generic, toolDisplayName(context.tool.toolName))
 
     /** 步骤展开时是否显示内联摘要 */
     fun hasSummary(context: ToolUIContext): Boolean = false
@@ -146,7 +146,7 @@ fun DefaultToolPreview(
         }
         FormItem(
             label = {
-                Text(stringResource(R.string.chat_message_tool_call_label, context.tool.toolName))
+                Text(stringResource(R.string.chat_message_tool_call_label, toolDisplayName(context.tool.toolName)))
             }
         ) {
             HighlightCodeBlock(

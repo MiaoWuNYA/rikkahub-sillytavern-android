@@ -45,6 +45,7 @@ import me.rerere.rikkahub.data.ai.transformers.onGenerationFinish
 import me.rerere.rikkahub.data.ai.transformers.transforms
 import me.rerere.rikkahub.data.ai.PromptDebugCache
 import me.rerere.rikkahub.data.ai.tools.buildMemoryTools
+import me.rerere.rikkahub.data.ai.tools.truncateForToolResult
 import me.rerere.rikkahub.data.ai.transformers.visualTransforms
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.findProvider
@@ -976,7 +977,12 @@ class GenerationLoop(
         val nonTextParts = output.filter { it !is UIMessagePart.Text }
         val totalChars = textParts.sumOf { it.text.length }
 
-        if (totalChars <= MAX_TOOL_OUTPUT_CHARS || !hasShellAccess) return output
+        if (totalChars <= MAX_TOOL_OUTPUT_CHARS) return output
+
+        // 无 shell 的助手不能读落盘文件，直接头尾截断内联返回（原实现对无 shell 助手完全不截断）
+        if (!hasShellAccess) {
+            return textParts.map { UIMessagePart.Text(it.text.truncateForToolResult()) } + nonTextParts
+        }
 
         Log.i(TAG, "maybeTruncateToolOutput: truncating tool $toolCallId output ($totalChars chars)")
 
@@ -1126,7 +1132,7 @@ private var _lastUserContext: String? = null
  * - 内容变化 → 旧块原位保留（内容已冻结不再重渲染），新块追加在当前尾部并更新锚点，
  *   前缀仍然命中到旧块末尾；
  * - 锚点消息被上下文窗口截断/分支切换 → 清空重置，按尾部注入重新锚定（该事件本身已破坏前缀）。
- * 块数量随内容变化次数增长，由滚动压缩整体重建时自然收敛。
+ * 内容变化时只保留紧邻上一块（防止多份矛盾记忆/日期累积），新块追加尾部。
  */
 private object UserContextAnchorCache {
     data class Block(val text: String, val afterMessageId: Uuid?)
@@ -1177,7 +1183,7 @@ private fun buildUserContext(
             appendLine(value)
         }
         appendLine()
-        appendLine("IMPORTANT: this context may or may not be relevant to your tasks. You should not respond to this context unless it is highly relevant to your task.")
+        appendLine("Use this context only if it is relevant to the current task; do not respond to it directly.")
         append("</system-reminder>")
     }
 

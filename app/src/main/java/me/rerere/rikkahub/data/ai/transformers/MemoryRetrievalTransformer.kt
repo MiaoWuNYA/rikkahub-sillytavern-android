@@ -159,7 +159,11 @@ class MemoryRetrievalTransformer(
         reindexScope.launch {
             runCatching {
                 memoryEmbeddingService.reindexAssistant(ctx.assistant.id.toString(), ctx.settings)
-            }.onFailure { Log.w(TAG, "Background memory reindex failed", it) }
+            }.onFailure {
+                // 失败要允许下轮重试：否则本次进程内 RAG 永远退化为词法检索
+                Log.w(TAG, "Background memory reindex failed", it)
+                reindexTriggered.remove(key)
+            }
         }
     }
 
