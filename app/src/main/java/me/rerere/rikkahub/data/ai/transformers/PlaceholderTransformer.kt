@@ -388,8 +388,19 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
     private val frozenTurnMacros =
         java.util.concurrent.ConcurrentHashMap<String, Pair<String, TurnMacroSnapshot>>()
 
+    /**
+     * 按消息冻结的宏渲染结果：key = assistantId:messageId，
+     * value = (Text 部件内容哈希, 渲染后的 Text 文本列表，非 Text 部件为 null)。
+     * 只缓存含花括号的消息（见 transform 内注释），上限超出整体清空。
+     */
+    private val frozenMessageRenders =
+        java.util.concurrent.ConcurrentHashMap<String, Pair<Int, List<String?>>>()
+
     /** 冻结缓存上限：超出时淘汰最早写入的会话（防长期驻留内存） */
     private const val MAX_FROZEN_TURNS = 64
+
+    /** 按消息冻结的渲染缓存上限（含宏的消息才占位） */
+    private const val MAX_FROZEN_MESSAGES = 128
 
     override suspend fun transform(
         ctx: TransformerContext,
@@ -427,28 +438,53 @@ object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
                 snapshot
             }
 
-        val result = messages.map {
-            it.copy(
-                parts = it.parts.map { part ->
+        val result = messages.map { msg ->
+            // 按消息冻结宏渲染：存储的历史消息 id 稳定、内容不可变，但其文本里的宏
+            // （最典型是把含 {{time}}/{{idleDuration}} 示例的文档/README 粘进对话）
+            // 每轮请求都重新渲染 → 该消息每次请求内容都变，其后的缓存全部失效。
+            // 首次渲染后按 (assistant, messageId, 内容哈希) 冻结，消息被编辑才重渲染。
+            // 注入块每轮生成新 id，天然不命中此缓存（其稳定性由注入侧冻结保证）。
+            val textParts = msg.parts.map { (it as? UIMessagePart.Text)?.text }
+            val renderKey = "${ctx.assistant.id}:${msg.id}"
+            val contentHash = textParts.hashCode()
+            val cachedRender = frozenMessageRenders[renderKey]?.takeIf { it.first == contentHash }?.second
+            if (cachedRender != null) {
+                msg.copy(
+                    parts = msg.parts.mapIndexed { i, part ->
+                        val t = cachedRender.getOrNull(i)
+                        if (part is UIMessagePart.Text && t != null) part.copy(text = t) else part
+                    }
+                )
+            } else {
+                val rendered = msg.parts.map { part ->
                     if (part is UIMessagePart.Text) {
-                        part.copy(
-                            text = stripInjectedMarker(
-                                replacePlaceholders(
-                                    text = part.text,
-                                    ctx = ctx,
-                                    engine = engine,
-                                    settingsStore = settingsStore,
-                                    messages = messages,
-                                    frozen = frozen,
-                                    reusedFrozen = reusedFrozen,
-                                )
+                        stripInjectedMarker(
+                            replacePlaceholders(
+                                text = part.text,
+                                ctx = ctx,
+                                engine = engine,
+                                settingsStore = settingsStore,
+                                messages = messages,
+                                frozen = frozen,
+                                reusedFrozen = reusedFrozen,
                             )
                         )
                     } else {
-                        part
+                        null
                     }
                 }
-            )
+                // 只缓存含宏候选（花括号）的消息，避免纯文本消息白白占内存
+                if (textParts.any { it?.contains('{') == true }) {
+                    if (frozenMessageRenders.size >= MAX_FROZEN_MESSAGES) frozenMessageRenders.clear()
+                    frozenMessageRenders[renderKey] = contentHash to rendered
+                }
+                msg.copy(
+                    parts = msg.parts.mapIndexed { i, part ->
+                        val t = rendered.getOrNull(i)
+                        if (part is UIMessagePart.Text && t != null) part.copy(text = t) else part
+                    }
+                )
+            }
         }
         vars.flush()
         return result
