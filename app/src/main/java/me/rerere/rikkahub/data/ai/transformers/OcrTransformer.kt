@@ -44,6 +44,22 @@ object OcrTransformer : InputMessageTransformer, KoinComponent {
         )
     }
 
+    // 按用户轮冻结的 OCR 结果：LRU 逐出/过期后同一条历史消息里的同一张图会重新 OCR，
+    // LLM 生成的文本不确定 → 前缀分叉打断缓存。每轮（按最新用户消息）内同一图片
+    // 永远复用首步结果。key = assistantId:conversationId:lastUserMsgId → (图片url → 文本)
+    private val turnOcrFreeze =
+        java.util.concurrent.ConcurrentHashMap<String, MutableMap<String, String>>()
+
+    private fun turnCache(ctx: TransformerContext, messages: List<UIMessage>): MutableMap<String, String> {
+        val lastUserMsgId = messages.lastOrNull { it.role == MessageRole.USER }?.id?.toString()
+            ?: "no-user-turn"
+        val key = "${ctx.assistant.id}:${ctx.conversationId ?: "no-conversation"}:$lastUserMsgId"
+        return turnOcrFreeze.getOrPut(key) {
+            if (turnOcrFreeze.size >= 32) turnOcrFreeze.clear()
+            java.util.concurrent.ConcurrentHashMap()
+        }
+    }
+
     override suspend fun transform(
         ctx: TransformerContext,
         messages: List<UIMessage>,
@@ -57,6 +73,7 @@ object OcrTransformer : InputMessageTransformer, KoinComponent {
         }
         if (!hasImages) return messages
 
+        val turn = turnCache(ctx, messages)
         return withContext(Dispatchers.IO) {
             try {
                 ctx.processingStatus.value = "正在识别图片..."
@@ -65,7 +82,7 @@ object OcrTransformer : InputMessageTransformer, KoinComponent {
                         parts = message.parts.map { part ->
                             when {
                                 part is UIMessagePart.Image && part.url.startsWith("file:") -> {
-                                    UIMessagePart.Text(performOcr(part))
+                                    UIMessagePart.Text(performOcr(part, turn))
                                 }
 
                                 else -> part
@@ -79,10 +96,14 @@ object OcrTransformer : InputMessageTransformer, KoinComponent {
         }
     }
 
-    suspend fun performOcr(part: UIMessagePart.Image): String = runCatching {
+    suspend fun performOcr(part: UIMessagePart.Image, turnCache: MutableMap<String, String>? = null): String = runCatching {
+        // 本轮冻结优先：同轮内同一图片即使 LRU 逐出也复用首步结果（文本必须稳定）
+        turnCache?.get(part.url)?.let { return it }
+
         // Check cache first
         cache.get(part.url)?.let { cachedResult ->
             Log.i(TAG, "performOcr: Using cached result for ${part.url}")
+            turnCache?.put(part.url, cachedResult)
             return cachedResult
         }
 
@@ -116,6 +137,7 @@ object OcrTransformer : InputMessageTransformer, KoinComponent {
 
         // Cache the result
         cache.put(part.url, ocrResult)
+        turnCache?.put(part.url, ocrResult)
         return ocrResult
     }.getOrElse {
         "[ERROR, OCR failed: $it]"
