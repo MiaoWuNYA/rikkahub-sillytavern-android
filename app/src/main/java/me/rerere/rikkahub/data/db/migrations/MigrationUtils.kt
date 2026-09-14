@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.data.db.migrations
 
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -94,4 +95,23 @@ internal fun migratePartsArray(partsElement: JsonArray): JsonArray {
             }
         }
     )
+}
+
+/**
+ * Safe ADD COLUMN — checks PRAGMA table_info before executing.
+ * Prevents "duplicate column name" crashes when restoring backups from newer versions
+ * that already contain the column. SQLite has no native ADD COLUMN IF NOT EXISTS.
+ */
+internal fun SupportSQLiteDatabase.addColumnIfNotExists(
+    table: String,
+    column: String,
+    definition: String,
+) {
+    query("PRAGMA table_info($table)").use { cursor ->
+        val nameIndex = cursor.getColumnIndex("name")
+        while (cursor.moveToNext()) {
+            if (cursor.getString(nameIndex) == column) return
+        }
+    }
+    execSQL("ALTER TABLE `$table` ADD COLUMN `$column` $definition")
 }

@@ -12,12 +12,12 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  */
 val Migration_26_27 = object : Migration(26, 27) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("ALTER TABLE `MemoryEntity` ADD COLUMN `memory_type` TEXT NOT NULL DEFAULT 'fact'")
-        db.execSQL("ALTER TABLE `MemoryEntity` ADD COLUMN `created_at` INTEGER NOT NULL DEFAULT 0")
-        db.execSQL("ALTER TABLE `MemoryEntity` ADD COLUMN `source_conversation_id` TEXT")
-        db.execSQL("ALTER TABLE `MemoryEntity` ADD COLUMN `embedding` BLOB")
-        db.execSQL("ALTER TABLE `MemoryEntity` ADD COLUMN `embedding_model_id` TEXT")
-        db.execSQL("ALTER TABLE `MemoryEntity` ADD COLUMN `embedding_dimension` INTEGER")
+        db.addColumnIfNotExists("MemoryEntity", "memory_type", "TEXT NOT NULL DEFAULT 'fact'")
+        db.addColumnIfNotExists("MemoryEntity", "created_at", "INTEGER NOT NULL DEFAULT 0")
+        db.addColumnIfNotExists("MemoryEntity", "source_conversation_id", "TEXT")
+        db.addColumnIfNotExists("MemoryEntity", "embedding", "BLOB")
+        db.addColumnIfNotExists("MemoryEntity", "embedding_model_id", "TEXT")
+        db.addColumnIfNotExists("MemoryEntity", "embedding_dimension", "INTEGER")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_MemoryEntity_assistant_id` ON `MemoryEntity` (`assistant_id`)")
     }
 }

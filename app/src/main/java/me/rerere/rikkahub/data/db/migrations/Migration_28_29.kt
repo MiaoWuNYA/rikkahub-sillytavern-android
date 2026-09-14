@@ -9,6 +9,6 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  */
 val Migration_28_29 = object : Migration(28, 29) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("ALTER TABLE `workspaces` ADD COLUMN `shell_compatibility_mode` INTEGER NOT NULL DEFAULT 0")
+        db.addColumnIfNotExists("workspaces", "shell_compatibility_mode", "INTEGER NOT NULL DEFAULT 0")
     }
 }

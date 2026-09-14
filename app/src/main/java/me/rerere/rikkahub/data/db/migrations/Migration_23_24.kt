@@ -39,6 +39,6 @@ val Migration_23_24 = object : Migration(23, 24) {
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_conversation_folder_assistant_id` ON `conversation_folder`(`assistant_id`)")
 
         // upstream 版本 v24 通过 AutoMigration(from=23, to=24) 自动添加了 folder_id
-        db.execSQL("ALTER TABLE `ConversationEntity` ADD COLUMN `folder_id` TEXT NOT NULL DEFAULT ''")
+        db.addColumnIfNotExists("ConversationEntity", "folder_id", "TEXT NOT NULL DEFAULT ''")
     }
 }

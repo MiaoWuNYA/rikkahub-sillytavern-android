@@ -9,6 +9,6 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  */
 val Migration_27_28 = object : Migration(27, 28) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("ALTER TABLE `ConversationEntity` ADD COLUMN `rolling_context_summary` TEXT NOT NULL DEFAULT ''")
+        db.addColumnIfNotExists("ConversationEntity", "rolling_context_summary", "TEXT NOT NULL DEFAULT ''")
     }
 }
