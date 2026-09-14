@@ -224,10 +224,8 @@ private val matchReplacementCache = SimpleCache.builder<String, String>()
 private fun resolveReplacement(replaceString: String): String {
     matchReplacementCache.getIfPresent(replaceString)?.let { return it }
     // 官方酒馆：替换字符串里的 {{match}}（不区分大小写）= 当前完整匹配，等价 $0
-    val replacement = replaceString.replace(
-        Regex("""\{\{match}}""", RegexOption.IGNORE_CASE),
-        "$0",
-    )
+    // 不能用 Regex 编译：Android ICU 对裸 }} 抛语法错误（桌面 JVM 允许），改用纯字符串替换
+    val replacement = replaceString.replace("{{match}}", "$0", ignoreCase = true)
     matchReplacementCache.put(replaceString, replacement)
     return replacement
 }

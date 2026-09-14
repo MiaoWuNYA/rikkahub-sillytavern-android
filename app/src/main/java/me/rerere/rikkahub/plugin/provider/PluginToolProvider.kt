@@ -142,15 +142,22 @@ class PluginToolProvider(
      */
     private fun parseSkillChunks(content: String): List<Pair<String, String>> {
         val chunks = mutableListOf<Pair<String, String>>()
-        // 源文件混合了 \n 与 \r\n 行尾，分隔符需同时兼容
-        val parts = content.split(Regex("\r?\n---\r?\n"))
+        // 新版技能包用唯一分隔符 <<<SKILL_SPLIT>>> 切分（技能正文里可能含 --- 干扰行）；
+        // 旧版技能包用 --- 行分隔，保持兼容
+        val parts = if (content.contains("<<<SKILL_SPLIT>>>")) {
+            content.split(Regex("\r?\n<<<SKILL_SPLIT>>>\r?\n"))
+        } else {
+            content.split(Regex("\r?\n---\r?\n"))
+        }
         for (part in parts) {
             val trimmed = part.trim()
             if (trimmed.isEmpty()) continue
             val nameMatch = Regex("^name:\\s*(.+)", RegexOption.MULTILINE).find(trimmed)
             if (nameMatch != null) {
                 val skillName = nameMatch.groupValues[1].trim().trim('"', '\'')
-                chunks.add(skillName to "---\n$trimmed")
+                // 新版技能块自带 frontmatter 的 --- 包裹；旧版是裸 name: 开头需补
+                val body = if (trimmed.startsWith("---")) trimmed else "---\n$trimmed"
+                chunks.add(skillName to body)
             }
         }
         return chunks
