@@ -67,12 +67,16 @@ class PluginToolProvider(
             }
 
             // 可选分段（通过 config 开关控制）
+            // skills 分段不做分段级开关（由 individual skill config keys 控制），
+            // 其余分段：config 值缺失或非 boolean 时一律视为关闭
             plugin.info.manifest.sections.forEach { section ->
-                val configKey = "enable_${section.name}"
-                val sectionEnabled = plugin.info.getConfigValue(configKey)
-                    ?.let { it is kotlinx.serialization.json.JsonPrimitive && it.content.toBooleanStrictOrNull() ?: false }
-                    ?: false
-                if (!sectionEnabled) return@forEach
+                if (section.name != "skills") {
+                    val configKey = "enable_${section.name}"
+                    val sectionEnabled = plugin.info.getConfigValue(configKey)
+                        ?.let { it is kotlinx.serialization.json.JsonPrimitive && it.content.toBooleanStrictOrNull() ?: false }
+                        ?: false
+                    if (!sectionEnabled) return@forEach
+                }
 
                 val resolved = resolvePluginFile(plugin, section.file) ?: return@forEach
 
@@ -138,11 +142,12 @@ class PluginToolProvider(
      */
     private fun parseSkillChunks(content: String): List<Pair<String, String>> {
         val chunks = mutableListOf<Pair<String, String>>()
-        val parts = content.split(Regex("\n---\n"))
+        // 源文件混合了 \n 与 \r\n 行尾，分隔符需同时兼容
+        val parts = content.split(Regex("\r?\n---\r?\n"))
         for (part in parts) {
             val trimmed = part.trim()
             if (trimmed.isEmpty()) continue
-            val nameMatch = Regex("^name:\\s*(.+)").find(trimmed)
+            val nameMatch = Regex("^name:\\s*(.+)", RegexOption.MULTILINE).find(trimmed)
             if (nameMatch != null) {
                 val skillName = nameMatch.groupValues[1].trim().trim('"', '\'')
                 chunks.add(skillName to "---\n$trimmed")
