@@ -69,14 +69,30 @@ class PluginToolProvider(
             // 可选分段（通过 config 开关控制）
             plugin.info.manifest.sections.forEach { section ->
                 val configKey = "enable_${section.name}"
-                val enabled = plugin.info.getConfigValue(configKey)
+                val sectionEnabled = plugin.info.getConfigValue(configKey)
                     ?.let { it is kotlinx.serialization.json.JsonPrimitive && it.content.toBooleanStrictOrNull() ?: true }
-                    ?: true // 默认启用
-                if (enabled) {
-                    val resolved = resolvePluginFile(plugin, section.file)
-                    if (resolved != null) {
-                        parts.add("【${section.label}】\n$resolved")
+                    ?: true
+                if (!sectionEnabled) return@forEach
+
+                val resolved = resolvePluginFile(plugin, section.file) ?: return@forEach
+
+                // 技能包分段：按 individual skill config keys 过滤
+                if (section.name == "skills") {
+                    val skillChunks = parseSkillChunks(resolved)
+                    if (skillChunks.isNotEmpty()) {
+                        val enabledSkills = skillChunks.filter { (skillName, _) ->
+                            val skillKey = "enable_$skillName"
+                            val skillEnabled = plugin.info.getConfigValue(skillKey)
+                                ?.let { it is kotlinx.serialization.json.JsonPrimitive && it.content.toBooleanStrictOrNull() ?: false }
+                                ?: false
+                            skillEnabled
+                        }.map { it.second }
+                        if (enabledSkills.isNotEmpty()) {
+                            parts.add("【${section.label}】\n${enabledSkills.joinToString("\n\n")}")
+                        }
                     }
+                } else {
+                    parts.add("【${section.label}】\n$resolved")
                 }
             }
 
@@ -112,6 +128,25 @@ class PluginToolProvider(
             android.util.Log.e("PluginToolProvider", "Plugin ${plugin.id}: failed to resolve: $ref", e)
             null
         }
+    }
+
+    /**
+     * 解析技能包内容为独立技能块
+     * 每个技能以 "---" + YAML frontmatter 开头，包含 name 字段
+     */
+    private fun parseSkillChunks(content: String): List<Pair<String, String>> {
+        val chunks = mutableListOf<Pair<String, String>>()
+        val parts = content.split(Regex("\n---\n"))
+        for (part in parts) {
+            val trimmed = part.trim()
+            if (trimmed.isEmpty()) continue
+            val nameMatch = Regex("^name:\\s*(.+)").find(trimmed)
+            if (nameMatch != null) {
+                val skillName = nameMatch.groupValues[1].trim().trim('"', '\'')
+                chunks.add(skillName to "---\n$trimmed")
+            }
+        }
+        return chunks
     }
 
     /**
