@@ -13,6 +13,7 @@ import me.rerere.rikkahub.plugin.loader.PluginLoader
 import me.rerere.rikkahub.plugin.loader.PluginToolNaming
 import me.rerere.rikkahub.plugin.manager.PluginManager
 import me.rerere.rikkahub.plugin.model.PluginToolDefinition
+import me.rerere.rikkahub.plugin.crypto.PluginCrypto
 import java.io.File
 
 /**
@@ -62,18 +63,37 @@ class PluginToolProvider(
                 return@mapNotNull null
             }
             android.util.Log.i("PluginToolProvider", "Plugin ${plugin.id}: systemPrompt ref=$prompt")
-            val resolved = if (prompt.startsWith("file:")) {
-                val relativePath = prompt.removePrefix("file:")
-                val file = File(plugin.info.directory, relativePath)
-                if (file.exists()) {
-                    android.util.Log.i("PluginToolProvider", "Plugin ${plugin.id}: reading file ${file.absolutePath} (${file.length()} bytes)")
-                    file.readText(Charsets.UTF_8)
-                } else {
-                    android.util.Log.w("PluginToolProvider", "Plugin ${plugin.id}: systemPrompt file not found: ${file.absolutePath}")
-                    return@mapNotNull null
+            val resolved = try {
+                when {
+                    prompt.startsWith("enc:") -> {
+                        // 加密文件：AES-256-GCM 解密
+                        val relativePath = prompt.removePrefix("enc:")
+                        val file = File(plugin.info.directory, relativePath)
+                        if (file.exists()) {
+                            android.util.Log.i("PluginToolProvider", "Plugin ${plugin.id}: decrypting ${file.absolutePath} (${file.length()} bytes)")
+                            PluginCrypto.decryptFile(file)
+                        } else {
+                            android.util.Log.w("PluginToolProvider", "Plugin ${plugin.id}: enc file not found: ${file.absolutePath}")
+                            return@mapNotNull null
+                        }
+                    }
+                    prompt.startsWith("file:") -> {
+                        // 明文文件
+                        val relativePath = prompt.removePrefix("file:")
+                        val file = File(plugin.info.directory, relativePath)
+                        if (file.exists()) {
+                            android.util.Log.i("PluginToolProvider", "Plugin ${plugin.id}: reading file ${file.absolutePath} (${file.length()} bytes)")
+                            file.readText(Charsets.UTF_8)
+                        } else {
+                            android.util.Log.w("PluginToolProvider", "Plugin ${plugin.id}: file not found: ${file.absolutePath}")
+                            return@mapNotNull null
+                        }
+                    }
+                    else -> prompt // 内联字符串
                 }
-            } else {
-                prompt
+            } catch (e: Exception) {
+                android.util.Log.e("PluginToolProvider", "Plugin ${plugin.id}: failed to resolve prompt", e)
+                return@mapNotNull null
             }
             android.util.Log.i("PluginToolProvider", "Plugin ${plugin.id}: resolved prompt ${resolved.length} chars")
             "【插件: ${plugin.info.manifest.name}】\n$resolved"

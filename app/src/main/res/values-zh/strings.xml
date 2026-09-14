@@ -1960,6 +1960,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="workspace_detail_compatibility_mode">兼容模式</string>
   <string name="workspace_detail_compatibility_mode_desc">如果终端无法启动，请尝试启用此功能。这可能会降低性能。适用于新的终端标签页及后续命令。</string>
   <string name="workspace_detail_settings_save_failed">保存设置失败</string>
+  <string name="plugin_manage">插件</string>
   <string name="plugin_page_title">插件管理</string>
   <string name="plugin_page_refresh">刷新</string>
   <string name="plugin_page_new_folder">新建文件夹</string>

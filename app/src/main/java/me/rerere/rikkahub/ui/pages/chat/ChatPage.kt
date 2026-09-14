@@ -686,6 +686,9 @@ private fun ChatPageContent(
                     onMoreClick = {
                         showFilesSheet = true
                     },
+                    onPluginManage = {
+                        navController.navigate(Screen.Plugins)
+                    },
                 )
             },
         ) { innerPadding ->

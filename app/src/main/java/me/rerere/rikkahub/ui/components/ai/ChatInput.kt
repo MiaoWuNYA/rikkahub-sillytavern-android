@@ -101,6 +101,7 @@ import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.ArrowUp02
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Fullscreen
+import me.rerere.hugeicons.stroke.Package01
 import me.rerere.hugeicons.stroke.Zap
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
@@ -176,6 +177,7 @@ fun ChatInput(
     onStartVoiceMode: (() -> Unit)? = null,
     voiceState: VoiceSessionState = VoiceSessionState(),
     onStopVoiceMode: () -> Unit = {},
+    onPluginManage: (() -> Unit)? = null,
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
@@ -472,6 +474,15 @@ fun ChatInput(
                                     }
                                 }
                             )
+                        }
+
+                        if (onPluginManage != null) {
+                            ActionIconButton(onClick = onPluginManage) {
+                                Icon(
+                                    imageVector = HugeIcons.Package01,
+                                    contentDescription = stringResource(R.string.plugin_manage),
+                                )
+                            }
                         }
 
                         if (loading) {

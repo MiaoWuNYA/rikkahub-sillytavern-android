@@ -1962,6 +1962,7 @@
   <string name="workspace_detail_compatibility_mode">Compatibility mode</string>
   <string name="workspace_detail_compatibility_mode_desc">Try enabling this if the terminal fails to start. It may reduce performance. Applies to new terminal tabs and subsequent commands.</string>
   <string name="workspace_detail_settings_save_failed">Failed to save settings</string>
+  <string name="plugin_manage">Plugins</string>
   <string name="plugin_page_title">Plugins</string>
   <string name="plugin_page_refresh">Refresh</string>
   <string name="plugin_page_new_folder">New Folder</string>
