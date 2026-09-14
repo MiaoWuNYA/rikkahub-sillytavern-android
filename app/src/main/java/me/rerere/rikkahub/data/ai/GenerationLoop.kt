@@ -92,6 +92,7 @@ class GenerationLoop(
     private val memoryRepo: MemoryRepository,
     private val conversationRepo: ConversationRepository,
     private val memoryEmbeddingService: me.rerere.rikkahub.data.memory.MemoryEmbeddingService,
+    private val pluginToolProvider: me.rerere.rikkahub.plugin.provider.PluginToolProvider,
 ) {
     fun generateText(
         settings: Settings,
@@ -170,6 +171,15 @@ class GenerationLoop(
                 assistant.contextTemplate.trim() == me.rerere.rikkahub.data.model.DEFAULT_CONTEXT_TEMPLATE)
         val conversationOverride = assistant.allowConversationSystemPrompt && !conversationSystemPrompt.isNullOrBlank()
 
+        // 收集插件系统提示词
+        val pluginSystemPromptText = run {
+            val pluginPrompts = pluginToolProvider.getPluginSystemPrompts()
+            if (pluginPrompts.isEmpty()) "" else pluginPrompts.joinToString("\n\n")
+        }
+        if (pluginSystemPromptText.isNotBlank()) {
+            Log.i(TAG, "buildCachedSystemPrompt: plugin system prompt injected (${pluginSystemPromptText.length} chars)")
+        }
+
         val mainIdentity = if (conversationOverride) {
             conversationSystemPrompt
         } else if (useOfficialSplit) {
@@ -224,7 +234,7 @@ class GenerationLoop(
             workspaceDescription = if (hasTool("workspace_read", "workspace_write", "workspace_shell")) {
                 "Working directory: ${context.filesDir?.absolutePath ?: "."}"
             } else "",
-            extraInstructions = "",
+            extraInstructions = pluginSystemPromptText,
             // 提示词缓存：Recent Chats 每天变化且列表随其他会话活动移动，
             // 放在系统提示（前缀最顶部）会打断全部缓存，已挪到上下文尾部（buildUserContext）
             constraints = emptyList(),
@@ -575,6 +585,11 @@ class GenerationLoop(
             messages
         }
         val limitedChat = requestMessages.limitContext(assistant.contextMessageLimit)
+        // 收集插件系统提示词（suspend 调用，需在 coroutine 上下文中）
+        val pluginSystemPromptText = run {
+            val pluginPrompts = pluginToolProvider.getPluginSystemPrompts()
+            if (pluginPrompts.isEmpty()) "" else pluginPrompts.joinToString("\n\n")
+        }
         val internalMessages = buildList {
             // 延迟构建：prebuiltSystemMessages 几乎总是非空，fallback 每步白算一遍是纯浪费
             val fallbackSystem = { buildString {
@@ -613,7 +628,7 @@ class GenerationLoop(
                     appendLine("- If you need clarification, ask the user directly")
                 },
                 workspaceDescription = "Working directory: ${context.filesDir?.absolutePath ?: "."}",
-                extraInstructions = "",
+                extraInstructions = pluginSystemPromptText,
                 // 提示词缓存：Recent Chats 已挪到上下文尾部（buildUserContext）
                 constraints = emptyList(),
             )

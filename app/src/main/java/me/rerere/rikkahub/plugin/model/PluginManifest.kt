@@ -65,6 +65,14 @@ data class PluginManifest(
      * 特殊值 "*" 表示允许所有域名（不推荐，仅用于开发调试）。
      */
     val allowedHosts: List<String> = emptyList(),
+
+    /**
+     * 插件系统提示词（可选）。
+     * 启用后，此内容会作为 extraInstructions 注入到 AI 的 system prompt 中。
+     * 用于开发者测试提示词兼容性等场景。
+     * 支持内联字符串或文件引用（以 "file:" 开头，如 "file:prompts/system.md"）。
+     */
+    val systemPrompt: String? = null,
 )
 
 /**

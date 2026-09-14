@@ -252,6 +252,7 @@ val dataSourceModule = module {
             memoryRepo = get(),
             conversationRepo = get(),
             memoryEmbeddingService = get(),
+            pluginToolProvider = get(),
         )
     }
 

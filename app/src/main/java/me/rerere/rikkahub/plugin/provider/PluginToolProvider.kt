@@ -13,6 +13,7 @@ import me.rerere.rikkahub.plugin.loader.PluginLoader
 import me.rerere.rikkahub.plugin.loader.PluginToolNaming
 import me.rerere.rikkahub.plugin.manager.PluginManager
 import me.rerere.rikkahub.plugin.model.PluginToolDefinition
+import java.io.File
 
 /**
  * 插件工具提供者
@@ -42,6 +43,40 @@ class PluginToolProvider(
             plugin.info.manifest.tools.map { toolDef ->
                 createTool(plugin, toolDef)
             }
+        }
+    }
+
+    /**
+     * 获取所有启用插件的系统提示词。
+     * 返回格式为 "【插件: {name}】\n{prompt}" 的列表。
+     * 支持内联字符串和 file: 前缀的文件引用。
+     */
+    suspend fun getPluginSystemPrompts(): List<String> {
+        pluginManager.awaitInitialization()
+        val allPlugins = pluginLoader.getAllLoadedPlugins()
+        android.util.Log.i("PluginToolProvider", "getPluginSystemPrompts: ${allPlugins.size} loaded plugins")
+        return allPlugins.mapNotNull { plugin ->
+            val prompt = plugin.info.manifest.systemPrompt?.takeIf { it.isNotBlank() }
+            if (prompt == null) {
+                android.util.Log.d("PluginToolProvider", "Plugin ${plugin.id}: no systemPrompt defined")
+                return@mapNotNull null
+            }
+            android.util.Log.i("PluginToolProvider", "Plugin ${plugin.id}: systemPrompt ref=$prompt")
+            val resolved = if (prompt.startsWith("file:")) {
+                val relativePath = prompt.removePrefix("file:")
+                val file = File(plugin.info.directory, relativePath)
+                if (file.exists()) {
+                    android.util.Log.i("PluginToolProvider", "Plugin ${plugin.id}: reading file ${file.absolutePath} (${file.length()} bytes)")
+                    file.readText(Charsets.UTF_8)
+                } else {
+                    android.util.Log.w("PluginToolProvider", "Plugin ${plugin.id}: systemPrompt file not found: ${file.absolutePath}")
+                    return@mapNotNull null
+                }
+            } else {
+                prompt
+            }
+            android.util.Log.i("PluginToolProvider", "Plugin ${plugin.id}: resolved prompt ${resolved.length} chars")
+            "【插件: ${plugin.info.manifest.name}】\n$resolved"
         }
     }
 

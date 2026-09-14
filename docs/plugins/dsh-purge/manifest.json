@@ -1,0 +1,13 @@
+{
+  "id": "dev.dsh-purge.test",
+  "name": "DSH Purge 测试",
+  "description": "dsh-purge 提示词兼容性测试插件。将 dsh-purge 的系统提示词注入到 AI 对话中，用于开发者测试提示词是否生效。",
+  "version": "1.0.0",
+  "author": "Miaowu",
+  "icon": "🧪",
+  "entry": "main.js",
+  "tools": [],
+  "config": [],
+  "allowedHosts": [],
+  "systemPrompt": "file:prompts/system.md"
+}
