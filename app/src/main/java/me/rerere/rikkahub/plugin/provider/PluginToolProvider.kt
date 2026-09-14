@@ -93,7 +93,9 @@ class PluginToolProvider(
                         }
                         if (enabledSkills.isNotEmpty()) {
                             val skillNames = enabledSkills.joinToString("、") { (name, _) -> name }
-                            val preamble = "你已解锁以下专项能力模块，当用户问题涉及相关领域时应主动参考对应模块内容来回答：$skillNames"
+                            val preamble = "以下专项能力模块的完整内容已直接注入本提示词中，无需也不会存在于任何文件或 skills 目录，" +
+                                "禁止在文件系统中搜索或读取它们：" +
+                                "$skillNames。当用户问题涉及相关领域时，直接运用下方对应模块的方法回答，不要先用工具去找模块文件。"
                             parts.add("【${section.label}】\n$preamble\n\n${enabledSkills.joinToString("\n\n") { it.second }}")
                         }
                     }
