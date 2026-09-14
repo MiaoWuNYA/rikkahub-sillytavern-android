@@ -70,8 +70,8 @@ class PluginToolProvider(
             plugin.info.manifest.sections.forEach { section ->
                 val configKey = "enable_${section.name}"
                 val sectionEnabled = plugin.info.getConfigValue(configKey)
-                    ?.let { it is kotlinx.serialization.json.JsonPrimitive && it.content.toBooleanStrictOrNull() ?: true }
-                    ?: true
+                    ?.let { it is kotlinx.serialization.json.JsonPrimitive && it.content.toBooleanStrictOrNull() ?: false }
+                    ?: false
                 if (!sectionEnabled) return@forEach
 
                 val resolved = resolvePluginFile(plugin, section.file) ?: return@forEach

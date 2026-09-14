@@ -72,7 +72,8 @@ fun PluginDetailPage(
     onNavigateBack: () -> Unit,
     viewModel: PluginViewModel = koinViewModel()
 ) {
-    val plugin = viewModel.getPlugin(pluginId)
+    val plugins by viewModel.plugins.collectAsStateWithLifecycle()
+    val plugin = plugins.find { it.manifest.id == pluginId }
 
     if (plugin == null) {
         Column(
@@ -149,17 +150,9 @@ fun PluginDetailPage(
                             configValues = configValues.toMutableMap().apply {
                                 if (value != null) put(field.name, value) else remove(field.name)
                             }
+                            viewModel.updatePluginConfig(pluginId, configValues)
                         }
                     )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = { viewModel.updatePluginConfig(pluginId, configValues) },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(imageVector = HugeIcons.CheckmarkCircle01, contentDescription = null)
-                    Spacer(modifier = Modifier.size(8.dp))
-                    Text(stringResource(R.string.plugin_detail_save_config))
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
