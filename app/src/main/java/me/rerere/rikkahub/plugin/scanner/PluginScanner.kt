@@ -47,11 +47,16 @@ class PluginScanner(
      */
     fun scanPlugins(): List<PluginInfo> {
         val dir = pluginsDir
+        android.util.Log.i("PluginScanner", "scanPlugins: dir=${dir.absolutePath}, exists=${dir.exists()}, isDir=${dir.isDirectory}")
         if (!dir.exists() || !dir.isDirectory) {
             return emptyList()
         }
-
-        return dir.listFiles { file -> file.isDirectory }
+        val subDirs = dir.listFiles { file -> file.isDirectory }
+        android.util.Log.i("PluginScanner", "scanPlugins: found ${subDirs?.size ?: 0} subdirectories")
+        subDirs?.forEach { d ->
+            android.util.Log.i("PluginScanner", "  - ${d.name}: manifest=${File(d, MANIFEST_FILE).exists()}")
+        }
+        return subDirs
             ?.mapNotNull { pluginDir -> loadPluginInfo(pluginDir) }
             ?: emptyList()
     }
@@ -167,11 +172,17 @@ class PluginScanner(
             }
 
             val pluginDir = File(ensurePluginsDir(), manifest.id)
+            android.util.Log.i("PluginScanner", "completeImport: target=${pluginDir.absolutePath}")
             if (pluginDir.exists()) {
                 pluginDir.deleteRecursively()
             }
             manifestFile.parentFile?.copyRecursively(pluginDir, overwrite = true)
             tempDir.deleteRecursively()
+
+            // 验证文件已写入
+            val copiedFiles = pluginDir.listFiles()
+            android.util.Log.i("PluginScanner", "completeImport: copied ${copiedFiles?.size ?: 0} files to ${pluginDir.absolutePath}")
+            copiedFiles?.forEach { f -> android.util.Log.i("PluginScanner", "  - ${f.name} (${f.length()} bytes)") }
 
             // 写入完整性校验和
             runCatching {
