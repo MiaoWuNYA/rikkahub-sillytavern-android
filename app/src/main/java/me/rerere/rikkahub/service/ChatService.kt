@@ -1373,11 +1373,13 @@ class ChatService(
                 maxOutputTokens = assistant.maxTokens,
             )
             // 摘要无法刷新时的兜底：直接把请求窗口裁剪到最近的对话窗口
+            // 注意：优先使用刚刷新的 rollingSummary（而非 conversation 快照中的旧摘要），
+            // 否则旧摘要覆盖范围小，createRollingContextPlan 误判"仍需压缩"，兜底窗口被错误激活。
             val fallbackWindowStartIndex = rollingThresholdTokens?.takeIf { threshold ->
                 messageRange == null &&
                     createRollingContextPlan(
                         messages = generationMessages,
-                        storedSummary = conversation.rollingContextSummary,
+                        storedSummary = rollingSummary ?: conversation.rollingContextSummary,
                         thresholdTokens = threshold,
                         pruneTransient = settings.huadengSettings.enableTransientContentPrune,
                     ) != null

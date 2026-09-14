@@ -99,8 +99,19 @@ fun createRollingContextPlan(
     val workingTokens = estimateActiveContextTokens(messages, previousSummary, pruneTransient)
     if (!force && workingTokens < effectiveThreshold) return null
 
+    // 自适应保留窗口：预留固定开销（系统提示词/工具 schema）和摘要目标后，
+    // 剩余空间才是保留窗口的 token 预算。固定比例（55%）在小上下文窗口模型上
+    // 会导致 压缩后总量仍超阈值 → 每轮重复压缩的死循环。
+    val targetSummaryTokens = (effectiveThreshold / SUMMARY_TARGET_DIVISOR)
+        .coerceIn(MIN_SUMMARY_TOKENS, MAX_SUMMARY_TOKENS)
+    val overhead = lastMeasuredFixedOverhead.coerceAtLeast(MIN_CONTEXT_RESERVE_TOKENS)
+    val keepTokenBudget = if (force) {
+        0
+    } else {
+        (effectiveThreshold - overhead - targetSummaryTokens).coerceAtLeast(0)
+    }
     val keepCount = unsummarizedMessages.recentWindowCount(
-        tokenBudget = if (force) 0 else (effectiveThreshold * RECENT_WINDOW_RATIO).toInt(),
+        tokenBudget = keepTokenBudget,
         pruneTransient = pruneTransient,
     )
     val messagesToSummarize = unsummarizedMessages.dropLast(keepCount)
@@ -118,8 +129,7 @@ fun createRollingContextPlan(
         previousSummary = previousSummary,
         messagesToSummarize = messagesToSummarize,
         sourceMessageIds = messages.take(coveredCount + messagesToSummarize.size).map(UIMessage::id),
-        targetTokens = targetTokensOverride ?: (effectiveThreshold / SUMMARY_TARGET_DIVISOR)
-            .coerceIn(MIN_SUMMARY_TOKENS, MAX_SUMMARY_TOKENS),
+        targetTokens = targetTokensOverride ?: targetSummaryTokens,
     )
 }
 
@@ -303,7 +313,9 @@ fun rollingContextWindowStartIndex(
     thresholdTokens: Int,
     pruneTransient: Boolean = false,
 ): Int {
-    val tokenBudget = (effectiveRollingContextThreshold(thresholdTokens) * RECENT_WINDOW_RATIO).toInt()
+    val effectiveThreshold = effectiveRollingContextThreshold(thresholdTokens)
+    val overhead = lastMeasuredFixedOverhead.coerceAtLeast(MIN_CONTEXT_RESERVE_TOKENS)
+    val tokenBudget = (effectiveThreshold - overhead).coerceAtLeast(0)
     return messages.size - messages.recentWindowCount(tokenBudget, pruneTransient)
 }
 
@@ -347,7 +359,6 @@ private const val AUDIO_TOKEN_ESTIMATE = 4_096
 private const val VIDEO_TOKEN_ESTIMATE = 8_192
 private const val MIN_ROLLING_CONTEXT_MESSAGES = 1
 private const val MIN_RECENT_MESSAGE_COUNT = 1
-private const val RECENT_WINDOW_RATIO = 0.55f
 private const val SUMMARY_TARGET_DIVISOR = 4
 private const val MIN_SUMMARY_TOKENS = 512
 internal const val MAX_SUMMARY_TOKENS = 8_000
