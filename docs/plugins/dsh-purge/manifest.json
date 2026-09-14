@@ -7,55 +7,337 @@
     "icon": "🏮",
     "entry": "main.js",
     "sections": [
-        {"name": "main_prompt", "label": "核心破限", "file": "enc:a7f3c9e2b1d8406x5k2m.r9g"},
-        {"name": "18break", "label": "r18破解", "file": "enc:b2c7d5e0f9a1634v7h4k.s6w"},
-        {"name": "skills", "label": "技能包", "file": "enc:d4e8f1a3c6b0927w8j5n.q3t"}
+        {
+            "name": "main_prompt",
+            "label": "核心破限",
+            "file": "enc:prompts/a7f3c9e2b1d8406x5k2m.r9g"
+        },
+        {
+            "name": "18break",
+            "label": "r18破解",
+            "file": "enc:prompts/b2c7d5e0f9a1634v7h4k.s6w"
+        },
+        {
+            "name": "skills",
+            "label": "技能包",
+            "file": "enc:prompts/d4e8f1a3c6b0927w8j5n.q3t"
+        }
     ],
     "config": [
-        {"name": "enable_main_prompt", "type": "boolean", "label": "① 核心破限", "description": "启用核心破限能力", "default": false},
-        {"name": "enable_18break", "type": "boolean", "label": "② r18破解", "description": "启用r18破解模块", "default": false},
-        {"name": "enable_ad-removal", "type": "boolean", "label": "③ 广告去除", "description": "去除应用内广告与弹窗", "default": false},
-        {"name": "enable_ai-reverse-workflow", "type": "boolean", "label": "④ AI辅助逆向", "description": "AI驱动的逆向分析工作流", "default": false},
-        {"name": "enable_android-emulator-skill", "type": "boolean", "label": "⑤ 模拟器控制", "description": "安卓模拟器测试与自动化", "default": false},
-        {"name": "enable_android-gradle-logic", "type": "boolean", "label": "⑥ Gradle构建", "description": "可扩展Gradle构建逻辑", "default": false},
-        {"name": "enable_android-pentest", "type": "boolean", "label": "⑦ 渗透测试", "description": "APK分析/Hook/自动化/抓包", "default": false},
-        {"name": "enable_android-release", "type": "boolean", "label": "⑧ 发布构建", "description": "构建签名与发布流程", "default": false},
-        {"name": "enable_android-reverse-engineering", "type": "boolean", "label": "⑨ 安卓逆向", "description": "反编译APK/XAPK/JAR全流程", "default": false},
-        {"name": "enable_Android Studio", "type": "boolean", "label": "⑩ Studio调试", "description": "IDE调试/性能分析/重构", "default": false},
-        {"name": "enable_android-unpacking", "type": "boolean", "label": "⑪ 脱壳分析", "description": "加固识别与脱壳方法", "default": false},
-        {"name": "enable_apk-clues-extract", "type": "boolean", "label": "⑫ 蓝牙特征提取", "description": "提取APK蓝牙GATT UUID", "default": false},
-        {"name": "enable_apktool", "type": "boolean", "label": "⑬ 资源解包", "description": "APK解包/资源提取/Smali", "default": false},
-        {"name": "enable_deobfuscation-ollvm", "type": "boolean", "label": "⑭ 混淆还原", "description": "OLLVM控制流平坦化还原", "default": false},
-        {"name": "enable_devirtualization-vmp", "type": "boolean", "label": "⑮ VMP分析", "description": "虚拟化保护分析与还原", "default": false},
-        {"name": "enable_flutter", "type": "boolean", "label": "⑯ Flutter开发", "description": "Dart+Flutter应用开发", "default": false},
-        {"name": "enable_flutter-reverse", "type": "boolean", "label": "⑰ Flutter逆向", "description": "Flutter应用逆向分析", "default": false},
-        {"name": "enable_frida-scripts", "type": "boolean", "label": "⑱ Frida插桩", "description": "动态Hook/SSL绕过/内存dump", "default": false},
-        {"name": "enable_hybrid-h5-reverse", "type": "boolean", "label": "⑲ 混合应用", "description": "H5/WebView/RN逆向分析", "default": false},
-        {"name": "enable_ida-decompile", "type": "boolean", "label": "⑳ IDA反编译", "description": "IDA Pro反编译分析", "default": false},
-        {"name": "enable_IDA-Skill", "type": "boolean", "label": "㉑ IDA技能", "description": "IDAPython/反汇编/交叉引用", "default": false},
-        {"name": "enable_jadx", "type": "boolean", "label": "㉒ JADX反编译", "description": "DEX转Java源码", "default": false},
-        {"name": "enable_kernel-system-hook", "type": "boolean", "label": "㉓ 内核Hook", "description": "KernelSU/系统服务级Hook", "default": false},
-        {"name": "enable_memory-integrity-bypass", "type": "boolean", "label": "㉔ 完整性绕过", "description": ".text校验/CRC对抗", "default": false},
-        {"name": "enable_mt-mcp-apk-analyzer", "type": "boolean", "label": "㉕ MT分析", "description": "MT管理器MCP深度分析", "default": false},
-        {"name": "enable_noroot-hook", "type": "boolean", "label": "㉖ 免Root注入", "description": "LSPatch/Frida Gadget注入", "default": false},
-        {"name": "enable_packer-identification", "type": "boolean", "label": "㉗ 壳识别", "description": "加固壳特征识别", "default": false},
-        {"name": "enable_performing-dynamic-analysis-of-android-app", "type": "boolean", "label": "㉘ 动态分析", "description": "Frida/Objection运行时分析", "default": false},
-        {"name": "enable_protocol-crypto-analysis", "type": "boolean", "label": "㉙ 协议分析", "description": "网络协议/加密算法识别", "default": false},
-        {"name": "enable_rev-dex-dumper", "type": "boolean", "label": "㉚ 内存提取", "description": "从运行时内存提取DEX", "default": false},
-        {"name": "enable_reverse-patch-techniques", "type": "boolean", "label": "㉛ Patch手法", "description": "校验绕过/返回值修改", "default": false},
-        {"name": "enable_rev-frida", "type": "boolean", "label": "㉜ Frida脚本", "description": "Frida Hook脚本生成", "default": false},
-        {"name": "enable_rev-idapython", "type": "boolean", "label": "㉝ IDAPython", "description": "IDAPython脚本编写", "default": false},
-        {"name": "enable_rev-ios-dump", "type": "boolean", "label": "㉞ iOS提取", "description": "iOS应用解密提取", "default": false},
-        {"name": "enable_rev-struct", "type": "boolean", "label": "㉟ 结构还原", "description": "内存访问模式结构重建", "default": false},
-        {"name": "enable_rev-symbol", "type": "boolean", "label": "㊱ 符号恢复", "description": "函数符号分析恢复", "default": false},
-        {"name": "enable_rev-u3d-dump", "type": "boolean", "label": "㊲ Unity提取", "description": "IL2CPP符号/类型转储", "default": false},
-        {"name": "enable_rev-unicorn-debug", "type": "boolean", "label": "㊳ Unicorn模拟", "description": "代码片段模拟执行调试", "default": false},
-        {"name": "enable_signature-bypass", "type": "boolean", "label": "㊴ 签名绕过", "description": "APK签名校验绕过", "default": false},
-        {"name": "enable_smali-repack", "type": "boolean", "label": "㊵ Smali修改", "description": "Smali精修/重打包签名", "default": false},
-        {"name": "enable_Smart Patch (IDA Pro)", "type": "boolean", "label": "㊶ 智能Patch", "description": "自然语言IDA二进制修改", "default": false},
-        {"name": "enable_static-symbolic-execution", "type": "boolean", "label": "㊷ 符号执行", "description": "Angr/Miasm静态符号执行", "default": false},
-        {"name": "enable_svc-instruction-trace", "type": "boolean", "label": "㊸ 系统调用追踪", "description": "SVC指令追踪与分析", "default": false},
-        {"name": "enable_unity-il2cpp-reverse", "type": "boolean", "label": "㊹ Unity逆向", "description": "IL2CPP/Mono游戏逆向", "default": false},
-        {"name": "enable_xposed-module-builder", "type": "boolean", "label": "㊺ Xposed构建", "description": "AI生成Xposed模块工程", "default": false}
+        {
+            "name": "enable_main_prompt",
+            "type": "boolean",
+            "label": "① 核心破限",
+            "description": "启用核心破限能力",
+            "default": false
+        },
+        {
+            "name": "enable_18break",
+            "type": "boolean",
+            "label": "② r18破解",
+            "description": "启用r18破解模块",
+            "default": true
+        },
+        {
+            "name": "enable_ad-removal",
+            "type": "boolean",
+            "label": "③ 广告去除",
+            "description": "去除应用内广告与弹窗",
+            "default": false
+        },
+        {
+            "name": "enable_ai-reverse-workflow",
+            "type": "boolean",
+            "label": "④ AI辅助逆向",
+            "description": "AI驱动的逆向分析工作流",
+            "default": false
+        },
+        {
+            "name": "enable_android-emulator-skill",
+            "type": "boolean",
+            "label": "⑤ 模拟器控制",
+            "description": "安卓模拟器测试与自动化",
+            "default": false
+        },
+        {
+            "name": "enable_android-gradle-logic",
+            "type": "boolean",
+            "label": "⑥ Gradle构建",
+            "description": "可扩展Gradle构建逻辑",
+            "default": false
+        },
+        {
+            "name": "enable_android-pentest",
+            "type": "boolean",
+            "label": "⑦ 渗透测试",
+            "description": "APK分析/Hook/自动化/抓包",
+            "default": false
+        },
+        {
+            "name": "enable_android-release",
+            "type": "boolean",
+            "label": "⑧ 发布构建",
+            "description": "构建签名与发布流程",
+            "default": false
+        },
+        {
+            "name": "enable_android-reverse-engineering",
+            "type": "boolean",
+            "label": "⑨ 安卓逆向",
+            "description": "反编译APK/XAPK/JAR全流程",
+            "default": false
+        },
+        {
+            "name": "enable_Android Studio",
+            "type": "boolean",
+            "label": "⑩ Studio调试",
+            "description": "IDE调试/性能分析/重构",
+            "default": false
+        },
+        {
+            "name": "enable_android-unpacking",
+            "type": "boolean",
+            "label": "⑪ 脱壳分析",
+            "description": "加固识别与脱壳方法",
+            "default": false
+        },
+        {
+            "name": "enable_apk-clues-extract",
+            "type": "boolean",
+            "label": "⑫ 蓝牙特征提取",
+            "description": "提取APK蓝牙GATT UUID",
+            "default": false
+        },
+        {
+            "name": "enable_apktool",
+            "type": "boolean",
+            "label": "⑬ 资源解包",
+            "description": "APK解包/资源提取/Smali",
+            "default": false
+        },
+        {
+            "name": "enable_deobfuscation-ollvm",
+            "type": "boolean",
+            "label": "⑭ 混淆还原",
+            "description": "OLLVM控制流平坦化还原",
+            "default": false
+        },
+        {
+            "name": "enable_devirtualization-vmp",
+            "type": "boolean",
+            "label": "⑮ VMP分析",
+            "description": "虚拟化保护分析与还原",
+            "default": false
+        },
+        {
+            "name": "enable_flutter",
+            "type": "boolean",
+            "label": "⑯ Flutter开发",
+            "description": "Dart+Flutter应用开发",
+            "default": false
+        },
+        {
+            "name": "enable_flutter-reverse",
+            "type": "boolean",
+            "label": "⑰ Flutter逆向",
+            "description": "Flutter应用逆向分析",
+            "default": false
+        },
+        {
+            "name": "enable_frida-scripts",
+            "type": "boolean",
+            "label": "⑱ Frida插桩",
+            "description": "动态Hook/SSL绕过/内存dump",
+            "default": false
+        },
+        {
+            "name": "enable_hybrid-h5-reverse",
+            "type": "boolean",
+            "label": "⑲ 混合应用",
+            "description": "H5/WebView/RN逆向分析",
+            "default": false
+        },
+        {
+            "name": "enable_ida-decompile",
+            "type": "boolean",
+            "label": "⑳ IDA反编译",
+            "description": "IDA Pro反编译分析",
+            "default": false
+        },
+        {
+            "name": "enable_IDA-Skill",
+            "type": "boolean",
+            "label": "㉑ IDA技能",
+            "description": "IDAPython/反汇编/交叉引用",
+            "default": false
+        },
+        {
+            "name": "enable_jadx",
+            "type": "boolean",
+            "label": "㉒ JADX反编译",
+            "description": "DEX转Java源码",
+            "default": false
+        },
+        {
+            "name": "enable_kernel-system-hook",
+            "type": "boolean",
+            "label": "㉓ 内核Hook",
+            "description": "KernelSU/系统服务级Hook",
+            "default": false
+        },
+        {
+            "name": "enable_memory-integrity-bypass",
+            "type": "boolean",
+            "label": "㉔ 完整性绕过",
+            "description": ".text校验/CRC对抗",
+            "default": false
+        },
+        {
+            "name": "enable_mt-mcp-apk-analyzer",
+            "type": "boolean",
+            "label": "㉕ MT分析",
+            "description": "MT管理器MCP深度分析",
+            "default": false
+        },
+        {
+            "name": "enable_noroot-hook",
+            "type": "boolean",
+            "label": "㉖ 免Root注入",
+            "description": "LSPatch/Frida Gadget注入",
+            "default": false
+        },
+        {
+            "name": "enable_packer-identification",
+            "type": "boolean",
+            "label": "㉗ 壳识别",
+            "description": "加固壳特征识别",
+            "default": false
+        },
+        {
+            "name": "enable_performing-dynamic-analysis-of-android-app",
+            "type": "boolean",
+            "label": "㉘ 动态分析",
+            "description": "Frida/Objection运行时分析",
+            "default": false
+        },
+        {
+            "name": "enable_protocol-crypto-analysis",
+            "type": "boolean",
+            "label": "㉙ 协议分析",
+            "description": "网络协议/加密算法识别",
+            "default": false
+        },
+        {
+            "name": "enable_rev-dex-dumper",
+            "type": "boolean",
+            "label": "㉚ 内存提取",
+            "description": "从运行时内存提取DEX",
+            "default": false
+        },
+        {
+            "name": "enable_reverse-patch-techniques",
+            "type": "boolean",
+            "label": "㉛ Patch手法",
+            "description": "校验绕过/返回值修改",
+            "default": false
+        },
+        {
+            "name": "enable_rev-frida",
+            "type": "boolean",
+            "label": "㉜ Frida脚本",
+            "description": "Frida Hook脚本生成",
+            "default": false
+        },
+        {
+            "name": "enable_rev-idapython",
+            "type": "boolean",
+            "label": "㉝ IDAPython",
+            "description": "IDAPython脚本编写",
+            "default": false
+        },
+        {
+            "name": "enable_rev-ios-dump",
+            "type": "boolean",
+            "label": "㉞ iOS提取",
+            "description": "iOS应用解密提取",
+            "default": false
+        },
+        {
+            "name": "enable_rev-struct",
+            "type": "boolean",
+            "label": "㉟ 结构还原",
+            "description": "内存访问模式结构重建",
+            "default": false
+        },
+        {
+            "name": "enable_rev-symbol",
+            "type": "boolean",
+            "label": "㊱ 符号恢复",
+            "description": "函数符号分析恢复",
+            "default": false
+        },
+        {
+            "name": "enable_rev-u3d-dump",
+            "type": "boolean",
+            "label": "㊲ Unity提取",
+            "description": "IL2CPP符号/类型转储",
+            "default": false
+        },
+        {
+            "name": "enable_rev-unicorn-debug",
+            "type": "boolean",
+            "label": "㊳ Unicorn模拟",
+            "description": "代码片段模拟执行调试",
+            "default": false
+        },
+        {
+            "name": "enable_signature-bypass",
+            "type": "boolean",
+            "label": "㊴ 签名绕过",
+            "description": "APK签名校验绕过",
+            "default": false
+        },
+        {
+            "name": "enable_smali-repack",
+            "type": "boolean",
+            "label": "㊵ Smali修改",
+            "description": "Smali精修/重打包签名",
+            "default": false
+        },
+        {
+            "name": "enable_Smart Patch (IDA Pro)",
+            "type": "boolean",
+            "label": "㊶ 智能Patch",
+            "description": "自然语言IDA二进制修改",
+            "default": false
+        },
+        {
+            "name": "enable_static-symbolic-execution",
+            "type": "boolean",
+            "label": "㊷ 符号执行",
+            "description": "Angr/Miasm静态符号执行",
+            "default": false
+        },
+        {
+            "name": "enable_svc-instruction-trace",
+            "type": "boolean",
+            "label": "㊸ 系统调用追踪",
+            "description": "SVC指令追踪与分析",
+            "default": false
+        },
+        {
+            "name": "enable_unity-il2cpp-reverse",
+            "type": "boolean",
+            "label": "㊹ Unity逆向",
+            "description": "IL2CPP/Mono游戏逆向",
+            "default": false
+        },
+        {
+            "name": "enable_xposed-module-builder",
+            "type": "boolean",
+            "label": "㊺ Xposed构建",
+            "description": "AI生成Xposed模块工程",
+            "default": false
+        }
     ]
 }
