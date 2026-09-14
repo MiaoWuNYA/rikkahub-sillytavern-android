@@ -98,6 +98,7 @@ private val prefixNames = mapOf(
     "workspace_" to "书斋运筹",
     "memory_" to "心念归藏",
     "task_" to "运筹帷幄",
+    "plugin_" to "插件注入",
 )
 
 fun toolDisplayName(toolName: String): String {

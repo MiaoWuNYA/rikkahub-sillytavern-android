@@ -86,9 +86,11 @@ class PluginToolProvider(
                                 ?.let { it is kotlinx.serialization.json.JsonPrimitive && it.content.toBooleanStrictOrNull() ?: false }
                                 ?: false
                             skillEnabled
-                        }.map { it.second }
+                        }
                         if (enabledSkills.isNotEmpty()) {
-                            parts.add("【${section.label}】\n${enabledSkills.joinToString("\n\n")}")
+                            val skillNames = enabledSkills.joinToString("、") { (name, _) -> name }
+                            val preamble = "你已解锁以下专项能力模块，当用户问题涉及相关领域时应主动参考对应模块内容来回答：$skillNames"
+                            parts.add("【${section.label}】\n$preamble\n\n${enabledSkills.joinToString("\n\n") { it.second }}")
                         }
                     }
                 } else {
@@ -98,7 +100,7 @@ class PluginToolProvider(
 
             if (parts.isEmpty()) return@mapNotNull null
             android.util.Log.i("PluginToolProvider", "Plugin ${plugin.id}: ${parts.size} sections, total ${parts.sumOf { it.length }} chars")
-            "【插件: ${plugin.info.manifest.name}】\n${parts.joinToString("\n\n")}"
+            parts.joinToString("\n\n")
         }
     }
 
