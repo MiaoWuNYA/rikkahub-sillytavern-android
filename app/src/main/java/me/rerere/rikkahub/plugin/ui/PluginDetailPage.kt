@@ -86,11 +86,11 @@ fun PluginDetailPage(
     }
 
     var configValues by remember(pluginId) {
-        mutableStateOf(plugin.config.toMutableMap())
+        mutableStateOf(buildDefaultConfig(plugin))
     }
 
     LaunchedEffect(plugin.config) {
-        configValues = plugin.config.toMutableMap()
+        configValues = buildDefaultConfig(plugin)
     }
 
     val folders by viewModel.folders.collectAsState()
@@ -173,6 +173,20 @@ fun PluginDetailPage(
             )
         }
     }
+}
+
+/**
+ * 构建包含 manifest 默认值的完整配置 map
+ * 首次打开时 plugin.config 为空，需要从 manifest.config 读取 default 填充
+ */
+private fun buildDefaultConfig(plugin: PluginInfo): MutableMap<String, JsonElement> {
+    val map = plugin.config.toMutableMap()
+    plugin.manifest.config.forEach { field ->
+        if (!map.containsKey(field.name) && field.default != null) {
+            map[field.name] = field.default
+        }
+    }
+    return map
 }
 
 /**

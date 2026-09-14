@@ -520,6 +520,13 @@ internal fun PluginCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (plugin.manifest.config.isNotEmpty()) {
+                    Text(
+                        text = stringResource(R.string.plugin_card_has_settings, plugin.manifest.config.size),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
                 if (plugin.loadError != null) {
                     Text(
                         text = stringResource(R.string.plugin_load_error, plugin.loadError),

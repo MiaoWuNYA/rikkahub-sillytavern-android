@@ -2008,6 +2008,7 @@
   <string name="plugin_detail_tool_params">Parameters: %1$s</string>
   <string name="plugin_detail_config">Plugin config</string>
   <string name="plugin_detail_save_config">Save config</string>
+  <string name="plugin_card_has_settings">⚙ %1$d settings</string>
   <string name="plugin_detail_path">Plugin path</string>
   <string name="plugin_detail_folder">Folder</string>
   <string name="plugin_detail_folder_hint">Tap to move the plugin to another folder</string>

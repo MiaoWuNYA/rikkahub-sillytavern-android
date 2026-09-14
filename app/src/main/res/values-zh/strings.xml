@@ -2006,6 +2006,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="plugin_detail_tool_params">参数: %1$s</string>
   <string name="plugin_detail_config">插件配置</string>
   <string name="plugin_detail_save_config">保存配置</string>
+  <string name="plugin_card_has_settings">⚙ %1$d 项设置</string>
   <string name="plugin_detail_path">插件路径</string>
   <string name="plugin_detail_folder">所属文件夹</string>
   <string name="plugin_detail_folder_hint">点击选择文件夹，移动插件到其他分组</string>
