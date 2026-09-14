@@ -177,7 +177,6 @@ fun ChatInput(
     onStartVoiceMode: (() -> Unit)? = null,
     voiceState: VoiceSessionState = VoiceSessionState(),
     onStopVoiceMode: () -> Unit = {},
-    onPluginManage: (() -> Unit)? = null,
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
@@ -474,15 +473,6 @@ fun ChatInput(
                                     }
                                 }
                             )
-                        }
-
-                        if (onPluginManage != null) {
-                            ActionIconButton(onClick = onPluginManage) {
-                                Icon(
-                                    imageVector = HugeIcons.Package01,
-                                    contentDescription = stringResource(R.string.plugin_manage),
-                                )
-                            }
                         }
 
                         if (loading) {

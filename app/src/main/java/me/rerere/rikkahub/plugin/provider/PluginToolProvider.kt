@@ -57,46 +57,60 @@ class PluginToolProvider(
         val allPlugins = pluginLoader.getAllLoadedPlugins()
         android.util.Log.i("PluginToolProvider", "getPluginSystemPrompts: ${allPlugins.size} loaded plugins")
         return allPlugins.mapNotNull { plugin ->
+            val parts = mutableListOf<String>()
+
+            // 主提示词
             val prompt = plugin.info.manifest.systemPrompt?.takeIf { it.isNotBlank() }
-            if (prompt == null) {
-                android.util.Log.d("PluginToolProvider", "Plugin ${plugin.id}: no systemPrompt defined")
-                return@mapNotNull null
+            if (prompt != null) {
+                val resolved = resolvePluginFile(plugin, prompt) ?: return@mapNotNull null
+                parts.add(resolved)
             }
-            android.util.Log.i("PluginToolProvider", "Plugin ${plugin.id}: systemPrompt ref=$prompt")
-            val resolved = try {
-                when {
-                    prompt.startsWith("enc:") -> {
-                        // 加密文件：AES-256-GCM 解密
-                        val relativePath = prompt.removePrefix("enc:")
-                        val file = File(plugin.info.directory, relativePath)
-                        if (file.exists()) {
-                            android.util.Log.i("PluginToolProvider", "Plugin ${plugin.id}: decrypting ${file.absolutePath} (${file.length()} bytes)")
-                            PluginCrypto.decryptFile(file)
-                        } else {
-                            android.util.Log.w("PluginToolProvider", "Plugin ${plugin.id}: enc file not found: ${file.absolutePath}")
-                            return@mapNotNull null
-                        }
+
+            // 可选分段（通过 config 开关控制）
+            plugin.info.manifest.sections.forEach { section ->
+                val configKey = "enable_${section.name}"
+                val enabled = plugin.info.getConfigValue(configKey)
+                    ?.let { it is kotlinx.serialization.json.JsonPrimitive && it.content.toBooleanStrictOrNull() ?: true }
+                    ?: true // 默认启用
+                if (enabled) {
+                    val resolved = resolvePluginFile(plugin, section.file)
+                    if (resolved != null) {
+                        parts.add("【${section.label}】\n$resolved")
                     }
-                    prompt.startsWith("file:") -> {
-                        // 明文文件
-                        val relativePath = prompt.removePrefix("file:")
-                        val file = File(plugin.info.directory, relativePath)
-                        if (file.exists()) {
-                            android.util.Log.i("PluginToolProvider", "Plugin ${plugin.id}: reading file ${file.absolutePath} (${file.length()} bytes)")
-                            file.readText(Charsets.UTF_8)
-                        } else {
-                            android.util.Log.w("PluginToolProvider", "Plugin ${plugin.id}: file not found: ${file.absolutePath}")
-                            return@mapNotNull null
-                        }
-                    }
-                    else -> prompt // 内联字符串
                 }
-            } catch (e: Exception) {
-                android.util.Log.e("PluginToolProvider", "Plugin ${plugin.id}: failed to resolve prompt", e)
-                return@mapNotNull null
             }
-            android.util.Log.i("PluginToolProvider", "Plugin ${plugin.id}: resolved prompt ${resolved.length} chars")
-            "【插件: ${plugin.info.manifest.name}】\n$resolved"
+
+            if (parts.isEmpty()) return@mapNotNull null
+            android.util.Log.i("PluginToolProvider", "Plugin ${plugin.id}: ${parts.size} sections, total ${parts.sumOf { it.length }} chars")
+            "【插件: ${plugin.info.manifest.name}】\n${parts.joinToString("\n\n")}"
+        }
+    }
+
+    /**
+     * 解析插件文件引用（enc:/file:/内联）
+     */
+    private fun resolvePluginFile(plugin: LoadedPlugin, ref: String): String? {
+        return try {
+            when {
+                ref.startsWith("enc:") -> {
+                    val file = File(plugin.info.directory, ref.removePrefix("enc:"))
+                    if (file.exists()) PluginCrypto.decryptFile(file) else {
+                        android.util.Log.w("PluginToolProvider", "Plugin ${plugin.id}: enc file not found: ${file.absolutePath}")
+                        null
+                    }
+                }
+                ref.startsWith("file:") -> {
+                    val file = File(plugin.info.directory, ref.removePrefix("file:"))
+                    if (file.exists()) file.readText(Charsets.UTF_8) else {
+                        android.util.Log.w("PluginToolProvider", "Plugin ${plugin.id}: file not found: ${file.absolutePath}")
+                        null
+                    }
+                }
+                else -> ref
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("PluginToolProvider", "Plugin ${plugin.id}: failed to resolve: $ref", e)
+            null
         }
     }
 

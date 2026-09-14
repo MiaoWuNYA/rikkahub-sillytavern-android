@@ -1,13 +1,40 @@
 {
   "id": "dev.dsh-purge.test",
   "name": "DSH Purge 测试",
-  "description": "提示词兼容性测试插件",
+  "description": "提示词兼容性测试插件（主提示词/技能包/世界书，可独立开关）",
   "version": "1.0.0",
   "author": "Miaowu",
   "icon": "🧪",
   "entry": "main.js",
   "tools": [],
-  "config": [],
+  "config": [
+    {
+      "name": "enable_skills",
+      "type": "boolean",
+      "label": "注入技能包",
+      "description": "注入逆向工程/安卓开发等技能提示词",
+      "default": true
+    },
+    {
+      "name": "enable_worldbook",
+      "type": "boolean",
+      "label": "注入世界书",
+      "description": "注入18破除世界书角色设定",
+      "default": true
+    }
+  ],
   "allowedHosts": [],
-  "systemPrompt": "enc:prompts/system.enc"
+  "systemPrompt": "enc:prompts/main.enc",
+  "sections": [
+    {
+      "name": "skills",
+      "label": "技能包",
+      "file": "enc:prompts/skills.enc"
+    },
+    {
+      "name": "worldbook",
+      "label": "世界书",
+      "file": "enc:prompts/worldbook.enc"
+    }
+  ]
 }

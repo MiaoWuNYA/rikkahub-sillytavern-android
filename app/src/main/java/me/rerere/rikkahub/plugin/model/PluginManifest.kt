@@ -69,10 +69,29 @@ data class PluginManifest(
     /**
      * 插件系统提示词（可选）。
      * 启用后，此内容会作为 extraInstructions 注入到 AI 的 system prompt 中。
-     * 用于开发者测试提示词兼容性等场景。
-     * 支持内联字符串或文件引用（以 "file:" 开头，如 "file:prompts/system.md"）。
+     * 支持内联字符串、"file:" 明文引用、"enc:" 加密引用。
      */
     val systemPrompt: String? = null,
+
+    /**
+     * 可选提示词分段（可选）。
+     * 每个分段可独立通过 config 开关控制是否注入。
+     * 用于将大型提示词拆分为可独立开关的功能模块。
+     */
+    val sections: List<PluginPromptSection> = emptyList(),
+)
+
+/**
+ * 插件提示词分段定义
+ */
+@Serializable
+data class PluginPromptSection(
+    /** 分段标识名，用于 config 开关关联（如 "enable_{name}"） */
+    val name: String,
+    /** 显示标签 */
+    val label: String,
+    /** 加密文件引用（"enc:..." 或 "file:..."） */
+    val file: String,
 )
 
 /**

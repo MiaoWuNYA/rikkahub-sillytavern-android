@@ -141,6 +141,15 @@ internal fun FilesPicker(
                     onClick = start,
                 )
             }
+
+            BigIconTextButton(
+                icon = { Icon(HugeIcons.Package01, contentDescription = null) },
+                text = { Text(stringResource(R.string.plugin_manage)) },
+                onClick = {
+                    onDismiss()
+                    navController.navigate(Screen.Plugins)
+                },
+            )
         }
 
         HorizontalDivider(
