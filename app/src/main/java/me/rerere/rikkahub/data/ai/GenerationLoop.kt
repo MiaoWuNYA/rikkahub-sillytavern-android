@@ -410,7 +410,7 @@ class GenerationLoop(
                 // 仅在没有真实 tool call 时触发，对正常模型零开销
                 if (toolCalls.isEmpty()) {
                     val textContent = messages.last().parts.filterIsInstance<UIMessagePart.Text>().joinToString("") { it.text }
-                    val dsmlCalls = parseDsmlToolCalls(textContent)
+                    val dsmlCalls = parseDsmlToolCalls(textContent, toolsInternal.mapTo(HashSet()) { it.name })
                     if (dsmlCalls.isNotEmpty()) {
                         Log.w(TAG, "Parsed ${dsmlCalls.size} DSML tool calls from text output")
                         // 把文本中的 DSML 标记替换为干净的说明，保留其余正文
@@ -1403,10 +1403,21 @@ private val DSML_PARAM_RE = Regex(
  * 从文本中解析 DSML 格式的工具调用，返回可执行的 Tool 列表。
  * 仅当模型不走 function calling 而在文本中输出工具调用时才触发。
  */
-private fun parseDsmlToolCalls(text: String): List<UIMessagePart.Tool> {
+private fun parseDsmlToolCalls(text: String, availableTools: Set<String>): List<UIMessagePart.Tool> {
     val results = mutableListOf<UIMessagePart.Tool>()
     for (match in DSML_INVOKE_RE.findAll(text)) {
-        val toolName = match.groupValues[1]
+        val rawName = match.groupValues[1]
+        // 名称修正：模型从提示词文本猜的工具名可能与实际注册名不一致
+        val toolName = when {
+            rawName in availableTools -> rawName
+            // 常见别名
+            rawName == "web_search" && "search_web" in availableTools -> "search_web"
+            rawName == "web_fetch" && "scrape_web" in availableTools -> "scrape_web"
+            // 后缀模糊匹配：web_search → search_web
+            availableTools.any { it.replace("_", "") == rawName.replace("_", "").reversed() } ->
+                availableTools.first { it.replace("_", "") == rawName.replace("_", "").reversed() }
+            else -> rawName // 未知工具名，原样传入（执行时会报 not found）
+        }
         val block = match.groupValues[2]
         val args = buildJsonObject {
             for (param in DSML_PARAM_RE.findAll(block)) {
