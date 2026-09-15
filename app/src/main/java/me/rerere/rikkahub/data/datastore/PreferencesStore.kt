@@ -757,6 +757,10 @@ data class HuaDengSettings(
     val enableTransientContentPrune: Boolean = true,
     // 清爽简洁模式：隐藏情侣空间/生活空间等娱乐功能入口，并不再注册对应 AI 工具
     val enableCleanMode: Boolean = false,
+    // 上下文滚动压缩：关闭后不再自动压缩早期对话为摘要（助手级开关仍可单独启用）
+    val enableRollingContextCompression: Boolean = true,
+    // 工具结果截断：关闭后工具输出不再截断（默认截断超过 32KB 的输出）
+    val enableToolResultTruncation: Boolean = true,
 )
 
 /**

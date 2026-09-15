@@ -411,9 +411,32 @@ class GenerationLoop(
                     break
                 }
 
+                // 中转站兼容：部分中转站对同一 tool name 返回相同 toolCallId，
+                // 流式模式下参数被拼接成 {json1}{json2}，这里拆分并分配新 ID
+                val expandedToolCalls = toolCalls.flatMap { tool ->
+                    val input = tool.input
+                    if (input.length <= 2 || !input.startsWith("{")) {
+                        listOf(tool)
+                    } else {
+                        // 尝试检测拼接的多个 JSON 对象
+                        val splits = splitConcatenatedJsonArgs(input)
+                        if (splits.size <= 1) {
+                            listOf(tool)
+                        } else {
+                            Log.w(TAG, "Splitting concatenated tool args: ${tool.toolName} (${splits.size} parts)")
+                            splits.mapIndexed { index, arg ->
+                                tool.copy(
+                                    toolCallId = "${tool.toolCallId}_$index",
+                                    input = arg,
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // 1. Deduplicate tools: same (toolName, input) only execute once
                 val seenTools = mutableSetOf<Pair<String, String>>()
-                val uniqueTools = toolCalls.filter { tool ->
+                val uniqueTools = expandedToolCalls.filter { tool ->
                     val key = tool.toolName to tool.input
                     if (key in seenTools) {
                         Log.w(TAG, "Deduplicated duplicate tool call: ${tool.toolName}")
@@ -492,7 +515,11 @@ class GenerationLoop(
             // 工具结果进入历史后每轮重复计费：超长输出截断并落盘（shell 可用时模型可自行读取全文）
             val hasShellAccess = toolsInternal.any { it.name == "execute_command" }
             fun truncateToolResult(result: Result<UIMessagePart.Tool>): Result<UIMessagePart.Tool> =
-                result.map { it.copy(output = maybeTruncateToolOutput(it.toolCallId, it.output, hasShellAccess)) }
+                if (settings.huadengSettings.enableToolResultTruncation) {
+                    result.map { it.copy(output = maybeTruncateToolOutput(it.toolCallId, it.output, hasShellAccess)) }
+                } else {
+                    result
+                }
 
             if (isParallel) {
                 // 并行执行所有工具
@@ -1308,4 +1335,39 @@ private fun List<UIMessage>.withMessageNames(): List<UIMessage> = map { message 
     } else {
         message.copy(parts = listOf(UIMessagePart.Text("$name: ")) + message.parts)
     }
+}
+
+/**
+ * 中转站兼容：拆分拼接的 JSON 对象参数。
+ * 部分中转站对同一 tool name 返回相同 toolCallId，流式模式下参数被拼接成 {json1}{json2}。
+ * 按 JSON 对象边界（花括号匹配）拆分，返回每个独立的 JSON 字符串。
+ */
+private fun splitConcatenatedJsonArgs(input: String): List<String> {
+    if (!input.startsWith("{")) return listOf(input)
+    val results = mutableListOf<String>()
+    var depth = 0
+    var start = 0
+    var inString = false
+    var escape = false
+    for (i in input.indices) {
+        val c = input[i]
+        when {
+            escape -> escape = false
+            c == '\\' && inString -> escape = true
+            c == '"' -> inString = !inString
+            !inString && c == '{' -> depth++
+            !inString && c == '}' -> {
+                depth--
+                if (depth == 0) {
+                    results.add(input.substring(start, i + 1))
+                    start = i + 1
+                }
+            }
+        }
+    }
+    // 如果尾部还有未闭合内容，追加为独立片段
+    if (start < input.length) {
+        results.add(input.substring(start))
+    }
+    return results.ifEmpty { listOf(input) }
 }

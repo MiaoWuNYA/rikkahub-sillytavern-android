@@ -1367,7 +1367,7 @@ class ChatService(
             }
             val rollingSummaryMessageCount = rollingSummary?.coveredMessageCount(generationMessages) ?: 0
             val rollingThresholdTokens = automaticRollingContextThreshold(
-                enabled = assistant.enableRollingContextCompression,
+                enabled = assistant.enableRollingContextCompression && settings.huadengSettings.enableRollingContextCompression,
                 configuredThresholdTokens = assistant.rollingContextCompressionThresholdTokens,
                 modelContextWindowTokens = model.contextWindowTokens,
                 maxOutputTokens = assistant.maxTokens,
@@ -2142,7 +2142,7 @@ class ChatService(
         settings: Settings,
         processingStatus: MutableStateFlow<String?>,
     ): RollingContextSummary? {
-        if (!assistant.enableRollingContextCompression) return null
+        if (!assistant.enableRollingContextCompression || !settings.huadengSettings.enableRollingContextCompression) return null
         val thresholdTokens = automaticRollingContextThreshold(
             enabled = true,
             configuredThresholdTokens = assistant.rollingContextCompressionThresholdTokens,

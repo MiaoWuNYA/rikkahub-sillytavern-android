@@ -9,12 +9,12 @@
     "sections": [
         {
             "name": "main_prompt",
-            "label": "核心破限",
+            "label": "核心模块",
             "file": "enc:prompts/a7f3c9e2b1d8406x5k2m.r9g"
         },
         {
             "name": "18break",
-            "label": "r18破解",
+            "label": "内容解锁",
             "file": "enc:prompts/b2c7d5e0f9a1634v7h4k.s6w"
         },
         {
@@ -27,22 +27,22 @@
         {
             "name": "enable_main_prompt",
             "type": "boolean",
-            "label": "① 核心破限",
-            "description": "启用核心破限能力",
+            "label": "① 核心模块",
+            "description": "启用核心模块能力",
             "default": false
         },
         {
             "name": "enable_18break",
             "type": "boolean",
-            "label": "② r18破解",
-            "description": "启用r18破解模块",
+            "label": "② 内容解锁",
+            "description": "启用内容解锁模块",
             "default": true
         },
         {
             "name": "enable_破限",
             "type": "boolean",
-            "label": "③ 破限加强",
-            "description": "通用破限加强模块",
+            "label": "③ 增强模块",
+            "description": "通用增强模块",
             "default": false
         },
         {

@@ -167,6 +167,46 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                             )
                         },
                     )
+                    item(
+                        headlineContent = { Text("上下文滚动压缩") },
+                        supportingContent = {
+                            Text("对话过长时自动将早期消息压缩为摘要以节省 token。关闭后不再自动压缩（助手级开关仍可单独启用）；若遇到每轮都重复压缩或缓存失效，可尝试关闭")
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = settings.huadengSettings.enableRollingContextCompression,
+                                onCheckedChange = { enabled ->
+                                    vm.updateSettings(
+                                        settings.copy(
+                                            huadengSettings = settings.huadengSettings.copy(
+                                                enableRollingContextCompression = enabled,
+                                            ),
+                                        )
+                                    )
+                                },
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text("工具结果截断") },
+                        supportingContent = {
+                            Text("工具输出超过 32KB 时自动截断并保存到文件。关闭后工具结果不截断，完整内容保留在消息历史中（若中转站导致工具调用异常，可尝试关闭)")
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = settings.huadengSettings.enableToolResultTruncation,
+                                onCheckedChange = { enabled ->
+                                    vm.updateSettings(
+                                        settings.copy(
+                                            huadengSettings = settings.huadengSettings.copy(
+                                                enableToolResultTruncation = enabled,
+                                            ),
+                                        )
+                                    )
+                                },
+                            )
+                        },
+                    )
                 }
             }
 

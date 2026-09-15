@@ -792,7 +792,21 @@ class ChatCompletionsAPI(
                         )
                     )
                 }
-                toolCalls.forEach { toolCalls ->
+                // 中转站兼容：部分中转站对同一 tool name 重复返回相同 toolCallId，
+                // 按 ID 去重并保留参数最长的那个（信息最完整）
+                val dedupedToolCalls = toolCalls.fold(mutableMapOf<String, JsonElement>()) { acc, tc ->
+                    val id = tc.jsonObject["id"]?.jsonPrimitive?.contentOrNull ?: return@fold acc
+                    val existing = acc[id]
+                    if (existing == null) {
+                        acc[id] = tc
+                    } else {
+                        val existingArgs = existing.jsonObject["function"]?.jsonObject?.get("arguments")?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val newArgs = tc.jsonObject["function"]?.jsonObject?.get("arguments")?.jsonPrimitive?.contentOrNull.orEmpty()
+                        if (newArgs.length > existingArgs.length) acc[id] = tc
+                    }
+                    acc
+                }
+                dedupedToolCalls.values.forEach { toolCalls ->
                     val type = toolCalls.jsonObject["type"]?.jsonPrimitive?.contentOrNull
                     if (!type.isNullOrEmpty() && type != "function") error("tool call type not supported: $type")
                     val toolCallId = toolCalls.jsonObject["id"]?.jsonPrimitive?.contentOrNull
