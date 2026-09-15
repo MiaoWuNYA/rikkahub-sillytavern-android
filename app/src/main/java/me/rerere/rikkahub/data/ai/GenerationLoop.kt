@@ -405,9 +405,27 @@ class GenerationLoop(
                 )
                 emit(GenerationChunk.Messages(messages))
 
-                val toolCalls = messages.last().getTools().filter { !it.isExecuted }
+                var toolCalls = messages.last().getTools().filter { !it.isExecuted }
+                // 兜底：部分模型/中转站不走 function calling，而在文本里输出 DSML 格式的工具调用
+                // 仅在没有真实 tool call 时触发，对正常模型零开销
                 if (toolCalls.isEmpty()) {
-                    // no tool calls, break
+                    val textContent = messages.last().parts.filterIsInstance<UIMessagePart.Text>().joinToString("") { it.text }
+                    val dsmlCalls = parseDsmlToolCalls(textContent)
+                    if (dsmlCalls.isNotEmpty()) {
+                        Log.w(TAG, "Parsed ${dsmlCalls.size} DSML tool calls from text output")
+                        // 把文本中的 DSML 标记替换为干净的说明，保留其余正文
+                        val cleanedText = cleanDsmlFromText(textContent)
+                        val lastMsg = messages.last()
+                        val cleanedParts = if (cleanedText.isNotBlank()) {
+                            lastMsg.parts.map { if (it is UIMessagePart.Text) it.copy(text = cleanedText) else it }
+                        } else {
+                            lastMsg.parts.filter { it !is UIMessagePart.Text }
+                        }
+                        messages = messages.dropLast(1) + lastMsg.copy(parts = cleanedParts + dsmlCalls)
+                        toolCalls = dsmlCalls
+                    }
+                }
+                if (toolCalls.isEmpty()) {
                     break
                 }
 
@@ -1370,4 +1388,49 @@ private fun splitConcatenatedJsonArgs(input: String): List<String> {
         results.add(input.substring(start))
     }
     return results.ifEmpty { listOf(input) }
+}
+
+// ── DSML 文本工具调用兼容 ──
+
+private val DSML_INVOKE_RE = Regex(
+    """<｜｜DSML｜｜\s*invoke\s+name="([^"]+)">([\s\S]*?)</｜｜DSML｜｜\s*invoke>""",
+)
+private val DSML_PARAM_RE = Regex(
+    """<｜｜DSML｜｜\s*parameter\s+name="([^"]+)"(?:\s+string="true")?>([\s\S]*?)</｜｜DSML｜｜\s*parameter>""",
+)
+
+/**
+ * 从文本中解析 DSML 格式的工具调用，返回可执行的 Tool 列表。
+ * 仅当模型不走 function calling 而在文本中输出工具调用时才触发。
+ */
+private fun parseDsmlToolCalls(text: String): List<UIMessagePart.Tool> {
+    val results = mutableListOf<UIMessagePart.Tool>()
+    for (match in DSML_INVOKE_RE.findAll(text)) {
+        val toolName = match.groupValues[1]
+        val block = match.groupValues[2]
+        val args = buildJsonObject {
+            for (param in DSML_PARAM_RE.findAll(block)) {
+                put(param.groupValues[1], JsonPrimitive(param.groupValues[2]))
+            }
+        }
+        results.add(
+            UIMessagePart.Tool(
+                toolCallId = "dsml_${toolName}_${results.size}",
+                toolName = toolName,
+                input = args.toString(),
+                output = emptyList(),
+            )
+        )
+    }
+    return results
+}
+
+/**
+ * 从文本中移除 DSML 标签块，保留其余正文。
+ */
+private fun cleanDsmlFromText(text: String): String {
+    // 先移除整个 <calls>...</calls> 块
+    val cleaned = text.replace(Regex("""<｜｜DSML｜｜\s*calls>[\s\S]*?</｜｜DSML｜｜\s*calls>"""), "")
+    // 再兜底移除散落的单个 invoke 块
+    return cleaned.replace(DSML_INVOKE_RE, "").trim()
 }
