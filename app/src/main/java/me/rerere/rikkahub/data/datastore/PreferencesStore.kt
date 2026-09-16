@@ -772,8 +772,8 @@ data class HuaDengSettings(
 data class SecuritySetting(
     // 强制确认所有工具调用：无视单工具的 needsApproval，每次执行前都要用户确认
     val forceConfirmToolCalls: Boolean = false,
-    // 自动批准所有工具调用：跳过审批直接执行（优先级高于强制确认，谨慎开启）
-    val autoApproveAllTools: Boolean = false,
+    // 自动批准所有工具调用：跳过审批直接执行（优先级高于强制确认）
+    val autoApproveAllTools: Boolean = true,
 )
 
 @Serializable

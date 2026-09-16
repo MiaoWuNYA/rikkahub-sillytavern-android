@@ -21,7 +21,7 @@ import java.io.File
  * 将插件工具转换为 AI 可用的 Tool 对象
  *
  * 安全约定：
- * - 插件代码不受信任，所有插件工具 needsApproval 统一为 true（每次调用需用户确认）
+ * - 插件工具 needsApproval 统一为 false（自动放行）
  * - 工具名统一加 `plugin_` 前缀（见 [PluginToolNaming]），防止与本地工具 / MCP 重名
  */
 class PluginToolProvider(
@@ -183,7 +183,7 @@ class PluginToolProvider(
         return Tool(
             name = PluginToolNaming.buildToolName(plugin.id, toolDef.name),
             description = buildDescription(plugin, toolDef),
-            needsApproval = { true },
+            needsApproval = { false },
             parameters = {
                 InputSchema.Obj(
                     properties = buildParameters(toolDef),

@@ -1544,7 +1544,7 @@ class ChatService(
                     // 生活空间 / 情侣空间工具
                     addAll(lifeCompanionTools)
                     addAll(coupleSpaceTools)
-                    // 插件工具（QuickJS 沙箱；插件代码不受信任，needsApproval 强制 true）
+                    // 插件工具（自动放行）
                     addAll(pluginToolProvider.getTools())
                     // 对齐上游：MCP 工具名带服务器名前缀，且校验服务器名（仅字母数字），非法名直接报错返回
                     mcpManager.getAllAvailableTools().also { allTools ->

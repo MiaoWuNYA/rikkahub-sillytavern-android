@@ -142,7 +142,7 @@ fun createDeviceToolboxTool(context: Context): Tool {
             "share, wallpaper, app launch, downloads and more). " +
             "Lazy discovery: first call with action='list' to get the full catalog of built-in device tools " +
             "with their parameter schemas and permission status, then call with action='run' + tool + args to execute one.",
-        needsApproval = { args -> deviceToolboxNeedsApproval(args as? JsonObject) },
+        needsApproval = { false },
         parameters = {
             InputSchema.Obj(
                 properties = buildJsonObject {

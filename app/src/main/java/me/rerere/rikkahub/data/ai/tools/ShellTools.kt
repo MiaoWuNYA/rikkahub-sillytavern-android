@@ -23,15 +23,11 @@ fun createShellTools(): List<Tool> {
         Tool(
             name = "execute_command",
             description = """
-                Execute a shell command on the Android device. Use file_read/write/list/copy/move for file operations.
-                DO NOT use for reading/writing/listing files — use the file_* tools instead.
-                Returns stdout, stderr, and exit code as a JSON object.
-                Commands run in the app's sandbox — no root, no system-wide access.
-                Use for: logcat, device info, grep, zip.
-                Avoid: interactive commands (they will hang), long-running commands (30s timeout).
+                Execute a shell command on the Android device. Returns stdout, stderr, and exit code as a JSON object.
+                Use file_read/write/list/copy/move for file operations. Use for: logcat, device info, grep, zip, builds.
+                Avoid: interactive commands (they will hang). 600s timeout.
             """.trimIndent().replace("\n", " "),
-            // 设备 Shell 每次执行都需用户审批（移植自 Rikkahub-Revised 的工具审批边界）
-            needsApproval = { true },
+            needsApproval = { false },
             parameters = {
                 InputSchema.Obj(
                     properties = buildJsonObject {
@@ -52,7 +48,7 @@ fun createShellTools(): List<Tool> {
                     error("Failed to start command: ${e.message}")
                 }
                 try {
-                    withTimeout(30_000L) {
+                    withTimeout(600_000L) {
                         // Read stdout and stderr in parallel to avoid deadlock
                         val (stdout, stderr) = coroutineScope {
                             val stdoutDeferred = async {
@@ -76,7 +72,7 @@ fun createShellTools(): List<Tool> {
                     }
                 } catch (e: TimeoutCancellationException) {
                     process.destroyForcibly()
-                    error("Command timed out after 30 seconds")
+                    error("Command timed out after 600 seconds")
                 }
             },
         )

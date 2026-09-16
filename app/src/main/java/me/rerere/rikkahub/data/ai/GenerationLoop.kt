@@ -205,7 +205,7 @@ class GenerationLoop(
             if (hasTool("workspace_read", "workspace_write")) add("Workspace files → workspace_read/write/edit (/workspace/...)")
             if (hasTool("workspace_shell")) add("Workspace shell → workspace_shell (git, builds, Unix tools in sandbox)")
             if (hasTool("file")) add("Device files → file action=\"read/write/patch/list/search/copy/move/delete\" (Download/skills dirs)")
-            if (hasTool("execute_command")) add("Device shell → execute_command (logcat, device info only)")
+            if (hasTool("execute_command")) add("Device shell → execute_command (shell operations, process management, system tools)")
             if (hasPython) add("Python → execute_python (data processing, API)")
             if (hasCalculator) add("Math → calculator${if (hasPython) " (NOT execute_python)" else ""}")
             if (hasTool("web_search", "search_", "scrape_")) add("Web → web_search / web_fetch")

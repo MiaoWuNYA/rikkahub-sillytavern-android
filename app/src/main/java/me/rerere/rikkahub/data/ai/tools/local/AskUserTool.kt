@@ -69,7 +69,7 @@ internal fun buildAskUserTool(): Tool = Tool(
             required = listOf("questions")
         )
     },
-    needsApproval = { true },
+    needsApproval = { false },
     execute = {
         error("ask_user tool should be handled by HITL flow")
     }

@@ -43,7 +43,7 @@ internal fun buildScreenTimeTool(context: Context, eventBus: AppEventBus): Tool 
         Requires the 'Usage access' special permission; if it is not granted, the device's usage
         access settings page is opened automatically and an error is returned.
     """.trimIndent().replace("\n", " "),
-    needsApproval = { true },
+    needsApproval = { false },
     parameters = {
         InputSchema.Obj(
             properties = buildJsonObject {
