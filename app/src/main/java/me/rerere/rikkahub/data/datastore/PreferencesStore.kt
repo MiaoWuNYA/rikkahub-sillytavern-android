@@ -761,6 +761,8 @@ data class HuaDengSettings(
     val enableRollingContextCompression: Boolean = true,
     // 工具结果截断：关闭后工具输出不再截断（默认截断超过 32KB 的输出）
     val enableToolResultTruncation: Boolean = true,
+    // 系统提示词转义：将系统消息中的 < > 转为 HTML 实体，绕过中转站 WAF 安全策略拦截
+    val enableSystemPromptEscape: Boolean = false,
 )
 
 /**

@@ -861,6 +861,27 @@ class GenerationLoop(
         // 提示词查看器：缓存最终发送给模型的完整消息列表，供聊天抽屉"查看提示词"调试入口渲染
         PromptDebugCache.store(conversationId, internalMessages)
 
+        // 系统提示词转义：将系统消息中的 < > 转为 HTML 实体，绕过中转站 WAF 拦截
+        val escapedMessages = if (settings.huadengSettings.enableSystemPromptEscape) {
+            internalMessages.map { msg ->
+                if (msg.role == MessageRole.SYSTEM) {
+                    msg.copy(
+                        parts = msg.parts.map { part ->
+                            if (part is UIMessagePart.Text) {
+                                part.copy(text = part.text.escapeXmlTags())
+                            } else {
+                                part
+                            }
+                        }
+                    )
+                } else {
+                    msg
+                }
+            }
+        } else {
+            internalMessages
+        }
+
         var messages: List<UIMessage> = messages
         val params = TextGenerationParams(
             model = model,
@@ -904,8 +925,8 @@ class GenerationLoop(
                     var attemptMessages = responseBaseMessages
                     // 防空回复：重试时对请求副本的末条用户消息做微扰（历史消息不动）
                     val requestMessages =
-                        if (emptyRetryCount > 0) internalMessages.perturbForEmptyRetry(emptyRetryCount)
-                        else internalMessages
+                        if (emptyRetryCount > 0) escapedMessages.perturbForEmptyRetry(emptyRetryCount)
+                        else escapedMessages
                     try {
                         providerImpl.streamText(
                             providerSetting = provider,
@@ -964,8 +985,8 @@ class GenerationLoop(
                 val baseMessages = messages
                 while (true) {
                     val requestMessages =
-                        if (emptyRetryCount > 0) internalMessages.perturbForEmptyRetry(emptyRetryCount)
-                        else internalMessages
+                        if (emptyRetryCount > 0) escapedMessages.perturbForEmptyRetry(emptyRetryCount)
+                        else escapedMessages
                     val result = executeProviderRequestWithRetry(
                         processingStatus = processingStatus,
                         enabled = settings.networkSetting.enableAutoRetry,
@@ -1445,3 +1466,10 @@ private fun cleanDsmlFromText(text: String): String {
     // 再兜底移除散落的单个 invoke 块
     return cleaned.replace(DSML_INVOKE_RE, "").trim()
 }
+
+/**
+ * 将文本中的 < 和 > 转为 HTML 实体，绕过中转站 WAF 安全策略拦截。
+ * 仅转义标签尖括号，不影响引号、等号等其他字符。
+ */
+private fun String.escapeXmlTags(): String =
+    this.replace("<", "&lt;").replace(">", "&gt;")
