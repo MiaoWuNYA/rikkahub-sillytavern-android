@@ -858,29 +858,27 @@ class GenerationLoop(
             chatMessageCount = limitedChat.size,
         )
 
-        // 提示词查看器：缓存最终发送给模型的完整消息列表，供聊天抽屉"查看提示词"调试入口渲染
-        PromptDebugCache.store(conversationId, internalMessages)
-
-        // 系统提示词转义：将系统消息中的 < > 转为 HTML 实体，绕过中转站 WAF 拦截
+        // 系统提示词转义：将所有消息中的 < > 转为 HTML 实体，绕过中转站 WAF 拦截
+        // 不仅转义 SYSTEM 消息（工具提示词、system-reminder），也转义 USER 消息
+        // 中的 XML 标签（如 <time_reminder>），避免任何角色的消息触发 WAF
         val escapedMessages = if (settings.huadengSettings.enableSystemPromptEscape) {
             internalMessages.map { msg ->
-                if (msg.role == MessageRole.SYSTEM) {
-                    msg.copy(
-                        parts = msg.parts.map { part ->
-                            if (part is UIMessagePart.Text) {
-                                part.copy(text = part.text.escapeXmlTags())
-                            } else {
-                                part
-                            }
+                msg.copy(
+                    parts = msg.parts.map { part ->
+                        if (part is UIMessagePart.Text) {
+                            part.copy(text = part.text.escapeXmlTags())
+                        } else {
+                            part
                         }
-                    )
-                } else {
-                    msg
-                }
+                    }
+                )
             }
         } else {
             internalMessages
         }
+
+        // 提示词查看器：缓存最终发送给模型的完整消息列表（转义后），供聊天抽屉"查看提示词"调试入口渲染
+        PromptDebugCache.store(conversationId, escapedMessages)
 
         var messages: List<UIMessage> = messages
         val params = TextGenerationParams(
