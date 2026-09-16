@@ -50,7 +50,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.AiMagic
 import me.rerere.hugeicons.stroke.Alert01
-import me.rerere.hugeicons.stroke.Shield01
 import me.rerere.hugeicons.stroke.Book01
 import me.rerere.hugeicons.stroke.Book03
 import me.rerere.hugeicons.stroke.BookOpen02
@@ -66,7 +65,6 @@ import me.rerere.hugeicons.stroke.InLove
 import me.rerere.hugeicons.stroke.LookTop
 import me.rerere.hugeicons.stroke.Edit01
 import me.rerere.hugeicons.stroke.GlobalSearch
-import me.rerere.hugeicons.stroke.Notebook
 import me.rerere.hugeicons.stroke.GraduationCap
 import me.rerere.hugeicons.stroke.MessageMultiple01
 import me.rerere.hugeicons.stroke.McpServer
@@ -224,12 +222,6 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         supportingContent = { Text(stringResource(R.string.setting_page_plugins_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_plugins)) },
                     )
-                    item(
-                        onClick = { navController.navigate(Screen.SettingSecurity) },
-                        leadingContent = { Icon(HugeIcons.Shield01, null) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_security_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_security)) },
-                    )
                     if (!settings.huadengSettings.enableCleanMode) {
                         item(
                             onClick = { navController.navigate(Screen.Persona) },
@@ -238,12 +230,6 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                             headlineContent = { Text(stringResource(R.string.setting_page_persona)) },
                         )
                     }
-                    item(
-                        onClick = { navController.navigate(Screen.AuthorsNote) },
-                        leadingContent = { Icon(HugeIcons.Notebook, null) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_authors_note_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_authors_note)) },
-                    )
                     item(
                         onClick = { navController.navigate(Screen.SettingHuaDeng) },
                         leadingContent = { Icon(HugeIcons.Settings03, null) },

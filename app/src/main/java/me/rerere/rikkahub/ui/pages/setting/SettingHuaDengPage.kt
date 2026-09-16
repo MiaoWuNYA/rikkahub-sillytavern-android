@@ -19,6 +19,8 @@ import me.rerere.hugeicons.stroke.AlarmClock
 import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.Message01
 import me.rerere.hugeicons.stroke.MessageMultiple01
+import me.rerere.hugeicons.stroke.Notebook
+import me.rerere.hugeicons.stroke.Shield01
 import me.rerere.rikkahub.Screen
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -244,6 +246,20 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                         leadingContent = { Icon(HugeIcons.AlarmClock, null) },
                         supportingContent = { Text(stringResource(R.string.setting_page_proactive_message_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_proactive_message)) },
+                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingSecurity) },
+                        leadingContent = { Icon(HugeIcons.Shield01, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_security_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_security)) },
+                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.AuthorsNote) },
+                        leadingContent = { Icon(HugeIcons.Notebook, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_authors_note_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_authors_note)) },
                         trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
                     )
                 }
