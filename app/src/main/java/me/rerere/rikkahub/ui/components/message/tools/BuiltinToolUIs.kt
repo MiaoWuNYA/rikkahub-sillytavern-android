@@ -765,7 +765,7 @@ private fun SearchWebPreview(
         }
 
         if (items.isNotEmpty()) {
-            items(items) { item ->
+            items(items, key = { it.getStringContent("url") ?: it.hashCode().toString() }) { item ->
                 val url = item.getStringContent("url") ?: return@items
                 val title = item.getStringContent("title") ?: return@items
                 val text = item.getStringContent("text") ?: return@items
@@ -855,7 +855,7 @@ private fun ScrapeWebPreview(content: JsonElement) {
             )
         }
 
-        items(urls) { url ->
+        items(urls, key = { it.jsonObject["url"]?.jsonPrimitive?.content ?: it.hashCode().toString() }) { url ->
             val urlObject = url.jsonObject
             Column(
                 modifier = Modifier.fillMaxWidth(),

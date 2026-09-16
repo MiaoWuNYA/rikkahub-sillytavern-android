@@ -232,6 +232,13 @@ fun AssistantDetailPage(id: String) {
                         headlineContent = { Text(stringResource(R.string.assistant_page_tab_local_tools)) },
                         trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
                     )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingMemory) },
+                        leadingContent = { Icon(HugeIcons.Brain02, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_memory_desc)) },
+                        headlineContent = { Text("高级记忆设置") },
+                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
+                    )
                 }
             }
         }

@@ -13,6 +13,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.AlarmClock
+import me.rerere.hugeicons.stroke.ArrowRight01
+import me.rerere.hugeicons.stroke.Message01
+import me.rerere.hugeicons.stroke.MessageMultiple01
+import me.rerere.rikkahub.Screen
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -52,6 +59,7 @@ import me.rerere.rikkahub.data.ai.tools.ynufe.YnufeStore
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.Switch
+import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.plus
 import org.koin.androidx.compose.koinViewModel
@@ -206,6 +214,37 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                                 },
                             )
                         },
+                    )
+                }
+            }
+
+            // ── 接入与自动化 ──
+            item {
+                val navController = LocalNavController.current
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text("接入与自动化") },
+                ) {
+                    item(
+                        onClick = { navController.navigate(Screen.SettingWeixinBot) },
+                        leadingContent = { Icon(HugeIcons.Message01, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_weixin_bot_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_weixin_bot)) },
+                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingQqBot) },
+                        leadingContent = { Icon(HugeIcons.MessageMultiple01, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_qq_bot_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_qq_bot)) },
+                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingProactiveMessage) },
+                        leadingContent = { Icon(HugeIcons.AlarmClock, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_proactive_message_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_proactive_message)) },
+                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
                     )
                 }
             }
