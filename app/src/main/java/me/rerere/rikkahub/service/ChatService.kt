@@ -154,12 +154,14 @@ import kotlin.uuid.Uuid
 
 internal fun backgroundTextGenerationParams(
     model: Model,
+    conversationId: Uuid? = null,
     reasoningLevel: ReasoningLevel = ReasoningLevel.AUTO,
 ): TextGenerationParams = TextGenerationParams(
     model = model,
     reasoningLevel = reasoningLevel,
     customHeaders = model.customHeaders,
     customBody = model.customBodies,
+    sessionId = conversationId?.toString(),
 )
 
 private const val TAG = "ChatService"
@@ -790,7 +792,7 @@ class ChatService(
                 val result = providerHandler.generateText(
                     providerSetting = provider,
                     messages = listOf(narratorSystem) + history + UIMessage.user(prompt),
-                    params = backgroundTextGenerationParams(model),
+                    params = backgroundTextGenerationParams(model, conversationId),
                 )
                 // 官方 /sysgen trim=true：先按最后一个句子边界裁剪（trimToEndSentence），再走 getRegexedString(message, SLASH_COMMAND)
                 val rawNarration = result.message.toText()
@@ -1794,7 +1796,7 @@ class ChatService(
                 val result = providerManager.getProviderByType(compressionProvider).generateText(
                     providerSetting = compressionProvider,
                     messages = listOf(UIMessage.user(prompt)),
-                    params = backgroundTextGenerationParams(compressionModel, ReasoningLevel.OFF),
+                    params = backgroundTextGenerationParams(compressionModel, reasoningLevel = ReasoningLevel.OFF),
                 )
                 result.message.toText().trim().takeIf { it.isNotBlank() }
                     ?: error("Compression model returned no visible text")
@@ -1841,7 +1843,7 @@ class ChatService(
                                 .takeLast(4).joinToString("\n\n") { it.summaryAsText() })
                     ),
                 ),
-                params = backgroundTextGenerationParams(model, settings.fastModelReasoningLevel),
+                params = backgroundTextGenerationParams(model, conversationId, settings.fastModelReasoningLevel),
             )
 
             // 生成完，conversation可能不是最新了，因此需要重新获取
@@ -1893,7 +1895,7 @@ class ChatService(
                                 .takeLast(8).joinToString("\n\n") { it.summaryAsText() }),
                     )
                 ),
-                params = backgroundTextGenerationParams(model, settings.fastModelReasoningLevel),
+                params = backgroundTextGenerationParams(model, conversationId, settings.fastModelReasoningLevel),
             )
             val suggestions =
                 result.message.toText().split("\n").map { it.trim() }
@@ -2100,7 +2102,7 @@ class ChatService(
             val result = providerHandler.generateText(
                 providerSetting = provider,
                 messages = listOf(UIMessage.user(prompt)),
-                params = backgroundTextGenerationParams(model),
+                params = backgroundTextGenerationParams(model, conversationId),
             )
 
             return result.message.toText().trim().takeIf { it.isNotBlank() }
@@ -2214,6 +2216,7 @@ class ChatService(
             content = plan.toCompressionContent(),
             targetTokens = plan.targetTokens,
             additionalPrompt = additionalPrompt,
+            conversationId = conversationId,
         )
         val latestConversation = getConversationFlow(conversationId).value
         val latestPlanningMessages = DocumentAsPromptTransformer.transformDocumentContents(
@@ -2252,6 +2255,7 @@ class ChatService(
         content: String,
         targetTokens: Int,
         additionalPrompt: String,
+        conversationId: Uuid,
     ): String {
         val model = settings.findModelById(settings.compressModelId)
             ?: settings.getCurrentChatModel()
@@ -2274,7 +2278,7 @@ class ChatService(
             val result = providerHandler.generateText(
                 providerSetting = provider,
                 messages = listOf(UIMessage.user(buildPrompt(input, requestedTokens))),
-                params = backgroundTextGenerationParams(model),
+                params = backgroundTextGenerationParams(model, conversationId),
             )
             return result.message.toText().trim().takeIf { it.isNotBlank() }
                 ?: throw IllegalStateException("Failed to generate rolling summary")
