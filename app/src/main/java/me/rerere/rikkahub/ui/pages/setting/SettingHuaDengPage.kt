@@ -220,7 +220,7 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                     item(
                         headlineContent = { Text("系统提示词转义") },
                         supportingContent = {
-                            Text("将系统消息中的 < > 转为 HTML 实体，绕过中转站 WAF 安全策略拦截（如遇到 upstream_content_rejected 错误可开启）")
+                            Text("将系统消息中的 < > 转为 HTML 实体，绕过中转站 WAF 安全策略拦截（如遇到 upstream_content_rejected 错误可开启）。一般不需要开启")
                         },
                         trailingContent = {
                             Switch(

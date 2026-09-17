@@ -59,6 +59,8 @@ class PreferenceStoreV4MigrationTest {
         MEMORY_DEFAULT_KEYS.forEach { key ->
             assertEquals(true, (assistant[key] as JsonPrimitive).content.toBooleanStrict())
         }
+        // enableCrossWindowMemory 默认值已改回 false，迁移必须保留用户显式关闭的值
+        assertEquals(false, (assistant["enableCrossWindowMemory"] as JsonPrimitive).content.toBooleanStrict())
         // 其他字段不受影响
         assertEquals(0.7, assistant["temperature"]!!.jsonPrimitive.content.toDouble(), 0.0)
     }

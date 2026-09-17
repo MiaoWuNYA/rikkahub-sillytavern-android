@@ -47,9 +47,9 @@
   <string name="assistant_page_add_body">Add Body</string>
   <string name="assistant_page_add_header">Add Header</string>
   <string name="assistant_page_anti_empty_response">Anti Empty Reply (Gemini)</string>
-  <string name="assistant_page_anti_empty_response_desc">Moves the system prompt into the conversation flow (fake user/model turns) and automatically perturbs the last message and retries when the model returns an empty reply. Recommended for Gemini</string>
+  <string name="assistant_page_anti_empty_response_desc">Moves the system prompt into the conversation flow (fake user/model turns) and automatically perturbs the last message and retries when the model returns an empty reply. Recommended for Gemini. Usually no need to enable</string>
   <string name="assistant_page_proxy_fix">Proxy Fix (中转站)</string>
-  <string name="assistant_page_proxy_fix_desc">Fixes Gemini responses via OpenAI-compatible proxy: recovers content from reasoning_content when the proxy misroutes it, strips "Response:" prefix artifacts, and prevents truncation</string>
+  <string name="assistant_page_proxy_fix_desc">Fixes Gemini responses via OpenAI-compatible proxy: recovers content from reasoning_content when the proxy misroutes it, strips "Response:" prefix artifacts, and prevents truncation. Usually no need to enable</string>
   <string name="setting_page_huadeng">HuaDeng Settings</string>
   <string name="setting_page_huadeng_desc">Global proxy fix, anti-empty reply, and university tools</string>
   <string name="setting_page_huadeng_title">Compatibility</string>

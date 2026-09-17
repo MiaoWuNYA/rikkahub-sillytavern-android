@@ -40,7 +40,8 @@ internal val MEMORY_DEFAULT_KEYS = setOf(
     "enableMemoryRag",
     "enableEpisodicMemory",
     "enableThreeLayerMemory",
-    "enableCrossWindowMemory",
+    // 注意：enableCrossWindowMemory 不在列。该开关默认值已改回 false（注入内容易被
+    // AI 当成本轮话题），用户显式关掉的 false 必须保留，不能再被翻回 true。
 )
 
 internal fun migrateAssistantsMemoryDefaults(assistantsJson: String): String {

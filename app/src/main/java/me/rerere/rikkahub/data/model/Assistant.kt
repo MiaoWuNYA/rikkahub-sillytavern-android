@@ -96,7 +96,8 @@ data class Assistant(
     // 按相关性召回长期记忆（词项重叠打分），替代全量注入；默认开启
     val enableThreeLayerMemory: Boolean = true,
     // 跨窗口生活流：同一助手在不同对话间的近期经历共享（SharedPreferences 存储）
-    val enableCrossWindowMemory: Boolean = true,
+    // 默认关闭：注入内容易被 AI 当成本轮话题，打断沉浸式对话；需要时在助手设置里手动开启
+    val enableCrossWindowMemory: Boolean = false,
     // 超过阈值字符后后台压缩旧的生活流前缀为摘要
     val enableCrossWindowMemoryCompression: Boolean = true,
     val crossWindowMemoryCompressionThresholdChars: Int = 12000,
