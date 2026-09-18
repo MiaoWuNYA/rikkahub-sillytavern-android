@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -781,10 +782,11 @@ private fun SearchWebPreview(
         }
 
         if (items.isNotEmpty()) {
-            items(items, key = { items.indexOf(it) }) { item ->
-                val url = item.getStringContent("url") ?: return@items
-                val title = item.getStringContent("title") ?: return@items
-                val text = item.getStringContent("text") ?: return@items
+            // 同上：key 用下标（原先 items.indexOf(it) 是 O(n²) 且同样依赖元素自身）
+            itemsIndexed(items, key = { index, _ -> index }) { _, item ->
+                val url = item.getStringContent("url") ?: return@itemsIndexed
+                val title = item.getStringContent("title") ?: return@itemsIndexed
+                val text = item.getStringContent("text") ?: return@itemsIndexed
 
                 Card(
                     onClick = { context.openUrl(url) },
@@ -852,7 +854,9 @@ private fun ScrapeWebPreview(content: JsonElement) {
             )
         }
 
-        items(urls, key = { it }) { url ->
+        // key 必须能存进 Bundle：JsonElement 不行（SaveableStateHolder 会抛
+        // "Type of the key ... is not supported"）。这里用下标，既稳定又不会因重复 URL 撞 key。
+        itemsIndexed(urls, key = { index, _ -> index }) { _, url ->
             val urlObject = url.jsonObject
             Column(
                 modifier = Modifier.fillMaxWidth(),

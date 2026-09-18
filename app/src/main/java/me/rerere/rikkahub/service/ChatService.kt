@@ -53,6 +53,7 @@ import me.rerere.ai.core.MessageRole
 import me.rerere.ai.core.Tool
 import me.rerere.ai.provider.BuiltInTools
 import me.rerere.ai.core.ReasoningLevel
+import me.rerere.ai.provider.Modality
 import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.ModelAbility
 import me.rerere.ai.provider.ProviderManager
@@ -1506,9 +1507,16 @@ class ChatService(
                     if (assistant.enableRecentChatsReference) {
                         addAll(createConversationTools(conversationRepo, assistant.id))
                     }
-                    // 华灯：瞬态内容裁剪的配套取回工具——占位说明里带消息 ID，AI 按需取回原文
+                    // 华灯：瞬态内容裁剪的配套取回工具——占位说明里带消息 ID，AI 按需取回原文。
+                    // 模型支持视觉时回灌真实图片，否则回灌 OCR 文本
                     if (settings.huadengSettings.enableTransientContentPrune) {
-                        add(createHistoryMessageTool(conversationRepo, conversation.id))
+                        add(
+                            createHistoryMessageTool(
+                                conversationRepo = conversationRepo,
+                                conversationId = conversation.id,
+                                supportsImageInput = model.inputModalities.contains(Modality.IMAGE),
+                            )
+                        )
                     }
                     addAll(createWorkspaceToolsIfReady(assistant.workspaceId?.toString(), conversation.workspaceCwd))
                     addAll(localTools.getTools(assistant.localTools))
