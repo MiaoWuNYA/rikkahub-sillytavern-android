@@ -197,6 +197,10 @@ class CoupleAiService : KoinComponent {
             model = model,
             prompt = prompt,
             numOfImages = safeCount,
+            // 和生图页共用同一份尺寸/思考强度偏好——两处都是"生图"，分开存会让用户
+            // 改了一边、另一边还是老样子。
+            size = settings.imageGenerationSize,
+            reasoningLevel = settings.imageGenerationReasoningLevel,
             customHeaders = model.customHeaders,
             customBody = model.customBodies,
         )

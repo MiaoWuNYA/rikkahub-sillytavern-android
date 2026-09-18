@@ -87,6 +87,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import me.rerere.ai.core.ReasoningLevel
 import me.rerere.ai.provider.ModelType
 import me.rerere.ai.ui.ImageGenSize
 import me.rerere.common.android.appTempFolder
@@ -105,6 +106,7 @@ import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.files.FileUtils
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.ui.components.ai.ModelSelector
+import me.rerere.rikkahub.ui.components.ai.label
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.FormItem
 import me.rerere.rikkahub.ui.components.ui.ImagePreviewDialog
@@ -242,13 +244,13 @@ private fun ImageGenScreen(
 ) {
     val prompt by vm.prompt.collectAsStateWithLifecycle()
     val numberOfImages by vm.numberOfImages.collectAsStateWithLifecycle()
-    val size by vm.size.collectAsStateWithLifecycle()
     val isGenerating by vm.isGenerating.collectAsStateWithLifecycle()
     val currentGeneratedImages by vm.currentGeneratedImages.collectAsStateWithLifecycle()
     val referenceImages by vm.referenceImages.collectAsStateWithLifecycle()
     val error by vm.error.collectAsStateWithLifecycle()
     val settings by vm.settingsStore.settingsFlow.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
+    val size = settings.imageGenerationSize
+    val reasoningLevel = settings.imageGenerationReasoningLevel
     val toaster = LocalToaster.current
     var showSettingsSheet by remember { mutableStateOf(false) }
     val sheetState = rememberBottomSheetState(
@@ -323,7 +325,7 @@ private fun ImageGenScreen(
             vm = vm,
             numberOfImages = numberOfImages,
             size = size,
-            scope = scope,
+            reasoningLevel = reasoningLevel,
             sheetState = sheetState,
             onDismiss = { showSettingsSheet = false }
         )
@@ -804,7 +806,7 @@ private fun SettingsBottomSheet(
     vm: ImgGenVM,
     numberOfImages: Int,
     size: String,
-    scope: CoroutineScope,
+    reasoningLevel: ReasoningLevel,
     sheetState: SheetState,
     onDismiss: () -> Unit
 ) {
@@ -817,7 +819,8 @@ private fun SettingsBottomSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
-                .imePadding(),
+                .imePadding()
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
@@ -838,7 +841,7 @@ private fun SettingsBottomSheet(
             }
 
             FormItem(
-                label = { Text("Image Size") }
+                label = { Text(stringResource(R.string.imggen_page_image_size)) }
             ) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -858,12 +861,31 @@ private fun SettingsBottomSheet(
                 OutlinedTextField(
                     value = size,
                     onValueChange = vm::updateSize,
-                    label = { Text("Custom size") },
+                    label = { Text(stringResource(R.string.imggen_page_custom_size)) },
                     placeholder = { Text("e.g. 1024x1024") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = MaterialTheme.typography.bodySmall,
                 )
+            }
+
+            // 生图模型同样支持思考强度。AUTO 默认不发这个参数——多数站点不认，发了可能 400。
+            FormItem(
+                label = { Text(stringResource(R.string.setting_provider_page_reasoning)) },
+                description = { Text(stringResource(R.string.imggen_page_reasoning_desc)) }
+            ) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    ReasoningLevel.entries.forEach { level ->
+                        FilterChip(
+                            selected = reasoningLevel == level,
+                            onClick = { vm.updateReasoningLevel(level) },
+                            label = { Text(level.label()) }
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

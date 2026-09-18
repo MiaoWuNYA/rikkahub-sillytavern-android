@@ -398,6 +398,9 @@
   <string name="imggen_page_generate_image">Сгенерировать изображение</string>
   <string name="imggen_page_generation_count">Количество генераций</string>
   <string name="imggen_page_generation_count_desc">Количество изображений для генерации за раз</string>
+<string name="imggen_page_image_size">Размер изображения</string>
+<string name="imggen_page_custom_size">Свой размер</string>
+<string name="imggen_page_reasoning_desc">Глубина рассуждений при генерации изображений. Оставьте «Авто», если провайдер не документирует эту опцию — большинство сайтов отклоняют этот параметр.</string>
   <string name="imggen_page_image_saved_success">Изображение сохранено в галерею</string>
   <string name="imggen_page_model_selection">Выбор модели</string>
   <string name="imggen_page_model_selection_desc">Выберите модель ИИ для генерации изображений</string>

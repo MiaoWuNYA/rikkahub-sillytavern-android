@@ -398,6 +398,9 @@
   <string name="imggen_page_generate_image">画像を生成</string>
   <string name="imggen_page_generation_count">生成数</string>
   <string name="imggen_page_generation_count_desc">一度に生成する画像の数</string>
+<string name="imggen_page_image_size">画像サイズ</string>
+<string name="imggen_page_custom_size">カスタムサイズ</string>
+<string name="imggen_page_reasoning_desc">画像生成時の思考の深さ。プロバイダーのドキュメントで対応が明記されていない限り「自動」のままにしてください。多くのサイトはこのパラメータを拒否します。</string>
   <string name="imggen_page_image_saved_success">画像をギャラリーに保存しました</string>
   <string name="imggen_page_model_selection">モデル選択</string>
   <string name="imggen_page_model_selection_desc">画像生成に使用するAIモデルを選択</string>

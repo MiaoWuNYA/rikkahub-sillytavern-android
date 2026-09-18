@@ -88,6 +88,11 @@ data class ImageGenerationParams(
     val prompt: String,
     val numOfImages: Int = 1,
     val size: String = ImageGenSize.AUTO.value,
+    /**
+     * 思考强度。AUTO 表示不显式指定，由站点自己决定——多数站点没有这个参数，
+     * 发了反而可能被拒，所以只有用户显式选过才带。
+     */
+    val reasoningLevel: ReasoningLevel = ReasoningLevel.AUTO,
     val partialImages: Int = 2,
     val customHeaders: List<CustomHeader> = emptyList(),
     val customBody: List<CustomBody> = emptyList(),
@@ -100,6 +105,7 @@ data class ImageEditParams(
     val images: List<String>,
     val numOfImages: Int = 1,
     val size: String = ImageGenSize.AUTO.value,
+    val reasoningLevel: ReasoningLevel = ReasoningLevel.AUTO,
     val partialImages: Int = 2,
     val customHeaders: List<CustomHeader> = emptyList(),
     val customBody: List<CustomBody> = emptyList(),

@@ -405,20 +405,18 @@ fun ChatDrawerContent(
                                 navController.navigate(Screen.AuthorsNote)
                             }
                         )
+                        // 收藏原本是并列按钮之一，为给生图/设置腾地方撤了下来。整屏只有这一处
+                        // 能进 Screen.Favorite，直接删掉会让收藏变成死功能，所以收进菜单里。
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.favorite_page_title)) },
+                            leadingIcon = { Icon(HugeIcons.InLove, null) },
+                            onClick = {
+                                showMenuPopup = false
+                                navController.navigate(Screen.Favorite)
+                            }
+                        )
                     }
                 }
-
-                DrawerAction(
-                    icon = {
-                        Icon(HugeIcons.InLove, stringResource(R.string.favorite_page_title))
-                    },
-                    label = {
-                        Text(stringResource(R.string.favorite_page_title))
-                    },
-                    onClick = {
-                        navController.navigate(Screen.Favorite)
-                    },
-                )
 
                 DrawerAction(
                     icon = {

@@ -20,11 +20,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import me.rerere.ai.core.ReasoningLevel
 import me.rerere.ai.provider.ImageEditParams
 import me.rerere.ai.provider.ImageGenerationParams
 import me.rerere.ai.provider.ModelType
 import me.rerere.ai.provider.ProviderManager
-import me.rerere.ai.ui.ImageGenSize
 import me.rerere.ai.ui.ImageGenerationItem
 import me.rerere.common.android.appTempFolder
 import me.rerere.rikkahub.data.datastore.SettingsStore
@@ -70,9 +70,6 @@ class ImgGenVM(
 
     private val _numberOfImages = MutableStateFlow(1)
     val numberOfImages: StateFlow<Int> = _numberOfImages
-
-    private val _size = MutableStateFlow(ImageGenSize.AUTO.value)
-    val size: StateFlow<String> = _size
 
     private val _isGenerating = MutableStateFlow(false)
     val isGenerating: StateFlow<Boolean> = _isGenerating
@@ -124,8 +121,20 @@ class ImgGenVM(
         _numberOfImages.value = count.coerceIn(1, 4)
     }
 
+    /**
+     * 尺寸与思考强度存全局设置而不是页面内 state：用户调过一次就该记住，每次进页面都被
+     * 重置回 auto 很烦。这里用 update 而不是直接赋值，保证和设置页并发改动能合并。
+     */
     fun updateSize(size: String) {
-        _size.value = size
+        viewModelScope.launch {
+            settingsStore.update { it.copy(imageGenerationSize = size) }
+        }
+    }
+
+    fun updateReasoningLevel(level: ReasoningLevel) {
+        viewModelScope.launch {
+            settingsStore.update { it.copy(imageGenerationReasoningLevel = level) }
+        }
     }
 
     fun addReferenceImages(paths: List<String>) {
@@ -176,7 +185,8 @@ class ImgGenVM(
                     model = model,
                     prompt = requestPrompt,
                     numOfImages = _numberOfImages.value,
-                    size = _size.value,
+                    size = settings.imageGenerationSize,
+                    reasoningLevel = settings.imageGenerationReasoningLevel,
                     customHeaders = model.customHeaders,
                     customBody = model.customBodies
                 )
@@ -222,7 +232,8 @@ class ImgGenVM(
                     prompt = requestPrompt,
                     images = sourceImages,
                     numOfImages = _numberOfImages.value,
-                    size = _size.value,
+                    size = settings.imageGenerationSize,
+                    reasoningLevel = settings.imageGenerationReasoningLevel,
                     customHeaders = model.customHeaders,
                     customBody = model.customBodies
                 )

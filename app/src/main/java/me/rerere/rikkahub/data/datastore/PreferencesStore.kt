@@ -25,6 +25,7 @@ import me.rerere.ai.core.MessageRole
 import me.rerere.ai.core.ReasoningLevel
 import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.ProviderSetting
+import me.rerere.ai.ui.ImageGenSize
 import me.rerere.rikkahub.AppScope
 import me.rerere.rikkahub.data.ai.mcp.McpServerConfig
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_COMPRESS_PROMPT
@@ -105,6 +106,8 @@ class SettingsStore(
         val TRANSLATE_MODEL = stringPreferencesKey("translate_model")
         val ENABLE_SUGGESTION = booleanPreferencesKey("enable_suggestion")
         val IMAGE_GENERATION_MODEL = stringPreferencesKey("image_generation_model")
+        val IMAGE_GENERATION_SIZE = stringPreferencesKey("image_generation_size")
+        val IMAGE_GENERATION_REASONING_LEVEL = stringPreferencesKey("image_generation_reasoning_level")
         val TITLE_PROMPT = stringPreferencesKey("title_prompt")
         val TRANSLATION_PROMPT = stringPreferencesKey("translation_prompt")
         val TRANSLATE_THINKING_BUDGET = intPreferencesKey("translate_thinking_budget")
@@ -225,6 +228,8 @@ class SettingsStore(
                 preferences[TRANSLATE_MODEL] = settings.translateModeId.toString()
                 preferences[ENABLE_SUGGESTION] = settings.enableSuggestion
                 preferences[IMAGE_GENERATION_MODEL] = settings.imageGenerationModelId.toString()
+                preferences[IMAGE_GENERATION_SIZE] = settings.imageGenerationSize
+                preferences[IMAGE_GENERATION_REASONING_LEVEL] = settings.imageGenerationReasoningLevel.name
                 preferences[TITLE_PROMPT] = settings.titlePrompt
                 preferences[TRANSLATION_PROMPT] = settings.translatePrompt
                 preferences[TRANSLATE_THINKING_BUDGET] = settings.translateThinkingBudget
@@ -326,6 +331,10 @@ class SettingsStore(
                     ?: DEFAULT_AUTO_MODEL_ID,
                 enableSuggestion = preferences[ENABLE_SUGGESTION] != false,
                 imageGenerationModelId = preferences[IMAGE_GENERATION_MODEL]?.let { Uuid.parse(it) } ?: Uuid.random(),
+                imageGenerationSize = preferences[IMAGE_GENERATION_SIZE] ?: ImageGenSize.AUTO.value,
+                imageGenerationReasoningLevel = preferences[IMAGE_GENERATION_REASONING_LEVEL]
+                    ?.let { value -> ReasoningLevel.entries.find { it.name == value } }
+                    ?: ReasoningLevel.AUTO,
                 titlePrompt = preferences[TITLE_PROMPT] ?: DEFAULT_TITLE_PROMPT,
                 translatePrompt = preferences[TRANSLATION_PROMPT] ?: DEFAULT_TRANSLATION_PROMPT,
                 translateThinkingBudget = preferences[TRANSLATE_THINKING_BUDGET] ?: 0,
@@ -659,6 +668,10 @@ data class Settings(
     val titleModelId: Uuid? = null,
     val fastModelReasoningLevel: ReasoningLevel = ReasoningLevel.AUTO,
     val imageGenerationModelId: Uuid = Uuid.random(),
+    // 生图页的尺寸与思考强度。放在全局设置里而不是页面内 state：用户调过一次就该记住，
+    // 每次进页面都被重置回 auto 很烦。默认 auto = 不显式指定，交给站点自己决定。
+    val imageGenerationSize: String = ImageGenSize.AUTO.value,
+    val imageGenerationReasoningLevel: ReasoningLevel = ReasoningLevel.AUTO,
     val titlePrompt: String = DEFAULT_TITLE_PROMPT,
     val translateModeId: Uuid = Uuid.random(),
     val translatePrompt: String = DEFAULT_TRANSLATION_PROMPT,

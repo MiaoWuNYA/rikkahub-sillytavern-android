@@ -398,6 +398,9 @@
   <string name="imggen_page_generate_image">生成圖片</string>
   <string name="imggen_page_generation_count">生成數量</string>
   <string name="imggen_page_generation_count_desc">每次生成的圖片數量</string>
+<string name="imggen_page_image_size">圖片尺寸</string>
+<string name="imggen_page_custom_size">自訂尺寸</string>
+<string name="imggen_page_reasoning_desc">生圖時的思考深度。除非供應商文件明確支援，否則保持「自動」——多數站點會直接拒絕這個參數。</string>
   <string name="imggen_page_image_saved_success">圖片已保存到相簿</string>
   <string name="imggen_page_model_selection">模型選擇</string>
   <string name="imggen_page_model_selection_desc">選擇用於圖片生成的AI模型</string>

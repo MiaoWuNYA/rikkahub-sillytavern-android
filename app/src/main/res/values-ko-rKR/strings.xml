@@ -398,6 +398,9 @@
   <string name="imggen_page_generate_image">이미지 생성</string>
   <string name="imggen_page_generation_count">생성 개수</string>
   <string name="imggen_page_generation_count_desc">한 번에 생성할 이미지 수</string>
+<string name="imggen_page_image_size">이미지 크기</string>
+<string name="imggen_page_custom_size">사용자 지정 크기</string>
+<string name="imggen_page_reasoning_desc">이미지 생성 시의 사고 깊이. 공급자 문서에서 지원이 명시되지 않았다면 "자동"으로 두세요. 대부분의 사이트는 이 매개변수를 거부합니다.</string>
   <string name="imggen_page_image_saved_success">이미지가 갤러리에 저장되었습니다</string>
   <string name="imggen_page_model_selection">모델 선택</string>
   <string name="imggen_page_model_selection_desc">이미지 생성에 사용할 AI 모델 선택</string>
