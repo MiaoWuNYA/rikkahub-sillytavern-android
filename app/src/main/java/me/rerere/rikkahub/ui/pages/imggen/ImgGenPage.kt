@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.pager.HorizontalPager
@@ -392,11 +393,17 @@ private fun InputBar(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // 不带 onlyIcon：原来只显示一个脑图标，用户根本看不出这是模型选择器。
+            // 加宽度上限，避免长模型名把整行撑破（TextButton 内部已有 ellipsis）。
+            //
+            // fallbackToAllTypes：供应商 /models 接口不带类型信息，拉回来的模型默认全是 CHAT。
+            // 严格按 IMAGE 过滤会让没手动标过类型的用户看到空列表——"进入后选不了模型"。
             ModelSelector(
                 modelId = settings.imageGenerationModelId,
                 providers = settings.providers,
                 type = ModelType.IMAGE,
-                onlyIcon = true,
+                fallbackToAllTypes = true,
+                modifier = Modifier.widthIn(max = 160.dp),
                 onSelect = { model ->
                     scope.launch {
                         vm.settingsStore.update { oldSettings ->

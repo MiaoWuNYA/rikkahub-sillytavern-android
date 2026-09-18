@@ -476,6 +476,7 @@
   <string name="model_list_no_providers">没有可用AI提供商, 请在设置添加</string>
   <string name="model_list_search_placeholder">输入模型名称搜索</string>
   <string name="model_list_select_model">选择模型</string>
+  <string name="model_list_type_filter_relaxed">尚无模型被标记为该类型，已显示全部模型。可在供应商设置中修改模型类型。</string>
   <string name="more_options">更多选项</string>
   <string name="no_text_content_to_copy">暂无可复制的文本内容</string>
   <string name="notification_channel_chat_completed">聊天完成</string>

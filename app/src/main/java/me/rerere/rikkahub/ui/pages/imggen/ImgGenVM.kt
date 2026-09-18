@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import me.rerere.ai.provider.ImageEditParams
 import me.rerere.ai.provider.ImageGenerationParams
+import me.rerere.ai.provider.ModelType
 import me.rerere.ai.provider.ProviderManager
 import me.rerere.ai.ui.ImageGenSize
 import me.rerere.ai.ui.ImageGenerationItem
@@ -96,6 +97,25 @@ class ImgGenVM(
         }
         .cachedIn(viewModelScope)
 
+    init {
+        // imageGenerationModelId 的默认值是随机 UUID，谁都不指向，所以首次进页面时模型选择器
+        // 上必然显示"选择模型"。这里补一次自动落位：已经是有效模型就不动，否则挑一个可用的
+        // 图像模型（没有就退而取第一个非嵌入模型），用户仍可随时改选。
+        //
+        // 用 first { !it.init } 而非 first()：settingsFlow 的初值是 Settings.dummy()，
+        // 直接 first() 会拿到空 providers 然后静默放弃。也不能用 collect——用户在页面上
+        // 手动改选后会被反复覆盖。
+        viewModelScope.launch {
+            val settings = settingsStore.settingsFlow.first { !it.init }
+            if (settings.findModelById(settings.imageGenerationModelId) != null) return@launch
+            val models = settings.providers.filter { it.enabled }.flatMap { it.models }
+            val fallback = models.firstOrNull { it.type == ModelType.IMAGE }
+                ?: models.firstOrNull { it.type != ModelType.EMBEDDING }
+                ?: return@launch
+            settingsStore.update { it.copy(imageGenerationModelId = fallback.id) }
+        }
+    }
+
     fun updatePrompt(prompt: String) {
         _prompt.value = prompt
     }
@@ -146,10 +166,10 @@ class ImgGenVM(
 
                 val settings = settingsStore.settingsFlow.first()
                 val model = settings.findModelById(settings.imageGenerationModelId)
-                    ?: throw IllegalStateException("No model selected")
+                    ?: throw IllegalStateException(NO_MODEL_MESSAGE)
 
                 val provider = model.findProvider(settings.providers)
-                    ?: throw IllegalStateException("Provider not found")
+                    ?: throw IllegalStateException("未找到该模型所属的提供商，请在设置中检查")
 
                 val requestPrompt = _prompt.value
                 val params = ImageGenerationParams(
@@ -190,10 +210,10 @@ class ImgGenVM(
 
                 val settings = settingsStore.settingsFlow.first()
                 val model = settings.findModelById(settings.imageGenerationModelId)
-                    ?: throw IllegalStateException("No model selected")
+                    ?: throw IllegalStateException(NO_MODEL_MESSAGE)
 
                 val provider = model.findProvider(settings.providers)
-                    ?: throw IllegalStateException("Provider not found")
+                    ?: throw IllegalStateException("未找到该模型所属的提供商，请在设置中检查")
 
                 val requestPrompt = _prompt.value
                 val sourceImages = _referenceImages.value
@@ -374,5 +394,8 @@ class ImgGenVM(
     companion object {
         private const val TAG = "ImgGenVM"
         private const val MAX_REFERENCE_IMAGES = 16
+
+        /** 未选模型时的提示。默认值是随机 UUID，指向不存在的模型，所以这条几乎必现，要说人话。 */
+        private const val NO_MODEL_MESSAGE = "请先选择图像生成模型"
     }
 }

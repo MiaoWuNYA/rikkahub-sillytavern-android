@@ -97,6 +97,7 @@ class ModelListState internal constructor(
     modelId: Uuid?,
     providers: List<ProviderSetting>,
     type: ModelType,
+    fallbackToAllTypes: Boolean = false,
 ) {
     var modelId by mutableStateOf(modelId)
         private set
@@ -110,12 +111,31 @@ class ModelListState internal constructor(
     var visible by mutableStateOf(false)
         private set
 
+    /**
+     * 实际参与过滤的模型类型集合。
+     *
+     * 供应商的 `/models` 接口只返回模型 id，拉回来的模型类型一律默认成 [ModelType.CHAT]，
+     * 除非用户在供应商详情页手动改过。生图页若严格按 [ModelType.IMAGE] 过滤，绝大多数用户
+     * 看到的会是一个空列表——"选不了模型"就是这么来的。开启 fallbackToAllTypes 后，
+     * 只有当全局确实不存在该类型的模型时才退化成"除嵌入模型外全部可选"；一旦用户标了
+     * 任意一个 IMAGE 模型，就恢复严格过滤，不会污染正常用法。
+     *
+     * 在 [update] 里算好存字段，而不是用 getter 现算：下游 `remember(providers, modelTypes)`
+     * 靠引用相等判缓存，每次重组返回新 Set 会让所有过滤每帧重算。
+     */
+    var effectiveTypes: Set<ModelType> = setOf(type)
+        private set
+
+    /** 是否因兜底而放宽了类型过滤（列表里混着非目标类型的模型），用于给用户一句说明 */
+    val isTypeFilterRelaxed: Boolean
+        get() = effectiveTypes.size > 1
+
     val currentModel: Model?
         get() = modelId?.let { providers.findModelById(it) }
 
     val filteredProviders: List<ProviderSetting>
         get() = providers.fastFilter { provider ->
-            provider.enabled && provider.models.fastAny { model -> model.type == type }
+            provider.enabled && provider.models.fastAny { model -> model.type in effectiveTypes }
         }
 
     fun open() {
@@ -130,10 +150,25 @@ class ModelListState internal constructor(
         modelId: Uuid?,
         providers: List<ProviderSetting>,
         type: ModelType,
+        fallbackToAllTypes: Boolean = false,
     ) {
         this.modelId = modelId
         this.providers = providers
         this.type = type
+        this.effectiveTypes = resolveEffectiveTypes(providers, type, fallbackToAllTypes)
+    }
+
+    private fun resolveEffectiveTypes(
+        providers: List<ProviderSetting>,
+        type: ModelType,
+        fallbackToAllTypes: Boolean,
+    ): Set<ModelType> {
+        if (!fallbackToAllTypes) return setOf(type)
+        val hasExactType = providers.fastAny { provider ->
+            provider.models.fastAny { it.type == type }
+        }
+        if (hasExactType) return setOf(type)
+        return ModelType.entries.filterTo(mutableSetOf()) { it != ModelType.EMBEDDING }
     }
 }
 
@@ -142,18 +177,21 @@ fun rememberModelListState(
     modelId: Uuid?,
     providers: List<ProviderSetting>,
     type: ModelType,
+    fallbackToAllTypes: Boolean = false,
 ): ModelListState {
     return remember {
         ModelListState(
             modelId = modelId,
             providers = providers,
             type = type,
+            fallbackToAllTypes = fallbackToAllTypes,
         )
     }.also {
         it.update(
             modelId = modelId,
             providers = providers,
             type = type,
+            fallbackToAllTypes = fallbackToAllTypes,
         )
     }
 }
@@ -166,12 +204,14 @@ fun ModelSelector(
     modifier: Modifier = Modifier,
     onlyIcon: Boolean = false,
     allowClear: Boolean = false,
+    fallbackToAllTypes: Boolean = false,
     onSelect: (Model) -> Unit
 ) {
     val state = rememberModelListState(
         modelId = modelId,
         providers = providers,
         type = type,
+        fallbackToAllTypes = fallbackToAllTypes,
     )
 
     ModelSelectorButton(
@@ -290,10 +330,20 @@ fun ModelListSheet(
                 .imePadding(),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
+            // 兜底放开了类型过滤，列表里会混进聊天模型——不说明的话用户不知道自己在选什么。
+            if (state.isTypeFilterRelaxed) {
+                Text(
+                    text = stringResource(R.string.model_list_type_filter_relaxed),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                )
+            }
+
             ModelList(
                 currentModel = state.modelId,
                 providers = state.filteredProviders,
-                modelType = state.type,
+                modelTypes = state.effectiveTypes,
                 onSelect = {
                     onSelect(it)
                     dismiss()
@@ -310,7 +360,7 @@ fun ModelListSheet(
 private fun ColumnScope.ModelList(
     currentModel: Uuid? = null,
     providers: List<ProviderSetting>,
-    modelType: ModelType,
+    modelTypes: Set<ModelType>,
     onSelect: (Model) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -321,23 +371,23 @@ private fun ColumnScope.ModelList(
 
     val favoriteModels = settings.value.favoriteModels.mapNotNull { modelId ->
         val model = settings.value.providers.findModelById(modelId) ?: return@mapNotNull null
-        if (model.type != modelType) return@mapNotNull null
+        if (model.type !in modelTypes) return@mapNotNull null
         val provider = model.findProvider(providers = settings.value.providers, checkOverwrite = false) ?: return@mapNotNull null
         model to provider
     }
 
     var searchKeywords by remember { mutableStateOf("") }
 
-    val typeFilteredModelsByProvider = remember(providers, modelType) {
+    val typeFilteredModelsByProvider = remember(providers, modelTypes) {
         providers.associate { provider ->
-            provider.id to provider.models.fastFilter { it.type == modelType }
+            provider.id to provider.models.fastFilter { it.type in modelTypes }
         }
     }
 
-    val searchFilteredModelsByProvider = remember(providers, modelType, searchKeywords) {
+    val searchFilteredModelsByProvider = remember(providers, modelTypes, searchKeywords) {
         providers.associate { provider ->
             provider.id to provider.models.fastFilter {
-                it.type == modelType && it.displayName.contains(searchKeywords, true)
+                it.type in modelTypes && it.displayName.contains(searchKeywords, true)
             }
         }
     }

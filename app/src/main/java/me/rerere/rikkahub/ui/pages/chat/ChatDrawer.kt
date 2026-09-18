@@ -422,6 +422,18 @@ fun ChatDrawerContent(
 
                 DrawerAction(
                     icon = {
+                        Icon(HugeIcons.Image02, stringResource(R.string.chat_page_menu_image_generation))
+                    },
+                    label = {
+                        Text(stringResource(R.string.chat_page_menu_image_generation))
+                    },
+                    onClick = {
+                        navController.navigate(Screen.ImageGen)
+                    },
+                )
+
+                DrawerAction(
+                    icon = {
                         Icon(HugeIcons.ChartColumn, "统计数据")
                     },
                     label = {
