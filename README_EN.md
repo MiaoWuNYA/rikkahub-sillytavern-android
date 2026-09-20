@@ -15,9 +15,9 @@
 
 </div>
 
-> **In one line**: SillyTavern, on your phone — a native Android client, not a WebView shell, no Termux or Node.js required.
-> Install an APK, import the hundreds of character cards and lorebooks you already have, and it also fixes the two classic
-> tavern headaches: **long chats burning money** and **the AI forgetting everything**.
+> A SillyTavern-compatible client for Android, implemented natively — no Termux or Node.js required.
+> Existing character cards, lorebooks and presets import directly, with dedicated optimization for the **cost** and
+> **context retention** of long conversations.
 >
 > A deeply customized fork of [RikkaHub](https://github.com/rikkahub/rikkahub), already merged with upstream **v2.5.2**, plus **2150+ commits** of additions.
 
@@ -25,9 +25,9 @@
 
 ## 🍺 Tavern capabilities at a glance
 
-**Bring your whole desktop tavern setup over** — parsed with official SillyTavern semantics, not an approximate "it imports, sort of" conversion:
+**Existing tavern assets migrate directly** — parsed with official SillyTavern semantics rather than an approximate conversion:
 
-| What you have | What this app does with it |
+| Asset type | Compatibility |
 |---|---|
 | **Character cards** (PNG / V2 / V3 JSON) | **20+ fields** (upstream keeps only 6): example messages, alternate greetings, multilingual notes, post-history instructions, character version, tags, nickname, assets, embedded lorebook, raw `extensions` JSON… nothing upstream drops is lost — **import → export round-trips without data loss** |
 | **Lorebooks** | **30+ entry fields**, aligned rule by rule with official `world-info.js`: four secondary-keyword logic modes, whole-word/regex/case, per-entry scan depth, constant activation, cross-book groups + weight + override, trigger probability, sticky / cooldown, delayed activation, recursion controls, budget exemption, character-field matching ×6 |
@@ -40,37 +40,37 @@
 
 **The prompt pipeline follows the official structure too**: main prompt, standalone character-field messages, example messages split on `<START>` into real user/assistant turns, PHI appended after history, depth prompts injected at their configured depth and role.
 
-### How this differs from other Android tavern projects
+### Differences from other Android tavern projects
 
-Search "Android SillyTavern" and most results are **containers or launchers** — they bundle Node.js and SillyTavern and run it (their own descriptions give it away: *runner*, *launcher*, *container*, *installer*, *local Node.js server*).
+Searching "Android SillyTavern" surfaces mostly **containers or launchers** — projects that bundle Node.js with SillyTavern and run it (their descriptions typically use terms such as *runner*, *launcher*, *container*, *installer*, *local Node.js server*).
 
-This project is a **native rewrite**: a complete Kotlin + Jetpack Compose client where the tavern compatibility layer is core code, not a shim. That means:
+This project is a **native implementation**: a complete Kotlin + Jetpack Compose client in which the tavern compatibility layer is core code rather than an external wrapper. The differences:
 
-- **No Node service** — no background process hogging memory, fast cold start
-- **Tavern features wired into client features**: a card's lorebook can drive plugin tools, the memory system, TTS read-aloud, and the device toolbox
-- **A real phone experience**: Material You theming, gestures, notifications, the share sheet
+- **No Node service to run** — no background process holding memory, faster cold start
+- **Tavern features interoperate with client features**: a card's lorebook can drive plugin tools, the memory system, TTS read-aloud, and the device toolbox
+- **A complete mobile experience**: Material You theming, gestures, notifications, the share sheet
 
-### It also solves two long-standing tavern problems
+### It also addresses two common tavern pain points
 
 - ⚡ **Long chats get expensive** → [Prompt prefix cache optimization](#-prompt-prefix-cache-optimization) removes per-turn divergence points
 - 🧠 **The AI forgets / the context blows up** → [Memory & long conversations](#-memory--long-conversations): semantic RAG + three-layer memory + rolling compression
 
 ---
 
-## 🔍 You might be looking for
+## 🔍 Common needs and where they map
 
-| What you want to do | The matching feature |
+| Need | Corresponding feature |
 |---|---|
-| **Run SillyTavern cards / lorebooks on Android** | Cards (V2/V3/PNG), lorebooks (30+ fields), presets, regex, QR, themes — all imported with official SillyTavern semantics |
-| **A usable SillyTavern client on mobile** | This app is one; the tavern layer is a core direction, not a bolt-on |
-| **Move my desktop tavern data to my phone** | Six asset types import: cards, lorebooks, presets, regex, QR, themes |
-| **Mobile tavern is slow / Termux is a hassle** | Native client — no Termux, no Node.js, just install the APK |
-| Long chats that are too expensive / keep forgetting | Prompt prefix cache + semantic memory RAG + three-layer memory + rolling compression |
-| Connect my own proxy station / third-party API | OpenAI / Anthropic / Google / DeepSeek compatible; the proxy-fix switch cures the common pathologies |
-| Give the AI my own tools | QuickJS plugin system — write a `main.js`, zip it, import it |
-| Chat from WeChat / QQ too | WeChat Bot (QR login), QQ Bot (official API), reusing any assistant's AI and memory |
-| Voice that speaks and listens | Doubao TTS 2.0 + Volcengine ASR, powering voice / video calls |
-| Let the AI operate my phone | Device toolbox: 30 tools — torch, volume, SMS, contacts, location, notifications… |
+| **Use tavern character cards and lorebooks on Android** | Cards (V2/V3/PNG), lorebooks (30+ fields), presets, regex, QR, themes — all imported with official semantics |
+| **Find a SillyTavern client for Android** | This project; the tavern compatibility layer is a core module |
+| **Migrate desktop tavern data to a phone** | Six asset types import: cards, lorebooks, presets, regex, QR, themes |
+| **Mobile tavern performance is insufficient, or Termux setup is undesirable** | Native client — no Termux, no Node.js, just install the APK |
+| Long-conversation cost is too high / context is lost frequently | Prompt prefix cache + semantic memory RAG + three-layer memory + rolling compression |
+| Connect a self-hosted proxy station or third-party API | OpenAI / Anthropic / Google / DeepSeek compatible; the proxy-fix switch cures the common pathologies |
+| Extend the AI with custom tools | QuickJS plugin system — write a `main.js`, zip it, import it |
+| Continue conversations from WeChat / QQ | WeChat Bot (QR login), QQ Bot (official API), reusing any assistant's AI and memory |
+| Speech output and voice conversation | Doubao TTS 2.0 + Volcengine ASR, powering voice / video calls |
+| Let the AI operate the phone | Device toolbox: 30 tools — torch, volume, SMS, contacts, location, notifications… |
 | Privacy | Sanitized request logging, tool-approval boundaries, telemetry off by default, all data stays local |
 
 > **Search keywords**: Android SillyTavern, SillyTavern Android client, mobile SillyTavern, tavern client,
@@ -133,25 +133,6 @@ rikkahub/rikkahub (original upstream, v2.5.2)
 5. For plugins: Settings → **Plugins** → import ZIP ([bundled plugins](#-bundled-plugins) work out of the box)
 
 > In-app update: Settings → About → Check for updates (GitHub Releases API, with an auto-fallback mirror for mainland China)
-
----
-
-## 🔍 You might be looking for
-
-| What you want to do | The matching feature |
-|---|---|
-| Run SillyTavern cards / lorebooks on Android | Cards (V2/V3/PNG), lorebooks (30+ fields), presets, regex, QR — all imported with official SillyTavern semantics |
-| A usable SillyTavern client on mobile | This app is one; the tavern layer is a core direction, not a bolt-on |
-| Long chats that are too expensive / keep forgetting | Prompt prefix cache + semantic memory RAG + three-layer memory + rolling compression |
-| Connect my own proxy station / third-party API | OpenAI / Anthropic / Google / DeepSeek compatible; the proxy-fix switch cures the common pathologies |
-| Give the AI my own tools | QuickJS plugin system — write a `main.js`, zip it, import it |
-| Chat from WeChat / QQ too | WeChat Bot (QR login), QQ Bot (official API), reusing any assistant's AI and memory |
-| Voice that speaks and listens | Doubao TTS 2.0 + Volcengine ASR, powering voice / video calls |
-| Let the AI operate my phone | Device toolbox: 30 tools — torch, volume, SMS, contacts, location, notifications… |
-| Privacy | Sanitized request logging, tool-approval boundaries, telemetry off by default, all data stays local |
-
-> **Search keywords**: Android AI client, Android LLM chat, SillyTavern Android, mobile SillyTavern,
-> roleplay AI, prompt cache, RAG memory, OpenAI-compatible proxy, Kotlin Jetpack Compose AI app.
 
 ---
 
