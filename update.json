@@ -1,11 +1,11 @@
 {
-  "version": "2.5.4fix10",
-  "publishedAt": "2026-09-20T03:20:00Z",
-  "changelog": "教务系统改成插件，应用不再内置 + 新增卡路里插件\n\n- 云南财经教务系统移出应用硬编码，改成可热插拔的插件（课表/成绩/考试/公告/空闲教室），账号密码在插件设置里填，验证码仍自动识别\n- 插件沙箱新增会话式 HTTP（自带 Cookie 罐，能拿二进制）与图片解码桥，插件可以自己做登录态和图像处理\n- 新增「卡路里与蛋白质记录」插件，跟 AI 说吃了什么就记下来，插件详情页显示当天摄入与剩余额度\n- 插件支持详情页数据卡片（manifest.detailCard）",
+  "version": "2.5.4fix11",
+  "publishedAt": "2026-09-20T04:00:00Z",
+  "changelog": "主仓库迁移到 MiaoWuNYA/rikkahub-huadeng + 华灯设置简介调整\n\n- 代码与发布迁移到新仓库（原仓库是 GitHub fork，搜索默认不返回 fork，导致很难被搜到）；更新检查与关于页链接已同步指向新仓库\n- 华灯设置简介不再提及云财教务系统（该功能已改为插件形式提供）\n- 插件沙箱的会话式 HTTP 与图片解码能力、插件详情页数据卡片\n- 卡路里与蛋白质记录插件；云南财经教务系统插件\n- 更新检查改用 GitHub Releases API，修复 2.5.4fix9 与 2.5.4 被判定为同版本的比较器缺陷\n- 标题生成不再长篇思考：改用独立推理等级（默认关闭）并重写提示词",
   "downloads": [
     {
-      "name": "rikkahub-plus-2.5.4fix10-arm64-v8a.apk",
-      "url": "https://github.com/MiaoWuNYA/rikkahub-huadeng/releases/download/v2.5.4fix10/rikkahub-plus-2.5.4fix10-arm64-v8a.apk",
+      "name": "rikkahub-plus-2.5.4fix11-arm64-v8a.apk",
+      "url": "https://github.com/MiaoWuNYA/rikkahub-huadeng/releases/download/v2.5.4fix11/rikkahub-plus-2.5.4fix11-arm64-v8a.apk",
       "size": "约 102 MB"
     }
   ]
