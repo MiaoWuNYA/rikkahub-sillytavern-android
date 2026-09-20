@@ -2,7 +2,9 @@
 
 # RikkaHub Plus · 华灯版
 
-**安卓上的 AI 聊天客户端 · 深度定制分支**
+### 安卓手机上的 **SillyTavern（酒馆）** 客户端
+
+**角色卡 · 世界书 · 预设 · 正则 · 快速回复 · 美化主题 —— 按酒馆官方语义一键导入**
 
 [**简体中文**](README.md) | [**English**](README_EN.md) | [差异手册](DIVERGENCE.md)
 
@@ -13,18 +15,77 @@
 
 </div>
 
-> 基于 [RikkaHub](https://github.com/rikkahub/rikkahub) 的深度定制分支，已合入上游 **v2.5.2**（截至 2026-09）。
-> 上游功能原样保留，另加 **2150+ 提交**、**170 个新 Kotlin 文件**，重点在下面 12 个方向。
+> **一句话**：把酒馆搬到手机上——原生安卓客户端，不是 WebView 套壳、不需要 Termux 或 Node.js，
+> 装个 APK 就能导入你那几百张角色卡和世界书，还顺带把**长对话烧钱**和**失忆**这两个老问题解决了。
+>
+> 本项目是 [RikkaHub](https://github.com/rikkahub/rikkahub) 的深度定制分支，已合入上游 **v2.5.2**，另有 **2150+ 提交**的增量。
 
 ---
 
-## 📌 相对上游，这个分支多了什么
+## 🍺 酒馆能力总览
+
+**把你电脑上那套酒馆资产直接搬过来**——全部按 SillyTavern 官方语义解析，不是"能导入就行"的近似转换：
+
+| 你手上的东西 | 这个 App 的表现 |
+|---|---|
+| **角色卡**（PNG / V2 / V3 JSON） | 字段覆盖 **20+**（上游仅 6 个）：示例对话、备选开场白、多语备注、对话后指令、角色版本、标签、昵称、资源、内嵌世界书、`extensions` 原始 JSON……上游丢弃的全部保留，**导入 → 导出往返无损** |
+| **世界书 / Lorebook** | 条目字段 **30+**，逐条对齐官方 `world-info.js`：四种次级关键词逻辑、整词/正则/大小写、条目级扫描深度、常驻激活、跨书分组 + 权重 + 覆盖、触发概率、粘滞 / 冷却、延迟激活、递归排除 / 阻止递归 / 延迟递归、预算豁免、角色字段匹配 ×6 |
+| **预设**（Preset） | 按官方提示词管理器结构导入 |
+| **正则脚本**（Regex） | Find / Replace / `_ALT`、OnlyFormat、宏支持、注入深度（minDepth/maxDepth）、排序与缓存，同时作用于展示层与提示词层 |
+| **快速回复**（QR） | QR 集合导入，输入框斜杠面板一键执行 |
+| **美化主题**（Theme） | **537 个真实主题全量验证通过**：叠层配色合成、`custom_css` 背景图、气泡圆角、主题字体 |
+| **HTML 展示卡** | 直接渲染，默认展开 + 点击全屏 |
+| **多开场白** | `alternate_greetings` 全量导入，聊天中随时切换 |
+
+**提示词链路也是官方那套**：主提示词、角色字段独立消息、示例对话按 `<START>` 拆成真实 user/assistant 轮次、PHI 追加在历史之后、深度提示词按配置的深度与角色注入。
+
+### 和常见安卓酒馆方案的区别
+
+搜"安卓酒馆"出来的一堆项目，多数是**容器 / 启动器**——把 Node.js 和 SillyTavern 打包进去跑（看它们的描述就知道：*runner*、*launcher*、*容器*、*installer*、*local Node.js server*）。
+
+这个项目是**原生重写**：Kotlin + Jetpack Compose 的完整客户端，酒馆兼容层是核心代码而非外挂。区别在于：
+
+- **不用起 Node 服务**，不占后台常驻内存，冷启动快
+- **酒馆能力与客户端能力打通**：角色卡的世界书能调用插件工具、记忆系统、语音朗读、设备工具箱
+- **手机上该有的体验**：Material You 主题、手势、通知栏、分享面板一应俱全
+
+### 还顺带解决了两件酒馆老问题
+
+- ⚡ **长对话烧钱** → [提示词前缀缓存优化](#-提示词前缀缓存优化)，消除每轮变化的分叉点
+- 🧠 **聊久了失忆 / 爆上下文** → [记忆与长对话](#-记忆与长对话)，语义 RAG + 三层记忆 + 滚动压缩
+
+---
+
+## 🔍 你可能在找
+
+| 你想做的事情 | 对应功能 |
+|---|---|
+| **在安卓手机上跑酒馆角色卡 / 世界书** | 角色卡 V2/V3/PNG、世界书 30+ 字段、预设、正则、QR、美化主题全按官方语义导入 |
+| **找一个手机上能用的 SillyTavern 客户端** | 本应用就是，酒馆兼容层是核心方向而非外挂 |
+| **把电脑上的酒馆数据搬到手机** | 角色卡 / 世界书 / 预设 / 正则 / QR / 主题，六类资产全支持导入 |
+| **手机酒馆太卡 / 要用 Termux 太麻烦** | 原生客户端，无需 Termux、Node.js，APK 直装 |
+| AI 聊天长对话太贵 / 老是失忆 | 提示词前缀缓存 + 语义记忆 RAG + 三层记忆 + 上下文滚动压缩 |
+| 接入自己的中转站 / 第三方 API | OpenAI / Anthropic / Google / DeepSeek 兼容协议，中转站兼容开关修复常见病态 |
+| 给 AI 加自己的工具 | QuickJS 插件系统，写个 `main.js` 打包 ZIP 就能导入 |
+| 想要微信 / QQ 里也能聊 | 微信 Bot（扫码）、QQ Bot（官方 API），复用任意助手的 AI 与记忆 |
+| 想要能读出来、能对话的语音 | 豆包 TTS 2.0 + 火山 ASR，支持语音 / 视频通话 |
+| 让 AI 能操作手机 | 设备工具箱 30 个工具：手电筒、音量、短信、联系人、定位、发通知…… |
+| 在意隐私 | 请求日志脱敏、工具审批边界、遥测默认关闭、数据全部留在本机 |
+
+> **搜索关键词**：安卓酒馆、手机酒馆、酒馆客户端、SillyTavern 安卓、SillyTavern Android、酒馆手机版、
+> 角色卡导入、世界书、Lorebook、角色扮演 AI、AI 角色扮演、RP 客户端、
+> Android LLM chat、AI 聊天客户端、prompt cache 提示词缓存、RAG 记忆、OpenAI 兼容中转、
+> Kotlin Jetpack Compose AI 应用、本地 AI 聊天。
+
+---
+
+## 📌 相对上游多了什么
 
 | | 方向 | 一句话 |
 |---|---|---|
+| 🍺 | **酒馆深度兼容**（核心） | 角色卡 / 世界书 / 预设 / 正则 / QR / 美化主题，按官方语义无损导入导出 |
 | ⚡ | **提示词缓存优化** | 消除每轮变化的上下文分叉点，长对话 token 费用大幅下降 |
 | 🧩 | **插件系统** | QuickJS 沙箱插件，ZIP 导入，AI 可直接调用插件工具 |
-| 🍺 | **酒馆深度兼容** | 角色卡 / 世界书 / 预设 / 正则 / QR / 美化主题，按官方语义无损导入导出 |
 | 🧠 | **记忆与长对话** | 语义 RAG + 三层记忆 + 滚动压缩，长对话不失忆不爆窗 |
 | 🗼 | **中转站兼容** | Gemini 走 OpenAI 兼容中转的三类经典病态自动修复 |
 | 🔊 | **豆包语音** | TTS 2.0 + 火山 ASR，一个 Agent Plan Key 支撑语音/视频通话 |
@@ -47,15 +108,17 @@ rikkahub/rikkahub (最上游，v2.5.2)
         │            │  酒馆系统 / 宏引擎 / 斜杠命令 / 群聊
         │            ▼
         └──► MiaoWuNYA/rikkahub-huadeng  ← 本仓库
-                     │  缓存优化 / 插件 / 记忆 / 中转兼容 / 手机增强
+                     │  酒馆增强 / 缓存优化 / 插件 / 记忆 / 中转兼容 / 手机增强
                      │
                      ├─ 另从 orangechat & Tumin 引入：三层记忆、情侣空间、
                      │  生活空间、外观自定义、插件系统雏形
                      └─ 另从 Rikkahub-Revised 移植：语义记忆 RAG、滚动压缩
 ```
 
-- **对最上游 `rikkahub`**：上游功能全部保留；本分支的酒馆/插件/记忆等全部是增量
-- **对中间分支 `heikeyangle-code/rikkahub-plus`（mingli2）**：酒馆核心来自它，本分支在其上补齐了缓存优化、插件、记忆、中转兼容、语音与隐私加固
+- **对最上游 `rikkahub`**：上游功能全部保留；酒馆、插件、记忆等全部是增量
+- **对中间分支 `heikeyangle-code/rikkahub-plus`（mingli2）**：酒馆核心来自它，本分支在其上补齐了
+  HTML 卡片、多开场白、预设与正则导入、QR 导入、世界书编辑器补全与 Token 预算兜底、
+  Vector Storage 语义条目、提示词查看器、正则深度限制与缓存、开场白宏替换
 - **对其它同源分支**：见文末[致谢](#-致谢与版权说明credits)，特色功能的来源均已注明
 
 </details>
@@ -65,31 +128,92 @@ rikkahub/rikkahub (最上游，v2.5.2)
 ## 🚀 快速开始
 
 1. 到 [Releases](https://github.com/MiaoWuNYA/rikkahub-huadeng/releases/latest) 下载最新 APK（`arm64-v8a`，Android 8.0+）
-2. 安装后：设置 → 模型与服务 → **提供商**，添加你的 API
-3. 设置 → 模型与服务 → **默认模型和提示词**，给对话/标题/压缩分别选模型
-4. 想用酒馆角色卡：助手页 → 导入角色卡（PNG / JSON）
-5. 想加插件：设置 → **插件管理** → 导入 ZIP（[内置插件](#-内置插件)开箱可用）
+2. **导入角色卡**：助手页 → 导入（支持 PNG 卡 / V2 / V3 JSON），世界书和预设会自动带进来
+3. **配模型**：设置 → 模型与服务 → **提供商**，添加你的 API；再到**默认模型和提示词**给对话/标题/压缩分别选模型
+4. **导入世界书 / 预设 / 正则 / QR**：设置 → 扩展管理，四类酒馆资产各有入口
+5. **换个酒馆主题**：设置 → 偏好设置 → 聊天外观自定义 → 导入酒馆主题
+6. 想加插件：设置 → **插件管理** → 导入 ZIP（[内置插件](#-内置插件)开箱可用）
 
 > 应用内更新：设置 → 关于 → 检查更新（走 GitHub Releases API，国内镜像自动回退）
 
 ---
 
-## 🔍 你可能在找
+## 🍺 酒馆系统详解（对齐 SillyTavern 官方语义）
 
-| 你想做的事情 | 对应功能 |
+> 酒馆核心（角色卡结构、世界书引擎、宏引擎 2.0、斜杠命令、群聊）来自中间分支
+> [heikeyangle-code/rikkahub-plus](https://github.com/heikeyangle-code/rikkahub-plus) 的 `mingli2` 分支。
+> 本分支在其基础上**新增**：HTML 卡片渲染、多开场白导入、预设与正则脚本导入、QR 快速回复导入、
+> 世界书编辑器字段补全 + Token 预算兜底、Vector Storage 语义条目、提示词查看器、
+> 正则深度限制与缓存、开场白宏替换。
+
+### 1. 角色卡：导入 → 结构化 → 注入 → 导出 → 编辑
+
+- **字段覆盖 20+（上游仅 6 个）**：示例对话、备选开场白、多语 creator_notes、对话后指令（post_history_instructions）、角色版本、标签、昵称、资源、group_only_greetings、创建/修改日期、内嵌世界书、extensions 原始 JSON（含深度提示词的 depth/role）——上游丢弃的字段全部保留，**导入 → 导出往返无损**
+- **官方 Chat Completion 注入结构**：主提示词、角色字段独立消息、示例对话按 `<START>` 拆成真实 user/assistant 轮次、PHI 追加在历史之后、深度提示词按配置的深度/角色注入
+- **V2 / V3 双版本**：V3 高级字段与 PNG 卡（ccv3）支持，非 PNG 自动转 PNG 并做注入宏替换
+- **可视化角色卡编辑器**：全部字段编辑 + 内嵌世界书管理 + 一键导出（JSON / PNG 嵌入）
+- **多开场白**：`alternate_greetings` 全量导入，可在聊天中随时切换
+- **HTML 卡片**：酒馆 HTML 展示卡直接渲染，默认展开 + 点击全屏
+
+### 2. 世界书（Lorebook）
+
+逐条对齐酒馆官方 `world-info.js` 语义，条目字段从上游 6 个扩展到 30+：
+
+| 能力 | 官方对应 |
 |---|---|
-| 在安卓手机上跑酒馆角色卡 / 世界书 | 角色卡 V2/V3/PNG、世界书 30+ 字段、预设、正则、QR 全按 SillyTavern 官方语义导入 |
-| 找一个手机上能用的 SillyTavern 客户端 | 本应用就是，酒馆兼容层是核心方向而非外挂 |
-| AI 聊天长对话太贵 / 老是失忆 | 提示词前缀缓存 + 语义记忆 RAG + 三层记忆 + 上下文滚动压缩 |
-| 接入自己的中转站 / 第三方 API | OpenAI / Anthropic / Google / DeepSeek 兼容协议，中转站兼容开关修复常见病态 |
-| 给 AI 加自己的工具 | QuickJS 插件系统，写个 `main.js` 打包 ZIP 就能导入 |
-| 想要微信 / QQ 里也能聊 | 微信 Bot（扫码）、QQ Bot（官方 API），复用任意助手的 AI 与记忆 |
-| 想要能读出来、能对话的语音 | 豆包 TTS 2.0 + 火山 ASR，支持语音 / 视频通话 |
-| 让 AI 能操作手机 | 设备工具箱 30 个工具：手电筒、音量、短信、联系人、定位、发通知…… |
-| 在意隐私 | 请求日志脱敏、工具审批边界、遥测默认关闭、数据全部留在本机 |
+| 四种次级关键词逻辑（任意/全部/排除任一/排除全部） | `selective_logic` |
+| 整词匹配 / 正则 / 区分大小写 | `match_whole_words` / `key_regex` / `key_case_sensitive` |
+| 条目级扫描深度 | `scan_depth` |
+| 常驻激活 | `constant` |
+| 跨书分组 + 组权重 + 组覆盖 | `group` / `group_weight` / `group_override` |
+| 触发概率 | `probability` / `use_probability` |
+| 粘滞 / 冷却 | `sticky` / `cooldown` |
+| 延迟激活 | `extensions.delay` |
+| 递归排除 / 阻止递归 / 延迟递归 | `exclude_recursion` / `prevent_recursion` / `delay_until_recursion` |
+| 预算豁免 | `extensions.ignore_budget` |
+| 角色字段匹配（人设/描述/性格/深度提示词/场景/备注 ×6） | `extensions.match_*` |
+| 显示顺序 / 生成过滤器 / 触发器 | `display_index` / `display_position` / `triggers` |
 
-> **搜索关键词**：安卓 AI 客户端、Android LLM chat、SillyTavern Android、酒馆手机版、角色扮演 AI、
-> 提示词缓存 / prompt cache、RAG 记忆、OpenAI 兼容中转、Kotlin Jetpack Compose AI 应用。
+**扫描引擎**：完整实现官方 `checkWorldInfo` 状态机（INITIAL → 递归 / 最少激活 / 延迟层级循环），带预算、溢出、粘滞、冷却全生命周期；跨书分组按官方规则选出唯一条目（粘滞优先 → 关键词评分 → 组覆盖 → 加权随机）。
+
+**世界书编辑器**：全局设置（扫描深度、Token 预算 + 绝对上限、最少激活 + 最大深度、递归扫描 + 步数上限、插入策略、溢出提醒、组评分）、条目全字段编辑、拖拽排序、外置/内嵌双向同步、Vector Storage 语义条目。
+
+### 3. 预设 / 正则 / 美化主题
+
+- **预设导入**：酒馆 JSON 预设按官方提示词管理器结构导入
+- **正则脚本导入**：Find/Replace/`_ALT`、OnlyFormat、宏支持、注入深度（minDepth/maxDepth）、排序与缓存，作用于展示与提示词两层
+- **美化主题导入**：见[外观与主题](#-外观自定义与主题)
+
+### 4. 快速回复（Quick Replies）
+
+酒馆 QR 集合导入，输入框斜杠面板一键执行。
+
+### 5. 宏引擎 2.0
+
+- **变量**：`{{setvar}}` `{{getvar}}` `{{.var}}` 简写全家桶，全局 + 会话级持久化 —— 角色卡可以记住剧情状态
+- **条件**：`{{if}} / {{else}}`、比较运算符、`&&` / `||`、作用域块、嵌套
+- **随机与时间**：`{{pick}}`（回合内稳定）、`{{roll::1d20}}`、`{{random}}`、`{{time}}`、`{{datetimeformat}}`
+- **对话感知**：`{{lastUserMessage}}` `{{lastCharMessage}}` `{{idleDuration}}` `{{charFirstMessage::N}}` `{{original}}` 等 **60+ 官方宏**全量支持
+- 未知宏原样保留，不破坏提示词
+
+### 6. 斜杠命令
+
+输入框直接敲，`/help` 列出全部命令与说明。**20+ 内置命令**：
+
+- **角色扮演**：`/impersonate`（AI 以你的口吻起草）、`/continue`、`/sendas`、`/sys`、`/sysgen`、`/trigger`、`/message-name`、`/delname`
+- **变量与随机**：`/listvar` `/setvar` `/getvar` `/addvar` `/incvar` `/decvar` `/flushvar` `/reroll-pick`
+- **角色卡管理**：`/char-update` `/char-duplicate` `/rename-char`
+- **注入**：`/inject`（按位置/深度/角色注入）、`/prompt`
+- 技能提供的命令自动出现在面板中
+
+### 7. 人设 Persona 与作者注释
+
+- **人设**：官方五档注入位置（IN_PROMPT / TOP / BOTTOM / AT_DEPTH / NONE）、按角色绑定、独立 SYSTEM 消息注入、一键禁用
+- **作者注释**（导演备注）：官方间隔语义（每次 / 每 N 条用户消息）、注入深度与角色、总开关
+
+### 8. 群聊
+
+多角色同场对话，每个成员有独立提示词 / 人设 / 模型；4 种发言策略（NATURAL AI 选人 / 列表 / 加权随机 / 手动）+ 5 种扩展模式；自动接话（轮数 1-10 可设、延迟可设、被用户消息打断）；发言者实时状态；群聊持久化。
 
 ---
 
@@ -196,82 +320,6 @@ exports.hello = function (args) {
 
 ---
 
-## 🍺 酒馆系统（对齐 SillyTavern 官方语义）
-
-> 酒馆核心（角色卡结构、世界书引擎、宏引擎 2.0、斜杠命令、群聊）来自中间分支 [heikeyangle-code/rikkahub-plus](https://github.com/heikeyangle-code/rikkahub-plus) 的 `mingli2` 分支。
-> 本分支在其基础上**新增**：HTML 卡片渲染、多开场白导入、预设与正则脚本导入、QR 快速回复导入、世界书编辑器字段补全 + Token 预算兜底、Vector Storage 语义条目、提示词查看器、正则深度限制与缓存、开场白宏替换。
-
-### 1. 角色卡：导入 → 结构化 → 注入 → 导出 → 编辑
-
-- **字段覆盖 20+（上游仅 6 个）**：示例对话、备选开场白、多语 creator_notes、对话后指令（post_history_instructions）、角色版本、标签、昵称、资源、group_only_greetings、创建/修改日期、内嵌世界书、extensions 原始 JSON（含深度提示词的 depth/role）——上游丢弃的字段全部保留，**导入 → 导出往返无损**
-- **官方 Chat Completion 注入结构**：主提示词、角色字段独立消息、示例对话按 `<START>` 拆成真实 user/assistant 轮次、PHI 追加在历史之后、深度提示词按配置的深度/角色注入
-- **V2 / V3 双版本**：V3 高级字段与 PNG 卡（ccv3）支持，非 PNG 自动转 PNG 并做注入宏替换
-- **可视化角色卡编辑器**：全部字段编辑 + 内嵌世界书管理 + 一键导出（JSON / PNG 嵌入）
-- **多开场白**：`alternate_greetings` 全量导入，可在聊天中随时切换
-- **HTML 卡片**：酒馆 HTML 展示卡直接渲染，默认展开 + 点击全屏
-
-### 2. 世界书（Lorebook）
-
-逐条对齐酒馆官方 `world-info.js` 语义，条目字段从上游 6 个扩展到 30+：
-
-| 能力 | 官方对应 |
-|---|---|
-| 四种次级关键词逻辑（任意/全部/排除任一/排除全部） | `selective_logic` |
-| 整词匹配 / 正则 / 区分大小写 | `match_whole_words` / `key_regex` / `key_case_sensitive` |
-| 条目级扫描深度 | `scan_depth` |
-| 常驻激活 | `constant` |
-| 跨书分组 + 组权重 + 组覆盖 | `group` / `group_weight` / `group_override` |
-| 触发概率 | `probability` / `use_probability` |
-| 粘滞 / 冷却 | `sticky` / `cooldown` |
-| 延迟激活 | `extensions.delay` |
-| 递归排除 / 阻止递归 / 延迟递归 | `exclude_recursion` / `prevent_recursion` / `delay_until_recursion` |
-| 预算豁免 | `extensions.ignore_budget` |
-| 角色字段匹配（人设/描述/性格/深度提示词/场景/备注 ×6） | `extensions.match_*` |
-| 显示顺序 / 生成过滤器 / 触发器 | `display_index` / `display_position` / `triggers` |
-
-**扫描引擎**：完整实现官方 `checkWorldInfo` 状态机（INITIAL → 递归 / 最少激活 / 延迟层级循环），带预算、溢出、粘滞、冷却全生命周期；跨书分组按官方规则选出唯一条目（粘滞优先 → 关键词评分 → 组覆盖 → 加权随机）。
-
-**世界书编辑器**：全局设置（扫描深度、Token 预算 + 绝对上限、最少激活 + 最大深度、递归扫描 + 步数上限、插入策略、溢出提醒、组评分）、条目全字段编辑、拖拽排序、外置/内嵌双向同步、Vector Storage 语义条目。
-
-### 3. 预设 / 正则 / 美化主题
-
-- **预设导入**：酒馆 JSON 预设按官方提示词管理器结构导入
-- **正则脚本导入**：Find/Replace/`_ALT`、OnlyFormat、宏支持、注入深度（minDepth/maxDepth）、排序与缓存，作用于展示与提示词两层
-- **美化主题导入**：见[外观与主题](#-外观自定义与主题)
-
-### 4. 快速回复（Quick Replies）
-
-酒馆 QR 集合导入，输入框斜杠面板一键执行。
-
-### 5. 宏引擎 2.0
-
-- **变量**：`{{setvar}}` `{{getvar}}` `{{.var}}` 简写全家桶，全局 + 会话级持久化 —— 角色卡可以记住剧情状态
-- **条件**：`{{if}} / {{else}}`、比较运算符、`&&` / `||`、作用域块、嵌套
-- **随机与时间**：`{{pick}}`（回合内稳定）、`{{roll::1d20}}`、`{{random}}`、`{{time}}`、`{{datetimeformat}}`
-- **对话感知**：`{{lastUserMessage}}` `{{lastCharMessage}}` `{{idleDuration}}` `{{charFirstMessage::N}}` `{{original}}` 等 **60+ 官方宏**全量支持
-- 未知宏原样保留，不破坏提示词
-
-### 6. 斜杠命令
-
-输入框直接敲，`/help` 列出全部命令与说明。**20+ 内置命令**：
-
-- **角色扮演**：`/impersonate`（AI 以你的口吻起草）、`/continue`、`/sendas`、`/sys`、`/sysgen`、`/trigger`、`/message-name`、`/delname`
-- **变量与随机**：`/listvar` `/setvar` `/getvar` `/addvar` `/incvar` `/decvar` `/flushvar` `/reroll-pick`
-- **角色卡管理**：`/char-update` `/char-duplicate` `/rename-char`
-- **注入**：`/inject`（按位置/深度/角色注入）、`/prompt`
-- 技能提供的命令自动出现在面板中
-
-### 7. 人设 Persona 与作者注释
-
-- **人设**：官方五档注入位置（IN_PROMPT / TOP / BOTTOM / AT_DEPTH / NONE）、按角色绑定、独立 SYSTEM 消息注入、一键禁用
-- **作者注释**（导演备注）：官方间隔语义（每次 / 每 N 条用户消息）、注入深度与角色、总开关
-
-### 8. 群聊
-
-多角色同场对话，每个成员有独立提示词 / 人设 / 模型；4 种发言策略（NATURAL AI 选人 / 列表 / 加权随机 / 手动）+ 5 种扩展模式；自动接话（轮数 1-10 可设、延迟可设、被用户消息打断）；发言者实时状态；群聊持久化。
-
----
-
 ## 🧠 记忆与长对话
 
 - **语义记忆 RAG**（移植自 [Rikkahub-Revised](https://github.com/YaeNovin/Rikkahub-Revised)）：记忆分 FACT（事实）/ EPISODIC（情节）两类，向量嵌入 + 余弦相似度检索（附中文分词大词 + CJK 二元组词法兜底），情节记忆带时间衰减加权，结果按预算注入
@@ -313,6 +361,8 @@ Gemini 经 OpenAI 兼容中转站（newapi 等）接入时的经典病态，自�
   - Agent Plan 专属接口路径默认内置，标准控制台用户可改回官方路径
 - **火山 ASR**：Agent Plan 的 `ark-xxx` 密钥只在 `/api/v3/plan/` 专属路径有效，默认地址已切换为 plan 专属路径，标准控制台密钥用户可在设置中改回
 - **一个 Agent Plan API Key** 同时驱动语音输入与语音输出
+
+> 配合[酒馆角色卡](#-酒馆系统详解对齐-sillytavern-官方语义)使用效果最佳：角色卡的台词能直接读出来。
 
 ---
 
@@ -481,11 +531,11 @@ AlarmManager 精确闹钟 + WorkManager 兜底双通道，随机间隔（可设�
 |---|---|---|
 | [rikkahub/rikkahub](https://github.com/rikkahub/rikkahub) | **原始上游项目**，本仓库的全部基础功能来自它 | AGPL-3.0 |
 | [heikeyangle-code/rikkahub-plus](https://github.com/heikeyangle-code/rikkahub-plus) | **直接上游（中间分支）**，酒馆系统、宏引擎、斜杠命令、群聊等核心增强的开发者 | AGPL-3.0 |
+| [SillyTavern/SillyTavern](https://github.com/SillyTavern/SillyTavern) | **酒馆系统的兼容目标**；角色卡 / 世界书 / 宏 / 斜杠命令的**语义与格式规范**参考其官方实现（AGPL-3.0），本项目未复制其代码 | AGPL-3.0 |
 | [sue1231513/orangechat](https://github.com/sue1231513/orangechat) | 同源分支，本项目从它与其下游 Tumin 引入了**情侣空间 / 生活空间 / 三层记忆 / 聊天外观自定义 / QuickJS 插件系统**等特色功能 | AGPL-3.0 |
 | [lingwangshu018/Tumin](https://github.com/lingwangshu018/Tumin) | orangechat 的下游分支，同上 | AGPL-3.0 |
 | [ExTV/rikkahub-agent](https://github.com/ExTV/rikkahub-agent) | 同源分支，设备工具箱的部分工具实现参考 | AGPL-3.0 |
 | [YaeNovin/Rikkahub-Revised](https://github.com/YaeNovin/Rikkahub-Revised) | 同源分支，本项目从中移植了**语义记忆 RAG** 与**上下文滚动压缩** | AGPL-3.0 |
-| [SillyTavern/SillyTavern](https://github.com/SillyTavern/SillyTavern) | 酒馆系统的兼容目标；角色卡 / 世界书 / 宏 / 斜杠命令的**语义与格式规范**参考其官方实现（AGPL-3.0），本项目未复制其代码 | AGPL-3.0 |
 
 本项目与其上游均为 **AGPL-3.0** 许可，本仓库沿用同一许可证继续开源。各上游项目的版权归其原作者所有，感谢他们慷慨开源。
 
