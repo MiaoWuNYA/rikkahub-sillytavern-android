@@ -498,8 +498,8 @@ Hidable in one tap via **HuaDeng Settings → Clean simple mode**, which also st
 | Channel | Description |
 |---|---|
 | **Stable** | Versioned releases (`2.5.4fixN`) on [Releases](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases) |
-| **Nightly** | Actions build twice daily (skipped if no commit in the past 24h) and overwrite the [nightly](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/tag/nightly) prerelease |
-| **Manual builds** | Every push produces an APK artifact on [Actions](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/actions) |
+| **Nightly** | Actions build twice daily (skipped if no commit in the past 24h) and overwrite the [nightly](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/tag/nightly) prerelease; versions advance by date (`2.5.4fixYYYYMMDD`) |
+| **Manual builds** | Every push produces an APK artifact on [Actions](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/actions) (build page → Artifacts → `rikkahub-plus-fresh`; sign-in required) |
 | **In-app update** | Settings → About → Check for updates (GitHub Releases API, with a mainland-China-reachable mirror fallback) |
 
 > Only a single `arm64-v8a` APK is published, supporting Android 8.0 (API 26) and above.

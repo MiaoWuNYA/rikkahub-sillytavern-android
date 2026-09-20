@@ -505,8 +505,8 @@ AlarmManager 精确闹钟 + WorkManager 兜底双通道，随机间隔（可设�
 | 渠道 | 说明 |
 |---|---|
 | **稳定版** | [Releases](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases) 按版本发布（`2.5.4fixN`） |
-| **Nightly** | Actions 每天两次自动构建（过去 24 小时无新提交则跳过），覆盖 [nightly](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/tag/nightly) 预发布 |
-| **手动构建产物** | 每次推送在 [Actions](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/actions) 产出 APK Artifact |
+| **Nightly** | Actions 每天两次自动构建（过去 24 小时无新提交则跳过），覆盖 [nightly](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/tag/nightly) 预发布；版本按日期推进（`2.5.4fixYYYYMMDD`） |
+| **手动构建产物** | 每次推送在 [Actions](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/actions) 产出 APK Artifact（构建页底部「Artifacts → rikkahub-plus-fresh」，需登录） |
 | **应用内更新** | 设置 → 关于 → 检查更新（GitHub Releases API，国内可达镜像自动回退） |
 
 > 仅提供 `arm64-v8a` 单一架构 APK，支持 Android 8.0（API 26）及以上。
