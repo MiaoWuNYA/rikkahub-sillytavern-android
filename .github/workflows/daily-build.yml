@@ -80,14 +80,27 @@ jobs:
 
       - name: Prepare build files
         run: |
-          # 解码base64编码的keystore文件
-          echo "${{ secrets.KEY_BASE64 }}" | base64 -d > app/app.key
+          # 签名配置：优先用仓库 secret，未配置时退回与 Build APK 一致的调试密钥。
+          # 仓库迁移后旧 secret 不会跟着走，这里必须能自我兜底，否则 nightly 每晚必失败。
+          if [ -n "${{ secrets.KEY_BASE64 }}" ]; then
+            echo "${{ secrets.KEY_BASE64 }}" | base64 -d > app/app.key
+            echo "${{ secrets.SIGNING_CONFIG }}" > local.properties
+          else
+            cat > local.properties << 'EOF'
+          storeFile=app.key
+          storePassword=android
+          keyAlias=androiddebugkey
+          keyPassword=android
+          EOF
+          fi
 
-          # 写入签名配置到local.properties
-          echo "${{ secrets.SIGNING_CONFIG }}" > local.properties
-
-          # 写入Google Services配置
-          echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
+          # google-services.json 缺省时补一个空壳：Firebase 默认关闭，
+          # 只有 -Prikkahub.enableFirebase=true 才会真正读取它
+          if [ -n "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
+            echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
+          elif [ ! -f app/google-services.json ]; then
+            echo '{}' > app/google-services.json
+          fi
 
       - name: Gradle Build
         run: |
