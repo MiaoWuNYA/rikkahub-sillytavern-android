@@ -341,9 +341,9 @@ QuickJS 沙箱插件：插件 = ZIP 包（`manifest.json` + `main.js`），设�
 
 ## 📦 下载
 
-- **Nightly 预发布**：本仓库 Actions 每日自动构建并发布到 [Releases](https://github.com/MiaoWuNYA/rikkahub-plus/releases/tag/nightly)（tag `nightly`，每晚覆盖为最新）
-- **稳定版**：[Releases](https://github.com/MiaoWuNYA/rikkahub-plus/releases) 按版本发布（`2.5.4fixN`）
-- **手动构建产物**：[Actions](https://github.com/MiaoWuNYA/rikkahub-plus/actions) 每次推送构建 APK Artifact（`rikkahub-plus-fresh`）
+- **Nightly 预发布**：本仓库 Actions 每日自动构建并发布到 [Releases](https://github.com/MiaoWuNYA/rikkahub-huadeng/releases/tag/nightly)（tag `nightly`，每晚覆盖为最新）
+- **稳定版**：[Releases](https://github.com/MiaoWuNYA/rikkahub-huadeng/releases) 按版本发布（`2.5.4fixN`）
+- **手动构建产物**：[Actions](https://github.com/MiaoWuNYA/rikkahub-huadeng/actions) 每次推送构建 APK Artifact（`rikkahub-plus-fresh`）
 - **应用内更新**：设置 → 关于 → 检查更新（走 GitHub Releases API，国内可达镜像自动回退）
 
 ---

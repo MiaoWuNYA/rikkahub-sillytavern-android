@@ -7,8 +7,8 @@ on:
 
 jobs:
   build:
-    # 只在本仓库构建；镜像仓库的构建由源仓库完成，避免 CI 翻倍
-    if: github.repository == 'MiaoWuNYA/rikkahub-plus'
+    # 老 fork MiaoWuNYA/rikkahub-plus 已归档，只在新仓库构建
+    if: github.repository == 'MiaoWuNYA/rikkahub-huadeng'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

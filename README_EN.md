@@ -277,9 +277,9 @@ On top of upstream: file operations, shell, task tools, calculator, database que
 
 ## 📦 Download
 
-- **Nightly prerelease**: Actions build daily and publish to [Releases](https://github.com/MiaoWuNYA/rikkahub-plus/releases/tag/nightly) (tag `nightly`, overwritten with the latest each night).
-- **Stable releases**: versioned releases (`2.5.2fixN`) on [Releases](https://github.com/MiaoWuNYA/rikkahub-plus/releases).
-- **Manual builds**: every push builds an APK artifact (`rikkahub-plus-fresh`) on [Actions](https://github.com/MiaoWuNYA/rikkahub-plus/actions).
+- **Nightly prerelease**: Actions build daily and publish to [Releases](https://github.com/MiaoWuNYA/rikkahub-huadeng/releases/tag/nightly) (tag `nightly`, overwritten with the latest each night).
+- **Stable releases**: versioned releases (`2.5.2fixN`) on [Releases](https://github.com/MiaoWuNYA/rikkahub-huadeng/releases).
+- **Manual builds**: every push builds an APK artifact (`rikkahub-plus-fresh`) on [Actions](https://github.com/MiaoWuNYA/rikkahub-huadeng/actions).
 
 ---
 
