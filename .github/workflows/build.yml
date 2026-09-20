@@ -41,6 +41,23 @@ jobs:
           rm -rf app/build/python/  # 清理之前失败构建的脏缓存
           ./gradlew assembleRelease -x :web:buildWebUi --no-build-cache --stacktrace 2>&1 | tee build.log
           exit ${PIPESTATUS[0]}
+      # AGP 9 已移除 applicationVariants，无法在 Gradle 里改产物名，改在这里重命名。
+      # 默认名 app-release.apk 不带版本号，分批下载时容易和旧版本混淆。
+      # 命名保持英文，避免升级工具处理中文路径出错。
+      - name: Rename APK
+        run: |
+          set -e
+          V=$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts)
+          echo "versionName=$V"
+          for f in app/build/outputs/apk/release/*.apk; do
+            [ -e "$f" ] || { echo "没有找到 APK，保持原样"; exit 0; }
+            case "$f" in
+              *"$V"*) echo "已是带版本号的名称：$f" ;;
+              *) mv "$f" "app/build/outputs/apk/release/rikkahub-plus-${V}-arm64-v8a.apk"
+                 echo "重命名为 rikkahub-plus-${V}-arm64-v8a.apk" ;;
+            esac
+          done
+          ls -la app/build/outputs/apk/release/
       - name: Upload build log
         uses: actions/upload-artifact@v4
         if: failure()
