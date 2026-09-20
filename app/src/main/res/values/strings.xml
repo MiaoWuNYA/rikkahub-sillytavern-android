@@ -53,7 +53,7 @@
   <string name="assistant_page_proxy_fix">Proxy Fix (中转站)</string>
   <string name="assistant_page_proxy_fix_desc">Fixes Gemini responses via OpenAI-compatible proxy: recovers content from reasoning_content when the proxy misroutes it, strips "Response:" prefix artifacts, and prevents truncation. Usually no need to enable</string>
   <string name="setting_page_huadeng">HuaDeng Settings</string>
-  <string name="setting_page_huadeng_desc">Global proxy fix, anti-empty reply, and university tools</string>
+  <string name="setting_page_huadeng_desc">Global proxy fix, anti-empty reply, and context &amp; tool tuning</string>
   <string name="setting_page_huadeng_title">Compatibility</string>
   <string name="setting_page_memory">Memory</string>
   <string name="setting_page_memory_desc">Fixed memory, cross-window life stream, long-term recall</string>

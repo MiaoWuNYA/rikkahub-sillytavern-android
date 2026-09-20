@@ -54,7 +54,7 @@
   <string name="assistant_page_proxy_fix">中转站兼容</string>
   <string name="assistant_page_proxy_fix_desc">修复 Gemini 经 OpenAI 兼容中转站时 reasoning_content 吞掉正文的问题：自动将误放入推理字段的内容恢复为正文，剥离 "Response:" 前缀伪影，防止回复被截断。一般不需要开启</string>
   <string name="setting_page_huadeng">华灯设置</string>
-  <string name="setting_page_huadeng_desc">全局中转站兼容、防空回复、云财教务系统</string>
+  <string name="setting_page_huadeng_desc">全局中转站兼容、防空回复、上下文与工具治理</string>
   <string name="setting_page_huadeng_title">兼容与辅助</string>
   <string name="setting_page_memory">记忆</string>
   <string name="setting_page_memory_desc">固定记忆、跨窗口生活流、长期记忆按需召回</string>
