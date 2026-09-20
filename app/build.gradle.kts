@@ -97,6 +97,16 @@ android {
             }
             buildConfigField("String", "VERSION_NAME", "\"${android.defaultConfig.versionName}\"")
             buildConfigField("String", "VERSION_CODE", "\"${android.defaultConfig.versionCode}\"")
+
+            // 产物直接带上真实版本号：默认的 app-release.apk 同名同大小，
+            // 分批下载容易和旧版本混淆。产物名保持英文，避免升级工具处理中文路径出错。
+            applicationVariants.all {
+                outputs.all {
+                    val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+                    output.outputFileName =
+                        "rikkahub-plus-${android.defaultConfig.versionName}-arm64-v8a.apk"
+                }
+            }
         }
         debug {
             applicationIdSuffix = ".debug"
