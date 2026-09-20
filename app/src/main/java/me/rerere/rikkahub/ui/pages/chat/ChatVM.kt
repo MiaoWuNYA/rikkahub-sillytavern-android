@@ -16,6 +16,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -42,6 +45,8 @@ import me.rerere.rikkahub.service.ChatService
 import me.rerere.rikkahub.data.datastore.getAssistantById
 import me.rerere.rikkahub.ui.hooks.writeStringPreference
 import me.rerere.rikkahub.ui.hooks.ChatInputState
+import me.rerere.rikkahub.utils.UiState
+import me.rerere.rikkahub.utils.UpdateChecker
 import java.util.Locale
 import kotlin.uuid.Uuid
 
@@ -53,6 +58,7 @@ class ChatVM(
     private val settingsStore: SettingsStore,
     private val conversationRepo: ConversationRepository,
     private val chatService: ChatService,
+    val updateChecker: UpdateChecker,
     private val analytics: FirebaseAnalytics?, // Firebase 遥测默认关闭（移植自 Rikkahub-Revised）: 未启用时为 null
     private val filesManager: FilesManager,
     private val favoriteRepository: FavoriteRepository,
@@ -165,6 +171,22 @@ class ChatVM(
             filesManager.deleteChatFiles(listOf(oldAvatar.url.toUri()))
         }
     }
+
+    // 更新检查。暂停期内（设置里选的 7/14/21 天）不再发起请求。
+    val updateState = settingsStore.settingsFlow
+        .map { settings ->
+            !settings.init &&
+                settings.displaySetting.updateCheckDisabledUntilEpochMillis <= System.currentTimeMillis()
+        }
+        .distinctUntilChanged()
+        .flatMapLatest { enabled ->
+            if (enabled) updateChecker.updateState else flowOf(UiState.Loading)
+        }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            UiState.Loading,
+        )
 
     // 设置聊天模型
     fun setChatModel(assistant: Assistant, model: Model) {

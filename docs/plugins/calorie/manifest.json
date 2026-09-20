@@ -1,0 +1,98 @@
+{
+  "id": "com.rikkahub.plugin.calorie",
+  "name": "卡路里与蛋白质记录",
+  "description": "跟 AI 说一句「中午吃了碗牛肉面」，热量和蛋白质就都记下来了，每天累计。插件详情页随时能看到今日摄入和剩余额度。",
+  "version": "1.1.0",
+  "author": "喵呜Miaowu",
+  "icon": "🍱",
+  "entry": "main.js",
+  "detailCard": "detail_card",
+  "systemPrompt": "【卡路里与蛋白质记录】\n你接入了用户的饮食记录本，工具名为 plugin_com_rikkahub_plugin_calorie_db0cd4_*。\n\n使用规则：\n1. 用户提到自己吃了、喝了什么（包括「刚吃了个苹果」「午饭是牛肉面」这类随口的叙述），就调用 save_meal 记下来，不要只是口头回应。\n2. calories（热量，整数千卡）和 protein（蛋白质，克，可带一位小数）都由你按常见份量估算。中式家常菜参考：一碗米饭约 230 kcal / 4 g 蛋白、一碗牛肉面约 600 kcal / 25 g、一份炒青菜约 120 kcal / 3 g、一个鸡蛋约 75 kcal / 7 g、一个苹果约 95 kcal / 0.5 g、一杯牛奶约 130 kcal / 7 g、一份鸡胸肉约 165 kcal / 31 g、一份红烧肉约 500 kcal / 15 g。\n3. 拿不准就取中间值，不要为了精确而反复追问用户——记一个大致准确的数比不记有用。如果实在判断不出蛋白质，protein 留空即可（按 0 记）。\n4. 用户说「记错了」「刚才那条删掉」，先调用 query_calories 拿到记录 id，再用 delete_meal 删除。\n5. 用户问「今天吃了多少」「这周摄入如何」时调用 query_calories。\n6. 记完之后用一到两句话回报：这一餐记了多少热量和蛋白质、今天累计多少、距离目标还剩多少。不要罗列全部记录，也不要输出表格。\n7. 如果返回里没有 calorie_target / protein_target，说明用户还没设目标，可以在回复末尾顺带提一句「可以在插件设置里设每日目标」，但不要每轮都提。",
+  "tools": [
+    {
+      "name": "save_meal",
+      "description": "记录一条饮食记录。用户告知吃了什么时调用。热量与蛋白质由你按常见份量估算。",
+      "parameters": [
+        {
+          "name": "description",
+          "type": "string",
+          "required": true,
+          "description": "吃了什么，含份量，如「牛肉面 一大碗」「苹果 一个」"
+        },
+        {
+          "name": "calories",
+          "type": "number",
+          "required": true,
+          "description": "估算热量，整数千卡。如一碗牛肉面约 600"
+        },
+        {
+          "name": "protein",
+          "type": "number",
+          "required": false,
+          "description": "估算蛋白质，单位克，可带一位小数。如一碗牛肉面约 25"
+        },
+        {
+          "name": "meal_type",
+          "type": "string",
+          "required": false,
+          "description": "餐次：早餐、午餐、晚餐、加餐。省略时按当前时间自动判断"
+        },
+        {
+          "name": "date",
+          "type": "string",
+          "required": false,
+          "description": "日期，YYYY-MM-DD，也接受「今天」「昨天」或 MM-DD。省略为今天"
+        }
+      ]
+    },
+    {
+      "name": "query_calories",
+      "description": "查询某一天的热量、蛋白质、每条记录明细与剩余额度，返回每条记录的 id 供删除时使用",
+      "parameters": [
+        {
+          "name": "date",
+          "type": "string",
+          "required": false,
+          "description": "日期，YYYY-MM-DD，也接受「今天」「昨天」或 MM-DD。省略为今天"
+        }
+      ]
+    },
+    {
+      "name": "delete_meal",
+      "description": "删除一条记错的饮食记录。先调用 query_calories 取得 id",
+      "parameters": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "记录 id，来自 query_calories 的返回"
+        },
+        {
+          "name": "date",
+          "type": "string",
+          "required": false,
+          "description": "该记录所属日期，省略为今天"
+        }
+      ]
+    }
+  ],
+  "config": [
+    {
+      "name": "daily_target",
+      "type": "number",
+      "label": "每日热量目标（千卡）",
+      "description": "用于显示剩余额度。填 0 表示不设热量目标",
+      "default": 2000,
+      "placeholder": "2000"
+    },
+    {
+      "name": "protein_target",
+      "type": "number",
+      "label": "每日蛋白质目标（克）",
+      "description": "用于显示剩余额度。填 0 表示不设蛋白质目标",
+      "default": 60,
+      "placeholder": "60"
+    }
+  ],
+  "allowedHosts": []
+}

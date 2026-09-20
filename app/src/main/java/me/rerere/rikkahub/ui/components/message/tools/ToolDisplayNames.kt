@@ -34,7 +34,6 @@ private val exactNames = mapOf(
     "clipboard_tool" to "拾简掇墨",
     "clipboard" to "拾简掇墨",
     "ask_user" to "垂询问策",
-    "ynufe" to "云财教务",
     "device_toolbox" to "万象百宝囊",
     "post_notification" to "张榜示谕",
     "show_toast" to "浮语掠影",

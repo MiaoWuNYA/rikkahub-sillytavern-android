@@ -5,6 +5,7 @@ import me.rerere.hugeicons.stroke.Code
 import me.rerere.hugeicons.stroke.Earth
 import me.rerere.hugeicons.stroke.File02
 import me.rerere.hugeicons.stroke.Github
+import me.rerere.hugeicons.stroke.Package
 import me.rerere.hugeicons.stroke.SmartPhone01
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -49,6 +50,9 @@ import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.openUrl
 import me.rerere.rikkahub.utils.plus
+
+// 本定制版的源码仓库。上面那条 Github 指向上游原版，用户容易混淆，这条才是本仓库。
+private const val AUTHOR_REPO_URL = "https://github.com/MiaoWuNYA/rikkahub-plus"
 
 @Composable
 fun SettingAboutPage() {
@@ -167,6 +171,13 @@ fun SettingAboutPage() {
                             leadingContent = { Icon(HugeIcons.Github, null) },
                             supportingContent = { Text("https://github.com/rikkahub/rikkahub") },
                             headlineContent = { Text(stringResource(R.string.about_page_github)) },
+                        )
+                        // 上游仓库在上面，这里是本定制版的仓库——两行都留着，方便用户对照。
+                        item(
+                            onClick = { context.openUrl(AUTHOR_REPO_URL) },
+                            leadingContent = { Icon(HugeIcons.Package, null) },
+                            supportingContent = { Text(AUTHOR_REPO_URL) },
+                            headlineContent = { Text(stringResource(R.string.about_page_author_repo)) },
                         )
                         item(
                             onClick = { context.openUrl("https://github.com/rikkahub/rikkahub/blob/master/LICENSE") },

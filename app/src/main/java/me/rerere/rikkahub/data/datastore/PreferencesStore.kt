@@ -32,6 +32,7 @@ import me.rerere.rikkahub.data.ai.prompts.DEFAULT_COMPRESS_PROMPT
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_OCR_PROMPT
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_SUGGESTION_PROMPT
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_TITLE_PROMPT
+import me.rerere.rikkahub.data.ai.prompts.TITLE_PROMPT_REVISION
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_TRANSLATION_PROMPT
 import me.rerere.rikkahub.data.ai.prompts.LEARNING_MODE_PROMPT
 import me.rerere.asr.ASRProviderSetting
@@ -103,6 +104,8 @@ class SettingsStore(
         val FAST_MODEL = stringPreferencesKey("fast_model")
         val TITLE_MODEL = stringPreferencesKey("title_model")
         val FAST_MODEL_REASONING_LEVEL = stringPreferencesKey("fast_model_reasoning_level")
+        val TITLE_REASONING_LEVEL = stringPreferencesKey("title_reasoning_level")
+        val TITLE_PROMPT_REVISION_KEY = intPreferencesKey("title_prompt_revision")
         val TRANSLATE_MODEL = stringPreferencesKey("translate_model")
         val ENABLE_SUGGESTION = booleanPreferencesKey("enable_suggestion")
         val IMAGE_GENERATION_MODEL = stringPreferencesKey("image_generation_model")
@@ -225,12 +228,14 @@ class SettingsStore(
                 preferences[FAST_MODEL] = settings.fastModelId.toString()
                 preferences[TITLE_MODEL] = settings.titleModelId?.toString() ?: ""
                 preferences[FAST_MODEL_REASONING_LEVEL] = settings.fastModelReasoningLevel.name
+                preferences[TITLE_REASONING_LEVEL] = settings.titleReasoningLevel.name
                 preferences[TRANSLATE_MODEL] = settings.translateModeId.toString()
                 preferences[ENABLE_SUGGESTION] = settings.enableSuggestion
                 preferences[IMAGE_GENERATION_MODEL] = settings.imageGenerationModelId.toString()
                 preferences[IMAGE_GENERATION_SIZE] = settings.imageGenerationSize
                 preferences[IMAGE_GENERATION_REASONING_LEVEL] = settings.imageGenerationReasoningLevel.name
                 preferences[TITLE_PROMPT] = settings.titlePrompt
+                preferences[TITLE_PROMPT_REVISION_KEY] = TITLE_PROMPT_REVISION
                 preferences[TRANSLATION_PROMPT] = settings.translatePrompt
                 preferences[TRANSLATE_THINKING_BUDGET] = settings.translateThinkingBudget
                 preferences[SUGGESTION_PROMPT] = settings.suggestionPrompt
@@ -327,6 +332,11 @@ class SettingsStore(
                 fastModelReasoningLevel = preferences[FAST_MODEL_REASONING_LEVEL]
                     ?.let { value -> ReasoningLevel.entries.find { it.name == value } }
                     ?: ReasoningLevel.AUTO,
+                // 标题推理等级默认 OFF：标题只是给对话起个名，走思考链纯属浪费。
+                // 旧版本是继承 fastModelReasoningLevel 的，显式关掉才是这次修复的本体。
+                titleReasoningLevel = preferences[TITLE_REASONING_LEVEL]
+                    ?.let { value -> ReasoningLevel.entries.find { it.name == value } }
+                    ?: ReasoningLevel.OFF,
                 translateModeId = preferences[TRANSLATE_MODEL]?.let { Uuid.parse(it) }
                     ?: DEFAULT_AUTO_MODEL_ID,
                 enableSuggestion = preferences[ENABLE_SUGGESTION] != false,
@@ -335,7 +345,10 @@ class SettingsStore(
                 imageGenerationReasoningLevel = preferences[IMAGE_GENERATION_REASONING_LEVEL]
                     ?.let { value -> ReasoningLevel.entries.find { it.name == value } }
                     ?: ReasoningLevel.AUTO,
-                titlePrompt = preferences[TITLE_PROMPT] ?: DEFAULT_TITLE_PROMPT,
+                titlePrompt = Settings.resolveTitlePrompt(
+                    stored = preferences[TITLE_PROMPT],
+                    storedRevision = preferences[TITLE_PROMPT_REVISION_KEY],
+                ),
                 translatePrompt = preferences[TRANSLATION_PROMPT] ?: DEFAULT_TRANSLATION_PROMPT,
                 translateThinkingBudget = preferences[TRANSLATE_THINKING_BUDGET] ?: 0,
                 suggestionPrompt = preferences[SUGGESTION_PROMPT] ?: DEFAULT_SUGGESTION_PROMPT,
@@ -667,6 +680,9 @@ data class Settings(
     // 标题总结模型：null = 跟随快速模型
     val titleModelId: Uuid? = null,
     val fastModelReasoningLevel: ReasoningLevel = ReasoningLevel.AUTO,
+    // 标题推理等级。旧版标题请求直接复用 fastModelReasoningLevel，遇到会思考的模型
+    // 就会花一二百个 token 在"数字数"上；默认 OFF，让标题请求不走思考链。
+    val titleReasoningLevel: ReasoningLevel = ReasoningLevel.OFF,
     val imageGenerationModelId: Uuid = Uuid.random(),
     // 生图页的尺寸与思考强度。放在全局设置里而不是页面内 state：用户调过一次就该记住，
     // 每次进页面都被重置回 auto 很烦。默认 auto = 不显式指定，交给站点自己决定。
@@ -743,6 +759,37 @@ data class Settings(
     companion object {
         // 构造一个用于初始化的settings, 但它不能用于保存，防止使用初始值存储
         fun dummy() = Settings(init = true)
+
+        /**
+         * 决定标题提示词用哪一份。
+         *
+         * 用户升级时盘里存的还是旧版默认提示词，光在代码里改 DEFAULT_TITLE_PROMPT 是够不到
+         * 他们的。这里靠 prefs 里记的 revision 判断：revision 落后且盘里的值恰好等于某一版
+         * 旧默认值，说明用户从没动过，直接换成新默认；只要用户手改过（对不上任何历史默认值），
+         * 就原样保留，绝不能覆盖用户自己写的提示词。
+         */
+        internal fun resolveTitlePrompt(stored: String?, storedRevision: Int?): String {
+            if (stored == null) return DEFAULT_TITLE_PROMPT
+            if ((storedRevision ?: 0) >= TITLE_PROMPT_REVISION) return stored
+            return if (stored in LEGACY_TITLE_PROMPTS) DEFAULT_TITLE_PROMPT else stored
+        }
+
+        // 历史版本的默认标题提示词。只增不改：删掉条目会让对应该版本的用户不再被迁移。
+        private val LEGACY_TITLE_PROMPTS = listOf(
+            """
+                I will give you some dialogue content in the `<content>` block.
+                You need to summarize the conversation between user and assistant into a short title.
+                1. The title language should be consistent with the user's primary language
+                2. Do not use punctuation or other special symbols
+                3. Reply directly with the title
+                4. Summarize using {locale} language
+                5. The title should not exceed 10 characters
+
+                <content>
+                {content}
+                </content>
+            """.trimIndent(),
+        )
     }
 }
 

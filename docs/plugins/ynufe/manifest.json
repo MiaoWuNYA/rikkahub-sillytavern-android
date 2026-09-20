@@ -1,0 +1,109 @@
+{
+  "id": "com.rikkahub.plugin.ynufe",
+  "name": "云南财经教务系统",
+  "description": "云南财经大学强智教务系统。登录后可让 AI 查课表、成绩、考试安排、教务公告和空闲教室。验证码自动识别，连续失败会让你手输一次。",
+  "version": "1.0.0",
+  "author": "喵呜Miaowu",
+  "icon": "🎓",
+  "entry": "main.js",
+  "detailCard": "detail_card",
+  "systemPrompt": "【云南财经教务系统】\n你接入了云南财经大学强智教务系统，工具名为 plugin_com_rikkahub_plugin_ynufe_840844_ynufe，所有操作都通过 action 参数选择。\n\naction 一览：\n- status   查询当前登录状态（不确定登录没登录时先调它）\n- login    登录（默认用设置里保存的账号密码，自动识别验证码）\n- logout   退出登录，清除会话\n- schedule 查课表（可选 semester，如 2025-2026-1；默认当前学期）\n- grade    查成绩（GPA、总学分、逐门明细）\n- exam     查考试安排（可选 semester；type 为期初/期中/期末，默认期末）\n- announcement 查教务公告列表\n- classroom 查空闲教室（可选 campus 南院/北院/呈贡/安宁、room_type 一般/多媒体/实验/机房、week 周次、day 星期 1-7、session_start/session_end 节次）\n- help     返回用法说明\n\n使用规则：\n1. 账号密码保存在插件设置里，不要向用户索要密码。用户问课表成绩这类问题时直接调用工具，不要先反问学号密码。\n2. 如果返回 need_login 且说明设置里没有凭据，引导用户到「插件 → 云南财经教务系统 → 配置」填写学号和密码，不要在对话里收集密码。\n3. 如果返回 need_captcha 和 captcha_image，把那张图片用 markdown 原样贴给用户（不要改写链接），请用户读出 4 位验证码，然后调用 action=login 并带上 captcha 参数重试。\n4. 课表、成绩、考试、公告这类查询结果按原样整理给用户即可；成绩明细很多时按学期分组，不要一次全列出来，先说 GPA 和总学分，再问用户要不要看某个学期的明细。\n5. 查空闲教室时，用户没给条件就按默认（南院、全部类型、第 1 周、今天、1-2 节）查，并把实际使用的条件告诉用户。\n6. 数据来自学校教务系统，只读。不要代替用户做选课、退课等写操作。",
+  "tools": [
+    {
+      "name": "ynufe",
+      "description": "云南财经大学强智教务系统。通过 action 选择操作：status 查登录状态、login 登录、logout 退出、schedule 查课表、grade 查成绩、exam 查考试安排、announcement 查教务公告、classroom 查空闲教室、help 看说明。账号密码已在插件设置里保存，无需向用户索要。",
+      "parameters": [
+        {
+          "name": "action",
+          "type": "string",
+          "required": true,
+          "description": "操作：status | login | logout | schedule | grade | exam | announcement | classroom | help"
+        },
+        {
+          "name": "captcha",
+          "type": "string",
+          "required": false,
+          "description": "4 位图形验证码。仅在自动识别失败、用户读出图片上的字符后传入"
+        },
+        {
+          "name": "account",
+          "type": "string",
+          "required": false,
+          "description": "学号。可选，仅在用户主动提供且设置里没保存时传入；正常情况不要向用户索要"
+        },
+        {
+          "name": "password",
+          "type": "string",
+          "required": false,
+          "description": "密码。可选，仅在用户主动提供且设置里没保存时传入；正常情况不要向用户索要"
+        },
+        {
+          "name": "semester",
+          "type": "string",
+          "required": false,
+          "description": "学年学期，如 2025-2026-1。schedule/exam/classroom 用，不传则用当前学期"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "required": false,
+          "description": "exam 用：期初 | 期中 | 期末（默认期末）"
+        },
+        {
+          "name": "campus",
+          "type": "string",
+          "required": false,
+          "description": "classroom 用：南院 | 北院 | 呈贡 | 安宁（默认南院）"
+        },
+        {
+          "name": "room_type",
+          "type": "string",
+          "required": false,
+          "description": "classroom 用：全部 | 一般教室 | 多媒体教室 | 实验室 | 计算机房 | 语音室 等（默认全部）"
+        },
+        {
+          "name": "week",
+          "type": "string",
+          "required": false,
+          "description": "classroom 用：周次 1-30（默认第 1 周）"
+        },
+        {
+          "name": "day",
+          "type": "string",
+          "required": false,
+          "description": "classroom 用：星期几，1=周一 ... 7=周日（默认今天）"
+        },
+        {
+          "name": "session_start",
+          "type": "string",
+          "required": false,
+          "description": "classroom 用：起始节次 1-10（默认 1）"
+        },
+        {
+          "name": "session_end",
+          "type": "string",
+          "required": false,
+          "description": "classroom 用：结束节次 1-10（默认 2），不能小于起始节次"
+        }
+      ]
+    }
+  ],
+  "config": [
+    {
+      "name": "account",
+      "type": "string",
+      "label": "学号",
+      "description": "云南财经大学学号",
+      "placeholder": "2023xxxxxx"
+    },
+    {
+      "name": "password",
+      "type": "password",
+      "label": "教务系统密码",
+      "description": "只保存在本机的插件设置里，用于自动登录"
+    }
+  ],
+  "allowedHosts": [
+    "xjwis.ynufe.edu.cn"
+  ]
+}

@@ -28,6 +28,13 @@ class PluginManager(
     private val loader: PluginLoader,
     private val repository: PluginRepository,
 ) {
+    /**
+     * 调用插件导出的函数（详情页数据卡片用）。
+     * 转发到 loader，让 UI 层不必直接依赖 loader。
+     */
+    suspend fun callExport(pluginId: String, functionName: String): Result<JsonElement> =
+        loader.callExport(pluginId, functionName, kotlinx.serialization.json.JsonObject(emptyMap()))
+
     private val _plugins = MutableStateFlow<List<PluginInfo>>(emptyList())
     val plugins: StateFlow<List<PluginInfo>> = _plugins.asStateFlow()
 

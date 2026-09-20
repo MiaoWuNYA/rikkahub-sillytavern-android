@@ -81,6 +81,7 @@ exports.say_hello = say_hello;
 | `author` | string | ✅ | 作者名 |
 | `icon` | string | ✅ | 图标，可以是 Emoji（如 `🌤️`）或 URL |
 | `entry` | string | ✅ | 入口文件路径，相对于插件根目录，如 `main.js` |
+| `detailCard` | string | ❌ | 详情页数据卡片的导出函数名，见 4.10 |
 | `tools` | array | ❌ | 向 AI 注册的工具列表 |
 | `config` | array | ❌ | 用户配置项，安装后在插件详情页显示设置表单 |
 | `permissions` | array | ❌ | 插件权限声明，目前支持 `ai_chat`、`disable_native_selection` |
@@ -321,6 +322,90 @@ var decoder = new TextDecoder();
 var text = decoder.decode(bytes);       // "你好"
 ```
 
+### 4.8 会话式 HTTP `http.*`
+
+`fetch` 是一次性的裸请求，拿不到 Cookie，也处理不了二进制。
+需要「先 GET 登录页拿到 session，再带着它 POST，登录成功后服务端还会换发
+新的 session」这类流程（教务、论坛、任何带登录态的老网站）时用 `http.*`——
+它自带 Cookie 罐，宿主会自动保存每一跳响应的 `Set-Cookie`，并在后续请求里带上。
+
+```javascript
+var r = http.get("https://example.com/login");
+r.status;      // 200
+r.ok;          // true / false
+r.url;         // 最终地址（跟随重定向后）
+r.redirected;  // 是否发生过重定向
+r.text();      // 正文（字符串）
+r.json();      // 正文按 JSON 解析
+r.bytes();     // Uint8Array，图片等二进制用这个
+r.base64();    // 正文的 base64 原文
+
+http.postForm("https://example.com/login", { user: "a", pass: "b" });  // form-urlencoded
+http.postJson("https://example.com/api", { a: 1 });
+http.post("https://example.com/raw", "原样正文");
+// 另有 http.put / http.delete / http.head / http.request(method, url, options)
+
+http.cookies("https://example.com");   // 看看当前存了哪些 cookie（调试用）
+http.clearCookies();                   // 清空（退出登录）
+```
+
+`options` 支持 `{ headers: {...}, contentType: "...", timeoutMs: 20000 }`。
+域名同样受 `manifest.allowedHosts` 限制，未声明的域名会被拒绝。
+
+### 4.9 图片解码 `image.decode`
+
+沙箱里没有 `canvas`，要逐像素处理图片（验证码识别、取色、缩略图分析）时用它：
+
+```javascript
+var img = image.decode(http.get(url).bytes());  // 也可以直接传 base64 字符串
+img.width;    // 像素宽
+img.height;   // 像素高
+img.pixels;   // Uint8ClampedArray，RGBA 顺序，每 4 字节一个像素
+```
+
+`pixels` 的布局和浏览器 `canvas.getImageData().data` 完全一致，
+所以现成的 canvas 图像算法可以整段搬进来：
+
+```javascript
+for (var y = 0; y < img.height; y++) {
+  for (var x = 0; x < img.width; x++) {
+    var i = (y * img.width + x) * 4;
+    var gray = 0.299 * img.pixels[i] + 0.587 * img.pixels[i + 1] + 0.114 * img.pixels[i + 2];
+  }
+}
+```
+
+### 4.10 详情页数据卡片 `detailCard`
+
+想让插件详情页显示一块实时状态（今日摄入、当前登录账号、待办条数），
+在 `manifest.json` 里把 `detailCard` 声明为某个导出函数的**名字**：
+
+```json
+{
+  "entry": "main.js",
+  "detailCard": "detail_card"
+}
+```
+
+```javascript
+function detail_card(params) {
+  return {
+    title: "今日摄入",                                  // 必填，空的就整张卡片不显示
+    items: [                                           // 可省略
+      { label: "热量", value: "1200 kcal" },
+      { label: "蛋白质", value: "65 g" }
+    ],
+    note: "最近一条：午餐 · 牛肉面"                       // 可省略
+  };
+}
+exports.detail_card = detail_card;
+```
+
+宿主会在详情页打开时调用一次，超时 8 秒。函数抛错或超时只是卡片不显示，
+不影响插件其它功能。所以这里只适合做本地计算或读缓存，
+**不要在 `detailCard` 里发网络请求**——校园网、弱网下 8 秒很容易不够。
+
+
 ---
 
 ## 五、promptTemplate（让 AI 知道你的插件）
@@ -547,4 +632,5 @@ WebView 页面可以通过 `hookConfigs` 声明事件绑定：
 
 | 插件 | 路径 | 亮点 |
 |------|------|------|
-| 天气查询 | `plugins/example/weather/` | 基础工具 + fetch 网络请求 |
+| 卡路里与蛋白质记录 | `docs/plugins/calorie/` | 最小可用工具集：dataStore 存数据、detailCard 详情页卡片、按天聚合 |
+| 云南财经教务系统 | `docs/plugins/ynufe/` | 完整案例：`http.*` 维持登录态、`image.decode` 做验证码 OCR、多文件源码拼成单入口 |

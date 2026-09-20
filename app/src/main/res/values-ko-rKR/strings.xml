@@ -1,5 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <resources>
+  <string name="about_page_author_repo">작성자 저장소</string>
+  <string name="about_page_author_repo_desc">이 커스텀 빌드의 소스 코드</string>
   <string name="about_page_github">Github</string>
   <string name="about_page_license">라이선스</string>
   <string name="about_page_system">시스템</string>
@@ -1282,6 +1284,7 @@ mDNS 주소: .local 호스트네임을 사용하며, IP를 몰라도 같은 네�
   <string name="search_picker_model_description">모델 제공자에 내장된 클라우드 검색</string>
   <string name="search_picker_select_provider">검색 제공자 선택</string>
   <string name="search_picker_turn_off">검색 끄기</string>
+  <string name="setting_display_page_show_updates_title">업데이트 표시</string>
   <string name="setting_update_reminder_enabled">업데이트 알림이 사용 설정되어 있습니다.</string>
   <string name="setting_update_reminder_paused_until">%1$s까지 일시 중지됨</string>
   <string name="setting_update_reminder_pause_title">업데이트 알림 일시중지</string>

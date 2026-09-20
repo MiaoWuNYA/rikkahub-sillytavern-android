@@ -89,6 +89,7 @@ import me.rerere.rikkahub.ui.components.ui.BackupReminderCard
 import me.rerere.rikkahub.ui.components.ui.Greeting
 import me.rerere.rikkahub.ui.components.ui.Tooltip
 import me.rerere.rikkahub.ui.components.ui.UIAvatar
+import me.rerere.rikkahub.ui.components.ui.UpdateCard
 import me.rerere.rikkahub.ui.components.webview.WebViewContentCache
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.context.Navigator
@@ -169,6 +170,22 @@ fun ChatDrawerContent(
     // Menu popup 状态
     var showMenuPopup by remember { mutableStateOf(false) }
 
+    val updateCheckDisabledUntil = settings.displaySetting.updateCheckDisabledUntilEpochMillis
+    var updateChecksEnabled by remember(updateCheckDisabledUntil) {
+        mutableStateOf(updateCheckDisabledUntil <= System.currentTimeMillis())
+    }
+    LaunchedEffect(updateCheckDisabledUntil) {
+        while (true) {
+            val remaining = updateCheckDisabledUntil - System.currentTimeMillis()
+            if (remaining <= 0) {
+                updateChecksEnabled = true
+                break
+            }
+            updateChecksEnabled = false
+            delay(minOf(remaining, 60 * 60 * 1_000L))
+        }
+    }
+
     ModalDrawerSheet(
         modifier = Modifier.width(300.dp)
     ) {
@@ -186,6 +203,10 @@ fun ChatDrawerContent(
                 modifier = Modifier.padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+            if (updateChecksEnabled) {
+                UpdateCard(vm)
+            }
+
             BackupReminderCard(
                 settings = settings,
                 onClick = { navController.navigate(Screen.Backup) },

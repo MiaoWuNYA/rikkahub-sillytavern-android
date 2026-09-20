@@ -1,5 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <resources>
+  <string name="about_page_author_repo">Репозиторий автора</string>
+  <string name="about_page_author_repo_desc">Исходный код этой сборки</string>
   <string name="about_page_github">GitHub</string>
   <string name="about_page_license">Лицензия</string>
   <string name="about_page_system">Система</string>
@@ -1282,6 +1284,7 @@
   <string name="search_picker_model_description">Облачный поиск, встроенный в провайдера моделей</string>
   <string name="search_picker_select_provider">Выберите провайдера поиска</string>
   <string name="search_picker_turn_off">Отключить поиск</string>
+  <string name="setting_display_page_show_updates_title">Показывать обновления</string>
   <string name="setting_update_reminder_enabled">Напоминания об обновлениях включены</string>
   <string name="setting_update_reminder_paused_until">Приостановлено до %1$s</string>
   <string name="setting_update_reminder_pause_title">Приостановить напоминания об обновлениях</string>

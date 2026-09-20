@@ -1,12 +1,12 @@
 {
-  "version": "2.5.2fix5",
-  "publishedAt": "2026-09-08T05:00:00Z",
-  "changelog": "基于上游 2.5.2，保留酒馆/群聊等自定义功能。\n\n- userContext（记忆+日期+Recent Chats）改为冻结锚点注入：内容不变时钉在首次出现的位置，不再随历史追加而后移，前缀缓存全额命中\n- 内容变化时旧块原位保留、新块追加尾部，缓存不清零",
+  "version": "2.5.4fix10",
+  "publishedAt": "2026-09-20T03:20:00Z",
+  "changelog": "教务系统改成插件，应用不再内置 + 新增卡路里插件\n\n- 云南财经教务系统移出应用硬编码，改成可热插拔的插件（课表/成绩/考试/公告/空闲教室），账号密码在插件设置里填，验证码仍自动识别\n- 插件沙箱新增会话式 HTTP（自带 Cookie 罐，能拿二进制）与图片解码桥，插件可以自己做登录态和图像处理\n- 新增「卡路里与蛋白质记录」插件，跟 AI 说吃了什么就记下来，插件详情页显示当天摄入与剩余额度\n- 插件支持详情页数据卡片（manifest.detailCard）",
   "downloads": [
     {
-      "name": "rikkahub-plus-2.5.2fix5-arm64-v8a.apk",
-      "url": "https://github.com/MiaoWuNYA/rikkahub-plus/releases/download/v2.5.2fix5/rikkahub-plus-2.5.2fix5-arm64-v8a.apk",
-      "size": "约 110 MB"
+      "name": "rikkahub-plus-2.5.4fix10-arm64-v8a.apk",
+      "url": "https://github.com/MiaoWuNYA/rikkahub-plus/releases/download/v2.5.4fix10/rikkahub-plus-2.5.4fix10-arm64-v8a.apk",
+      "size": "约 102 MB"
     }
   ]
 }

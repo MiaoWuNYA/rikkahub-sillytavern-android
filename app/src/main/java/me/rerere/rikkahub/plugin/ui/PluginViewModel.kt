@@ -6,7 +6,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import me.rerere.rikkahub.plugin.manager.PluginManager
 import me.rerere.rikkahub.plugin.model.PluginFolder
 import me.rerere.rikkahub.plugin.model.PluginInfo
@@ -152,6 +156,28 @@ class PluginViewModel(
     }
 
     /**
+     * 详情页数据卡片。
+     *
+     * 卡片内容是插件自己算的（比如今日卡路里），打开详情页时拉一次。失败一律当作
+     * 没有卡片——插件没登录、函数写错、超时，都不该在详情页上糊一块红字。
+     */
+    private val _detailCard = MutableStateFlow<PluginDetailCard?>(null)
+    val detailCard: StateFlow<PluginDetailCard?> = _detailCard.asStateFlow()
+
+    fun loadDetailCard(pluginId: String, exportName: String) {
+        _detailCard.value = null
+        viewModelScope.launch {
+            pluginManager.awaitInitialization()
+            val result = pluginManager.callExport(pluginId, exportName)
+            _detailCard.value = result.getOrNull()?.let { PluginDetailCard.parse(it) }
+        }
+    }
+
+    fun clearDetailCard() {
+        _detailCard.value = null
+    }
+
+    /**
      * 获取插件目录
      */
     fun getPluginsDirectory() = pluginManager.getPluginsDirectory()
@@ -246,5 +272,35 @@ class PluginViewModel(
         data object Loading : OperationState()
         data class Success(val message: String) : OperationState()
         data class Error(val message: String) : OperationState()
+    }
+}
+
+/**
+ * 详情页数据卡片的内容。
+ * 插件返回 `{"title", "items": [{"label","value"}], "note"}`，字段都容错处理：
+ * 插件作者少写一个字段不该让整张卡片消失。
+ */
+data class PluginDetailCard(
+    val title: String,
+    val items: List<Item>,
+    val note: String? = null,
+) {
+    data class Item(val label: String, val value: String)
+
+    companion object {
+        fun parse(element: JsonElement): PluginDetailCard? {
+            val obj = element as? JsonObject ?: return null
+            val title = (obj["title"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
+                ?: return null
+            val items = (obj["items"] as? JsonArray).orEmpty().mapNotNull { item ->
+                val o = item as? JsonObject ?: return@mapNotNull null
+                val label = (o["label"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+                val value = (o["value"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+                if (label.isBlank() && value.isBlank()) null else Item(label, value)
+            }
+            val note = (obj["note"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
+            if (items.isEmpty() && note == null) return null
+            return PluginDetailCard(title, items, note)
+        }
     }
 }

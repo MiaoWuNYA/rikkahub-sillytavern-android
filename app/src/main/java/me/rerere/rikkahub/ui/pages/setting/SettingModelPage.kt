@@ -135,6 +135,10 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
                 modelId = settings.titleModelId,
                 providers = settings.providers,
                 onSelect = { vm.updateSettings(settings.copy(titleModelId = it.id)) },
+                reasoningLevel = settings.titleReasoningLevel,
+                onUpdateReasoningLevel = {
+                    vm.updateSettings(settings.copy(titleReasoningLevel = it))
+                },
             )
         }
         item {

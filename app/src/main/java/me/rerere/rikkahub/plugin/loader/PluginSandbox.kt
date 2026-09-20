@@ -1,9 +1,12 @@
 package me.rerere.rikkahub.plugin.loader
 
+import android.graphics.BitmapFactory
+import android.util.Base64
 import android.util.Log
 import com.whl.quickjs.wrapper.JSCallFunction
 import com.whl.quickjs.wrapper.QuickJSContext
 import com.whl.quickjs.wrapper.QuickJSObject
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -13,8 +16,13 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import me.rerere.rikkahub.plugin.data.PluginDataStore
+import okhttp3.Cookie
+import okhttp3.CookieJar
+import okhttp3.HttpUrl
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -24,8 +32,8 @@ import java.util.concurrent.TimeUnit
  *
  * 安全底线（移植自 Tumin）：
  * - 所有 QuickJS 操作必须在 PluginLoader 的单线程 dispatcher 上执行
- * - nativeFetch 受 manifest.allowedHosts 域名白名单约束（[FetchPolicy]）
- * - 插件只能访问显式注入的桥接（fetch / console / dataStore），
+ * - nativeFetch / nativeHttp 均受 manifest.allowedHosts 域名白名单约束（[FetchPolicy]）
+ * - 插件只能访问显式注入的桥接（fetch / http / image / console / dataStore），
  *   无法反射调用宿主 Java 代码
  *
  * 裁剪：移除了 Tumin 的 memoryBank / musicPlayer 桥接（本仓库无对应服务）。
@@ -38,6 +46,9 @@ class PluginSandbox(
     companion object {
         private const val TAG = "PluginSandbox"
         private const val FETCH_TIMEOUT_SECONDS = 15L
+        private const val HTTP_TIMEOUT_SECONDS = 30L
+        private const val DEFAULT_FORM_CONTENT_TYPE = "application/x-www-form-urlencoded; charset=utf-8"
+        private const val COOKIE_PREFIX = "__cookie__:"
     }
 
     private val json = Json {
@@ -180,6 +191,8 @@ var exports = {};
 
 // 原生桥接变量（由 Android 注入）
 var __nativeFetch = null;
+var __httpBridge = null;
+var __imageBridge = null;
 var __dataStoreBridge = null;
 
 // dataStore 桥接对象 - 插件可直接调用
@@ -229,6 +242,141 @@ function fetch(url, options) {
         json: function() { return JSON.parse(result.body); }
     };
 }
+
+// ---------------------------------------------------------------------------
+// 会话式 HTTP（http.*）
+//
+// 与上面的裸 fetch 的区别：这一个自带 Cookie 罐，且能拿到二进制（bytes / base64）。
+// 教务、论坛这类需要「先拿验证码和 JSESSIONID，再带着它登录，登录时服务端还会
+// 换发新的会话 ID」的场景，裸 fetch 做不了——每一跳响应的 Set-Cookie 都得留住。
+//
+//   var r = http.get('https://x/login');          // 自动带上之前存的 cookie
+//   http.postForm('https://x/login', {a: 1});     // form-urlencoded
+//   http.postJson('https://x/api', {a: 1});
+//   http.cookies('https://x');                    // 查看当前 cookie（调试用）
+//   http.clearCookies();
+//
+// 返回对象与 fetch 同形，另加 bytes()（Uint8Array）与 base64()。
+// ---------------------------------------------------------------------------
+function __httpCall(method, url, options) {
+    if (!__httpBridge) throw new Error('http is not available: native bridge not injected');
+    options = options || {};
+    var payload = {
+        method: method,
+        url: url,
+        headers: options.headers || {},
+        body: options.body === undefined || options.body === null ? null : String(options.body),
+        contentType: options.contentType || null,
+        timeoutMs: options.timeoutMs || 0
+    };
+    var result = JSON.parse(__httpBridge('request', JSON.stringify(payload)));
+    if (!result.success) throw new Error(result.error || 'http request failed');
+
+    var bytesCache = null;
+    return {
+        ok: result.ok,
+        status: result.status,
+        url: result.url,
+        redirected: result.redirected,
+        headers: result.headers,
+        body: result.body,
+        text: function() { return result.body; },
+        json: function() { return JSON.parse(result.body); },
+        bytes: function() {
+            if (bytesCache) return bytesCache;
+            var bin = atob(result.base64 || '');
+            var out = new Uint8Array(bin.length);
+            for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i) & 0xFF;
+            bytesCache = out;
+            return out;
+        },
+        base64: function() { return result.base64 || ''; }
+    };
+}
+
+function __formEncode(data) {
+    var parts = [];
+    for (var k in data) {
+        if (!Object.prototype.hasOwnProperty.call(data, k)) continue;
+        if (data[k] === undefined || data[k] === null) continue;
+        parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(String(data[k])));
+    }
+    return parts.join('&');
+}
+
+var http = {
+    request: function(method, url, options) { return __httpCall(method, url, options); },
+    get: function(url, options) { return __httpCall('GET', url, options); },
+    post: function(url, body, options) {
+        options = options || {};
+        options.body = body;
+        return __httpCall('POST', url, options);
+    },
+    put: function(url, body, options) {
+        options = options || {};
+        options.body = body;
+        return __httpCall('PUT', url, options);
+    },
+    delete: function(url, options) { return __httpCall('DELETE', url, options); },
+    head: function(url, options) { return __httpCall('HEAD', url, options); },
+    postForm: function(url, data, options) {
+        options = options || {};
+        options.body = __formEncode(data);
+        options.contentType = options.contentType || 'application/x-www-form-urlencoded; charset=utf-8';
+        return __httpCall('POST', url, options);
+    },
+    postJson: function(url, data, options) {
+        options = options || {};
+        options.body = typeof data === 'string' ? data : JSON.stringify(data);
+        options.contentType = options.contentType || 'application/json; charset=utf-8';
+        return __httpCall('POST', url, options);
+    },
+    cookies: function(url) {
+        if (!__httpBridge) return {};
+        var r = JSON.parse(__httpBridge('cookies', JSON.stringify({url: url || null})));
+        return r.success ? (r.cookies || {}) : {};
+    },
+    clearCookies: function() {
+        if (!__httpBridge) return false;
+        return JSON.parse(__httpBridge('clearCookies', '{}')).success === true;
+    }
+};
+
+// ---------------------------------------------------------------------------
+// 图像解码（image.*）
+//
+// 沙箱里没有 canvas，验证码识别这类要逐像素算的活儿必须让宿主解码。
+//   var img = image.decode(bytes);  // {width, height, pixels: Uint8ClampedArray}
+// pixels 是 RGBA 顺序，每 4 字节一个像素——与浏览器 canvas.getImageData 一致，
+// 便于把现成的 canvas 图像算法直接搬进来。
+// ---------------------------------------------------------------------------
+var image = {
+    decode: function(data) {
+        if (!__imageBridge) throw new Error('image is not available: native bridge not injected');
+        var b64 = '';
+        if (typeof data === 'string') {
+            b64 = data;
+        } else if (data && typeof data.base64 === 'function') {
+            b64 = data.base64();
+        } else if (data && data.length !== undefined) {
+            // Uint8Array / Array：逐字节转 base64（避免 apply 栈溢出，分块处理）
+            var chars = '';
+            var chunk = 8192;
+            for (var i = 0; i < data.length; i += chunk) {
+                chars += String.fromCharCode.apply(null, Array.prototype.slice.call(data, i, i + chunk));
+            }
+            b64 = btoa(chars);
+        } else {
+            throw new Error('image.decode expects Uint8Array, base64 string, or an http response');
+        }
+        var r = JSON.parse(__imageBridge('decode', JSON.stringify({base64: b64})));
+        if (!r.success) throw new Error(r.error || 'image decode failed');
+        var bin = atob(r.rgba);
+        var pixels = new Uint8ClampedArray(bin.length);
+        for (var j = 0; j < bin.length; j++) pixels[j] = bin.charCodeAt(j) & 0xFF;
+        return { width: r.width, height: r.height, pixels: pixels };
+    }
+};
 """.trimIndent())
 
             // 注入原生 fetch
@@ -239,6 +387,30 @@ function fetch(url, options) {
                     nativeFetch(url, optionsJson)
                 } catch (e: Exception) {
                     Log.e(TAG, "Native fetch error: url=$url", e)
+                    """{"success":false,"error":${escapeJson(e.message ?: "Unknown error")}}"""
+                }
+            })
+
+            // 注入会话式 HTTP 桥接
+            getGlobalObject().setProperty("__httpBridge", JSCallFunction { args ->
+                val action = args[0] as? String ?: ""
+                val paramsJson = args[1] as? String ?: "{}"
+                try {
+                    nativeHttpBridge(action, paramsJson)
+                } catch (e: Exception) {
+                    Log.e(TAG, "HTTP bridge error: action=$action", e)
+                    """{"success":false,"error":${escapeJson(e.message ?: "Unknown error")}}"""
+                }
+            })
+
+            // 注入图像解码桥接
+            getGlobalObject().setProperty("__imageBridge", JSCallFunction { args ->
+                val action = args[0] as? String ?: ""
+                val paramsJson = args[1] as? String ?: "{}"
+                try {
+                    nativeImageBridge(action, paramsJson)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Image bridge error: action=$action", e)
                     """{"success":false,"error":${escapeJson(e.message ?: "Unknown error")}}"""
                 }
             })
@@ -330,6 +502,252 @@ function fetch(url, options) {
         } catch (e: Exception) {
             Log.e(TAG, "nativeFetch failed: url=$url", e)
             """{"success":false,"error":${escapeJson(e.message ?: "Unknown error")}}"""
+        }
+    }
+
+    // ======================= 会话式 HTTP =======================
+
+    /**
+     * 插件 Cookie 存储：内存 + PluginDataStore 双写。
+     *
+     * 只订阅会话类 cookie（无过期时间或未过期）。持久化是因为插件进程随时可能被
+     * 系统回收，登录态却没理由因此作废——用户不该每次打开应用都重登一次。
+     * 命名空间由 PluginDataStore 自身保证（每个插件一个 SharedPreferences）。
+     */
+    private inner class PluginCookieStore {
+        private val cache = mutableMapOf<String, MutableMap<String, Cookie>>()
+        private var loaded = false
+
+        private fun ensureLoaded() {
+            if (loaded) return
+            loaded = true
+            val store = dataStore ?: return
+            store.listData().filter { it.startsWith(COOKIE_PREFIX) }.forEach { key ->
+                runCatching {
+                    val saved = json.decodeFromString(SavedCookie.serializer(), store.getData(key) ?: return@forEach)
+                    if (saved.expiresAt > 0 && saved.expiresAt <= System.currentTimeMillis()) return@forEach
+                    val cookie = Cookie.Builder()
+                        .name(saved.name)
+                        .value(saved.value)
+                        .domain(saved.domain)
+                        .path(saved.path)
+                        .apply { if (saved.secure) secure() }
+                        .apply { if (saved.httpOnly) httpOnly() }
+                        .build()
+                    cache.getOrPut(saved.domain) { mutableMapOf() }[saved.name] = cookie
+                }
+            }
+        }
+
+        fun cookiesFor(url: HttpUrl): List<Cookie> {
+            ensureLoaded()
+            return cache.values.flatMap { it.values }.filter { it.matches(url) }
+        }
+
+        fun save(url: HttpUrl, cookies: List<Cookie>) {
+            ensureLoaded()
+            if (cookies.isEmpty()) return
+            val store = dataStore
+            for (cookie in cookies) {
+                val domain = cookie.domain.ifEmpty { url.host }
+                // 服务端用 Max-Age=0 表示删除，别把它存回来
+                if (cookie.expiresAt <= 0 && cookie.value.isEmpty()) {
+                    cache[domain]?.remove(cookie.name)
+                    store?.deleteData("$COOKIE_PREFIX$domain.${cookie.name}")
+                    continue
+                }
+                cache.getOrPut(domain) { mutableMapOf() }[cookie.name] = cookie
+                store?.setData(
+                    "$COOKIE_PREFIX$domain.${cookie.name}",
+                    json.encodeToString(
+                        SavedCookie.serializer(),
+                        SavedCookie(
+                            name = cookie.name,
+                            value = cookie.value,
+                            domain = domain,
+                            path = cookie.path.ifEmpty { "/" },
+                            expiresAt = cookie.expiresAt,
+                            secure = cookie.secure,
+                            httpOnly = cookie.httpOnly,
+                        )
+                    )
+                )
+            }
+        }
+
+        fun all(): Map<String, String> {
+            ensureLoaded()
+            return cache.values.flatMap { it.values }.associate { it.name to it.value }
+        }
+
+        fun clear() {
+            ensureLoaded()
+            cache.clear()
+            dataStore?.listData()
+                ?.filter { it.startsWith(COOKIE_PREFIX) }
+                ?.forEach { dataStore.deleteData(it) }
+        }
+    }
+
+    private val cookieStore by lazy { PluginCookieStore() }
+
+    private val httpClient by lazy {
+        okHttpClient.newBuilder()
+            .connectTimeout(HTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(HTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .writeTimeout(HTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .cookieJar(object : CookieJar {
+                override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) =
+                    cookieStore.save(url, cookies)
+
+                override fun loadForRequest(url: HttpUrl): List<Cookie> =
+                    cookieStore.cookiesFor(url)
+            })
+            // 登录流程靠 302 换发会话，不自动跟随的话拿不到新 cookie
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .build()
+    }
+
+    @Serializable
+    private data class SavedCookie(
+        val name: String,
+        val value: String,
+        val domain: String,
+        val path: String,
+        val expiresAt: Long,
+        val secure: Boolean,
+        val httpOnly: Boolean,
+    )
+
+    /**
+     * 会话式 HTTP 桥接。与 nativeFetch 的两点不同：
+     * 1. 带 Cookie 罐（见 [PluginCookieStore]），跨调用保持登录态
+     * 2. 返回 base64 原文，插件可解成二进制（验证码图片等）
+     *
+     * 白名单约束与 fetch 完全一致，失败一律 fail-closed。
+     */
+    private fun nativeHttpBridge(action: String, paramsJson: String): String {
+        return when (action) {
+            "cookies" -> {
+                val cookies = cookieStore.all()
+                val obj = buildJsonObject { cookies.forEach { (k, v) -> put(k, JsonPrimitive(v)) } }
+                """{"success":true,"cookies":${json.encodeToString(JsonObject.serializer(), obj)}}"""
+            }
+            "clearCookies" -> {
+                cookieStore.clear()
+                """{"success":true}"""
+            }
+            "request" -> {
+                val params = json.parseToJsonElement(paramsJson) as? JsonObject
+                    ?: return """{"success":false,"error":"invalid request params"}"""
+                val url = (params["url"] as? JsonPrimitive)?.contentOrNull
+                    ?: return """{"success":false,"error":"url is required"}"""
+                if (!FetchPolicy.isUrlAllowed(url, allowedHosts)) {
+                    val host = runCatching { java.net.URL(url).host }.getOrDefault(url)
+                    Log.w(TAG, "http blocked: host='$host' not in allowedHosts=$allowedHosts")
+                    return """{"success":false,"error":"Network request to '$host' is not allowed. Please add it to manifest.allowedHosts."}"""
+                }
+                runCatching { performHttpRequest(params) }
+                    .getOrElse { """{"success":false,"error":${escapeJson(it.message ?: "Unknown error")}}""" }
+            }
+            else -> """{"success":false,"error":"unknown action: $action"}"""
+        }
+    }
+
+    private fun performHttpRequest(params: JsonObject): String {
+        val method = (params["method"] as? JsonPrimitive)?.contentOrNull?.uppercase() ?: "GET"
+        val url = (params["url"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+        val bodyText = (params["body"] as? JsonPrimitive)?.contentOrNull
+        val contentType = (params["contentType"] as? JsonPrimitive)?.contentOrNull
+        val timeoutMs = (params["timeoutMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull() ?: 0L
+
+        val builder = Request.Builder().url(url)
+        (params["headers"] as? JsonObject)?.forEach { (key, value) ->
+            (value as? JsonPrimitive)?.contentOrNull?.let { builder.addHeader(key, it) }
+        }
+
+        val requestBody = bodyText?.toRequestBody(
+            (contentType ?: DEFAULT_FORM_CONTENT_TYPE).toMediaType()
+        )
+        when (method) {
+            "GET" -> builder.get()
+            "HEAD" -> builder.head()
+            "POST" -> builder.post(requestBody ?: "".toRequestBody(null))
+            "PUT" -> builder.put(requestBody ?: "".toRequestBody(null))
+            "PATCH" -> builder.patch(requestBody ?: "".toRequestBody(null))
+            "DELETE" -> if (requestBody != null) builder.delete(requestBody) else builder.delete()
+            else -> builder.get()
+        }
+
+        val client = if (timeoutMs > 0) {
+            httpClient.newBuilder()
+                .callTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+                .build()
+        } else {
+            httpClient
+        }
+
+        client.newCall(builder.build()).execute().use { response ->
+            val bytes = response.body?.bytes() ?: ByteArray(0)
+            // 二进制内容（图片）当字符串读会变成乱码，所以正文按 UTF-8 解、原文另附 base64
+            val text = runCatching { String(bytes, Charsets.UTF_8) }.getOrDefault("")
+            val headersJson = buildJsonObject {
+                response.headers.names().forEach { name ->
+                    put(name, JsonPrimitive(response.headers.values(name).joinToString(", ")))
+                }
+            }
+            return buildString {
+                append("{\"success\":true,")
+                append("\"status\":${response.code},")
+                append("\"ok\":${response.code in 200..299},")
+                append("\"redirected\":${response.priorResponse != null},")
+                append("\"url\":${escapeJson(response.request.url.toString())},")
+                append("\"headers\":${json.encodeToString(JsonObject.serializer(), headersJson)},")
+                append("\"body\":${escapeJson(text)},")
+                append("\"base64\":${escapeJson(Base64.encodeToString(bytes, Base64.NO_WRAP))}")
+                append("}")
+            }
+        }
+    }
+
+    // ======================= 图像解码 =======================
+
+    /**
+     * 图像解码桥接：把 PNG/JPEG 字节解成 RGBA 像素（与 canvas.getImageData 同序），
+     * 让插件能在 JS 里做逐像素处理（验证码识别等）。
+     */
+    private fun nativeImageBridge(action: String, paramsJson: String): String {
+        if (action != "decode") return """{"success":false,"error":"unknown action: $action"}"""
+        val params = json.parseToJsonElement(paramsJson) as? JsonObject
+            ?: return """{"success":false,"error":"invalid params"}"""
+        val b64 = (params["base64"] as? JsonPrimitive)?.contentOrNull
+            ?: return """{"success":false,"error":"base64 is required"}"""
+
+        val bytes = runCatching { Base64.decode(b64, Base64.DEFAULT) }
+            .getOrElse { return """{"success":false,"error":"invalid base64: ${escapeJson(it.message ?: "")}"}""" }
+        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            ?: return """{"success":false,"error":"unsupported or corrupt image data"}"""
+
+        return try {
+            val w = bitmap.width
+            val h = bitmap.height
+            val pixels = IntArray(w * h)
+            bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
+            // ARGB_8888 的 int 是 A<<24|R<<16|G<<8|B，转成 canvas 的 RGBA 字节序
+            val rgba = ByteArray(w * h * 4)
+            for (i in pixels.indices) {
+                val c = pixels[i]
+                val o = i * 4
+                rgba[o] = ((c shr 16) and 0xFF).toByte()
+                rgba[o + 1] = ((c shr 8) and 0xFF).toByte()
+                rgba[o + 2] = (c and 0xFF).toByte()
+                rgba[o + 3] = ((c shr 24) and 0xFF).toByte()
+            }
+            """{"success":true,"width":$w,"height":$h,"rgba":${escapeJson(Base64.encodeToString(rgba, Base64.NO_WRAP))}}"""
+        } finally {
+            // Bitmap 不是 Closeable，只能手动回收（验证码图小，但插件可能循环解码）
+            bitmap.recycle()
         }
     }
 

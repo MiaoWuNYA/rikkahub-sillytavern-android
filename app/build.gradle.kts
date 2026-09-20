@@ -56,8 +56,8 @@ android {
         applicationId = "me.rerere.rikkahub"
         minSdk = 26
         targetSdk = 37
-        versionCode = 222
-        versionName = "2.5.4fix9"
+        versionCode = 223
+        versionName = "2.5.4fix10"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -260,7 +260,7 @@ dependencies {
     implementation(libs.androidx.paging.compose)
     // Apache Commons Text
     implementation(libs.commons.text)
-    // Jsoup (HTML parsing for 教务 parsing)
+    // Jsoup (HTML 渲染，richtext 组件用)
     implementation(libs.jsoup)
     // Toast (Sonner)
     implementation(libs.sonner)

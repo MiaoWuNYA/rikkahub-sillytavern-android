@@ -79,6 +79,16 @@ data class PluginManifest(
      * 用于将大型提示词拆分为可独立开关的功能模块。
      */
     val sections: List<PluginPromptSection> = emptyList(),
+
+    /**
+     * 详情页数据卡片（可选）：插件导出的函数名。
+     *
+     * 声明后，插件详情页会调用它并把返回值渲染成一张数据卡片，用于展示
+     * 「今日摄入 1200 kcal」这类需要随时瞄一眼的状态。函数应返回：
+     * `{"title": "...", "items": [{"label": "...", "value": "..."}], "note": "..."}`
+     * items / note 都可省略。函数抛错或超时只是不显示卡片，不影响插件使用。
+     */
+    val detailCard: String? = null,
 )
 
 /**

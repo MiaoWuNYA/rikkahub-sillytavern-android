@@ -33,6 +33,7 @@ val viewModelModule = module {
             settingsStore = get(),
             conversationRepo = get(),
             chatService = get(),
+            updateChecker = get(),
             analytics = if (me.rerere.rikkahub.BuildConfig.ENABLE_FIREBASE) get() else null,
             filesManager = get(),
             favoriteRepository = get(),

@@ -15,6 +15,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -96,6 +98,17 @@ fun PluginDetailPage(
 
     val folders by viewModel.folders.collectAsState()
 
+    // 详情页数据卡片（如卡路里插件的「今日摄入」）：打开时拉一次
+    val detailCard by viewModel.detailCard.collectAsStateWithLifecycle()
+    val detailCardExport = plugin.manifest.detailCard
+    LaunchedEffect(pluginId, detailCardExport) {
+        if (detailCardExport.isNullOrBlank()) {
+            viewModel.clearDetailCard()
+        } else {
+            viewModel.loadDetailCard(pluginId, detailCardExport)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -119,6 +132,11 @@ fun PluginDetailPage(
                 .verticalScroll(rememberScrollState())
         ) {
             PluginInfoSection(plugin)
+
+            if (detailCard != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                PluginDetailCardView(detailCard!!)
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -164,6 +182,57 @@ fun PluginDetailPage(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+/**
+ * 详情页数据卡片：插件导出的实时状态（如今日卡路里摄入）。
+ */
+@Composable
+private fun PluginDetailCardView(card: PluginDetailCard) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = card.title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+            card.items.forEach { item ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = item.label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Text(
+                        text = item.value,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
+            if (card.note != null) {
+                Text(
+                    text = card.note,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                )
+            }
         }
     }
 }

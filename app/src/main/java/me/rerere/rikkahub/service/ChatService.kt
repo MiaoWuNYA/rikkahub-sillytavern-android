@@ -75,6 +75,7 @@ import me.rerere.rikkahub.data.ai.GenerationChunk
 import me.rerere.rikkahub.data.ai.GenerationLoop
 import me.rerere.rikkahub.data.ai.TranslationHandler
 import me.rerere.rikkahub.data.ai.mcp.McpManager
+import me.rerere.rikkahub.data.ai.prompts.TITLE_MAX_CHARS
 import me.rerere.rikkahub.plugin.provider.PluginToolProvider
 import me.rerere.rikkahub.data.ai.tools.LocalTools
 import me.rerere.rikkahub.data.ai.tools.LocalToolOption
@@ -89,7 +90,6 @@ import me.rerere.rikkahub.data.ai.tools.createCalculatorTool
 import me.rerere.rikkahub.data.ai.tools.createWebFetchTool
 import me.rerere.rikkahub.data.ai.tools.createTaskTools
 import me.rerere.rikkahub.data.ai.tools.createConversationTools
-import me.rerere.rikkahub.data.ai.tools.ynufe.createYnufeTool
 import me.rerere.rikkahub.data.ai.tools.ChatToolFactory
 import me.rerere.rikkahub.data.ai.tools.InvalidMcpServerNamesException
 import me.rerere.rikkahub.data.files.SkillManager
@@ -1526,10 +1526,6 @@ class ChatService(
                     if (assistant.localTools.contains(LocalToolOption.PythonEngine)) {
                         add(createPythonTool(context, assistant.toolExecTimeout))
                     }
-                    // 云南财经教务系统工具（课表/成绩/考试/公告）
-                    if (assistant.enableYnufeTools) {
-                        add(createYnufeTool(context))
-                    }
                     if (assistant.localTools.contains(LocalToolOption.DatabaseQuery)) {
                         add(createDatabaseQueryTool(database))
                     }
@@ -1847,11 +1843,14 @@ class ChatService(
                     UIMessage.user(
                         prompt = settings.titlePrompt.applyPlaceholders(
                             "locale" to Locale.getDefault().displayName,
+                            "maxChars" to TITLE_MAX_CHARS.toString(),
                             "content" to conversation.currentMessages
                                 .takeLast(4).joinToString("\n\n") { it.summaryAsText() })
                     ),
                 ),
-                params = backgroundTextGenerationParams(model, conversationId, settings.fastModelReasoningLevel),
+                // 标题原来跟着 fastModelReasoningLevel 走，遇到会思考的模型会花上百个 token
+                // 在"数一下几个字"上，纯浪费。标题就是个起名任务，用自己的等级（默认 OFF）。
+                params = backgroundTextGenerationParams(model, conversationId, settings.titleReasoningLevel),
             )
 
             // 生成完，conversation可能不是最新了，因此需要重新获取

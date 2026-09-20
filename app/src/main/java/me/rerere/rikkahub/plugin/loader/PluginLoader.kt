@@ -44,6 +44,9 @@ class PluginLoader(
          * 这一层只是给调用方一个明确的失败信号，不是彻底防死锁。
          */
         const val TOOL_TIMEOUT_MS = 30_000L
+
+        /** 详情页数据卡片的超时：比工具调用短得多，卡住了就当作没有卡片。 */
+        const val DETAIL_CARD_TIMEOUT_MS = 8_000L
     }
 
     // 单线程调度器，确保所有 QuickJS 操作在同一线程执行
@@ -107,6 +110,39 @@ class PluginLoader(
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load plugin ${pluginInfo.manifest.id}", e)
             Result.failure(e)
+        }
+    }
+
+    /**
+     * 调用插件导出的任意函数（不限于 manifest.tools）。
+     *
+     * 供详情页数据卡片这类宿主侧 UI 使用。工具调用有 30 秒的耐心，卡片渲染没有——
+     * 用户点开详情页不该为了等一张统计卡而白屏，所以这里单独给一个短超时。
+     */
+    suspend fun callExport(
+        pluginId: String,
+        functionName: String,
+        params: JsonElement,
+        timeoutMs: Long = DETAIL_CARD_TIMEOUT_MS,
+    ): Result<JsonElement> {
+        return withContext(Dispatchers.Default) {
+            val result: Result<JsonElement>? = withTimeoutOrNull(timeoutMs) {
+                withContext(pluginDispatcher) {
+                    val plugin = loadedPlugins[pluginId]
+                        ?: return@withContext Result.failure<JsonElement>(
+                            IllegalStateException("Plugin not loaded: $pluginId")
+                        )
+                    if (!plugin.sandbox.hasFunction(functionName)) {
+                        return@withContext Result.failure<JsonElement>(
+                            IllegalArgumentException("Export not found: $functionName")
+                        )
+                    }
+                    Result.success(plugin.sandbox.callFunction(functionName, params))
+                }
+            }
+            result ?: Result.failure(
+                IllegalStateException("Plugin export timed out after ${timeoutMs}ms: $pluginId/$functionName")
+            )
         }
     }
 

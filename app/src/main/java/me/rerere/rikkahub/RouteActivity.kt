@@ -98,7 +98,6 @@ import me.rerere.rikkahub.ui.pages.chat.GroupChatListPage
 import me.rerere.rikkahub.ui.pages.chat.GroupChatPage
 import me.rerere.rikkahub.ui.pages.setting.PersonaPage
 import me.rerere.rikkahub.ui.pages.setting.AuthorsNotePage
-import me.rerere.rikkahub.ui.pages.setting.YnufeAccountPage
 import me.rerere.rikkahub.ui.pages.debug.DebugPage
 import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspacePage
 import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspaceDetailPage
@@ -634,10 +633,6 @@ class RouteActivity : ComponentActivity() {
                                 AuthorsNotePage()
                             }
 
-                            entry<Screen.YnufeAccount> {
-                                YnufeAccountPage()
-                            }
-
                             entry<Screen.GroupChatList> {
                                 GroupChatListPage()
                             }
@@ -910,9 +905,6 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object AuthorsNote : Screen
-
-    @Serializable
-    data object YnufeAccount : Screen
 
     @Serializable
     data class GroupChat(val id: String) : Screen
