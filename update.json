@@ -1,7 +1,7 @@
 {
-  "version": "2.5.4fix12",
-  "publishedAt": "2026-09-20T06:00:00Z",
-  "changelog": "仓库更名为 rikkahub-sillytavern-android，酒馆定位提权\n\n- 仓库更名为 MiaoWuNYA/rikkahub-sillytavern-android，让「安卓酒馆」相关搜索能搜到本项目（旧地址 GitHub 自动重定向，已装用户更新不受影响）\n- README 以酒馆为第一卖点重排：标题直写「安卓手机上的 SillyTavern 客户端」，新增酒馆能力总览与六类酒馆资产对照表，并说明本项目是原生重写而非容器/启动器\n- 更新检查、关于页链接、CI 工作流守卫同步指向新仓库\n- 修正 README 若干与代码不符的描述（音色预设数量、设备工具与插件工具的审批行为、安全设置默认值、Nightly 构建频率）",
+  "version": "2.5.4fix20260920",
+  "publishedAt": "2026-09-20T16:00:23Z",
+  "changelog": "每日自动构建（2026-09-20）。",
   "downloads": [
     {
       "name": "rikkahub-plus-2.5.4fix12-arm64-v8a.apk",
