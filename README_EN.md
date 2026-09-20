@@ -2,8 +2,8 @@
 
 [**English**](README_EN.md) | [**简体中文**](README.md)
 
-> A deeply customized fork of [RikkaHub](https://github.com/rikkahub/rikkahub), already merged with the latest upstream (**v2.5.1**).
-> Every upstream capability is preserved as-is; on top of it this fork strengthens six areas: **⚡ prompt prefix caching**, **🧠 memory & long conversations**, **🍺 SillyTavern compatibility**, **🗼 proxy-station compatibility**, **📱 on-device augmentation**, and **🛡 privacy & stability**.
+> A deeply customized fork of [RikkaHub](https://github.com/rikkahub/rikkahub), already merged with upstream **v2.5.2**.
+> Every upstream capability is preserved as-is; on top of it this fork strengthens seven areas: **⚡ prompt prefix caching**, **🧠 memory & long conversations**, **🍺 SillyTavern compatibility**, **🧩 plugin system**, **🗼 proxy-station compatibility**, **📱 on-device augmentation**, and **🛡 privacy & stability**.
 > Per-file differences and the upstream merge workflow live in [DIVERGENCE.md](DIVERGENCE.md).
 
 ---
