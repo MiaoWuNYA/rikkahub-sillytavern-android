@@ -7,6 +7,8 @@ on:
 
 jobs:
   build:
+    # 只在本仓库构建；镜像仓库的构建由源仓库完成，避免 CI 翻倍
+    if: github.repository == 'MiaoWuNYA/rikkahub-plus'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
