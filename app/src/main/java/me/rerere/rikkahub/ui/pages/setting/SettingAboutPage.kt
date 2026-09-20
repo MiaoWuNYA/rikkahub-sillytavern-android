@@ -52,7 +52,7 @@ import me.rerere.rikkahub.utils.openUrl
 import me.rerere.rikkahub.utils.plus
 
 // 本定制版的源码仓库。上面那条 Github 指向上游原版，用户容易混淆，这条才是本仓库。
-private const val AUTHOR_REPO_URL = "https://github.com/MiaoWuNYA/rikkahub-huadeng"
+private const val AUTHOR_REPO_URL = "https://github.com/MiaoWuNYA/rikkahub-sillytavern-android"
 
 @Composable
 fun SettingAboutPage() {

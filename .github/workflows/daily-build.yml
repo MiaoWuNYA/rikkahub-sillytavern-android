@@ -11,7 +11,7 @@ jobs:
   # 检查过去 24 小时内是否有新提交，没有则跳过构建，避免重复打包
   check:
     # 老 fork MiaoWuNYA/rikkahub-plus 已归档，只在新仓库构建
-    if: github.repository == 'MiaoWuNYA/rikkahub-huadeng'
+    if: github.repository == 'MiaoWuNYA/rikkahub-sillytavern-android'
     runs-on: ubuntu-latest
     outputs:
       should_build: ${{ steps.check.outputs.should_build }}

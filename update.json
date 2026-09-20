@@ -1,11 +1,11 @@
 {
-  "version": "2.5.4fix11",
-  "publishedAt": "2026-09-20T04:00:00Z",
-  "changelog": "主仓库迁移到 MiaoWuNYA/rikkahub-huadeng + 华灯设置简介调整\n\n- 代码与发布迁移到新仓库（原仓库是 GitHub fork，搜索默认不返回 fork，导致很难被搜到）；更新检查与关于页链接已同步指向新仓库\n- 华灯设置简介不再提及云财教务系统（该功能已改为插件形式提供）\n- 插件沙箱的会话式 HTTP 与图片解码能力、插件详情页数据卡片\n- 卡路里与蛋白质记录插件；云南财经教务系统插件\n- 更新检查改用 GitHub Releases API，修复 2.5.4fix9 与 2.5.4 被判定为同版本的比较器缺陷\n- 标题生成不再长篇思考：改用独立推理等级（默认关闭）并重写提示词",
+  "version": "2.5.4fix12",
+  "publishedAt": "2026-09-20T06:00:00Z",
+  "changelog": "仓库更名为 rikkahub-sillytavern-android，酒馆定位提权\n\n- 仓库更名为 MiaoWuNYA/rikkahub-sillytavern-android，让「安卓酒馆」相关搜索能搜到本项目（旧地址 GitHub 自动重定向，已装用户更新不受影响）\n- README 以酒馆为第一卖点重排：标题直写「安卓手机上的 SillyTavern 客户端」，新增酒馆能力总览与六类酒馆资产对照表，并说明本项目是原生重写而非容器/启动器\n- 更新检查、关于页链接、CI 工作流守卫同步指向新仓库\n- 修正 README 若干与代码不符的描述（音色预设数量、设备工具与插件工具的审批行为、安全设置默认值、Nightly 构建频率）",
   "downloads": [
     {
-      "name": "rikkahub-plus-2.5.4fix11-arm64-v8a.apk",
-      "url": "https://github.com/MiaoWuNYA/rikkahub-huadeng/releases/download/v2.5.4fix11/rikkahub-plus-2.5.4fix11-arm64-v8a.apk",
+      "name": "rikkahub-plus-2.5.4fix12-arm64-v8a.apk",
+      "url": "https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/download/v2.5.4fix12/rikkahub-plus-2.5.4fix12-arm64-v8a.apk",
       "size": "约 102 MB"
     }
   ]

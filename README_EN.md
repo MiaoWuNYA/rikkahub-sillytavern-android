@@ -2,19 +2,81 @@
 
 # RikkaHub Plus · HuaDeng
 
-**An Android AI chat client · deeply customized fork**
+### A **SillyTavern** client for Android
+
+**Character cards · lorebooks · presets · regex · quick replies · beautification themes — imported with official SillyTavern semantics**
 
 [**English**](README_EN.md) | [**简体中文**](README.md) | [Divergence map](DIVERGENCE.md)
 
-[![Release](https://img.shields.io/github/v/release/MiaoWuNYA/rikkahub-huadeng?label=release&color=brightgreen)](https://github.com/MiaoWuNYA/rikkahub-huadeng/releases)
+[![Release](https://img.shields.io/github/v/release/MiaoWuNYA/rikkahub-sillytavern-android?label=release&color=brightgreen)](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
-[![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)](https://github.com/MiaoWuNYA/rikkahub-huadeng/releases)
-[![Stars](https://img.shields.io/github/stars/MiaoWuNYA/rikkahub-huadeng?color=yellow)](https://github.com/MiaoWuNYA/rikkahub-huadeng/stargazers)
+[![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases)
+[![Stars](https://img.shields.io/github/stars/MiaoWuNYA/rikkahub-sillytavern-android?color=yellow)](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/stargazers)
 
 </div>
 
-> A deeply customized fork of [RikkaHub](https://github.com/rikkahub/rikkahub), already merged with upstream **v2.5.2** (as of 2026-09).
-> Every upstream capability is preserved as-is, plus **2150+ commits** and **170 new Kotlin files** across the 12 areas below.
+> **In one line**: SillyTavern, on your phone — a native Android client, not a WebView shell, no Termux or Node.js required.
+> Install an APK, import the hundreds of character cards and lorebooks you already have, and it also fixes the two classic
+> tavern headaches: **long chats burning money** and **the AI forgetting everything**.
+>
+> A deeply customized fork of [RikkaHub](https://github.com/rikkahub/rikkahub), already merged with upstream **v2.5.2**, plus **2150+ commits** of additions.
+
+---
+
+## 🍺 Tavern capabilities at a glance
+
+**Bring your whole desktop tavern setup over** — parsed with official SillyTavern semantics, not an approximate "it imports, sort of" conversion:
+
+| What you have | What this app does with it |
+|---|---|
+| **Character cards** (PNG / V2 / V3 JSON) | **20+ fields** (upstream keeps only 6): example messages, alternate greetings, multilingual notes, post-history instructions, character version, tags, nickname, assets, embedded lorebook, raw `extensions` JSON… nothing upstream drops is lost — **import → export round-trips without data loss** |
+| **Lorebooks** | **30+ entry fields**, aligned rule by rule with official `world-info.js`: four secondary-keyword logic modes, whole-word/regex/case, per-entry scan depth, constant activation, cross-book groups + weight + override, trigger probability, sticky / cooldown, delayed activation, recursion controls, budget exemption, character-field matching ×6 |
+| **Presets** | Imported under the official prompt-manager structure |
+| **Regex scripts** | Find / Replace / `_ALT`, OnlyFormat, macros, injection depth (minDepth/maxDepth), ordering and caching — applied at both the display and prompt layers |
+| **Quick Replies** (QR) | QR sets import; run from the slash popup in one tap |
+| **Beautification themes** | **Verified against 537 real themes** (537/537 parse): layered color compositing, `custom_css` backgrounds, bubble corner radius, theme fonts |
+| **HTML display cards** | Rendered in-chat, expanded by default with tap-to-fullscreen |
+| **Multiple greetings** | Full `alternate_greetings` import with in-chat switching |
+
+**The prompt pipeline follows the official structure too**: main prompt, standalone character-field messages, example messages split on `<START>` into real user/assistant turns, PHI appended after history, depth prompts injected at their configured depth and role.
+
+### How this differs from other Android tavern projects
+
+Search "Android SillyTavern" and most results are **containers or launchers** — they bundle Node.js and SillyTavern and run it (their own descriptions give it away: *runner*, *launcher*, *container*, *installer*, *local Node.js server*).
+
+This project is a **native rewrite**: a complete Kotlin + Jetpack Compose client where the tavern compatibility layer is core code, not a shim. That means:
+
+- **No Node service** — no background process hogging memory, fast cold start
+- **Tavern features wired into client features**: a card's lorebook can drive plugin tools, the memory system, TTS read-aloud, and the device toolbox
+- **A real phone experience**: Material You theming, gestures, notifications, the share sheet
+
+### It also solves two long-standing tavern problems
+
+- ⚡ **Long chats get expensive** → [Prompt prefix cache optimization](#-prompt-prefix-cache-optimization) removes per-turn divergence points
+- 🧠 **The AI forgets / the context blows up** → [Memory & long conversations](#-memory--long-conversations): semantic RAG + three-layer memory + rolling compression
+
+---
+
+## 🔍 You might be looking for
+
+| What you want to do | The matching feature |
+|---|---|
+| **Run SillyTavern cards / lorebooks on Android** | Cards (V2/V3/PNG), lorebooks (30+ fields), presets, regex, QR, themes — all imported with official SillyTavern semantics |
+| **A usable SillyTavern client on mobile** | This app is one; the tavern layer is a core direction, not a bolt-on |
+| **Move my desktop tavern data to my phone** | Six asset types import: cards, lorebooks, presets, regex, QR, themes |
+| **Mobile tavern is slow / Termux is a hassle** | Native client — no Termux, no Node.js, just install the APK |
+| Long chats that are too expensive / keep forgetting | Prompt prefix cache + semantic memory RAG + three-layer memory + rolling compression |
+| Connect my own proxy station / third-party API | OpenAI / Anthropic / Google / DeepSeek compatible; the proxy-fix switch cures the common pathologies |
+| Give the AI my own tools | QuickJS plugin system — write a `main.js`, zip it, import it |
+| Chat from WeChat / QQ too | WeChat Bot (QR login), QQ Bot (official API), reusing any assistant's AI and memory |
+| Voice that speaks and listens | Doubao TTS 2.0 + Volcengine ASR, powering voice / video calls |
+| Let the AI operate my phone | Device toolbox: 30 tools — torch, volume, SMS, contacts, location, notifications… |
+| Privacy | Sanitized request logging, tool-approval boundaries, telemetry off by default, all data stays local |
+
+> **Search keywords**: Android SillyTavern, SillyTavern Android client, mobile SillyTavern, tavern client,
+> character card import, lorebook, world info, roleplay AI, AI roleplay, RP client,
+> Android LLM chat, AI chat client, prompt cache, RAG memory, OpenAI-compatible proxy,
+> Kotlin Jetpack Compose AI app, local AI chat.
 
 ---
 
@@ -22,9 +84,9 @@
 
 | | Area | In one line |
 |---|---|---|
+| 🍺 | **Deep SillyTavern compatibility** (core) | Cards / lorebooks / presets / regex / QR / themes, lossless with official semantics |
 | ⚡ | **Prompt cache optimization** | Removes per-turn context divergence — long-conversation token cost drops sharply |
 | 🧩 | **Plugin system** | QuickJS-sandboxed plugins, ZIP import, directly callable by the AI |
-| 🍺 | **Deep SillyTavern compatibility** | Cards / lorebooks / presets / regex / QR / themes, lossless with official semantics |
 | 🧠 | **Memory & long conversations** | Semantic RAG + three-layer memory + rolling compression |
 | 🗼 | **Proxy-station compatibility** | Auto-fixes the three classic Gemini-via-OpenAI-proxy pathologies |
 | 🔊 | **Doubao voice** | TTS 2.0 + Volcengine ASR; one Agent Plan key powers voice/video calls |
@@ -46,7 +108,7 @@ rikkahub/rikkahub (original upstream, v2.5.2)
         ├──► heikeyangle-code/rikkahub-plus (intermediate fork, mingli2)
         │            │  tavern system / macro engine / slash commands / group chats
         │            ▼
-        └──► MiaoWuNYA/rikkahub-huadeng  ← this repo
+        └──► MiaoWuNYA/rikkahub-sillytavern-android  ← this repo
                      │  cache optimization / plugins / memory / proxy fix / on-device
                      │
                      ├─ also from orangechat & Tumin: three-layer memory, couples space,
@@ -64,7 +126,7 @@ rikkahub/rikkahub (original upstream, v2.5.2)
 
 ## 🚀 Quick start
 
-1. Grab the latest APK from [Releases](https://github.com/MiaoWuNYA/rikkahub-huadeng/releases/latest) (`arm64-v8a`, Android 8.0+)
+1. Grab the latest APK from [Releases](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/latest) (`arm64-v8a`, Android 8.0+)
 2. Settings → Models & Services → **Providers**, add your API
 3. Settings → Models & Services → **Default models & prompts**, pick models for chat / title / compression
 4. For SillyTavern cards: Assistants page → import card (PNG / JSON)
@@ -454,9 +516,9 @@ Hidable in one tap via **HuaDeng Settings → Clean simple mode**, which also st
 
 | Channel | Description |
 |---|---|
-| **Stable** | Versioned releases (`2.5.4fixN`) on [Releases](https://github.com/MiaoWuNYA/rikkahub-huadeng/releases) |
-| **Nightly** | Actions build twice daily (skipped if no commit in the past 24h) and overwrite the [nightly](https://github.com/MiaoWuNYA/rikkahub-huadeng/releases/tag/nightly) prerelease |
-| **Manual builds** | Every push produces an APK artifact on [Actions](https://github.com/MiaoWuNYA/rikkahub-huadeng/actions) |
+| **Stable** | Versioned releases (`2.5.4fixN`) on [Releases](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases) |
+| **Nightly** | Actions build twice daily (skipped if no commit in the past 24h) and overwrite the [nightly](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/tag/nightly) prerelease |
+| **Manual builds** | Every push produces an APK artifact on [Actions](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/actions) |
 | **In-app update** | Settings → About → Check for updates (GitHub Releases API, with a mainland-China-reachable mirror fallback) |
 
 > Only a single `arm64-v8a` APK is published, supporting Android 8.0 (API 26) and above.

@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     # 老 fork MiaoWuNYA/rikkahub-plus 已归档，只在新仓库构建
-    if: github.repository == 'MiaoWuNYA/rikkahub-huadeng'
+    if: github.repository == 'MiaoWuNYA/rikkahub-sillytavern-android'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -8,10 +8,10 @@
 
 [**简体中文**](README.md) | [**English**](README_EN.md) | [差异手册](DIVERGENCE.md)
 
-[![Release](https://img.shields.io/github/v/release/MiaoWuNYA/rikkahub-huadeng?label=release&color=brightgreen)](https://github.com/MiaoWuNYA/rikkahub-huadeng/releases)
+[![Release](https://img.shields.io/github/v/release/MiaoWuNYA/rikkahub-sillytavern-android?label=release&color=brightgreen)](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
-[![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)](https://github.com/MiaoWuNYA/rikkahub-huadeng/releases)
-[![Stars](https://img.shields.io/github/stars/MiaoWuNYA/rikkahub-huadeng?color=yellow)](https://github.com/MiaoWuNYA/rikkahub-huadeng/stargazers)
+[![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases)
+[![Stars](https://img.shields.io/github/stars/MiaoWuNYA/rikkahub-sillytavern-android?color=yellow)](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/stargazers)
 
 </div>
 
@@ -107,7 +107,7 @@ rikkahub/rikkahub (最上游，v2.5.2)
         ├──► heikeyangle-code/rikkahub-plus (中间分支 mingli2)
         │            │  酒馆系统 / 宏引擎 / 斜杠命令 / 群聊
         │            ▼
-        └──► MiaoWuNYA/rikkahub-huadeng  ← 本仓库
+        └──► MiaoWuNYA/rikkahub-sillytavern-android  ← 本仓库
                      │  酒馆增强 / 缓存优化 / 插件 / 记忆 / 中转兼容 / 手机增强
                      │
                      ├─ 另从 orangechat & Tumin 引入：三层记忆、情侣空间、
@@ -127,7 +127,7 @@ rikkahub/rikkahub (最上游，v2.5.2)
 
 ## 🚀 快速开始
 
-1. 到 [Releases](https://github.com/MiaoWuNYA/rikkahub-huadeng/releases/latest) 下载最新 APK（`arm64-v8a`，Android 8.0+）
+1. 到 [Releases](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/latest) 下载最新 APK（`arm64-v8a`，Android 8.0+）
 2. **导入角色卡**：助手页 → 导入（支持 PNG 卡 / V2 / V3 JSON），世界书和预设会自动带进来
 3. **配模型**：设置 → 模型与服务 → **提供商**，添加你的 API；再到**默认模型和提示词**给对话/标题/压缩分别选模型
 4. **导入世界书 / 预设 / 正则 / QR**：设置 → 扩展管理，四类酒馆资产各有入口
@@ -504,9 +504,9 @@ AlarmManager 精确闹钟 + WorkManager 兜底双通道，随机间隔（可设�
 
 | 渠道 | 说明 |
 |---|---|
-| **稳定版** | [Releases](https://github.com/MiaoWuNYA/rikkahub-huadeng/releases) 按版本发布（`2.5.4fixN`） |
-| **Nightly** | Actions 每天两次自动构建（过去 24 小时无新提交则跳过），覆盖 [nightly](https://github.com/MiaoWuNYA/rikkahub-huadeng/releases/tag/nightly) 预发布 |
-| **手动构建产物** | 每次推送在 [Actions](https://github.com/MiaoWuNYA/rikkahub-huadeng/actions) 产出 APK Artifact |
+| **稳定版** | [Releases](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases) 按版本发布（`2.5.4fixN`） |
+| **Nightly** | Actions 每天两次自动构建（过去 24 小时无新提交则跳过），覆盖 [nightly](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/tag/nightly) 预发布 |
+| **手动构建产物** | 每次推送在 [Actions](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/actions) 产出 APK Artifact |
 | **应用内更新** | 设置 → 关于 → 检查更新（GitHub Releases API，国内可达镜像自动回退） |
 
 > 仅提供 `arm64-v8a` 单一架构 APK，支持 Android 8.0（API 26）及以上。

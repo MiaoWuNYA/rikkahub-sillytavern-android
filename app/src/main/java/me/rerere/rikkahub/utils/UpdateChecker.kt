@@ -27,7 +27,7 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 /** 本定制版的仓库。GitHub Release 是权威来源，仓库根目录的 update.json 是兜底快照。 */
-private const val REPO = "MiaoWuNYA/rikkahub-huadeng"
+private const val REPO = "MiaoWuNYA/rikkahub-sillytavern-android"
 private const val BRANCH = "huadeng"
 
 private const val API_URL = "https://api.github.com/repos/$REPO/releases/latest"
