@@ -1,0 +1,87 @@
+name: Sync mirror
+
+# 把本仓库同步到只读镜像 MiaoWuNYA/rikkahub-plus-huadeng。
+#
+# 为什么要镜像：本仓库是 GitHub fork，而仓库搜索默认不返回 fork，
+# 搜 rikkahub / sillytavern android 都搜不到这里。镜像不是 fork，能被搜到。
+#
+# 这个 workflow 同时存在于两个仓库，靠下面的 if 区分：
+#   源仓库   -> 直接跳过，什么都不做
+#   镜像仓库 -> 拉取源仓库最新提交，重打镜像横幅，强推覆盖
+#
+# 不依赖任何 PAT：源仓库是公开的，抓取不需要凭据；
+# 推到自己仓库用内置的 GITHUB_TOKEN 即可。
+
+on:
+  schedule:
+    # 每 6 小时一次，刻意避开整点（GitHub 的 cron 是 UTC）
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-mirror
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'MiaoWuNYA/rikkahub-plus-huadeng'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout mirror
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch source and rebuild tree
+        id: build
+        run: |
+          set -euo pipefail
+          before_tree="$(git rev-parse origin/main^{tree})"
+
+          git remote add source https://github.com/MiaoWuNYA/rikkahub-plus.git
+          git fetch --no-tags source huadeng
+          git reset --hard source/huadeng
+
+          # 镜像横幅：告诉来访者这是镜像、去哪儿下载和提问
+          python3 - <<'PY'
+          lines = [
+              "> **这是 [MiaoWuNYA/rikkahub-plus](https://github.com/MiaoWuNYA/rikkahub-plus) 的只读镜像仓库。**",
+              "> 代码每 6 小时自动同步一次，请勿在此提交 issue 或 PR —— 请到主仓库。",
+              ">",
+              "> **⬇️ [下载 APK / 查看更新日志](https://github.com/MiaoWuNYA/rikkahub-plus/releases)**",
+              "> （应用内的检查更新也指向主仓库，两个仓库功能完全一致）",
+              "",
+          ]
+          with open("README.md", encoding="utf-8") as f:
+              body = f.read()
+          with open("README.md", "w", encoding="utf-8") as f:
+              f.write("\n".join(lines) + body)
+          PY
+
+          git add -A
+          after_tree="$(git write-tree)"
+          echo "source head: $(git rev-parse --short source/huadeng)"
+          echo "before_tree=$before_tree"
+          echo "after_tree=$after_tree"
+          if [ "$before_tree" = "$after_tree" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push
+        if: steps.build.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -q -m "sync: $(git rev-parse --short source/huadeng) from main repo"
+          git push --force origin HEAD:main
+          echo "pushed $(git rev-parse --short HEAD)"
+
+      - name: Nothing to do
+        if: steps.build.outputs.changed != 'true'
+        run: echo "镜像已是最新，无需推送"
