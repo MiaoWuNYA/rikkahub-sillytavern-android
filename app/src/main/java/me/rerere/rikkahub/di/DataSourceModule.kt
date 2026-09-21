@@ -231,6 +231,14 @@ val dataSourceModule = module {
             repository = get(),
             providerManager = get(),
             memoryEmbeddingService = get(),
+            jevClient = get(),
+        )
+    }
+
+    single {
+        me.rerere.rikkahub.data.ai.jev.JevClient(
+            httpClient = get(),
+            settingsStore = get(),
         )
     }
 

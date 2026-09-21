@@ -823,6 +823,21 @@ data class HuaDengSettings(
     val enableToolResultTruncation: Boolean = true,
     // 系统提示词转义：将系统消息中的 < > 转为 HTML 实体，绕过中转站 WAF 安全策略拦截
     val enableSystemPromptEscape: Boolean = false,
+
+    // ---- Jev 智能决策（TypeSafe System One Model）----
+    // 只做判断不生成文本的隐形决策层，永不进入用户可选模型列表。全部字段必须在请求失败时静默回退。
+    // 注意：本类整体以 JSON 存在 DataStore，任一字段解析失败会整块回退默认值，
+    // 所以这里只能放基础可序列化类型，不要引入自定义 serializer。
+    val jevBaseUrl: String = "https://api.typesafe.ai",
+    val jevApiKey: String = "",
+    // 低于该置信度不用 Jev 的判断，回退原有逻辑。noul 没有 confidence，用 |p-0.5|*2 折算
+    val jevConfidenceThreshold: Float = 0.7f,
+    // 标题模型指向：对话命名改由 Jev 完成，设置里的「标题模型」置灰
+    val jevTakeoverTitle: Boolean = false,
+    // 自动记忆筛选：记忆检索改由 Jev 判相关性，替代 embedding 相似度召回
+    val jevTakeoverMemory: Boolean = false,
+    // 大模型工具调用：把 Jev 注册成 judge 工具挂给主力模型
+    val jevJudgeTool: Boolean = false,
 )
 
 /**

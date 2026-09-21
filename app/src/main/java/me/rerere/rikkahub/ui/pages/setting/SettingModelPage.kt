@@ -13,6 +13,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -129,9 +130,15 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
             )
         }
         item {
+            val jevTakeoverTitle = settings.huadengSettings.jevTakeoverTitle
             ModelSettingItem(
                 title = stringResource(R.string.setting_model_page_title_model),
-                description = stringResource(R.string.setting_model_page_title_model_desc),
+                // Jev 接管时把描述换成接管说明，避免"开关开了但旧入口还在生效"的观感
+                description = if (jevTakeoverTitle) {
+                    stringResource(R.string.setting_model_page_title_model_jev_takeover)
+                } else {
+                    stringResource(R.string.setting_model_page_title_model_desc)
+                },
                 modelId = settings.titleModelId,
                 providers = settings.providers,
                 onSelect = { vm.updateSettings(settings.copy(titleModelId = it.id)) },
@@ -139,6 +146,7 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
                 onUpdateReasoningLevel = {
                     vm.updateSettings(settings.copy(titleReasoningLevel = it))
                 },
+                enabled = !jevTakeoverTitle,
             )
         }
         item {
@@ -206,17 +214,28 @@ private fun ModelSettingItem(
     onSelect: (Model) -> Unit,
     reasoningLevel: ReasoningLevel? = null,
     onUpdateReasoningLevel: ((ReasoningLevel) -> Unit)? = null,
+    enabled: Boolean = true,
 ) {
     val state = rememberModelListState(
         modelId = modelId,
         providers = providers,
         type = ModelType.CHAT,
     )
+    val itemColors = if (enabled) {
+        null
+    } else {
+        ListItemDefaults.colors(
+            headlineColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            trailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            disabledHeadlineColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 
     Column {
         CardGroup(title = { Text(title) }) {
             item(
-                onClick = { state.open() },
+                onClick = if (enabled) ({ state.open() }) else null,
+                colors = itemColors,
                 headlineContent = { Text(title) },
                 trailingContent = {
                     Row(
@@ -239,7 +258,7 @@ private fun ModelSettingItem(
                     }
                 },
             )
-            if (reasoningLevel != null && onUpdateReasoningLevel != null) {
+            if (enabled && reasoningLevel != null && onUpdateReasoningLevel != null) {
                 item(
                     headlineContent = { Text(stringResource(R.string.assistant_page_thinking_budget)) },
                     trailingContent = {
@@ -259,5 +278,7 @@ private fun ModelSettingItem(
         )
     }
 
-    ModelListSheet(state = state, onSelect = onSelect)
+    if (enabled) {
+        ModelListSheet(state = state, onSelect = onSelect)
+    }
 }

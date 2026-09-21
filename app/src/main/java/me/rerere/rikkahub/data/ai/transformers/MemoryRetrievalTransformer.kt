@@ -11,6 +11,8 @@ import me.rerere.ai.provider.ProviderManager
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.ai.ui.UIMessage
 import me.rerere.rikkahub.data.ai.ThreeLayerMemoryPolicy
+import me.rerere.rikkahub.data.ai.jev.JevClient
+import me.rerere.rikkahub.data.ai.jev.JevPrompts
 import me.rerere.rikkahub.data.ai.buildMemoryPrompt
 import me.rerere.rikkahub.data.ai.resolveEmbeddingModel
 import me.rerere.rikkahub.data.model.MemoryType
@@ -41,6 +43,8 @@ private const val RAG_MEMORY_PROMPT_CHAR_BUDGET = 3_600
 private const val EPISODIC_RECENCY_BOOST = 0.08f
 private const val EPISODIC_RECENCY_DECAY_DAYS = 30.0
 private const val MILLIS_PER_DAY = 86_400_000.0
+/** Jev 一次最多判多少条记忆（再多要分批，代价是延迟线性增长，注入用不着那么宽） */
+private const val JEV_SCREENING_CANDIDATES = 32
 
 /**
  * 记忆 RAG 检索（移植自 Rikkahub-Revised）：
@@ -51,6 +55,7 @@ class MemoryRetrievalTransformer(
     private val repository: MemoryRepository,
     private val providerManager: ProviderManager,
     private val memoryEmbeddingService: me.rerere.rikkahub.data.memory.MemoryEmbeddingService,
+    private val jevClient: JevClient,
 ) : InputMessageTransformer {
     override suspend fun transform(
         ctx: TransformerContext,
@@ -112,7 +117,14 @@ class MemoryRetrievalTransformer(
 
         val semanticMatches = semanticSearch(ctx, records, query)
             .filter { (_, score) -> score > 0f }
-        val baseMatches = semanticMatches.ifEmpty { lexicalSearch(records, query) }
+        val baseMatches = when {
+            // Jev 接管：直接用 Jev 判相关性，省掉 embedding 调用。
+            // 任何一条判断缺失（判不出/超时/没配 Key）都整批回退原检索，不能静默少注入。
+            ctx.settings.huadengSettings.jevTakeoverMemory -> {
+                jevScreening(ctx, records, query) ?: semanticMatches.ifEmpty { lexicalSearch(records, query) }
+            }
+            else -> semanticMatches.ifEmpty { lexicalSearch(records, query) }
+        }
         val nowMs = System.currentTimeMillis()
         val selected = baseMatches
             .map { (record, score) ->
@@ -191,6 +203,47 @@ class MemoryRetrievalTransformer(
             Log.w(TAG, "Embedding retrieval failed; using lexical fallback", error)
             emptyList()
         }
+    }
+
+    /**
+     * Jev 相关性筛选，替代 embedding 相似度召回。
+     *
+     * 返回 null 表示"这次不要用 Jev 的结果"——没配置、整批失败、有任意一条没答上来。
+     * 调用方据此回退到原检索路径。这么做是刻意的：Jev 是隐形决策层，
+     * 宁可整批退回老逻辑，也不能因为漏答就静默少注入记忆。
+     *
+     * 通过筛选的记忆按创建时间排序（Jev 只判相关与否，不给相关性分数）。
+     * 后续还会过一遍 applyEpisodicRecencyBoost 做时间近因加权。
+     */
+    private suspend fun jevScreening(
+        ctx: TransformerContext,
+        records: List<MemorySearchRecord>,
+        query: String,
+    ): List<Pair<MemorySearchRecord, Float>>? = withContext(Dispatchers.IO) {
+        val candidates = records.take(JEV_SCREENING_CANDIDATES)
+        if (candidates.isEmpty()) return@withContext null
+
+        val questions = JevPrompts.memoryRelevanceBatch(candidates.map { it.memory.content })
+        val verdicts = runCatching {
+            jevClient.judge(JevPrompts.stateOf(query), questions)
+        }.getOrElse {
+            Log.w(TAG, "Jev 记忆筛选调用失败，回退原检索", it)
+            return@withContext null
+        }
+        // 有任意一条没答上来就整批退回，避免"部分判过"造成注入内容莫名变少
+        if (verdicts.size != questions.size) {
+            Log.w(TAG, "Jev 记忆筛选漏答 ${questions.size - verdicts.size} 条，回退原检索")
+            return@withContext null
+        }
+
+        val threshold = ctx.settings.huadengSettings.jevConfidenceThreshold.toDouble()
+        candidates.mapIndexedNotNull { index, record ->
+            val verdict = verdicts["m$index"] ?: return@mapIndexedNotNull null
+            val probability = verdict.noul ?: return@mapIndexedNotNull null
+            val confidence = kotlin.math.abs(probability - 0.5) * 2
+            if (probability <= 0.5 || confidence < threshold) return@mapIndexedNotNull null
+            record to 1f
+        }.sortedByDescending { (record, _) -> record.memory.createdAt }
     }
 
     private fun maybeScheduleReindex(ctx: TransformerContext, hasRecords: Boolean) {

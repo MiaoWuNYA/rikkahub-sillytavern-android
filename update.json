@@ -1,7 +1,7 @@
 {
   "version": "2.5.4fix13",
   "publishedAt": "2026-09-21T14:10:00Z",
-  "changelog": "合入上游 rikkahub 2.5.3 之后的更新\n\n- 合并上游 rikkahub 2.5.3 之后的 3 个提交（Chat Completions 与 DashScope 推理参数）\n- DashScope（阿里云百炼）：改用 reasoning_effort，弃用 enable_thinking / thinking_budget\n- Chat Completions 关闭思考时直接传 none，不再夹带成 low\n- 同步收下上游 2.5.2 以来的其它更新：QuickJS 迁移到 quickjs-kt 修复资源泄露、工作区长按多选导出、图片裁剪提速、输入栏 blur/glass 效果、内置代码连字修复等",
+  "changelog": "合入上游 rikkahub 2.5.3 之后的更新\n\n- 合并上游 rikkahub 2.5.3 之后的 3 个提交（Chat Completions 与 DashScope 推理参数）\n- DashScope（阿里云百炼）：改用 reasoning_effort，弃用 enable_thinking / thinking_budget\n- Chat Completions 关闭思考时直接传 none，不再夹带成 low\n- 同步收下上游 2.5.2 以来的其它更新：QuickJS 迁移到 quickjs-kt 修复资源泄露、工作区长按多选导出、图片裁剪提速、输入栏 blur/glass 效果、内置代码连字修复等\n\n新增\n- 华灯设置新增「Jev 智能决策」：接入 TypeSafe System One 判断模型，只做判断不生成文本，单次 70-500 毫秒，输出 token 免费。它不是可选的聊天模型，只在应用内部做隐形决策\n- 三个接管开关，各自顶掉一块既有功能，被顶掉的原入口会同步进入禁用态：\n  - 自动记忆筛选：记忆检索改由 Jev 判相关性，替代 embedding 相似度召回，省掉一次付费嵌入调用\n  - 标题模型指向：对话命名改由 Jev 完成，设置里的「标题模型」那一项置灰并显示「当前由 Jev 接管」\n  - 大模型工具调用：把 Jev 注册成 judge 工具挂给主力模型，让它在生成中途也能发起判断\n- Jev 菜单内可填 API 地址（默认官方，支持中转/自建代理）、API Key，并调节置信度阈值（默认 0.70）\n\n稳定性\n- Key 未填或地址非法时开关仍可打开但不生效，页面顶部出黄色提示；请求失败、响应解析失败、置信度低于阈值，一律静默回退原有逻辑，不弹错误、不打断对话\n- 记忆筛选采用整批回退：任意一条判断缺失就整批退回原检索，避免静默少注入记忆\n- Jev 仅通过 OkHttp 直连配置的地址，不参与用户可选模型列表",
   "downloads": [
     {
       "name": "rikkahub-plus-2.5.4fix13-arm64-v8a.apk",

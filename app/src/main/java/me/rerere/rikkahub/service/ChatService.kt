@@ -75,6 +75,9 @@ import me.rerere.rikkahub.data.ai.GenerationChunk
 import me.rerere.rikkahub.data.ai.GenerationLoop
 import me.rerere.rikkahub.data.ai.TranslationHandler
 import me.rerere.rikkahub.data.ai.mcp.McpManager
+import me.rerere.rikkahub.data.ai.jev.JevClient
+import me.rerere.rikkahub.data.ai.jev.JevResult
+import me.rerere.rikkahub.data.ai.tools.createJudgeTool
 import me.rerere.rikkahub.data.ai.prompts.TITLE_MAX_CHARS
 import me.rerere.rikkahub.plugin.provider.PluginToolProvider
 import me.rerere.rikkahub.data.ai.tools.LocalTools
@@ -241,6 +244,7 @@ class ChatService(
     private val crossWindowMemoryStore: CrossWindowMemoryStore,
     private val coupleRepository: CoupleRepository,
     private val pluginToolProvider: PluginToolProvider,
+    private val jevClient: JevClient,
 ) {
     // workspace 系统提示注入 (依赖 workspaceRepository, 故在类内构造)
     private val workspaceReminderTransformer = WorkspaceReminderTransformer(workspaceRepository)
@@ -1532,6 +1536,9 @@ class ChatService(
                     if (assistant.localTools.contains(LocalToolOption.Calculator)) {
                         add(createCalculatorTool(context))
                     }
+                    if (settings.huadengSettings.jevJudgeTool) {
+                        add(createJudgeTool(jevClient))
+                    }
                     add(createWebFetchTool())
                     if (assistant.localTools.contains(LocalToolOption.TaskTools)) {
                         addAll(createTaskTools())
@@ -1816,6 +1823,54 @@ class ChatService(
 
     // ---- 生成标题 ----
 
+    /**
+     * 用 Jev 选标题：Jev 不生成文本，所以先在本地裁候选，再让它挑。
+     * 返回 null 表示没选出来（未配置、失败、置信度不足、候选都不合适），调用方回退标题模型。
+     */
+    private suspend fun generateTitleWithJev(conversation: Conversation): String? {
+        return runCatching {
+            val turns = conversation.currentMessages.takeLast(4).map { it.summaryAsText() }
+            val text = turns.joinToString("\n\n")
+            if (text.isBlank()) return@runCatching null
+
+            val candidates = buildList {
+                // 第一条消息的开头通常就是话题本身
+                turns.firstOrNull()?.let { add(it.toTitleCandidate()) }
+                // 后面每条的首句补充话题走向
+                turns.drop(1).forEach { add(it.toTitleCandidate()) }
+                conversation.title.trim().takeIf { it.isNotBlank() }?.let { add(it) }
+            }.filter { it.isNotBlank() }
+
+            when (val result = jevClient.judgeTitle(candidates, text)) {
+                is JevResult.Ok -> result.value.take(TITLE_MAX_CHARS).trim().ifBlank { null }
+                is JevResult.Uncertain -> {
+                    Logging.log(TAG, "Jev 标题置信度不足，回退标题模型")
+                    null
+                }
+                is JevResult.Failed -> {
+                    Logging.log(TAG, "Jev 标题失败，回退标题模型: ${result.reason}")
+                    null
+                }
+            }
+        }.getOrElse {
+            Logging.log(TAG, "Jev 标题异常，回退标题模型: $it")
+            null
+        }
+    }
+
+    /** 把一段消息压成一个候选标题：取首句、去掉换行与多余空白 */
+    private fun String.toTitleCandidate(): String = lineSequence()
+        .firstOrNull { it.isNotBlank() }
+        .orEmpty()
+        .trim()
+        .trimStart('#', '-', '*', '>', '「', '《', '"', '\'', '“')
+        .substringBefore('。')
+        .substringBefore('！')
+        .substringBefore('？')
+        .substringBefore('.')
+        .take(TITLE_MAX_CHARS)
+        .trim()
+
     suspend fun generateTitle(
         conversationId: Uuid,
         conversation: Conversation,
@@ -1830,6 +1885,19 @@ class ChatService(
 
         runCatching {
             val settings = settingsStore.settingsFlow.first()
+
+            // Jev 接管标题：只让它"选"，不让它"写"。判不出来 / 未配置 / 失败一律往下走原逻辑，
+            // 所以这里不 return，也不报错。
+            if (settings.huadengSettings.jevTakeoverTitle) {
+                val title = generateTitleWithJev(conversation)
+                if (title != null) {
+                    conversationRepo.getConversationById(conversationId)?.let {
+                        saveConversation(conversationId, it.copy(title = title))
+                    }
+                    return@runCatching
+                }
+            }
+
             // 标题模型未设置时跟随快速模型
             val model = settings.findModelById(settings.titleModelId)
                 ?: settings.findModelById(settings.fastModelId)
@@ -1999,6 +2067,9 @@ class ChatService(
                 }
                 if (assistant.localTools.contains(LocalToolOption.Calculator)) {
                     add(createCalculatorTool(context))
+                }
+                if (settings.huadengSettings.jevJudgeTool) {
+                    add(createJudgeTool(jevClient))
                 }
                 add(createWebFetchTool())
                 if (assistant.localTools.contains(LocalToolOption.TaskTools)) {

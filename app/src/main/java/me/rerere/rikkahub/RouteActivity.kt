@@ -141,6 +141,7 @@ import me.rerere.rikkahub.ui.pages.setting.SettingSpeechPage
 import me.rerere.rikkahub.ui.pages.setting.SettingWebPage
 import me.rerere.rikkahub.ui.pages.setting.SettingWeixinBotPage
 import me.rerere.rikkahub.ui.pages.setting.SettingHuaDengPage
+import me.rerere.rikkahub.ui.pages.setting.SettingJevPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSecurityPage
 import me.rerere.rikkahub.ui.pages.share.handler.ShareHandlerPage
 import me.rerere.rikkahub.ui.pages.stats.StatsPage
@@ -524,6 +525,10 @@ class RouteActivity : ComponentActivity() {
                                 SettingHuaDengPage()
                             }
 
+                            entry<Screen.SettingJev> {
+                                SettingJevPage()
+                            }
+
                             entry<Screen.SettingSecurity> {
                                 SettingSecurityPage()
                             }
@@ -841,6 +846,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingHuaDeng : Screen
+
+    @Serializable
+    data object SettingJev : Screen
     data object SettingSecurity : Screen
 
     @Serializable

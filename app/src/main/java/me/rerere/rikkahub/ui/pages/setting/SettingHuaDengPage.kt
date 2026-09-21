@@ -17,6 +17,7 @@ import androidx.compose.material3.Icon
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.AlarmClock
 import me.rerere.hugeicons.stroke.ArrowRight01
+import me.rerere.hugeicons.stroke.Brain01
 import me.rerere.hugeicons.stroke.Message01
 import me.rerere.hugeicons.stroke.MessageMultiple01
 import me.rerere.hugeicons.stroke.Notebook
@@ -239,6 +240,13 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                     modifier = Modifier.padding(horizontal = 8.dp),
                     title = { Text("接入与自动化") },
                 ) {
+                    item(
+                        onClick = { navController.navigate(Screen.SettingJev) },
+                        leadingContent = { Icon(HugeIcons.Brain01, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_jev_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_jev)) },
+                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
+                    )
                     item(
                         onClick = { navController.navigate(Screen.SettingWeixinBot) },
                         leadingContent = { Icon(HugeIcons.Message01, null) },
