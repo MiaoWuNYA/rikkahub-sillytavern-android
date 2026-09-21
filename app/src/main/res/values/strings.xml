@@ -68,6 +68,8 @@
   <string name="setting_page_jev_fallback_desc">Any failure — network error, invalid key, unparsable response, or confidence below the threshold — silently falls back to the original logic. No error dialogs, no interruption to the conversation.</string>
   <string name="setting_page_jev_credentials">Credentials</string>
   <string name="setting_page_jev_base_url">API address</string>
+  <string name="setting_page_jev_endpoint">Endpoint (what the app actually calls): %1$s</string>
+  <string name="setting_page_jev_endpoint_copy">Copy endpoint</string>
   <string name="setting_page_jev_api_key">API key</string>
   <string name="setting_page_jev_model">Judgment model</string>
   <string name="setting_page_jev_threshold">Confidence threshold</string>

@@ -28,7 +28,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,6 +38,7 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Alert02
 import me.rerere.hugeicons.stroke.Brain
 import me.rerere.hugeicons.stroke.CheckmarkCircle02
+import me.rerere.hugeicons.stroke.Copy01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.ai.jev.JEV_DEFAULT_BASE_URL
 import me.rerere.rikkahub.data.ai.jev.JEV_DEFAULT_MODEL
@@ -98,6 +101,9 @@ fun SettingJevPage(vm: SettingVM = koinViewModel()) {
 
     val configured = huaDeng.jevApiKey.isNotBlank() && huaDeng.jevBaseUrl.isValidHttpUrl()
     val anyTakeover = huaDeng.jevTakeoverTitle || huaDeng.jevTakeoverMemory || huaDeng.jevJudgeTool
+    // 第三方中转/自建代理要照着这个填，所以显示拼好的完整端点而不是只给个域名
+    val endpoint = remember(huaDeng.jevBaseUrl) { huaDeng.jevBaseUrl.resolveSystemOneEndpoint() }
+    val clipboard = LocalClipboardManager.current
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -184,24 +190,34 @@ fun SettingJevPage(vm: SettingVM = koinViewModel()) {
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_page_jev_base_url)) },
                         supportingContent = {
-                            OutlinedTextField(
-                                value = baseUrl,
-                                onValueChange = { baseUrl = it },
-                                placeholder = { Text(JEV_DEFAULT_BASE_URL) },
-                                singleLine = true,
-                                shape = MaterialTheme.shapes.small,
-                                colors = TextFieldDefaults.colors(
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                ),
-                                trailingIcon = {
-                                    ConfirmIconButton(
-                                        visible = baseUrl.trim() != huaDeng.jevBaseUrl,
-                                        onClick = ::commitBaseUrl,
-                                    )
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                            )
+                            Column {
+                                Text(
+                                    text = stringResource(R.string.setting_page_jev_endpoint, endpoint),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                OutlinedTextField(
+                                    value = baseUrl,
+                                    onValueChange = { baseUrl = it },
+                                    placeholder = { Text(JEV_DEFAULT_BASE_URL) },
+                                    singleLine = true,
+                                    shape = MaterialTheme.shapes.small,
+                                    colors = TextFieldDefaults.colors(
+                                        focusedIndicatorColor = Color.Transparent,
+                                        unfocusedIndicatorColor = Color.Transparent,
+                                    ),
+                                    trailingIcon = {
+                                        if (baseUrl.trim() != huaDeng.jevBaseUrl) {
+                                            ConfirmIconButton(visible = true, onClick = ::commitBaseUrl)
+                                        } else {
+                                            CopyEndpointButton(endpoint)
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp),
+                                )
+                            }
                         },
                     )
                     item(
@@ -345,7 +361,24 @@ private val JevWarningColor = Color(0xFFF0A020)
 private fun String.isValidHttpUrl(): Boolean =
     startsWith("http://") || startsWith("https://")
 
-/** 文本框改动没有落盘时露出一个确认按钮，避免每敲一个字符就写一次 DataStore */
+/**
+ * 与 JevClient 拼 URL 的方式保持一致：填根地址补 /v1/systemone，
+ * 填已经带 /v1 的地址就只补后半段。第三方中转的服务地址格式不一（有的要 /v1、
+ * 有的自带完整路径），所以这里只做展示，最终以客户端实际拼出来的为准。
+ */
+private fun String.resolveSystemOneEndpoint(): String {
+    val base = trim().trimEnd('/').ifEmpty { JEV_DEFAULT_BASE_URL }
+    return when {
+        base.endsWith("/v1/systemone") -> base
+        base.endsWith("/v1") -> "$base/systemone"
+        else -> "$base/v1/systemone"
+    }
+}
+
+/**
+
+ * 文本框改动没有落盘时露出一个确认按钮，避免每敲一个字符就写一次 DataStore
+ */
 @Composable
 private fun ConfirmIconButton(visible: Boolean, onClick: () -> Unit) {
     if (!visible) return
@@ -353,6 +386,18 @@ private fun ConfirmIconButton(visible: Boolean, onClick: () -> Unit) {
         Icon(
             imageVector = HugeIcons.CheckmarkCircle02,
             contentDescription = stringResource(R.string.common_save),
+        )
+    }
+}
+
+/** 点一下把完整端点拷走，省得第三方服务后台一个个字符照着敲 */
+@Composable
+private fun CopyEndpointButton(endpoint: String) {
+    val clipboard = LocalClipboardManager.current
+    IconButton(onClick = { clipboard.setText(AnnotatedString(endpoint)) }) {
+        Icon(
+            imageVector = HugeIcons.Copy01,
+            contentDescription = stringResource(R.string.setting_page_jev_endpoint_copy),
         )
     }
 }

@@ -69,6 +69,8 @@
   <string name="setting_page_jev_fallback_desc">网络失败、Key 无效、响应解析失败、置信度低于阈值，一律静默回退原有逻辑。不弹错误、不打断对话。</string>
   <string name="setting_page_jev_credentials">接入凭证</string>
   <string name="setting_page_jev_base_url">API 地址</string>
+  <string name="setting_page_jev_endpoint">实际请求端点：%1$s</string>
+  <string name="setting_page_jev_endpoint_copy">复制完整端点</string>
   <string name="setting_page_jev_api_key">API Key</string>
   <string name="setting_page_jev_model">判断模型</string>
   <string name="setting_page_jev_threshold">置信度阈值</string>
