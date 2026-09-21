@@ -1,7 +1,7 @@
 {
   "version": "2.5.4fix13",
   "publishedAt": "2026-09-21T14:10:00Z",
-  "changelog": "合入上游 rikkahub 2.5.3 之后的更新\n\n- 合并上游 rikkahub 2.5.3 之后的 3 个提交（Chat Completions 与 DashScope 推理参数）\n- DashScope（阿里云百炼）：改用 reasoning_effort，弃用 enable_thinking / thinking_budget\n- Chat Completions 关闭思考时直接传 none，不再夹带成 low\n- 合入带来的额外收益：上游 5.x 接口与模型注册、QuickJS 迁移到 quickjs-kt 修复资源泄露、工作区长按多选导出、图片裁剪提速等（本地编译已验证可正常出包）",
+  "changelog": "合入上游 rikkahub 2.5.3 之后的更新\n\n- 合并上游 rikkahub 2.5.3 之后的 3 个提交（Chat Completions 与 DashScope 推理参数）\n- DashScope（阿里云百炼）：改用 reasoning_effort，弃用 enable_thinking / thinking_budget\n- Chat Completions 关闭思考时直接传 none，不再夹带成 low\n- 同步收下上游 2.5.2 以来的其它更新：QuickJS 迁移到 quickjs-kt 修复资源泄露、工作区长按多选导出、图片裁剪提速、输入栏 blur/glass 效果、内置代码连字修复等",
   "downloads": [
     {
       "name": "rikkahub-plus-2.5.4fix13-arm64-v8a.apk",
