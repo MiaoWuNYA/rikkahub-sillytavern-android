@@ -1829,17 +1829,16 @@ class ChatService(
      */
     private suspend fun generateTitleWithJev(conversation: Conversation): String? {
         return runCatching {
-            val turns = conversation.currentMessages.takeLast(4).map { it.summaryAsText() }
-            val text = turns.joinToString("\n\n")
+            val turns = conversation.currentMessages.takeLast(4)
+            val text = turns.joinToString("\n\n") { it.summaryAsText() }
             if (text.isBlank()) return@runCatching null
 
             val candidates = buildList {
-                // 第一条消息的开头通常就是话题本身
-                turns.firstOrNull()?.let { add(it.toTitleCandidate()) }
-                // 后面每条的首句补充话题走向
-                turns.drop(1).forEach { add(it.toTitleCandidate()) }
+                // 候选必须取消息正文（toText），不能用 summaryAsText——那个带 "[USER]: " 角色
+                // 前缀，截 14 字后候选就成了"半句对话"，Jev 只能选 other 回退标题模型
+                turns.forEach { msg -> add(msg.toText().toTitleCandidate()) }
                 conversation.title.trim().takeIf { it.isNotBlank() }?.let { add(it) }
-            }.filter { it.isNotBlank() }
+            }.filter { it.isNotBlank() }.distinct()
 
             when (val result = jevClient.judgeTitle(candidates, text)) {
                 is JevResult.Ok -> result.value.take(TITLE_MAX_CHARS).trim().ifBlank { null }
@@ -1858,11 +1857,12 @@ class ChatService(
         }
     }
 
-    /** 把一段消息压成一个候选标题：取首句、去掉换行与多余空白 */
+    /** 把一段消息压成一个候选标题：去角色前缀残留、取首句、去掉换行与多余空白 */
     private fun String.toTitleCandidate(): String = lineSequence()
         .firstOrNull { it.isNotBlank() }
         .orEmpty()
         .trim()
+        .replace(Regex("^\\[[A-Z_]+]:\\s*"), "")  // summaryAsText 的 "[USER]: " 残留
         .trimStart('#', '-', '*', '>', '「', '《', '"', '\'', '“')
         .substringBefore('。')
         .substringBefore('！')

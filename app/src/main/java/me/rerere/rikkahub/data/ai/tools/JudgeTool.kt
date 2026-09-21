@@ -31,6 +31,13 @@ fun createJudgeTool(jevClient: JevClient): Tool = Tool(
         "It only judges — it never writes content. Returns the answer with a confidence score.\n" +
         "Use for quick checks mid-generation (off-topic? which option fits? rate the current mood). " +
         "Do not use it to summarize or generate text.",
+    // 工具路由说明：tools 数组里光有 schema 不够，很多模型（尤其走中转的小模型）只看系统
+    // 提示里的 <tool_selection> 清单决定用什么工具。不写这行，模型会"不知道"judge 存在。
+    systemPrompt = { _, _ ->
+        "Quick checks → judge (fast judgment model: yes/no, pick an option, or rate against levels; " +
+            "it answers, it never writes). Use it for quick yes/no, choice, or rating questions " +
+            "instead of reasoning them out yourself."
+    },
     parameters = {
         InputSchema.Obj(
             properties = buildJsonObject {
