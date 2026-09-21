@@ -74,9 +74,6 @@ import kotlin.time.Clock
 
 private const val TAG = "ChatCompletionsAPI"
 
-/** 中转站 response 前缀：要求其后紧跟空白/冒号/结尾/中日韩字符，避免误伤 "responses" 等英文单词。 */
-private val RESPONSE_PREFIX_REGEX = Regex("(?i)^response(?=\\s|:|\$|[\\u4e00-\\u9fff\\u3040-\\u30ff])\\s*:?\\s*")
-
 class ChatCompletionsAPI(
     private val client: OkHttpClient,
     private val keyRoulette: KeyRoulette
@@ -97,7 +94,7 @@ class ChatCompletionsAPI(
             .url("${providerSetting.baseUrl}${providerSetting.chatCompletionsPath}")
             .headers(params.customHeaders.toHeaders())
             .post(json.encodeToString(requestBody).toRequestBody("application/json".toMediaType()))
-            .addHeader("Authorization", "Bearer ${keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString(), params.sessionId)}")
+            .addHeader("Authorization", "Bearer ${keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString())}")
             .configureReferHeaders(providerSetting.baseUrl)
             .configureSessionHeaders(providerSetting.baseUrl, params.sessionId)
             .build()
@@ -124,16 +121,10 @@ class ChatCompletionsAPI(
             ?: "unknown"
         val usage = parseTokenUsage(bodyJson["usage"] as? JsonObject)
 
-        var parsedMessage = parseMessage(message)
-        // 中转站兼容：修复 Gemini reasoning_content 吞掉正文
-        if (params.enableProxyFix) {
-            parsedMessage = fixProxyGeminiContent(parsedMessage)
-        }
-
         TextGenerationResult(
             id = id,
             model = model,
-            message = parsedMessage,
+            message = parseMessage(message),
             finishReason = finishReason,
             usage = usage
         )
@@ -155,7 +146,7 @@ class ChatCompletionsAPI(
             .url("${providerSetting.baseUrl}${providerSetting.chatCompletionsPath}")
             .headers(params.customHeaders.toHeaders())
             .post(json.encodeToString(requestBody).toRequestBody("application/json".toMediaType()))
-            .addHeader("Authorization", "Bearer ${keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString(), params.sessionId)}")
+            .addHeader("Authorization", "Bearer ${keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString())}")
             .addHeader("Content-Type", "application/json")
             .configureReferHeaders(providerSetting.baseUrl)
             .configureSessionHeaders(providerSetting.baseUrl, params.sessionId)
@@ -166,7 +157,7 @@ class ChatCompletionsAPI(
         // just for debugging response body
         // println(client.newCall(request).await().body?.string())
 
-        val decoder = ChatCompletionsStreamDecoder(enableProxyFix = params.enableProxyFix)
+        val decoder = ChatCompletionsStreamDecoder()
 
         fun sendChunks(chunks: Iterable<StreamChunk>) {
             chunks.forEach { chunk ->
@@ -248,7 +239,6 @@ class ChatCompletionsAPI(
                     includeHistoryReasoning = providerSetting.includeHistoryReasoning,
                     includeOpenRouterReasoningDetails = isOpenRouter,
                     supportInputModalities = params.model.inputModalities,
-                    systemPromptInChat = params.systemPromptInChat,
                 )
             )
 
@@ -294,9 +284,10 @@ class ChatCompletionsAPI(
 
                     "dashscope.aliyuncs.com" -> {
                         // 阿里云百炼
-                        // https://bailian.console.aliyun.com/console?tab=doc#/doc/?type=model&url=https%3A%2F%2Fhelp.aliyun.com%2Fdocument_detail%2F2870973.html&renderType=iframe
-                        put("enable_thinking", level.isEnabled)
-                        if (level != ReasoningLevel.AUTO) put("thinking_budget", level.budgetTokens)
+                        // https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions
+                        if (level != ReasoningLevel.AUTO) {
+                            put("reasoning_effort", level.effort)
+                        }
                     }
 
                     "ark.cn-beijing.volces.com" -> {
@@ -418,10 +409,8 @@ class ChatCompletionsAPI(
                     }
 
                     else -> {
-                        // OpenAI 官方
-                        // 文档中，completions API 只支持 "low", "medium", "high"
                         if (level != ReasoningLevel.AUTO) {
-                            put("reasoning_effort", if (level.effort == "none") "low" else level.effort)
+                            put("reasoning_effort", level.effort)
                         }
                     }
                 }
@@ -465,33 +454,10 @@ class ChatCompletionsAPI(
         includeHistoryReasoning: Boolean = true,
         includeOpenRouterReasoningDetails: Boolean = false,
         supportInputModalities: List<Modality> = listOf(Modality.TEXT, Modality.IMAGE),
-        systemPromptInChat: Boolean = false,
     ) = buildJsonArray {
         val filteredMessages = messages.filter { it.isValidToUpload() }
-        var ackInserted = false
 
         filteredMessages.forEach { message ->
-            if (message.role == MessageRole.SYSTEM) {
-                // 防空回复（systemPromptInChat）：SYSTEM 消息原位转为 user 轮
-                // （Gemini 经 OpenAI 兼容中转/映射场景不支持 system role），
-                // 首个系统块后跟一条假 assistant 确认轮，避免模型把系统内容当用户提问。
-                // 默认路径必须原位保留 system role：主系统提示词、记忆注入、userContext、
-                // 世界书 system 注入全走 SYSTEM 消息（2026-09-08 曾在此整体丢弃，导致
-                // 记忆/人设静默失效，勿回退）
-                if (!systemPromptInChat) {
-                    addNonAssistantMessage(message)
-                    return@forEach
-                }
-                addNonAssistantMessage(message, asUserRole = true)
-                if (!ackInserted) {
-                    ackInserted = true
-                    add(buildJsonObject {
-                        put("role", "assistant")
-                        put("content", "Understood.")
-                    })
-                }
-                return@forEach
-            }
             if (message.role == MessageRole.ASSISTANT) {
                 addAssistantMessages(
                     message = message,
@@ -535,7 +501,6 @@ class ChatCompletionsAPI(
                         contentParts = contentBuffer,
                         tools = group.tools,
                         reasoningPart = reasoningPart,
-                        name = message.name,
                         includeOpenRouterReasoningDetails = includeOpenRouterReasoningDetails,
                     )?.let { assistantMessage ->
                         add(assistantMessage)
@@ -547,7 +512,6 @@ class ChatCompletionsAPI(
                     group.tools.forEach { tool ->
                         add(buildJsonObject {
                             put("role", "tool")
-                            put("name", tool.toolName)
                             put("tool_call_id", tool.toolCallId)
                             put("content", tool.toToolResultContent(supportInputModalities))
                         })
@@ -562,7 +526,6 @@ class ChatCompletionsAPI(
                 contentParts = contentBuffer,
                 tools = emptyList(),
                 reasoningPart = reasoningPart,
-                name = message.name,
                 includeOpenRouterReasoningDetails = includeOpenRouterReasoningDetails,
             )?.let { assistantMessage ->
                 add(assistantMessage)
@@ -574,7 +537,6 @@ class ChatCompletionsAPI(
         contentParts: List<UIMessagePart>,
         tools: List<UIMessagePart.Tool>,
         reasoningPart: UIMessagePart.Reasoning?,
-        name: String?,
         includeOpenRouterReasoningDetails: Boolean,
     ): JsonObject? {
         val hasUsableContent = contentParts.any { part ->
@@ -596,8 +558,6 @@ class ChatCompletionsAPI(
 
         return buildJsonObject {
             put("role", "assistant")
-            // 官方 openai.js:610 始终携带 name 字段（/sendas 角色名等）
-            name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
 
             // reasoning_content
             if (hasReasoning) {
@@ -664,15 +624,9 @@ class ChatCompletionsAPI(
         }
     }
 
-    private fun JsonArrayBuilder.addNonAssistantMessage(message: UIMessage, asUserRole: Boolean = false) {
+    private fun JsonArrayBuilder.addNonAssistantMessage(message: UIMessage) {
         add(buildJsonObject {
-            if (asUserRole) {
-                put("role", "user")
-            } else {
-                put("role", JsonPrimitive(message.role.name.lowercase()))
-            }
-            // 官方 openai.js:610 始终携带 name 字段（/sendas 角色名、/sys 旁白名等），模型据此识别消息归属
-            message.name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
+            put("role", JsonPrimitive(message.role.name.lowercase()))
 
             if (message.parts.isOnlyTextPart()) {
                 put("content", message.parts.filterIsInstance<UIMessagePart.Text>().first().text)
@@ -792,21 +746,7 @@ class ChatCompletionsAPI(
                         )
                     )
                 }
-                // 中转站兼容：部分中转站对同一 tool name 重复返回相同 toolCallId，
-                // 按 ID 去重并保留参数最长的那个（信息最完整）
-                val dedupedToolCalls = toolCalls.fold(mutableMapOf<String, JsonElement>()) { acc, tc ->
-                    val id = tc.jsonObject["id"]?.jsonPrimitive?.contentOrNull ?: return@fold acc
-                    val existing = acc[id]
-                    if (existing == null) {
-                        acc[id] = tc
-                    } else {
-                        val existingArgs = existing.jsonObject["function"]?.jsonObject?.get("arguments")?.jsonPrimitive?.contentOrNull.orEmpty()
-                        val newArgs = tc.jsonObject["function"]?.jsonObject?.get("arguments")?.jsonPrimitive?.contentOrNull.orEmpty()
-                        if (newArgs.length > existingArgs.length) acc[id] = tc
-                    }
-                    acc
-                }
-                dedupedToolCalls.values.forEach { toolCalls ->
+                toolCalls.forEach { toolCalls ->
                     val type = toolCalls.jsonObject["type"]?.jsonPrimitive?.contentOrNull
                     if (!type.isNullOrEmpty() && type != "function") error("tool call type not supported: $type")
                     val toolCallId = toolCalls.jsonObject["id"]?.jsonPrimitive?.contentOrNull
@@ -839,55 +779,6 @@ class ChatCompletionsAPI(
                 )
             ),
         )
-    }
-
-    /**
-     * 中转站兼容：修复 Gemini 经 OpenAI 兼容中转时 reasoning_content 吞掉正文的问题。
-     *
-     * 某些中转站（将 Gemini 映射为 OpenAI 协议）在启用 extended thinking 时会把实际回复
-     * 塞进 reasoning_content 字段，导致：
-     * - content 字段以 "Response:" 前缀开头且正文被截断
-     * - 或 content 为空，全部内容都在 reasoning 中
-     *
-     * 修复策略：
-     * 1. 剥离 content 开头的 "Response:" / "response:" 前缀
-     * 2. 当 content 极短而 reasoning 有实质内容时，将 reasoning 提升为正文
-     */
-    private fun fixProxyGeminiContent(message: UIMessage): UIMessage {
-        if (message.role != MessageRole.ASSISTANT) return message
-        val textParts = message.parts.filterIsInstance<UIMessagePart.Text>()
-        val reasoningParts = message.parts.filterIsInstance<UIMessagePart.Reasoning>()
-        if (textParts.isEmpty() || reasoningParts.isEmpty()) return message
-
-        val text = textParts.first().text
-        val reasoning = reasoningParts.joinToString("") { it.reasoning }
-        if (reasoning.isEmpty()) return message
-
-        // 剥离 "Response:" / "response" 前缀（后面须跟空白/冒号/结尾/中日韩字符，避免误伤英文词）
-        val prefix = RESPONSE_PREFIX_REGEX
-        val cleanedText = prefix.replace(text, "").trimStart()
-
-        // 仅当正文剥离前缀后为空（正文不存在）时才提升 reasoning 为正文；
-        // 不能用"reasoning 远长于正文"判断——正常模型长思考 + 短回答会被误伤
-        if (cleanedText.isEmpty()) {
-            val cleanedReasoning = prefix.replace(reasoning, "").trimStart()
-            // 保留其余 Text part（如 "Response:" 单独成 part 时第二部分是真正文，不能丢）
-            val otherTexts = message.parts.filterIsInstance<UIMessagePart.Text>().drop(1)
-            return message.copy(
-                parts = listOf(UIMessagePart.Text((listOf(cleanedReasoning) + otherTexts.map { it.text })
-                    .joinToString(""))) +
-                    message.parts.filter { it !is UIMessagePart.Text && it !is UIMessagePart.Reasoning }
-            )
-        }
-        // 仅需剥离前缀
-        if (cleanedText != text) {
-            return message.copy(
-                parts = message.parts.map { part ->
-                    if (part is UIMessagePart.Text && part.text == text) part.copy(text = cleanedText) else part
-                }
-            )
-        }
-        return message
     }
 
     private fun parseAnnotations(jsonArray: JsonArray): List<UIMessageAnnotation> {
