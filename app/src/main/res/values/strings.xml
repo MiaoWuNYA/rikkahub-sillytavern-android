@@ -69,6 +69,7 @@
   <string name="setting_page_jev_credentials">Credentials</string>
   <string name="setting_page_jev_base_url">API address</string>
   <string name="setting_page_jev_api_key">API key</string>
+  <string name="setting_page_jev_model">Judgment model</string>
   <string name="setting_page_jev_threshold">Confidence threshold</string>
   <string name="setting_page_jev_threshold_title">Minimum confidence</string>
   <string name="setting_page_jev_threshold_desc">Judgments below this confidence are discarded and the original logic takes over. Applying judgment below the threshold is what causes wrong decisions.</string>

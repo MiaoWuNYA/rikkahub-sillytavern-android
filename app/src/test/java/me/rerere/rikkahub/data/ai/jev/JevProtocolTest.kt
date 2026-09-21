@@ -3,6 +3,7 @@ package me.rerere.rikkahub.data.ai.jev
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -77,10 +78,16 @@ class JevProtocolTest {
         assertNull(answer.noul)
     }
 
+    /**
+     * 回归测试：model 是服务端必填字段，漏掉会得到 422 "Field required"。
+     * 之前它靠 data class 默认值兜底，配上 encodeDefaults=false 被静默省略过，
+     * 所以这里必须断言它在编码结果里**确实存在**，而不是"允许不存在"。
+     */
     @Test
-    fun `request body only uses the three allowed top level fields`() {
+    fun `request body always carries state model and questions`() {
         val request = JevRequest(
             state = buildJsonObject { put("text", JsonPrimitive("hi")) },
+            model = JEV_DEFAULT_MODEL,
             questions = mapOf(
                 "q" to JevQuestion(
                     type = JevQuestion.TYPE_NOUL,
@@ -89,19 +96,20 @@ class JevProtocolTest {
             ),
         )
         val encoded = json.encodeToString(request)
-        val keys = Json.parseToJsonElement(encoded)
-            .let { it as kotlinx.serialization.json.JsonObject }.keys
-        // model 与默认值相同时不序列化（encodeDefaults=false），不能断言它一定存在。
-        // 真正要守住的是：不出现 state/model/questions 之外的顶层字段——多一个字段会被服务端拒。
-        assertTrue("意外的顶层字段: $keys", keys.all { it in setOf("state", "model", "questions") })
-        assertTrue("state 必须存在", "state" in keys)
-        assertTrue("questions 必须存在", "questions" in keys)
+        val obj = Json.parseToJsonElement(encoded) as kotlinx.serialization.json.JsonObject
+        assertEquals(
+            "顶层字段只能是这三个，多一个会被服务端拒",
+            setOf("state", "model", "questions"),
+            obj.keys,
+        )
+        assertEquals(JEV_DEFAULT_MODEL, obj.getValue("model").jsonPrimitive.content)
     }
 
     @Test
     fun `question ids are request side only`() {
         val request = JevRequest(
             state = JsonPrimitive("s"),
+            model = JEV_DEFAULT_MODEL,
             questions = mapOf("m0" to JevQuestion(type = JevQuestion.TYPE_NOUL)),
         )
         val encoded = json.encodeToString(request)

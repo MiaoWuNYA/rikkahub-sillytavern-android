@@ -61,7 +61,12 @@ class JevClient(
     private val httpClient: OkHttpClient,
     private val settingsStore: SettingsStore,
 ) {
-    private data class Config(val baseUrl: String, val apiKey: String, val threshold: Double)
+    private data class Config(
+        val baseUrl: String,
+        val apiKey: String,
+        val model: String,
+        val threshold: Double,
+    )
 
     /**
      * 返回 null 表示当前配置不可用（Key 未填或地址非法）。
@@ -73,7 +78,8 @@ class JevClient(
         if (!base.startsWith("http://") && !base.startsWith("https://")) return null
         val key = h.jevApiKey.trim()
         if (key.isEmpty()) return null
-        return Config(base, key, h.jevConfidenceThreshold.toDouble())
+        val model = h.jevModel.trim().ifEmpty { JEV_DEFAULT_MODEL }
+        return Config(base, key, model, h.jevConfidenceThreshold.toDouble())
     }
 
     /** 设置页用来判断要不要显示黄色提示 */
@@ -96,7 +102,7 @@ class JevClient(
         }
 
         val body = JevJson.encodeToString(
-            JevRequest(state = state, questions = questions)
+            JevRequest(state = state, model = config.model, questions = questions)
         )
         val url = "${config.baseUrl}/v1/systemone"
         val request = Request.Builder()

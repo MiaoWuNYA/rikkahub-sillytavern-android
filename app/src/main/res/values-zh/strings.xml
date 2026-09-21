@@ -70,6 +70,7 @@
   <string name="setting_page_jev_credentials">接入凭证</string>
   <string name="setting_page_jev_base_url">API 地址</string>
   <string name="setting_page_jev_api_key">API Key</string>
+  <string name="setting_page_jev_model">判断模型</string>
   <string name="setting_page_jev_threshold">置信度阈值</string>
   <string name="setting_page_jev_threshold_title">最低置信度</string>
   <string name="setting_page_jev_threshold_desc">低于该置信度的判断结果一律弃用，交回原有逻辑。阈值调太低会让不可靠的判断被当真。</string>

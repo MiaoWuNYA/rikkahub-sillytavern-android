@@ -38,6 +38,7 @@ import me.rerere.hugeicons.stroke.Brain
 import me.rerere.hugeicons.stroke.CheckmarkCircle02
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.ai.jev.JEV_DEFAULT_BASE_URL
+import me.rerere.rikkahub.data.ai.jev.JEV_DEFAULT_MODEL
 import me.rerere.rikkahub.data.datastore.HuaDengSettings
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
@@ -63,9 +64,11 @@ fun SettingJevPage(vm: SettingVM = koinViewModel()) {
 
     var baseUrl by remember(huaDeng) { mutableStateOf(huaDeng.jevBaseUrl) }
     var apiKey by remember(huaDeng) { mutableStateOf(huaDeng.jevApiKey) }
+    var model by remember(huaDeng) { mutableStateOf(huaDeng.jevModel) }
     LaunchedEffect(huaDeng) {
         baseUrl = huaDeng.jevBaseUrl
         apiKey = huaDeng.jevApiKey
+        model = huaDeng.jevModel
     }
 
     fun updateHuaDeng(newValue: HuaDengSettings) {
@@ -83,6 +86,13 @@ fun SettingJevPage(vm: SettingVM = koinViewModel()) {
         val normalized = apiKey.trim()
         if (normalized != huaDeng.jevApiKey) {
             updateHuaDeng(huaDeng.copy(jevApiKey = normalized))
+        }
+    }
+
+    fun commitModel() {
+        val normalized = model.trim().ifEmpty { JEV_DEFAULT_MODEL }
+        if (normalized != huaDeng.jevModel) {
+            updateHuaDeng(huaDeng.copy(jevModel = normalized))
         }
     }
 
@@ -212,6 +222,29 @@ fun SettingJevPage(vm: SettingVM = koinViewModel()) {
                                     ConfirmIconButton(
                                         visible = apiKey.trim() != huaDeng.jevApiKey,
                                         onClick = ::commitApiKey,
+                                    )
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_page_jev_model)) },
+                        supportingContent = {
+                            OutlinedTextField(
+                                value = model,
+                                onValueChange = { model = it },
+                                placeholder = { Text(JEV_DEFAULT_MODEL) },
+                                singleLine = true,
+                                shape = MaterialTheme.shapes.small,
+                                colors = TextFieldDefaults.colors(
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent,
+                                ),
+                                trailingIcon = {
+                                    ConfirmIconButton(
+                                        visible = model.trim() != huaDeng.jevModel,
+                                        onClick = ::commitModel,
                                     )
                                 },
                                 modifier = Modifier.fillMaxWidth(),

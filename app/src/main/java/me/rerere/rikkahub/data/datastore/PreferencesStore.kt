@@ -830,6 +830,9 @@ data class HuaDengSettings(
     // 所以这里只能放基础可序列化类型，不要引入自定义 serializer。
     val jevBaseUrl: String = "https://api.typesafe.ai",
     val jevApiKey: String = "",
+    // 判断模型：默认 jev-latest，签发方另有 jev-preview 时可在设置里切换。
+    // 留空按默认处理；请求体里这个字段是必填，绝不能省。
+    val jevModel: String = "jev-latest",
     // 低于该置信度不用 Jev 的判断，回退原有逻辑。noul 没有 confidence，用 |p-0.5|*2 折算
     val jevConfidenceThreshold: Float = 0.7f,
     // 标题模型指向：对话命名改由 Jev 完成，设置里的「标题模型」置灰

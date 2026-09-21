@@ -17,10 +17,15 @@ import kotlinx.serialization.json.JsonElement
 const val JEV_DEFAULT_BASE_URL = "https://api.typesafe.ai"
 const val JEV_DEFAULT_MODEL = "jev-latest"
 
+/**
+ * model 不给默认值：序列化统一用 `encodeDefaults = false`，带默认值的字段会被整段省略，
+ * 而服务端把 model 列为必填——省掉它换来的是 422 "Field required"。
+ * 这里让它在类型层面就必填，杜绝再被漏掉。
+ */
 @Serializable
 data class JevRequest(
     val state: JsonElement,
-    val model: String = JEV_DEFAULT_MODEL,
+    val model: String,
     val questions: Map<String, JevQuestion>,
 )
 
