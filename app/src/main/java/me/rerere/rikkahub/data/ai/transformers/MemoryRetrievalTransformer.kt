@@ -3,6 +3,8 @@ package me.rerere.rikkahub.data.ai.transformers
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.rerere.ai.provider.EmbeddingGenerationParams
@@ -43,16 +45,16 @@ private const val RAG_MEMORY_PROMPT_CHAR_BUDGET = 3_600
 private const val EPISODIC_RECENCY_BOOST = 0.08f
 private const val EPISODIC_RECENCY_DECAY_DAYS = 30.0
 private const val MILLIS_PER_DAY = 86_400_000.0
-/** Jev 一次最多判多少条记忆（再多要分批，代价是延迟线性增长，注入用不着那么宽） */
-private const val JEV_SCREENING_CANDIDATES = 32
+/** Jev 单次请求的问题数上限（照 JevClient 的保守值），候选再多就分批并行判 */
+private const val JEV_SCREENING_BATCH = 32
+/** Jev 筛选最多覆盖多少条候选：全量判会把首 token 延迟拉爆，超出的靠原检索兜底 */
+private const val JEV_SCREENING_MAX_CANDIDATES = 96
 /**
- * 记忆筛选的置信度门槛，独立于设置页的全局阈值并刻意压到 0.5：
- * noul 的等效置信度是 |p-0.5|*2，0.5 等于"相关概率过半就收"。
- * 全局的 0.7 是为 judge 工具设计的——工具给模型的答案要干脆；而记忆注入
- * 宁多勿漏，门槛一高中立记忆（称呼、偏好这类对话里没直接出现的）全被拦掉，
- * 用户看起来就是"筛选不生效"。
+ * 记忆筛选的概率门槛：noul 的 p 本身就是校准过的"相关概率"，0.5 = 过半就收。
+ * 注意不能用等效置信度 |p-0.5|*2 再卡一遍 0.5——两个条件叠加等于实际要求
+ * p >= 0.75，中立记忆（称呼、偏好这类）照样全被拦掉，筛选看起来"不生效"。
  */
-private const val JEV_MEMORY_CONFIDENCE_FLOOR = 0.5
+private const val JEV_MEMORY_PROBABILITY_FLOOR = 0.5
 
 /**
  * 记忆 RAG 检索（移植自 Rikkahub-Revised）：
@@ -127,9 +129,9 @@ class MemoryRetrievalTransformer(
             .filter { (_, score) -> score > 0f }
         val baseMatches = when {
             // Jev 接管：直接用 Jev 判相关性，省掉 embedding 调用。
-            // 任何一条判断缺失（判不出/超时/没配 Key）都整批回退原检索，不能静默少注入。
+            // 空列表（没配置/批次失败/全不相关）都退回原检索兜底，不能静默少注入。
             ctx.settings.huadengSettings.jevTakeoverMemory -> {
-                jevScreening(ctx, records, query) ?: semanticMatches.ifEmpty { lexicalSearch(records, query) }
+                jevScreening(ctx, records, query).ifEmpty { semanticMatches.ifEmpty { lexicalSearch(records, query) } }
             }
             else -> semanticMatches.ifEmpty { lexicalSearch(records, query) }
         }
@@ -216,45 +218,56 @@ class MemoryRetrievalTransformer(
     /**
      * Jev 相关性筛选，替代 embedding 相似度召回。
      *
-     * 返回 null 表示"这次不要用 Jev 的结果"——没配置、整批失败、有任意一条没答上来。
+     * 返回 null 表示"这次不要用 Jev 的结果"——没配置、整批失败、有任意一批没答上来。
      * 调用方据此回退到原检索路径。这么做是刻意的：Jev 是隐形决策层，
      * 宁可整批退回老逻辑，也不能因为漏答就静默少注入记忆。
      *
-     * 通过筛选的记忆按创建时间排序（Jev 只判相关与否，不给相关性分数）。
-     * 后续还会过一遍 applyEpisodicRecencyBoost 做时间近因加权。
+     * 候选按创建时间倒序取最近 N 条（DAO 查询本身无序，不排序会变成"只看最旧的
+     * 几十条"）；超过上限的剩余记录靠调用方的原检索兜底。零通过时也返回空列表
+     * 而不是 null：Jev 判全部不相关是合法结论，交回原检索是为了给宽泛查询兜底，
+     * 两种情况调用方都会走 `ifEmpty { ... }`，行为一致。
      */
     private suspend fun jevScreening(
         ctx: TransformerContext,
         records: List<MemorySearchRecord>,
         query: String,
-    ): List<Pair<MemorySearchRecord, Float>>? = withContext(Dispatchers.IO) {
-        val candidates = records.take(JEV_SCREENING_CANDIDATES)
-        if (candidates.isEmpty()) return@withContext null
+    ): List<Pair<MemorySearchRecord, Float>> = withContext(Dispatchers.IO) {
+        val candidates = records
+            .sortedByDescending { it.memory.createdAt }
+            .take(JEV_SCREENING_MAX_CANDIDATES)
+        if (candidates.isEmpty()) return@withContext emptyList()
 
-        val questions = JevPrompts.memoryRelevanceBatch(candidates.map { it.memory.content })
-        val verdicts = runCatching {
-            jevClient.judge(JevPrompts.stateOf(query), questions)
-        }.getOrElse {
-            Log.w(TAG, "Jev 记忆筛选调用失败，回退原检索", it)
-            return@withContext null
-        }
-        // 有任意一条没答上来就整批退回，避免"部分判过"造成注入内容莫名变少
-        if (verdicts.size != questions.size) {
-            Log.w(TAG, "Jev 记忆筛选漏答 ${questions.size - verdicts.size} 条，回退原检索")
-            return@withContext null
+        // 按 JevClient 的单请求问题数上限分批，批次间并行判，延迟不随批数线性涨
+        val batches = candidates.chunked(JEV_SCREENING_BATCH)
+        val verdicts = batches.map { batch ->
+            async {
+                runCatching {
+                    jevClient.judge(JevPrompts.stateOf(query), JevPrompts.memoryRelevanceBatch(batch.map { it.memory.content }))
+                }
+            }
+        }.awaitAll()
+        // 有任意一批失败就整批退回，避免"部分判过"造成注入内容莫名变少
+        if (verdicts.any { it.isFailure }) {
+            Log.w(TAG, "Jev 记忆筛选有批次失败，回退原检索")
+            return@withContext emptyList()
         }
 
-        val threshold = jevMemoryThreshold()
-        candidates.mapIndexedNotNull { index, record ->
-            val verdict = verdicts["m$index"] ?: return@mapIndexedNotNull null
-            val probability = verdict.noul ?: return@mapIndexedNotNull null
-            val confidence = kotlin.math.abs(probability - 0.5) * 2
-            if (probability <= 0.5 || confidence < threshold) return@mapIndexedNotNull null
-            record to 1f
-        }.sortedByDescending { (record, _) -> record.memory.createdAt }
+        val floor = JEV_MEMORY_PROBABILITY_FLOOR
+        batches.flatMapIndexed { batchIdx, batch ->
+            val answered = verdicts[batchIdx].getOrThrow()
+            if (answered.size < batch.size) {
+                Log.w(TAG, "Jev 记忆筛选批次 #$batchIdx 漏答 ${batch.size - answered.size} 条")
+            }
+            batch.mapIndexedNotNull { idx, record ->
+                val probability = answered["m$idx"]?.noul ?: return@mapIndexedNotNull null
+                if (probability < floor) return@mapIndexedNotNull null
+                // Jev 不给相关性分数，用概率本身当排序依据（比"全 1f 再按时间排"更贴意图）
+                record to probability.toFloat()
+            }
+        }.sortedByDescending { (record, probability) ->
+            probability + applyEpisodicRecencyBoost(record.memory, 0f, System.currentTimeMillis())
+        }.map { (record, _) -> record to 1f }
     }
-
-    private fun jevMemoryThreshold(): Double = JEV_MEMORY_CONFIDENCE_FLOOR
 
     private fun maybeScheduleReindex(ctx: TransformerContext, hasRecords: Boolean) {
         if (!hasRecords) return
