@@ -21,3 +21,7 @@ stelli/
 *验证报告*
 *_verification_report.*
 verification_report.*
+
+# 本地插件包等杂物，不推远程
+dsh-purge.zip
+nihe.zip
