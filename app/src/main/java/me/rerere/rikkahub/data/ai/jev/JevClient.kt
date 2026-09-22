@@ -174,35 +174,6 @@ class JevClient(
         return kotlin.math.abs(p - 0.5) * 2
     }
 
-    /**
-     * 起标题。
-     *
-     * Jev 不生成文本，所以不能让它"写"标题——这里由本地按对话内容裁出一组候选，
-     * 让它选一个。候选质量决定结果质量，选不出来时调用方回退到标题模型。
-     */
-    suspend fun judgeTitle(candidates: List<String>, conversationText: String): JevResult<String> {
-        val options = candidates.map { it.trim() }.filter { it.isNotBlank() }.distinct()
-        if (options.isEmpty()) return JevResult.Failed("没有可用候选标题")
-        val result = judgeOne(
-            state = JevPrompts.stateOf(conversationText),
-            id = "title",
-            question = JevPrompts.titleChoice(options),
-        )
-        return when (result) {
-            is JevResult.Ok -> {
-                val picked = result.value.choice
-                when {
-                    picked == null -> JevResult.Failed("响应缺少 choice")
-                    picked == TITLE_OTHER_OPTION -> JevResult.Failed("Jev 认为候选都不合适")
-                    picked !in options -> JevResult.Failed("Jev 返回了候选之外的选项: $picked")
-                    else -> JevResult.Ok(picked)
-                }
-            }
-            is JevResult.Uncertain -> result
-            is JevResult.Failed -> result
-        }
-    }
-
     private fun executeWithRetry(request: Request): okhttp3.Response {
         var attempt = 0
         while (true) {
@@ -253,8 +224,6 @@ class JevClient(
          * 这里设一个保守上限防止一次请求铺得太开，超了要分批。
          */
         const val JEV_MAX_QUESTIONS = 32
-        /** 标题选择里代表"都不合适"的选项名，与 JevPrompts.titleChoice 保持一致 */
-        const val TITLE_OTHER_OPTION = "other"
         private const val JEV_MAX_RETRIES = 2
         private const val JEV_BACKOFF_CAP_MS = 5_000L
     }

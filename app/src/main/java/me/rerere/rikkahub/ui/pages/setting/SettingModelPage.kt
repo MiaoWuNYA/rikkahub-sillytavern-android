@@ -130,15 +130,9 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
             )
         }
         item {
-            val jevTakeoverTitle = settings.huadengSettings.jevTakeoverTitle
             ModelSettingItem(
                 title = stringResource(R.string.setting_model_page_title_model),
-                // Jev 接管时把描述换成接管说明，避免"开关开了但旧入口还在生效"的观感
-                description = if (jevTakeoverTitle) {
-                    stringResource(R.string.setting_model_page_title_model_jev_takeover)
-                } else {
-                    stringResource(R.string.setting_model_page_title_model_desc)
-                },
+                description = stringResource(R.string.setting_model_page_title_model_desc),
                 modelId = settings.titleModelId,
                 providers = settings.providers,
                 onSelect = { vm.updateSettings(settings.copy(titleModelId = it.id)) },
@@ -146,7 +140,6 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
                 onUpdateReasoningLevel = {
                     vm.updateSettings(settings.copy(titleReasoningLevel = it))
                 },
-                enabled = !jevTakeoverTitle,
             )
         }
         item {

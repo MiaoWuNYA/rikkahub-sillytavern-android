@@ -834,9 +834,8 @@ data class HuaDengSettings(
     // 留空按默认处理；请求体里这个字段是必填，绝不能省。
     val jevModel: String = "jev-latest",
     // 低于该置信度不用 Jev 的判断，回退原有逻辑。noul 没有 confidence，用 |p-0.5|*2 折算
+    // 注意：记忆筛选不使用这个阈值，它有自己的更低门槛（见 MemoryRetrievalTransformer）
     val jevConfidenceThreshold: Float = 0.7f,
-    // 标题模型指向：对话命名改由 Jev 完成，设置里的「标题模型」置灰
-    val jevTakeoverTitle: Boolean = false,
     // 自动记忆筛选：记忆检索改由 Jev 判相关性，替代 embedding 相似度召回
     val jevTakeoverMemory: Boolean = false,
     // 大模型工具调用：把 Jev 注册成 judge 工具挂给主力模型

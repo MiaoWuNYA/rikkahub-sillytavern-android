@@ -27,16 +27,18 @@ import me.rerere.rikkahub.data.ai.jev.JevResult
 fun createJudgeTool(jevClient: JevClient): Tool = Tool(
     name = "judge",
     description = "" +
-        "Ask a fast judgment model a yes/no, multiple-choice, or rating question about a piece of text. " +
-        "It only judges — it never writes content. Returns the answer with a confidence score.\n" +
-        "Use for quick checks mid-generation (off-topic? which option fits? rate the current mood). " +
-        "Do not use it to summarize or generate text.",
+        "Jev: ask a dedicated fast judgment model (TypeSafe System One) a yes/no, multiple-choice, or rating " +
+        "question about a piece of text. It only judges — it never writes content. Returns the answer with a " +
+        "calibrated confidence score, end-to-end in ~100ms and free.\n" +
+        "PREFER calling judge over reasoning out the answer yourself when the question is binary, a choice, or a rating — " +
+        "especially when you feel uncertain. Use it for quick checks mid-generation (off-topic? which option fits? " +
+        "rate the current mood). Do not use it to summarize or generate text.",
     // 工具路由说明：tools 数组里光有 schema 不够，很多模型（尤其走中转的小模型）只看系统
     // 提示里的 <tool_selection> 清单决定用什么工具。不写这行，模型会"不知道"judge 存在。
     systemPrompt = { _, _ ->
-        "Quick checks → judge (fast judgment model: yes/no, pick an option, or rate against levels; " +
-            "it answers, it never writes). Use it for quick yes/no, choice, or rating questions " +
-            "instead of reasoning them out yourself."
+        "Quick checks → judge (the Jev judgment model: yes/no, pick an option, or rate against levels). " +
+            "When you are unsure about a yes/no, choice, or rating question, call judge instead of guessing — " +
+            "it is fast, free, and calibrated. It answers questions; it never writes content."
     },
     parameters = {
         InputSchema.Obj(

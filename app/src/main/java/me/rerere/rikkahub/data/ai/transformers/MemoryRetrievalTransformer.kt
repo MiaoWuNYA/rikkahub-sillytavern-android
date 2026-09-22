@@ -45,6 +45,14 @@ private const val EPISODIC_RECENCY_DECAY_DAYS = 30.0
 private const val MILLIS_PER_DAY = 86_400_000.0
 /** Jev 一次最多判多少条记忆（再多要分批，代价是延迟线性增长，注入用不着那么宽） */
 private const val JEV_SCREENING_CANDIDATES = 32
+/**
+ * 记忆筛选的置信度门槛，独立于设置页的全局阈值并刻意压到 0.5：
+ * noul 的等效置信度是 |p-0.5|*2，0.5 等于"相关概率过半就收"。
+ * 全局的 0.7 是为 judge 工具设计的——工具给模型的答案要干脆；而记忆注入
+ * 宁多勿漏，门槛一高中立记忆（称呼、偏好这类对话里没直接出现的）全被拦掉，
+ * 用户看起来就是"筛选不生效"。
+ */
+private const val JEV_MEMORY_CONFIDENCE_FLOOR = 0.5
 
 /**
  * 记忆 RAG 检索（移植自 Rikkahub-Revised）：
@@ -236,7 +244,7 @@ class MemoryRetrievalTransformer(
             return@withContext null
         }
 
-        val threshold = ctx.settings.huadengSettings.jevConfidenceThreshold.toDouble()
+        val threshold = jevMemoryThreshold()
         candidates.mapIndexedNotNull { index, record ->
             val verdict = verdicts["m$index"] ?: return@mapIndexedNotNull null
             val probability = verdict.noul ?: return@mapIndexedNotNull null
@@ -245,6 +253,8 @@ class MemoryRetrievalTransformer(
             record to 1f
         }.sortedByDescending { (record, _) -> record.memory.createdAt }
     }
+
+    private fun jevMemoryThreshold(): Double = JEV_MEMORY_CONFIDENCE_FLOOR
 
     private fun maybeScheduleReindex(ctx: TransformerContext, hasRecords: Boolean) {
         if (!hasRecords) return

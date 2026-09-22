@@ -79,8 +79,6 @@
   <string name="setting_page_jev_takeover">接管开关</string>
   <string name="setting_page_jev_memory">自动记忆筛选</string>
   <string name="setting_page_jev_memory_desc">记忆检索改由 Jev 判断相关性，不再走 embedding 相似度。任何一条判断缺失就整批回退原逻辑。</string>
-  <string name="setting_page_jev_title">标题模型指向</string>
-  <string name="setting_page_jev_title_desc">对话命名改由 Jev 完成，设置里的「标题模型」那一项会置灰不可改。</string>
   <string name="setting_page_jev_tool">大模型工具调用</string>
   <string name="setting_page_jev_tool_desc">把 Jev 注册成 judge 工具挂给主力模型，让它在生成过程中也能发起判断。</string>
   <string name="setting_page_memory">记忆</string>
@@ -952,7 +950,6 @@
   <string name="setting_model_page_title">模型设置</string>
   <string name="setting_model_page_title_model">标题总结模型</string>
   <string name="setting_model_page_title_model_desc">用于总结对话标题的模型。未设置时使用快速模型</string>
-  <string name="setting_model_page_title_model_jev_takeover">当前由 Jev 接管，可在 华灯设置 → Jev 智能决策 中调整</string>
   <string name="setting_model_page_translate_model">翻译模型</string>
   <string name="setting_model_page_translate_model_desc">用于翻译功能的模型</string>
   <string name="setting_model_page_translate_prompt_vars">变量: 原始文本: {source_text}, 目标语言: {target_lang}</string>

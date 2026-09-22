@@ -100,7 +100,7 @@ fun SettingJevPage(vm: SettingVM = koinViewModel()) {
     }
 
     val configured = huaDeng.jevApiKey.isNotBlank() && huaDeng.jevBaseUrl.isValidHttpUrl()
-    val anyTakeover = huaDeng.jevTakeoverTitle || huaDeng.jevTakeoverMemory || huaDeng.jevJudgeTool
+    val anyTakeover = huaDeng.jevTakeoverMemory || huaDeng.jevJudgeTool
     // 第三方中转/自建代理要照着这个填，所以显示拼好的完整端点而不是只给个域名
     val endpoint = remember(huaDeng.jevBaseUrl) { huaDeng.jevBaseUrl.resolveSystemOneEndpoint() }
     val clipboard = LocalClipboardManager.current
@@ -322,18 +322,6 @@ fun SettingJevPage(vm: SettingVM = koinViewModel()) {
                                 checked = huaDeng.jevTakeoverMemory,
                                 onCheckedChange = { enabled ->
                                     updateHuaDeng(huaDeng.copy(jevTakeoverMemory = enabled))
-                                },
-                            )
-                        },
-                    )
-                    item(
-                        headlineContent = { Text(stringResource(R.string.setting_page_jev_title)) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_jev_title_desc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = huaDeng.jevTakeoverTitle,
-                                onCheckedChange = { enabled ->
-                                    updateHuaDeng(huaDeng.copy(jevTakeoverTitle = enabled))
                                 },
                             )
                         },

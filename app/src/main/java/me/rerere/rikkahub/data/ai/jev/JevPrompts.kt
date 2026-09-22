@@ -15,36 +15,20 @@ import kotlinx.serialization.json.put
 object JevPrompts {
 
     /**
-     * 标题生成用 choice：让 Jev 从若干候选里挑一个，而不是让它写标题。
-     *
-     * 这是刻意的设计——Jev 不生成文本，让它"写"标题只会得到垃圾。
-     * 所以先由本地按对话内容裁出几个候选（取消息首句、关键词），再让 Jev 选。
-     */
-    fun titleChoice(candidates: List<String>): JevQuestion = JevQuestion(
-        type = JevQuestion.TYPE_CHOICE,
-        instructions = JsonPrimitive(
-            """
-            从下面这些候选标题里，选出最能概括这段对话主题的一个。
-            候选是用机械规则从对话里裁出来的，可能包含标点残留或半句话，忽略这些瑕疵，
-            只看哪个最贴近对话真正在聊什么。若都不合适，选 "other"。
-            """.trimIndent()
-        ),
-        criteria = buildJsonObject {
-            candidates.forEach { put(it, JsonPrimitive("候选标题：$it")) }
-            put("other", JsonPrimitive("以上候选都不能概括对话主题"))
-        },
-    )
-
-    /**
      * 记忆筛选用 noul：判断某条记忆是否与当前对话相关。
      * 每条记忆单独一个 question，id 用 "m0"、"m1"…… 便于批量回填。
+     *
+     * 阈值刻意放低（0.5）：Jev 是概率校准的，0.5 就是"相关概率过半"。
+     * 用常规的 0.7 会把中立但有用的记忆（比如"用户怎么称呼我"这类当前对话
+     * 没直接提到、但随时可能用上的身份记忆）全拦在门外，筛选显得"不生效"。
      */
     fun memoryRelevance(memoryContent: String): JevQuestion = JevQuestion(
         type = JevQuestion.TYPE_NOUL,
         instructions = JsonPrimitive(
             """
             这段对话与下面这条记忆是否相关？相关指的是：这条记忆对理解当前对话、
-            或对当前该说什么有帮助。只是同一话题领域但没有实际帮助的，算不相关。
+            或对当前该说什么有帮助。身份类记忆（称呼、偏好、习惯）即使当前对话
+            没直接提到也算相关。只是同一话题领域但没有实际帮助的，才算不相关。
             记忆内容：$memoryContent
             """.trimIndent()
         ),

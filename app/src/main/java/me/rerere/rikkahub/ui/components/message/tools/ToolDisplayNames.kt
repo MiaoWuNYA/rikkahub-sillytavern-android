@@ -26,6 +26,8 @@ private val exactNames = mapOf(
     "execute_python" to "灵枢演算",
     "eval_javascript" to "锦囊码算",
     "execute_command" to "乾纲令行",
+    // ── Jev 判断 ──
+    "judge" to "Jev 明断",
     // ── 技能 / 系统 ──
     "use_skill" to "秘技启封",
     "present_file" to "献卷呈览",

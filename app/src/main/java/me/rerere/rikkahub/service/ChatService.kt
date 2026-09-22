@@ -76,7 +76,6 @@ import me.rerere.rikkahub.data.ai.GenerationLoop
 import me.rerere.rikkahub.data.ai.TranslationHandler
 import me.rerere.rikkahub.data.ai.mcp.McpManager
 import me.rerere.rikkahub.data.ai.jev.JevClient
-import me.rerere.rikkahub.data.ai.jev.JevResult
 import me.rerere.rikkahub.data.ai.tools.createJudgeTool
 import me.rerere.rikkahub.data.ai.prompts.TITLE_MAX_CHARS
 import me.rerere.rikkahub.plugin.provider.PluginToolProvider
@@ -1823,54 +1822,6 @@ class ChatService(
 
     // ---- 生成标题 ----
 
-    /**
-     * 用 Jev 选标题：Jev 不生成文本，所以先在本地裁候选，再让它挑。
-     * 返回 null 表示没选出来（未配置、失败、置信度不足、候选都不合适），调用方回退标题模型。
-     */
-    private suspend fun generateTitleWithJev(conversation: Conversation): String? {
-        return runCatching {
-            val turns = conversation.currentMessages.takeLast(4)
-            val text = turns.joinToString("\n\n") { it.summaryAsText() }
-            if (text.isBlank()) return@runCatching null
-
-            val candidates = buildList {
-                // 候选必须取消息正文（toText），不能用 summaryAsText——那个带 "[USER]: " 角色
-                // 前缀，截 14 字后候选就成了"半句对话"，Jev 只能选 other 回退标题模型
-                turns.forEach { msg -> add(msg.toText().toTitleCandidate()) }
-                conversation.title.trim().takeIf { it.isNotBlank() }?.let { add(it) }
-            }.filter { it.isNotBlank() }.distinct()
-
-            when (val result = jevClient.judgeTitle(candidates, text)) {
-                is JevResult.Ok -> result.value.take(TITLE_MAX_CHARS).trim().ifBlank { null }
-                is JevResult.Uncertain -> {
-                    Logging.log(TAG, "Jev 标题置信度不足，回退标题模型")
-                    null
-                }
-                is JevResult.Failed -> {
-                    Logging.log(TAG, "Jev 标题失败，回退标题模型: ${result.reason}")
-                    null
-                }
-            }
-        }.getOrElse {
-            Logging.log(TAG, "Jev 标题异常，回退标题模型: $it")
-            null
-        }
-    }
-
-    /** 把一段消息压成一个候选标题：去角色前缀残留、取首句、去掉换行与多余空白 */
-    private fun String.toTitleCandidate(): String = lineSequence()
-        .firstOrNull { it.isNotBlank() }
-        .orEmpty()
-        .trim()
-        .replace(Regex("^\\[[A-Z_]+]:\\s*"), "")  // summaryAsText 的 "[USER]: " 残留
-        .trimStart('#', '-', '*', '>', '「', '《', '"', '\'', '“')
-        .substringBefore('。')
-        .substringBefore('！')
-        .substringBefore('？')
-        .substringBefore('.')
-        .take(TITLE_MAX_CHARS)
-        .trim()
-
     suspend fun generateTitle(
         conversationId: Uuid,
         conversation: Conversation,
@@ -1885,18 +1836,6 @@ class ChatService(
 
         runCatching {
             val settings = settingsStore.settingsFlow.first()
-
-            // Jev 接管标题：只让它"选"，不让它"写"。判不出来 / 未配置 / 失败一律往下走原逻辑，
-            // 所以这里不 return，也不报错。
-            if (settings.huadengSettings.jevTakeoverTitle) {
-                val title = generateTitleWithJev(conversation)
-                if (title != null) {
-                    conversationRepo.getConversationById(conversationId)?.let {
-                        saveConversation(conversationId, it.copy(title = title))
-                    }
-                    return@runCatching
-                }
-            }
 
             // 标题模型未设置时跟随快速模型
             val model = settings.findModelById(settings.titleModelId)
