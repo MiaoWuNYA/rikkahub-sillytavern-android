@@ -104,6 +104,16 @@ class MemoryRetrievalTransformer(
             }
         if (records.isEmpty()) return@withContext messages
 
+        // Jev 接管时会话级复用：整个会话只筛一次，后续每条消息直接复用同一段注入文本。
+        // 相关性筛选每轮全量判 96 条是纯烧 token——记忆条目在一场对话里几乎不变，
+        // 判一遍的结论持续有效。记忆条数变了才重筛（增删记忆后能感知）；只改内容不改
+        // 条数的极端情况感知不到，可在记忆页增删一条触发。
+        if (ctx.settings.huadengSettings.jevTakeoverMemory) {
+            jevScreeningCache[turnKey]?.takeIf { it.first == records.size }?.let { (_, prompt) ->
+                return@withContext insertAfterLastUserMessage(messages, prompt)
+            }
+        }
+
         // 首轮启动记忆：还没有用户消息得到过回复、没有相关性检索可用，自动注入最近的记忆，
         // 让模型开局就读懂用户；后续轮次再按当前消息的相关性检索。
         // 判定按用户消息数（<=1）：角色卡开场白是 ASSISTANT 消息，若按"无 ASSISTANT"
@@ -150,6 +160,11 @@ class MemoryRetrievalTransformer(
             maxChars = RAG_MEMORY_PROMPT_CHAR_BUDGET,
         )
         if (contextPrompt.isBlank()) return@withContext messages
+        // Jev 接管时会话级缓存注入文本（条数作失效指纹），后续轮次零筛选直接复用
+        if (ctx.settings.huadengSettings.jevTakeoverMemory) {
+            if (jevScreeningCache.size >= FROZEN_TURN_CAP) jevScreeningCache.clear()
+            jevScreeningCache[turnKey] = records.size to contextPrompt
+        }
         // 提示词缓存：检索结果每轮随查询变化，必须注入上下文尾部（紧贴最后一条 USER 消息
         // 之后），只失效尾部前缀。旧实现改写第 0 条 system 消息（前缀最顶部），缓存率直接归零。
         storeFrozenAndInsert(turnKey, lastUserMsgId, messages, contextPrompt)
@@ -289,6 +304,13 @@ class MemoryRetrievalTransformer(
     /** 按用户轮冻结的检索结果：key = assistantId:conversationId，value = (lastUserMsgId, 注入文本) */
     private val frozenTurnPrompt =
         java.util.concurrent.ConcurrentHashMap<String, Pair<String, String>>()
+
+    /**
+     * Jev 筛选结果的会话级缓存：key = assistantId:conversationId，
+     * value = (记忆条数失效指纹, 注入文本)。条数变了视为记忆集变化，重筛。
+     */
+    private val jevScreeningCache =
+        java.util.concurrent.ConcurrentHashMap<String, Pair<Int, String>>()
     private val reindexScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
 
     private suspend fun getOrEmbedQuery(
