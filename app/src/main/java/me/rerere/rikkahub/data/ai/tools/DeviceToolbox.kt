@@ -135,13 +135,33 @@ fun createDeviceToolboxTool(context: Context): Tool {
     )
     val innerToolsByName = innerTools.associateBy { it.name }
 
+    // 懒发现省的是工具 schema 的 token，但如果模型根本不知道有哪些能力，它就永远不会
+    // 调 action=list 去发现——"不知道所以不调用"。所以这里把全部工具名 + 一句话能力
+    // 写进系统提示路由区（动态从 innerTools 生成，与实际目录永不漂移），参数 schema
+    // 仍然走 action=list 按需拉取。
+    val catalogLine = innerTools.joinToString("; ") { tool ->
+        val firstSentence = tool.description.substringBefore(". ")
+        "${tool.name} ($firstSentence)"
+    }
+
     return Tool(
         name = "device_toolbox",
-        description = "Device toolbox: control and inspect the phone (torch, vibrate, volume, brightness, " +
-            "battery, storage, WiFi, sensors, SMS, contacts, call log, location, alarms, music, notifications, " +
-            "share, wallpaper, app launch, downloads and more). " +
-            "Lazy discovery: first call with action='list' to get the full catalog of built-in device tools " +
-            "with their parameter schemas and permission status, then call with action='run' + tool + args to execute one.",
+        description = "Device toolbox: control and inspect the phone — torch, vibrate, volume, brightness, " +
+            "battery, storage, WiFi, sensors, SMS, contacts, call log, location, alarms, timers, music, " +
+            "notifications, share, wallpaper, app launch, URL opening, media scanning, file download/open. " +
+            "When the user asks anything involving these device capabilities, call this tool instead of saying " +
+            "you cannot. Lazy discovery: call with action='list' to get full parameter schemas and permission " +
+            "status, then action='run' + tool + args to execute.",
+        // 工具路由说明：把全部子工具名直接写进系统提示，模型不需要先 list 就知道
+        // "原来我能开手电筒 / 查电量 / 发通知"。这行进 <tool_selection> 附近的路由区，
+        // 弱模型主要靠它决定用什么工具。
+        systemPrompt = { _, _ ->
+            "Phone control → device_toolbox (one meta-tool covering the whole device). " +
+                "Built-in tools: $catalogLine. " +
+                "For any user request touching these (turn on flashlight, set an alarm, check battery, " +
+                "find my location, read SMS, open an app, post a notification...), call device_toolbox " +
+                "(action='list' first if unsure of the exact parameters) instead of saying you can't."
+        },
         needsApproval = { false },
         parameters = {
             InputSchema.Obj(
