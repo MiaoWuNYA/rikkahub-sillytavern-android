@@ -25,3 +25,14 @@ verification_report.*
 # 本地插件包等杂物，不推远程
 dsh-purge.zip
 nihe.zip
+
+# AI agent 使用文档/本地配置，不推远程
+CLAUDE.md
+AGENTS.md
+.claude/
+.agents/
+.hermes/
+.cursor/
+.windsurf/
+.cursorrules
+GEMINI.md
