@@ -1372,7 +1372,7 @@
   <string name="workspace_detail_compatibility_mode">相容模式</string>
   <string name="workspace_detail_compatibility_mode_desc">如果終端機無法啟動，請嘗試啟用此選項。這可能會降低效能。適用於新的終端機分頁和後續指令。</string>
   <string name="workspace_detail_settings_save_failed">儲存設定失敗</string>
-  <string name="about_page_custom_build">華燈定製版 %1$s / %2$d</string>
+  <string name="about_page_custom_build">華燈定製版 %1$s / %2$s</string>
   <string name="asr_step_hotwords_placeholder">熱詞1, 熱詞2, 熱詞3</string>
   <string name="assistant_importer_import_success">角色卡匯入成功</string>
   <string name="assistant_importer_merge_greetings">多個開場白合併為同一對話的多條訊息</string>

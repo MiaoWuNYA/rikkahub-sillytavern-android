@@ -1374,7 +1374,7 @@ mDNSアドレス: .localホスト名を使用し、IPを知らなくても同じ
   <string name="workspace_detail_compatibility_mode">互換モード</string>
   <string name="workspace_detail_compatibility_mode_desc">ターミナルが起動しない場合、これを有効にしてみてください。パフォーマンスが低下する可能性があります。新しいターミナルタブとその後のコマンドに適用されます。</string>
   <string name="workspace_detail_settings_save_failed">設定の保存に失敗しました</string>
-  <string name="about_page_custom_build">花灯カスタムビルド %1$s / %2$d</string>
+  <string name="about_page_custom_build">花灯カスタムビルド %1$s / %2$s</string>
   <string name="asr_step_hotwords_placeholder">hotword1, hotword2, hotword3</string>
   <string name="assistant_importer_import_success">キャラクターカードのインポートに成功しました</string>
   <string name="assistant_importer_merge_greetings">複数の挨拶を1つのチャット内で連続メッセージとしてマージ</string>

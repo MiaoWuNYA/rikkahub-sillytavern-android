@@ -2448,7 +2448,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="weixin_bot_notification_disconnected_title">微信 Bot 已断开</string>
   <string name="weixin_bot_notification_running_text">正在监听微信消息</string>
   <string name="weixin_bot_notification_running_title">微信 Bot 运行中</string>
-  <string name="about_page_custom_build">华灯定制版 %1$s / %2$d</string>
+  <string name="about_page_custom_build">华灯定制版 %1$s / %2$s</string>
   <string name="asr_step_hotwords_placeholder">热词1, 热词2, 热词3</string>
   <string name="donate_page_afdian_title">爱发电</string>
   <string name="life_calendar_all_day">全天</string>

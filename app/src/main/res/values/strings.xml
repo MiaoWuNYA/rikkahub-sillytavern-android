@@ -2446,7 +2446,7 @@
   <string name="weixin_bot_notification_disconnected_title">WeChat Bot disconnected</string>
   <string name="weixin_bot_notification_running_text">Listening for WeChat messages</string>
   <string name="weixin_bot_notification_running_title">WeChat Bot running</string>
-  <string name="about_page_custom_build">Huadeng Custom Build %1$s / %2$d</string>
+  <string name="about_page_custom_build">Huadeng Custom Build %1$s / %2$s</string>
   <string name="asr_step_hotwords_placeholder">hotword1, hotword2, hotword3</string>
   <string name="donate_page_afdian_title">Afdian</string>
   <string name="life_calendar_all_day">All day</string>
