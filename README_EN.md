@@ -568,12 +568,7 @@ The configuration page for the TypeSafe System One judge model: API base URL / k
 
 ## 🤝 Contributions welcome
 
-If you are — or plan to be — **maintaining your own fork** (whether forked from upstream rikkahub or from this repo), let's collaborate:
-
-- **Share merge experience**: tracking upstream, resolving conflicts, staying independent yet current — every fork maintainer shares this struggle. [DIVERGENCE.md](DIVERGENCE.md) is my conflict-handling handbook for upstream merges; I'm happy to trade notes on yours
-- **Build signature features together**: ideas around tavern compatibility, prompt prefix caching, semantic memory, Jev decisioning, or the plugin system are welcome as Issues or PRs — or fork and cross-port freely
-- **Cross-fork interop**: feature porting and semantics alignment across the same-origin forks (orangechat, Tumin, rikkahub-agent, Rikkahub-Revised, …) — reach out anytime
-- **Plugin ecosystem**: writing QuickJS plugins (skills, tools, data cards)? Come exchange plugin and sandbox know-how
+Contributions are always welcome! Bug reports, suggestions, and code are all appreciated:
 
 - Bug reports / suggestions: [Issues](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/issues)
 - Code: just Fork + PR — no permission needed

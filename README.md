@@ -574,12 +574,7 @@ TypeSafe System One 判断模型的接入配置页：API 地址 / Key / 模型�
 
 ## 🤝 欢迎协作
 
-如果你正在或打算**复刻 / 二创自己的分支**（无论是从上游 rikkahub 还是本仓库 fork），欢迎与我协作：
-
-- **交流合并经验**：追踪上游、解决冲突、保持分支独立又不过时，是每个分支维护者的共同难题。我在 [DIVERGENCE.md](DIVERGENCE.md) 里整理了合并上游的冲突处理手册，也乐于互相分享各自的实践
-- **共建特色功能**：酒馆兼容、提示词前缀缓存、语义记忆、Jev 智能决策、插件系统等方向的改进想法，欢迎提 Issue 或 PR，也可以直接 fork 后互相移植
-- **跨分支互通**：各同源分支（orangechat、Tumin、rikkahub-agent、Rikkahub-Revised 等）之间的功能移植与兼容性讨论，都欢迎来找我对齐语义
-- **插件生态**：如果你在写 QuickJS 插件（技能、工具、数据卡片），欢迎交换插件与沙箱经验
+欢迎大家与我协作！无论是提 Bug、提建议还是贡献代码，都非常欢迎：
 
 - 提 Bug / 建议：[Issues](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/issues)
 - 提代码：直接 Fork + PR，无需事先申请
