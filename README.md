@@ -25,11 +25,6 @@
 
 ---
 
-## 📸 界面一览
-
-<details open>
-<summary><b>点击查看截图（8 张）</b></summary>
-
 ### 酒馆兼容
 
 | 角色卡全兼容（V3 卡 + 62 条内嵌世界书） | 宏引擎（60+ 官方宏） |
@@ -51,8 +46,6 @@
 | 插件系统 |
 |---|
 | ![插件](docs/screenshots/plugins.jpg) |
-
-</details>
 
 ---
 

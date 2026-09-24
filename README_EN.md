@@ -24,11 +24,6 @@
 
 ---
 
-## 📸 Screenshots
-
-<details open>
-<summary><b>Click to view (8 screenshots, Chinese UI)</b></summary>
-
 ### Tavern compatibility
 
 | Character cards (V3 card + 62-entry embedded lorebook) | Macro engine (60+ official macros) |
@@ -50,8 +45,6 @@
 | Plugin system |
 |---|
 | ![Plugins](docs/screenshots/plugins.jpg) |
-
-</details>
 
 ---
 
