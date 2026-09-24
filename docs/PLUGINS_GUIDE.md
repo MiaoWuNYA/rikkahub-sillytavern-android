@@ -1,5 +1,7 @@
 # RikkaHub Plus 插件开发指南
 
+> 英文版：[PLUGINS_GUIDE_EN.md](PLUGINS_GUIDE_EN.md)
+
 > 本指南源自 orangechat/Tumin 的插件体系（AGPL-3.0），按 RikkaHub Plus 的实现做了裁剪：
 > 不支持声明式 UI 页（ui）、WebView 自定义页（customPage/customPageWebView）、事件钩子（hooks）与提示词模板注入（promptTemplate）。
 > 工具型插件（tools + config）完整可用。
