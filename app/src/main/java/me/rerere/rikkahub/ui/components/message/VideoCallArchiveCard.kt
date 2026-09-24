@@ -22,8 +22,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.pages.voice.VideoCallArchiveEntry
 import me.rerere.rikkahub.ui.pages.voice.VideoCallArchiveStore
 import kotlin.math.max
@@ -43,9 +45,12 @@ fun VideoCallArchiveCard(
     val archive = remember(sessionId) { store.find(sessionId) }
     var showDetails by remember { mutableStateOf(false) }
 
-    val durationLabel = archive?.let(::durationLabel).orEmpty().ifBlank { "已结束" }
+    val endedLabel = stringResource(R.string.video_call_ended)
+    val durationLabel = archive?.let { durationLabel(it) }.orEmpty().ifBlank { endedLabel }
     val turns = archive?.messages?.count { it.role == "user" } ?: 0
-    val assistantName = archive?.assistantName.orEmpty().ifBlank { "视频通话" }
+    val assistantName = archive?.assistantName.orEmpty().ifBlank {
+        stringResource(R.string.video_call_title)
+    }
 
     Surface(
         modifier = modifier
@@ -65,7 +70,7 @@ fun VideoCallArchiveCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "📹 视频通话记录",
+                    text = "📹 " + stringResource(R.string.video_call_archive_title),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -83,9 +88,9 @@ fun VideoCallArchiveCard(
 
             Text(
                 text = if (archive == null) {
-                    "通话档案暂时不可用"
+                    stringResource(R.string.video_call_archive_unavailable)
                 } else {
-                    "$turns 回合 · 点击查看完整通话"
+                    stringResource(R.string.video_call_archive_turns_hint, turns)
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -110,9 +115,18 @@ private fun VideoCallArchiveDialog(
         onDismissRequest = onDismiss,
         title = {
             Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text("📹 与 ${archive.assistantName.ifBlank { "TA" }} 的视频通话")
                 Text(
-                    text = "${durationLabel(archive)} · ${archive.messages.count { it.role == "user" }} 回合",
+                    stringResource(
+                        R.string.video_call_archive_dialog_title,
+                        archive.assistantName.ifBlank { stringResource(R.string.video_call_fallback_name) },
+                    )
+                )
+                Text(
+                    text = stringResource(
+                        R.string.video_call_archive_dialog_subtitle,
+                        durationLabel(archive),
+                        archive.messages.count { it.role == "user" },
+                    ),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -125,7 +139,7 @@ private fun VideoCallArchiveDialog(
             ) {
                 if (archive.messages.isEmpty()) {
                     Text(
-                        "这次通话没有可显示的文字记录。",
+                        stringResource(R.string.video_call_archive_empty),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
@@ -133,7 +147,11 @@ private fun VideoCallArchiveDialog(
                         val isUser = message.role == "user"
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(
-                                text = if (isUser) "你" else archive.assistantName.ifBlank { "TA" },
+                                text = if (isUser) {
+                                    stringResource(R.string.common_you)
+                                } else {
+                                    archive.assistantName.ifBlank { stringResource(R.string.video_call_fallback_name) }
+                                },
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -148,16 +166,21 @@ private fun VideoCallArchiveDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("关闭")
+                Text(stringResource(R.string.common_close))
             }
         },
     )
 }
 
+@Composable
 private fun durationLabel(archive: VideoCallArchiveEntry): String {
     val end = archive.endedAtEpochMillis ?: archive.startedAtEpochMillis
     val durationSeconds = max(0L, (end - archive.startedAtEpochMillis) / 1000L)
     val minutes = durationSeconds / 60L
     val seconds = durationSeconds % 60L
-    return if (minutes > 0) "${minutes}分${seconds}秒" else "${seconds}秒"
+    return if (minutes > 0) {
+        stringResource(R.string.video_call_duration_min_sec, minutes, seconds)
+    } else {
+        stringResource(R.string.video_call_duration_sec, seconds)
+    }
 }

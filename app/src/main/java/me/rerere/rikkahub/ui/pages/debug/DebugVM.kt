@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.ui.pages.debug
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,8 +23,10 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 import kotlin.random.Random
 import kotlin.uuid.Uuid
+import me.rerere.rikkahub.R
 
 class DebugVM(
+    private val application: Application,
     private val settingsStore: SettingsStore,
     private val conversationRepository: ConversationRepository,
 ) : ViewModel() {
@@ -95,7 +98,7 @@ class DebugVM(
             val conversation = Conversation(
                 id = Uuid.random(),
                 assistantId = DEFAULT_ASSISTANT_ID,
-                title = "超大对话测试 (${sizeMB}MB)",
+                title = application.getString(R.string.debug_oversized_conversation_title, sizeMB),
                 messageNodes = messageNodes,
             )
 
@@ -121,7 +124,7 @@ class DebugVM(
             val conversation = Conversation(
                 id = Uuid.random(),
                 assistantId = DEFAULT_ASSISTANT_ID,
-                title = "${messageCount}条消息测试",
+                title = application.getString(R.string.debug_messages_conversation_title, messageCount),
                 messageNodes = messageNodes,
             )
 

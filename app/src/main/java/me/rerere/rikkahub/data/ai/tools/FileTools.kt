@@ -1,15 +1,20 @@
 package me.rerere.rikkahub.data.ai.tools
 
+import android.content.Context
 import kotlinx.serialization.json.*
 import me.rerere.ai.core.InputSchema
 import me.rerere.ai.core.Tool
 import me.rerere.ai.ui.UIMessagePart
+import me.rerere.rikkahub.R
 import java.io.File
 
 /**
  * 文件操作工具 — 统一 file 工具，通过 action 参数选择操作。
  */
-fun createFileTools(workspaceDir: String = "/storage/emulated/0/Download"): List<Tool> {
+fun createFileTools(
+    workspaceDir: String = "/storage/emulated/0/Download",
+    context: Context? = null,
+): List<Tool> {
     val defaultDir = workspaceDir
 
     fun resolveFile(path: String): File {
@@ -171,9 +176,16 @@ fun createFileTools(workspaceDir: String = "/storage/emulated/0/Download"): List
                                 val size = if (f.isFile) " (${formatSize(f.length())})" else ""
                                 "$icon ${f.name}$size"
                             }?.joinToString("\n") ?: "(empty)"
-                            listOf(UIMessagePart.Text("[${file.absolutePath}] 目录内容:\n$listing"))
+                            val header = context?.getString(R.string.file_tools_directory_contents, file.absolutePath)
+                                ?: "[${file.absolutePath}] 目录内容:\n"
+                            listOf(UIMessagePart.Text(header + listing))
                         } else {
-                            if (file.length() > 5 * 1024 * 1024) error("文件超过 5MB，为防止内存溢出无法读取: $path")
+                            if (file.length() > 5 * 1024 * 1024) {
+                                error(
+                                    context?.getString(R.string.file_tools_file_too_large, path)
+                                        ?: "文件超过 5MB，为防止内存溢出无法读取: $path"
+                                )
+                            }
                             val offset = obj["offset"]?.jsonPrimitive?.intOrNull ?: 1
                             val limit = obj["limit"]?.jsonPrimitive?.intOrNull ?: 2000
                             val lines = file.readLines()

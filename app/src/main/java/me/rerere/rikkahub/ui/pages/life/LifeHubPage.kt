@@ -19,9 +19,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import org.json.JSONArray
 import org.json.JSONObject
@@ -29,6 +31,8 @@ import java.text.DateFormat
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
+// 分区标题/提示同时用于 UI 显示与持久化数据标识（加载时按 tag 迁移分类），
+// 必须保持字面量稳定，不随语言切换。
 private enum class LifeSection(val title: String, val emoji: String, val hint: String) {
     HOME("今日", "🏡", "今天的状态、安排与共同生活"),
     STATUS("周期与身体", "🌸", "记录经期、周期、身体状态、心情与精力"),
@@ -60,6 +64,8 @@ private data class MemoCategory(
     val soft: Color,
 )
 
+// 备忘分类名持久化在 SharedPreferences 中（memoCategory id 与 tag 迁移都依赖字面量），
+// 必须保持字面量稳定，不随语言切换。
 private val memoCategories = listOf(
     MemoCategory("life", "生活", "🏡", Color(0xFFFFF8EE), Color(0xFFB98653), Color(0xFFFFEBD4)),
     MemoCategory("todo", "待办", "⏰", Color(0xFFFFF0E6), Color(0xFFC77B52), Color(0xFFFFDFC9)),
@@ -81,6 +87,7 @@ fun LifeHubPage() {
     var entries by remember { mutableStateOf(loadEntries(context)) }
     var showAdd by remember { mutableStateOf(false) }
     var editingMemoId by remember { mutableStateOf<Long?>(null) }
+    val deleteText = stringResource(R.string.delete)
 
     val saveAll: (List<LifeEntry>) -> Unit = { updated ->
         entries = updated
@@ -99,7 +106,7 @@ fun LifeHubPage() {
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("生活空间") }, navigationIcon = { BackButton() }) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.life_hub_title)) }, navigationIcon = { BackButton() }) },
         floatingActionButton = {
             if (section != LifeSection.HOME &&
                 section != LifeSection.STATUS &&
@@ -159,7 +166,7 @@ fun LifeHubPage() {
                     }
                     if (section == LifeSection.READING) item {
                         TextButton(onClick = { bookImporter.launch(arrayOf("text/plain", "text/*")) }) {
-                            Text("＋ 导入 TXT 小说")
+                            Text(stringResource(R.string.life_import_txt))
                         }
                     }
                     if (section == LifeSection.HOME) {
@@ -173,7 +180,7 @@ fun LifeHubPage() {
                             }
                         }
                     } else if (filtered.isEmpty()) item {
-                        Text("这里还没有记录，点击右下角开始。", modifier = Modifier.padding(8.dp))
+                        Text(stringResource(R.string.life_hub_empty), modifier = Modifier.padding(8.dp))
                     }
                     if (section != LifeSection.HOME) items(filtered, key = { it.id }) { entry ->
                         Card(Modifier.fillMaxWidth()) {
@@ -183,7 +190,7 @@ fun LifeHubPage() {
                                     if (entry.tag.isNotBlank()) Text(entry.tag, color = MaterialTheme.colorScheme.primary)
                                 }
                                 if (entry.detail.isNotBlank()) Text(entry.detail)
-                                TextButton(onClick = { saveAll(entries.filterNot { it.id == entry.id }) }) { Text("删除") }
+                                TextButton(onClick = { saveAll(entries.filterNot { it.id == entry.id }) }) { Text(deleteText) }
                             }
                         }
                     }
@@ -300,16 +307,16 @@ private fun MemoBoard(
                 onValueChange = { query = it },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                placeholder = { Text("🔎 搜索一张小便签……") },
+                placeholder = { Text(stringResource(R.string.life_memo_search_placeholder)) },
                 singleLine = true,
             )
         }
         item {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                item { MemoFilterChip("全部 ${entries.size}", filter == MemoFilter.ALL) { filter = MemoFilter.ALL } }
-                item { MemoFilterChip("📌 置顶", filter == MemoFilter.PINNED) { filter = MemoFilter.PINNED } }
-                item { MemoFilterChip("☐ 待办", filter == MemoFilter.TODO) { filter = MemoFilter.TODO } }
-                item { MemoFilterChip("✓ 完成", filter == MemoFilter.DONE) { filter = MemoFilter.DONE } }
+                item { MemoFilterChip(stringResource(R.string.life_memo_filter_all, entries.size), filter == MemoFilter.ALL) { filter = MemoFilter.ALL } }
+                item { MemoFilterChip(stringResource(R.string.life_memo_filter_pinned), filter == MemoFilter.PINNED) { filter = MemoFilter.PINNED } }
+                item { MemoFilterChip(stringResource(R.string.life_memo_filter_todo), filter == MemoFilter.TODO) { filter = MemoFilter.TODO } }
+                item { MemoFilterChip(stringResource(R.string.life_memo_filter_done), filter == MemoFilter.DONE) { filter = MemoFilter.DONE } }
             }
         }
         item {
@@ -318,7 +325,7 @@ private fun MemoBoard(
                     FilterChip(
                         selected = categoryFilter == null,
                         onClick = { categoryFilter = null },
-                        label = { Text("🎀 所有分类") },
+                        label = { Text(stringResource(R.string.life_memo_filter_all_categories)) },
                         shape = RoundedCornerShape(18.dp),
                     )
                 }
@@ -375,8 +382,8 @@ private fun MemoBoardHeader(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("୨୧  LIFE MEMO", color = Color(0xFFB45E7A), style = MaterialTheme.typography.labelLarge)
-                    Text("生活备忘板", color = Color(0xFF5A4650), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    Text("把想记住的事情贴在这里。", color = Color(0xFF8A737D), style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.life_memo_board_title), color = Color(0xFF5A4650), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.life_memo_board_desc), color = Color(0xFF8A737D), style = MaterialTheme.typography.bodyMedium)
                 }
                 Surface(shape = CircleShape, color = Color(0xFFFFDFE9)) {
                     Box(Modifier.size(46.dp), contentAlignment = Alignment.Center) {
@@ -386,9 +393,9 @@ private fun MemoBoardHeader(
             }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MemoStatPill("☁", "待处理", todoCount, Color(0xFFFFE4D8), Color(0xFFB96F54), Modifier.weight(1f))
-                MemoStatPill("✓", "完成啦", doneCount, Color(0xFFE4F1E8), Color(0xFF5E826B), Modifier.weight(1f))
-                MemoStatPill("📌", "置顶", pinnedCount, Color(0xFFE9E4F7), Color(0xFF79649C), Modifier.weight(1f))
+                MemoStatPill("☁", stringResource(R.string.life_memo_stat_todo), todoCount, Color(0xFFFFE4D8), Color(0xFFB96F54), Modifier.weight(1f))
+                MemoStatPill("✓", stringResource(R.string.life_memo_stat_done), doneCount, Color(0xFFE4F1E8), Color(0xFF5E826B), Modifier.weight(1f))
+                MemoStatPill("📌", stringResource(R.string.life_memo_stat_pinned), pinnedCount, Color(0xFFE9E4F7), Color(0xFF79649C), Modifier.weight(1f))
             }
 
             FilledTonalButton(
@@ -400,7 +407,7 @@ private fun MemoBoardHeader(
                     contentColor = Color(0xFF9F4F6A),
                 ),
             ) {
-                Text("＋ 写一张小便签")
+                Text(stringResource(R.string.life_memo_add))
             }
         }
     }
@@ -452,18 +459,18 @@ private fun MemoEmptyState(completelyEmpty: Boolean, onAdd: () -> Unit) {
         ) {
             Text(if (completelyEmpty) "🎀📝" else "☁️", style = MaterialTheme.typography.headlineMedium)
             Text(
-                if (completelyEmpty) "这里还没有小便签哦" else "没有找到这张小便签",
+                stringResource(if (completelyEmpty) R.string.life_memo_empty_all_title else R.string.life_memo_empty_filter_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = Color(0xFF64535A),
             )
             Text(
-                if (completelyEmpty) "把想记住的事情贴上来吧。" else "换个关键词或筛选条件试试看～",
+                stringResource(if (completelyEmpty) R.string.life_memo_empty_all_desc else R.string.life_memo_empty_filter_desc),
                 color = Color(0xFF8C7A82),
                 style = MaterialTheme.typography.bodyMedium,
             )
             if (completelyEmpty) {
-                TextButton(onClick = onAdd) { Text("贴第一张便签 ♡") }
+                TextButton(onClick = onAdd) { Text(stringResource(R.string.life_memo_empty_add)) }
             }
         }
     }
@@ -479,7 +486,17 @@ private fun MemoCard(
     onAddCalendar: () -> Unit,
 ) {
     val category = memoCategory(entry.memoCategory)
-    val reminderState = entry.reminderAt?.let { memoReminderState(it) }
+    val deleteText = stringResource(R.string.delete)
+    val reminderState = entry.reminderAt?.let {
+        memoReminderState(
+            value = it,
+            passed = stringResource(R.string.life_memo_reminder_passed),
+            today = stringResource(R.string.life_memo_reminder_today),
+            tomorrow = stringResource(R.string.life_memo_reminder_tomorrow),
+            inDays = stringResource(R.string.life_memo_reminder_in_days, TimeUnit.MILLISECONDS.toDays(it - System.currentTimeMillis())),
+        )
+    }
+    val editText = stringResource(R.string.edit)
 
     Card(
         onClick = onEdit,
@@ -507,7 +524,7 @@ private fun MemoCard(
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(category.label, style = MaterialTheme.typography.labelMedium, color = category.accent)
-                        if (entry.pinned) Text("📌 置顶", style = MaterialTheme.typography.labelSmall, color = category.accent)
+                        if (entry.pinned) Text(stringResource(R.string.life_memo_pinned_tag), style = MaterialTheme.typography.labelSmall, color = category.accent)
                     }
                     Text(
                         entry.title,
@@ -537,7 +554,7 @@ private fun MemoCard(
             Row(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
                 Surface(shape = RoundedCornerShape(12.dp), color = category.soft.copy(alpha = 0.78f)) {
                     Text(
-                        "贴于 ${formatMemoDate(entry.createdAt)}",
+                        stringResource(R.string.life_memo_posted_at, formatMemoDate(entry.createdAt)),
                         modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
                         color = category.accent,
                         style = MaterialTheme.typography.labelSmall,
@@ -558,7 +575,7 @@ private fun MemoCard(
 
             if (entry.completed) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    Text("完成啦 ✓", color = category.accent.copy(alpha = 0.72f), style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.life_memo_completed_tag), color = category.accent.copy(alpha = 0.72f), style = MaterialTheme.typography.labelMedium)
                 }
             }
 
@@ -569,15 +586,15 @@ private fun MemoCard(
                     onClick = onToggleDone,
                     colors = ButtonDefaults.textButtonColors(contentColor = category.accent),
                 ) {
-                    Text(if (entry.completed) "↩ 恢复" else "✓ 完成")
+                    Text(if (entry.completed) stringResource(R.string.life_memo_restore) else stringResource(R.string.life_memo_mark_done))
                 }
                 Spacer(Modifier.weight(1f))
                 if (entry.reminderAt != null) {
                     TextButton(onClick = onAddCalendar) { Text("📅") }
                 }
-                TextButton(onClick = onEdit) { Text("编辑") }
+                TextButton(onClick = onEdit) { Text(editText) }
                 TextButton(onClick = onDelete, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)) {
-                    Text("拿下")
+                    Text(deleteText)
                 }
             }
         }
@@ -586,16 +603,16 @@ private fun MemoCard(
 
 private data class MemoReminderState(val label: String, val urgent: Boolean)
 
-private fun memoReminderState(value: Long): MemoReminderState {
+private fun memoReminderState(value: Long, passed: String, today: String, tomorrow: String, inDays: String): MemoReminderState {
     val now = System.currentTimeMillis()
     val diff = value - now
     val day = TimeUnit.MILLISECONDS.toDays(diff)
     return when {
-        diff < -TimeUnit.DAYS.toMillis(1) -> MemoReminderState("已过提醒日", false)
-        diff <= 0L -> MemoReminderState("今天", true)
-        diff < TimeUnit.DAYS.toMillis(1) -> MemoReminderState("今天", true)
-        day == 1L -> MemoReminderState("明天", true)
-        day in 2L..3L -> MemoReminderState("还有 $day 天", true)
+        diff < -TimeUnit.DAYS.toMillis(1) -> MemoReminderState(passed, false)
+        diff <= 0L -> MemoReminderState(today, true)
+        diff < TimeUnit.DAYS.toMillis(1) -> MemoReminderState(today, true)
+        day == 1L -> MemoReminderState(tomorrow, true)
+        day in 2L..3L -> MemoReminderState(inDays, true)
         else -> MemoReminderState(formatMemoDate(value), false)
     }
 }
@@ -621,9 +638,9 @@ private fun MemoEditorDialog(
         shape = RoundedCornerShape(26.dp),
         title = {
             Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(if (initial == null) "🎀 写一张小便签" else "📝 修改这张便签")
+                Text(stringResource(if (initial == null) R.string.life_memo_editor_new_title else R.string.life_memo_editor_edit_title))
                 Text(
-                    if (initial == null) "想到什么就先贴上来。" else "慢慢改，不着急。",
+                    stringResource(if (initial == null) R.string.life_memo_editor_new_desc else R.string.life_memo_editor_edit_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -634,7 +651,7 @@ private fun MemoEditorDialog(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("这张便签想记什么？") },
+                    label = { Text(stringResource(R.string.life_memo_editor_title_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(18.dp),
                     singleLine = true,
@@ -642,13 +659,13 @@ private fun MemoEditorDialog(
                 OutlinedTextField(
                     value = detail,
                     onValueChange = { detail = it },
-                    label = { Text("写下一点内容……") },
+                    label = { Text(stringResource(R.string.life_memo_editor_detail_label)) },
                     minLines = 5,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(18.dp),
                 )
 
-                Text("放进哪个小抽屉？", style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.life_memo_editor_category_label), style = MaterialTheme.typography.labelLarge)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(memoCategories) { item ->
                         FilterChip(
@@ -673,16 +690,16 @@ private fun MemoEditorDialog(
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
-                                Text("📌 贴到最上面", color = currentCategory.accent, fontWeight = FontWeight.SemiBold)
-                                Text("重要的小事会一直排在前面", style = MaterialTheme.typography.bodySmall, color = Color(0xFF75666D))
+                                Text(stringResource(R.string.life_memo_editor_pin), color = currentCategory.accent, fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(R.string.life_memo_editor_pin_desc), style = MaterialTheme.typography.bodySmall, color = Color(0xFF75666D))
                             }
                             Switch(checked = pinned, onCheckedChange = { pinned = it })
                         }
                         if (initial != null) {
                             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
-                                    Text("✓ 已经完成啦", color = currentCategory.accent, fontWeight = FontWeight.SemiBold)
-                                    Text("完成后便签会轻轻淡下来", style = MaterialTheme.typography.bodySmall, color = Color(0xFF75666D))
+                                    Text(stringResource(R.string.life_memo_editor_completed), color = currentCategory.accent, fontWeight = FontWeight.SemiBold)
+                                    Text(stringResource(R.string.life_memo_editor_completed_desc), style = MaterialTheme.typography.bodySmall, color = Color(0xFF75666D))
                                 }
                                 Switch(checked = completed, onCheckedChange = { completed = it })
                             }
@@ -695,11 +712,11 @@ private fun MemoEditorDialog(
                         onClick = { showDatePicker = true },
                         shape = RoundedCornerShape(16.dp),
                     ) {
-                        Text(reminderAt?.let { "⏰ ${formatMemoDate(it)}" } ?: "⏰ 选择提醒日期")
+                        Text(reminderAt?.let { stringResource(R.string.life_memo_editor_reminder_set, formatMemoDate(it)) } ?: stringResource(R.string.life_memo_editor_reminder_pick))
                     }
-                    if (reminderAt != null) TextButton(onClick = { reminderAt = null }) { Text("清除") }
+                    if (reminderAt != null) TextButton(onClick = { reminderAt = null }) { Text(stringResource(R.string.life_memo_editor_clear)) }
                 }
-                Text("提醒日期会留在便签上，也可以一键放进系统日历。", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.life_memo_editor_reminder_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         confirmButton = {
@@ -712,10 +729,10 @@ private fun MemoEditorDialog(
                     contentColor = Color(0xFF9F4F6A),
                 ),
             ) {
-                Text(if (initial == null) "收进备忘板 ♡" else "保存这张便签")
+                Text(stringResource(if (initial == null) R.string.life_memo_editor_save_new else R.string.life_memo_editor_save_edit))
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("先不写") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.life_memo_editor_dismiss)) } },
     )
 
     if (showDatePicker) {
@@ -726,9 +743,9 @@ private fun MemoEditorDialog(
                 TextButton(onClick = {
                     reminderAt = state.selectedDateMillis
                     showDatePicker = false
-                }) { Text("贴上这个日期") }
+                }) { Text(stringResource(R.string.life_memo_editor_pick_date)) }
             },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("取消") } },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.cancel)) } },
         ) { DatePicker(state = state, showModeToggle = false) }
     }
 }
@@ -744,15 +761,35 @@ private fun AddLifeEntryDialog(
     var tag by remember(section) { mutableStateOf("") }
     val labels = when (section) {
         LifeSection.HOME -> Triple("", "", "")
-        LifeSection.STATUS -> Triple("今天感觉怎么样", "身体感受或想让 AI 知道的事", "心情 / 精力")
-        LifeSection.MEMO -> Triple("备忘标题", "计划或想法", "分类")
-        LifeSection.CALENDAR -> Triple("安排或提醒标题", "时间、地点和需要 AI 提醒的事情", "今天 / 本周 / 纪念日")
-        LifeSection.MUSIC -> Triple("歌曲名", "歌手、故事或一起听歌的回忆", "想念 / 开心 / 安慰")
-        LifeSection.READING -> Triple("书名或章节", "阅读进度、原文、你的批注以及想问 AI 的问题", "普通书签 / 情绪书签 / 猜想书签 / 记忆书签")
+        LifeSection.STATUS -> Triple(
+            stringResource(R.string.life_entry_status_title),
+            stringResource(R.string.life_entry_status_detail),
+            stringResource(R.string.life_entry_status_tag),
+        )
+        LifeSection.MEMO -> Triple(
+            stringResource(R.string.life_entry_memo_title),
+            stringResource(R.string.life_entry_memo_detail),
+            stringResource(R.string.life_entry_memo_tag),
+        )
+        LifeSection.CALENDAR -> Triple(
+            stringResource(R.string.life_entry_calendar_title),
+            stringResource(R.string.life_entry_calendar_detail),
+            stringResource(R.string.life_entry_calendar_tag),
+        )
+        LifeSection.MUSIC -> Triple(
+            stringResource(R.string.life_entry_music_title),
+            stringResource(R.string.life_entry_music_detail),
+            stringResource(R.string.life_entry_music_tag),
+        )
+        LifeSection.READING -> Triple(
+            stringResource(R.string.life_entry_reading_title),
+            stringResource(R.string.life_entry_reading_detail),
+            stringResource(R.string.life_entry_reading_tag),
+        )
     }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("添加${section.title}") },
+        title = { Text(stringResource(R.string.life_entry_add_title, section.title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(title, { title = it }, label = { Text(labels.first) }, modifier = Modifier.fillMaxWidth())
@@ -760,8 +797,8 @@ private fun AddLifeEntryDialog(
                 OutlinedTextField(tag, { tag = it }, label = { Text(labels.third) }, modifier = Modifier.fillMaxWidth())
             }
         },
-        confirmButton = { TextButton(enabled = title.isNotBlank(), onClick = { onSave(title.trim(), detail.trim(), tag.trim()) }) { Text("保存") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+        confirmButton = { TextButton(enabled = title.isNotBlank(), onClick = { onSave(title.trim(), detail.trim(), tag.trim()) }) { Text(stringResource(R.string.common_save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }
 

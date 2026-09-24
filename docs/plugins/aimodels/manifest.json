@@ -1,0 +1,157 @@
+{
+  "id": "com.rikkahub.plugin.aimodels",
+  "name": "AI 模型世界",
+  "description": "把 600+ 个大模型的档案和基准评分装进 RikkaHub。数据来自 liyupi/ai-model-world（每小时同步 Epoch AI、models.dev、LiveBench、Hugging Face）。AI 可以查任意模型的价格、上下文、发布日期、能力，也能按价格/智力/上线下时间筛选排序，数据存在本地，随时一键更新。",
+  "version": "1.0.0",
+  "author": "喵呜Miaowu",
+  "icon": "🌍",
+  "entry": "main.js",
+  "detailCard": "detail_card",
+  "systemPrompt": "【AI 模型世界】\n你接入了本地的大模型资料库（600+ 模型、64 家厂商，含 Epoch AI / models.dev / LiveBench 基准评分），工具名为 plugin_com_rikkahub_plugin_aimodels_00ab86_*。\n\n使用规则：\n1. 用户问任何「某个模型怎么样 / 多少钱 / 上下文多长 / 什么能力 / 和 XX 比哪个强 / 有哪些便宜的模型 / 最新的模型」这类问题，先调用工具查真实数据，不要凭记忆作答——你的训练数据会过时，而这份资料库是本地实时数据。\n2. 记不清资料库内容时，可以先调用 get_data_info 看有没有数据和收录范围；数据为空时直接调用 update_data 拉取（需要联网，走 App 的网络设置里的代理）。\n3. 查询单个模型用 get_model（带全部评分），按条件筛选或排行用 search_models，跨模型对比用 compare_models，查厂商用 list_vendors。模糊的模型名（如「opus」「gpt-5」「豆包」）先 search_models 确认 id 再取详情；get_model 拿不准时会返回 candidates 候选列表，这时从中挑最匹配的完整 id 再调一次，不要重复用同一个模糊名。厂商参数支持中文名（「字节」「月之暗面」）。\n4. 价格单位是美元/百万 token；上下文窗口是 token 数。评分是百分制或指数（unit 字段说明），来自第三方基准（Epoch AI、LiveBench 等），报告时注明是第三方评测，不要说成官方数据。\n5. 回答时挑重点讲：价格、上下文、核心能力、几项关键评分。不要把工具返回的全部字段原样罗列给用户。",
+  "tools": [
+    {
+      "name": "update_data",
+      "description": "从 ai-model-world 拉取最新大模型数据并保存到本地。首次使用或用户要求刷新数据时调用。数据每小时在源仓库自动同步，无需频繁更新。",
+      "parameters": []
+    },
+    {
+      "name": "get_data_info",
+      "description": "查看本地数据概况：数据日期、收录的模型数量与厂商数量。查询前不确定数据是否可用时先调用。",
+      "parameters": []
+    },
+    {
+      "name": "search_models",
+      "description": "按条件筛选并排序模型，返回精简档案列表。支持按名称模糊匹配、按价格/上下文/发布时间/评分排序，或指定智力基准只取有分的模型。",
+      "parameters": [
+        {
+          "name": "query",
+          "type": "string",
+          "required": false,
+          "description": "名称模糊匹配（模型名/厂商名/id，如「opus」「豆包」「gemini」）。忽略大小写，空格/下划线/连字符等同处理，「deepseek v3.2」也能搜到 deepseek-v3.2"
+        },
+        {
+          "name": "vendor",
+          "type": "string",
+          "required": false,
+          "description": "按厂商过滤，可用 id（openai、anthropic、deepseek）或名称（「字节」「月之暗面」「阿里」）"
+        },
+        {
+          "name": "max_input_price",
+          "type": "number",
+          "required": false,
+          "description": "输入价上限（美元/百万 token）"
+        },
+        {
+          "name": "max_output_price",
+          "type": "number",
+          "required": false,
+          "description": "输出价上限（美元/百万 token）"
+        },
+        {
+          "name": "min_context",
+          "type": "number",
+          "required": false,
+          "description": "上下文窗口下限（token）"
+        },
+        {
+          "name": "released_after",
+          "type": "string",
+          "required": false,
+          "description": "只看该日期（YYYY-MM-DD）之后发布的模型"
+        },
+        {
+          "name": "reasoning",
+          "type": "boolean",
+          "required": false,
+          "description": "true 只看支持推理/思考的模型"
+        },
+        {
+          "name": "tool_call",
+          "type": "boolean",
+          "required": false,
+          "description": "true 只看支持工具调用的模型"
+        },
+        {
+          "name": "vision",
+          "type": "boolean",
+          "required": false,
+          "description": "true 只看支持图片输入的多模态模型"
+        },
+        {
+          "name": "open_weights",
+          "type": "boolean",
+          "required": false,
+          "description": "true 只看开源权重模型"
+        },
+        {
+          "name": "active_only",
+          "type": "boolean",
+          "required": false,
+          "description": "true 排除已退役模型，默认 true"
+        },
+        {
+          "name": "benchmark",
+          "type": "string",
+          "required": false,
+          "description": "按基准过滤/排序：只返回该基准有分的模型。常用：eci（综合智力）、swe_bench_verified（真实编程）、gpqa_diamond（科学问答）、aime（数学竞赛）、arc_agi_2（视觉推理）、aider_polyglot（多语言编程）、hle（人类终极考试）、terminal_bench_2_0（终端操作）、webdev_arena_elo（网页开发竞技场）。已知基准之外会报错并列出可选值"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "required": false,
+          "description": "排序字段：benchmark（配合 benchmark 参数，分数从高到低，默认）、price（输入价从低到高）、price_desc、context（上下文从大到小）、release（最新发布在前）、output_price（输出价从低到高）。默认 benchmark，无 benchmark 时按 release"
+        },
+        {
+          "name": "limit",
+          "type": "number",
+          "required": false,
+          "description": "最多返回条数，默认 20，最大 60"
+        }
+      ]
+    },
+    {
+      "name": "get_model",
+      "description": "获取单个模型的完整档案：价格、上下文、参数量、能力、模态、全部基准评分及出处。模型 id 来自 search_models。",
+      "parameters": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "模型 id（如 anthropic/claude-opus-4.8）或 slug；也接受模糊名（「deepseek v3.2」「qwen max」），能唯一确定时直接返回完整档案"
+        },
+        {
+          "name": "vendor",
+          "type": "string",
+          "required": false,
+          "description": "可选，缩小模糊匹配范围（厂商 id 或中文名）"
+        }
+      ]
+    },
+    {
+      "name": "compare_models",
+      "description": "横向对比 2-5 个模型：价格、上下文、能力、共有基准的分数逐项对照。模型 id 来自 search_models，也接受模糊名。",
+      "parameters": [
+        {
+          "name": "ids",
+          "type": "array",
+          "required": true,
+          "description": "模型 id 数组，2-5 个"
+        }
+      ]
+    },
+    {
+      "name": "list_vendors",
+      "description": "列出数据收录的厂商（名称、国家、主页），或看某厂商旗下的全部模型。",
+      "parameters": [
+        {
+          "name": "vendor",
+          "type": "string",
+          "required": false,
+          "description": "厂商 id（如 anthropic）或中文名（如「字节」）。省略时列出全部厂商及旗下模型数"
+        }
+      ]
+    }
+  ],
+  "config": [],
+  "allowedHosts": ["raw.githubusercontent.com"]
+}

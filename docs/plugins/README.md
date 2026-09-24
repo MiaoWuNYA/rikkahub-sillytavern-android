@@ -17,9 +17,15 @@ ynufe/       云南财经大学教务系统
   yunfe.js               业务逻辑与工具入口
   build.py               把上面四个源码拼成 main.js 并打包
   main.js                构建产物，勿手改
+
+aimodels/    大模型资料库（数据来自 liyupi/ai-model-world）
+  manifest.json      插件清单
+  main.js            插件本体（单文件）
+  build.py           校验 manifest 与导出函数对得上，并打 zip
+  test.js            Node 自测（假 dataStore/fetch + 真实数据快照，40+ 断言）
 ```
 
-打好的 zip 放在 `docs/plugins/` 下（`calorie.zip`、`ynufe.zip`），导入用。
+打好的 zip 放在 `docs/plugins/` 下（`calorie.zip`、`ynufe.zip`、`aimodels.zip`），导入用。
 
 ## 为什么 ynufe 要拼文件
 
@@ -38,8 +44,19 @@ python3 docs/plugins/ynufe/build.py --zip
   这是 `fetch` 做不到的。
 - `image.decode` 把图片解成 RGBA 像素数组。沙箱没有 canvas，
   验证码 OCR 这类逐像素计算只能靠宿主解码。
-- `dataStore` 按插件隔离的键值存储，卡路里的每日记录放在这里。
+- `dataStore` 按插件隔离的键值存储，卡路里的每日记录放在这里；
+  aimodels 把整份模型库（约 600KB JSON）也塞在这里，配合模块级缓存避免反复 parse。
 - `manifest.detailCard` 详情页数据卡片，声明一个导出函数名即可。
+- `fetch` 走的是宿主那个带 `SettingsProxySelector` 的 OkHttpClient，
+  所以在「设置 → 网络」里配的代理（含 clash 的 127.0.0.1:7897）对插件请求一样生效。
+
+### 大 JSON 入库的注意点
+
+aimodels 的数据源单个文件 2.6MB，直接 JSON.parse 对嵌入式 JS 引擎太重。
+做法是先 fetch 成字符串、逐条裁剪成短字段再入库，分两个键写：
+
+1. 先写 `db`（模型数组），成功后再写 `meta`（日期、厂商表、统计）。
+2. 读的时候只认 `meta`——它在就代表 `db` 一定写完过，不会读到半截数据。
 
 ## 验证
 

@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -28,6 +29,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.util.UUID
+import me.rerere.rikkahub.R
 
 private const val READING_PREFS = "tumin_reading_space"
 private const val BOOKS_KEY = "books"
@@ -47,6 +49,7 @@ private data class ReadingBook(
 
 private data class ReadingChapter(val title: String, val body: String)
 
+// 书签类型名随 BookmarkType 枚举一起持久化与展示，保持字面量稳定。
 private enum class BookmarkType(val label: String, val emoji: String) {
     NORMAL("普通书签", "🔖"),
     EMOTION("情绪书签", "💗"),
@@ -93,6 +96,7 @@ fun ReadingSpacePanel() {
     var memories by remember { mutableStateOf(loadMemories(context)) }
     var selectedBookId by remember { mutableStateOf<String?>(null) }
     var importError by remember { mutableStateOf<String?>(null) }
+    val importFailedText = stringResource(R.string.life_reading_import_failed)
 
     fun persistBooks(value: List<ReadingBook>) {
         books = value
@@ -119,7 +123,7 @@ fun ReadingSpacePanel() {
                     selectedBookId = book.id
                     importError = null
                 }
-                .onFailure { importError = it.message ?: "导入失败" }
+                .onFailure { importError = it.message ?: importFailedText }
         }
     }
 
@@ -193,15 +197,15 @@ private fun BookshelfView(
             ) {
                 Column(Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("📖  OUR READING ROOM", color = Color(0xFF9C6A47), style = MaterialTheme.typography.labelLarge)
-                    Text("共读小屋", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color(0xFF4F433B))
-                    Text("不是把小说扔进来就算共读。我们会记住读到哪里、在哪一段停下来、又一起想过什么。", color = Color(0xFF7A6B61))
+                    Text(stringResource(R.string.life_reading_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color(0xFF4F433B))
+                    Text(stringResource(R.string.life_reading_desc), color = Color(0xFF7A6B61))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ReadingStat("书", books.size, Modifier.weight(1f))
-                        ReadingStat("书签", bookmarks.size, Modifier.weight(1f))
-                        ReadingStat("批注", notes.size, Modifier.weight(1f))
-                        ReadingStat("记忆", memories.size, Modifier.weight(1f))
+                        ReadingStat(stringResource(R.string.life_reading_stat_books), books.size, Modifier.weight(1f))
+                        ReadingStat(stringResource(R.string.life_reading_stat_bookmarks), bookmarks.size, Modifier.weight(1f))
+                        ReadingStat(stringResource(R.string.life_reading_stat_notes), notes.size, Modifier.weight(1f))
+                        ReadingStat(stringResource(R.string.life_reading_stat_memories), memories.size, Modifier.weight(1f))
                     }
-                    FilledTonalButton(onClick = onImport, modifier = Modifier.fillMaxWidth()) { Text("＋ 导入 TXT 小说") }
+                    FilledTonalButton(onClick = onImport, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.life_import_txt)) }
                     importError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
                 }
             }
@@ -216,8 +220,8 @@ private fun BookshelfView(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text("📚", style = MaterialTheme.typography.headlineLarge)
-                        Text("书架还是空的", fontWeight = FontWeight.SemiBold)
-                        Text("先导入一本 TXT 小说，我们从第一页开始。", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.life_reading_empty_title), fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.life_reading_empty_desc), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -242,11 +246,11 @@ private fun BookshelfView(
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(book.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 2)
-                        Text("读到第 ${book.chapterIndex + 1} 章 · ${progress}%", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.life_reading_progress, book.chapterIndex + 1, progress), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         LinearProgressIndicator(progress = { progress / 100f }, modifier = Modifier.fillMaxWidth())
-                        Text("继续阅读", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(R.string.life_reading_continue), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
                     }
-                    TextButton(onClick = { onDelete(book) }) { Text("删除") }
+                    TextButton(onClick = { onDelete(book) }) { Text(stringResource(R.string.delete)) }
                 }
             }
         }
@@ -301,17 +305,17 @@ private fun ReadingRoom(
         Surface(color = Color(0xFFFFFBF4), shadowElevation = 2.dp) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = onBack) { Text("‹ 书架") }
+                    TextButton(onClick = onBack) { Text(stringResource(R.string.life_reading_back_shelf)) }
                     Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(book.title, fontWeight = FontWeight.SemiBold, maxLines = 1)
                         Text(chapter.title, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                     }
-                    TextButton(onClick = { showToc = true }) { Text("目录") }
+                    TextButton(onClick = { showToc = true }) { Text(stringResource(R.string.life_reading_toc)) }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    TextButton(onClick = { showMarks = true }) { Text("🔖 ${bookmarks.size}") }
-                    TextButton(onClick = { showMarks = true }) { Text("💬 ${notes.size}") }
-                    TextButton(onClick = { showMemories = true }) { Text("✨ 共读记忆") }
+                    TextButton(onClick = { showMarks = true }) { Text(stringResource(R.string.life_reading_bookmarks_badge, bookmarks.size)) }
+                    TextButton(onClick = { showMarks = true }) { Text(stringResource(R.string.life_reading_notes_badge, notes.size)) }
+                    TextButton(onClick = { showMemories = true }) { Text(stringResource(R.string.life_reading_memories_badge)) }
                 }
             }
         }
@@ -359,9 +363,9 @@ private fun ReadingRoom(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                TextButton(enabled = chapterIndex > 0, onClick = { chapterIndex -= 1; onProgress(chapterIndex, 0) }) { Text("‹ 上一章") }
+                TextButton(enabled = chapterIndex > 0, onClick = { chapterIndex -= 1; onProgress(chapterIndex, 0) }) { Text(stringResource(R.string.life_reading_prev_chapter)) }
                 Text("${chapterIndex + 1} / ${chapters.size.coerceAtLeast(1)}", style = MaterialTheme.typography.labelMedium)
-                TextButton(enabled = chapterIndex < chapters.lastIndex, onClick = { chapterIndex += 1; onProgress(chapterIndex, 0) }) { Text("下一章 ›") }
+                TextButton(enabled = chapterIndex < chapters.lastIndex, onClick = { chapterIndex += 1; onProgress(chapterIndex, 0) }) { Text(stringResource(R.string.life_reading_next_chapter)) }
             }
         }
     }
@@ -403,7 +407,7 @@ private fun ReadingRoom(
     if (showToc) {
         AlertDialog(
             onDismissRequest = { showToc = false },
-            title = { Text("目录") },
+            title = { Text(stringResource(R.string.life_reading_toc)) },
             text = {
                 LazyColumn(Modifier.heightIn(max = 480.dp)) {
                     itemsIndexed(chapters) { index, item ->
@@ -414,7 +418,7 @@ private fun ReadingRoom(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showToc = false }) { Text("关闭") } },
+            confirmButton = { TextButton(onClick = { showToc = false }) { Text(stringResource(R.string.life_reading_close)) } },
         )
     }
 
@@ -438,15 +442,15 @@ private fun ReadingAnnotationDialog(
     var text by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("在这一段停一下") },
+        title = { Text(stringResource(R.string.life_reading_annotate_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Surface(shape = RoundedCornerShape(14.dp), color = Color(0xFFFFF8EF)) {
                     Text("“${quote.take(180)}”", modifier = Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall, color = Color(0xFF77675B))
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(selected = mode == "bookmark", onClick = { mode = "bookmark" }, label = { Text("书签") })
-                    FilterChip(selected = mode == "note", onClick = { mode = "note" }, label = { Text("批注给 TA") })
+                    FilterChip(selected = mode == "bookmark", onClick = { mode = "bookmark" }, label = { Text(stringResource(R.string.life_reading_mode_bookmark)) })
+                    FilterChip(selected = mode == "note", onClick = { mode = "note" }, label = { Text(stringResource(R.string.life_reading_mode_note)) })
                 }
                 if (mode == "bookmark") {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -463,11 +467,11 @@ private fun ReadingAnnotationDialog(
                     value = text,
                     onValueChange = { text = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text(if (mode == "bookmark") "给这个书签留句话（可选）" else "你想和 TA 说什么？") },
+                    label = { Text(stringResource(if (mode == "bookmark") R.string.life_reading_bookmark_label else R.string.life_reading_note_label)) },
                     minLines = 3,
                 )
                 if (mode == "note") {
-                    Text("批注会进入共读上下文，TA 在聊天时能看到这一段和你的想法。", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.life_reading_note_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         },
@@ -475,9 +479,9 @@ private fun ReadingAnnotationDialog(
             FilledTonalButton(
                 enabled = mode == "bookmark" || text.isNotBlank(),
                 onClick = { if (mode == "bookmark") onBookmark(type, text.trim()) else onNote(text.trim()) },
-            ) { Text(if (mode == "bookmark") "夹进书里" else "留给 TA") }
+            ) { Text(stringResource(if (mode == "bookmark") R.string.life_reading_save_bookmark else R.string.life_reading_save_note)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }
 
@@ -492,12 +496,12 @@ private fun ReadingMarksDialog(
     var tab by remember { mutableIntStateOf(0) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("书签与批注") },
+        title = { Text(stringResource(R.string.life_reading_marks_title)) },
         text = {
             Column {
                 TabRow(selectedTabIndex = tab) {
-                    Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("书签 ${bookmarks.size}") })
-                    Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("批注 ${notes.size}") })
+                    Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text(stringResource(R.string.life_reading_marks_tab_bookmarks, bookmarks.size)) })
+                    Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text(stringResource(R.string.life_reading_marks_tab_notes, notes.size)) })
                 }
                 LazyColumn(Modifier.heightIn(max = 440.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (tab == 0) {
@@ -506,13 +510,13 @@ private fun ReadingMarksDialog(
                         }
                     } else {
                         items(notes.sortedByDescending { it.createdAt }, key = { it.id }) { item ->
-                            MarkCard("💬 给 TA 的批注", item.quote, item.text) { onDeleteNote(item) }
+                            MarkCard(stringResource(R.string.life_reading_marks_note_card), item.quote, item.text) { onDeleteNote(item) }
                         }
                     }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("完成") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.life_reading_done)) } },
     )
 }
 
@@ -522,7 +526,7 @@ private fun MarkCard(title: String, quote: String, note: String, onDelete: () ->
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(title, fontWeight = FontWeight.SemiBold)
-                TextButton(onClick = onDelete) { Text("删除") }
+                TextButton(onClick = onDelete) { Text(stringResource(R.string.delete)) }
             }
             Text("“${quote.take(180)}”", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (note.isNotBlank()) Text(note)
@@ -538,25 +542,30 @@ private fun ReadingMemoriesDialog(
     onDelete: (ReadingMemory) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var type by remember { mutableStateOf("喜欢的角色") }
+    var type by remember { mutableStateOf("") }
     var text by remember { mutableStateOf("") }
-    val types = listOf("喜欢的角色", "特别章节", "共同观点", "讨论内容")
+    val types = listOf(
+        stringResource(R.string.life_memory_type_character),
+        stringResource(R.string.life_memory_type_chapter),
+        stringResource(R.string.life_memory_type_viewpoint),
+        stringResource(R.string.life_memory_type_discussion),
+    )
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("✨ 共读记忆") },
+        title = { Text(stringResource(R.string.life_reading_memories_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(types) { item -> FilterChip(selected = type == item, onClick = { type = item }, label = { Text(item) }) }
                 }
-                OutlinedTextField(value = text, onValueChange = { text = it }, modifier = Modifier.fillMaxWidth(), label = { Text("把这次阅读留下来") })
+                OutlinedTextField(value = text, onValueChange = { text = it }, modifier = Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.life_reading_memory_label)) })
                 FilledTonalButton(
-                    enabled = text.isNotBlank(),
+                    enabled = text.isNotBlank() && type.isNotBlank(),
                     onClick = {
                         onAdd(ReadingMemory(UUID.randomUUID().toString(), bookId, type, text.trim()))
                         text = ""
                     },
-                ) { Text("记住") }
+                ) { Text(stringResource(R.string.life_reading_memory_save)) }
                 HorizontalDivider()
                 LazyColumn(Modifier.heightIn(max = 300.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(memories.sortedByDescending { it.createdAt }, key = { it.id }) { item ->
@@ -566,14 +575,14 @@ private fun ReadingMemoriesDialog(
                                     Text(item.type, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                                     Text(item.text)
                                 }
-                                TextButton(onClick = { onDelete(item) }) { Text("删") }
+                                TextButton(onClick = { onDelete(item) }) { Text(stringResource(R.string.life_reading_delete_short)) }
                             }
                         }
                     }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("完成") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.life_reading_done)) } },
     )
 }
 
@@ -586,8 +595,8 @@ private fun importTxtBook(context: Context, uri: Uri): ReadingBook {
     val target = File(dir, "$id.txt")
     context.contentResolver.openInputStream(uri)?.use { input ->
         target.outputStream().use { output -> input.copyTo(output) }
-    } ?: error("无法读取这个 TXT 文件")
-    if (target.length() == 0L) error("这个 TXT 文件是空的")
+    } ?: error(context.getString(R.string.life_reading_error_unreadable))
+    if (target.length() == 0L) error(context.getString(R.string.life_reading_error_empty))
     return ReadingBook(
         id = id,
         title = displayName.substringBeforeLast('.').ifBlank { "未命名小说" },

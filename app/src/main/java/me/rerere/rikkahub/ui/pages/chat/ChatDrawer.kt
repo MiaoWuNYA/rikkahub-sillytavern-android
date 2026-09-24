@@ -453,10 +453,10 @@ fun ChatDrawerContent(
 
                 DrawerAction(
                     icon = {
-                        Icon(HugeIcons.ChartColumn, "统计数据")
+                        Icon(HugeIcons.ChartColumn, stringResource(R.string.stats_page_title))
                     },
                     label = {
-                        Text("统计数据")
+                        Text(stringResource(R.string.stats_page_title))
                     },
                     onClick = {
                         navController.navigate(Screen.Stats)
@@ -818,7 +818,7 @@ private fun DrawerActions(
                         tint = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        text = "情侣空间",
+                        text = stringResource(R.string.couple_space_title),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
@@ -848,7 +848,7 @@ private fun DrawerActions(
                         tint = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        text = "生活空间",
+                        text = stringResource(R.string.chat_drawer_life_space),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )

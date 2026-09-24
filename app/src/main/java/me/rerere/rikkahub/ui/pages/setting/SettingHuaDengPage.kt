@@ -131,9 +131,9 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
-                        headlineContent = { Text("上下文瞬态内容裁剪") },
+                        headlineContent = { Text(stringResource(R.string.huadeng_transient_prune)) },
                         supportingContent = {
-                            Text("超过两轮对话之前的网页搜索结果、图片、音视频不再随每次请求发送（占位说明附带消息 ID，AI 可通过 read_history_message 工具按需取回原文），大幅减少图片与搜索类长对话的 token 消耗；消息存储与聊天记录显示不受影响")
+                            Text(stringResource(R.string.huadeng_transient_prune_desc))
                         },
                         trailingContent = {
                             Switch(
@@ -151,9 +151,9 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
-                        headlineContent = { Text("清爽简洁模式") },
+                        headlineContent = { Text(stringResource(R.string.huadeng_clean_mode)) },
                         supportingContent = {
-                            Text("开启后隐藏情侣空间、生活空间等娱乐功能入口，并且不再向 AI 注册对应工具，界面更简洁、上下文更省 token")
+                            Text(stringResource(R.string.huadeng_clean_mode_desc))
                         },
                         trailingContent = {
                             Switch(
@@ -171,9 +171,9 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
-                        headlineContent = { Text("上下文滚动压缩") },
+                        headlineContent = { Text(stringResource(R.string.huadeng_rolling_compression)) },
                         supportingContent = {
-                            Text("对话过长时自动将早期消息压缩为摘要以节省 token。关闭后不再自动压缩（助手级开关仍可单独启用）；若遇到每轮都重复压缩或缓存失效，可尝试关闭")
+                            Text(stringResource(R.string.huadeng_rolling_compression_desc))
                         },
                         trailingContent = {
                             Switch(
@@ -191,9 +191,9 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
-                        headlineContent = { Text("工具结果截断") },
+                        headlineContent = { Text(stringResource(R.string.huadeng_tool_result_truncation)) },
                         supportingContent = {
-                            Text("工具输出超过 32KB 时自动截断并保存到文件。关闭后工具结果不截断，完整内容保留在消息历史中（若中转站导致工具调用异常，可尝试关闭)")
+                            Text(stringResource(R.string.huadeng_tool_result_truncation_desc))
                         },
                         trailingContent = {
                             Switch(
@@ -211,9 +211,9 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
-                        headlineContent = { Text("系统提示词转义") },
+                        headlineContent = { Text(stringResource(R.string.huadeng_system_prompt_escape)) },
                         supportingContent = {
-                            Text("将系统消息中的 < > 转为 HTML 实体，绕过中转站 WAF 安全策略拦截（如遇到 upstream_content_rejected 错误可开启）。一般不需要开启")
+                            Text(stringResource(R.string.huadeng_system_prompt_escape_desc))
                         },
                         trailingContent = {
                             Switch(
@@ -238,7 +238,7 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                 val navController = LocalNavController.current
                 CardGroup(
                     modifier = Modifier.padding(horizontal = 8.dp),
-                    title = { Text("接入与自动化") },
+                    title = { Text(stringResource(R.string.huadeng_section_integration)) },
                 ) {
                     item(
                         onClick = { navController.navigate(Screen.SettingJev) },

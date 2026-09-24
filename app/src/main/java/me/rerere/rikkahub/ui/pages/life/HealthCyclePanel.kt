@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -38,11 +39,12 @@ import org.json.JSONObject
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
+import me.rerere.rikkahub.R
 
 private const val HEALTH_PREFS = "tumin_health_cycle"
 private const val PERIODS_KEY = "periods"
@@ -68,6 +70,8 @@ private data class DailyBodyLog(
     val note: String = "",
 )
 
+// 这些选项会原样持久化到 SharedPreferences（flow/mood/energy/symptoms），
+// 必须保持字面量稳定，不随语言切换。
 private val symptomOptions = listOf("腹痛", "腰酸", "头痛", "胸胀", "疲惫", "失眠", "食欲变化", "皮肤状态")
 private val moodOptions = listOf("开心", "平静", "敏感", "烦躁", "低落", "焦虑")
 private val energyOptions = listOf("高", "中", "低")
@@ -90,6 +94,12 @@ fun HealthCyclePanel() {
     var reminderDays by remember { mutableIntStateOf(prefs.getInt(REMINDER_DAYS_KEY, 3)) }
     var aiAllowed by remember { mutableStateOf(prefs.getBoolean(AI_ALLOWED_KEY, true)) }
     var pendingReminderEnable by remember { mutableStateOf(false) }
+    val todayText = stringResource(R.string.life_common_today)
+    val settingsText = stringResource(R.string.settings)
+    val recordText = stringResource(R.string.life_common_record)
+    val editText = stringResource(R.string.edit)
+    val cancelText = stringResource(R.string.cancel)
+    val saveText = stringResource(R.string.common_save)
 
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         reminderEnabled = granted && pendingReminderEnable
@@ -146,25 +156,25 @@ fun HealthCyclePanel() {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text("🌷 PERIOD & BODY", color = Color(0xFFB85F78), style = MaterialTheme.typography.labelLarge)
-                            Text("生理周期", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color(0xFF57454B))
+                            Text(stringResource(R.string.life_health_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color(0xFF57454B))
                             Text(
                                 when {
-                                    dayInPeriod != null && currentPeriod?.end != null -> "经期第 $dayInPeriod 天，已按实际开始和结束记录。"
-                                    dayInPeriod != null -> "经期第 $dayInPeriod 天，结束日暂按 $effectivePeriod 天经期预测。"
-                                    openPeriod != null -> "这次经期还没有记录结束日，预测区间已结束，可以按实际日期补记。"
-                                    daysUntil != null && daysUntil >= 0 -> "预计还有 $daysUntil 天到下次经期。"
-                                    predictedStart != null -> "预计日期已过，可以按实际情况记录新的开始日。"
-                                    else -> "记录第一次经期后，先按 30 天周期、7 天经期帮你预测。"
+                                    dayInPeriod != null && currentPeriod?.end != null -> stringResource(R.string.life_health_status_period_recorded, dayInPeriod)
+                                    dayInPeriod != null -> stringResource(R.string.life_health_status_period_estimated, dayInPeriod, effectivePeriod)
+                                    openPeriod != null -> stringResource(R.string.life_health_status_period_open)
+                                    daysUntil != null && daysUntil >= 0 -> stringResource(R.string.life_health_status_days_until, daysUntil)
+                                    predictedStart != null -> stringResource(R.string.life_health_status_passed)
+                                    else -> stringResource(R.string.life_health_status_empty)
                                 },
                                 color = Color(0xFF806B72),
                             )
                         }
-                        FilledTonalButton(onClick = { showSettings = true }, shape = RoundedCornerShape(16.dp)) { Text("设置") }
+                        FilledTonalButton(onClick = { showSettings = true }, shape = RoundedCornerShape(16.dp)) { Text(settingsText) }
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        HealthStat(if (learnedCycle != null) "平均周期" else "预测周期", "${effectiveCycle}天", Modifier.weight(1f))
-                        HealthStat(if (learnedPeriod != null) "平均经期" else "预测经期", "${effectivePeriod}天", Modifier.weight(1f))
-                        HealthStat("记录", "${periods.size}次", Modifier.weight(1f))
+                        HealthStat(stringResource(if (learnedCycle != null) R.string.life_health_stat_avg_cycle else R.string.life_health_stat_pred_cycle), stringResource(R.string.life_health_days_value, effectiveCycle), Modifier.weight(1f))
+                        HealthStat(stringResource(if (learnedPeriod != null) R.string.life_health_stat_avg_period else R.string.life_health_stat_pred_period), stringResource(R.string.life_health_days_value, effectivePeriod), Modifier.weight(1f))
+                        HealthStat(stringResource(R.string.life_health_stat_record_count), stringResource(R.string.life_health_times_value, periods.size), Modifier.weight(1f))
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
@@ -178,7 +188,7 @@ fun HealthCyclePanel() {
                             enabled = openPeriod == null,
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC96882)),
                             shape = RoundedCornerShape(18.dp),
-                        ) { Text(if (openPeriod == null) "今天来了" else "本轮已开始") }
+                        ) { Text(if (openPeriod == null) stringResource(R.string.life_health_btn_period_start) else stringResource(R.string.life_health_btn_period_started)) }
                         OutlinedButton(
                             onClick = {
                                 openPeriod?.let { active ->
@@ -189,14 +199,14 @@ fun HealthCyclePanel() {
                             modifier = Modifier.weight(1f),
                             enabled = openPeriod != null,
                             shape = RoundedCornerShape(18.dp),
-                        ) { Text("今天结束") }
+                        ) { Text(stringResource(R.string.life_health_btn_period_end)) }
                     }
                     if (periods.isNotEmpty()) {
                         Text(
                             when {
-                                learnedCycle == null && learnedPeriod == null -> "数据还少：先用 30 天周期 / 7 天经期预测；记录多起来后会自动学习你的节奏。"
-                                learnedCycle != null && learnedPeriod != null -> "已根据最近记录自动调整周期与经期长度。"
-                                else -> "已经开始学习你的记录；数据再多一些，预测会继续按你的实际周期调整。"
+                                learnedCycle == null && learnedPeriod == null -> stringResource(R.string.life_health_learning_cold)
+                                learnedCycle != null && learnedPeriod != null -> stringResource(R.string.life_health_learning_done)
+                                else -> stringResource(R.string.life_health_learning_partial)
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -215,9 +225,9 @@ fun HealthCyclePanel() {
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text("${month.year}年 ${month.monthValue}月", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        Text(stringResource(R.string.life_health_month_title, month.year, month.monthValue), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                         TextButton(onClick = { month = month.minusMonths(1) }) { Text("‹") }
-                        TextButton(onClick = { month = YearMonth.now(); selectedDate = today }) { Text("今天") }
+                        TextButton(onClick = { month = YearMonth.now(); selectedDate = today }) { Text(todayText) }
                         TextButton(onClick = { month = month.plusMonths(1) }) { Text("›") }
                     }
                     HealthMonthCalendar(month, selectedDate, periods, logs, predictedStart, effectivePeriod) { selectedDate = it }
@@ -236,16 +246,25 @@ fun HealthCyclePanel() {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text(selectedDate.format(DateTimeFormatter.ofPattern("M月d日 EEE")), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                            Text(if (log == null) "这一天还没有身体记录" else "已经记下今天的身体状态", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                stringResource(
+                                    R.string.life_health_date_title,
+                                    selectedDate.monthValue,
+                                    selectedDate.dayOfMonth,
+                                    selectedDate.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, Locale.getDefault()),
+                                ),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(stringResource(if (log == null) R.string.life_health_no_log else R.string.life_health_has_log), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        FilledTonalButton(onClick = { showLogEditor = true }, shape = RoundedCornerShape(16.dp)) { Text(if (log == null) "记录" else "编辑") }
+                        FilledTonalButton(onClick = { showLogEditor = true }, shape = RoundedCornerShape(16.dp)) { Text(if (log == null) recordText else editText) }
                     }
                     log?.let {
-                        if (it.flow.isNotBlank()) Text("🩸 流量：${it.flow}")
-                        if (it.symptoms.isNotEmpty()) Text("🌿 身体：${it.symptoms.joinToString("、")}")
-                        if (it.mood.isNotBlank()) Text("💭 心情：${it.mood}")
-                        if (it.energy.isNotBlank()) Text("☁️ 精力：${it.energy}")
+                        if (it.flow.isNotBlank()) Text(stringResource(R.string.life_health_log_flow, it.flow))
+                        if (it.symptoms.isNotEmpty()) Text(stringResource(R.string.life_health_log_symptoms, it.symptoms.joinToString("、")))
+                        if (it.mood.isNotBlank()) Text(stringResource(R.string.life_health_log_mood, it.mood))
+                        if (it.energy.isNotBlank()) Text(stringResource(R.string.life_health_log_energy, it.energy))
                         if (it.note.isNotBlank()) Text(it.note, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
@@ -255,16 +274,16 @@ fun HealthCyclePanel() {
         item {
             Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), color = Color(0xFFF4F0F8)) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("♡ TA 能知道什么", fontWeight = FontWeight.Bold, color = Color(0xFF735F82))
+                    Text(stringResource(R.string.life_health_ai_title), fontWeight = FontWeight.Bold, color = Color(0xFF735F82))
                     Text(
-                        if (aiAllowed) "当前允许 AI 读取最近的周期阶段与身体记录，用于更自然地关心你。" else "当前已关闭，聊天 AI 不会收到周期与身体记录。",
+                        stringResource(if (aiAllowed) R.string.life_health_ai_on else R.string.life_health_ai_off),
                         color = Color(0xFF766E7B),
                     )
-                    Text("只提供当前状态和最近记录，不会每次发送完整周期历史。", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.life_health_ai_privacy), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
-        item { Text("周期预测只根据你记录的历史日期做简单估算，不用于诊断、避孕或替代医疗建议。", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        item { Text(stringResource(R.string.life_health_disclaimer), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
 
     if (showLogEditor) {
@@ -319,7 +338,16 @@ private fun HealthMonthCalendar(
     val dates = (0 until 42).map { start.plusDays(it.toLong()) }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(Modifier.fillMaxWidth()) {
-            listOf("一", "二", "三", "四", "五", "六", "日").forEach { Text(it, Modifier.weight(1f), textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall) }
+            val weekdays = listOf(
+                stringResource(R.string.life_weekday_mon),
+                stringResource(R.string.life_weekday_tue),
+                stringResource(R.string.life_weekday_wed),
+                stringResource(R.string.life_weekday_thu),
+                stringResource(R.string.life_weekday_fri),
+                stringResource(R.string.life_weekday_sat),
+                stringResource(R.string.life_weekday_sun),
+            )
+            weekdays.forEach { Text(it, Modifier.weight(1f), textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall) }
         }
         dates.chunked(7).forEach { week ->
             Row(Modifier.fillMaxWidth()) {
@@ -359,9 +387,9 @@ private fun HealthMonthCalendar(
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("● 已记录经期", color = Color(0xFFC9637D), style = MaterialTheme.typography.labelSmall)
-            Text("○ 预测经期", color = Color(0xFFD99AAF), style = MaterialTheme.typography.labelSmall)
-            Text("• 身体记录", color = Color(0xFF8B75A0), style = MaterialTheme.typography.labelSmall)
+            Text(stringResource(R.string.life_health_legend_recorded), color = Color(0xFFC9637D), style = MaterialTheme.typography.labelSmall)
+            Text(stringResource(R.string.life_health_legend_predicted), color = Color(0xFFD99AAF), style = MaterialTheme.typography.labelSmall)
+            Text(stringResource(R.string.life_health_legend_body_log), color = Color(0xFF8B75A0), style = MaterialTheme.typography.labelSmall)
         }
     }
 }
@@ -373,25 +401,26 @@ private fun BodyLogDialog(date: LocalDate, initial: DailyBodyLog?, onDismiss: ()
     var mood by remember(date) { mutableStateOf(initial?.mood.orEmpty()) }
     var energy by remember(date) { mutableStateOf(initial?.energy.orEmpty()) }
     var note by remember(date) { mutableStateOf(initial?.note.orEmpty()) }
+    val cancelText = stringResource(R.string.cancel)
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(28.dp),
-        title = { Text("🌷 ${date.monthValue}月${date.dayOfMonth}日") },
+        title = { Text(stringResource(R.string.life_health_log_dialog_title, date.monthValue, date.dayOfMonth)) },
         text = {
             LazyColumn(Modifier.heightIn(max = 560.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                item { Text("经量", fontWeight = FontWeight.Bold) }
+                item { Text(stringResource(R.string.life_health_flow), fontWeight = FontWeight.Bold) }
                 item { ChoiceRow(flowOptions, flow) { flow = if (flow == it) "" else it } }
-                item { Text("身体感受", fontWeight = FontWeight.Bold) }
+                item { Text(stringResource(R.string.life_health_body_feeling), fontWeight = FontWeight.Bold) }
                 item { LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) { items(symptomOptions) { symptom -> FilterChip(selected = symptom in selectedSymptoms, onClick = { selectedSymptoms = if (symptom in selectedSymptoms) selectedSymptoms - symptom else selectedSymptoms + symptom }, label = { Text(symptom) }) } } }
-                item { Text("心情", fontWeight = FontWeight.Bold) }
+                item { Text(stringResource(R.string.life_health_mood), fontWeight = FontWeight.Bold) }
                 item { ChoiceRow(moodOptions, mood) { mood = if (mood == it) "" else it } }
-                item { Text("精力", fontWeight = FontWeight.Bold) }
+                item { Text(stringResource(R.string.life_health_energy), fontWeight = FontWeight.Bold) }
                 item { ChoiceRow(energyOptions, energy) { energy = if (energy == it) "" else it } }
-                item { OutlinedTextField(note, { note = it }, modifier = Modifier.fillMaxWidth(), minLines = 3, label = { Text("今天还想记一点什么") }, shape = RoundedCornerShape(18.dp)) }
+                item { OutlinedTextField(note, { note = it }, modifier = Modifier.fillMaxWidth(), minLines = 3, label = { Text(stringResource(R.string.life_health_note_label)) }, shape = RoundedCornerShape(18.dp)) }
             }
         },
-        confirmButton = { FilledTonalButton(onClick = { onSave(DailyBodyLog(date, flow, selectedSymptoms, mood, energy, note.trim())) }) { Text("保存今天") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+        confirmButton = { FilledTonalButton(onClick = { onSave(DailyBodyLog(date, flow, selectedSymptoms, mood, energy, note.trim())) }) { Text(stringResource(R.string.life_health_save_today)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(cancelText) } },
     )
 }
 
@@ -415,22 +444,24 @@ private fun HealthSettingsDialog(
     var reminders by remember { mutableStateOf(reminderEnabled) }
     var days by remember { mutableIntStateOf(reminderDays) }
     var ai by remember { mutableStateOf(aiAllowed) }
+    val saveText = stringResource(R.string.common_save)
+    val cancelText = stringResource(R.string.cancel)
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(28.dp),
-        title = { Text("周期设置") },
+        title = { Text(stringResource(R.string.life_health_settings_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text("历史记录不足时，先按约 30 天周期、7 天经期预测；记录多起来后会自动按你的实际节奏调整。", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("初始预测周期：$cycle 天"); Slider(cycle.toFloat(), { cycle = it.toInt() }, valueRange = 20f..45f, steps = 24)
-                Text("初始预测经期：$period 天"); Slider(period.toFloat(), { period = it.toInt() }, valueRange = 2f..10f, steps = 7)
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text("通知栏提醒", fontWeight = FontWeight.Bold); Text("退出橘瓣后也可以收到", style = MaterialTheme.typography.bodySmall) }; Switch(reminders, { reminders = it }) }
-                if (reminders) { Text("提前 $days 天提醒"); Slider(days.toFloat(), { days = it.toInt() }, valueRange = 1f..7f, steps = 5) }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text("允许 AI 读取", fontWeight = FontWeight.Bold); Text("只提供当前状态与最近记录", style = MaterialTheme.typography.bodySmall) }; Switch(ai, { ai = it }) }
+                Text(stringResource(R.string.life_health_settings_intro), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.life_health_settings_cycle, cycle)); Slider(cycle.toFloat(), { cycle = it.toInt() }, valueRange = 20f..45f, steps = 24)
+                Text(stringResource(R.string.life_health_settings_period, period)); Slider(period.toFloat(), { period = it.toInt() }, valueRange = 2f..10f, steps = 7)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text(stringResource(R.string.life_health_settings_reminder), fontWeight = FontWeight.Bold); Text(stringResource(R.string.life_health_settings_reminder_desc), style = MaterialTheme.typography.bodySmall) }; Switch(reminders, { reminders = it }) }
+                if (reminders) { Text(stringResource(R.string.life_health_settings_days_before, days)); Slider(days.toFloat(), { days = it.toInt() }, valueRange = 1f..7f, steps = 5) }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text(stringResource(R.string.life_health_settings_ai), fontWeight = FontWeight.Bold); Text(stringResource(R.string.life_health_settings_ai_desc), style = MaterialTheme.typography.bodySmall) }; Switch(ai, { ai = it }) }
             }
         },
-        confirmButton = { FilledTonalButton(onClick = { onSave(cycle, period, reminders, days, ai) }) { Text("保存") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+        confirmButton = { FilledTonalButton(onClick = { onSave(cycle, period, reminders, days, ai) }) { Text(saveText) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(cancelText) } },
     )
 }
 
@@ -503,9 +534,9 @@ class PeriodReminderWorker(appContext: Context, params: WorkerParameters) : Work
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return Result.success()
 
         val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) manager.createNotificationChannel(NotificationChannel(PERIOD_CHANNEL_ID, "周期提醒", NotificationManager.IMPORTANCE_DEFAULT).apply { description = "经期预测与周期提醒" })
-        val text = if (days == 0) "按记录估算，今天可能接近经期开始日。记得按实际情况记录哦。" else "按记录估算，大约还有 $days 天可能进入经期。要不要提前准备一下？"
-        val notification = NotificationCompat.Builder(applicationContext, PERIOD_CHANNEL_ID).setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle("🌷 周期小提醒").setContentText(text).setStyle(NotificationCompat.BigTextStyle().bigText(text)).setAutoCancel(true).build()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) manager.createNotificationChannel(NotificationChannel(PERIOD_CHANNEL_ID, applicationContext.getString(R.string.life_health_notif_channel), NotificationManager.IMPORTANCE_DEFAULT).apply { description = applicationContext.getString(R.string.life_health_notif_channel_desc) })
+        val text = if (days == 0) applicationContext.getString(R.string.life_health_notif_today) else applicationContext.getString(R.string.life_health_notif_soon, days)
+        val notification = NotificationCompat.Builder(applicationContext, PERIOD_CHANNEL_ID).setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle(applicationContext.getString(R.string.life_health_notif_title)).setContentText(text).setStyle(NotificationCompat.BigTextStyle().bigText(text)).setAutoCancel(true).build()
         NotificationManagerCompat.from(applicationContext).notify(46321, notification)
         prefs.edit().putString(LAST_NOTIFICATION_KEY, marker).apply()
         return Result.success()

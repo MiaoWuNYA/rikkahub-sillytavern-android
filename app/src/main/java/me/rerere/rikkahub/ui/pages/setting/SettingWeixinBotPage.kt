@@ -101,7 +101,7 @@ fun SettingWeixinBotPage(vm: SettingVM = koinViewModel()) {
     Scaffold(
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text("微信 Bot") },
+                title = { Text(stringResource(R.string.weixin_bot_title)) },
                 navigationIcon = { BackButton() },
                 scrollBehavior = scrollBehavior,
                 colors = CustomColors.topBarColors
@@ -118,17 +118,24 @@ fun SettingWeixinBotPage(vm: SettingVM = koinViewModel()) {
             // 说明
             item {
                 CardGroup(
-                    title = { Text("说明") },
+                    title = { Text(stringResource(R.string.weixin_bot_section_about)) },
                     modifier = Modifier.padding(horizontal = 8.dp)
                 ) {
                     item(
                         leadingContent = { Icon(imageVector = HugeIcons.MessageMultiple01, contentDescription = null) },
-                        headlineContent = { Text("微信 Bot 是什么") },
-                        supportingContent = { Text("把你的微信号变成 AI 入口: 别人(或你自己)给这个微信号发消息, 会由关联的助手回复. 相当于给助手多开一个微信通道, AI/记忆/工具都用那个助手的.") }
+                        headlineContent = { Text(stringResource(R.string.weixin_bot_what_is)) },
+                        supportingContent = { Text(stringResource(R.string.weixin_bot_what_is_desc)) }
                     )
                     item(
-                        headlineContent = { Text("关联助手") },
-                        supportingContent = { Text("固定使用当前助手: ${settings.getCurrentAssistant().name.ifBlank { "未命名" }}") }
+                        headlineContent = { Text(stringResource(R.string.weixin_bot_linked_assistant)) },
+                        supportingContent = {
+                            Text(
+                                stringResource(
+                                    R.string.weixin_bot_linked_assistant_desc,
+                                    settings.getCurrentAssistant().name.ifBlank { stringResource(R.string.weixin_bot_unnamed) }
+                                )
+                            )
+                        }
                     )
                 }
             }
@@ -136,17 +143,20 @@ fun SettingWeixinBotPage(vm: SettingVM = koinViewModel()) {
             // 扫码登录
             item {
                 CardGroup(
-                    title = { Text("登录") },
+                    title = { Text(stringResource(R.string.weixin_bot_section_login)) },
                     modifier = Modifier.padding(horizontal = 8.dp)
                 ) {
                     item(
-                        headlineContent = { Text("登录状态") },
+                        headlineContent = { Text(stringResource(R.string.weixin_bot_login_status)) },
                         supportingContent = {
                             Text(
                                 if (botSetting.botToken.isNotBlank()) {
-                                    "已登录 (Bot: ${botSetting.botId.ifBlank { "未知" }})"
+                                    stringResource(
+                                        R.string.weixin_bot_logged_in,
+                                        botSetting.botId.ifBlank { stringResource(R.string.weixin_bot_unknown) }
+                                    )
                                 } else {
-                                    "未登录"
+                                    stringResource(R.string.weixin_bot_not_logged_in)
                                 }
                             )
                         },
@@ -156,19 +166,22 @@ fun SettingWeixinBotPage(vm: SettingVM = koinViewModel()) {
                                 onClick = {
                                     scope.launch {
                                         isLoggingIn = true
-                                        loginStatus = "获取二维码..."
+                                        loginStatus = context.getString(R.string.weixin_bot_fetching_qrcode)
                                         try {
                                             val qr = client.getQrcode(botSetting.baseUrl)
                                             qrContent = qr.qrcodeImgContent
-                                            loginStatus = "请用微信扫码"
+                                            loginStatus = context.getString(R.string.weixin_bot_scan_prompt)
                                             qrBitmap = withContext(Dispatchers.Default) {
                                                 runCatching { renderQrCode(qr.qrcodeImgContent, 480) }
                                                     .onFailure {
-                                                        loginStatus = "二维码渲染失败, 请用下方链接扫码: ${it.message}"
+                                                        loginStatus = context.getString(
+                                                            R.string.weixin_bot_qr_render_failed, it.message.orEmpty()
+                                                        )
                                                     }
                                                     .getOrNull()
                                             }
                                             // 轮询扫码状态, 最多 5 分钟
+                                            val waitingStatus = context.getString(R.string.weixin_bot_waiting_scan)
                                             val deadline = System.currentTimeMillis() + 5 * 60_000
                                             var currentQrcode = qr.qrcode
                                             var refreshCount = 0
@@ -184,17 +197,17 @@ fun SettingWeixinBotPage(vm: SettingVM = koinViewModel()) {
                                                                 botId = st.botId ?: "",
                                                             )
                                                         )
-                                                        loginStatus = "登录成功!"
+                                                        loginStatus = context.getString(R.string.weixin_bot_login_success)
                                                         confirmed = true
                                                     }
-                                                    "scaned" -> loginStatus = "已扫码, 请在微信确认..."
+                                                    "scaned" -> loginStatus = context.getString(R.string.weixin_bot_scanned)
                                                     "expired" -> {
                                                         refreshCount++
                                                         if (refreshCount > 3) {
-                                                            loginStatus = "二维码多次过期, 请重试"
+                                                            loginStatus = context.getString(R.string.weixin_bot_qr_expired_many)
                                                             break
                                                         }
-                                                        loginStatus = "二维码过期, 刷新中..."
+                                                        loginStatus = context.getString(R.string.weixin_bot_qr_expired_refresh)
                                                         val newQr = client.getQrcode(botSetting.baseUrl)
                                                         currentQrcode = newQr.qrcode
                                                         qrBitmap = withContext(Dispatchers.Default) {
@@ -202,38 +215,48 @@ fun SettingWeixinBotPage(vm: SettingVM = koinViewModel()) {
                                                                 .getOrNull()
                                                         }
                                                     }
-                                                    else -> loginStatus = "等待扫码..." // wait
+                                                    else -> loginStatus = waitingStatus // wait
                                                 }
                                                 delay(1000)
                                             }
-                                            if (!confirmed && loginStatus == "等待扫码...") {
-                                                loginStatus = "登录超时"
+                                            if (!confirmed && loginStatus == waitingStatus) {
+                                                loginStatus = context.getString(R.string.weixin_bot_login_timeout)
                                             }
                                             qrBitmap = null
                                         } catch (e: Exception) {
-                                            loginStatus = "登录失败: ${e.message ?: e::class.simpleName}"
+                                            loginStatus = context.getString(
+                                                R.string.weixin_bot_login_failed,
+                                                e.message ?: e::class.simpleName.orEmpty()
+                                            )
                                         } finally {
                                             isLoggingIn = false
                                         }
                                     }
                                 }
                             ) {
-                                Text(if (isLoggingIn) "登录中..." else if (botSetting.botToken.isNotBlank()) "重新登录" else "扫码登录")
+                                Text(
+                                    if (isLoggingIn) stringResource(R.string.weixin_bot_logging_in)
+                                    else if (botSetting.botToken.isNotBlank()) stringResource(R.string.weixin_bot_relogin)
+                                    else stringResource(R.string.weixin_bot_scan_login)
+                                )
                             }
                         }
                     )
-                    if (loginStatus.isNotBlank() && loginStatus != "未登录") {
-                        item(headlineContent = { Text("状态") }, supportingContent = { Text(loginStatus) })
+                    if (loginStatus.isNotBlank() && loginStatus != context.getString(R.string.weixin_bot_not_logged_in)) {
+                        item(
+                            headlineContent = { Text(stringResource(R.string.weixin_bot_status)) },
+                            supportingContent = { Text(loginStatus) }
+                        )
                     }
                     if (botSetting.botToken.isNotBlank()) {
                         item(
-                            headlineContent = { Text("退出登录") },
+                            headlineContent = { Text(stringResource(R.string.weixin_bot_logout)) },
                             trailingContent = {
                                 FilledTonalButton(onClick = {
                                     WeixinBotService.stop(context)
                                     update(botSetting.copy(botToken = "", botId = ""))
-                                    loginStatus = "已退出"
-                                }) { Text("退出") }
+                                    loginStatus = context.getString(R.string.weixin_bot_logged_out)
+                                }) { Text(stringResource(R.string.weixin_bot_logout_button)) }
                             }
                         )
                     }
@@ -261,7 +284,7 @@ fun SettingWeixinBotPage(vm: SettingVM = koinViewModel()) {
                         qrBitmap?.let { bmp ->
                             androidx.compose.foundation.Image(
                                 bitmap = bmp.asImageBitmap(),
-                                contentDescription = "微信登录二维码",
+                                contentDescription = stringResource(R.string.weixin_bot_qr_content_desc),
                                 modifier = Modifier
                                     .size(240.dp)
                                     .background(Color.White)
@@ -271,7 +294,7 @@ fun SettingWeixinBotPage(vm: SettingVM = koinViewModel()) {
                         // URL 始终显示 (可点击打开)
                         qrContent?.let { url ->
                             Text(
-                                text = "如果二维码不显示, 点按钮用浏览器打开:",
+                                text = stringResource(R.string.weixin_bot_qr_open_hint),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -279,7 +302,7 @@ fun SettingWeixinBotPage(vm: SettingVM = koinViewModel()) {
                                 val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
                                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 try { context.startActivity(intent) } catch (_: Exception) {}
-                            }) { Text("用浏览器打开二维码链接") }
+                            }) { Text(stringResource(R.string.weixin_bot_open_qr_link)) }
                         }
                     }
                 }
@@ -288,12 +311,12 @@ fun SettingWeixinBotPage(vm: SettingVM = koinViewModel()) {
             // 总开关
             item {
                 CardGroup(
-                    title = { Text("运行") },
+                    title = { Text(stringResource(R.string.weixin_bot_section_run)) },
                     modifier = Modifier.padding(horizontal = 8.dp)
                 ) {
                     item(
-                        headlineContent = { Text("启用微信 Bot") },
-                        supportingContent = { Text("开启后启动后台长轮询服务. 需先扫码登录.") },
+                        headlineContent = { Text(stringResource(R.string.weixin_bot_enable)) },
+                        supportingContent = { Text(stringResource(R.string.weixin_bot_enable_desc)) },
                         trailingContent = {
                             Switch(
                                 checked = botSetting.enabled,
@@ -310,8 +333,8 @@ fun SettingWeixinBotPage(vm: SettingVM = koinViewModel()) {
                     )
                     if (botSetting.enabled && botSetting.botToken.isBlank()) {
                         item(
-                            headlineContent = { Text("⚠ 尚未登录") },
-                            supportingContent = { Text("服务需要登录后才能收发消息, 请先扫码登录") }
+                            headlineContent = { Text(stringResource(R.string.weixin_bot_not_logged_warning)) },
+                            supportingContent = { Text(stringResource(R.string.weixin_bot_not_logged_warning_desc)) }
                         )
                     }
                 }

@@ -51,6 +51,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -90,6 +91,7 @@ fun SkillDetailPage(skillName: String) {
     val hasUpdateSource by vm.hasUpdateSource.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val toaster = LocalToaster.current
+    val context = LocalContext.current
 
     var editingFile by remember { mutableStateOf<SkillFile?>(null) }
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
@@ -151,7 +153,7 @@ fun SkillDetailPage(skillName: String) {
                             }
     val totalFiles = skill.linkedFiles.values.sumOf { it.size }
     if (totalFiles > 0) {
-        SuggestionChip(onClick = {}, label = { Text("📎 $totalFiles 文件") })
+        SuggestionChip(onClick = {}, label = { Text(stringResource(R.string.skill_detail_page_file_count, totalFiles)) })
     }
 }
 
@@ -159,7 +161,7 @@ fun SkillDetailPage(skillName: String) {
 if (skill.commands.isNotEmpty()) {
     Spacer(Modifier.height(6.dp))
     Text(
-        "斜杠命令",
+        stringResource(R.string.skill_detail_page_slash_commands),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.primary,
     )
@@ -204,13 +206,13 @@ if (skill.allowedTools.isNotEmpty()) {
 Spacer(Modifier.height(4.dp))
 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
     if (skill.userInvocable) {
-        SuggestionChip(onClick = {}, label = { Text("可手动调用") })
+        SuggestionChip(onClick = {}, label = { Text(stringResource(R.string.skill_detail_page_user_invocable)) })
     }
     if (skill.disableModelInvocation) {
-        SuggestionChip(onClick = {}, label = { Text("不调模型") })
+        SuggestionChip(onClick = {}, label = { Text(stringResource(R.string.skill_detail_page_disable_model_invocation)) })
     }
     if (skill.injectPosition != null) {
-        SuggestionChip(onClick = {}, label = { Text("注入: ${skill.injectPosition}") })
+        SuggestionChip(onClick = {}, label = { Text(stringResource(R.string.skill_detail_page_inject_position, skill.injectPosition)) })
     }
 }
 
@@ -218,7 +220,7 @@ Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
 if (skill.mcpServers.isNotEmpty()) {
     Spacer(Modifier.height(8.dp))
     Text(
-        "MCP 服务器",
+        stringResource(R.string.skill_detail_page_mcp_servers),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.primary,
     )
@@ -244,7 +246,7 @@ if (skill.mcpServers.isNotEmpty()) {
                         if (skill.triggers.isNotEmpty()) {
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                "触发词: ${skill.triggers.joinToString(", ")}",
+                                stringResource(R.string.skill_detail_page_triggers, skill.triggers.joinToString(", ")),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.tertiary,
                             )
@@ -297,7 +299,7 @@ if (skill.mcpServers.isNotEmpty()) {
                                                 modifier = Modifier.size(14.dp),
                                             )
                                             Spacer(Modifier.width(4.dp))
-                                            Text("检查更新", style = MaterialTheme.typography.labelSmall)
+                                            Text(stringResource(R.string.skill_detail_page_check_update), style = MaterialTheme.typography.labelSmall)
                                         }
                                     }
                                 }
@@ -386,7 +388,7 @@ if (skill.mcpServers.isNotEmpty()) {
             onDismissRequest = { showUpdatePicker = false },
             title = {
                 Text(
-                    "发现 ${scannedForUpdate.size} 个 Skill",
+                    stringResource(R.string.skills_page_found_skills, scannedForUpdate.size),
                     style = MaterialTheme.typography.titleMedium,
                 )
             },
@@ -409,12 +411,13 @@ if (skill.mcpServers.isNotEmpty()) {
                             else scannedForUpdate.indices.toSet()
                         }) {
                             Text(
-                                if (selectedForUpdate.size == scannedForUpdate.size) "取消全选" else "全选",
+                                if (selectedForUpdate.size == scannedForUpdate.size) stringResource(R.string.skills_page_deselect_all)
+                                else stringResource(R.string.skills_page_select_all),
                                 style = MaterialTheme.typography.labelSmall,
                             )
                         }
                         Text(
-                            "已选 ${selectedForUpdate.size}",
+                            stringResource(R.string.skills_page_selected_count, selectedForUpdate.size),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -463,14 +466,14 @@ if (skill.mcpServers.isNotEmpty()) {
                                             if (skillInfo.hasUpdate) {
                                                 Spacer(Modifier.width(6.dp))
                                                 Surface(shape = RoundedCornerShape(4.dp), color = MaterialTheme.colorScheme.errorContainer) {
-                                                    Text("有更新", modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                                    Text(stringResource(R.string.skills_page_has_update), modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
                                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onErrorContainer)
                                                 }
                                             }
                                             if (skillInfo.isNew) {
                                                 Spacer(Modifier.width(6.dp))
                                                 Surface(shape = RoundedCornerShape(4.dp), color = MaterialTheme.colorScheme.tertiaryContainer) {
-                                                    Text("新增", modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                                    Text(stringResource(R.string.skills_page_new_badge), modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
                                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onTertiaryContainer)
                                                 }
                                             }
@@ -497,12 +500,20 @@ if (skill.mcpServers.isNotEmpty()) {
                             vm.setUpdating(true)
                             val toUpdate = selectedForUpdate.map { scannedForUpdate[it] }
                             // 逐个更新（仅选中的）
-                            updateNext(0, toUpdate, skillsVM, vm, toaster, updateRepoUrl)
+                            updateNext(
+                                0, toUpdate, skillsVM, vm, toaster, updateRepoUrl,
+                                updateDoneText = context.getString(R.string.skill_detail_page_update_done_count, toUpdate.size),
+                                installFailedText = context.getString(R.string.skill_detail_page_install_failed),
+                                updateFailedText = context.getString(R.string.skill_detail_page_update_failed),
+                            )
                         }
                     },
                     enabled = selectedForUpdate.isNotEmpty() && !updating,
                 ) {
-                    Text(if (updating) "更新中..." else "更新选中 (${selectedForUpdate.size})")
+                    Text(
+                        if (updating) stringResource(R.string.skill_detail_page_updating)
+                        else stringResource(R.string.skill_detail_page_update_selected, selectedForUpdate.size)
+                    )
                 }
             },
             dismissButton = {
@@ -521,12 +532,15 @@ private fun updateNext(
     detailVM: SkillDetailVM,
     toaster: com.dokar.sonner.ToasterState,
     repoUrl: String = "",
+    updateDoneText: String = "",
+    installFailedText: String = "",
+    updateFailedText: String = "",
 ) {
     if (index >= skills.size) {
         detailVM.setUpdating(false)
         detailVM.loadFiles()
         detailVM.refreshSourceStatus()
-        toaster.show("更新完成: ${skills.size} 个")
+        toaster.show(updateDoneText)
         return
     }
     val skill = skills[index]
@@ -535,20 +549,20 @@ private fun updateNext(
         val fullUrl = if (repoUrl.startsWith("http")) repoUrl else "https://github.com/$repoUrl"
         skillsVM.downloadSkillFromGitHub(fullUrl, skill) { ok, msg ->
             if (ok) {
-                updateNext(index + 1, skills, skillsVM, detailVM, toaster, repoUrl)
+                updateNext(index + 1, skills, skillsVM, detailVM, toaster, repoUrl, updateDoneText, installFailedText, updateFailedText)
             } else {
                 detailVM.setUpdating(false)
-                toaster.show("安装失败: $msg")
+                toaster.show("$installFailedText: $msg")
             }
         }
     } else {
         // 已安装 skill → 走更新路径
         skillsVM.updateSkillFromGitHub(skill.name) { ok, msg ->
             if (ok) {
-                updateNext(index + 1, skills, skillsVM, detailVM, toaster, repoUrl)
+                updateNext(index + 1, skills, skillsVM, detailVM, toaster, repoUrl, updateDoneText, installFailedText, updateFailedText)
             } else {
                 detailVM.setUpdating(false)
-                toaster.show("更新失败: $msg")
+                toaster.show("$updateFailedText: $msg")
             }
         }
     }

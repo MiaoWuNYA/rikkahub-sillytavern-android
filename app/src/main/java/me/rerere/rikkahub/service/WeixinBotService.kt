@@ -209,8 +209,8 @@ class WeixinBotService : Service(), KoinComponent {
 
     private fun startForegroundCompat() {
         val notification: Notification = NotificationCompat.Builder(this, CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("微信 Bot 运行中")
-            .setContentText("正在监听微信消息")
+            .setContentTitle(getString(R.string.weixin_bot_notification_running_title))
+            .setContentText(getString(R.string.weixin_bot_notification_running_text))
             .setSmallIcon(R.drawable.small_icon)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
@@ -231,8 +231,8 @@ class WeixinBotService : Service(), KoinComponent {
     private fun notifyTokenExpired() {
         try {
             val notification = NotificationCompat.Builder(this, CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID)
-                .setContentTitle("微信 Bot 已断开")
-                .setContentText("登录已过期, 请到设置页重新扫码登录")
+                .setContentTitle(getString(R.string.weixin_bot_notification_disconnected_title))
+                .setContentText(getString(R.string.weixin_bot_notification_disconnected_text))
                 .setSmallIcon(R.drawable.small_icon)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setAutoCancel(true)

@@ -86,6 +86,37 @@ rikkahub/rikkahub (最上游，v2.5.2)
 
 ---
 
+## 📸 界面一览
+
+<details open>
+<summary><b>点击查看截图（9 张）</b></summary>
+
+### 酒馆兼容
+
+| 角色卡全兼容（V3 卡 + 62 条内嵌世界书） | 世界书读取实例 | 宏引擎（60+ 官方宏） |
+|---|---|---|
+| ![角色卡](docs/screenshots/tavern-cards.jpg) | ![世界书](docs/screenshots/tavern-lorebook.jpg) | ![宏](docs/screenshots/macros.jpg) |
+
+### 记忆与缓存
+
+| 多维度记忆设置 | 前缀缓存分叉诊断（字符级定位） |
+|---|---|
+| ![记忆](docs/screenshots/memory.jpg) | ![缓存诊断](docs/screenshots/cache-diagnostics.jpg) |
+
+### 本分支专属
+
+| 华灯设置（兼容与辅助开关） | 华灯设置（接入与自动化） | Jev 智能决策 |
+|---|---|---|
+| ![华灯开关](docs/screenshots/huadeng-toggles.jpg) | ![华灯接入](docs/screenshots/huadeng-integrations.jpg) | ![Jev](docs/screenshots/jev.jpg) |
+
+| 插件系统 |
+|---|
+| ![插件](docs/screenshots/plugins.jpg) |
+
+</details>
+
+---
+
 ## 💬 聊天功能（本分支核心增强）
 
 ### ⚡ 提示词前缀缓存优化
@@ -431,6 +462,22 @@ AlarmManager 精确闹钟 + WorkManager 兜底双通道，随机间隔（可设�
 
 </details>
 
+### 从 Chatbox 或其他通用 AI 客户端换过来？
+
+如果你正在用 **Chatbox**（或其他通用 AI 聊天客户端）接 API 聊天，本 app 是一个值得考虑的升级——基础体验完全对齐（多供应商接入、流式输出、Markdown / LaTeX / 代码高亮、对话导出、数据备份），在这之上还多了一整层 Chatbox 没有的能力：
+
+| Chatbox 有 | 本 app 额外提供 |
+|---|---|
+| 多供应商接入、流式对话 | ✅ 同样有，另支持 **Anthropic / Gemini 原生协议**与中转站病态自动修复 |
+| 对话历史 | ✅ + **语义记忆 RAG / 三层记忆**，AI 跨会话记住你，无需手动粘贴背景 |
+| 每轮全文发送，长对话越来越贵 | ✅ **提示词前缀缓存优化**，长对话 token 成本大幅下降 |
+| 单一界面 | ✅ + **酒馆兼容**（角色卡 / 世界书 / 预设 / 正则 / 主题按官方语义导入） |
+| 无扩展机制 | ✅ **QuickJS 插件系统** + 30 个设备工具 + 微信 / QQ Bot |
+| 文字聊天 | ✅ + **语音 / 视频通话**（豆包 TTS 2.0 + 火山 ASR） |
+| 数据同步到云 | ✅ 数据全部**本地存储**，S3 / WebDAV 备份自选 |
+
+不需要任何"酒馆"概念也能当纯聊天客户端用——两条路线互不干扰，先按普通 AI 客户端上手，想要时再导入角色卡。
+
 ---
 
 ## 🔍 常见需求对照
@@ -438,6 +485,7 @@ AlarmManager 精确闹钟 + WorkManager 兜底双通道，随机间隔（可设�
 | 需求 | 对应功能 |
 |---|---|
 | **找一个好用的安卓 AI 聊天 App** | 即本项目：接上 API 就能聊，多供应商 + 流式 + 语音 + 记忆 + 插件 |
+| **正在用 Chatbox，想要记忆 / 角色扮演 / 省 token** | 即本项目，见[从 Chatbox 换过来](#-从-chatbox-或其他通用-ai-客户端换过来) |
 | **降低长对话 API 花费** | 提示词前缀缓存优化，命中部分大幅降价 |
 | **AI 总忘记之前说过什么** | 语义记忆 RAG + 三层记忆 + 滚动压缩，可叠加 Jev 记忆筛选 |
 | **在安卓设备上使用酒馆角色卡与世界书** | 角色卡 V2/V3/PNG、世界书 30+ 字段、预设、正则、QR、美化主题，全部按官方语义导入 |
@@ -455,6 +503,7 @@ AlarmManager 精确闹钟 + WorkManager 兜底双通道，随机间隔（可设�
 > 安卓酒馆、手机酒馆、酒馆客户端、SillyTavern 安卓、SillyTavern Android、酒馆手机版、
 > 角色卡导入、世界书、Lorebook、角色扮演 AI、AI 角色扮演、RP 客户端、
 > Android LLM chat、AI 聊天客户端、RAG 记忆、OpenAI 兼容中转、
+> Chatbox 安卓、Chatbox 替代、Chatbox 类似应用、Chatbox 记忆、Chatbox 角色扮演、
 > Kotlin Jetpack Compose AI 应用、本地 AI 聊天。
 
 ---
@@ -511,8 +560,8 @@ TypeSafe System One 判断模型的接入配置页：API 地址 / Key / 模型�
 
 | 渠道 | 说明 |
 |---|---|
-| **稳定版** | [Releases](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases) 按版本发布（`2.5.4fixN`） |
-| **Nightly** | Actions 每天两次自动构建（过去 24 小时无新提交则跳过），覆盖 [nightly](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/tag/nightly) 预发布；版本按日期推进（`2.5.4fixYYYYMMDD`） |
+| **稳定版** | [Releases](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases) 按版本发布（`2.5.4.N`，历史版本曾是 `2.5.4fixN`，可直接覆盖安装升级） |
+| **Nightly** | Actions 每天两次自动构建（过去 24 小时无新提交则跳过），覆盖 [nightly](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/tag/nightly) 预发布；版本按日期推进（`2.5.4.YYYYMMDD`） |
 | **手动构建产物** | 每次推送在 [Actions](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/actions) 产出 APK Artifact（构建页底部「Artifacts → rikkahub-plus-fresh」，需登录） |
 | **应用内更新** | 设置 → 关于 → 检查更新（GitHub Releases API，国内可达镜像自动回退） |
 

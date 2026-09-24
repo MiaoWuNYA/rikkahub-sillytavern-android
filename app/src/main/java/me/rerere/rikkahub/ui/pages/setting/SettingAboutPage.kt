@@ -142,7 +142,7 @@ fun SettingAboutPage() {
                             ),
                             leadingContent = { Icon(HugeIcons.Code, null) },
                             supportingContent = {
-                                Text("华灯定制版 ${BuildConfig.VERSION_NAME} / ${BuildConfig.VERSION_CODE}")
+                                Text(stringResource(R.string.about_page_custom_build, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE))
                             },
                             headlineContent = { Text(stringResource(R.string.about_page_version)) },
                         )

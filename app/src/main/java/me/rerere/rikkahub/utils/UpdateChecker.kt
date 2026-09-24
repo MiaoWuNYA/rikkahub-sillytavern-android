@@ -269,12 +269,12 @@ private fun formatSize(bytes: Long): String = when {
 }
 
 /**
- * 版本号，支持本项目自己的 `2.5.4fix9` 命名。
+ * 版本号，支持本项目自己的 `2.5.4.13` 四段命名（历史上曾是 `2.5.4fixN`）。
  *
- * 上游那套纯 SemVer 解析器处理不了 `fixN`：`split(".")` 之后拿到的 patch 段是
+ * 上游那套纯 SemVer 解析器处理不了历史 `fixN` 后缀：`split(".")` 之后拿到的 patch 段是
  * `4fix9`，`toIntOrNull()` 返回 null 被当成 0，于是 2.5.4fix9 和 2.5.4 判成相等，
- * 更新提示直接不出现。这里把 `fixN` 单独解析成一个补丁序号参与比较：
- * 2.5.4 < 2.5.4fix1 < 2.5.4fix9 < 2.5.4fix10 < 2.5.5。
+ * 更新提示直接不出现。这里把 `fixN` 后缀单独解析成一个补丁序号参与比较：
+ * 2.5.4 < 2.5.4fix1 < 2.5.4.9 < 2.5.4.10 < 2.5.5。
  */
 @JvmInline
 value class Version(val value: String) : Comparable<Version> {

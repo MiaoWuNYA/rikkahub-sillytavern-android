@@ -6,7 +6,7 @@
 
 **Chat out of the box · prefix caching saves tokens · memory that doesn't fade · character cards / lorebooks / presets imported with official SillyTavern semantics**
 
-[**English**](README_EN.md) | [**简体中文**](README.md) | [Divergence map](DIVERGENCE.md)
+[**English**](README_EN.md) | [**简体中文**](README.md) | [Divergence map](DIVERGENCE.md) | [Divergence map (EN)](DIVERGENCE_EN.md)
 
 [![Release](https://img.shields.io/github/v/release/MiaoWuNYA/rikkahub-sillytavern-android?label=release&color=brightgreen)](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
@@ -80,6 +80,37 @@ rikkahub/rikkahub (original upstream, v2.5.2)
    - **Add plugins** (Settings → Plugins → import ZIP; [bundled plugins](#-bundled-plugins) work out of the box)
 
 > In-app update: Settings → About → Check for updates (GitHub Releases API, with an auto-fallback mirror for mainland China)
+
+---
+
+## 📸 Screenshots
+
+<details open>
+<summary><b>Click to view (9 screenshots, Chinese UI)</b></summary>
+
+### Tavern compatibility
+
+| Character cards (V3 card + 62-entry embedded lorebook) | Lorebook in action | Macro engine (60+ official macros) |
+|---|---|---|
+| ![Cards](docs/screenshots/tavern-cards.jpg) | ![Lorebook](docs/screenshots/tavern-lorebook.jpg) | ![Macros](docs/screenshots/macros.jpg) |
+
+### Memory & caching
+
+| Multi-dimensional memory settings | Prefix divergence diagnostics (character-level diff) |
+|---|---|
+| ![Memory](docs/screenshots/memory.jpg) | ![Cache diagnostics](docs/screenshots/cache-diagnostics.jpg) |
+
+### This fork's exclusives
+
+| HuaDeng Settings (compatibility & helpers) | HuaDeng Settings (access & automation) | Jev decisioning |
+|---|---|---|
+| ![HuaDeng toggles](docs/screenshots/huadeng-toggles.jpg) | ![HuaDeng integrations](docs/screenshots/huadeng-integrations.jpg) | ![Jev](docs/screenshots/jev.jpg) |
+
+| Plugin system |
+|---|
+| ![Plugins](docs/screenshots/plugins.jpg) |
+
+</details>
 
 ---
 
@@ -425,6 +456,22 @@ Multi-character conversations with independent prompts / personas / models per m
 
 </details>
 
+### Switching from Chatbox or another general-purpose AI client?
+
+If you currently use **Chatbox** (or any other general AI chat client) to talk to APIs, this app is a worthwhile upgrade — the fundamentals are fully covered (multi-provider access, streaming, Markdown / LaTeX / syntax highlighting, chat export, data backup), plus an entire layer Chatbox doesn't have:
+
+| Chatbox has | This app adds |
+|---|---|
+| Multi-provider access, streaming | ✅ Yes, plus **native Anthropic / Gemini protocols** and auto-fix for proxy-station pathologies |
+| Chat history | ✅ + **semantic memory RAG / three-layer memory** — the AI remembers you across sessions, no pasting context manually |
+| Full context resent every turn, long chats get expensive | ✅ **Prompt prefix cache optimization** — long-conversation token cost drops sharply |
+| Single interface | ✅ + **SillyTavern compatibility** (character cards / lorebooks / presets / regex / themes imported with official semantics) |
+| No extension mechanism | ✅ **QuickJS plugin system** + 30 device tools + WeChat / QQ Bots |
+| Text chat only | ✅ + **voice / video calls** (Doubao TTS 2.0 + Volcengine ASR) |
+| Cloud sync | ✅ Data stays **local**, with optional S3 / WebDAV backup |
+
+No "tavern" concepts required as a pure chat client — both routes coexist. Start with it as a plain AI client and import a character card whenever you want.
+
 ---
 
 ## 🔍 Common needs and where they map
@@ -432,6 +479,7 @@ Multi-character conversations with independent prompts / personas / models per m
 | Need | Corresponding feature |
 |---|---|
 | **Find a good Android AI chat app** | This project: plug in an API and chat — multi-provider + streaming + voice + memory + plugins |
+| **Using Chatbox, want memory / roleplay / lower token cost** | This project — see [Switching from Chatbox](#-switching-from-chatbox-or-another-general-purpose-ai-client) |
 | **Cut long-conversation API cost** | Prompt prefix cache optimization — cache hits are billed far below the normal rate |
 | **The AI keeps forgetting** | Semantic memory RAG + three-layer memory + rolling compression, with optional Jev memory screening |
 | **Use tavern character cards and lorebooks on Android** | Cards (V2/V3/PNG), lorebooks (30+ fields), presets, regex, QR, themes — all imported with official semantics |
@@ -449,6 +497,7 @@ Multi-character conversations with independent prompts / personas / models per m
 > Android SillyTavern, SillyTavern Android client, mobile SillyTavern, tavern client,
 > character card import, lorebook, world info, roleplay AI, AI roleplay, RP client,
 > Android LLM chat, AI chat client, RAG memory, OpenAI-compatible proxy,
+> Chatbox for Android, Chatbox alternative, Chatbox with memory, Chatbox roleplay,
 > Kotlin Jetpack Compose AI app, local AI chat.
 
 ---
@@ -505,8 +554,8 @@ The configuration page for the TypeSafe System One judge model: API base URL / k
 
 | Channel | Description |
 |---|---|
-| **Stable** | Versioned releases (`2.5.4fixN`) on [Releases](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases) |
-| **Nightly** | Actions build twice daily (skipped if no commit in the past 24h) and overwrite the [nightly](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/tag/nightly) prerelease; versions advance by date (`2.5.4fixYYYYMMDD`) |
+| **Stable** | Versioned releases (`2.5.4.N`; historical versions used `2.5.4fixN` — installs upgrade over them directly) on [Releases](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases) |
+| **Nightly** | Actions build twice daily (skipped if no commit in the past 24h) and overwrite the [nightly](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/tag/nightly) prerelease; versions advance by date (`2.5.4.YYYYMMDD`) |
 | **Manual builds** | Every push produces an APK artifact on [Actions](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/actions) (build page → Artifacts → `rikkahub-plus-fresh`; sign-in required) |
 | **In-app update** | Settings → About → Check for updates (GitHub Releases API, with a mainland-China-reachable mirror fallback) |
 
@@ -521,6 +570,20 @@ The configuration page for the TypeSafe System One judge model: API base URL / k
 - **Versus the intermediate mingli2 branch**: beyond tavern enhancements, this branch adds prompt prefix caching, semantic memory RAG & rolling compression, Jev decisioning, proxy-station compatibility & anti-empty-reply, Doubao voice, and privacy hardening
 - **New since v2.5.4**: the academic system moved out of the app into a plugin, the calories & protein plugin, session-aware HTTP and image decoding in the plugin sandbox, detail-page data cards, the update check moving to the GitHub Releases API, and Jev decisioning
 - **Merging upstream**: see the conflict handbook in [DIVERGENCE.md](DIVERGENCE.md)
+
+---
+
+## 🤝 Contributions welcome
+
+If you are — or plan to be — **maintaining your own fork** (whether forked from upstream rikkahub or from this repo), let's collaborate:
+
+- **Share merge experience**: tracking upstream, resolving conflicts, staying independent yet current — every fork maintainer shares this struggle. [DIVERGENCE.md](DIVERGENCE.md) is my conflict-handling handbook for upstream merges; I'm happy to trade notes on yours
+- **Build signature features together**: ideas around tavern compatibility, prompt prefix caching, semantic memory, Jev decisioning, or the plugin system are welcome as Issues or PRs — or fork and cross-port freely
+- **Cross-fork interop**: feature porting and semantics alignment across the same-origin forks (orangechat, Tumin, rikkahub-agent, Rikkahub-Revised, …) — reach out anytime
+- **Plugin ecosystem**: writing QuickJS plugins (skills, tools, data cards)? Come exchange plugin and sandbox know-how
+
+- Bug reports / suggestions: [Issues](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/issues)
+- Code: just Fork + PR — no permission needed
 
 ---
 

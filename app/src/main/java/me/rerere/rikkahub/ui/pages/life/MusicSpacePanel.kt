@@ -32,16 +32,21 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.koin.compose.koinInject
 import java.util.UUID
+import me.rerere.rikkahub.R
+import androidx.compose.ui.res.stringResource
 
 private const val MUSIC_PREFS = "tumin_music_space"
 private const val MUSIC_TRACKS_KEY = "tracks"
 
 private enum class MusicSource { LOCAL, DIRECT_URL, NETEASE }
 
+// "未知歌手" 会持久化到 SharedPreferences 中，保持字面量稳定。
+private const val MUSIC_UNKNOWN_ARTIST = "未知歌手"
+
 private data class MusicTrack(
     val id: String = UUID.randomUUID().toString(),
     val title: String,
-    val artist: String = "未知歌手",
+    val artist: String = MUSIC_UNKNOWN_ARTIST,
     val coverUrl: String = "",
     val source: MusicSource,
     val sourceUrl: String,
@@ -64,6 +69,10 @@ fun MusicSpacePanel() {
     var togetherMode by remember { mutableStateOf(playback.togetherMode) }
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    val cancelText = stringResource(R.string.cancel)
+    val saveText = stringResource(R.string.common_save)
+    val importText = stringResource(R.string.life_music_import)
+    val neteaseParseFailedText = stringResource(R.string.life_music_error_parse_failed)
 
     fun persist(updated: List<MusicTrack>) {
         tracks = updated
@@ -136,22 +145,22 @@ fun MusicSpacePanel() {
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             Text("🎧", style = MaterialTheme.typography.headlineMedium)
-                            Text("我们的歌单还是空的", fontWeight = FontWeight.SemiBold)
-                            Text("可以从网易云、本地文件或音频 URL 导入。", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            FilledTonalButton(onClick = { showImportMenu = true }) { Text("＋ 导入第一首歌") }
+                            Text(stringResource(R.string.life_music_empty_title), fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(R.string.life_music_empty_desc), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            FilledTonalButton(onClick = { showImportMenu = true }) { Text(stringResource(R.string.life_music_empty_import)) }
                         }
                     }
                 }
             } else {
                 item {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text("歌曲 ${tracks.size}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.life_music_track_count, tracks.size), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         Spacer(Modifier.weight(1f))
                         TextButton(onClick = {
                             togetherMode = !togetherMode
                             MusicPlaybackSession.setTogetherMode(togetherMode)
                         }) {
-                            Text(if (togetherMode) "💕 双人听" else "🎧 单人听")
+                            Text(stringResource(if (togetherMode) R.string.life_music_mode_together else R.string.life_music_mode_solo))
                         }
                     }
                 }
@@ -189,7 +198,7 @@ fun MusicSpacePanel() {
         AlertDialog(
             onDismissRequest = { showImportMenu = false },
             shape = RoundedCornerShape(24.dp),
-            title = { Text("导入音乐") },
+            title = { Text(importText) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     FilledTonalButton(
@@ -198,33 +207,33 @@ fun MusicSpacePanel() {
                             showNeteaseImport = true
                         },
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text("☁ 网易云音乐") }
+                    ) { Text(stringResource(R.string.life_music_source_netease)) }
                     OutlinedButton(
                         onClick = {
                             showImportMenu = false
                             localImporter.launch(arrayOf("audio/*"))
                         },
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text("📁 本地音乐") }
+                    ) { Text(stringResource(R.string.life_music_source_local)) }
                     OutlinedButton(
                         onClick = {
                             showImportMenu = false
                             showDirectUrlImport = true
                         },
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text("🔗 音频 URL") }
+                    ) { Text(stringResource(R.string.life_music_source_url)) }
                 }
             },
             confirmButton = {},
-            dismissButton = { TextButton(onClick = { showImportMenu = false }) { Text("取消") } },
+            dismissButton = { TextButton(onClick = { showImportMenu = false }) { Text(cancelText) } },
         )
     }
 
     if (showNeteaseImport) {
         MusicTextImportDialog(
-            title = "从网易云音乐导入",
-            hint = "粘贴网易云分享文案或链接。歌曲会尽量同时导入公开歌词；暂时没有可播放音源的歌曲仍保留网易云来源。",
-            label = "网易云分享链接或分享文案",
+            title = stringResource(R.string.life_music_netease_title),
+            hint = stringResource(R.string.life_music_netease_hint),
+            label = stringResource(R.string.life_music_netease_label),
             loading = loading,
             error = error,
             onDismiss = {
@@ -237,12 +246,12 @@ fun MusicSpacePanel() {
                 loading = true
                 error = null
                 scope.launch {
-                    runCatching { importNeteaseTrack(client, input) }
+                    runCatching { importNeteaseTrack(context, client, input) }
                         .onSuccess { imported ->
                             persist((tracks + imported).distinctBy { it.sourceUrl })
                             showNeteaseImport = false
                         }
-                        .onFailure { error = it.message ?: "网易云链接解析失败" }
+                        .onFailure { error = it.message ?: neteaseParseFailedText }
                     loading = false
                 }
             },
@@ -256,7 +265,7 @@ fun MusicSpacePanel() {
                 persist(
                     tracks + MusicTrack(
                         title = title,
-                        artist = artist.ifBlank { "未知歌手" },
+                        artist = artist.ifBlank { MUSIC_UNKNOWN_ARTIST },
                         source = MusicSource.DIRECT_URL,
                         sourceUrl = url,
                         playableUrl = url,
@@ -288,10 +297,10 @@ private fun MusicPlaylistHero(count: Int, onImport: () -> Unit, onPlayAll: () ->
                     }
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Text("我们的歌单", color = Color.White, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.life_music_hero_title), color = Color.White, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     Text("OUR PLAYLIST", color = Color.White.copy(alpha = 0.58f), style = MaterialTheme.typography.labelMedium)
-                    Text("把想和 TA 一起听的歌放在这里。", color = Color.White.copy(alpha = 0.76f), style = MaterialTheme.typography.bodySmall)
-                    Text("$count 首歌曲", color = Color.White.copy(alpha = 0.58f), style = MaterialTheme.typography.labelSmall)
+                    Text(stringResource(R.string.life_music_hero_desc), color = Color.White.copy(alpha = 0.76f), style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.life_music_hero_count, count), color = Color.White.copy(alpha = 0.58f), style = MaterialTheme.typography.labelSmall)
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -300,13 +309,13 @@ private fun MusicPlaylistHero(count: Int, onImport: () -> Unit, onPlayAll: () ->
                     enabled = count > 0,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE9484F)),
                     shape = RoundedCornerShape(18.dp),
-                ) { Text("▶ 播放全部") }
+                ) { Text(stringResource(R.string.life_music_play_all)) }
                 OutlinedButton(
                     onClick = onImport,
                     shape = RoundedCornerShape(18.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                     border = BorderStroke(1.dp, Color.White.copy(alpha = 0.30f)),
-                ) { Text("＋ 导入音乐") }
+                ) { Text(stringResource(R.string.life_music_import)) }
             }
         }
     }
@@ -320,6 +329,11 @@ private fun MusicTrackRow(
     onClick: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    val sourceLocalText = stringResource(R.string.life_music_source_local_short)
+    val sourceUrlText = stringResource(R.string.life_music_source_url_short)
+    val sourceNeteaseText = stringResource(R.string.life_music_source_netease_short)
+    val hasLyricsText = stringResource(R.string.life_music_has_lyrics)
+    val openText = stringResource(R.string.life_music_open)
     Surface(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -352,12 +366,12 @@ private fun MusicTrackRow(
                         append(" · ")
                         append(
                             when (track.source) {
-                                MusicSource.LOCAL -> "本地"
-                                MusicSource.DIRECT_URL -> "URL"
-                                MusicSource.NETEASE -> "网易云"
+                                MusicSource.LOCAL -> sourceLocalText
+                                MusicSource.DIRECT_URL -> sourceUrlText
+                                MusicSource.NETEASE -> sourceNeteaseText
                             }
                         )
-                        if (track.lyricsLrc.isNotBlank()) append(" · 有歌词")
+                        if (track.lyricsLrc.isNotBlank()) append(" · $hasLyricsText")
                     },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -366,7 +380,7 @@ private fun MusicTrackRow(
                 )
             }
             if (track.playableUrl.isBlank()) {
-                Text("打开", color = Color(0xFFE9484F), style = MaterialTheme.typography.labelMedium)
+                Text(openText, color = Color(0xFFE9484F), style = MaterialTheme.typography.labelMedium)
             } else {
                 Text("▶", color = Color(0xFFE9484F))
             }
@@ -402,7 +416,7 @@ private fun MusicMiniPlayer(
             Column(Modifier.weight(1f)) {
                 Text(track.title, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    if (togetherMode) "💕 正和 TA 一起听" else track.artist,
+                    if (togetherMode) stringResource(R.string.life_music_listening_together) else track.artist,
                     color = Color.White.copy(alpha = 0.62f),
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -425,6 +439,8 @@ private fun MusicTextImportDialog(
     onImport: (String) -> Unit,
 ) {
     var value by remember { mutableStateOf("") }
+    val cancelText = stringResource(R.string.cancel)
+    val importText = stringResource(R.string.life_music_import)
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(24.dp),
@@ -444,9 +460,9 @@ private fun MusicTextImportDialog(
             }
         },
         confirmButton = {
-            FilledTonalButton(enabled = value.isNotBlank() && !loading, onClick = { onImport(value.trim()) }) { Text("导入") }
+            FilledTonalButton(enabled = value.isNotBlank() && !loading, onClick = { onImport(value.trim()) }) { Text(importText) }
         },
-        dismissButton = { TextButton(enabled = !loading, onClick = onDismiss) { Text("取消") } },
+        dismissButton = { TextButton(enabled = !loading, onClick = onDismiss) { Text(cancelText) } },
     )
 }
 
@@ -456,19 +472,21 @@ private fun MusicDirectUrlDialog(onDismiss: () -> Unit, onSave: (String, String,
     var artist by remember { mutableStateOf("") }
     var url by remember { mutableStateOf("") }
     var lyrics by remember { mutableStateOf("") }
+    val cancelText = stringResource(R.string.cancel)
+    val saveText = stringResource(R.string.common_save)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("导入音频 URL") },
+        title = { Text(stringResource(R.string.life_music_url_import_title)) },
         text = {
             Column(Modifier.heightIn(max = 560.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(title, { title = it }, label = { Text("歌名") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(artist, { artist = it }, label = { Text("歌手（可选）") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(url, { url = it }, label = { Text("可播放的音频 URL") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(title, { title = it }, label = { Text(stringResource(R.string.life_music_url_field_title)) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(artist, { artist = it }, label = { Text(stringResource(R.string.life_music_url_field_artist)) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(url, { url = it }, label = { Text(stringResource(R.string.life_music_url_field_url)) }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(
                     lyrics,
                     { lyrics = it },
-                    label = { Text("LRC 歌词（可选）") },
-                    placeholder = { Text("[00:12.50]第一句歌词") },
+                    label = { Text(stringResource(R.string.life_music_url_field_lyrics)) },
+                    placeholder = { Text(stringResource(R.string.life_music_url_field_lyrics_hint)) },
                     minLines = 3,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -478,20 +496,20 @@ private fun MusicDirectUrlDialog(onDismiss: () -> Unit, onSave: (String, String,
             TextButton(
                 enabled = title.isNotBlank() && (url.startsWith("http://") || url.startsWith("https://")),
                 onClick = { onSave(title.trim(), artist.trim(), url.trim(), lyrics.trim()) },
-            ) { Text("保存") }
+            ) { Text(saveText) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(cancelText) } },
     )
 }
 
-private suspend fun importNeteaseTrack(client: OkHttpClient, rawInput: String): MusicTrack = withContext(Dispatchers.IO) {
-    val url = extractFirstUrl(rawInput) ?: error("没有找到网易云分享链接")
+private suspend fun importNeteaseTrack(context: Context, client: OkHttpClient, rawInput: String): MusicTrack = withContext(Dispatchers.IO) {
+    val url = extractFirstUrl(rawInput) ?: error(context.getString(R.string.life_music_error_no_link))
     val request = Request.Builder().url(url).get().build()
     client.newCall(request).execute().use { response ->
-        if (!response.isSuccessful) error("网易云页面打开失败：HTTP ${response.code}")
+        if (!response.isSuccessful) error(context.getString(R.string.life_music_error_page_open_failed, response.code))
         val finalUrl = response.request.url.toString()
         if (!finalUrl.contains("music.163.com") && !url.contains("music.163.com") && !url.contains("163cn.tv")) {
-            error("这看起来不是网易云音乐链接")
+            error(context.getString(R.string.life_music_error_not_netease))
         }
         val html = response.body.string()
         val type = when {

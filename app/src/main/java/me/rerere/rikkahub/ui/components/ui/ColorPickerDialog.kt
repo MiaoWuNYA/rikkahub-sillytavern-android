@@ -44,8 +44,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceIn
+import me.rerere.rikkahub.R
 
 private const val TAG = "ColorPickerDialog"
 private const val MEMORY_PREFS = "color_picker_memory"
@@ -104,14 +106,14 @@ fun ColorPickerDialog(
     @OptIn(ExperimentalLayoutApi::class)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("颜色选择") },
+        title = { Text(stringResource(R.string.color_picker_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp), Alignment.CenterVertically) {
                     Box(Modifier.size(48.dp).background(defaultColor, CircleShape))
-                    Text("原色", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.color_picker_original), style = MaterialTheme.typography.labelMedium)
                     Spacer(Modifier.weight(1f))
-                    Text("当前", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.color_picker_current), style = MaterialTheme.typography.labelMedium)
                     Box(Modifier.size(48.dp).background(cur, CircleShape))
                 }
                 SVPicker(hue = hue, sat = sat, v = v) { ns, nv ->
@@ -133,7 +135,7 @@ fun ColorPickerDialog(
                             }
                         } catch (e: Exception) { Log.e(TAG, "Error parsing hex", e) }
                     },
-                    label = { Text("HEX (#RRGGBB 或 #AARRGGBB)") },
+                    label = { Text(stringResource(R.string.color_picker_hex_label)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -142,12 +144,12 @@ fun ColorPickerDialog(
                     Arrangement.SpaceBetween,
                     Alignment.CenterVertically
                 ) {
-                    Text("记忆色", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.color_picker_memory), style = MaterialTheme.typography.labelMedium)
                     if (memoryColors.isNotEmpty()) {
                         TextButton(onClick = {
                             memoryColors = emptyList()
                             saveMemoryColors(context, emptyList())
-                        }) { Text("清除全部", style = MaterialTheme.typography.labelSmall) }
+                        }) { Text(stringResource(R.string.color_picker_clear_all), style = MaterialTheme.typography.labelSmall) }
                     }
                 }
                 FlowRow(
@@ -205,15 +207,15 @@ fun ColorPickerDialog(
         },
         confirmButton = {
             Row {
-                TextButton(onClick = { onConfirm(null); onDismiss() }) { Text("重置") }
+                TextButton(onClick = { onConfirm(null); onDismiss() }) { Text(stringResource(R.string.color_picker_reset)) }
                 Spacer(Modifier.width(8.dp))
                 TextButton(onClick = {
                     try { onConfirm(cur.toArgbLong()) } catch (e: Exception) { Log.e(TAG, "Error toArgbLong", e); onConfirm(null) }
                     onDismiss()
-                }) { Text("确认") }
+                }) { Text(stringResource(R.string.confirm)) }
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } }
     )
 }
 

@@ -1502,7 +1502,7 @@ class ChatService(
                 outputTransformers = outputTransformers,
                 tools = buildList {
                     if (assistant.localTools.contains(LocalToolOption.FileTools)) {
-                        addAll(createFileTools())
+                        addAll(createFileTools(context = context))
                     }
                     if (useExternalWebSearch) {
                         addAll(createSearchTools(settings))
@@ -1992,7 +1992,7 @@ class ChatService(
             },
             tools = buildList {
                 if (assistant.localTools.contains(LocalToolOption.FileTools)) {
-                    addAll(createFileTools())
+                    addAll(createFileTools(context = context))
                 }
                 if (assistant.enableWebSearch) {
                     addAll(createSearchTools(settings))

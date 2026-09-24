@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -62,6 +63,7 @@ import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Mic01
 import me.rerere.hugeicons.stroke.MicOff01
 import me.rerere.hugeicons.stroke.VolumeHigh
+import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.getAssistantById
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.service.VoiceCallService
@@ -222,7 +224,7 @@ fun VoiceCallPage(
             )
 
             Text(
-                "语音通话中",
+                stringResource(R.string.voice_call_status_subtitle),
                 color = Color.White.copy(alpha = .58f),
                 fontSize = 13.sp,
                 modifier = Modifier.padding(top = 5.dp),
@@ -268,7 +270,7 @@ fun VoiceCallPage(
             }
             val subtitleAuthor = when (uiState.status) {
                 VoiceCallStatus.Listening,
-                VoiceCallStatus.Processing -> "你"
+                VoiceCallStatus.Processing -> stringResource(R.string.common_you)
                 else -> displayName
             }
 
@@ -288,11 +290,11 @@ fun VoiceCallPage(
                 } else {
                     Text(
                         when (uiState.status) {
-                            VoiceCallStatus.Listening -> "我在听。"
-                            VoiceCallStatus.Processing -> "TA 正在想怎么回答你…"
-                            VoiceCallStatus.Speaking -> "TA 正在说话…"
-                            VoiceCallStatus.Error -> "通话出现了问题"
-                            VoiceCallStatus.Idle -> "正在连接语音…"
+                            VoiceCallStatus.Listening -> stringResource(R.string.voice_call_listening)
+                            VoiceCallStatus.Processing -> stringResource(R.string.voice_call_processing)
+                            VoiceCallStatus.Speaking -> stringResource(R.string.voice_call_speaking)
+                            VoiceCallStatus.Error -> stringResource(R.string.voice_call_error)
+                            VoiceCallStatus.Idle -> stringResource(R.string.voice_call_connecting)
                         },
                         color = Color.White.copy(alpha = .40f),
                         fontSize = 14.sp,
@@ -320,21 +322,21 @@ fun VoiceCallPage(
             ) {
                 LabeledControlButton(
                     icon = if (uiState.isMuted) HugeIcons.MicOff01 else HugeIcons.Mic01,
-                    label = if (uiState.isMuted) "取消静音" else "静音",
+                    label = if (uiState.isMuted) stringResource(R.string.common_unmute) else stringResource(R.string.common_mute),
                     selected = uiState.isMuted,
                     enabled = boundService != null,
                 ) { boundService?.toggleMute() }
 
                 LabeledControlButton(
                     icon = HugeIcons.VolumeHigh,
-                    label = if (uiState.isSpeakerEnabled) "扬声器" else "听筒",
+                    label = if (uiState.isSpeakerEnabled) stringResource(R.string.common_speaker) else stringResource(R.string.common_earpiece),
                     selected = uiState.isSpeakerEnabled,
                     enabled = boundService != null,
                 ) { boundService?.toggleSpeaker() }
 
                 LabeledControlButton(
                     icon = HugeIcons.Cancel01,
-                    label = "挂断",
+                    label = stringResource(R.string.common_hang_up),
                     destructive = true,
                     enabled = true,
                 ) {
@@ -357,14 +359,14 @@ private fun VoiceCallBlockedPage(onBack: () -> Unit) {
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("当前已有其他通话", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.voice_call_blocked_title), color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
             Text(
-                "请先结束正在进行的语音或视频通话，再开始新的语音电话。",
+                stringResource(R.string.voice_call_blocked_desc),
                 color = Color.White.copy(alpha = .62f),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 12.dp, bottom = 20.dp),
             )
-            Button(onClick = onBack) { Text("返回") }
+            Button(onClick = onBack) { Text(stringResource(R.string.back)) }
         }
     }
 }
@@ -498,10 +500,11 @@ private fun ControlButton(
     }
 }
 
+@Composable
 private fun statusText(status: VoiceCallStatus): String = when (status) {
-    VoiceCallStatus.Idle -> "连接中"
-    VoiceCallStatus.Listening -> "正在听你说"
-    VoiceCallStatus.Processing -> "正在想"
-    VoiceCallStatus.Speaking -> "正在说话"
-    VoiceCallStatus.Error -> "通话异常"
+    VoiceCallStatus.Idle -> stringResource(R.string.video_call_status_idle)
+    VoiceCallStatus.Listening -> stringResource(R.string.video_call_status_listening)
+    VoiceCallStatus.Processing -> stringResource(R.string.video_call_status_processing)
+    VoiceCallStatus.Speaking -> stringResource(R.string.video_call_status_speaking)
+    VoiceCallStatus.Error -> stringResource(R.string.video_call_status_error)
 }

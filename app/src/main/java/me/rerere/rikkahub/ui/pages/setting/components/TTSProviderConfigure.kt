@@ -1067,7 +1067,7 @@ private fun StepTTSConfiguration(
     // API Key
     FormItem(
         label = { Text(stringResource(R.string.setting_tts_page_api_key)) },
-        description = { Text("从阶跃星辰官网获取密钥: platform.stepfun.com/interface-key") }
+        description = { Text(stringResource(R.string.tts_step_api_key_desc)) }
     ) {
         OutlinedTextField(
             value = setting.apiKey,
@@ -1075,7 +1075,7 @@ private fun StepTTSConfiguration(
                 onValueChange(setting.copy(apiKey = newApiKey))
             },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("从阶跃星辰官网获取密钥") },
+            placeholder = { Text(stringResource(R.string.tts_step_api_key_placeholder)) },
         )
     }
 
@@ -1180,7 +1180,7 @@ private fun StepTTSConfiguration(
 
     FormItem(
         label = { Text("Response Format") },
-        description = { Text("音频编码格式 (注意 StepFun API 字段名为 camelCase)") }
+        description = { Text(stringResource(R.string.tts_step_response_format_desc)) }
     ) {
         SelectTextField(
             value = setting.responseFormat,
@@ -1198,7 +1198,7 @@ private fun StepTTSConfiguration(
     // Speed
     FormItem(
         label = { Text(stringResource(R.string.setting_tts_page_speed)) },
-        description = { Text("语速 (0.5 - 2.0, 1.0 为正常)") }
+        description = { Text(stringResource(R.string.tts_step_speed_desc)) }
     ) {
         OutlinedNumberInput(
             value = setting.speed,
@@ -1215,7 +1215,7 @@ private fun StepTTSConfiguration(
     // Volume
     FormItem(
         label = { Text("Volume") },
-        description = { Text("音量 (0.1 - 2.0, 1.0 为正常)") }
+        description = { Text(stringResource(R.string.tts_step_volume_desc)) }
     ) {
         OutlinedNumberInput(
             value = setting.volume,
@@ -1234,7 +1234,7 @@ private fun StepTTSConfiguration(
 
     FormItem(
         label = { Text("Sample Rate") },
-        description = { Text("采样率 (Hz)") }
+        description = { Text(stringResource(R.string.tts_sample_rate_desc)) }
     ) {
         SelectTextField(
             value = setting.sampleRate.toString(),
@@ -1251,7 +1251,7 @@ private fun StepTTSConfiguration(
     // Instruction (仅 stepaudio-2.5-tts 生效)
     FormItem(
         label = { Text("Instruction") },
-        description = { Text("全局语境指令, 仅 stepaudio-2.5-tts 生效 (≤200 字符, 留空不下发)") }
+        description = { Text(stringResource(R.string.tts_step_instruction_desc)) }
     ) {
         OutlinedTextField(
             value = setting.instruction,
@@ -1262,7 +1262,7 @@ private fun StepTTSConfiguration(
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("例如: 语气温柔, 语速偏慢") },
+            placeholder = { Text(stringResource(R.string.tts_step_instruction_placeholder)) },
             minLines = 2,
             maxLines = 4,
         )
@@ -1277,7 +1277,7 @@ private fun DoubaoTTSConfiguration(
     // API Key
     FormItem(
         label = { Text(stringResource(R.string.setting_tts_page_api_key)) },
-        description = { Text("火山引擎 API Key (Agent Plan 的 ark-xxx 或新版控制台 Key)") }
+        description = { Text(stringResource(R.string.tts_doubao_api_key_desc)) }
     ) {
         OutlinedTextField(
             value = setting.apiKey,
@@ -1292,7 +1292,7 @@ private fun DoubaoTTSConfiguration(
     // Base URL (完整接口地址)
     FormItem(
         label = { Text(stringResource(R.string.setting_tts_page_base_url)) },
-        description = { Text("Agent Plan 须用 /api/v3/plan/tts/unidirectional; 标准控制台用 /api/v3/tts/unidirectional") }
+        description = { Text(stringResource(R.string.tts_doubao_base_url_desc)) }
     ) {
         OutlinedTextField(
             value = setting.baseUrl,
@@ -1310,7 +1310,7 @@ private fun DoubaoTTSConfiguration(
     // 标准控制台 1.0 用户可手动输入
     FormItem(
         label = { Text("Resource ID") },
-        description = { Text("Agent Plan 用户保持 seed-tts-2.0（1.0 未开通会报 45000030）; 音色版本必须与之一致") }
+        description = { Text(stringResource(R.string.tts_doubao_resource_id_desc)) }
     ) {
         SelectTextField(
             value = setting.resourceId,
@@ -1348,7 +1348,7 @@ private fun DoubaoTTSConfiguration(
 
     FormItem(
         label = { Text(stringResource(R.string.setting_tts_page_voice)) },
-        description = { Text("音色与 Resource ID 版本必须匹配, 否则报 55000000; 也可手动输入任意音色 ID") }
+        description = { Text(stringResource(R.string.tts_doubao_speaker_desc)) }
     ) {
         OutlinedTextField(
             value = setting.speaker,
@@ -1366,7 +1366,7 @@ private fun DoubaoTTSConfiguration(
 
     FormItem(
         label = { Text("Audio Format") },
-        description = { Text("音频编码格式") }
+        description = { Text(stringResource(R.string.tts_audio_format_desc)) }
     ) {
         SelectTextField(
             value = setting.format,
@@ -1386,7 +1386,7 @@ private fun DoubaoTTSConfiguration(
 
     FormItem(
         label = { Text("Sample Rate") },
-        description = { Text("采样率 (Hz)") }
+        description = { Text(stringResource(R.string.tts_sample_rate_desc)) }
     ) {
         SelectTextField(
             value = setting.sampleRate.toString(),
@@ -1403,7 +1403,7 @@ private fun DoubaoTTSConfiguration(
     // Speech Rate
     FormItem(
         label = { Text(stringResource(R.string.setting_tts_page_speech_rate)) },
-        description = { Text("语速 (0.2 - 2.0, 1.0 为正常)") }
+        description = { Text(stringResource(R.string.tts_doubao_speech_rate_desc)) }
     ) {
         OutlinedNumberInput(
             value = setting.speechRate,

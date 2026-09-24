@@ -39,12 +39,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.ChatFontFamily
 import me.rerere.rikkahub.data.datastore.DisplaySetting
 import me.rerere.rikkahub.data.files.FileFolders
@@ -136,7 +138,10 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
             }.onSuccess { theme ->
                 pendingTheme = theme
             }.onFailure { error ->
-                toaster.show("主题解析失败：${error.message.orEmpty()}", type = ToastType.Error)
+                toaster.show(
+                    context.getString(R.string.setting_display_st_theme_parse_failed, error.message.orEmpty()),
+                    type = ToastType.Error
+                )
             }
         }
     }
@@ -202,17 +207,22 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
         val changeLabels = themeChangeLabels(theme, displaySetting)
         AlertDialog(
             onDismissRequest = { pendingTheme = null },
-            title = { Text("应用酒馆主题") },
+            title = { Text(stringResource(R.string.setting_display_apply_st_theme)) },
             text = {
                 Text(
                     buildString {
-                        append("主题「${theme.name ?: "未命名"}」将覆盖以下外观设置：\n")
+                        append(
+                            stringResource(
+                                R.string.setting_display_st_theme_will_override,
+                                theme.name ?: stringResource(R.string.setting_display_st_theme_unnamed)
+                            )
+                        )
                         if (changeLabels.isEmpty()) {
-                            append("\n未能识别出可应用的字段（应用后设置不会有变化）")
+                            append(stringResource(R.string.setting_display_st_theme_no_fields))
                         } else {
-                            changeLabels.forEach { label -> append("\n· $label") }
+                            changeLabels.forEach { label -> append("\n· ${stringResource(label)}") }
                         }
-                        append("\n\n其余显示设置保持不变；自定义 CSS 仅提取聊天背景图、气泡圆角与主题字体")
+                        append(stringResource(R.string.setting_display_st_theme_unchanged_note))
                     }
                 )
             },
@@ -231,7 +241,10 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                                 deleteThemeFileIfOwned(context, displaySetting.chatBackgroundImagePath, path)
                                 patched = patched.copy(chatBackgroundImagePath = path)
                             }.onFailure {
-                                bgNote = "；背景图获取失败（${it.message ?: "未知错误"}），已跳过"
+                                bgNote = context.getString(
+                                    R.string.setting_display_st_theme_bg_note_failed,
+                                    it.message ?: context.getString(R.string.setting_display_st_theme_unknown_error)
+                                )
                             }
                         }
                         // 主题字体：@font-face 里的 ttf/otf 自动下载并设为聊天字体
@@ -244,22 +257,30 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                                 patched = patched.copy(
                                     chatFontFamily = ChatFontFamily.CUSTOM,
                                     chatCustomFontPath = relativePath,
-                                    chatCustomFontName = themeFont.family ?: "酒馆主题字体",
+                                    chatCustomFontName = themeFont.family
+                                        ?: context.getString(R.string.setting_display_st_theme_default_font_name),
                                 )
                             }.onFailure {
-                                bgNote += "；主题字体获取失败（${it.message ?: "未知错误"}），已跳过"
+                                bgNote += context.getString(
+                                    R.string.setting_display_st_theme_font_note_failed,
+                                    it.message ?: context.getString(R.string.setting_display_st_theme_unknown_error)
+                                )
                             }
                         }
                         updateDisplaySetting(patched)
                         toaster.show(
-                            "已应用主题：${theme.name ?: "未命名"}$bgNote",
+                            context.getString(
+                                R.string.setting_display_st_theme_applied_toast,
+                                theme.name ?: context.getString(R.string.setting_display_st_theme_unnamed),
+                                bgNote
+                            ),
                             type = if (bgNote.isEmpty()) ToastType.Success else ToastType.Warning
                         )
                     }
-                }) { Text("应用") }
+                }) { Text(stringResource(R.string.setting_display_apply)) }
             },
             dismissButton = {
-                TextButton(onClick = { pendingTheme = null }) { Text("取消") }
+                TextButton(onClick = { pendingTheme = null }) { Text(stringResource(R.string.common_cancel)) }
             },
         )
     }
@@ -267,7 +288,7 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
     Scaffold(
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text("聊天外观自定义") },
+                title = { Text(stringResource(R.string.setting_display_title)) },
                 navigationIcon = { BackButton() },
                 scrollBehavior = scrollBehavior,
                 colors = CustomColors.topBarColors
@@ -284,16 +305,16 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
             item("import") {
                 CardGroup(
                     modifier = Modifier.padding(horizontal = 8.dp),
-                    title = { Text("导入") },
+                    title = { Text(stringResource(R.string.setting_display_import_section)) },
                 ) {
                     item(
-                        headlineContent = { Text("导入酒馆（SillyTavern）主题") },
+                        headlineContent = { Text(stringResource(R.string.setting_display_import_st_theme)) },
                         supportingContent = {
-                            Text("选择酒馆主题 JSON，按酒馆叠层语义应用配色、字号、气泡圆角、背景图与主题字体")
+                            Text(stringResource(R.string.setting_display_import_st_theme_desc))
                         },
                         trailingContent = {
                             TextButton(onClick = { themePickerLauncher.launch("application/json") }) {
-                                Text("导入")
+                                Text(stringResource(R.string.setting_display_import_button))
                             }
                         },
                     )
@@ -303,10 +324,10 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
             item("colors") {
                 CardGroup(
                     modifier = Modifier.padding(horizontal = 8.dp),
-                    title = { Text("颜色自定义") },
+                    title = { Text(stringResource(R.string.setting_display_colors_section)) },
                 ) {
                     item(
-                        headlineContent = { Text("主色调（按钮/链接）") },
+                        headlineContent = { Text(stringResource(R.string.setting_display_primary_color)) },
                         trailingContent = {
                             ColorItemTrailing(
                                 color = displaySetting.primaryColor?.toComposeColor()
@@ -318,7 +339,7 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
-                        headlineContent = { Text("全局字体颜色") },
+                        headlineContent = { Text(stringResource(R.string.setting_display_global_text_color)) },
                         trailingContent = {
                             ColorItemTrailing(
                                 color = displaySetting.globalTextColor?.toComposeColor()
@@ -330,8 +351,8 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
-                        headlineContent = { Text("用户气泡颜色") },
-                        supportingContent = { Text("自定义用户消息气泡背景色") },
+                        headlineContent = { Text(stringResource(R.string.setting_display_user_bubble_color)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_user_bubble_color_desc)) },
                         trailingContent = {
                             ColorItemTrailing(
                                 color = displaySetting.userBubbleColor?.toComposeColor()
@@ -343,8 +364,8 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
-                        headlineContent = { Text("AI气泡颜色") },
-                        supportingContent = { Text("自定义AI消息气泡背景色") },
+                        headlineContent = { Text(stringResource(R.string.setting_display_assistant_bubble_color)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_assistant_bubble_color_desc)) },
                         trailingContent = {
                             ColorItemTrailing(
                                 color = displaySetting.assistantBubbleColor?.toComposeColor()
@@ -356,7 +377,7 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
-                        headlineContent = { Text("思维链气泡颜色") },
+                        headlineContent = { Text(stringResource(R.string.setting_display_thinking_bubble_color)) },
                         trailingContent = {
                             ColorItemTrailing(
                                 color = displaySetting.thinkingBubbleColor?.toComposeColor()
@@ -368,8 +389,8 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
-                        headlineContent = { Text("聊天背景色") },
-                        supportingContent = { Text("助手设置里有背景图时图片优先") },
+                        headlineContent = { Text(stringResource(R.string.setting_display_chat_bg_color)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_chat_bg_color_desc)) },
                         trailingContent = {
                             ColorItemTrailing(
                                 color = displaySetting.chatBackgroundColor?.toComposeColor()
@@ -381,7 +402,7 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
-                        headlineContent = { Text("输入框背景颜色") },
+                        headlineContent = { Text(stringResource(R.string.setting_display_input_bg_color)) },
                         trailingContent = {
                             ColorItemTrailing(
                                 color = displaySetting.inputFieldColor?.toComposeColor()
@@ -398,10 +419,10 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
             item("bubbles") {
                 CardGroup(
                     modifier = Modifier.padding(horizontal = 8.dp),
-                    title = { Text("气泡") },
+                    title = { Text(stringResource(R.string.setting_display_bubbles_section)) },
                 ) {
                     item(
-                        headlineContent = { Text("气泡不透明度") },
+                        headlineContent = { Text(stringResource(R.string.setting_display_bubble_opacity)) },
                         supportingContent = { Text("${(displaySetting.bubbleOpacity * 100).toInt()}%") },
                         trailingContent = {
                             Slider(
@@ -415,7 +436,7 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
-                        headlineContent = { Text("气泡圆角") },
+                        headlineContent = { Text(stringResource(R.string.setting_display_bubble_corner_radius)) },
                         supportingContent = { Text("${displaySetting.bubbleCornerRadius.toInt()} dp") },
                         trailingContent = {
                             Slider(
@@ -429,46 +450,46 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
-                        headlineContent = { Text("用户气泡背景图") },
+                        headlineContent = { Text(stringResource(R.string.setting_display_user_bubble_image)) },
                         supportingContent = {
                             Text(
-                                if (displaySetting.userBubbleImagePath.isBlank()) "未设置"
-                                else "已设置"
+                                if (displaySetting.userBubbleImagePath.isBlank()) stringResource(R.string.setting_display_not_set)
+                                else stringResource(R.string.setting_display_set)
                             )
                         },
                         trailingContent = {
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                TextButton(onClick = { userBubbleImagePicker.launch("image/*") }) { Text("选择") }
+                                TextButton(onClick = { userBubbleImagePicker.launch("image/*") }) { Text(stringResource(R.string.setting_display_choose)) }
                                 if (displaySetting.userBubbleImagePath.isNotBlank()) {
                                     TextButton(onClick = {
                                         updateDisplaySetting(displaySetting.copy(userBubbleImagePath = ""))
-                                    }) { Text("重置") }
+                                    }) { Text(stringResource(R.string.setting_display_reset)) }
                                 }
                             }
                         },
                     )
                     item(
-                        headlineContent = { Text("AI气泡背景图") },
+                        headlineContent = { Text(stringResource(R.string.setting_display_assistant_bubble_image)) },
                         supportingContent = {
                             Text(
-                                if (displaySetting.assistantBubbleImagePath.isBlank()) "未设置"
-                                else "已设置"
+                                if (displaySetting.assistantBubbleImagePath.isBlank()) stringResource(R.string.setting_display_not_set)
+                                else stringResource(R.string.setting_display_set)
                             )
                         },
                         trailingContent = {
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                TextButton(onClick = { assistantBubbleImagePicker.launch("image/*") }) { Text("选择") }
+                                TextButton(onClick = { assistantBubbleImagePicker.launch("image/*") }) { Text(stringResource(R.string.setting_display_choose)) }
                                 if (displaySetting.assistantBubbleImagePath.isNotBlank()) {
                                     TextButton(onClick = {
                                         updateDisplaySetting(displaySetting.copy(assistantBubbleImagePath = ""))
-                                    }) { Text("重置") }
+                                    }) { Text(stringResource(R.string.setting_display_reset)) }
                                 }
                             }
                         },
                     )
                     item(
-                        headlineContent = { Text("气泡背景图叠加颜色遮罩") },
-                        supportingContent = { Text("开启后图片上叠加原气泡颜色；关闭则纯图片") },
+                        headlineContent = { Text(stringResource(R.string.setting_display_bubble_image_overlay)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_bubble_image_overlay_desc)) },
                         trailingContent = {
                             Switch(
                                 checked = displaySetting.bubbleImageOverlayEnabled,
@@ -484,40 +505,43 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
             item("backgrounds") {
                 CardGroup(
                     modifier = Modifier.padding(horizontal = 8.dp),
-                    title = { Text("背景") },
+                    title = { Text(stringResource(R.string.setting_display_background_section)) },
                 ) {
                     item(
-                        headlineContent = { Text("聊天背景图") },
+                        headlineContent = { Text(stringResource(R.string.setting_display_chat_bg_image)) },
                         supportingContent = {
                             Text(
-                                if (displaySetting.chatBackgroundImagePath.isBlank()) "未设置（优先于助手背景，叠加聊天背景色遮罩）"
-                                else "已设置"
+                                if (displaySetting.chatBackgroundImagePath.isBlank()) stringResource(R.string.setting_display_chat_bg_image_not_set)
+                                else stringResource(R.string.setting_display_set)
                             )
                         },
                         trailingContent = {
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                TextButton(onClick = { chatBackgroundImagePicker.launch("image/*") }) { Text("选择") }
+                                TextButton(onClick = { chatBackgroundImagePicker.launch("image/*") }) { Text(stringResource(R.string.setting_display_choose)) }
                                 if (displaySetting.chatBackgroundImagePath.isNotBlank()) {
                                     TextButton(onClick = {
                                         deleteThemeFileIfOwned(context, displaySetting.chatBackgroundImagePath, null)
                                         updateDisplaySetting(displaySetting.copy(chatBackgroundImagePath = ""))
-                                    }) { Text("重置") }
+                                    }) { Text(stringResource(R.string.setting_display_reset)) }
                                 }
                             }
                         },
                     )
                     item(
-                        headlineContent = { Text("抽屉（侧边栏）背景图") },
+                        headlineContent = { Text(stringResource(R.string.setting_display_drawer_bg_image)) },
                         supportingContent = {
-                            Text(if (displaySetting.drawerBackgroundPath.isBlank()) "未设置" else "已设置")
+                            Text(
+                                if (displaySetting.drawerBackgroundPath.isBlank()) stringResource(R.string.setting_display_not_set)
+                                else stringResource(R.string.setting_display_set)
+                            )
                         },
                         trailingContent = {
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                TextButton(onClick = { drawerImagePicker.launch("image/*") }) { Text("选择") }
+                                TextButton(onClick = { drawerImagePicker.launch("image/*") }) { Text(stringResource(R.string.setting_display_choose)) }
                                 if (displaySetting.drawerBackgroundPath.isNotBlank()) {
                                     TextButton(onClick = {
                                         updateDisplaySetting(displaySetting.copy(drawerBackgroundPath = ""))
-                                    }) { Text("重置") }
+                                    }) { Text(stringResource(R.string.setting_display_reset)) }
                                 }
                             }
                         },
@@ -528,21 +552,21 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
     }
 }
 
-/** 计算酒馆主题将覆盖的设置项名称（用于导入前预览） */
-private fun themeChangeLabels(theme: SillyTavernTheme, base: DisplaySetting): List<String> {
+/** 计算酒馆主题将覆盖的设置项名称（用于导入前预览），返回字符串资源 ID */
+private fun themeChangeLabels(theme: SillyTavernTheme, base: DisplaySetting): List<Int> {
     val patched = theme.applyTo(base)
-    val labels = mutableListOf<String>()
-    if (patched.globalTextColor != base.globalTextColor) labels.add("全局字体颜色")
-    if (patched.chatBackgroundColor != base.chatBackgroundColor) labels.add("聊天背景色")
-    if (patched.userBubbleColor != base.userBubbleColor) labels.add("用户气泡颜色")
-    if (patched.assistantBubbleColor != base.assistantBubbleColor) labels.add("AI气泡颜色")
-    if (patched.quoteColor != base.quoteColor) labels.add("引用颜色")
-    if (patched.italicsColor != base.italicsColor) labels.add("斜体颜色")
-    if (patched.fontSizeRatio != base.fontSizeRatio) labels.add("字号比例")
-    if (patched.showAssistantBubble != base.showAssistantBubble) labels.add("AI 气泡显示")
-    if (patched.bubbleCornerRadius != base.bubbleCornerRadius) labels.add("气泡圆角")
-    if (extractBackgroundImageUrl(theme.customCss) != null) labels.add("聊天背景图（自动下载）")
-    if (extractThemeFont(theme.customCss) != null) labels.add("主题字体（自动下载）")
+    val labels = mutableListOf<Int>()
+    if (patched.globalTextColor != base.globalTextColor) labels.add(R.string.setting_display_st_theme_label_global_text_color)
+    if (patched.chatBackgroundColor != base.chatBackgroundColor) labels.add(R.string.setting_display_st_theme_label_chat_bg_color)
+    if (patched.userBubbleColor != base.userBubbleColor) labels.add(R.string.setting_display_st_theme_label_user_bubble_color)
+    if (patched.assistantBubbleColor != base.assistantBubbleColor) labels.add(R.string.setting_display_st_theme_label_assistant_bubble_color)
+    if (patched.quoteColor != base.quoteColor) labels.add(R.string.setting_display_st_theme_label_quote_color)
+    if (patched.italicsColor != base.italicsColor) labels.add(R.string.setting_display_st_theme_label_italics_color)
+    if (patched.fontSizeRatio != base.fontSizeRatio) labels.add(R.string.setting_display_st_theme_label_font_size_ratio)
+    if (patched.showAssistantBubble != base.showAssistantBubble) labels.add(R.string.setting_display_st_theme_label_assistant_bubble_display)
+    if (patched.bubbleCornerRadius != base.bubbleCornerRadius) labels.add(R.string.setting_display_st_theme_label_bubble_corner_radius)
+    if (extractBackgroundImageUrl(theme.customCss) != null) labels.add(R.string.setting_display_st_theme_label_chat_bg_image_auto)
+    if (extractThemeFont(theme.customCss) != null) labels.add(R.string.setting_display_st_theme_label_theme_font_auto)
     return labels
 }
 
@@ -559,9 +583,9 @@ private fun ColorItemTrailing(
                 .size(16.dp)
                 .background(color, CircleShape)
         )
-        TextButton(onClick = onPick) { Text("自定义") }
+        TextButton(onClick = onPick) { Text(stringResource(R.string.setting_display_custom)) }
         if (resetEnabled) {
-            TextButton(onClick = onReset) { Text("重置") }
+            TextButton(onClick = onReset) { Text(stringResource(R.string.setting_display_reset)) }
         }
     }
 }

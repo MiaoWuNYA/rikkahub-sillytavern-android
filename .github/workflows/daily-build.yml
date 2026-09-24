@@ -107,7 +107,7 @@ jobs:
           chmod +x gradlew
           # 重新生成 update.json，保证「关于页 → 检查更新」拿到的版本号与本次构建一致；
           # 未变化时不产生 diff，后面的提交步骤会自然跳过。
-          export REL_VERSION="2.5.4fix$(date -u +%Y%m%d)"
+          export REL_VERSION="2.5.4.$(date -u +%m%d)"
           export REL_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           python3 - <<'PY'
           import json, os, pathlib
@@ -142,7 +142,7 @@ jobs:
           prerelease: true
           body: |
             自动每日构建（commit `${{ github.sha }}`）
-            版本号：`2.5.4fix$(date -u +%Y%m%d)`
+            版本号：`2.5.4.$(date -u +%m%d)`
 
             > ⚠️ 开发版本，可能不稳定，仅供测试。
           files: app/build/outputs/apk/release/*.apk

@@ -199,7 +199,7 @@ fun SkillsPage() {
                             modifier = Modifier.size(24.dp),
                         )
                         Text(
-                            "导入",
+                            stringResource(R.string.skills_page_import_action),
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                             fontWeight = FontWeight.Medium,
                         )
@@ -248,7 +248,7 @@ fun SkillsPage() {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text("搜索 Skill...") },
+                    placeholder = { Text(stringResource(R.string.skills_page_search_placeholder)) },
                     leadingIcon = { Icon(HugeIcons.Search01, contentDescription = null) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
@@ -264,7 +264,7 @@ fun SkillsPage() {
                             FilterChip(
                                 selected = selectedCategory == null,
                                 onClick = { selectedCategory = null },
-                                label = { Text("全部", style = MaterialTheme.typography.labelSmall) },
+                                label = { Text(stringResource(R.string.skills_page_category_all), style = MaterialTheme.typography.labelSmall) },
                                 shape = RoundedCornerShape(8.dp),
                             )
                         }
@@ -301,7 +301,7 @@ fun SkillsPage() {
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        "已安装",
+                        stringResource(R.string.skills_page_installed),
                         style = MaterialTheme.typography.titleSmall,
                     )
                     if (skills.isNotEmpty()) {
@@ -409,7 +409,7 @@ fun SkillsPage() {
                                 fontWeight = FontWeight.Medium,
                             )
                             Text(
-                                "支持 .zip 和 .md 文件",
+                                stringResource(R.string.skills_page_import_file_hint),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -454,7 +454,7 @@ fun SkillsPage() {
                                 fontWeight = FontWeight.Medium,
                             )
                             Text(
-                                "选择包含 SKILL.md 的文件夹",
+                                stringResource(R.string.skills_page_import_folder_hint),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -494,12 +494,12 @@ fun SkillsPage() {
                         Spacer(Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "从 GitHub 导入",
+                                stringResource(R.string.skills_page_import_from_github),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium,
                             )
                             Text(
-                                "输入 GitHub 仓库中 SKILL.md 的 URL",
+                                stringResource(R.string.skills_page_import_github_hint),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -522,11 +522,11 @@ fun SkillsPage() {
         var repoUrl by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showGitHubDialog = false },
-            title = { Text("从 GitHub 导入") },
+            title = { Text(stringResource(R.string.skills_page_import_from_github)) },
             text = {
                 Column {
                     Text(
-                        "输入包含 SKILL.md 的 GitHub 仓库 URL：",
+                        stringResource(R.string.skills_page_github_url_label),
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Spacer(Modifier.height(12.dp))
@@ -542,7 +542,7 @@ fun SkillsPage() {
                     OutlinedTextField(
                         value = githubToken,
                         onValueChange = { vm.updateGithubToken(it) },
-                        placeholder = { Text("GitHub Token（可选，提升 API 限额到 5000/小时）") },
+                        placeholder = { Text(stringResource(R.string.skills_page_github_token_placeholder)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         enabled = !isScanning,
@@ -552,7 +552,7 @@ fun SkillsPage() {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                             Spacer(Modifier.width(8.dp))
-                            Text("正在扫描仓库...", style = MaterialTheme.typography.bodySmall)
+                            Text(stringResource(R.string.skills_page_scanning), style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
@@ -570,7 +570,7 @@ fun SkillsPage() {
                                         // 只有一个 skill，直接下载
                                         showGitHubDialog = false
                                         isDownloading = true
-                                        vm.setDownloadStatus("正在下载: ${skills[0].name}")
+                                        vm.setDownloadStatus(context.getString(R.string.skills_page_downloading_named, skills[0].name))
                                         vm.downloadSkillFromGitHub(scanRepoUrl, skills[0]) { ok, name ->
                                             isDownloading = false
                                             vm.setDownloadStatus(null)
@@ -592,7 +592,7 @@ fun SkillsPage() {
                     },
                     enabled = repoUrl.isNotBlank() && !isScanning,
                 ) {
-                    Text(if (isScanning) "扫描中..." else "搜索")
+                    Text(if (isScanning) stringResource(R.string.skills_page_scanning_short) else stringResource(R.string.skills_page_search_action))
                 }
             },
             dismissButton = {
@@ -609,7 +609,7 @@ fun SkillsPage() {
             onDismissRequest = { showSkillPicker = false },
             title = {
                 Text(
-                    "发现 ${scannedSkills.size} 个 Skill",
+                    stringResource(R.string.skills_page_found_skills, scannedSkills.size),
                     style = MaterialTheme.typography.titleMedium,
                 )
             },
@@ -633,12 +633,13 @@ fun SkillsPage() {
                             else scannedSkills.indices.toSet()
                         }) {
                             Text(
-                                if (selectedSkillIndices.size == scannedSkills.size) "取消全选" else "全选",
+                                if (selectedSkillIndices.size == scannedSkills.size) stringResource(R.string.skills_page_deselect_all)
+                                else stringResource(R.string.skills_page_select_all),
                                 style = MaterialTheme.typography.labelSmall,
                             )
                         }
                         Text(
-                            "已选 ${selectedSkillIndices.size}",
+                            stringResource(R.string.skills_page_selected_count, selectedSkillIndices.size),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -688,21 +689,21 @@ fun SkillsPage() {
                                             if (skill.hasUpdate) {
                                                 Spacer(Modifier.width(6.dp))
                                                 Surface(shape = RoundedCornerShape(4.dp), color = MaterialTheme.colorScheme.errorContainer) {
-                                                    Text("可更新", modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                                    Text(stringResource(R.string.skills_page_has_update), modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
                                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onErrorContainer)
                                                 }
                                             }
                                             if (!skill.isNew && !skill.hasUpdate) {
                                                 Spacer(Modifier.width(6.dp))
                                                 Surface(shape = RoundedCornerShape(4.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
-                                                    Text("已安装", modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                                    Text(stringResource(R.string.skills_page_installed), modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
                                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
                                                 }
                                             }
                                             if (skill.isNew) {
                                                 Spacer(Modifier.width(6.dp))
                                                 Surface(shape = RoundedCornerShape(4.dp), color = MaterialTheme.colorScheme.tertiaryContainer) {
-                                                    Text("新增", modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                                    Text(stringResource(R.string.skills_page_new_badge), modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
                                                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onTertiaryContainer)
                                                 }
                                             }
@@ -728,18 +729,19 @@ fun SkillsPage() {
                             showSkillPicker = false
                             isDownloading = true
                             val toDownload = selectedSkillIndices.map { scannedSkills[it] }
-                            vm.setDownloadStatus("准备下载...")
+                            vm.setDownloadStatus(context.getString(R.string.skills_page_preparing_download))
                             downloadAll(toDownload, scanRepoUrl, vm,
+                                failedPrefix = context.getString(R.string.skills_page_failed_prefix),
                                 onProgress = { cur, total, name ->
-                                    vm.setDownloadStatus("正在下载 ($cur/$total): $name")
+                                    vm.setDownloadStatus(context.getString(R.string.skills_page_downloading_progress, cur, total, name))
                                 },
                                 onDone = { count, lastError ->
                                     isDownloading = false
                                     vm.setDownloadStatus(null)
                                     if (count > 0) {
-                                        toaster.show("安装完成: $count 个")
+                                        toaster.show(context.getString(R.string.skills_page_install_done_count, count))
                                     } else {
-                                        toaster.show(lastError ?: "安装失败")
+                                        toaster.show(lastError ?: context.getString(R.string.skills_page_install_failed))
                                     }
                                 }
                             )
@@ -747,7 +749,10 @@ fun SkillsPage() {
                     },
                     enabled = selectedSkillIndices.isNotEmpty() && !isDownloading,
                 ) {
-                    Text(if (isDownloading) "安装中..." else "安装选中 (${selectedSkillIndices.size})")
+                    Text(
+                        if (isDownloading) stringResource(R.string.skills_page_installing)
+                        else stringResource(R.string.skills_page_install_selected, selectedSkillIndices.size)
+                    )
                 }
             },
             dismissButton = {
@@ -778,6 +783,7 @@ private fun downloadAll(
     skills: List<SkillsVM.GitHubSkillInfo>,
     repoUrl: String,
     vm: SkillsVM,
+    failedPrefix: String,
     onProgress: (current: Int, total: Int, name: String) -> Unit,
     onDone: (Int, String?) -> Unit,
 ) {
@@ -789,7 +795,7 @@ private fun downloadAll(
         vm.downloadSkillFromGitHub(repoUrl, skill) { ok, msg ->
             if (!ok && errors.get() == null) errors.set(msg)
             val done = completed.incrementAndGet()
-            onProgress(done, total, if (ok) skill.name else "失败: ${msg?.take(20)}")
+            onProgress(done, total, if (ok) skill.name else failedPrefix + (msg?.take(20) ?: ""))
             if (done == total) {
                 onDone(done, errors.get())
             }
@@ -921,7 +927,7 @@ private fun SkillCard(
                 IconButton(onClick = { menuExpanded = true }) {
                     Icon(
                         imageVector = HugeIcons.MoreVertical,
-                        contentDescription = "更多",
+                        contentDescription = stringResource(R.string.skills_page_more_actions),
                     )
                 }
                 DropdownMenu(
@@ -929,7 +935,7 @@ private fun SkillCard(
                     onDismissRequest = { menuExpanded = false },
                 ) {
                     DropdownMenuItem(
-                        text = { Text("删除", color = MaterialTheme.colorScheme.error) },
+                        text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
                         leadingIcon = {
                             Icon(HugeIcons.Delete01, null, tint = MaterialTheme.colorScheme.error)
                         },

@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.ui.pages.setting
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,9 +29,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.memory.CrossWindowMemoryStore
 import me.rerere.rikkahub.data.memory.extractFixedMemory
@@ -47,13 +50,13 @@ import java.text.DateFormat
 import java.util.Date
 
 private enum class MemoryStrategy(
-    val label: String,
-    val description: String,
-    val cost: String,
+    @StringRes val label: Int,
+    @StringRes val description: Int,
+    @StringRes val cost: Int,
 ) {
-    NATURAL("自然 · 推荐", "近期经历保留适中，重要旧记忆按需想起。", "中等记忆量 · 中等 Token"),
-    SAVER("省 Token", "更积极整理旧内容，只保留较少近期细节。", "较少记忆量 · 较低 Token"),
-    STRONG("记得更多", "保留更多近期细节，也更容易想起过去。", "更多记忆量 · 较高 Token"),
+    NATURAL(R.string.setting_memory_strategy_natural, R.string.setting_memory_strategy_natural_desc, R.string.setting_memory_strategy_natural_cost),
+    SAVER(R.string.setting_memory_strategy_saver, R.string.setting_memory_strategy_saver_desc, R.string.setting_memory_strategy_saver_cost),
+    STRONG(R.string.setting_memory_strategy_strong, R.string.setting_memory_strategy_strong_desc, R.string.setting_memory_strategy_strong_cost),
 }
 
 @Composable
@@ -78,23 +81,23 @@ fun SettingMemoryPage(vm: SettingVM = koinViewModel()) {
     if (confirmClear && assistant != null) {
         AlertDialog(
             onDismissRequest = { confirmClear = false },
-            title = { Text("清空最近发生的事？") },
-            text = { Text("只会清除此角色的近期原文和已整理摘要，不会删除角色设定、固定记忆或长期记忆。") },
+            title = { Text(stringResource(R.string.setting_memory_clear_recent_title)) },
+            text = { Text(stringResource(R.string.setting_memory_clear_recent_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     store.clearAssistant(assistant.id.toString())
                     recentRefresh++
                     confirmClear = false
-                }) { Text("清空") }
+                }) { Text(stringResource(R.string.setting_memory_clear)) }
             },
-            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("取消") } },
+            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
 
     Scaffold(
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text("记忆") },
+                title = { Text(stringResource(R.string.setting_memory_title)) },
                 navigationIcon = { BackButton() },
                 scrollBehavior = scrollBehavior,
                 colors = CustomColors.topBarColors,
@@ -104,7 +107,7 @@ fun SettingMemoryPage(vm: SettingVM = koinViewModel()) {
         containerColor = CustomColors.topBarColors.containerColor,
     ) { padding ->
         if (assistant == null) {
-            Column(Modifier.padding(padding).padding(24.dp)) { Text("请先创建一个助手。") }
+            Column(Modifier.padding(padding).padding(24.dp)) { Text(stringResource(R.string.setting_memory_no_assistant)) }
             return@Scaffold
         }
 
@@ -137,9 +140,12 @@ fun SettingMemoryPage(vm: SettingVM = koinViewModel()) {
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             item {
-                Text("TA 的记忆", style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(R.string.setting_memory_header), style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "${assistant.name.ifBlank { "TA" }} 会把与你有关的内容分层保存。你可以随时查看、修改或删除。",
+                    stringResource(
+                        R.string.setting_memory_header_desc,
+                        assistant.name.ifBlank { stringResource(R.string.setting_memory_ta) }
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -149,19 +155,19 @@ fun SettingMemoryPage(vm: SettingVM = koinViewModel()) {
                     options = assistants,
                     selectedOption = assistant,
                     onOptionSelected = { selectedId = it.id.toString() },
-                    optionToString = { it.name.ifBlank { "未命名助手" } },
+                    optionToString = { it.name.ifBlank { stringResource(R.string.setting_memory_unnamed_assistant) } },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
 
             item {
-                CardGroup(title = { Text("🧷 不会忘的事") }) {
+                CardGroup(title = { Text(stringResource(R.string.setting_memory_fixed_section)) }) {
                     item(
-                        headlineContent = { Text("角色设定") },
+                        headlineContent = { Text(stringResource(R.string.setting_memory_role_card)) },
                         supportingContent = {
                             Text(
-                                if (rolePrompt.isBlank()) "角色设定暂时为空。请在助手设置中维护角色卡。"
-                                else "角色卡由助手设置维护。这个记忆页面不会覆盖它。"
+                                if (rolePrompt.isBlank()) stringResource(R.string.setting_memory_role_card_empty)
+                                else stringResource(R.string.setting_memory_role_card_managed)
                             )
                         },
                     )
@@ -184,8 +190,8 @@ fun SettingMemoryPage(vm: SettingVM = koinViewModel()) {
                     onValueChange = { fixedDraft = it },
                     modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
                     minLines = 4,
-                    label = { Text("固定记忆") },
-                    supportingText = { Text("关系、约定、稳定偏好等。只修改这里，不会覆盖角色卡。") },
+                    label = { Text(stringResource(R.string.setting_memory_fixed_memory)) },
+                    supportingText = { Text(stringResource(R.string.setting_memory_fixed_memory_desc)) },
                 )
                 Button(
                     onClick = {
@@ -193,20 +199,20 @@ fun SettingMemoryPage(vm: SettingVM = koinViewModel()) {
                     },
                     enabled = fixedDraft.trim() != assistant.systemPrompt.extractFixedMemory(),
                     modifier = Modifier.padding(top = 8.dp),
-                ) { Text("保存固定记忆") }
+                ) { Text(stringResource(R.string.setting_memory_save_fixed)) }
             }
 
             item {
-                CardGroup(title = { Text("🌿 最近发生的事") }) {
+                CardGroup(title = { Text(stringResource(R.string.setting_memory_recent_section)) }) {
                     item(
-                        headlineContent = { Text("近期记忆") },
+                        headlineContent = { Text(stringResource(R.string.setting_memory_recent)) },
                         supportingContent = {
                             Text(
                                 when {
-                                    !assistant.enableCrossWindowMemory -> "已关闭。不同聊天窗口不会共享近期生活。"
-                                    summary != null -> "${recent.size} 条近期原文 · 更早内容已整理成摘要"
-                                    recent.isNotEmpty() -> "${recent.size} 条近期原文 · 还没有需要整理的旧内容"
-                                    else -> "还没有近期内容。开始聊天后会自动记录。"
+                                    !assistant.enableCrossWindowMemory -> stringResource(R.string.setting_memory_recent_disabled)
+                                    summary != null -> stringResource(R.string.setting_memory_recent_summarized, recent.size)
+                                    recent.isNotEmpty() -> stringResource(R.string.setting_memory_recent_count, recent.size)
+                                    else -> stringResource(R.string.setting_memory_recent_empty)
                                 }
                             )
                         },
@@ -225,10 +231,10 @@ fun SettingMemoryPage(vm: SettingVM = koinViewModel()) {
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f)),
                     ) {
                         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("较早内容摘要", fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(R.string.setting_memory_summary_title), fontWeight = FontWeight.SemiBold)
                             Text(savedSummary.text)
                             Text(
-                                "整理于 ${formatMemoryTime(savedSummary.updatedAt)}",
+                                stringResource(R.string.setting_memory_summary_time, formatMemoryTime(savedSummary.updatedAt)),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -238,7 +244,7 @@ fun SettingMemoryPage(vm: SettingVM = koinViewModel()) {
 
                 if (recent.isNotEmpty()) {
                     Text(
-                        "近期原文",
+                        stringResource(R.string.setting_memory_recent_raw),
                         modifier = Modifier.padding(top = 10.dp, bottom = 2.dp),
                         style = MaterialTheme.typography.titleSmall,
                     )
@@ -250,7 +256,12 @@ fun SettingMemoryPage(vm: SettingVM = koinViewModel()) {
                             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Text(entry.text, maxLines = 4)
                                 Text(
-                                    "${if (entry.role == "user") "你" else assistant.name.ifBlank { "TA" }} · ${formatMemoryTime(entry.timestamp)}",
+                                    stringResource(
+                                        R.string.setting_memory_entry_meta,
+                                        if (entry.role == "user") stringResource(R.string.setting_memory_you)
+                                        else assistant.name.ifBlank { stringResource(R.string.setting_memory_ta) },
+                                        formatMemoryTime(entry.timestamp),
+                                    ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -260,24 +271,29 @@ fun SettingMemoryPage(vm: SettingVM = koinViewModel()) {
                 }
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    TextButton(onClick = { recentRefresh++ }) { Text("刷新") }
+                    TextButton(onClick = { recentRefresh++ }) { Text(stringResource(R.string.setting_memory_refresh)) }
                     TextButton(
                         onClick = { confirmClear = true },
                         enabled = recent.isNotEmpty() || summary != null,
-                    ) { Text("清空最近发生的事") }
+                    ) { Text(stringResource(R.string.setting_memory_clear_recent_button)) }
                 }
             }
 
             item {
-                CardGroup(title = { Text("📚 很久以前的事") }) {
+                CardGroup(title = { Text(stringResource(R.string.setting_memory_long_term_section)) }) {
                     item(
                         onClick = { nav.navigate(Screen.AssistantMemory(assistantId)) },
-                        headlineContent = { Text("管理长期记忆") },
-                        supportingContent = { Text("逐条新增、修改或删除。聊天时只会想起与当前内容相关的部分。") },
+                        headlineContent = { Text(stringResource(R.string.setting_memory_manage_long_term)) },
+                        supportingContent = { Text(stringResource(R.string.setting_memory_manage_long_term_desc)) },
                     )
                     item(
-                        headlineContent = { Text("启用长期记忆") },
-                        supportingContent = { Text(if (assistant.enableMemory) "需要时会从长期记忆里找相关内容。" else "目前不会主动召回长期记忆。") },
+                        headlineContent = { Text(stringResource(R.string.setting_memory_enable_long_term)) },
+                        supportingContent = {
+                            Text(
+                                if (assistant.enableMemory) stringResource(R.string.setting_memory_long_term_on)
+                                else stringResource(R.string.setting_memory_long_term_off)
+                            )
+                        },
                         trailingContent = {
                             Switch(
                                 checked = assistant.enableMemory,
@@ -289,9 +305,12 @@ fun SettingMemoryPage(vm: SettingVM = koinViewModel()) {
             }
 
             item {
-                Text("记忆方式", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.setting_memory_strategy_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Text(
-                    "当前：${strategy?.label ?: "自定义"}",
+                    stringResource(
+                        R.string.setting_memory_strategy_current,
+                        strategy?.let { stringResource(it.label) } ?: stringResource(R.string.setting_memory_strategy_custom)
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
@@ -306,13 +325,16 @@ fun SettingMemoryPage(vm: SettingVM = koinViewModel()) {
 
             item {
                 TextButton(onClick = { advancedExpanded = !advancedExpanded }) {
-                    Text(if (advancedExpanded) "收起高级设置" else "高级设置")
+                    Text(
+                        if (advancedExpanded) stringResource(R.string.setting_memory_advanced_collapse)
+                        else stringResource(R.string.setting_memory_advanced)
+                    )
                 }
                 if (advancedExpanded) {
-                    CardGroup(title = { Text("工作方式") }) {
+                    CardGroup(title = { Text(stringResource(R.string.setting_memory_how_it_works)) }) {
                         item(
-                            headlineContent = { Text("三层记忆") },
-                            supportingContent = { Text("固定记忆 + 近期生活流 + 长期记忆按需召回") },
+                            headlineContent = { Text(stringResource(R.string.setting_memory_three_layer)) },
+                            supportingContent = { Text(stringResource(R.string.setting_memory_three_layer_desc)) },
                             trailingContent = {
                                 Switch(
                                     checked = assistant.enableThreeLayerMemory,
@@ -321,8 +343,8 @@ fun SettingMemoryPage(vm: SettingVM = koinViewModel()) {
                             },
                         )
                         item(
-                            headlineContent = { Text("后台整理近期内容") },
-                            supportingContent = { Text("超过阈值后，把较早的原文压缩成摘要。") },
+                            headlineContent = { Text(stringResource(R.string.setting_memory_background_compress)) },
+                            supportingContent = { Text(stringResource(R.string.setting_memory_background_compress_desc)) },
                             trailingContent = {
                                 Switch(
                                     checked = assistant.enableCrossWindowMemoryCompression,
@@ -332,11 +354,11 @@ fun SettingMemoryPage(vm: SettingVM = koinViewModel()) {
                         )
                     }
 
-                    Text("自定义参数", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 10.dp))
-                    MemoryNumericField("多少字符后整理旧内容", thresholdDraft) { thresholdDraft = digitsOnly(it) }
-                    MemoryNumericField("保留多少条近期原文", tailDraft) { tailDraft = digitsOnly(it) }
-                    MemoryNumericField("每次最多召回多少条长期记忆", recallDraft) { recallDraft = digitsOnly(it) }
-                    MemoryNumericField("长期记忆每轮最多字符", recallCharsDraft) { recallCharsDraft = digitsOnly(it) }
+                    Text(stringResource(R.string.setting_memory_custom_params), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 10.dp))
+                    MemoryNumericField(stringResource(R.string.setting_memory_param_threshold), thresholdDraft) { thresholdDraft = digitsOnly(it) }
+                    MemoryNumericField(stringResource(R.string.setting_memory_param_tail), tailDraft) { tailDraft = digitsOnly(it) }
+                    MemoryNumericField(stringResource(R.string.setting_memory_param_recall), recallDraft) { recallDraft = digitsOnly(it) }
+                    MemoryNumericField(stringResource(R.string.setting_memory_param_recall_chars), recallCharsDraft) { recallCharsDraft = digitsOnly(it) }
                     Button(
                         onClick = {
                             val threshold = thresholdDraft.toIntOrNull()?.coerceIn(1000, 100000) ?: return@Button
@@ -354,7 +376,7 @@ fun SettingMemoryPage(vm: SettingVM = koinViewModel()) {
                             }
                         },
                         modifier = Modifier.padding(top = 8.dp),
-                    ) { Text("保存自定义参数") }
+                    ) { Text(stringResource(R.string.setting_memory_save_custom_params)) }
                 }
             }
         }
@@ -371,9 +393,9 @@ private fun MemoryPresetCard(strategy: MemoryStrategy, selected: Boolean, onClic
         ),
     ) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(strategy.label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Text(strategy.description, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(strategy.cost, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(strategy.label), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(strategy.description), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(strategy.cost), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

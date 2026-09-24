@@ -433,8 +433,8 @@ class QqBotService : Service(), KoinComponent {
 
     private fun startForegroundCompat() {
         val notification: Notification = NotificationCompat.Builder(this, CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("QQ Bot 运行中")
-            .setContentText("正在监听 QQ 私聊消息")
+            .setContentTitle(getString(R.string.qq_bot_notification_running_title))
+            .setContentText(getString(R.string.qq_bot_notification_running_text))
             .setSmallIcon(R.drawable.small_icon)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
@@ -453,8 +453,8 @@ class QqBotService : Service(), KoinComponent {
     private fun notifyBanned() {
         try {
             val notification = NotificationCompat.Builder(this, CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID)
-                .setContentTitle("QQ Bot 已断开")
-                .setContentText("机器人可能已下架或被封禁, 请到 q.qq.com 检查")
+                .setContentTitle(getString(R.string.qq_bot_notification_disconnected_title))
+                .setContentText(getString(R.string.qq_bot_notification_disconnected_text))
                 .setSmallIcon(R.drawable.small_icon)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setAutoCancel(true)

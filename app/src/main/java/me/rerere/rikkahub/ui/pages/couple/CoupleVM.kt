@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import android.content.Context
+import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.db.entity.*
 import me.rerere.rikkahub.data.repository.CoupleRepository
@@ -26,7 +28,11 @@ data class RabbitSpaceUiState(
 class CoupleVM(
     private val repository: CoupleRepository,
     settingsStore: SettingsStore,
+    context: Context,
 ) : ViewModel() {
+    private val appContext = context.applicationContext
+    private fun str(resId: Int): String = appContext.getString(resId)
+
     private val coupleAi = CoupleAiService()
     private val _rabbitSpaceUiState = MutableStateFlow(RabbitSpaceUiState())
     val rabbitSpaceUiState = _rabbitSpaceUiState.asStateFlow()
@@ -70,17 +76,17 @@ class CoupleVM(
             val post = repository.addPost(relation.id, "user", content.trim(), persistedImages)
             _rabbitSpaceUiState.value = RabbitSpaceUiState(
                 commentingPostId = post.id,
-                notice = "动态已发表，正在等 TA 来评论……",
+                notice = str(R.string.couple_vm_post_published),
             )
             val reply = runCatching {
                 coupleAi.commentOnUserPost(relation.assistantId, content.trim(), persistedImages)
             }.getOrNull()
             if (!reply.isNullOrBlank()) {
                 repository.addComment(relation.id, post.id, "assistant", reply)
-                _rabbitSpaceUiState.value = RabbitSpaceUiState(notice = "TA 已经来留言啦")
+                _rabbitSpaceUiState.value = RabbitSpaceUiState(notice = str(R.string.couple_vm_partner_commented))
             } else {
                 _rabbitSpaceUiState.value = RabbitSpaceUiState(
-                    error = coupleAi.lastErrorMessage ?: "动态已经发出，但 TA 的自动评论生成失败",
+                    error = coupleAi.lastErrorMessage ?: str(R.string.couple_vm_auto_comment_failed),
                 )
             }
         }
@@ -93,17 +99,17 @@ class CoupleVM(
             if (post.author == "assistant") {
                 _rabbitSpaceUiState.value = RabbitSpaceUiState(
                     commentingPostId = post.id,
-                    notice = "留言已发出，正在等 TA 回复……",
+                    notice = str(R.string.couple_vm_comment_sent),
                 )
                 val reply = runCatching {
                     coupleAi.replyToUserComment(relation.assistantId, post.content, content, decodeImageUris(post.imageUri))
                 }.getOrNull()
                 if (!reply.isNullOrBlank()) {
                     repository.addComment(relation.id, post.id, "assistant", reply)
-                    _rabbitSpaceUiState.value = RabbitSpaceUiState(notice = "TA 回复了你的留言")
+                    _rabbitSpaceUiState.value = RabbitSpaceUiState(notice = str(R.string.couple_vm_partner_replied))
                 } else {
                     _rabbitSpaceUiState.value = RabbitSpaceUiState(
-                        error = coupleAi.lastErrorMessage ?: "留言已经保存，但 TA 的回复生成失败",
+                        error = coupleAi.lastErrorMessage ?: str(R.string.couple_vm_reply_failed),
                     )
                 }
             }
@@ -121,7 +127,7 @@ class CoupleVM(
         viewModelScope.launch {
             _rabbitSpaceUiState.value = RabbitSpaceUiState(
                 generatingPost = true,
-                notice = if (force) "TA 正在想发什么……" else null,
+                notice = if (force) str(R.string.couple_vm_ai_thinking_post) else null,
             )
             try {
                 val recentContext = existingPosts.take(8).reversed().joinToString("\n") { post ->
@@ -129,17 +135,17 @@ class CoupleVM(
                     val count = decodeImageUris(post.imageUri).size
                     val photoHint = when { count > 1 -> "（带${count}张照片）"; count == 1 -> "（带1张照片）"; else -> "" }
                     "$who$photoHint：${post.content}"
-                }.ifBlank { "这里还没有动态，你可以发第一条。" }
+                }.ifBlank { str(R.string.couple_vm_no_posts_yet) }
 
                 val draft = coupleAi.createPostDraft(relation.assistantId, recentContext)
                 if (draft == null) {
                     _rabbitSpaceUiState.value = RabbitSpaceUiState(
-                        error = coupleAi.lastErrorMessage ?: "TA 没有生成出可发表的动态",
+                        error = coupleAi.lastErrorMessage ?: str(R.string.couple_vm_no_post_generated),
                     )
                     return@launch
                 }
                 if (draft.content.isBlank() && !draft.needImage) {
-                    _rabbitSpaceUiState.value = RabbitSpaceUiState(error = "TA 返回了一条空动态，请重试")
+                    _rabbitSpaceUiState.value = RabbitSpaceUiState(error = str(R.string.couple_vm_empty_post))
                     return@launch
                 }
                 val generatedImages = if (draft.needImage && draft.imagePrompt.isNotBlank()) {
@@ -147,14 +153,14 @@ class CoupleVM(
                 } else emptyList()
                 if (draft.content.isNotBlank() || generatedImages.isNotEmpty()) {
                     repository.addPost(relation.id, "assistant", draft.content.trim(), generatedImages)
-                    val imageNote = if (draft.needImage && generatedImages.isEmpty()) "（配图生成失败，已先发表文字）" else ""
-                    _rabbitSpaceUiState.value = RabbitSpaceUiState(notice = "TA 已发表动态$imageNote")
+                    val imageNote = if (draft.needImage && generatedImages.isEmpty()) str(R.string.couple_vm_image_failed) else ""
+                    _rabbitSpaceUiState.value = RabbitSpaceUiState(notice = str(R.string.couple_vm_ai_posted) + imageNote)
                 } else {
-                    _rabbitSpaceUiState.value = RabbitSpaceUiState(error = coupleAi.lastErrorMessage ?: "动态生成失败")
+                    _rabbitSpaceUiState.value = RabbitSpaceUiState(error = coupleAi.lastErrorMessage ?: str(R.string.couple_vm_post_generate_failed))
                 }
             } catch (error: Throwable) {
                 _rabbitSpaceUiState.value = RabbitSpaceUiState(
-                    error = error.message?.takeIf { it.isNotBlank() } ?: "兔眠空间生成失败",
+                    error = error.message?.takeIf { it.isNotBlank() } ?: str(R.string.couple_vm_generate_failed),
                 )
             }
         }
@@ -164,10 +170,10 @@ class CoupleVM(
 
     fun deletePost(post: CouplePostEntity) = viewModelScope.launch {
         runCatching { repository.deletePost(post) }
-            .onSuccess { _rabbitSpaceUiState.value = RabbitSpaceUiState(notice = "这条动态已经删除") }
+            .onSuccess { _rabbitSpaceUiState.value = RabbitSpaceUiState(notice = str(R.string.couple_vm_post_deleted)) }
             .onFailure { error ->
                 _rabbitSpaceUiState.value = RabbitSpaceUiState(
-                    error = error.message?.takeIf { it.isNotBlank() } ?: "删除动态失败",
+                    error = error.message?.takeIf { it.isNotBlank() } ?: str(R.string.couple_vm_delete_failed),
                 )
             }
     }

@@ -80,7 +80,7 @@ fun SettingQqBotPage(vm: SettingVM = koinViewModel()) {
     Scaffold(
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text("QQ Bot") },
+                title = { Text(stringResource(R.string.qq_bot_title)) },
                 navigationIcon = { BackButton() },
                 scrollBehavior = scrollBehavior,
                 colors = CustomColors.topBarColors
@@ -97,21 +97,28 @@ fun SettingQqBotPage(vm: SettingVM = koinViewModel()) {
             // 说明
             item {
                 CardGroup(
-                    title = { Text("说明") },
+                    title = { Text(stringResource(R.string.qq_bot_section_about)) },
                     modifier = Modifier.padding(horizontal = 8.dp)
                 ) {
                     item(
                         leadingContent = { Icon(imageVector = HugeIcons.Message01, contentDescription = null) },
-                        headlineContent = { Text("QQ Bot 是什么") },
-                        supportingContent = { Text("把你的 QQ 机器人变成 AI 入口: 别人私聊你的 bot, 会由当前助手回复. 只处理私聊消息.") }
+                        headlineContent = { Text(stringResource(R.string.qq_bot_what_is)) },
+                        supportingContent = { Text(stringResource(R.string.qq_bot_what_is_desc)) }
                     )
                     item(
-                        headlineContent = { Text("怎么获取 AppID 和 Secret") },
-                        supportingContent = { Text("1. 去 q.qq.com 注册开发者并创建机器人\n2. 在机器人管理页面找到 AppID 和 AppSecret\n3. 复制填到下面") }
+                        headlineContent = { Text(stringResource(R.string.qq_bot_how_to_get_credentials)) },
+                        supportingContent = { Text(stringResource(R.string.qq_bot_how_to_get_credentials_desc)) }
                     )
                     item(
-                        headlineContent = { Text("关联助手") },
-                        supportingContent = { Text("固定使用当前助手: ${settings.getCurrentAssistant().name.ifBlank { "未命名" }}") }
+                        headlineContent = { Text(stringResource(R.string.qq_bot_linked_assistant)) },
+                        supportingContent = {
+                            Text(
+                                stringResource(
+                                    R.string.weixin_bot_linked_assistant_desc,
+                                    settings.getCurrentAssistant().name.ifBlank { stringResource(R.string.weixin_bot_unnamed) }
+                                )
+                            )
+                        }
                     )
                 }
             }
@@ -119,7 +126,7 @@ fun SettingQqBotPage(vm: SettingVM = koinViewModel()) {
             // 凭证
             item {
                 CardGroup(
-                    title = { Text("机器人凭证") },
+                    title = { Text(stringResource(R.string.qq_bot_section_credentials)) },
                     modifier = Modifier.padding(horizontal = 8.dp)
                 ) {
                     item(
@@ -128,7 +135,7 @@ fun SettingQqBotPage(vm: SettingVM = koinViewModel()) {
                             OutlinedTextField(
                                 value = botSetting.appId,
                                 onValueChange = { update(botSetting.copy(appId = it.trim())) },
-                                placeholder = { Text("如 102345678") },
+                                placeholder = { Text(stringResource(R.string.qq_bot_appid_placeholder)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                                 shape = MaterialTheme.shapes.small,
@@ -145,7 +152,7 @@ fun SettingQqBotPage(vm: SettingVM = koinViewModel()) {
                             OutlinedTextField(
                                 value = botSetting.appSecret,
                                 onValueChange = { update(botSetting.copy(appSecret = it.trim())) },
-                                placeholder = { Text("机器人密钥") },
+                                placeholder = { Text(stringResource(R.string.qq_bot_secret_placeholder)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                                 visualTransformation = PasswordVisualTransformation(),
@@ -163,12 +170,12 @@ fun SettingQqBotPage(vm: SettingVM = koinViewModel()) {
             // 开关
             item {
                 CardGroup(
-                    title = { Text("运行") },
+                    title = { Text(stringResource(R.string.qq_bot_section_run)) },
                     modifier = Modifier.padding(horizontal = 8.dp)
                 ) {
                     item(
-                        headlineContent = { Text("启用 QQ Bot") },
-                        supportingContent = { Text("开启后建立 WebSocket 连接监听私聊消息. 需先填 AppID 和 Secret.") },
+                        headlineContent = { Text(stringResource(R.string.qq_bot_enable)) },
+                        supportingContent = { Text(stringResource(R.string.qq_bot_enable_desc)) },
                         trailingContent = {
                             Switch(
                                 checked = botSetting.enabled,
@@ -185,14 +192,14 @@ fun SettingQqBotPage(vm: SettingVM = koinViewModel()) {
                     )
                     if (botSetting.enabled && (botSetting.appId.isBlank() || botSetting.appSecret.isBlank())) {
                         item(
-                            headlineContent = { Text("⚠ 凭证未填写") },
-                            supportingContent = { Text("请先填写 AppID 和 AppSecret, 再开启") }
+                            headlineContent = { Text(stringResource(R.string.qq_bot_credentials_missing_warning)) },
+                            supportingContent = { Text(stringResource(R.string.qq_bot_credentials_missing_desc)) }
                         )
                     }
                     if (botSetting.enabled) {
                         item(
-                            headlineContent = { Text("运行提示") },
-                            supportingContent = { Text("token 会自动刷新. 被动回复需在收到消息 5 分钟内发出.") }
+                            headlineContent = { Text(stringResource(R.string.qq_bot_run_hint)) },
+                            supportingContent = { Text(stringResource(R.string.qq_bot_run_hint_desc)) }
                         )
                     }
                 }

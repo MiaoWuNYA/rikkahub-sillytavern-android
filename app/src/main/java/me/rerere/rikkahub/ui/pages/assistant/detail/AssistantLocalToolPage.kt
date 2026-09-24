@@ -146,10 +146,10 @@ private fun AssistantLocalToolContent(
         CardGroup {
             item(
                 headlineContent = {
-                    Text("并行执行工具")
+                    Text(stringResource(R.string.local_tool_parallel_title))
                 },
                 supportingContent = {
-                    Text("同时执行多个工具调用，加速搜索、文件操作等")
+                    Text(stringResource(R.string.local_tool_parallel_desc))
                 },
                 trailingContent = {
                     Switch(
@@ -159,8 +159,8 @@ private fun AssistantLocalToolContent(
                 }
             )
             item(
-                headlineContent = { Text("工具重复调用上限") },
-                supportingContent = { Text("同一批内相同工具调用超过此数打断，默认8") },
+                headlineContent = { Text(stringResource(R.string.local_tool_recurring_limit_title)) },
+                supportingContent = { Text(stringResource(R.string.local_tool_recurring_limit_desc)) },
                 trailingContent = {
                     OutlinedTextField(
                         value = assistant.toolRecurringLimit.toString(),
@@ -175,8 +175,8 @@ private fun AssistantLocalToolContent(
                 }
             )
             item(
-                headlineContent = { Text("总工具调用轮数上限") },
-                supportingContent = { Text("整个对话AI调工具的总次数上限，默认256") },
+                headlineContent = { Text(stringResource(R.string.local_tool_total_steps_limit_title)) },
+                supportingContent = { Text(stringResource(R.string.local_tool_total_steps_limit_desc)) },
                 trailingContent = {
                     OutlinedTextField(
                         value = assistant.totalStepsLimit.toString(),
@@ -191,8 +191,8 @@ private fun AssistantLocalToolContent(
                 }
             )
             item(
-                headlineContent = { Text("单工具执行超时(秒)") },
-                supportingContent = { Text("每个工具调用最长执行时间，默认60") },
+                headlineContent = { Text(stringResource(R.string.local_tool_exec_timeout_title)) },
+                supportingContent = { Text(stringResource(R.string.local_tool_exec_timeout_desc)) },
                 trailingContent = {
                     OutlinedTextField(
                         value = assistant.toolExecTimeout.toString(),
@@ -207,8 +207,8 @@ private fun AssistantLocalToolContent(
                 }
             )
             item(
-                headlineContent = { Text("JS引擎超时(秒)") },
-                supportingContent = { Text("JavaScript代码执行超时，默认15") },
+                headlineContent = { Text(stringResource(R.string.local_tool_js_timeout_title)) },
+                supportingContent = { Text(stringResource(R.string.local_tool_js_timeout_desc)) },
                 trailingContent = {
                     OutlinedTextField(
                         value = assistant.jsTimeout.toString(),
@@ -223,8 +223,8 @@ private fun AssistantLocalToolContent(
                 }
             )
             item(
-                headlineContent = { Text("Shell超时(秒)") },
-                supportingContent = { Text("shell命令执行超时，默认30") },
+                headlineContent = { Text(stringResource(R.string.local_tool_shell_timeout_title)) },
+                supportingContent = { Text(stringResource(R.string.local_tool_shell_timeout_desc)) },
                 trailingContent = {
                     OutlinedTextField(
                         value = assistant.shellTimeout.toString(),
@@ -311,8 +311,8 @@ private fun AssistantLocalToolContent(
                 }
             )
             item(
-                headlineContent = { Text("Python 引擎") },
-                supportingContent = { Text("允许 AI 执行 Python 代码处理数据、调用 API、生成文件") },
+                headlineContent = { Text(stringResource(R.string.local_tool_python_title)) },
+                supportingContent = { Text(stringResource(R.string.local_tool_python_desc)) },
                 trailingContent = {
                     Switch(
                         checked = assistant.localTools.contains(LocalToolOption.PythonEngine),
@@ -321,8 +321,8 @@ private fun AssistantLocalToolContent(
                 }
             )
             item(
-                headlineContent = { Text("文件工具") },
-                supportingContent = { Text("允许 AI 读取、写入、搜索设备文件") },
+                headlineContent = { Text(stringResource(R.string.local_tool_file_title)) },
+                supportingContent = { Text(stringResource(R.string.local_tool_file_desc)) },
                 trailingContent = {
                     Switch(
                         checked = assistant.localTools.contains(LocalToolOption.FileTools),
@@ -331,8 +331,8 @@ private fun AssistantLocalToolContent(
                 }
             )
             item(
-                headlineContent = { Text("Shell 命令") },
-                supportingContent = { Text("允许 AI 执行 shell 命令") },
+                headlineContent = { Text(stringResource(R.string.local_tool_shell_cmd_title)) },
+                supportingContent = { Text(stringResource(R.string.local_tool_shell_cmd_desc)) },
                 trailingContent = {
                     Switch(
                         checked = assistant.localTools.contains(LocalToolOption.ShellTools),
@@ -341,8 +341,8 @@ private fun AssistantLocalToolContent(
                 }
             )
             item(
-                headlineContent = { Text("数据库查询") },
-                supportingContent = { Text("允许 AI 查询本地数据库（对话记录/设置）") },
+                headlineContent = { Text(stringResource(R.string.local_tool_database_title)) },
+                supportingContent = { Text(stringResource(R.string.local_tool_database_desc)) },
                 trailingContent = {
                     Switch(
                         checked = assistant.localTools.contains(LocalToolOption.DatabaseQuery),
@@ -379,8 +379,8 @@ private fun AssistantLocalToolContent(
                 }
             )
             item(
-                headlineContent = { Text("设备工具箱") },
-                supportingContent = { Text("手机设备控制：手电筒、震动、音量、亮度、短信、联系人、定位等（AI 先查询目录再按需调用）") },
+                headlineContent = { Text(stringResource(R.string.local_tool_device_toolbox_title)) },
+                supportingContent = { Text(stringResource(R.string.local_tool_device_toolbox_desc)) },
                 trailingContent = {
                     Switch(
                         checked = assistant.localTools.contains(LocalToolOption.DeviceToolbox),
@@ -389,8 +389,8 @@ private fun AssistantLocalToolContent(
                 }
             )
             item(
-                headlineContent = { Text("生活空间") },
-                supportingContent = { Text("生活备忘、日历提醒、共读书架、一起听歌等 AI 工具（情侣空间绑定时还会加入共读日记与纪念册）") },
+                headlineContent = { Text(stringResource(R.string.local_tool_life_companion_title)) },
+                supportingContent = { Text(stringResource(R.string.local_tool_life_companion_desc)) },
                 trailingContent = {
                     Switch(
                         checked = assistant.localTools.contains(LocalToolOption.LifeCompanion),
