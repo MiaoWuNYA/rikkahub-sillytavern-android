@@ -29,23 +29,23 @@
 
 | 角色卡全兼容（V3 卡 + 62 条内嵌世界书） | 宏引擎（60+ 官方宏） |
 |---|---|
-| <img src="docs/screenshots/tavern-cards.jpg" width="360" alt="角色卡"> | <img src="docs/screenshots/macros.jpg" width="360" alt="宏"> |
+| <img src="docs/screenshots/tavern-cards.jpg" width="280" alt="角色卡"> | <img src="docs/screenshots/macros.jpg" width="280" alt="宏"> |
 
 ### 记忆与缓存
 
 | 多维度记忆设置 | 前缀缓存分叉诊断（字符级定位） |
 |---|---|
-| <img src="docs/screenshots/memory.jpg" width="360" alt="记忆"> | <img src="docs/screenshots/cache-diagnostics.jpg" width="360" alt="缓存诊断"> |
+| <img src="docs/screenshots/memory.jpg" width="280" alt="记忆"> | <img src="docs/screenshots/cache-diagnostics.jpg" width="280" alt="缓存诊断"> |
 
 ### 本分支专属
 
 | 华灯设置（兼容与辅助开关） | 华灯设置（接入与自动化） | Jev 智能决策 |
 |---|---|---|
-| <img src="docs/screenshots/huadeng-toggles.jpg" width="360" alt="华灯开关"> | <img src="docs/screenshots/huadeng-integrations.jpg" width="360" alt="华灯接入"> | <img src="docs/screenshots/jev.jpg" width="360" alt="Jev"> |
+| <img src="docs/screenshots/huadeng-toggles.jpg" width="280" alt="华灯开关"> | <img src="docs/screenshots/huadeng-integrations.jpg" width="280" alt="华灯接入"> | <img src="docs/screenshots/jev.jpg" width="280" alt="Jev"> |
 
 | 插件系统 |
 |---|
-| <img src="docs/screenshots/plugins.jpg" width="360" alt="插件"> |
+| <img src="docs/screenshots/plugins.jpg" width="280" alt="插件"> |
 
 ---
 
