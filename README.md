@@ -22,7 +22,7 @@
 >
 > Both routes share the same client and don't interfere with each other.
 >
-> 中文介绍：[README_CN.md](README_CN.md) —— 安卓上的 AI 聊天客户端，兼为 SillyTavern（酒馆）安卓兼容端：角色卡 / 世界书 / 预设 / 正则 / 美化主题按官方语义一键导入，无需 Termux 或 Node.js。搜「安卓 酒馆」「SillyTavern 安卓」即可找到本项目。
+
 
 ---
 
@@ -594,6 +594,8 @@ This project stands on the shoulders of others:
 
 This repository and its upstreams are all **AGPL-3.0** licensed; this fork continues under the same license. Copyright of each upstream project belongs to its authors — thank you for open-sourcing.
 
+
+> 中文介绍：[README_CN.md](README_CN.md) —— 安卓上的 AI 聊天客户端，兼为 SillyTavern（酒馆）安卓兼容端：角色卡 / 世界书 / 预设 / 正则 / 美化主题按官方语义一键导入，无需 Termux 或 Node.js。搜「安卓 酒馆」「SillyTavern 安卓」即可找到本项目。
 ---
 
 <div align="center">
