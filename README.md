@@ -28,23 +28,23 @@
 
 | Character cards (V3 card + 62-entry embedded lorebook) | Macro engine (60+ official macros) |
 |---|---|
-| ![Cards](docs/screenshots/tavern-cards.jpg) | ![Macros](docs/screenshots/macros.jpg) |
+| ![Cards](docs/screenshots-en/tavern-cards.jpg) | ![Macros](docs/screenshots-en/macros.jpg) |
 
 ### Memory & caching
 
 | Multi-dimensional memory settings | Prefix divergence diagnostics (character-level diff) |
 |---|---|
-| ![Memory](docs/screenshots/memory.jpg) | ![Cache diagnostics](docs/screenshots/cache-diagnostics.jpg) |
+| ![Memory](docs/screenshots-en/memory.jpg) | ![Cache diagnostics](docs/screenshots-en/cache-diagnostics.jpg) |
 
 ### This fork's exclusives
 
 | HuaDeng Settings (compatibility & helpers) | HuaDeng Settings (access & automation) | Jev decisioning |
 |---|---|---|
-| ![HuaDeng toggles](docs/screenshots/huadeng-toggles.jpg) | ![HuaDeng integrations](docs/screenshots/huadeng-integrations.jpg) | ![Jev](docs/screenshots/jev.jpg) |
+| ![HuaDeng toggles](docs/screenshots-en/huadeng-toggles.jpg) | ![HuaDeng integrations](docs/screenshots-en/huadeng-integrations.jpg) | ![Jev](docs/screenshots-en/jev.jpg) |
 
 | Plugin system |
 |---|
-| ![Plugins](docs/screenshots/plugins.jpg) |
+| ![Plugins](docs/screenshots-en/plugins.jpg) |
 
 ---
 

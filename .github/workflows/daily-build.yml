@@ -115,8 +115,8 @@ jobs:
           data = json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
           data["version"] = os.environ["REL_VERSION"]
           data["publishedAt"] = os.environ["REL_DATE"]
-          data.setdefault("changelog", "Nightly auto-build.")
-          data["changelog"] = "Nightly auto-build (%s)." % os.environ["REL_DATE"][:10]
+          data.setdefault("changelog", "Nightly auto-build / 每日自动构建")
+          data["changelog"] = "Nightly auto-build (%s) / 每日自动构建（%s）" % (os.environ["REL_DATE"][:10], os.environ["REL_DATE"][:10])
           p.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
           PY
 
@@ -141,7 +141,7 @@ jobs:
           name: Nightly Build
           prerelease: true
           body: |
-            Nightly auto-build (commit `${{ github.sha }}`)
+            Nightly auto-build (commit `${{ github.sha }}`) / 自动每日构建（commit `${{ github.sha }}`）
 
-            > ⚠️ Development build — may be unstable, for testing only.
+            > ⚠️ Development build — may be unstable, for testing only. / 开发版本，可能不稳定，仅供测试。
           files: app/build/outputs/apk/release/*.apk
