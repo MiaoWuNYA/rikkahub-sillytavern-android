@@ -1,7 +1,7 @@
 {
-  "version": "2.5.4.14",
-  "publishedAt": "2026-09-24T05:15:00Z",
-  "changelog": "Jev decisioning improvements & four-locale completion / Jev 智能决策优化 + 日韩俄繁中翻译补全（1451×4）",
+  "version": "2.5.4.0924",
+  "publishedAt": "2026-09-24T14:09:59Z",
+  "changelog": "Nightly auto-build (2026-09-24) / 每日自动构建（2026-09-24）",
   "downloads": [
     {
       "name": "rikkahub-plus-2.5.4.14-arm64-v8a.apk",
