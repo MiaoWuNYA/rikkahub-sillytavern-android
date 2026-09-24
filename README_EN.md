@@ -24,7 +24,38 @@
 
 ---
 
-## ✨ What this fork adds over upstream
+## 📸 Screenshots
+
+<details open>
+<summary><b>Click to view (8 screenshots, Chinese UI)</b></summary>
+
+### Tavern compatibility
+
+| Character cards (V3 card + 62-entry embedded lorebook) | Macro engine (60+ official macros) |
+|---|---|
+| ![Cards](docs/screenshots/tavern-cards.jpg) | ![Macros](docs/screenshots/macros.jpg) |
+
+### Memory & caching
+
+| Multi-dimensional memory settings | Prefix divergence diagnostics (character-level diff) |
+|---|---|
+| ![Memory](docs/screenshots/memory.jpg) | ![Cache diagnostics](docs/screenshots/cache-diagnostics.jpg) |
+
+### This fork's exclusives
+
+| HuaDeng Settings (compatibility & helpers) | HuaDeng Settings (access & automation) | Jev decisioning |
+|---|---|---|
+| ![HuaDeng toggles](docs/screenshots/huadeng-toggles.jpg) | ![HuaDeng integrations](docs/screenshots/huadeng-integrations.jpg) | ![Jev](docs/screenshots/jev.jpg) |
+
+| Plugin system |
+|---|
+| ![Plugins](docs/screenshots/plugins.jpg) |
+
+</details>
+
+---
+
+## ✨ Fork features
 
 | | Area | In one line |
 |---|---|---|
@@ -80,37 +111,6 @@ rikkahub/rikkahub (original upstream, v2.5.2)
    - **Add plugins** (Settings → Plugins → import ZIP; [bundled plugins](#-bundled-plugins) work out of the box)
 
 > In-app update: Settings → About → Check for updates (GitHub Releases API, with an auto-fallback mirror for mainland China)
-
----
-
-## 📸 Screenshots
-
-<details open>
-<summary><b>Click to view (8 screenshots, Chinese UI)</b></summary>
-
-### Tavern compatibility
-
-| Character cards (V3 card + 62-entry embedded lorebook) | Macro engine (60+ official macros) |
-|---|---|
-| ![Cards](docs/screenshots/tavern-cards.jpg) | ![Macros](docs/screenshots/macros.jpg) |
-
-### Memory & caching
-
-| Multi-dimensional memory settings | Prefix divergence diagnostics (character-level diff) |
-|---|---|
-| ![Memory](docs/screenshots/memory.jpg) | ![Cache diagnostics](docs/screenshots/cache-diagnostics.jpg) |
-
-### This fork's exclusives
-
-| HuaDeng Settings (compatibility & helpers) | HuaDeng Settings (access & automation) | Jev decisioning |
-|---|---|---|
-| ![HuaDeng toggles](docs/screenshots/huadeng-toggles.jpg) | ![HuaDeng integrations](docs/screenshots/huadeng-integrations.jpg) | ![Jev](docs/screenshots/jev.jpg) |
-
-| Plugin system |
-|---|
-| ![Plugins](docs/screenshots/plugins.jpg) |
-
-</details>
 
 ---
 

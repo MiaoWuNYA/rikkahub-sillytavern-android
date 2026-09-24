@@ -25,7 +25,38 @@
 
 ---
 
-## ✨ 相对上游多了什么
+## 📸 界面一览
+
+<details open>
+<summary><b>点击查看截图（8 张）</b></summary>
+
+### 酒馆兼容
+
+| 角色卡全兼容（V3 卡 + 62 条内嵌世界书） | 宏引擎（60+ 官方宏） |
+|---|---|
+| ![角色卡](docs/screenshots/tavern-cards.jpg) | ![宏](docs/screenshots/macros.jpg) |
+
+### 记忆与缓存
+
+| 多维度记忆设置 | 前缀缓存分叉诊断（字符级定位） |
+|---|---|
+| ![记忆](docs/screenshots/memory.jpg) | ![缓存诊断](docs/screenshots/cache-diagnostics.jpg) |
+
+### 本分支专属
+
+| 华灯设置（兼容与辅助开关） | 华灯设置（接入与自动化） | Jev 智能决策 |
+|---|---|---|
+| ![华灯开关](docs/screenshots/huadeng-toggles.jpg) | ![华灯接入](docs/screenshots/huadeng-integrations.jpg) | ![Jev](docs/screenshots/jev.jpg) |
+
+| 插件系统 |
+|---|
+| ![插件](docs/screenshots/plugins.jpg) |
+
+</details>
+
+---
+
+## ✨ 分支特性
 
 | | 方向 | 一句话 |
 |---|---|---|
@@ -83,37 +114,6 @@ rikkahub/rikkahub (最上游，v2.5.2)
    - **加插件**（设置 → 插件管理 → 导入 ZIP，[内置插件](#-内置插件)开箱可用）
 
 > 应用内更新：设置 → 关于 → 检查更新（走 GitHub Releases API，国内镜像自动回退）
-
----
-
-## 📸 界面一览
-
-<details open>
-<summary><b>点击查看截图（8 张）</b></summary>
-
-### 酒馆兼容
-
-| 角色卡全兼容（V3 卡 + 62 条内嵌世界书） | 宏引擎（60+ 官方宏） |
-|---|---|
-| ![角色卡](docs/screenshots/tavern-cards.jpg) | ![宏](docs/screenshots/macros.jpg) |
-
-### 记忆与缓存
-
-| 多维度记忆设置 | 前缀缓存分叉诊断（字符级定位） |
-|---|---|
-| ![记忆](docs/screenshots/memory.jpg) | ![缓存诊断](docs/screenshots/cache-diagnostics.jpg) |
-
-### 本分支专属
-
-| 华灯设置（兼容与辅助开关） | 华灯设置（接入与自动化） | Jev 智能决策 |
-|---|---|---|
-| ![华灯开关](docs/screenshots/huadeng-toggles.jpg) | ![华灯接入](docs/screenshots/huadeng-integrations.jpg) | ![Jev](docs/screenshots/jev.jpg) |
-
-| 插件系统 |
-|---|
-| ![插件](docs/screenshots/plugins.jpg) |
-
-</details>
 
 ---
 
