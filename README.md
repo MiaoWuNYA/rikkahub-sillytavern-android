@@ -89,13 +89,13 @@ rikkahub/rikkahub (最上游，v2.5.2)
 ## 📸 界面一览
 
 <details open>
-<summary><b>点击查看截图（9 张）</b></summary>
+<summary><b>点击查看截图（8 张）</b></summary>
 
 ### 酒馆兼容
 
-| 角色卡全兼容（V3 卡 + 62 条内嵌世界书） | 世界书读取实例 | 宏引擎（60+ 官方宏） |
-|---|---|---|
-| ![角色卡](docs/screenshots/tavern-cards.jpg) | ![世界书](docs/screenshots/tavern-lorebook.jpg) | ![宏](docs/screenshots/macros.jpg) |
+| 角色卡全兼容（V3 卡 + 62 条内嵌世界书） | 宏引擎（60+ 官方宏） |
+|---|---|
+| ![角色卡](docs/screenshots/tavern-cards.jpg) | ![宏](docs/screenshots/macros.jpg) |
 
 ### 记忆与缓存
 

@@ -86,13 +86,13 @@ rikkahub/rikkahub (original upstream, v2.5.2)
 ## 📸 Screenshots
 
 <details open>
-<summary><b>Click to view (9 screenshots, Chinese UI)</b></summary>
+<summary><b>Click to view (8 screenshots, Chinese UI)</b></summary>
 
 ### Tavern compatibility
 
-| Character cards (V3 card + 62-entry embedded lorebook) | Lorebook in action | Macro engine (60+ official macros) |
-|---|---|---|
-| ![Cards](docs/screenshots/tavern-cards.jpg) | ![Lorebook](docs/screenshots/tavern-lorebook.jpg) | ![Macros](docs/screenshots/macros.jpg) |
+| Character cards (V3 card + 62-entry embedded lorebook) | Macro engine (60+ official macros) |
+|---|---|
+| ![Cards](docs/screenshots/tavern-cards.jpg) | ![Macros](docs/screenshots/macros.jpg) |
 
 ### Memory & caching
 
