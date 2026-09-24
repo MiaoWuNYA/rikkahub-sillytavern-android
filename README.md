@@ -16,7 +16,7 @@
 
 </div>
 
-> **RikkaHub 的深度定制分支**（已合入上游 v2.5.2，另有 2150+ 提交的增量），Kotlin + Jetpack Compose 原生实现。
+> **RikkaHub 的深度定制分支**（已合入上游 v2.5.3，另有 2150+ 提交的增量），Kotlin + Jetpack Compose 原生实现。
 >
 > - **只想找个好用的 AI 聊天 App**：接上任意 API 就能聊——多供应商、流式输出、语音通话、插件工具、记忆系统、缓存省钱，装上就用，酒馆功能默认不增加上下文，不浪费用量。
 > - **想找一个安卓酒馆 APP**：角色卡、世界书、预设、正则、美化主题按官方语义无损导入，无需 Termux 或 Node.js
@@ -73,7 +73,7 @@
 本仓库有两条上游血脉，理解这个才能看懂差异：
 
 ```
-rikkahub/rikkahub (最上游，v2.5.2)
+rikkahub/rikkahub (最上游，v2.5.3)
         │
         ├──► heikeyangle-code/rikkahub-plus (中间分支 mingli2)
         │            │  酒馆系统 / 宏引擎 / 斜杠命令 / 群聊
@@ -201,8 +201,9 @@ QuickJS 沙箱插件。插件 = ZIP 包（`manifest.json` + `main.js`），设�
 |---|---|
 | 🍱 **卡路里与蛋白质记录** | 跟 AI 说一句「中午吃了碗牛肉面」，热量与蛋白质就都记下来了。每日目标在插件设置里配，详情页显示今日摄入与各自剩余额度 |
 | 🎓 **云南财经教务系统** | 课表 / 成绩 / 考试安排 / 教务公告 / 空闲教室查询。账号密码填在插件设置里，验证码本地 OCR 自动识别，连续失败则返回图片让你手输 |
+| 🌍 **AI 模型世界** | 600+ 大模型的档案与基准评分（数据来自 liyupi/ai-model-world，每小时同步 Epoch AI / models.dev / LiveBench）。问「XX 模型多少钱 / 多长上下文 / 和 YY 比哪个强 / 有什么便宜的模型」AI 直接查本地库作答，数据一键更新 |
 
-两个插件包在 [`docs/plugins/`](docs/plugins/)（含源码，可直接参考），开发指南见 [docs/PLUGINS_GUIDE.md](docs/PLUGINS_GUIDE.md)。
+三个插件包在 [`docs/plugins/`](docs/plugins/)（含源码，可直接参考），开发指南见 [docs/PLUGINS_GUIDE.md](docs/PLUGINS_GUIDE.md)。
 
 <details>
 <summary><b>✍️ 写插件的最小例子（点击展开）</b></summary>
@@ -565,7 +566,7 @@ TypeSafe System One 判断模型的接入配置页：API 地址 / Key / 模型�
 ## ✅ 与上游的关系
 
 - **上游功能全部保留**：Material You 主题、多供应商、流式生成、会话分叉与重新生成、消息编辑 / 删除 / 翻译、全文搜索（jieba）、收藏、图片生成、TTS / ASR、MCP、工作区沙箱（终端多 Tab + Shell 兼容模式）、备份（S3 / WebDAV）、网络对话端、聊天导出等一切照旧
-- **已合入上游版本**：`rikkahub/rikkahub` master **v2.5.2**（2026-09）
+- **已合入上游版本**：`rikkahub/rikkahub` master **v2.5.3**（2026-09）
 - **相对中间分支 mingli2**：除酒馆增强外，新增提示词前缀缓存、语义记忆 RAG 与滚动压缩、Jev 智能决策、中转站兼容与防空回复、豆包语音、隐私加固
 - **v2.5.4 以来新增**：教务系统移出应用改为插件、卡路里与蛋白质记录插件、插件沙箱的会话式 HTTP 与图片解码、详情页数据卡片、更新检查改用 GitHub Releases API、Jev 智能决策接入
 - **合并上游**：见 [DIVERGENCE.md](DIVERGENCE.md) 的冲突处理手册
