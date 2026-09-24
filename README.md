@@ -1,13 +1,12 @@
 <div align="center">
 
-# RikkaHub Plus · 华灯版
+# RikkaHub Plus · HuaDeng
 
-### 安卓上的 **AI 聊天客户端**
-### 兼为 **SillyTavern（酒馆）兼容端**
+### An **AI chat client** for Android that is also a **SillyTavern**-compatible endpoint
 
-**开箱即聊 · 提示词缓存省 token · 记忆不失忆 · 角色卡 / 世界书 / 预设按酒馆官方语义一键导入**
+**Chat out of the box · prefix caching saves tokens · memory that doesn't fade · character cards / lorebooks / presets imported with official SillyTavern semantics**
 
-[**简体中文**](README.md) | [**English**](README_EN.md) | [差异手册](DIVERGENCE.md)
+[**English**](README.md) | [**简体中文**](README_CN.md) | [Divergence map](DIVERGENCE.md) | [Divergence map (EN)](DIVERGENCE_EN.md)
 
 [![Release](https://img.shields.io/github/v/release/MiaoWuNYA/rikkahub-sillytavern-android?label=release&color=brightgreen)](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
@@ -16,592 +15,587 @@
 
 </div>
 
-> **RikkaHub 的深度定制分支**（已合入上游 v2.5.3，另有 2150+ 提交的增量），Kotlin + Jetpack Compose 原生实现。
+> **A deeply customized fork of [RikkaHub](https://github.com/rikkahub/rikkahub)** (merged with upstream v2.5.3, plus 2150+ commits of additions), natively implemented in Kotlin + Jetpack Compose.
 >
-> - **只想找个好用的 AI 聊天 App**：接上任意 API 就能聊——多供应商、流式输出、语音通话、插件工具、记忆系统、缓存省钱，装上就用，酒馆功能默认不增加上下文，不浪费用量。
-> - **想找一个安卓酒馆 APP**：角色卡、世界书、预设、正则、美化主题按官方语义无损导入，无需 Termux 或 Node.js
+> - **Just want a good AI chat app**: plug in any API and start talking — multi-provider, streaming, voice calls, plugin tools, memory, cache savings. No "tavern" concepts required.
+> - **Migrating from desktop SillyTavern**: character cards, lorebooks, presets, regex and themes import losslessly with official semantics — no Termux, no Node.js.
 >
-> 两条路线共用同一个客户端，互不干扰。
+> Both routes share the same client and don't interfere with each other.
 
 ---
 
-### 酒馆兼容
+### Tavern compatibility
 
-| 角色卡全兼容（V3 卡 + 62 条内嵌世界书） | 宏引擎（60+ 官方宏） |
+| Character cards (V3 card + 62-entry embedded lorebook) | Macro engine (60+ official macros) |
 |---|---|
-| ![角色卡](docs/screenshots/tavern-cards.jpg) | ![宏](docs/screenshots/macros.jpg) |
+| ![Cards](docs/screenshots/tavern-cards.jpg) | ![Macros](docs/screenshots/macros.jpg) |
 
-### 记忆与缓存
+### Memory & caching
 
-| 多维度记忆设置 | 前缀缓存分叉诊断（字符级定位） |
+| Multi-dimensional memory settings | Prefix divergence diagnostics (character-level diff) |
 |---|---|
-| ![记忆](docs/screenshots/memory.jpg) | ![缓存诊断](docs/screenshots/cache-diagnostics.jpg) |
+| ![Memory](docs/screenshots/memory.jpg) | ![Cache diagnostics](docs/screenshots/cache-diagnostics.jpg) |
 
-### 本分支专属
+### This fork's exclusives
 
-| 华灯设置（兼容与辅助开关） | 华灯设置（接入与自动化） | Jev 智能决策 |
+| HuaDeng Settings (compatibility & helpers) | HuaDeng Settings (access & automation) | Jev decisioning |
 |---|---|---|
-| ![华灯开关](docs/screenshots/huadeng-toggles.jpg) | ![华灯接入](docs/screenshots/huadeng-integrations.jpg) | ![Jev](docs/screenshots/jev.jpg) |
+| ![HuaDeng toggles](docs/screenshots/huadeng-toggles.jpg) | ![HuaDeng integrations](docs/screenshots/huadeng-integrations.jpg) | ![Jev](docs/screenshots/jev.jpg) |
 
-| 插件系统 |
+| Plugin system |
 |---|
-| ![插件](docs/screenshots/plugins.jpg) |
+| ![Plugins](docs/screenshots/plugins.jpg) |
 
 ---
 
-## ✨ 分支特性
+## ✨ Fork features
 
-| | 方向 | 一句话 |
+| | Area | In one line |
 |---|---|---|
-| ⚡ | **提示词缓存优化** | 消除每轮变化的上下文分叉点，长对话 token 费用大幅下降 |
-| 🧠 | **记忆与长对话** | 语义 RAG + 三层记忆 + 滚动压缩，长对话不失忆不爆窗 |
-| 🧿 | **Jev 智能决策** | 挂载 TypeSafe System One 判断模型：记忆筛选 + 主模型的快问快答 |
-| 🧩 | **插件系统** | QuickJS 沙箱插件，ZIP 导入，AI 可直接调用插件工具 |
-| 🍺 | **酒馆深度兼容** | 角色卡 / 世界书 / 预设 / 正则 / QR / 美化主题，按官方语义无损导入导出 |
-| 🗼 | **中转站兼容** | Gemini 走 OpenAI 兼容中转的三类经典病态自动修复 |
-| 🔊 | **豆包语音** | TTS 2.0 + 火山 ASR，一个 Agent Plan Key 支撑语音/视频通话 |
-| 📱 | **手机增强** | 30 个设备工具（懒发现省 token）+ 微信/QQ Bot + AI 主动发消息 |
-| 🏮 | **华灯设置** | 本分支新增开关的统一入口页 |
-| 🎨 | **外观与主题** | 7 项配色自定义 + 酒馆美化主题导入 |
-| 🛠 | **技能与工具** | GitHub 一键装技能 + 20 个新工具 + DSML 文本工具调用兼容 |
-| 💞 | **情感陪伴** | 情侣空间、生活空间（周期/备忘录/日历/一起听/共读书架） |
-| 🛡 | **隐私与稳定** | 日志脱敏、审批边界、遥测默认关闭、SSE 与数据库加固 |
+| ⚡ | **Prompt cache optimization** | Removes per-turn context divergence — long-conversation token cost drops sharply |
+| 🧠 | **Memory & long conversations** | Semantic RAG + three-layer memory + rolling compression |
+| 🧿 | **Jev decisioning** | Mounts the TypeSafe System One judge model: memory screening + quick Q&A for the main model |
+| 🧩 | **Plugin system** | QuickJS-sandboxed plugins, ZIP import, directly callable by the AI |
+| 🍺 | **Deep SillyTavern compatibility** | Cards / lorebooks / presets / regex / QR / themes, lossless with official semantics |
+| 🗼 | **Proxy-station compatibility** | Auto-fixes the three classic Gemini-via-OpenAI-proxy pathologies |
+| 🔊 | **Doubao voice** | TTS 2.0 + Volcengine ASR; one Agent Plan key powers voice/video calls |
+| 📱 | **On-device augmentation** | 30 device tools (lazy-discovery), WeChat/QQ Bots, AI proactive messaging |
+| 🏮 | **HuaDeng Settings** | One page collecting this fork's new switches |
+| 🎨 | **Appearance & themes** | 7 custom colors + SillyTavern theme import |
+| 🛠 | **Skills & tools** | GitHub one-click skill install, 20 new tools, DSML text tool-call compat |
+| 💞 | **Companionship** | Couples space, life hub (cycle / memo / calendar / music / reading) |
+| 🛡 | **Privacy & stability** | Log sanitization, approval boundaries, telemetry off, SSE & DB hardening |
 
 <details>
-<summary><b>🗺️ 相对另外两个上游分支的定位（点击展开）</b></summary>
+<summary><b>🗺️ Where this fork sits between its two upstreams (click to expand)</b></summary>
 
-本仓库有两条上游血脉，理解这个才能看懂差异：
+Two upstream lineages meet here — knowing them makes the diff readable:
 
 ```
-rikkahub/rikkahub (最上游，v2.5.3)
+rikkahub/rikkahub (original upstream, v2.5.3)
         │
-        ├──► heikeyangle-code/rikkahub-plus (中间分支 mingli2)
-        │            │  酒馆系统 / 宏引擎 / 斜杠命令 / 群聊
+        ├──► heikeyangle-code/rikkahub-plus (intermediate fork, mingli2)
+        │            │  tavern system / macro engine / slash commands / group chats
         │            ▼
-        └──► MiaoWuNYA/rikkahub-sillytavern-android  ← 本仓库
-                     │  酒馆增强 / 缓存优化 / 插件 / 记忆 / 中转兼容 / 手机增强
+        └──► MiaoWuNYA/rikkahub-sillytavern-android  ← this repo
+                     │  cache optimization / plugins / memory / proxy fix / on-device
                      │
-                     ├─ 另从 orangechat & Tumin 引入：三层记忆、情侣空间、
-                     │  生活空间、外观自定义、插件系统雏形
-                     └─ 另从 Rikkahub-Revised 移植：语义记忆 RAG、滚动压缩
+                     ├─ also from orangechat & Tumin: three-layer memory, couples space,
+                     │  life hub, appearance customization, early plugin system
+                     └─ also ported from Rikkahub-Revised: semantic memory RAG, rolling compression
 ```
 
-- **对最上游 `rikkahub`**：上游功能全部保留；酒馆、插件、记忆等全部是增量
-- **对中间分支 `heikeyangle-code/rikkahub-plus`（mingli2）**：酒馆核心来自它，本分支在其上补齐了
-  HTML 卡片、多开场白、预设与正则导入、QR 导入、世界书编辑器补全与 Token 预算兜底、
-  Vector Storage 语义条目、提示词查看器、正则深度限制与缓存、开场白宏替换
-- **对其它同源分支**：见文末[致谢](#-致谢与版权说明credits)，特色功能的来源均已注明
+- **vs. original upstream `rikkahub`**: everything preserved; the tavern/plugin/memory work is purely additive
+- **vs. intermediate `heikeyangle-code/rikkahub-plus` (mingli2)**: the tavern core comes from it; this fork adds cache optimization, plugins, memory, proxy fix, voice, and privacy hardening on top
+- **vs. other same-origin forks**: see [Credits](#-credits) — feature provenance is stated per project
 
 </details>
 
 ---
 
-## 🚀 快速开始
+## 🚀 Quick start
 
-1. 到 [Releases](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/latest) 下载最新 APK（`arm64-v8a`，Android 8.0+）
-2. **配模型**：设置 → 模型与服务 → **提供商**，添加你的 API；再到**默认模型和提示词**给对话/标题/压缩分别选模型
-3. 开始聊天。想要更多：
-   - **导入角色卡**（助手页 → 导入，支持 PNG 卡 / V2 / V3 JSON，世界书和预设自动带进来）
-   - **导入世界书 / 预设 / 正则 / QR**（设置 → 扩展管理）
-   - **换个酒馆主题**（设置 → 偏好设置 → 聊天外观自定义 → 导入酒馆主题）
-   - **加插件**（设置 → 插件管理 → 导入 ZIP，[内置插件](#-内置插件)开箱可用）
+1. Grab the latest APK from [Releases](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/latest) (`arm64-v8a`, Android 8.0+)
+2. Settings → Models & Services → **Providers**, add your API; then **Default models & prompts** to pick models for chat / title / compression
+3. Start chatting. Want more:
+   - **Import a character card** (Assistants page → import, PNG / V2 / V3 JSON; lorebooks and presets come along automatically)
+   - **Import lorebooks / presets / regex / QR** (Settings → Extensions)
+   - **Try a SillyTavern theme** (Settings → Preferences → Chat appearance → import theme)
+   - **Add plugins** (Settings → Plugins → import ZIP; [bundled plugins](#-bundled-plugins) work out of the box)
 
-> 应用内更新：设置 → 关于 → 检查更新（走 GitHub Releases API，国内镜像自动回退）
+> In-app update: Settings → About → Check for updates (GitHub Releases API, with an auto-fallback mirror for mainland China)
 
 ---
 
-## 💬 聊天功能（本分支核心增强）
+## 💬 Chat features (this fork's core enhancements)
 
-### ⚡ 提示词前缀缓存优化
+### ⚡ Prompt Prefix Cache Optimization
 
-主流供应商（DeepSeek / Kimi / Claude 等）都提供自动前缀缓存：本次请求前缀与上次**逐字节一致**即命中，命中部分计费远低于正常价。但聊天场景里大量内容每轮都在变（时间戳、最近会话、记忆、随机数、滚动摘要），前缀一动缓存全废。
+Major providers (DeepSeek / Kimi / Claude, etc.) offer automatic prefix caching: a byte-identical prefix to the previous request is a cache hit, billed far below the normal rate. But in chat, plenty of content changes **every turn** (timestamps, recent chats, memories, random numbers, rolling summaries) — one divergence kills the whole cache.
 
-本分支借鉴 DeepSeek Harness 的前缀稳定性设计，逐个消除这些分叉点：
+Drawing on the DeepSeek Harness prefix-stability design, this fork eliminates those divergence points one by one:
 
-| 分叉点 | 处理方式 |
+| Divergence point | How it's handled |
 |---|---|
-| 最近会话 / 记忆引用等动态注入 | **冻结锚点**：旧块原位保留、新块追加到尾部，动态内容不再随历史后移 |
-| `{{random}}` / `{{pick}}` 等随机宏 | 按消息固定取值，历史消息不再每轮重掷 |
-| 世界书 / 技能 / 跨窗口记忆 / OCR / 正则 depth | 按「用户轮」冻结，同一轮内多次请求前缀一致 |
-| 已入历史的助手消息宏渲染 | 按消息冻结，结果不再随当前时间/变量变化 |
-| 时间族宏（`{{time}}` 等） | 5 分钟粒度对齐，避免秒级抖动 |
-| 滚动压缩摘要 | 追加式衔接，token 前缀跨压缩保持稳定 |
-| 记忆全量注入 / Recent Chats | 移出前缀区（前者移至上下文尾部） |
-| 多 API Key | 按会话粘性选 Key，避免上游缓存因账号切换失效 |
-| Claude `redacted_thinking` | 保留并回放，不破坏思维链块结构 |
+| Dynamic injections (recent chats, memory refs) | **Frozen anchors**: old block stays in place, new block appends at the tail |
+| `{{random}}` / `{{pick}}` and other random macros | Resolved deterministically per message — history no longer re-rolls |
+| Lorebooks / skills / cross-window memory / OCR / regex depth | Frozen per *user turn*, so repeated requests in a turn share a prefix |
+| Macro rendering of assistant messages already in history | Frozen per message — no longer varies with time or variables |
+| Time-family macros (`{{time}}`, …) | Aligned to 5-minute granularity, avoiding second-level jitter |
+| Rolling compression summaries | Append-style chaining keeps the token prefix stable across compressions |
+| Full memory injection / Recent Chats | Moved out of the prefix zone (the former to the context tail) |
+| Multiple API keys | Sticky per session, so upstream caching isn't invalidated by key switching |
+| Claude `redacted_thinking` | Preserved and replayed, keeping the thinking-block structure intact |
 
-**诊断工具**：内置**前缀分叉诊断**，逐条对比相邻两轮请求，显示公共前缀、估算命中率，并支持**字符级差异定位**——缓存为什么失效一目了然。另有**提示词查看器**可直接查看本轮发给模型的完整提示词。
+**Diagnostics**: a built-in **prefix divergence view** compares consecutive requests item by item, shows the common prefix and estimated hit rate, and supports **character-level diff location** — you can always see exactly why a cache missed. A **prompt viewer** also shows the exact prompt sent this turn.
 
-> 实际效果因对话形态而异：稳定、纯追加的聊天场景下命中率提升明显；具体幅度取决于内容变化频率与供应商定价。
+> Actual results vary by conversation shape: in steady, append-only chats the hit rate improves noticeably; the exact gain depends on how often content changes and on each provider's pricing.
 
-### 🧠 记忆与长对话
+### 🧠 Memory & Long Conversations
 
-- **语义记忆 RAG**（移植自 [Rikkahub-Revised](https://github.com/YaeNovin/Rikkahub-Revised)）：记忆分 FACT（事实）/ EPISODIC（情节）两类，向量嵌入 + 余弦相似度检索（附中文分词大词 + CJK 二元组词法兜底），情节记忆带时间衰减加权，结果按预算注入
-- **三层记忆**（源自 orangechat/Tumin）：固定记忆区（独立编辑、不覆盖角色卡）+ 近期生活流（跨会话记忆当前对话，其他对话的未读事件自动注入）+ 长期记忆词项重叠打分召回；生活流超阈值自动后台摘要
-- **memory_tool 增强**：新增 `list` 读取操作与 fact / episodic 类型区分，模型可先查看已有记忆再决定写入或更新
-- **记忆管理页**：按助手独立查看 / 编辑 / 删除记忆条目
-- **上下文滚动压缩**：长对话超阈值（按模型上下文窗口自动算或手动指定）时，用压缩模型把早期对话滚动摘要（原文保留、仅请求时替换前缀），突破上下文窗口而不丢人设与伏笔
-- **最近对话引用**：可选把该助手最近的对话列表注入提示词，跨会话连续性
-- **瞬态内容裁剪**：超过两轮的网页搜索结果 / 图片 / 音视频自动从请求中剔除（附消息 ID，AI 可用 `read_history_message` 取回原文）
-- **首轮自动读取记忆**：第一轮自动注入最近记忆（开局没有相关性查询可用），之后按相关性按需召回 —— AI 开局就认识你
+- **Semantic memory RAG** (ported from [Rikkahub-Revised](https://github.com/YaeNovin/Rikkahub-Revised)): memories split into FACT / EPISODIC, embedded with the vector model and retrieved via cosine similarity (with a lexical fallback of word terms + CJK bigrams); episodic memories get recency weighting; results are injected within a budget
+- **Three-layer memory** (from orangechat/Tumin): a fixed-memory section (independently editable without touching the character card) + a recent-life stream (cross-conversation memory of the current chat; unread events from other conversations auto-injected) + long-term recall via lexical-overlap scoring; the stream is auto-summarized in the background past a threshold
+- **Enhanced `memory_tool`**: a `list` read operation plus fact / episodic distinction — the model can review existing memories before writing or updating
+- **Memory management page**: view / edit / delete entries per assistant
+- **Rolling context compression**: past a threshold (auto-computed from the model's context window or set manually), a compression model rolls earlier turns into a summary (originals preserved, replaced only at request time), injected as a system message — staying in-window without losing persona or foreshadowing
+- **Recent chats reference**: optionally inject the assistant's recent conversation list for cross-session continuity
+- **Transient-content pruning**: web-search results / images / audio / video older than two turns are dropped from requests (with the message ID so the AI can retrieve the original via `read_history_message`)
+- **First-turn auto memory**: the first turn injects the most recent memories (no relevance query exists yet), later turns recall by relevance — the AI knows you from the first message
 
-> 记忆类功能（记忆 / RAG 检索 / 三层记忆 / 跨窗口生活流）**默认开启**——记忆让 AI 更了解用户，不为省上下文牺牲体验。已有助手保留原有设置，可随时在助手级关闭。
+> Memory features (memory tool / RAG / three-layer memory / cross-window life stream) are **on by default** — memory helps the AI know you better and isn't sacrificed to save context. Existing assistants keep their settings and can opt out per assistant.
 
-### 🧿 Jev 智能决策（TypeSafe System One）
+### 🧿 Jev decisioning (TypeSafe System One)
 
-设置 → 华灯设置 → **Jev 智能决策**。Jev 是一个**只做判断、不生成文本**的专用小模型（端到端约 100ms，输出 token 免费），作为客户端内部的隐形决策层挂载，填入 API Key 即可启用。两个接管开关：
+Settings → HuaDeng Settings → **Jev decisioning**. Jev is a dedicated small model that **only judges — it never generates text** (~100ms end to end, output tokens free). It mounts as an invisible decision layer inside the client: paste an API key and it works. Two takeover switches:
 
-| 开关 | 作用 |
+| Switch | What it does |
 |---|---|
-| **自动记忆筛选** | 用 Jev 逐条判断"这条记忆与当前对话相关吗"，替代 embedding 相似度检索——省掉 embedding API 调用。候选按时间倒序分批并行判断，相关概率过半即注入；身份类记忆（称呼、偏好）即使对话没直接提到也算相关 |
-| **大模型工具调用（judge）** | 给主模型挂一个 judge 工具（界面显示「Jev 明断」）：拿不准是非题 / 选择题 / 打分题时直接问 Jev，不再自己猜。系统提示同步注入工具路由说明，弱模型也能发现并使用 |
+| **Automatic memory screening** | Instead of embedding-similarity retrieval, Jev judges each memory "is this relevant to the current conversation?" — no embedding API calls. Candidates are batched in parallel newest-first; anything over 50% relevance probability is injected; identity memories (what to call you, preferences) count as relevant even when not mentioned |
+| **judge tool for the main model** | Gives the main model a `judge` tool (shown as "Jev 明断" in the UI): when unsure about a yes/no, multiple-choice, or rating question it asks Jev instead of guessing. A tool-routing note is injected into the system prompt so weaker models discover it too |
 
-**静默是硬要求**：Jev 不可用（没配 Key、网络失败、置信度不足）时，记忆与工具全部回退原有逻辑，不弹错误、不阻塞对话。
+**Silence is a hard requirement**: whenever Jev is unavailable (no key, network failure, low confidence), memory and tools fall back to the original logic — no error dialogs, no blocking.
 
-### 🧩 插件系统
+### 🧩 Plugin System
 
-QuickJS 沙箱插件。插件 = ZIP 包（`manifest.json` + `main.js`），设置 → **插件管理**一键导入。
+QuickJS-sandboxed plugins. A plugin is a ZIP package (`manifest.json` + `main.js`); import it in Settings → **Plugins**.
 
-> 插件系统源自 orangechat / Tumin，本分支在其之上补齐了工具型插件所需的沙箱能力（会话式 HTTP、图片解码、详情页卡片）。
+> The plugin system originated in orangechat / Tumin; this fork added the sandbox capabilities tool-style plugins need (session-aware HTTP, image decoding, detail-page cards).
 
-#### 能做什么
+#### What it can do
 
-- manifest 声明的 `tools` 自动转成 AI 可调用的工具（统一 `plugin_` 前缀）
-- **系统提示词注入**：`systemPrompt` 直接注入，或 `sections` 每段配一个开关（支持 `file:` 外置文件与 `enc:` AES-256-GCM 加密文件）
-- **详情页数据卡片**：声明 `detailCard` 后，插件详情页调用该导出函数渲染成实时状态卡片（如卡路里的「今日摄入」）
-- 文件夹归类、启用/停用、per-插件配置表单（文本 / 密码 / 开关 / 下拉 / **模型选择**）
-- 每插件独立 `dataStore` 键值存储，数据落在 `plugin_data_<id>`
+- `tools` declared in the manifest become AI-callable tools (unified `plugin_` prefix)
+- **System-prompt injection**: `systemPrompt` injected directly, or `sections` each gated by a config switch (supports `file:` external files and `enc:` AES-256-GCM encrypted files)
+- **Detail-page data cards**: declare `detailCard` and the plugin page calls that exported function and renders a live status card (e.g. calorie "today's intake")
+- Folders, enable/disable, per-plugin config forms (text / password / boolean / select / **model picker**)
+- Per-plugin `dataStore` key-value storage under `plugin_data_<id>`
 
-#### 沙箱内置能力
+#### Sandbox capabilities
 
-| API | 用途 |
+| API | Purpose |
 |---|---|
-| `fetch(url, options)` | 一次性请求，**不保存 Cookie**，域名白名单 fail-closed |
-| **`http.*`** | 会话式请求，**自带 Cookie 罐**（自动保存每一跳 `Set-Cookie`），可取二进制 `bytes()` / `base64()`。用于「先拿 session 再带着登录」的流程——教务、论坛这类 |
-| **`image.decode(data)`** | 图片 → RGBA 像素数组（布局同 `canvas.getImageData`）。沙箱没有 canvas，逐像素处理（验证码识别、取色）靠它 |
+| `fetch(url, options)` | One-shot request, **no cookie persistence**, fail-closed host allowlist |
+| **`http.*`** | Session-aware requests with a **built-in cookie jar** (saves each hop's `Set-Cookie`), binary-capable via `bytes()` / `base64()`. Built for "get a session, then log in with it" flows — academic systems, forums |
+| **`image.decode(data)`** | Image → RGBA pixel array (same layout as `canvas.getImageData`). There is no canvas in the sandbox, so per-pixel work (captcha OCR, color picking) relies on it |
 | `dataStore` | `set` / `get` / `del` / `list` |
-| `btoa` / `atob` / `TextEncoder` / `TextDecoder` | 编解码 |
-| `config` | 插件配置注入的全局对象 |
+| `btoa` / `atob` / `TextEncoder` / `TextDecoder` | Encoding helpers |
+| `config` | Global object holding the plugin's config |
 
-单线程执行，工具调用 30 秒超时，详情页卡片 8 秒超时。**只支持 ES5**（`async`/`await` 会被预处理为同步）。
+Single-threaded; 30s tool timeout, 8s detail-card timeout. **ES5 only** (`async`/`await` are preprocessed into synchronous calls).
 
-#### 安全
+#### Security
 
-- 导入两段式：先解析 manifest 预览确认，再落盘
-- 插件目录 **SHA-256 完整性校验**（`.integrity`），被改动后自动停用
-- **Zip Slip 防护**：解压时校验每个条目的 canonical path
-- `allowedHosts` 为空 = 拦截全部网络请求
-- 插件只能访问显式注入的桥接对象，拿不到宿主能力
+- Two-stage import: parse and preview the manifest, then commit
+- **SHA-256 integrity check** (`.integrity`) in the plugin directory — a modified plugin is disabled automatically
+- **Zip-Slip protection**: every entry's canonical path is verified on extraction
+- Empty `allowedHosts` = all network requests denied
+- Plugins reach only the explicitly injected bridge objects, never host capabilities
 
-> ⚠️ 插件是第三方代码，请只导入你信任的来源。
+> ⚠️ Plugins are third-party code. Only import sources you trust.
 
-#### 内置插件
+#### Bundled plugins
 
-| 插件 | 说明 |
+| Plugin | Description |
 |---|---|
-| 🍱 **卡路里与蛋白质记录** | 跟 AI 说一句「中午吃了碗牛肉面」，热量与蛋白质就都记下来了。每日目标在插件设置里配，详情页显示今日摄入与各自剩余额度 |
-| 🎓 **云南财经教务系统** | 课表 / 成绩 / 考试安排 / 教务公告 / 空闲教室查询。账号密码填在插件设置里，验证码本地 OCR 自动识别，连续失败则返回图片让你手输 |
-| 🌍 **AI 模型世界** | 600+ 大模型的档案与基准评分（数据来自 liyupi/ai-model-world，每小时同步 Epoch AI / models.dev / LiveBench）。问「XX 模型多少钱 / 多长上下文 / 和 YY 比哪个强 / 有什么便宜的模型」AI 直接查本地库作答，数据一键更新 |
+| 🍱 **Calories & Protein** | Say "I had a bowl of beef noodles for lunch" and both the calories and the protein are recorded. Daily targets are set in plugin settings; the detail page shows today's intake and each remaining budget |
+| 🌍 **AI Model World** | Profiles and benchmark scores of 600+ LLMs (data from liyupi/ai-model-world, hourly sync of Epoch AI / models.dev / LiveBench). Ask "how much does model X cost / how long is its context / is it stronger than Y / what are the cheap models" and the AI answers from the local database; one-tap data refresh |
+| 🎓 **YNUFE Academic System** | Timetable / grades / exam schedule / notices / empty classrooms for Yunnan University of Finance and Economics. Credentials live in plugin settings; captchas are OCR'd locally, with an image fallback for manual entry |
 
-三个插件包在 [`docs/plugins/`](docs/plugins/)（含源码，可直接参考），开发指南见 [docs/PLUGINS_GUIDE.md](docs/PLUGINS_GUIDE.md)。
+All packages (source included) are in [`docs/plugins/`](docs/plugins/); see [docs/PLUGINS_GUIDE.md](docs/PLUGINS_GUIDE.md) for the development guide.
 
 <details>
-<summary><b>✍️ 写插件的最小例子（点击展开）</b></summary>
+<summary><b>✍️ Minimal plugin example (click to expand)</b></summary>
 
-`manifest.json`：
+`manifest.json`:
 ```json
 {
   "id": "com.example.hello",
-  "name": "打个招呼",
+  "name": "Say hello",
   "version": "1.0.0",
   "entry": "main.js",
   "tools": [{
     "name": "hello",
-    "description": "向指定的人问好",
+    "description": "Greet someone by name",
     "parameters": [{ "name": "who", "type": "string", "required": true }]
   }],
   "allowedHosts": []
 }
 ```
 
-`main.js`：
+`main.js`:
 ```js
 exports.hello = function (args) {
-  var name = args && args.who ? args.who : '世界';
-  return { greeting: '你好，' + name + '！' };
+  var name = args && args.who ? args.who : 'world';
+  return { greeting: 'Hello, ' + name + '!' };
 };
 ```
 
-打包成 ZIP（**文件必须在根目录，不能有顶层文件夹**）即可导入。
+Zip it (files must sit at the root — **no top-level folder**) and import.
 
 </details>
 
-### 🗼 中转站兼容与防空回复
+### 🗼 Proxy-Station Compatibility & Anti-Empty-Reply
 
-Gemini 经 OpenAI 兼容中转站（newapi 等）接入时的经典病态，自动修复：
+Classic pathologies when Gemini is accessed through OpenAI-compatible proxy stations (newapi etc.), fixed automatically:
 
-- **正文被 reasoning_content 吞掉**：部分中转把实际回复塞进推理字段，`content` 只剩伪影——流结束后若正文为空而推理有实质内容，自动把推理提升为正文（思考阶段不误判，正常模型的长思考 + 短回答不受影响）
-- **`response` 前缀伪影**：正文开头出现 `response` / `Response:` 残留——流式与非流式路径均自动剥离，前缀被拆散在多个 delta 中也能完整识别；带边界判定，不会误伤 `responses` 等英文单词
-- **正文截断**：提升与剥离逻辑让回复完整呈现，不再「思考里是答案、正文只剩半截」
+- **Body swallowed by `reasoning_content`**: some proxies put the actual reply into the reasoning field, leaving artifacts in `content` — after the stream ends, if the body is empty while reasoning has substance, the reasoning is promoted to the body (no false positives during the thinking phase)
+- **`response` prefix artifacts**: stray `response` / `Response:` leftovers at the start of the body — stripped on both streaming and non-streaming paths, even when split across deltas; boundary checks avoid mangling words like `responses`
+- **Truncation**: promotion + stripping present the reply in full instead of "answer in the thinking block, half a reply in the body"
 
-**防空回复（全局版）**：
+**Anti-empty-reply (global)**:
 
-- **系统提示词入对话流**：SYSTEM 消息原位转为 user 轮（首条后跟模型确认轮），世界书 / 人设 / 滚动摘要等注入位置与内容保持不变 —— 绕开 Gemini 对 `systemInstruction` 的安全拦截
-- **空回复自动微扰重试**：检测到无文本、无工具调用的空回复时，对末条用户消息做标点微扰（加/删句号、加空格，4 变体轮换）自动重试至多 3 次
+- **System prompt into the conversation flow**: SYSTEM messages convert in place to user turns (with an acknowledgment turn after the first); lorebook / persona / rolling-summary positions and content stay untouched — bypassing Gemini's safety blocking of `systemInstruction`
+- **Auto-perturb retry**: on a reply with no text and no tool calls, the last user message is perturbed (add/remove periods, add space — 4 rotating variants) and retried up to 3 times
 
-两者默认关闭，在华灯设置或助手编辑页开启。
+Both are off by default; enable in HuaDeng Settings or per assistant.
 
-### 🔊 豆包语音（火山引擎 Agent Plan）
+### 🔊 Doubao Voice (Volcengine Agent Plan)
 
-- **Doubao TTS**：豆包语音合成大模型 2.0
-  - `seed-tts-2.0` 资源 + 内置 14 个 2.0 音色预设（默认灿灿 2.0，另有快乐小东、甜美桃子、高冷御姐等），支持手动输入任意音色 ID
-  - 语速调节、音频格式（mp3/wav/pcm/ogg/opus）与采样率可选
-  - 完整解析火山特有的**拼接式 JSON 分块流**响应，长音频合成验证通过
-  - Agent Plan 专属接口路径默认内置，标准控制台用户可改回官方路径
-- **火山 ASR**：Agent Plan 的 `ark-xxx` 密钥只在 `/api/v3/plan/` 专属路径有效，默认地址已切换为 plan 专属路径，标准控制台密钥用户可在设置中改回
-- **一个 Agent Plan API Key** 同时驱动语音输入与语音输出
+- **Doubao TTS**: Doubao speech-synthesis large model 2.0
+  - `seed-tts-2.0` resource with **14 built-in 2.0 voice presets** (default Cancan 2.0, plus Kuaile Xiaodong, Tianmei Taozi, Gaoleng Yujie, …); any voice ID can be typed manually
+  - Speech-rate control; audio format (mp3/wav/pcm/ogg/opus) and sample rate selectable
+  - Fully parses Volcengine's concatenated-JSON chunked streaming responses; long-audio synthesis verified
+  - The Agent Plan dedicated endpoint is built in as the default; standard-console users can switch back
+- **Volcengine ASR**: Agent Plan `ark-xxx` keys are only valid on the dedicated `/api/v3/plan/` path — the default URL now points there; standard-console users can change it back in settings
+- **One Agent Plan API key** drives both voice input and voice output
 
-> 配合语音 / 视频通话使用：聊天页顶栏一键进入通话界面（仅在 TTS 与 ASR 均已配置时显示）——本地静音检测 → ASR 增量转写 → 自动发送 → 回复流式朗读，支持随时打断，挂断后通话内容折叠成存档卡片留在会话里。
+> Pairs with voice / video calls: one tap on the chat top bar enters the call screen (shown only when both TTS and ASR are configured) — local voice-activity detection → ASR incremental transcription → auto-send → streaming TTS of the reply, interruptible at any time; on hang-up the call folds into an archive card in the conversation.
 
-### 📱 手机增强
+### 📱 On-Device Augmentation
 
-#### 设备工具箱（30 个工具）
+#### Device toolbox (30 tools)
 
-助手工具页开启后，AI 可调用手机系统能力：
+Enable it on an assistant and the AI can call phone system capabilities:
 
-手电筒 · 震动 · 音量读写 · 亮度读写 · Toast · 电量 · 存储 · Wi-Fi / 音频 / 电话 / 传感器信息 · 分享 · 壁纸 · 系统通知 · 闹钟 / 计时器 · 音乐控制 · 短信读取 · 联系人 · 通话记录 · 定位 · 应用启动 · 打开网页 · 媒体扫描 · 文件下载 · 打开文件
+torch · vibrate · volume read/write · brightness read/write · toast · battery · storage · Wi-Fi / audio / telephony / sensor info · share · wallpaper · notifications · alarm / timer · music control · SMS reading · contacts · call log · location · app launching · open URL · media scanning · file download · open file
 
-为节约 token 采用**懒发现元工具**：上下文里只注册一个 `device_toolbox` 工具位，AI 先 `action=list` 拉取工具目录（含参数说明与权限授予状态），再 `action=run` 调用具体工具。
+To save tokens it uses a **lazy-discovery meta-tool**: only one `device_toolbox` slot is registered in context. The AI calls `action=list` to fetch the catalog (parameter schemas + permission status), then `action=run` to invoke a specific tool.
 
-#### 微信 Bot / QQ Bot
+#### WeChat Bot / QQ Bot
 
-把某个已有助手接入消息通道（AI、记忆、工具全部复用该助手）：
+Connect an existing assistant to a messaging channel (AI, memories, and tools all reused from that assistant):
 
-- **微信 Bot**：扫码登录自己的微信号（iLink 协议），HTTP 长轮询收消息 → 自动回复；token 过期自动停服并通知
-- **QQ Bot**：QQ 开放平台官方 API，填入 AppID + AppSecret 即可，WebSocket 网关实时收发，token 自动刷新
+- **WeChat Bot**: QR-login with your own WeChat account (iLink protocol); HTTP long-polling receives messages → auto reply; an expired token stops the service with a notification
+- **QQ Bot**: official QQ Open Platform API — enter AppID + AppSecret; WebSocket gateway for real-time send/receive with automatic token refresh
 
-两者默认关闭，开启前有隐私风险确认弹窗。
+Both are off by default with a privacy risk-confirmation dialog before enabling.
 
-#### AI 主动发消息
+#### AI proactive messaging
 
-AlarmManager 精确闹钟 + WorkManager 兜底双通道，随机间隔（可设范围）主动找你聊天；生成时注入上下文（上次聊天距今、当前时间、电量），正在生成时礼貌放弃不冲突。默认关闭。
+AlarmManager exact alarms + WorkManager fallback; the assistant reaches out at random intervals (configurable range). Generation injects context (time since last chat, current time, battery) and politely skips a trigger while a generation is running. Off by default.
 
-### 🎨 外观自定义与主题
+### 🎨 Appearance & Themes
 
-- **颜色覆盖**：主色、全局文字、用户 / AI / 思维链气泡、聊天背景、输入框 7 项自定义颜色（ARGB）
-- **气泡美化**：用户 / AI 气泡背景图 + 圆角 + 主题色遮罩，抽屉背景图与**聊天背景图**（图片上叠加聊天背景色遮罩）
-- **文字颜色细化**：正文 / 引用 / 斜体色独立设置，附酒馆橙、暖金、玫红、珊瑚、薰衣草、天蓝、薄荷等预设色板
-- **酒馆美化主题导入**：SillyTavern 美化主题 JSON 一键导入，已用 **537 个真实主题**全量验证（537/537 解析成功）：
-  - **叠层配色合成**：按酒馆渲染层级（`blur_tint` → `chat_tint` → 消息气泡色调 → 背景图）把多层半透明色调合成为不透明近似色，透明气泡主题不再变成整片色块；8 位 hex 按 CSS 规范 `#RRGGBBAA` 解析
-  - **背景图**：从 `custom_css` 识别 `#bg1` / `body` / `#chat` 上的 `background-image`（URL 自动下载、data URI 解码）
-  - **气泡样式**：`.mes` / `#chat` 的 `border-radius` 映射为气泡圆角；`chat_display=1`（气泡模式）自动开启 AI 气泡显示
-  - **主题字体**：`@font-face` 里的 ttf/otf 自动下载并设为聊天字体（woff/woff2 忽略）
-  - 其余：`main_text_color` → 全局文字、`quote/italics_text_color` → 引用/斜体色、`font_scale` → 字号比例
-- 预设色板 + HCT 自定义主题 + 动态取色保持不变
+- **Color overrides**: 7 custom colors (primary, global text, user / AI / thinking bubbles, chat background, input field; ARGB)
+- **Bubble beautification**: user / AI bubble background images + corner radius + theme-color overlay; drawer background image and **chat background image** (tinted with the chat background color)
+- **Fine-grained text colors**: separate body / quote / italics colors, with Tavern-orange, warm-gold, rose, coral, lavender, sky-blue and mint presets
+- **SillyTavern theme import**: one-tap import of SillyTavern beautification theme JSONs, bulk-verified against **537 real themes** (537/537 parse successfully):
+  - **Layered color compositing**: theme tints (`blur_tint` → `chat_tint` → message bubble tints → background image) are composited source-over into opaque approximations following SillyTavern's render stack, so transparent-bubble themes no longer collapse into flat color blocks; 8-digit hex parsed per CSS spec as `#RRGGBBAA`
+  - **Background image**: `background-image` on `#bg1` / `body` / `#chat` detected from `custom_css` (URLs auto-downloaded, data URIs decoded)
+  - **Bubble styling**: `border-radius` on `.mes` / `#chat` maps to bubble corner radius; `chat_display=1` (bubble mode) enables assistant bubbles automatically
+  - **Theme fonts**: ttf/otf from `@font-face` are auto-downloaded and set as the chat font (woff/woff2 ignored)
+  - Also: `main_text_color` → global text, `quote/italics_text_color` → quote/italics colors, `font_scale` → font scale
+- Preset palettes + HCT custom themes + dynamic color remain unchanged
 
-### 🛠 技能与工具
+### 🛠 Skills & Tools
 
-#### 技能（Skills）
+#### Skills
 
-- **自动触发**：匹配关键词即注入 `SKILL.md`，不依赖模型主动调用
-- **公共技能目录** `/Rikkahub/skills`：文件管理器直接增删
-- **GitHub 一键安装 / 批量下载 / 更新检测**：支持子目录与多技能仓库，记录来源与整目录哈希
+- **Automatic triggering**: matching keywords inject `SKILL.md` without relying on the model
+- **Public skills directory** `/Rikkahub/skills`: add or remove via any file manager
+- **GitHub one-click install / batch download / update detection**: subdirectories and multi-skill repos supported, with source + directory-hash tracking
 
-#### 工具集
+#### Tools
 
-上游基础上新增：
+New on top of upstream:
 
-| 工具 | 中文名 | 说明 |
-|---|---|---|
-| `file` | 书阁司卷 | 统一文件工具：读 / 写 / patch / 列 / 搜 / 复制 / 移动 / 建目录 / 删除 |
-| `execute_command` | 乾纲令行 | 设备上执行 Shell 命令，返回 stdout/stderr/退出码 |
-| `execute_python` | 灵枢演算 | 设备内隔离的 Python 执行（Chaquopy） |
-| `calculator` | 神机妙算 | 700+ 函数计算器（统计 / 金融 / 矩阵 / 微积分 / 物理） |
-| `database_query` | 天书检阅 | 只读 SQLite 查询本机数据库 |
-| `task_*` | 布局落子 / 运筹帷幄 | 任务列表创建 / 查询 / 更新 / 团队编排 |
-| `web_fetch` | 摘星引卷 | 任意 URL 的 HTTP 请求（GET/POST/PUT/PATCH/DELETE） |
-| `present_file` | 献卷呈览 | 通过系统分享面板分享文件 |
-| `read_history_message` | 回溯拾遗 | 取回被瞬态裁剪的历史消息原文（开启裁剪时注册） |
-| `device_toolbox` | 万象百宝囊 | 30 个设备工具的懒发现入口 |
-| `life_*` / `shared_*` / `*_couple_space` | 手札杂记 / 共读同赏 / 观俪影轩 等 | 生活空间与情侣空间操作 |
-| `memory_tool` / `conversation_search` / `recent_chats` | 心念归藏 / 探寻搜查 / 溯源观澜 | 记忆与对话检索 |
-| `judge` | Jev 明断 | 询问 Jev 判断模型是非题 / 选择题 / 打分题（见 [Jev 智能决策](#-jev-智能决策typesafe-system-one)） |
+| Tool | Description |
+|---|---|
+| `file` | Unified file tool: read / write / patch / list / search / copy / move / mkdir / delete |
+| `execute_command` | Shell command on device; returns stdout/stderr/exit code |
+| `execute_python` | Isolated on-device Python execution (Chaquopy) |
+| `calculator` | 700+ function calculator (statistics / finance / matrix / calculus / physics) |
+| `database_query` | Read-only SQLite query against the local database |
+| `task_*` | Task list creation / lookup / update / team orchestration |
+| `web_fetch` | HTTP requests to any URL (GET/POST/PUT/PATCH/DELETE) |
+| `present_file` | Share a file via the system share sheet |
+| `read_history_message` | Retrieve the original text of pruned messages (registered when pruning is on) |
+| `device_toolbox` | Lazy-discovery entry point to the 30 device tools |
+| `life_*` / `shared_*` / `*_couple_space` | Life hub and couples space operations |
+| `memory_tool` / `conversation_search` / `recent_chats` | Memory and conversation retrieval |
+| `judge` | Ask the Jev judge model a yes/no / multiple-choice / rating question (see [Jev decisioning](#-jev-decisioning-typesafe-system-one)) |
 
-另有**系统提示词装配器**（工具选用指南 / 工作守则）。
+There is also a **system-prompt assembler** (tool-selection guide / work ethics).
 
-#### 工具调用兼容
+#### Tool-calling compatibility
 
-- **DSML 文本工具调用兼容**：模型不走 function calling、而是把调用写在正文里时，自动解析并执行，并从正文中清除标记
-- **工具别名映射**：`web_search` → `search_web` 等 DSML 惯用名自动映射到实际注册名
-- **工具中文雅称**：工具调用在界面上一律显示中文名（`web_search` → 联网搜索，`execute_python` → 灵枢演算）
+- **DSML text tool-call compat**: when a model writes tool calls into the message body instead of using function calling, they are parsed and executed, and the markers are stripped from the body
+- **Tool alias mapping**: DSML-idiomatic names like `web_search` are mapped to the actually-registered name (`search_web`)
+- **Chinese tool display names**: tool calls always show a Chinese name in the UI (`web_search` → 联网搜索, `execute_python` → 灵枢演算)
 
-### 💞 情感陪伴
+### 💞 Companionship
 
-可在**华灯设置 → 清爽简洁模式**一键隐藏，隐藏后也不再向 AI 注册对应工具。
+Hidable in one tap via **HuaDeng Settings → Clean simple mode**, which also stops registering the related tools.
 
-- **情侣空间**：绑定恋人后解锁「兔眠空间」（双方都能发动态、AI 会在评论区真的回复）、「我们的日记」、「纪念日」
-- **生活空间**：今日 / 周期与身体 / 备忘录 / 日历提醒 / 一起听 / 共读书架六个面板，AI 可通过工具参与记录
+- **Couples space**: bind a partner to unlock the "Rabbit's Burrow" feed (both sides post, and the AI genuinely replies in the comments), "Our Diary", and "Anniversaries"
+- **Life hub**: six panels — Today / Cycle & Body / Memos / Calendar reminders / Listen together / Shared reading shelf — which the AI can participate in via tools
 
 ---
 
-## 🍺 酒馆兼容（对齐 SillyTavern 官方语义）
+## 🍺 SillyTavern compatibility (aligned with official semantics)
 
-**既有的酒馆资产可直接迁移**——全部按 SillyTavern 官方语义解析，而非近似转换：
+**Existing tavern assets migrate directly** — parsed with official SillyTavern semantics rather than an approximate conversion:
 
-| 资产类型 | 兼容情况 |
+| Asset type | Compatibility |
 |---|---|
-| **角色卡**（PNG / V2 / V3 JSON） | 字段覆盖 **20+**（上游仅 6 个）：示例对话、备选开场白、多语备注、对话后指令、角色版本、标签、昵称、资源、内嵌世界书、`extensions` 原始 JSON……上游丢弃的字段全部保留，**导入 → 导出往返无损** |
-| **世界书 / Lorebook** | 条目字段 **30+**，逐条对齐官方 `world-info.js`：四种次级关键词逻辑、整词/正则/大小写、条目级扫描深度、常驻激活、跨书分组 + 权重 + 覆盖、触发概率、粘滞 / 冷却、延迟激活、递归排除 / 阻止递归 / 延迟递归、预算豁免、角色字段匹配 ×6 |
-| **预设**（Preset） | 按官方提示词管理器结构导入 |
-| **正则脚本**（Regex） | Find / Replace / `_ALT`、OnlyFormat、宏支持、注入深度（minDepth/maxDepth）、排序与缓存，同时作用于展示层与提示词层 |
-| **快速回复**（QR） | QR 集合导入，输入框斜杠面板一键执行 |
-| **美化主题**（Theme） | **537 个真实主题全量验证通过**：叠层配色合成、`custom_css` 背景图、气泡圆角、主题字体 |
-| **HTML 展示卡** | 直接渲染，默认展开 + 点击全屏 |
-| **多开场白** | `alternate_greetings` 全量导入，聊天中随时切换 |
+| **Character cards** (PNG / V2 / V3 JSON) | **20+ fields** (upstream keeps only 6): example messages, alternate greetings, multilingual notes, post-history instructions, character version, tags, nickname, assets, embedded lorebook, raw `extensions` JSON… nothing upstream drops is lost — **import → export round-trips without data loss** |
+| **Lorebooks** | **30+ entry fields**, aligned rule by rule with official `world-info.js`: four secondary-keyword logic modes, whole-word/regex/case, per-entry scan depth, constant activation, cross-book groups + weight + override, trigger probability, sticky / cooldown, delayed activation, recursion controls, budget exemption, character-field matching ×6 |
+| **Presets** | Imported under the official prompt-manager structure |
+| **Regex scripts** | Find / Replace / `_ALT`, OnlyFormat, macros, injection depth (minDepth/maxDepth), ordering and caching — applied at both the display and prompt layers |
+| **Quick Replies** (QR) | QR sets import; run from the slash popup in one tap |
+| **Beautification themes** | **Verified against 537 real themes** (537/537 parse): layered color compositing, `custom_css` backgrounds, bubble corner radius, theme fonts |
+| **HTML display cards** | Rendered in-chat, expanded by default with tap-to-fullscreen |
+| **Multiple greetings** | Full `alternate_greetings` import with in-chat switching |
 
-**提示词链路同样遵循官方结构**：主提示词、角色字段独立消息、示例对话按 `<START>` 拆分为真实 user/assistant 轮次、PHI 追加在历史之后、深度提示词按配置的深度与角色注入。
+**The prompt pipeline follows the official structure too**: main prompt, standalone character-field messages, example messages split on `<START>` into real user/assistant turns, PHI appended after history, depth prompts injected at their configured depth and role.
 
-### 与常见安卓酒馆方案的区别
+### Differences from other Android tavern projects
 
-搜索"安卓酒馆"返回的项目多为**容器或启动器**——将 Node.js 与 SillyTavern 一并打包运行（其描述中常见 *runner*、*launcher*、*容器*、*installer*、*local Node.js server* 等措辞）。
+Searching "Android SillyTavern" surfaces mostly **containers or launchers** — projects that bundle Node.js with SillyTavern and run it (their descriptions typically use terms such as *runner*, *launcher*, *container*, *installer*, *local Node.js server*).
 
-本项目为**原生实现**：基于 Kotlin + Jetpack Compose 的完整客户端，酒馆兼容层是核心代码而非外挂。区别在于：
+This project is a **native implementation**: a complete Kotlin + Jetpack Compose client in which the tavern compatibility layer is core code rather than an external wrapper. The differences:
 
-- **无需运行 Node 服务**，不占用后台常驻内存，冷启动更快
-- **酒馆能力与客户端能力互通**：角色卡的世界书可调用插件工具、记忆系统、语音朗读与设备工具箱
-- **完整的移动端体验**：Material You 主题、手势操作、通知栏、分享面板
+- **No Node service to run** — no background process holding memory, faster cold start
+- **Tavern features interoperate with client features**: a card's lorebook can drive plugin tools, the memory system, TTS read-aloud, and the device toolbox
+- **A complete mobile experience**: Material You theming, gestures, notifications, the share sheet
 
-### 同时优化了酒馆的两处常见痛点
+### It also addresses two common tavern pain points
 
-- ⚡ **长对话成本** → [提示词前缀缓存优化](#-提示词前缀缓存优化)，消除每轮变化的分叉点
-- 🧠 **上下文溢出与记忆丢失** → [记忆与长对话](#-记忆与长对话)，语义 RAG + 三层记忆 + 滚动压缩
+- ⚡ **Long chats get expensive** → [Prompt prefix cache optimization](#-prompt-prefix-cache-optimization) removes per-turn divergence points
+- 🧠 **The AI forgets / the context blows up** → [Memory & long conversations](#-memory--long-conversations): semantic RAG + three-layer memory + rolling compression
 
-> 酒馆核心（角色卡结构、世界书引擎、宏引擎 2.0、斜杠命令、群聊）来自中间分支
-> [heikeyangle-code/rikkahub-plus](https://github.com/heikeyangle-code/rikkahub-plus) 的 `mingli2` 分支。
-> 本分支在其基础上**新增**：HTML 卡片渲染、多开场白导入、预设与正则脚本导入、QR 快速回复导入、
-> 世界书编辑器字段补全 + Token 预算兜底、Vector Storage 语义条目、提示词查看器、
-> 正则深度限制与缓存、开场白宏替换。
+> The tavern core (character-card structure, lorebook engine, Macro Engine 2.0, slash commands, group chats) comes from the `mingli2` branch of the intermediate fork [heikeyangle-code/rikkahub-plus](https://github.com/heikeyangle-code/rikkahub-plus).
+> This branch (huadeng) **adds on top**: HTML card rendering, multiple-greetings import, preset & regex import, QR import, lorebook editor field completion + token-budget fallback, Vector Storage semantic entries, a prompt viewer, regex depth limits & caching, and greeting macro substitution.
 
 <details>
-<summary><b>📖 酒馆系统详解（点击展开）</b></summary>
+<summary><b>📖 Tavern system in detail (click to expand)</b></summary>
 
-#### 1. 角色卡：导入 → 结构化 → 注入 → 导出 → 编辑
+#### 1. Character Cards: import → structure → inject → export → edit
 
-- **字段覆盖 20+（上游仅 6 个）**：示例对话、备选开场白、多语 creator_notes、对话后指令（post_history_instructions）、角色版本、标签、昵称、资源、group_only_greetings、创建/修改日期、内嵌世界书、extensions 原始 JSON（含深度提示词的 depth/role）——上游丢弃的字段全部保留，**导入 → 导出往返无损**
-- **官方 Chat Completion 注入结构**：主提示词、角色字段独立消息、示例对话按 `<START>` 拆成真实 user/assistant 轮次、PHI 追加在历史之后、深度提示词按配置的深度/角色注入
-- **V2 / V3 双版本**：V3 高级字段与 PNG 卡（ccv3）支持，非 PNG 自动转 PNG 并做注入宏替换
-- **可视化角色卡编辑器**：全部字段编辑 + 内嵌世界书管理 + 一键导出（JSON / PNG 嵌入）
-- **多开场白**：`alternate_greetings` 全量导入，可在聊天中随时切换
-- **HTML 卡片**：酒馆 HTML 展示卡直接渲染，默认展开 + 点击全屏
+- **Field coverage grows from 6 (upstream) to 20+**: example messages, alternate greetings, multilingual creator notes, post-history instructions, character version, tags, nickname, assets, group_only_greetings, creation/modification dates, embedded lorebook, raw `extensions` JSON (including depth-prompt depth/role) — what upstream drops, this fork keeps. **Import → export round-trips without data loss.**
+- **Official Chat Completion injection structure**: main prompt, standalone character-field messages, example messages split on `<START>` into real user/assistant turns, PHI appended after history, depth prompts injected at their configured depth/role
+- **V2 / V3 dual version**: V3 advanced fields and ccv3 PNG cards; non-PNG cards auto-convert to PNG with macro substitution
+- **Visual character-card editor**: all fields + embedded-lorebook management + one-tap export (JSON / PNG embed)
+- **Multiple greetings**: full `alternate_greetings` import with in-chat switching
+- **HTML cards**: SillyTavern HTML display cards render in-chat, expanded by default with tap-to-fullscreen
 
-#### 2. 世界书（Lorebook）
+#### 2. Lorebooks
 
-逐条对齐酒馆官方 `world-info.js` 语义，条目字段从上游 6 个扩展到 30+：
+Aligned rule by rule with the official `world-info.js`; entry fields grow from 6 to 30+:
 
-| 能力 | 官方对应 |
+| Capability | Official counterpart |
 |---|---|
-| 四种次级关键词逻辑（任意/全部/排除任一/排除全部） | `selective_logic` |
-| 整词匹配 / 正则 / 区分大小写 | `match_whole_words` / `key_regex` / `key_case_sensitive` |
-| 条目级扫描深度 | `scan_depth` |
-| 常驻激活 | `constant` |
-| 跨书分组 + 组权重 + 组覆盖 | `group` / `group_weight` / `group_override` |
-| 触发概率 | `probability` / `use_probability` |
-| 粘滞 / 冷却 | `sticky` / `cooldown` |
-| 延迟激活 | `extensions.delay` |
-| 递归排除 / 阻止递归 / 延迟递归 | `exclude_recursion` / `prevent_recursion` / `delay_until_recursion` |
-| 预算豁免 | `extensions.ignore_budget` |
-| 角色字段匹配（人设/描述/性格/深度提示词/场景/备注 ×6） | `extensions.match_*` |
-| 显示顺序 / 生成过滤器 / 触发器 | `display_index` / `display_position` / `triggers` |
+| Four secondary-keyword logic modes | `selective_logic` |
+| Whole-word / regex / case sensitivity | `match_whole_words` / `key_regex` / `key_case_sensitive` |
+| Per-entry scan depth | `scan_depth` |
+| Constant activation | `constant` |
+| Cross-book groups + weight + override | `group` / `group_weight` / `group_override` |
+| Trigger probability | `probability` / `use_probability` |
+| Sticky / cooldown | `sticky` / `cooldown` |
+| Delayed activation | `extensions.delay` |
+| Recursion controls | `exclude_recursion` / `prevent_recursion` / `delay_until_recursion` |
+| Budget exemption | `extensions.ignore_budget` |
+| Character-field matching ×6 | `extensions.match_*` |
+| Display order / generation filter / triggers | `display_index` / `display_position` / `triggers` |
 
-**扫描引擎**：完整实现官方 `checkWorldInfo` 状态机（INITIAL → 递归 / 最少激活 / 延迟层级循环），带预算、溢出、粘滞、冷却全生命周期；跨书分组按官方规则选出唯一条目（粘滞优先 → 关键词评分 → 组覆盖 → 加权随机）。
+**Scan engine**: the full official `checkWorldInfo` state machine (INITIAL → recursion / min-activations / delay-level loop) with budget, overflow, sticky and cooldown lifecycles; cross-book groups elect a single entry per official rules (sticky → keyword score → group override → weighted random).
 
-**世界书编辑器**：全局设置（扫描深度、Token 预算 + 绝对上限、最少激活 + 最大深度、递归扫描 + 步数上限、插入策略、溢出提醒、组评分）、条目全字段编辑、拖拽排序、外置/内嵌双向同步、Vector Storage 语义条目。
+**Lorebook editor**: global settings (scan depth, token budget + absolute cap, min activations + max depth, recursion + step cap, insertion strategy, overflow alert, group scoring), full per-entry editing, drag-to-reorder, two-way external/embedded sync, Vector Storage semantic entries.
 
-#### 3. 预设 / 正则 / 美化主题
+#### 3. Presets / Regex / Themes
 
-- **预设导入**：酒馆 JSON 预设按官方提示词管理器结构导入
-- **正则脚本导入**：Find/Replace/`_ALT`、OnlyFormat、宏支持、注入深度（minDepth/maxDepth）、排序与缓存，作用于展示与提示词两层
-- **美化主题导入**：见[外观自定义与主题](#-外观自定义与主题)
+- **Preset import**: SillyTavern JSON presets imported under the official prompt-manager structure
+- **Regex script import**: Find/Replace/`_ALT`, OnlyFormat, macros, injection depth (minDepth/maxDepth), ordering and caching — applied at both display and prompt layers
+- **Theme import**: see [Appearance & Themes](#-appearance--themes)
 
-#### 4. 快速回复（Quick Replies）
+#### 4. Quick Replies
 
-酒馆 QR 集合导入，输入框斜杠面板一键执行。
+SillyTavern QR sets import; run from the slash popup in one tap.
 
-#### 5. 宏引擎 2.0
+#### 5. Macro Engine 2.0
 
-- **变量**：`{{setvar}}` `{{getvar}}` `{{.var}}` 简写全家桶，全局 + 会话级持久化 —— 角色卡可以记住剧情状态
-- **条件**：`{{if}} / {{else}}`、比较运算符、`&&` / `||`、作用域块、嵌套
-- **随机与时间**：`{{pick}}`（回合内稳定）、`{{roll::1d20}}`、`{{random}}`、`{{time}}`、`{{datetimeformat}}`
-- **对话感知**：`{{lastUserMessage}}` `{{lastCharMessage}}` `{{idleDuration}}` `{{charFirstMessage::N}}` `{{original}}` 等 **60+ 官方宏**全量支持
-- 未知宏原样保留，不破坏提示词
+- **Variables**: `{{setvar}}` `{{getvar}}`, the `{{.var}}` shorthand family, global + per-conversation persistence — cards can remember story state
+- **Conditionals**: `{{if}} / {{else}}`, comparison operators, `&&` / `||`, scoped blocks, nesting
+- **Random & time**: `{{pick}}` (stable within a turn), `{{roll::1d20}}`, `{{random}}`, `{{time}}`, `{{datetimeformat}}`
+- **Conversation-aware**: `{{lastUserMessage}}` `{{lastCharMessage}}` `{{idleDuration}}` `{{charFirstMessage::N}}` `{{original}}` — **60+ official macros** supported
+- Unknown macros pass through untouched
 
-#### 6. 斜杠命令
+#### 6. Slash Commands
 
-输入框直接敲，`/help` 列出全部命令与说明。**20+ 内置命令**：
+Type them in the input box; `/help` lists everything with descriptions. **20+ built-in commands**:
 
-- **角色扮演**：`/impersonate`（AI 以你的口吻起草）、`/continue`、`/sendas`、`/sys`、`/sysgen`、`/trigger`、`/message-name`、`/delname`
-- **变量与随机**：`/listvar` `/setvar` `/getvar` `/addvar` `/incvar` `/decvar` `/flushvar` `/reroll-pick`
-- **角色卡管理**：`/char-update` `/char-duplicate` `/rename-char`
-- **注入**：`/inject`（按位置/深度/角色注入）、`/prompt`
-- 技能提供的命令自动出现在面板中
+- **Roleplay**: `/impersonate`, `/continue`, `/sendas`, `/sys`, `/sysgen`, `/trigger`, `/message-name`, `/delname`
+- **Variables & random**: `/listvar` `/setvar` `/getvar` `/addvar` `/incvar` `/decvar` `/flushvar` `/reroll-pick`
+- **Character management**: `/char-update` `/char-duplicate` `/rename-char`
+- **Injection**: `/inject` (position/depth/role), `/prompt`
+- Skill-provided commands appear automatically in the popup
 
-#### 7. 人设 Persona 与作者注释
+#### 7. Personas & Author's Note
 
-- **人设**：官方五档注入位置（IN_PROMPT / TOP / BOTTOM / AT_DEPTH / NONE）、按角色绑定、独立 SYSTEM 消息注入、一键禁用
-- **作者注释**（导演备注）：官方间隔语义（每次 / 每 N 条用户消息）、注入深度与角色、总开关
+- **Personas**: official five-position injection (IN_PROMPT / TOP / BOTTOM / AT_DEPTH / NONE), per-character binding, standalone SYSTEM-message injection, one-tap disable
+- **Author's note**: official interval semantics (every / every N user messages), injection depth & role, master switch
 
-#### 8. 群聊
+#### 8. Group Chats
 
-多角色同场对话，每个成员有独立提示词 / 人设 / 模型；4 种发言策略（NATURAL AI 选人 / 列表 / 加权随机 / 手动）+ 5 种扩展模式；自动接话（轮数 1-10 可设、延迟可设、被用户消息打断）；发言者实时状态；群聊持久化。
+Multi-character conversations with independent prompts / personas / models per member; 4 speaker-selection strategies (NATURAL AI-picked / list / weighted random / manual) + 5 extended modes; auto-reply (1–10 configurable rounds & delay, interrupted by user messages); live speaker status; full persistence.
 
 </details>
 
-### 从 Chatbox 或其他通用 AI 客户端换过来？
+### Switching from Chatbox or another general-purpose AI client?
 
-如果你正在用 **Chatbox**（或其他通用 AI 聊天客户端）接 API 聊天，本 app 是一个值得考虑的升级——基础体验完全对齐（多供应商接入、流式输出、Markdown / LaTeX / 代码高亮、对话导出、数据备份），在这之上还多了一整层 Chatbox 没有的能力：
+If you currently use **Chatbox** (or any other general AI chat client) to talk to APIs, this app is a worthwhile upgrade — the fundamentals are fully covered (multi-provider access, streaming, Markdown / LaTeX / syntax highlighting, chat export, data backup), plus an entire layer Chatbox doesn't have:
 
-| Chatbox 有 | 本 app 额外提供 |
+| Chatbox has | This app adds |
 |---|---|
-| 多供应商接入、流式对话 | ✅ 同样有，另支持 **Anthropic / Gemini 原生协议**与中转站病态自动修复 |
-| 对话历史 | ✅ + **语义记忆 RAG / 三层记忆**，AI 跨会话记住你，无需手动粘贴背景 |
-| 每轮全文发送，长对话越来越贵 | ✅ **提示词前缀缓存优化**，长对话 token 成本大幅下降 |
-| 单一界面 | ✅ + **酒馆兼容**（角色卡 / 世界书 / 预设 / 正则 / 主题按官方语义导入） |
-| 无扩展机制 | ✅ **QuickJS 插件系统** + 30 个设备工具 + 微信 / QQ Bot |
-| 文字聊天 | ✅ + **语音 / 视频通话**（豆包 TTS 2.0 + 火山 ASR） |
-| 数据同步到云 | ✅ 数据全部**本地存储**，S3 / WebDAV 备份自选 |
+| Multi-provider access, streaming | ✅ Yes, plus **native Anthropic / Gemini protocols** and auto-fix for proxy-station pathologies |
+| Chat history | ✅ + **semantic memory RAG / three-layer memory** — the AI remembers you across sessions, no pasting context manually |
+| Full context resent every turn, long chats get expensive | ✅ **Prompt prefix cache optimization** — long-conversation token cost drops sharply |
+| Single interface | ✅ + **SillyTavern compatibility** (character cards / lorebooks / presets / regex / themes imported with official semantics) |
+| No extension mechanism | ✅ **QuickJS plugin system** + 30 device tools + WeChat / QQ Bots |
+| Text chat only | ✅ + **voice / video calls** (Doubao TTS 2.0 + Volcengine ASR) |
+| Cloud sync | ✅ Data stays **local**, with optional S3 / WebDAV backup |
 
-不需要任何"酒馆"概念也能当纯聊天客户端用——两条路线互不干扰，先按普通 AI 客户端上手，想要时再导入角色卡。
+No "tavern" concepts required as a pure chat client — both routes coexist. Start with it as a plain AI client and import a character card whenever you want.
 
 ---
 
-## 🔍 常见需求对照
+## 🔍 Common needs and where they map
 
-| 需求 | 对应功能 |
+| Need | Corresponding feature |
 |---|---|
-| **找一个好用的安卓 AI 聊天 App** | 即本项目：接上 API 就能聊，多供应商 + 流式 + 语音 + 记忆 + 插件 |
-| **正在用 Chatbox，想要记忆 / 角色扮演 / 省 token** | 即本项目，见[从 Chatbox 换过来](#-从-chatbox-或其他通用-ai-客户端换过来) |
-| **降低长对话 API 花费** | 提示词前缀缓存优化，命中部分大幅降价 |
-| **AI 总忘记之前说过什么** | 语义记忆 RAG + 三层记忆 + 滚动压缩，可叠加 Jev 记忆筛选 |
-| **在安卓设备上使用酒馆角色卡与世界书** | 角色卡 V2/V3/PNG、世界书 30+ 字段、预设、正则、QR、美化主题，全部按官方语义导入 |
-| **寻找安卓平台的 SillyTavern 客户端** | 即本项目，酒馆兼容层为核心模块 |
-| **将桌面端酒馆数据迁移至手机** | 角色卡 / 世界书 / 预设 / 正则 / QR / 主题，六类资产均支持导入 |
-| **手机端酒馆性能不足，或不愿配置 Termux** | 原生客户端，无需 Termux 与 Node.js，直接安装 APK |
-| 接入自建中转站或第三方 API | 兼容 OpenAI / Anthropic / Google / DeepSeek 协议，中转站兼容开关可修复常见异常 |
-| 为 AI 扩展自定义工具 | QuickJS 插件系统，编写 `main.js` 打包为 ZIP 即可导入 |
-| 在微信 / QQ 中继续对话 | 微信 Bot（扫码登录）、QQ Bot（官方 API），复用任意助手的 AI 与记忆 |
-| 语音朗读与语音对话 | 豆包 TTS 2.0 + 火山 ASR，支撑语音 / 视频通话 |
-| 让 AI 操作手机 | 设备工具箱 30 个工具：手电筒、音量、短信、联系人、定位、通知等 |
-| 注重隐私 | 请求日志脱敏、工具审批边界、遥测默认关闭，数据全部保存在本机 |
+| **Find a good Android AI chat app** | This project: plug in an API and chat — multi-provider + streaming + voice + memory + plugins |
+| **Using Chatbox, want memory / roleplay / lower token cost** | This project — see [Switching from Chatbox](#-switching-from-chatbox-or-another-general-purpose-ai-client) |
+| **Cut long-conversation API cost** | Prompt prefix cache optimization — cache hits are billed far below the normal rate |
+| **The AI keeps forgetting** | Semantic memory RAG + three-layer memory + rolling compression, with optional Jev memory screening |
+| **Use tavern character cards and lorebooks on Android** | Cards (V2/V3/PNG), lorebooks (30+ fields), presets, regex, QR, themes — all imported with official semantics |
+| **Find a SillyTavern client for Android** | This project; the tavern compatibility layer is a core module |
+| **Migrate desktop tavern data to a phone** | Six asset types import: cards, lorebooks, presets, regex, QR, themes |
+| **Mobile tavern performance is insufficient, or Termux setup is undesirable** | Native client — no Termux, no Node.js, just install the APK |
+| Connect a self-hosted proxy station or third-party API | OpenAI / Anthropic / Google / DeepSeek compatible; the proxy-fix switch cures the common pathologies |
+| Extend the AI with custom tools | QuickJS plugin system — write a `main.js`, zip it, import it |
+| Continue conversations from WeChat / QQ | WeChat Bot (QR login), QQ Bot (official API), reusing any assistant's AI and memory |
+| Speech output and voice conversation | Doubao TTS 2.0 + Volcengine ASR, powering voice / video calls |
+| Let the AI operate the phone | Device toolbox: 30 tools — torch, volume, SMS, contacts, location, notifications… |
+| Privacy | Sanitized request logging, tool-approval boundaries, telemetry off by default, all data stays local |
 
-> **搜索关键词**：AI 聊天 App、安卓 AI 客户端、AI 助手、AI 记忆、提示词缓存、prompt cache、
-> 安卓酒馆、手机酒馆、酒馆客户端、SillyTavern 安卓、SillyTavern Android、酒馆手机版、
-> 角色卡导入、世界书、Lorebook、角色扮演 AI、AI 角色扮演、RP 客户端、
-> Android LLM chat、AI 聊天客户端、RAG 记忆、OpenAI 兼容中转、
-> Chatbox 安卓、Chatbox 替代、Chatbox 类似应用、Chatbox 记忆、Chatbox 角色扮演、
-> Kotlin Jetpack Compose AI 应用、本地 AI 聊天。
+> **Search keywords**: AI chat app, Android AI client, AI assistant, AI memory, prompt cache,
+> Android SillyTavern, SillyTavern Android client, mobile SillyTavern, tavern client,
+> character card import, lorebook, world info, roleplay AI, AI roleplay, RP client,
+> Android LLM chat, AI chat client, RAG memory, OpenAI-compatible proxy,
+> Chatbox for Android, Chatbox alternative, Chatbox with memory, Chatbox roleplay,
+> Kotlin Jetpack Compose AI app, local AI chat.
 
 ---
 
-## 🏮 华灯设置（本分支专属）
+## 🏮 HuaDeng Settings (fork-exclusive)
 
-设置 → **华灯设置**：把本分支新增的兼容与辅助功能集中在一个页面，全局开关对所有助手生效（助手级开关可单独覆盖）。
+Settings → **HuaDeng Settings** collects this fork's compatibility and helper features on one page. Global switches apply to all assistants (per-assistant switches can override).
 
-### 兼容与辅助
+### Compatibility & helpers
 
-| 开关 | 说明 |
+| Switch | Description |
 |---|---|
-| **中转站兼容** | Gemini 经 OpenAI 兼容中转接入时的三类经典病态自动修复（默认关） |
-| **防空回复** | Gemini 空回复自动微扰重试 + 系统提示词入对话流（默认关） |
-| **上下文瞬态内容裁剪** | 超过两轮的网页搜索结果、图片、音视频不再随每次请求发送（占位说明附消息 ID），大幅减少图片与搜索类长对话的 token 消耗 |
-| **清爽简洁模式** | 隐藏情侣空间、生活空间等娱乐入口，且不再向 AI 注册对应工具，界面更简洁、上下文更省 token |
-| **上下文滚动压缩** | 对话过长时自动把早期消息压缩为摘要。关闭后不再自动压缩（助手级开关仍可单独启用） |
-| **工具结果截断** | 工具输出超过 32KB 自动截断并保存到文件。中转站导致工具调用异常时可尝试关闭 |
-| **系统提示词转义** | 把系统消息中的 `<` `>` 转为 HTML 实体，绕过中转站 WAF 拦截（遇到 `upstream_content_rejected` 时可开启） |
+| **Proxy fix** | Auto-fixes the three classic pathologies of Gemini via OpenAI-compatible proxies (off by default) |
+| **Anti-empty-reply** | Gemini empty-reply auto-perturb retry + system prompt into the conversation flow (off by default) |
+| **Transient-content pruning** | Web-search results, images, audio and video older than two turns stop being sent each request (placeholders carry the message ID) — a large token saving on image- and search-heavy chats |
+| **Clean simple mode** | Hides the couples space, life hub and similar entries, and stops registering their tools — cleaner UI, fewer tokens |
+| **Rolling context compression** | Compresses early messages into a summary when a chat grows long. Turning it off disables auto-compression (per-assistant switches still work) |
+| **Tool result truncation** | Tool output over 32KB is truncated and saved to a file. Try turning it off if a proxy station breaks tool calls |
+| **System prompt escaping** | Converts `<` `>` in system messages to HTML entities to bypass proxy WAFs (enable on `upstream_content_rejected`) |
 
-### 接入与自动化
+### Access & automation
 
-微信 Bot、QQ Bot、AI 主动发消息、安全设置、导演备注五个入口。
+Five entries: WeChat Bot, QQ Bot, AI proactive messaging, Security settings, and Author's note.
 
-> **安全设置**（设置 → 安全设置）：全局工具调用审批策略 —— **强制确认所有工具调用**（每次执行前都要确认）或**自动批准所有工具调用**（跳过审批，谨慎开启），两项互斥。前者默认关闭，后者默认开启。
+> **Security settings** (Settings → Security): the global tool-call approval policy — **force-confirm all tool calls** (confirm before every execution) or **auto-approve all tool calls** (skip approval; use with caution). They are mutually exclusive. The former is off by default; the latter is on by default.
 
-### Jev 智能决策
+### Jev decisioning
 
-TypeSafe System One 判断模型的接入配置页：API 地址 / Key / 模型名、置信度阈值滑块，以及两个接管开关（自动记忆筛选、大模型工具调用）。详见 [Jev 智能决策](#-jev-智能决策typesafe-system-one)。
-
----
-
-## 🛡 隐私与稳定性
-
-### 隐私加固
-
-- **请求日志脱敏**：请求头白名单机制，提示词 / Schema / 二进制 / 凭据脱敏，错误信息密钥掩码与体积上限
-- **工具审批边界**：剪贴板 / 屏幕时间 / Shell 每次执行需审批，文件工具写入类操作需审批；屏幕时间限制查询范围与明细条数且不输出包名
-- **备份恢复资源预算**：限制条目数、单条目与总解压大小，防御异常归档耗尽资源
-- **按日文件清理**：聊天附件与生成图片可按保留天数自动清理（默认关闭）
-- **Firebase 遥测默认关闭**：构建属性开启才启用 Google 服务与 Crashlytics
-- **插件沙箱**：见[插件系统 → 安全](#安全)
-
-### 稳定性
-
-- **前台服务保活**：切后台不断流，生成不被系统杀死
-- **SSE 长连接加固**：OkHttp 30s PING 保活，事件流请求禁用缓存与压缩，代理环境下流式输出不再被缓冲截断
-- **数据库平滑升级**：全部 schema 变更走显式迁移，老数据无损升级；迁移全部幂等，重复列不再崩溃
-- 备份导入一致性快照、启动安全恢复、图片选择迁移 PickVisualMedia 等大量修复
+The configuration page for the TypeSafe System One judge model: API base URL / key / model name, a confidence-threshold slider, and the two takeover switches (automatic memory screening, judge tool). See [Jev decisioning](#-jev-decisioning-typesafe-system-one).
 
 ---
 
-## 📦 下载
+## 🛡 Privacy & Stability
 
-| 渠道 | 说明 |
+### Privacy hardening
+
+- **Sanitized request logging**: request-header allowlist, prompt / schema / binary / credential redaction, secret masking and size caps on error messages
+- **Tool approval boundaries**: clipboard / screen-time / shell require approval on every execution; file tools require it for writes; screen-time queries are scope-limited and never expose package names
+- **Backup-restore resource budget**: entry counts and per-entry / total decompression sizes are capped against malicious archives
+- **Daily file cleanup**: chat attachments and generated images can auto-expire by retention days (off by default)
+- **Firebase telemetry off by default**: Google services and Crashlytics only activate with a build property
+- **Plugin sandbox**: see [Plugins → Security](#security)
+
+### Stability
+
+- **Foreground-service keep-alive**: generation survives app switching
+- **SSE long-connection hardening**: OkHttp 30s PING keep-alive; event-stream requests disable caching and compression so proxies no longer buffer streaming output
+- **Smooth database upgrades**: every schema change ships as an explicit migration — existing data upgrades losslessly; migrations are idempotent
+- Consistent-snapshot backup import with safe startup recovery, PickVisualMedia image picking, and many fixes
+
+---
+
+## 📦 Download
+
+| Channel | Description |
 |---|---|
-| **稳定版** | [Releases](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases) 按版本发布（`2.5.4.N`，历史版本曾是 `2.5.4fixN`，可直接覆盖安装升级） |
-| **Nightly** | Actions 每天两次自动构建（过去 24 小时无新提交则跳过），覆盖 [nightly](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/tag/nightly) 预发布；版本按日期推进（`2.5.4.YYYYMMDD`） |
-| **手动构建产物** | 每次推送在 [Actions](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/actions) 产出 APK Artifact（构建页底部「Artifacts → rikkahub-plus-fresh」，需登录） |
-| **应用内更新** | 设置 → 关于 → 检查更新（GitHub Releases API，国内可达镜像自动回退） |
+| **Stable** | Versioned releases (`2.5.4.N`; historical versions used `2.5.4fixN` — installs upgrade over them directly) on [Releases](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases) |
+| **Nightly** | Actions build twice daily (skipped if no commit in the past 24h) and overwrite the [nightly](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/tag/nightly) prerelease; versions advance by date (`2.5.4.YYYYMMDD`) |
+| **Manual builds** | Every push produces an APK artifact on [Actions](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/actions) (build page → Artifacts → `rikkahub-plus-fresh`; sign-in required) |
+| **In-app update** | Settings → About → Check for updates (GitHub Releases API, with a mainland-China-reachable mirror fallback) |
 
-> 仅提供 `arm64-v8a` 单一架构 APK，支持 Android 8.0（API 26）及以上。
-
----
-
-## ✅ 与上游的关系
-
-- **上游功能全部保留**：Material You 主题、多供应商、流式生成、会话分叉与重新生成、消息编辑 / 删除 / 翻译、全文搜索（jieba）、收藏、图片生成、TTS / ASR、MCP、工作区沙箱（终端多 Tab + Shell 兼容模式）、备份（S3 / WebDAV）、网络对话端、聊天导出等一切照旧
-- **已合入上游版本**：`rikkahub/rikkahub` master **v2.5.3**（2026-09）
-- **相对中间分支 mingli2**：除酒馆增强外，新增提示词前缀缓存、语义记忆 RAG 与滚动压缩、Jev 智能决策、中转站兼容与防空回复、豆包语音、隐私加固
-- **v2.5.4 以来新增**：教务系统移出应用改为插件、卡路里与蛋白质记录插件、插件沙箱的会话式 HTTP 与图片解码、详情页数据卡片、更新检查改用 GitHub Releases API、Jev 智能决策接入
-- **合并上游**：见 [DIVERGENCE.md](DIVERGENCE.md) 的冲突处理手册
+> Only a single `arm64-v8a` APK is published, supporting Android 8.0 (API 26) and above.
 
 ---
 
-## 🤝 欢迎协作
+## ✅ Relationship to upstream
 
-欢迎大家与我协作！无论是提 Bug、提建议还是贡献代码，都非常欢迎：
-
-- 提 Bug / 建议：[Issues](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/issues)
-- 提代码：直接 Fork + PR，无需事先申请
+- **Everything preserved**: Material You theming, multi-provider support, streaming, conversation forking & regeneration, message edit / delete / translate, full-text search (jieba), favorites, image generation, TTS / ASR, MCP, workspace sandbox (multi-tab terminal + shell compatibility mode), backup (S3 / WebDAV), web chat endpoint, and chat export all work as before
+- **Already merged with upstream**: `rikkahub/rikkahub` master **v2.5.3** (2026-09)
+- **Versus the intermediate mingli2 branch**: beyond tavern enhancements, this branch adds prompt prefix caching, semantic memory RAG & rolling compression, Jev decisioning, proxy-station compatibility & anti-empty-reply, Doubao voice, and privacy hardening
+- **New since v2.5.4**: the academic system moved out of the app into a plugin, the calories & protein plugin, session-aware HTTP and image decoding in the plugin sandbox, detail-page data cards, the update check moving to the GitHub Releases API, and Jev decisioning
+- **Merging upstream**: see the conflict handbook in [DIVERGENCE.md](DIVERGENCE.md)
 
 ---
 
-## 🙏 致谢与版权说明（Credits）
+## 🤝 Contributions welcome
 
-本项目站在前人的肩膀上，特别感谢以下项目：
+Contributions are always welcome! Bug reports, suggestions, and code are all appreciated:
 
-| 项目 | 关系 | 许可证 |
+- Bug reports / suggestions: [Issues](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/issues)
+- Code: just Fork + PR — no permission needed
+
+---
+
+## 🙏 Credits
+
+This project stands on the shoulders of others:
+
+| Project | Relationship | License |
 |---|---|---|
-| [rikkahub/rikkahub](https://github.com/rikkahub/rikkahub) | **原始上游项目**，本仓库的全部基础功能来自它 | AGPL-3.0 |
-| [heikeyangle-code/rikkahub-plus](https://github.com/heikeyangle-code/rikkahub-plus) | **直接上游（中间分支）**，酒馆系统、宏引擎、斜杠命令、群聊等核心增强的开发者 | AGPL-3.0 |
-| [SillyTavern/SillyTavern](https://github.com/SillyTavern/SillyTavern) | **酒馆系统的兼容目标**；角色卡 / 世界书 / 宏 / 斜杠命令的**语义与格式规范**参考其官方实现（AGPL-3.0），本项目未复制其代码 | AGPL-3.0 |
-| [sue1231513/orangechat](https://github.com/sue1231513/orangechat) | 同源分支，本项目从它与其下游 Tumin 引入了**情侣空间 / 生活空间 / 三层记忆 / 聊天外观自定义 / QuickJS 插件系统**等特色功能 | AGPL-3.0 |
-| [lingwangshu018/Tumin](https://github.com/lingwangshu018/Tumin) | orangechat 的下游分支，同上 | AGPL-3.0 |
-| [ExTV/rikkahub-agent](https://github.com/ExTV/rikkahub-agent) | 同源分支，设备工具箱的部分工具实现参考 | AGPL-3.0 |
-| [YaeNovin/Rikkahub-Revised](https://github.com/YaeNovin/Rikkahub-Revised) | 同源分支，本项目从中移植了**语义记忆 RAG** 与**上下文滚动压缩** | AGPL-3.0 |
+| [rikkahub/rikkahub](https://github.com/rikkahub/rikkahub) | **Original upstream** — all base functionality comes from it | AGPL-3.0 |
+| [heikeyangle-code/rikkahub-plus](https://github.com/heikeyangle-code/rikkahub-plus) | **Direct upstream (intermediate fork)** — author of the tavern system, macro engine, slash commands, group chats | AGPL-3.0 |
+| [sue1231513/orangechat](https://github.com/sue1231513/orangechat) | Same-origin fork — this project introduced **couples space / life hub / three-layer memory / chat appearance customization / QuickJS plugin system** from it and its downstream | AGPL-3.0 |
+| [lingwangshu018/Tumin](https://github.com/lingwangshu018/Tumin) | Downstream of orangechat — see above | AGPL-3.0 |
+| [ExTV/rikkahub-agent](https://github.com/ExTV/rikkahub-agent) | Same-origin fork — reference for some device-toolbox implementations | AGPL-3.0 |
+| [YaeNovin/Rikkahub-Revised](https://github.com/YaeNovin/Rikkahub-Revised) | Same-origin fork — this project ported **semantic memory RAG** and **rolling context compression** from it | AGPL-3.0 |
+| [SillyTavern/SillyTavern](https://github.com/SillyTavern/SillyTavern) | The compatibility target; the **semantics and format specs** of cards / lorebooks / macros / slash commands follow its official implementation (AGPL-3.0). No code was copied from it | AGPL-3.0 |
 
-本项目与其上游均为 **AGPL-3.0** 许可，本仓库沿用同一许可证继续开源。各上游项目的版权归其原作者所有，感谢他们慷慨开源。
+This repository and its upstreams are all **AGPL-3.0** licensed; this fork continues under the same license. Copyright of each upstream project belongs to its authors — thank you for open-sourcing.
 
 ---
 
 <div align="center">
 
-如果这个分支对你有用，欢迎点一个 ⭐ Star ✨
+If this fork is useful to you, please leave a ⭐ Star ✨
 
 </div>
