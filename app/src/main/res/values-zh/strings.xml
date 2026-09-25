@@ -31,6 +31,13 @@
   <string name="assistant_extensions_page_tab_skills">Skills</string>
   <string name="assistant_extensions_page_title">扩展管理</string>
   <string name="assistant_importer_import_failed">导入失败</string>
+  <string name="assistant_importer_import_from_url">从 URL 导入</string>
+  <string name="assistant_importer_url_hint">粘贴角色卡链接（PNG 或 JSON）</string>
+  <string name="assistant_importer_downloading">下载中...</string>
+  <string name="assistant_importer_download_failed">下载失败：%s</string>
+  <string name="assistant_importer_invalid_url">链接无效（仅支持 http/https）</string>
+  <string name="assistant_importer_file_too_large">文件过大（最大 %1$d MB）</string>
+  <string name="assistant_importer_not_character_card">不是有效的角色卡文件</string>
   <string name="assistant_importer_import_success">角色卡导入成功</string>
   <string name="assistant_importer_import_tavern_json">导入酒馆角色卡 (JSON)</string>
   <string name="assistant_importer_import_tavern_png">导入酒馆角色卡 (PNG)</string>

@@ -305,7 +305,14 @@ object ImageUtils {
     fun getTavernCharacterMeta(context: Context, uri: Uri): Result<String> = runCatching {
         val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
             ?: error("无法读取图片文件")
+        getTavernCharacterMetaFromBytes(bytes).getOrThrow()
+    }
 
+    /**
+     * 与 [getTavernCharacterMeta] 相同的解析逻辑，但直接作用于 PNG 字节数组
+     * 用于从网络下载的 PNG 数据（无 Uri 可读）
+     */
+    fun getTavernCharacterMetaFromBytes(bytes: ByteArray): Result<String> = runCatching {
         // PNG 签名(8 bytes)后开始 chunk
         var offset = 8
         var charaResult: String? = null

@@ -9,9 +9,18 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,10 +31,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.dokar.sonner.ToastType
 import com.dokar.sonner.ToasterState
+import android.util.Log
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -39,6 +52,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import me.rerere.common.http.jsonObjectOrNull
 import me.rerere.ai.ui.UIMessage
+import me.rerere.rikkahub.BuildConfig
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Lorebook
@@ -55,8 +69,13 @@ import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.utils.ImageUtils
+import me.rerere.common.http.await
 import me.rerere.rikkahub.utils.jsonPrimitiveOrNull
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.koin.compose.koinInject
+import java.util.concurrent.TimeUnit
 import kotlin.uuid.Uuid
 
 /**
@@ -90,6 +109,11 @@ private fun SillyTavernImporter(
     val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
     var isLoading by remember { mutableStateOf(false) }
+    // 复用应用内已配置的 OkHttpClient（含用户设置的代理），仅收紧总超时
+    val httpClient: OkHttpClient = koinInject()
+    val downloadClient = remember(httpClient) {
+        httpClient.newBuilder().callTimeout(30, TimeUnit.SECONDS).build()
+    }
     // 多个开场白时，合并为同一对话的多条消息（部分卡片把开场白拆成连续多条）
     var mergeGreetings by remember { mutableStateOf(false) }
 
@@ -122,6 +146,17 @@ private fun SillyTavernImporter(
             Text(if (isLoading) stringResource(R.string.assistant_importer_importing)
                  else stringResource(R.string.assistant_importer_import_tavern_json))
         }
+        UrlImportField(
+            isLoading = isLoading,
+            onImport = { url ->
+                runImport(scope, { isLoading = it }, { e ->
+                    e.printStackTrace()
+                    toaster.show(e.message ?: context.getString(R.string.assistant_importer_download_failed, ""))
+                }) {
+                    importFromUrl(context, url, downloadClient, filesManager, onImport, toaster, mergeGreetings)
+                }
+            },
+        )
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = 8.dp),
@@ -138,24 +173,82 @@ private fun SillyTavernImporter(
     }
 }
 
-private fun importFile(
-    context: Context, uri: Uri,
-    onImport: (TavernImportResult) -> Unit,
-    filesManager: FilesManager, toaster: ToasterState,
-    scope: kotlinx.coroutines.CoroutineScope,
-    mergeGreetings: Boolean = false,
-    setLoading: (Boolean) -> Unit
+/** URL 导入输入行：粘贴链接 → 下载解析 → 走与文件导入相同的回调 */
+@Composable
+private fun UrlImportField(
+    isLoading: Boolean,
+    onImport: (String) -> Unit,
+) {
+    var urlInput by remember { mutableStateOf("") }
+
+    fun submit() {
+        val value = urlInput.trim()
+        if (value.isNotEmpty() && !isLoading) onImport(value)
+    }
+
+    OutlinedTextField(
+        value = urlInput,
+        onValueChange = { urlInput = it },
+        enabled = !isLoading,
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text(stringResource(R.string.assistant_importer_url_hint)) },
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Uri,
+            imeAction = ImeAction.Go,
+        ),
+        keyboardActions = KeyboardActions(onGo = { submit() }),
+        trailingIcon = {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                )
+            } else {
+                IconButton(
+                    onClick = { submit() },
+                    enabled = urlInput.isNotBlank(),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Download,
+                        contentDescription = stringResource(R.string.assistant_importer_import_from_url),
+                    )
+                }
+            }
+        },
+    )
+}
+
+/** 统一的导入执行包装：文件选择器导入与 URL 导入共用，负责 loading 状态与错误提示 */
+private fun runImport(
+    scope: CoroutineScope,
+    setLoading: (Boolean) -> Unit,
+    onError: (Throwable) -> Unit,
+    block: suspend () -> Unit,
 ) {
     setLoading(true)
     scope.launch {
         try {
-            runCatching {
-                importFromUri(context, uri, filesManager, onImport, toaster, mergeGreetings)
-            }.onFailure { e ->
-                e.printStackTrace()
-                toaster.show(e.message ?: context.getString(R.string.assistant_importer_import_failed))
-            }
-        } finally { setLoading(false) }
+            runCatching { block() }.onFailure { e -> onError(e) }
+        } finally {
+            setLoading(false)
+        }
+    }
+}
+
+private fun importFile(
+    context: Context, uri: Uri,
+    onImport: (TavernImportResult) -> Unit,
+    filesManager: FilesManager, toaster: ToasterState,
+    scope: CoroutineScope,
+    mergeGreetings: Boolean = false,
+    setLoading: (Boolean) -> Unit
+) {
+    runImport(scope, setLoading, { e ->
+        e.printStackTrace()
+        toaster.show(e.message ?: context.getString(R.string.assistant_importer_import_failed))
+    }) {
+        importFromUri(context, uri, filesManager, onImport, toaster, mergeGreetings)
     }
 }
 
@@ -187,6 +280,120 @@ private suspend fun importFromUri(
             else -> error(context.getString(R.string.assistant_importer_unsupported_file_type, mime ?: "unknown"))
         }
     }
+    importFromString(context, jsonString, backgroundStr, avatarUri, onImport, toaster, mergeGreetings)
+}
+
+/** 角色卡下载体积上限，防止误贴大文件链接耗尽内存 */
+private const val MAX_DOWNLOAD_BYTES = 20L * 1024 * 1024
+
+private fun isPngBytes(bytes: ByteArray): Boolean =
+    bytes.size >= 8 &&
+        bytes[0] == 0x89.toByte() && bytes[1] == 0x50.toByte() &&
+        bytes[2] == 0x4E.toByte() && bytes[3] == 0x47.toByte()
+
+/** 仅接受 http/https 链接；其余协议（file://、content:// 等）一律拒绝 */
+private fun parseCardUrl(context: Context, raw: String): HttpUrl {
+    val url = raw.trim().toHttpUrlOrNull()
+        ?: error(context.getString(R.string.assistant_importer_invalid_url))
+    if (url.scheme != "http" && url.scheme != "https") {
+        error(context.getString(R.string.assistant_importer_invalid_url))
+    }
+    return url
+}
+
+/**
+ * 从 URL 下载角色卡并导入，PNG 与 JSON 均可
+ *
+ * 类型判定按权威性排序：Content-Type → URL 后缀 → PNG 魔数兜底
+ * （很多图床/CDN 直链返回 application/octet-stream 或 text/plain）
+ */
+private suspend fun importFromUrl(
+    context: Context,
+    rawUrl: String,
+    client: OkHttpClient,
+    filesManager: FilesManager,
+    onImport: (TavernImportResult) -> Unit,
+    toaster: ToasterState,
+    mergeGreetings: Boolean = false,
+) {
+    val url = parseCardUrl(context, rawUrl)
+    val (bytes, isPng) = withContext(Dispatchers.IO) {
+        val request = Request.Builder()
+            .url(url)
+            .get()
+            .apply { addHeader("User-Agent", "RikkaHub/${BuildConfig.VERSION_NAME}") }
+            .build()
+        client.newCall(request).await().use { response ->
+            if (!response.isSuccessful) {
+                error(context.getString(R.string.assistant_importer_download_failed, "${response.code}"))
+            }
+            val declaredLength = response.body?.contentLength() ?: -1L
+            if (declaredLength > MAX_DOWNLOAD_BYTES) {
+                error(context.getString(R.string.assistant_importer_file_too_large, MAX_DOWNLOAD_BYTES / 1024 / 1024))
+            }
+            val data = response.body?.bytes()
+                ?: error(context.getString(R.string.assistant_importer_download_failed, "empty body"))
+            if (data.size > MAX_DOWNLOAD_BYTES) {
+                error(context.getString(R.string.assistant_importer_file_too_large, MAX_DOWNLOAD_BYTES / 1024 / 1024))
+            }
+
+            val contentType = response.header("Content-Type")?.substringBefore(';')?.trim()?.lowercase()
+            val path = url.encodedPath.lowercase()
+            // 魔数最可靠，其次是明确的 Content-Type / 后缀；都没有时按 JSON 尝试
+            val png = isPngBytes(data) ||
+                contentType == "image/png" ||
+                (contentType == null && path.endsWith(".png"))
+            if (!png && contentType != null &&
+                contentType !in setOf(
+                    "application/json", "text/json", "text/plain",
+                    "application/octet-stream", "binary/octet-stream",
+                ) && !path.endsWith(".json")
+            ) {
+                error(context.getString(R.string.assistant_importer_not_character_card))
+            }
+            data to png
+        }
+    }
+
+    if (isPng) {
+        val jsonString = runCatching {
+            val base64Data = ImageUtils.getTavernCharacterMetaFromBytes(bytes).getOrThrow()
+            String(Base64.decode(base64Data, Base64.DEFAULT))
+        }.getOrElse { e ->
+            Log.w(TAG, "PNG 角色卡解析失败", e)
+            error(context.getString(R.string.assistant_importer_not_character_card))
+        }
+        // 下载的 PNG 本身既是背景源也是头像
+        val savedUris = withContext(Dispatchers.IO) { filesManager.createChatFilesByByteArrays(listOf(bytes)) }
+        val saved = savedUris.firstOrNull()?.toString()
+        importFromString(context, jsonString, saved, saved, onImport, toaster, mergeGreetings)
+    } else {
+        val jsonString = String(bytes, Charsets.UTF_8)
+        try {
+            importFromString(context, jsonString, null, null, onImport, toaster, mergeGreetings)
+        } catch (e: Exception) {
+            // 网页错误页 / 非角色卡 JSON 在这里暴露，给出可读提示而非解析器内部异常
+            Log.w(TAG, "URL 内容不是有效的角色卡", e)
+            error(context.getString(R.string.assistant_importer_not_character_card))
+        }
+    }
+}
+
+private const val TAG = "AssistantImporter"
+
+/**
+ * 解析角色卡 JSON 字符串并回调导入结果
+ * 文件导入与 URL 导入共用此入口
+ */
+private suspend fun importFromString(
+    context: Context,
+    jsonString: String,
+    backgroundStr: String?,
+    avatarUri: String?,
+    onImport: (TavernImportResult) -> Unit,
+    toaster: ToasterState,
+    mergeGreetings: Boolean = false,
+) {
     val json = Json.parseToJsonElement(jsonString).jsonObject
     val spec = json["spec"]?.jsonPrimitive?.contentOrNull
         ?: error(context.getString(R.string.assistant_importer_missing_spec_field))

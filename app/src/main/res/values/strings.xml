@@ -31,6 +31,13 @@
   <string name="assistant_extensions_page_tab_skills">Skills</string>
   <string name="assistant_extensions_page_title">Extensions</string>
   <string name="assistant_importer_import_failed">Import failed</string>
+  <string name="assistant_importer_import_from_url">Import from URL</string>
+  <string name="assistant_importer_url_hint">Paste character card URL (PNG or JSON)</string>
+  <string name="assistant_importer_downloading">Downloading...</string>
+  <string name="assistant_importer_download_failed">Download failed: %s</string>
+  <string name="assistant_importer_invalid_url">Invalid URL (http/https only)</string>
+  <string name="assistant_importer_file_too_large">File too large (max %1$d MB)</string>
+  <string name="assistant_importer_not_character_card">Not a valid character card file</string>
   <string name="assistant_importer_import_tavern_json">Import Tavern Character Card (JSON)</string>
   <string name="assistant_importer_import_tavern_png">Import Tavern Character Card (PNG)</string>
   <string name="assistant_importer_merge_greetings">Merge multiple greetings as consecutive messages in one chat</string>
