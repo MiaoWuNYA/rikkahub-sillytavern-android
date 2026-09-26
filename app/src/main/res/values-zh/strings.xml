@@ -2840,4 +2840,5 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="weixin_bot_waiting_scan">等待扫码...</string>
   <string name="weixin_bot_what_is">微信 Bot 是什么</string>
   <string name="weixin_bot_what_is_desc">把你的微信号变成 AI 入口: 别人(或你自己)给这个微信号发消息, 会由关联的助手回复. 相当于给助手多开一个微信通道, AI/记忆/工具都用那个助手的.</string>
+>>>>>>> rikkahub/master
 </resources>

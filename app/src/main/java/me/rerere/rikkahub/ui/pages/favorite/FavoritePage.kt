@@ -138,13 +138,11 @@ private fun SwipeableFavoriteCard(
         initialValue = SwipeToDismissBoxValue.Settled,
     )
 
-    LaunchedEffect(dismissState.currentValue) {
-        when (dismissState.currentValue) {
-            SwipeToDismissBoxValue.EndToStart -> {
-                onDelete()
-            }
-
-            else -> {}
+    // Key on settledValue: currentValue flips to the closest anchor mid-animation,
+    // which would restart this effect and cancel it before onDelete() runs.
+    LaunchedEffect(dismissState.settledValue) {
+        if (dismissState.settledValue == SwipeToDismissBoxValue.EndToStart) {
+            onDelete()
         }
     }
 

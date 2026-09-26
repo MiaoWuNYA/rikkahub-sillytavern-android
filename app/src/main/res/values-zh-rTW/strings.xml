@@ -2830,4 +2830,5 @@
   <string name="workspace_terminal_new_tab">新增終端標籤</string>
   <string name="workspace_terminal_no_tabs">沒有開啟的終端</string>
   <string name="workspace_terminal_tab">終端標籤</string>
+>>>>>>> rikkahub/master
 </resources>

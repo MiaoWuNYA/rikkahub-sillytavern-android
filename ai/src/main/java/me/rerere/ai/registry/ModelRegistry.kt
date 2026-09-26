@@ -550,6 +550,12 @@ object ModelRegistry {
         toolReasoningAbility()
     }
 
+    private val XIAOMI_MIMO_V2_6 = defineModel {
+        tokens("mimo", "v", "2", "6")
+        visionInput()
+        toolReasoningAbility()
+    }
+
     private val XIAOMI_MIMO_V3 = defineModel {
         tokens("mimo", "v", "3")
         visionInput()
@@ -681,6 +687,7 @@ object ModelRegistry {
         XIAOMI_MIMO_V2_PRO,
         XIAOMI_MIMO_V2_5,
         XIAOMI_MIMO_V2_5_PRO,
+        XIAOMI_MIMO_V2_6,
         XIAOMI_MIMO_V3,
         XIAOMI_MIMO_V3_PRO,
         HY3,

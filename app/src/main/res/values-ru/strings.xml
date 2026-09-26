@@ -2832,4 +2832,5 @@
   <string name="workspace_terminal_new_tab">Новая вкладка терминала</string>
   <string name="workspace_terminal_no_tabs">Нет открытых вкладок терминала</string>
   <string name="workspace_terminal_tab">Терминал %1$d</string>
+>>>>>>> rikkahub/master
 </resources>

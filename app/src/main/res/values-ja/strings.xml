@@ -2832,4 +2832,5 @@ mDNSアドレス: .localホスト名を使用し、IPを知らなくても同じ
   <string name="workspace_terminal_new_tab">新しいターミナルタブ</string>
   <string name="workspace_terminal_no_tabs">開いているターミナルタブがありません</string>
   <string name="workspace_terminal_tab">ターミナル %1$d</string>
+>>>>>>> rikkahub/master
 </resources>
