@@ -31,6 +31,13 @@
   <string name="assistant_extensions_page_tab_skills">스킬</string>
   <string name="assistant_extensions_page_title">확장 프로그램</string>
   <string name="assistant_importer_import_failed">가져오기 실패</string>
+  <string name="assistant_importer_import_from_url">URL에서 가져오기</string>
+  <string name="assistant_importer_url_hint">캐릭터 카드 URL 붙여넣기 (PNG 또는 JSON)</string>
+  <string name="assistant_importer_downloading">다운로드 중...</string>
+  <string name="assistant_importer_download_failed">다운로드 실패: %s</string>
+  <string name="assistant_importer_invalid_url">잘못된 URL입니다 (http/https만 지원)</string>
+  <string name="assistant_importer_file_too_large">파일이 너무 큽니다 (최대 %1$d MB)</string>
+  <string name="assistant_importer_not_character_card">유효한 캐릭터 카드 파일이 아닙니다</string>
   <string name="assistant_importer_import_tavern_json">타번 캐릭터 카드 가져오기 (JSON)</string>
   <string name="assistant_importer_import_tavern_png">타번 캐릭터 카드 가져오기 (PNG)</string>
   <string name="assistant_importer_importing">가져오는 중...</string>

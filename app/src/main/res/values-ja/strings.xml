@@ -31,6 +31,13 @@
   <string name="assistant_extensions_page_tab_skills">スキル</string>
   <string name="assistant_extensions_page_title">拡張機能</string>
   <string name="assistant_importer_import_failed">インポートに失敗しました</string>
+  <string name="assistant_importer_import_from_url">URL からインポート</string>
+  <string name="assistant_importer_url_hint">キャラクターカードの URL を貼り付け (PNG または JSON)</string>
+  <string name="assistant_importer_downloading">ダウンロード中...</string>
+  <string name="assistant_importer_download_failed">ダウンロードに失敗しました: %s</string>
+  <string name="assistant_importer_invalid_url">無効な URL です (http/https のみ対応)</string>
+  <string name="assistant_importer_file_too_large">ファイルが大きすぎます (最大 %1$d MB)</string>
+  <string name="assistant_importer_not_character_card">有効なキャラクターカードファイルではありません</string>
   <string name="assistant_importer_import_tavern_json">タバーンキャラクターカードをインポート (JSON)</string>
   <string name="assistant_importer_import_tavern_png">タバーンキャラクターカードをインポート (PNG)</string>
   <string name="assistant_importer_importing">インポート中...</string>

@@ -31,6 +31,13 @@
   <string name="assistant_extensions_page_tab_skills">Навыки</string>
   <string name="assistant_extensions_page_title">Расширения</string>
   <string name="assistant_importer_import_failed">Импорт не удался</string>
+  <string name="assistant_importer_import_from_url">Импорт по URL</string>
+  <string name="assistant_importer_url_hint">Вставьте ссылку на карточку персонажа (PNG или JSON)</string>
+  <string name="assistant_importer_downloading">Загрузка...</string>
+  <string name="assistant_importer_download_failed">Не удалось загрузить: %s</string>
+  <string name="assistant_importer_invalid_url">Недопустимая ссылка (только http/https)</string>
+  <string name="assistant_importer_file_too_large">Файл слишком большой (макс. %1$d МБ)</string>
+  <string name="assistant_importer_not_character_card">Это не файл карточки персонажа</string>
   <string name="assistant_importer_import_tavern_json">Импортировать карточку персонажа Tavern (JSON)</string>
   <string name="assistant_importer_import_tavern_png">Импортировать карту персонажа Tavern (PNG)</string>
   <string name="assistant_importer_importing">Импорт…</string>

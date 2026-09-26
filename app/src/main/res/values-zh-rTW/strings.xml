@@ -31,6 +31,13 @@
   <string name="assistant_extensions_page_tab_skills">技能</string>
   <string name="assistant_extensions_page_title">擴充功能</string>
   <string name="assistant_importer_import_failed">匯入失敗</string>
+  <string name="assistant_importer_import_from_url">從 URL 匯入</string>
+  <string name="assistant_importer_url_hint">貼上角色卡連結 (PNG 或 JSON)</string>
+  <string name="assistant_importer_downloading">下載中...</string>
+  <string name="assistant_importer_download_failed">下載失敗：%s</string>
+  <string name="assistant_importer_invalid_url">連結無效（僅支援 http/https）</string>
+  <string name="assistant_importer_file_too_large">檔案過大（最大 %1$d MB）</string>
+  <string name="assistant_importer_not_character_card">不是有效的角色卡檔案</string>
   <string name="assistant_importer_import_tavern_json">匯入酒館角色卡 (JSON)</string>
   <string name="assistant_importer_import_tavern_png">匯入酒館角色卡 (PNG)</string>
   <string name="assistant_importer_importing">匯入中...</string>
