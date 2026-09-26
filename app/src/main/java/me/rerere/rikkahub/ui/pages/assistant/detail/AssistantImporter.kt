@@ -9,11 +9,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -35,6 +34,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import com.composables.icons.lucide.Link2
+import com.composables.icons.lucide.Lucide
 import com.dokar.sonner.ToastType
 import com.dokar.sonner.ToasterState
 import android.util.Log
@@ -71,6 +72,7 @@ import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.utils.ImageUtils
 import me.rerere.common.http.await
 import me.rerere.rikkahub.utils.jsonPrimitiveOrNull
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -210,7 +212,7 @@ private fun UrlImportField(
                     enabled = urlInput.isNotBlank(),
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Download,
+                        imageVector = Lucide.Link2,
                         contentDescription = stringResource(R.string.assistant_importer_import_from_url),
                     )
                 }
@@ -321,7 +323,7 @@ private suspend fun importFromUrl(
         val request = Request.Builder()
             .url(url)
             .get()
-            .apply { addHeader("User-Agent", "RikkaHub/${BuildConfig.VERSION_NAME}") }
+            .addHeader("User-Agent", "RikkaHub/${BuildConfig.VERSION_NAME}")
             .build()
         client.newCall(request).await().use { response ->
             if (!response.isSuccessful) {
