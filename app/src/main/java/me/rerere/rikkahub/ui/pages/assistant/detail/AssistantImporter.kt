@@ -13,14 +13,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -118,6 +119,8 @@ private fun SillyTavernImporter(
     }
     // 多个开场白时，合并为同一对话的多条消息（部分卡片把开场白拆成连续多条）
     var mergeGreetings by remember { mutableStateOf(false) }
+    // URL 导入对话框
+    var showUrlDialog by remember { mutableStateOf(false) }
 
     val pngPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -148,17 +151,31 @@ private fun SillyTavernImporter(
             Text(if (isLoading) stringResource(R.string.assistant_importer_importing)
                  else stringResource(R.string.assistant_importer_import_tavern_json))
         }
-        UrlImportField(
-            isLoading = isLoading,
-            onImport = { url ->
-                runImport(scope, { isLoading = it }, { e ->
-                    e.printStackTrace()
-                    toaster.show(e.message ?: context.getString(R.string.assistant_importer_download_failed, ""))
-                }) {
-                    importFromUrl(context, url, downloadClient, filesManager, onImport, toaster, mergeGreetings)
-                }
-            },
-        )
+        OutlinedButton(
+            onClick = { showUrlDialog = true },
+            enabled = !isLoading
+        ) {
+            Icon(
+                imageVector = Lucide.Link2,
+                contentDescription = null,
+                modifier = Modifier.padding(end = 8.dp),
+            )
+            Text(stringResource(R.string.assistant_importer_import_from_url))
+        }
+        if (showUrlDialog) {
+            UrlImportDialog(
+                isLoading = isLoading,
+                onDismiss = { showUrlDialog = false },
+                onConfirm = { url ->
+                    runImport(scope, { isLoading = it }, { e ->
+                        e.printStackTrace()
+                        toaster.show(e.message ?: context.getString(R.string.assistant_importer_download_failed, ""))
+                    }) {
+                        importFromUrl(context, url, downloadClient, filesManager, onImport, toaster, mergeGreetings)
+                    }
+                },
+            )
+        }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = 8.dp),
@@ -175,47 +192,61 @@ private fun SillyTavernImporter(
     }
 }
 
-/** URL 导入输入行：粘贴链接 → 下载解析 → 走与文件导入相同的回调 */
+/** URL 导入对话框：输入链接 → 确定后下载（进度条由按钮上的 loading 态体现） */
 @Composable
-private fun UrlImportField(
+private fun UrlImportDialog(
     isLoading: Boolean,
-    onImport: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
 ) {
     var urlInput by remember { mutableStateOf("") }
 
     fun submit() {
         val value = urlInput.trim()
-        if (value.isNotEmpty() && !isLoading) onImport(value)
+        if (value.isNotEmpty() && !isLoading) {
+            onConfirm(value)
+            onDismiss()
+        }
     }
 
-    OutlinedTextField(
-        value = urlInput,
-        onValueChange = { urlInput = it },
-        enabled = !isLoading,
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-        label = { Text(stringResource(R.string.assistant_importer_url_hint)) },
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Uri,
-            imeAction = ImeAction.Go,
-        ),
-        keyboardActions = KeyboardActions(onGo = { submit() }),
-        trailingIcon = {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp,
-                )
-            } else {
-                IconButton(
-                    onClick = { submit() },
-                    enabled = urlInput.isNotBlank(),
-                ) {
-                    Icon(
-                        imageVector = Lucide.Link2,
-                        contentDescription = stringResource(R.string.assistant_importer_import_from_url),
-                    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.assistant_importer_import_from_url)) },
+        text = {
+            Column {
+                if (isLoading) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.padding(bottom = 12.dp),
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        Text(stringResource(R.string.assistant_importer_downloading))
+                    }
                 }
+                OutlinedTextField(
+                    value = urlInput,
+                    onValueChange = { urlInput = it },
+                    enabled = !isLoading,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.assistant_importer_url_hint)) },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Uri,
+                        imeAction = ImeAction.Go,
+                    ),
+                    keyboardActions = KeyboardActions(onGo = { submit() }),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { submit() }, enabled = !isLoading && urlInput.isNotBlank()) {
+                Text(stringResource(android.R.string.ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isLoading) {
+                Text(stringResource(android.R.string.cancel))
             }
         },
     )
@@ -341,6 +372,14 @@ private suspend fun importFromUrl(
 
             val contentType = response.header("Content-Type")?.substringBefore(';')?.trim()?.lowercase()
             val path = url.encodedPath.lowercase()
+            // HTML 错误页/过期链接嗅探：明显是网页就直接报错，不给解析器猜
+            if (!isPngBytes(data) &&
+                (contentType?.contains("text/html") == true ||
+                    String(data.copyOfRange(0, minOf(256, data.size)), Charsets.UTF_8)
+                        .trimStart().lowercase().startsWith("<!doctype html"))
+            ) {
+                error(context.getString(R.string.assistant_importer_not_character_card))
+            }
             // 魔数最可靠，其次是明确的 Content-Type / 后缀；都没有时按 JSON 尝试
             val png = isPngBytes(data) ||
                 contentType == "image/png" ||
@@ -397,16 +436,20 @@ private suspend fun importFromString(
     mergeGreetings: Boolean = false,
 ) {
     val json = Json.parseToJsonElement(jsonString).jsonObject
+    // spec 缺失时按数据结构推断（V1 卡及部分社区导出没有 spec 字段）：
+    // 有 data 对象视为 V2 结构，否则视为 V1 平铺结构
     val spec = json["spec"]?.jsonPrimitive?.contentOrNull
-        ?: error(context.getString(R.string.assistant_importer_missing_spec_field))
+        ?: if (json["data"]?.jsonObjectOrNull != null) "chara_card_v2" else "chara_card_v1"
 
     val (assistant, lorebooks) = when (spec) {
         "chara_card_v2" -> parseV2Card(context, json, backgroundStr, avatarUri, mergeGreetings)
         "chara_card_v3" -> parseV3Card(context, json, backgroundStr, avatarUri, mergeGreetings)
+        // V1 卡：字段平铺在顶层，等价映射到 V2 解析器
+        "chara_card_v1", "chara_card" -> parseV2Card(context, flattenV1Card(json), backgroundStr, avatarUri, mergeGreetings)
         else -> error(context.getString(R.string.assistant_importer_unsupported_spec, spec))
     }
 
-    toaster.show(context.getString(R.string.app_name, assistant.name))
+    toaster.show(context.getString(R.string.assistant_importer_import_success))
     onImport(
         TavernImportResult(
             assistant = assistant,
@@ -416,6 +459,26 @@ private suspend fun importFromString(
 }
 
 // ==================== V2 Parser ====================
+
+/**
+ * V1 卡（chara_card_v1 / 无 spec）：字段平铺在顶层，包装成 V2 的 data 结构。
+ * V1 的 embeddings 也归一为 character_book 以复用解析。
+ */
+private fun flattenV1Card(json: JsonObject): JsonObject {
+    val fields = listOf(
+        "name", "description", "personality", "scenario", "first_mes",
+        "mes_example", "system_prompt", "creator", "creator_notes",
+        "character_version", "tags", "post_history_instructions",
+    )
+    val data = buildMap<String, JsonElement> {
+        fields.forEach { f -> json[f]?.let { put(f, it) } }
+        json["alternate_greetings"]?.let { put("alternate_greetings", it) }
+        // V1 世界书字段名是 character_embdings，归一为 V2 的 character_book
+        (json["character_book"] ?: json["character_embdings"])?.let { put("character_book", it) }
+        json["extensions"]?.let { put("extensions", it) }
+    }
+    return JsonObject(json.toMap() + ("data" to JsonObject(data)))
+}
 
 private fun parseV2Card(context: Context, json: JsonObject, background: String?, avatarUri: String?, mergeGreetings: Boolean = false): Pair<Assistant, List<Lorebook>> {
     val data = json["data"]?.jsonObject ?: error(context.getString(R.string.assistant_importer_missing_data_field))
