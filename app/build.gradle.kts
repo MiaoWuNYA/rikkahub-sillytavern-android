@@ -53,11 +53,11 @@ android {
     namespace = "me.rerere.rikkahub"
     compileSdk = 37
     defaultConfig {
-        applicationId = "me.rerere.rikkahub"
+        applicationId = "me.rerere.rikkahub.huadeng"
         minSdk = 26
         targetSdk = 37
-        versionCode = 228
-        versionName = "2.5.4.15"
+        versionCode = 229
+        versionName = "2.5.4.16"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

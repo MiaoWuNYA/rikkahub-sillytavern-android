@@ -36,3 +36,6 @@ AGENTS.md
 .windsurf/
 .cursorrules
 GEMINI.md
+
+# 华灯正式签名密钥（勿提交）
+keystore-backup/

@@ -28,13 +28,22 @@ jobs:
       - name: Pre-install setuptools for build
         run: pip install --upgrade pip setuptools wheel 2>&1 | tail -3
       - name: Write signing config
+        env:
+          KEY_BASE64: ${{ secrets.KEY_BASE64 }}
+          SIGNING_CONFIG: ${{ secrets.SIGNING_CONFIG }}
         run: |
-          cat > local.properties << 'EOF'
+          if [ -n "$KEY_BASE64" ] && [ -n "$SIGNING_CONFIG" ]; then
+            echo "$KEY_BASE64" | base64 -d > app/app.key
+            echo "$SIGNING_CONFIG" > local.properties
+          else
+            # 密钥未配置时回退 debug 签名
+            cat > local.properties << 'EOF'
           storeFile=app.key
           storePassword=android
           keyAlias=androiddebugkey
           keyPassword=android
           EOF
+          fi
       - name: Build
         run: |
           chmod +x gradlew
