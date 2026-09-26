@@ -1,6 +1,8 @@
 <div align="center">
 
-# RikkaHub Plus · HuaDeng
+<img src="docs/huadeng-icon.png" width="96" alt="Lantern icon"/>
+
+# RikkaHub Plus · Lantern
 
 ### An **AI chat client** for Android that is also a **SillyTavern**-compatible endpoint
 
