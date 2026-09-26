@@ -15,7 +15,7 @@
 
 </div>
 
-> **A deeply customized fork of [RikkaHub](https://github.com/rikkahub/rikkahub)** (merged with upstream v2.5.3, plus 2150+ commits of additions), natively implemented in Kotlin + Jetpack Compose.
+> **A deeply customized fork of [RikkaHub](https://github.com/rikkahub/rikkahub)** (merged with upstream v2.5.4, plus 2150+ commits of additions), natively implemented in Kotlin + Jetpack Compose.
 >
 > - **Just want a good AI chat app**: plug in any API and start talking — multi-provider, streaming, voice calls, plugin tools, memory, cache savings. No "tavern" concepts required.
 > - **Migrating from desktop SillyTavern**: character cards, lorebooks, presets, regex and themes import losslessly with official semantics — no Termux, no Node.js.
@@ -74,7 +74,7 @@
 Two upstream lineages meet here — knowing them makes the diff readable:
 
 ```
-rikkahub/rikkahub (original upstream, v2.5.3)
+rikkahub/rikkahub (original upstream, v2.5.4)
         │
         ├──► heikeyangle-code/rikkahub-plus (intermediate fork, mingli2)
         │            │  tavern system / macro engine / slash commands / group chats
@@ -562,7 +562,7 @@ The configuration page for the TypeSafe System One judge model: API base URL / k
 ## ✅ Relationship to upstream
 
 - **Everything preserved**: Material You theming, multi-provider support, streaming, conversation forking & regeneration, message edit / delete / translate, full-text search (jieba), favorites, image generation, TTS / ASR, MCP, workspace sandbox (multi-tab terminal + shell compatibility mode), backup (S3 / WebDAV), web chat endpoint, and chat export all work as before
-- **Already merged with upstream**: `rikkahub/rikkahub` master **v2.5.3** (2026-09)
+- **Already merged with upstream**: `rikkahub/rikkahub` master **v2.5.4** (2026-09, includes Arabic i18n, RTL icon adaptation, "restore missing assistants from chat history" recovery, and fixes for MCP empty-header errors #1949, OpenAI Responses `item_id` #1948, favorites swipe-to-delete, thought-step icon black background #1946, code-block line-number copying, and Google provider `propertyNames` filtering)
 - **Versus the intermediate mingli2 branch**: beyond tavern enhancements, this branch adds prompt prefix caching, semantic memory RAG & rolling compression, Jev decisioning, proxy-station compatibility & anti-empty-reply, Doubao voice, and privacy hardening
 - **New since v2.5.4**: the academic system moved out of the app into a plugin, the calories & protein plugin, session-aware HTTP and image decoding in the plugin sandbox, detail-page data cards, the update check moving to the GitHub Releases API, and Jev decisioning
 - **Merging upstream**: see the conflict handbook in [DIVERGENCE.md](DIVERGENCE.md)

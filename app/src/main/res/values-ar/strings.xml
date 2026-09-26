@@ -763,11 +763,6 @@
   <string name="setting_display_page_auto_collapse_thinking_title">الطي التلقائي للتفكير</string>
   <string name="setting_display_page_auto_play_tts_desc">تشغيل TTS تلقائيًا بعد اكتمال إنشاء رسالة المساعد</string>
   <string name="setting_display_page_auto_play_tts_title">تشغيل TTS تلقائيًا بعد الإنشاء</string>
-  <string name="setting_display_page_background_effect_blur">تمويه</string>
-  <string name="setting_display_page_background_effect_desc">تمكين تأثير التمويه أو الزجاج على شريط إدخال الدردشة</string>
-  <string name="setting_display_page_background_effect_glass">زجاجي</string>
-  <string name="setting_display_page_background_effect_title">تأثير خلفية شريط الإدخال</string>
-  <string name="setting_display_page_background_effect_type">نوع تأثير الخلفية</string>
   <string name="setting_display_page_bubble_opacity_title">عتامة الفقاعة</string>
   <string name="setting_display_page_chat_font_family_custom">مخصص</string>
   <string name="setting_display_page_chat_font_family_default">الافتراضي</string>
@@ -823,8 +818,6 @@
   <string name="setting_display_page_show_thinking_content_title">إظهار محتوى التفكير</string>
   <string name="setting_display_page_show_token_usage_desc">عرض استخدام Token وعدد الرسائل</string>
   <string name="setting_display_page_show_token_usage_title">إظهار إحصاءات Token والسياق</string>
-  <string name="setting_display_page_show_updates_desc">ما إذا كان سيتم عرض إشعارات تحديث التطبيق</string>
-  <string name="setting_display_page_show_updates_title">إظهار التحديثات</string>
   <string name="setting_display_page_show_user_avatar_desc">تحديد ما إذا كان سيتم عرض صورة المستخدم الرمزية في رسائل الدردشة</string>
   <string name="setting_display_page_show_user_avatar_title">إظهار صورة المستخدم الرمزية</string>
   <string name="setting_display_page_skip_crop_image_desc">تخطي واجهة الاقتصاص بعد استيراد الصور أو التقاطها</string>

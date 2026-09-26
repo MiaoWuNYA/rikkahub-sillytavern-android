@@ -1,11 +1,11 @@
 {
-  "version": "2.5.4.0925",
-  "publishedAt": "2026-09-25T14:33:59Z",
-  "changelog": "Nightly auto-build (2026-09-25) / 每日自动构建（2026-09-25）",
+  "version": "2.5.4.15",
+  "publishedAt": "2026-09-26T12:00:00Z",
+  "changelog": "合并上游 rikkahub v2.5.4：阿拉伯语支持、RTL 图标适配、从聊天记录恢复缺失助手、MCP/收藏页/思考步骤等多项修复；新增角色卡 URL 直链导入 / Merged upstream rikkahub v2.5.4 (Arabic i18n, RTL icons, assistant recovery, multiple fixes); new: import character cards from URL",
   "downloads": [
     {
-      "name": "rikkahub-plus-2.5.4.14-arm64-v8a.apk",
-      "url": "https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/download/v2.5.4.14/rikkahub-plus-2.5.4.14-arm64-v8a.apk",
+      "name": "rikkahub-plus-2.5.4.15-arm64-v8a.apk",
+      "url": "https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/download/v2.5.4.15/rikkahub-plus-2.5.4.15-arm64-v8a.apk",
       "size": "约 104 MB"
     }
   ]
