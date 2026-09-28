@@ -470,6 +470,12 @@ class GenerationLoop(
                 val updatedTools = uniqueTools.map { tool ->
                     val toolDef = statusTrackedTools.find { it.name == tool.toolName }
                     when {
+                        // HITL 工具（ask_user）必须等用户回答：优先于"自动批准"判定，
+                        // 否则自动批准会把它当普通工具放行，问答流被打断
+                        mustWaitForUser(tool.toolName, tool.approvalState) -> {
+                            hasPendingApproval = true
+                            tool.copy(approvalState = ToolApprovalState.Pending)
+                        }
                         // 安全设置：自动批准所有工具调用（绕过单工具审批判定）
                         settings.securitySetting.autoApproveAllTools &&
                             tool.approvalState is ToolApprovalState.Auto -> tool

@@ -69,7 +69,10 @@ internal fun buildAskUserTool(): Tool = Tool(
             required = listOf("questions")
         )
     },
-    needsApproval = { false },
+    // ask_user 是 HITL（人机问答）工具，必须挂起等待用户回答，绝不能自动执行：
+    // execute 直接抛错，只有审批流把状态置为 Pending/Answered 才有意义。
+    // 因此这里恒为 true，且 GenerationLoop 会把 ask_user 排除在"自动批准所有工具"之外。
+    needsApproval = { true },
     execute = {
         error("ask_user tool should be handled by HITL flow")
     }
