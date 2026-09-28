@@ -154,7 +154,7 @@ data class AssistantRegex(
     val findRegex: String = "", // 正则表达式
     val replaceString: String = "", // 替换字符串
     val affectingScope: Set<AssistantAffectScope> = setOf(),
-    val visualOnly: Boolean = false, // 是否仅在视觉上影响
+    val visualOnly: Boolean = false, // 仅显示层生效；false = 显示与提示词两层都生效（对齐酒馆 markdownOnly/promptOnly 语义）
     // 官方酒馆深度过滤：1 = 最新一条消息，0 = 不限制；导入 minDepth/maxDepth 字段
     val minDepth: Int = 0,
     val maxDepth: Int = 0,
@@ -207,7 +207,12 @@ fun String.replaceRegexes(
     return assistant.regexes.fold(this) { acc, regex ->
         val depthOk = depth <= 0 || ((regex.minDepth <= 0 || depth >= regex.minDepth) &&
             (regex.maxDepth <= 0 || depth <= regex.maxDepth))
-        if (regex.enabled && depthOk && regex.visualOnly == visual && regex.affectingScope.contains(scope)) {
+        // 层级语义（对齐官方酒馆 markdownOnly/promptOnly）：
+        // visualOnly=true 仅影响显示；false/默认则显示与提示词两层都生效。
+        // 旧实现用 visualOnly == visual 严格相等，一条规则只能命中一层，
+        // 酒馆默认导入（markdownOnly=false, promptOnly=false → visualOnly=false）在聊天界面完全看不到效果。
+        val layerOk = visual || !regex.visualOnly
+        if (regex.enabled && depthOk && layerOk && regex.affectingScope.contains(scope)) {
             replaceWithRegex(acc, regex)
         } else {
             acc

@@ -124,7 +124,7 @@
   <string name="assistant_page_regex_name">名稱</string>
   <string name="assistant_page_regex_replace_string">取代字串</string>
   <string name="assistant_page_regex_title">訊息正規表示式</string>
-  <string name="assistant_page_regex_visual_only">僅視覺效果（僅影響顯示，不影響實際訊息）</string>
+  <string name="assistant_page_regex_visual_only">僅顯示（勾選後只影響介面顯示；不勾選則顯示和提示詞都生效）</string>
   <string name="assistant_page_remove">移除</string>
   <string name="assistant_page_remove_background">移除背景</string>
   <string name="assistant_page_save">保存</string>
@@ -1899,6 +1899,8 @@
   <string name="local_tool_js_timeout_desc">JavaScript程式碼執行超時，預設15</string>
   <string name="local_tool_js_timeout_title">JS引擎超時(秒)</string>
   <string name="local_tool_life_companion_desc">生活備忘、日曆提醒、共讀書架、一起聽歌等 AI 工具（情侶空間繫結時還會加入共讀日記與紀念冊）</string>
+  <string name="local_tool_couple_space_title">情侶空間</string>
+  <string name="local_tool_couple_space_desc">情侶空間 AI 工具：AI 可讀取/發布/評論/刪除已繫結情侶空間的動態（需已繫結情侶空間）</string>
   <string name="local_tool_life_companion_title">生活空間</string>
   <string name="local_tool_parallel_desc">同時執行多個工具呼叫，加速搜尋、檔案操作等</string>
   <string name="local_tool_parallel_title">並行執行工具</string>

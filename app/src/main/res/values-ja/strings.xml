@@ -124,7 +124,7 @@
   <string name="assistant_page_regex_name">名前</string>
   <string name="assistant_page_regex_replace_string">文字列を置換</string>
   <string name="assistant_page_regex_title">メッセージ正規表現</string>
-  <string name="assistant_page_regex_visual_only">表示のみ（実際のメッセージには影響しません）</string>
+  <string name="assistant_page_regex_visual_only">表示のみ（チェック時は表示にのみ適用、オフの場合は表示とプロンプトの両方に適用）</string>
   <string name="assistant_page_remove">削除</string>
   <string name="assistant_page_remove_background">背景を削除</string>
   <string name="assistant_page_save">保存</string>
@@ -1901,6 +1901,8 @@ mDNSアドレス: .localホスト名を使用し、IPを知らなくても同じ
   <string name="local_tool_js_timeout_desc">JavaScriptの実行タイムアウト。デフォルトは15</string>
   <string name="local_tool_js_timeout_title">JSエンジンのタイムアウト（秒）</string>
   <string name="local_tool_life_companion_desc">生活メモ、カレンダーリマインダー、読書棚、一緒に聴くなどのAIツール（カップルスペースをバインドすると読書日記とアルバムも含まれます）</string>
+  <string name="local_tool_couple_space_title">カップルスペース</string>
+  <string name="local_tool_couple_space_desc">カップルスペースのAIツール：バインド済みのカップルスペースの投稿を読み取り・投稿・コメント・削除します（バインドが必要）</string>
   <string name="local_tool_life_companion_title">ライフスペース</string>
   <string name="local_tool_parallel_desc">複数のツール呼び出しを同時に実行し、検索やファイル操作などを高速化します</string>
   <string name="local_tool_parallel_title">並列ツール実行</string>
