@@ -2843,4 +2843,10 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="weixin_bot_what_is">微信 Bot 是什么</string>
   <string name="weixin_bot_what_is_desc">把你的微信号变成 AI 入口: 别人(或你自己)给这个微信号发消息, 会由关联的助手回复. 相当于给助手多开一个微信通道, AI/记忆/工具都用那个助手的.</string>
 >>>>>>> rikkahub/master
+  <string name="setting_display_page_background_effect_title">输入栏背景效果</string>
+  <string name="setting_display_page_background_effect_desc">为聊天输入栏启用模糊或玻璃效果</string>
+  <string name="setting_display_page_background_effect_type">背景效果类型</string>
+  <string name="setting_display_page_background_effect_blur">模糊</string>
+  <string name="setting_display_page_background_effect_glass">玻璃</string>
+  <string name="skills_page_search_no_result">没有匹配的技能</string>
 </resources>

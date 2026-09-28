@@ -1868,6 +1868,7 @@
   <string name="common_cancel">Cancel</string>
   <string name="common_save">Save</string>
   <string name="common_delete">Delete</string>
+  <string name="common_delete_confirm_message">Are you sure you want to delete "%s"? This action cannot be undone.</string>
   <string name="common_rename">Rename</string>
   <string name="common_export">Export</string>
   <string name="common_share">Share</string>
@@ -2840,4 +2841,10 @@
   <string name="weixin_bot_waiting_scan">Waiting for scan...</string>
   <string name="weixin_bot_what_is">What is WeChat Bot</string>
   <string name="weixin_bot_what_is_desc">Turn your WeChat account into an AI entry point: when others (or you) message this account, the linked assistant replies. It is like an extra WeChat channel for the assistant; AI/memory/tools all use that assistant\'s.</string>
+  <string name="setting_display_page_background_effect_title">Input bar background effect</string>
+  <string name="setting_display_page_background_effect_desc">Enable a blur or glass effect on the chat input bar</string>
+  <string name="setting_display_page_background_effect_type">Background effect type</string>
+  <string name="setting_display_page_background_effect_blur">Blur</string>
+  <string name="setting_display_page_background_effect_glass">Glass</string>
+  <string name="skills_page_search_no_result">No matching skills</string>
 </resources>

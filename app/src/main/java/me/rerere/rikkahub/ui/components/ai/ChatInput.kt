@@ -85,6 +85,11 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.HazeBlurStyle
 import dev.chrisbanes.haze.blur.hazeBlur
 import dev.chrisbanes.haze.blur.material3.Material3
+import dev.chrisbanes.haze.glass.GlassDefaults
+import dev.chrisbanes.haze.glass.GlassStyle
+import dev.chrisbanes.haze.glass.OpticalSizeValue
+import dev.chrisbanes.haze.glass.hazeGlass
+import dev.chrisbanes.haze.glass.material3.Material3
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
 import me.rerere.ai.core.MessageRole
@@ -104,6 +109,7 @@ import me.rerere.hugeicons.stroke.Fullscreen
 import me.rerere.hugeicons.stroke.Package01
 import me.rerere.hugeicons.stroke.Zap
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.datastore.BackgroundEffectType
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.findModelById
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
@@ -333,11 +339,28 @@ fun ChatInput(
                     .fillMaxWidth()
                     .clip(containerShape)
                     .then(
-                        if (settings.displaySetting.enableBlurEffect) Modifier.hazeBlur(
-                            input = HazeInput.Sources(hazeState),
-                            style = inputHazeStyle,
-                        )
-                        else Modifier
+                        if (settings.displaySetting.enableBlurEffect) {
+                            when (settings.displaySetting.backgroundEffectType) {
+                                BackgroundEffectType.BLUR -> Modifier.hazeBlur(
+                                    input = HazeInput.Sources(hazeState),
+                                    style = inputHazeStyle,
+                                )
+                                BackgroundEffectType.GLASS -> Modifier.hazeGlass(
+                                    input = HazeInput.Sources(hazeState),
+                                    style = GlassStyle.Material3(
+                                        containerColor = hazeTintColor,
+                                        tint = hazeTintColor.copy(alpha = 0.3f),
+                                    ) {
+                                        // Keep background text from competing with the input text.
+                                        optics(GlassDefaults.optics.copy(
+                                            blurRadius = OpticalSizeValue.Fixed(16.dp),
+                                            depth = OpticalSizeValue.Fixed(0.5f),
+                                        ))
+                                        shape(containerShape as RoundedCornerShape)
+                                    },
+                                )
+                            }
+                        } else Modifier
                     ),
                 shape = containerShape,
                 tonalElevation = 0.dp,
