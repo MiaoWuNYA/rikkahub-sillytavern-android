@@ -10,8 +10,6 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -54,9 +53,16 @@ import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.utils.base64Encode
 
 // 块级 HTML 标签：出现在消息任意位置都值得走 WebView（排除 span：引号染色会注入 <span>，
-// 排除 p/img：误报率高，纯文本提到也会命中）
+// 排除 p/img：误报率高，纯文本提到也会命中）。
+// 含 html/head/body/!DOCTYPE：酒馆前端卡的完整 HTML 文档，第一个块级标签可能藏在 <head> 深处
 private val HTML_TAG_ANYWHERE = Regex(
-    """<(div|style|table|details|center|section|article|font|iframe|video|audio|h[1-6])\b""",
+    """<(div|style|table|details|center|section|article|font|iframe|video|audio|h[1-6]|html|head|body|!DOCTYPE)\b""",
+    RegexOption.IGNORE_CASE,
+)
+
+// ```html 围栏开头的行：前端卡常把整个 HTML 文档包在围栏里导出
+private val FENCED_HTML_OPEN = Regex(
+    """```[ \t]*html[ \t]*\r?\n""",
     RegexOption.IGNORE_CASE,
 )
 
@@ -82,7 +88,8 @@ private val INVISIBLE_LEADING = charArrayOf(
  */
 fun isHtmlRichContent(text: String): Boolean {
     val t = text.trim(' ', '\n', '\r', '\t', *INVISIBLE_LEADING)
-    return HTML_TAG_ANYWHERE.containsMatchIn(t) || CUSTOM_TAG_LINE_START.containsMatchIn(t)
+    return HTML_TAG_ANYWHERE.containsMatchIn(t) || CUSTOM_TAG_LINE_START.containsMatchIn(t) ||
+        FENCED_HTML_OPEN.containsMatchIn(t)
 }
 
 /**
@@ -95,6 +102,41 @@ fun findHtmlCard(text: String): Pair<Int, String>? {
         CUSTOM_TAG_LINE_START.find(text),
     ).minByOrNull { it.range.first } ?: return null
     return match.range.first to text.substring(match.range.first)
+}
+
+/**
+ * 酒馆前端卡：first_mes 常是 ```html 围栏包着的完整 HTML 文档。
+ * 命中时返回 (围栏前的散文, 剥掉围栏后的完整 HTML 文档)。
+ * 文档内部可能嵌 ```yaml 等围栏，所以闭合围栏取"行首 ```"的最后一次出现，
+ * 而非懒惰匹配到第一个闭合（否则文档会被截断）。
+ */
+private val CLOSING_FENCE_LINE = Regex("""^[ \t]*```[ \t]*$""", RegexOption.MULTILINE)
+
+fun findFencedHtmlDocument(text: String): Pair<String, String>? {
+    val open = FENCED_HTML_OPEN.find(text) ?: return null
+    val afterOpen = open.range.last + 1
+    if (afterOpen >= text.length) return null
+    val rest = text.substring(afterOpen)
+    val close = CLOSING_FENCE_LINE.findAll(rest).lastOrNull() ?: return null
+    val doc = rest.substring(0, close.range.first)
+        .replace("\r\n", "\n")
+        .trim(' ', '\n', '\r', '\t')
+        .takeIf { it.isNotEmpty() } ?: return null
+    // 只有当内容像 HTML 文档时才按围栏文档处理，避免误吞 ```html 代码演示
+    if (!doc.startsWith("<!DOCTYPE", ignoreCase = true) && !doc.startsWith("<html", ignoreCase = true)) {
+        return null
+    }
+    // 截到 </html> 为止：闭合围栏取"最后一次"，后面的散文可能被一起圈进来，
+    // HTML 解析器会把 </html> 之后的内容塞进 body 显示出来
+    val docEnd = doc.lastIndexOf("</html>", ignoreCase = true)
+    val finalDoc = if (docEnd >= 0) doc.substring(0, docEnd + "</html>".length) else doc
+    return text.substring(0, open.range.first).trim(' ', '\n', '\r', '\t') to finalDoc
+}
+
+/** 是否为完整 HTML 文档（<!DOCTYPE 或 <html> 开头）：整文档直接作为页面加载，不走 marked。 */
+fun isFullHtmlDocument(html: String): Boolean {
+    val t = html.trimStart(' ', '\n', '\r', '\t', *INVISIBLE_LEADING)
+    return t.startsWith("<!DOCTYPE", ignoreCase = true) || t.startsWith("<html", ignoreCase = true)
 }
 
 /**
@@ -111,6 +153,9 @@ fun HtmlWebViewBlock(
     val density = LocalDensity.current
     val colorScheme = MaterialTheme.colorScheme
     val context = LocalContext.current
+    // 内联卡片高度封顶：超出部分 WebView 内部滚动（卡片可交互的前提），
+    // 同时保证聊天列表在卡片外仍可正常滚动
+    val maxCardHeight = LocalConfiguration.current.screenHeightDp * 0.7f
     // marked.js 直接内联进页面：不依赖运行时 assets 拦截，拦截一旦失败
     // 整页脚本会静默失败变成空白
     val markedJs = remember {
@@ -142,7 +187,7 @@ fun HtmlWebViewBlock(
     Column(modifier = modifier) {
         AndroidView(
             factory = { context ->
-            PassThroughWebView(context).apply {
+            InteractiveWebView(context).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -197,19 +242,14 @@ fun HtmlWebViewBlock(
         },
         modifier = Modifier
             .fillMaxWidth()
-            // 内联 WebView 自身不消费触摸（保证聊天列表可滚动），把点击事件交给
-            // Compose 层：点卡片任意位置直接进入全屏查看器，不用再找右上角放大按钮
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-            ) { openFullscreen() }
             .then(
                 if (contentHeight > 0) {
                     Modifier.height(with(density) { contentHeight.toDp() })
                 } else {
                     Modifier.heightIn(min = 120.dp)
                 }
-            ),
+            )
+            .heightIn(max = maxCardHeight.dp),
         )
 
         // 内联 WebView 为保证聊天列表可滚动不消费触摸事件（只读），
@@ -245,15 +285,18 @@ fun HtmlWebViewBlock(
 }
 
 /**
- * HTML 角色卡容器：默认直接展开渲染 WebView（内联只读，点卡片即进全屏），
+ * HTML 角色卡容器：默认直接展开渲染 WebView（点卡片即进全屏），
  * 可手动折叠回按钮状态；折叠状态经 rememberSaveable 在列表滚动回收后恢复。
+ * 超大前端卡（完整 HTML 文档）默认折叠：一次渲染 20KB+ 的脚本化文档
+ * 是"随缘卡死/闪退"的主要来源，用户点开后再渲染（且全屏页渲染）。
  */
 @Composable
 fun HtmlCardBlock(
     html: String,
     modifier: Modifier = Modifier,
 ) {
-    var expanded by rememberSaveable { mutableStateOf(true) }
+    // 完整 HTML 文档（前端卡）默认折叠，混排小卡片照旧默认展开
+    var expanded by rememberSaveable { mutableStateOf(!isFullHtmlDocument(html)) }
     if (expanded) {
         HtmlWebViewBlock(html = html, modifier = modifier, onCollapse = { expanded = false })
     } else {
@@ -285,17 +328,38 @@ fun HtmlCardBlock(
 }
 
 /**
- * 不消费触摸事件的 WebView：内容高度自适应后内部无需滚动，
- * 把滑动手势交还给外层聊天列表（LazyColumn），否则聊天页无法上下翻动。
- * 代价是卡内 <details>/链接不可点击——聊天场景下翻页优先。
+ * 内联卡片 WebView：可交互（按钮/折叠面板能点），但只在"内容确实超出封顶高度、
+ * 需要卡片内滚动"时才消费手势——否则把触摸事件全部交还外层聊天列表，
+ * 避免短卡片吞掉滑动手势导致聊天页翻不动（老 PassThroughWebView 无条件放行，
+ * 代价是按钮全部点不了）。
  */
-private class PassThroughWebView(context: Context) : WebView(context) {
+private class InteractiveWebView(context: Context) : WebView(context) {
     init {
-        isVerticalScrollBarEnabled = false
+        isVerticalScrollBarEnabled = true
+        isHorizontalScrollBarEnabled = false
         overScrollMode = View.OVER_SCROLL_NEVER
     }
 
-    override fun onTouchEvent(event: MotionEvent): Boolean = false
+    private var canScrollInternally = false
+
+    fun updateScrollability() {
+        // 高度上报有延迟，松手时再按当前内容判断
+        canScrollInternally = computeVerticalScrollRange() > height
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+            updateScrollability()
+        }
+        // 点按永远放行（按钮/折叠面板要能点）；仅当内容超出且是滑动时才消费
+        return if (canScrollInternally && event.actionMasked != MotionEvent.ACTION_UP &&
+            event.actionMasked != MotionEvent.ACTION_POINTER_UP
+        ) {
+            super.onTouchEvent(event)
+        } else {
+            false
+        }
+    }
 }
 
 private const val HEIGHT_JS =
@@ -339,7 +403,14 @@ private fun buildHtmlBlockPage(
     markedJs: String,
     backgroundColor: androidx.compose.ui.graphics.Color? = null,
 ): String {
-    val b64 = html.trim(' ', '\n', '\r', '\t', *INVISIBLE_LEADING).base64Encode()
+    // CRLF 归一化：酒馆导出的卡常带 \r\n，会把 marked/正则预处理搞乱
+    val normalized = html.replace("\r\n", "\n").replace("\r", "\n")
+    // 完整 HTML 文档（前端卡）直接作为页面本身加载——包 wrapper 过 marked 会把文档
+    // 切碎，DOMParser 搬运又会让 <script> 变成不执行的惰性节点。只注入高度上报脚本
+    if (isFullHtmlDocument(normalized)) {
+        return buildFullDocPage(normalized.trim(' ', '\n', '\t', *INVISIBLE_LEADING))
+    }
+    val b64 = normalized.trim(' ', '\n', '\t', *INVISIBLE_LEADING).base64Encode()
     val textArgb = textColor.toArgb()
     val textCss = String.format("#%06X", textArgb and 0xFFFFFF)
     // 全屏页传不透明背景色；内联保持透明以融入聊天气泡
@@ -427,4 +498,45 @@ $markedTag
 </script>
 </body>
 </html>"""
+}
+
+/**
+ * 完整 HTML 文档（前端卡）直接作为页面本身加载：包 wrapper 过 marked 会把文档
+ * 切碎，DOMParser 搬运又会让 <script> 变成不执行的惰性节点。
+ * 只往 </head> 或文档最前面注入高度上报脚本；深色主题下若文档没写背景色
+ * （透明底），加一层默认背景防止浅色文字看不清。
+ */
+private fun buildFullDocPage(doc: String): String {
+    val inject = """
+<script>
+(function() {
+  function report() {
+    var h = Math.max(
+      document.documentElement.scrollHeight,
+      document.body ? document.body.scrollHeight : 0
+    );
+    if (window.rikkaHost && window.rikkaHost.reportHeight && h > 0) {
+      window.rikkaHost.reportHeight(h);
+    }
+  }
+  window.addEventListener('load', report);
+  setTimeout(report, 100);
+  setTimeout(report, 500);
+  setTimeout(report, 1500);
+  setTimeout(report, 4000);
+  if (window.ResizeObserver) {
+    new ResizeObserver(report).observe(document.documentElement);
+  }
+  if (window.ResizeObserver) {
+    new ResizeObserver(report).observe(document.body || document.documentElement);
+  }
+})();
+</script>
+"""
+    val injectAt = doc.indexOf("</head>", ignoreCase = true)
+    return if (injectAt >= 0) {
+        doc.substring(0, injectAt) + inject + doc.substring(injectAt)
+    } else {
+        inject + doc
+    }
 }
