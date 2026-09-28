@@ -2835,4 +2835,5 @@ mDNS 주소: .local 호스트네임을 사용하며, IP를 몰라도 같은 네�
   <string name="workspace_terminal_no_tabs">열려 있는 탭이 없어요</string>
   <string name="workspace_terminal_tab">터미널 %1$d</string>
 >>>>>>> rikkahub/master
+  <string name="skills_page_search_no_result">일치하는 스킬 없음</string>
 </resources>

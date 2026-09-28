@@ -620,7 +620,7 @@ private fun FileItem(
                 tint = MaterialTheme.colorScheme.primary,
             )
             Text(
-                text = skillFile.file.name,
+                text = skillFile.name,
                 style = MaterialTheme.typography.bodyMedium,
                 fontFamily = FontFamily.Monospace,
                 modifier = Modifier
@@ -628,7 +628,7 @@ private fun FileItem(
                     .padding(start = 8.dp),
             )
             Text(
-                text = "${skillFile.file.length()} B",
+                text = "${skillFile.size} B",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

@@ -15,12 +15,39 @@ class SkillManager(
         private const val TAG = "SkillManager"
     }
 
+    private val builtinLock = Any()
+
+    @Volatile
+    private var builtinExtracted = false
+
     fun getSkillsDir(): File {
         // App 外部文件目录，文件管理器可访问，无需额外权限
         val dir = context.getExternalFilesDir(null)?.resolve(FileFolders.SKILLS)
             ?: context.filesDir.resolve(FileFolders.SKILLS)
         if (!dir.exists()) dir.mkdirs()
         return dir
+    }
+
+    fun getBuiltinSkillsDir(): File {
+        val dir = context.filesDir.resolve(FileFolders.BUILTIN_SKILLS)
+        if (!dir.exists()) dir.mkdirs()
+        return dir
+    }
+
+    /**
+     * 确保内置技能已从 assets 解压到 [getBuiltinSkillsDir]，每个进程只检查一次。
+     */
+    fun ensureBuiltinSkillsExtracted() {
+        if (builtinExtracted) return
+        synchronized(builtinLock) {
+            if (builtinExtracted) return
+            runCatching {
+                BuiltinSkills.extractIfNeeded(context, getBuiltinSkillsDir())
+            }.onFailure {
+                Log.w(TAG, "ensureBuiltinSkillsExtracted: Failed to extract builtin skills", it)
+            }
+            builtinExtracted = true
+        }
     }
 
     /**
@@ -32,14 +59,29 @@ class SkillManager(
         return if (dir.exists() && dir.canRead()) dir else null
     }
 
-    fun listSkills(): List<SkillMetadata> {
-        val skillsDir = getSkillsDir()
-        return skillsDir.listFiles()
-            ?.filter { it.isDirectory }
+    /**
+     * 列出所有可用技能：用户技能 + 内置技能，同名时用户技能覆盖内置技能。
+     */
+    fun listSkills(): List<SkillMetadata> = mergeWithBuiltinSkills(
+        local = listSkillsIn(getSkillsDir(), builtin = false),
+        builtin = listBuiltinSkills(),
+    )
+
+    fun findSkill(name: String): SkillMetadata? = listSkills().firstOrNull { it.name == name }
+
+    private fun listBuiltinSkills(): List<SkillMetadata> {
+        ensureBuiltinSkillsExtracted()
+        return listSkillsIn(getBuiltinSkillsDir(), builtin = true)
+    }
+
+    private fun listSkillsIn(root: File, builtin: Boolean): List<SkillMetadata> {
+        return root.listFiles()
+            // 跳过隐藏目录，如原子写入残留的 .<name>.staging.N.tmp
+            ?.filter { it.isDirectory && !it.name.startsWith(".") }
             ?.mapNotNull { dir ->
                 val skillFile = dir.resolve("SKILL.md")
                 if (!skillFile.exists()) return@mapNotNull null
-                parseSkillFile(skillFile, dir)
+                parseSkillFile(skillFile, dir, builtin)
             }
             // 文件系统顺序不保证稳定：skill 顺序会进 use_skill 工具的 systemPrompt，
             // 乱序会让相同设置在不同进程/重启后前缀不同，打断提示词缓存
@@ -71,8 +113,11 @@ class SkillManager(
 
     suspend fun deleteSkill(name: String): Boolean = withContext(Dispatchers.IO) {
         val skillDir = resolveSkillDir(name) ?: return@withContext false
+        // 目录不存在时 deleteRecursively 也返回 true，需提前拦截，避免误清理内置技能的启用状态
+        if (!skillDir.exists()) return@withContext false
         val deleted = skillDir.deleteRecursively()
-        if (deleted) {
+        // 删除的是覆盖内置技能的同名用户技能时，内置技能会重新生效，保留启用状态
+        if (deleted && listBuiltinSkills().none { it.name == name }) {
             settingsStore.update { settings ->
                 settings.copy(
                     assistants = settings.assistants.map { assistant ->
@@ -118,9 +163,20 @@ class SkillManager(
     fun saveSkillFile(skillName: String, relativePath: String, content: String): Boolean {
         val skillDir = resolveSkillDir(skillName) ?: return false
         val target = SkillPaths.resolveSkillFile(skillDir, relativePath) ?: return false
-        target.parentFile?.mkdirs()
-        target.writeText(content)
-        return true
+        val parent = target.parentFile ?: return false
+        // 先写同目录临时文件再 rename 覆盖，避免写到一半失败时损坏原文件；
+        // IO 异常（如 mkdirs 失败导致 FileNotFoundException）转为返回 false，不向调用方抛出
+        val tempFile = parent.resolve(".${target.name}.tmp")
+        return try {
+            if (!parent.exists() && !parent.mkdirs()) return false
+            tempFile.writeText(content)
+            tempFile.renameTo(target)
+        } catch (e: Exception) {
+            Log.w(TAG, "saveSkillFile: Failed to save $skillName/$relativePath", e)
+            false
+        } finally {
+            if (tempFile.exists()) tempFile.delete()
+        }
     }
 
     fun saveSkillFilesAtomically(skillName: String, files: Map<String, String>): Boolean {
@@ -208,7 +264,7 @@ class SkillManager(
         return null
     }
 
-    private fun parseSkillFile(skillFile: File, skillDir: File): SkillMetadata? {
+    private fun parseSkillFile(skillFile: File, skillDir: File, builtin: Boolean = false): SkillMetadata? {
         return runCatching {
             val content = skillFile.readText()
             val frontmatter = SkillFrontmatterParser.parse(content)
@@ -241,6 +297,7 @@ class SkillManager(
                 skillDir = skillDir,
                 commands = commands,
                 mcpServers = (plugin?.mcpServers ?: emptyList()) + parseMcpJson(skillDir),
+                builtin = builtin,
             )
         }.getOrElse {
             Log.w(TAG, "parseSkillFile: Failed to parse ${skillFile.absolutePath}", it)
@@ -288,6 +345,8 @@ data class SkillMetadata(
     val commands: List<CommandFile> = emptyList(),
     val mcpServers: List<PluginMcpServer> = emptyList(),
     val skillDir: File,
+    /** 内置技能，来自 assets 解压，只读 */
+    val builtin: Boolean = false,
 ) {
     val skillFile: File get() = skillDir.resolve("SKILL.md")
 }

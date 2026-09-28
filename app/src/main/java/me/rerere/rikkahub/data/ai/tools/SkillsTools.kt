@@ -13,6 +13,9 @@ import me.rerere.rikkahub.data.files.SkillPaths
  * Skill 工具 — Claude Code 风格
  * 一个 use_skill 工具：加载 SKILL.md，自动返回 linked_files
  */
+// 与 Agent Skills 规范的 description 上限一致
+private const val MAX_SKILL_DESCRIPTION_LENGTH = 1024
+
 fun createSkillTools(
     enabledSkills: Set<String>,
     allSkills: List<SkillMetadata>,
@@ -46,8 +49,9 @@ fun createSkillTools(
                     byCategory.forEach { (cat, skills) ->
                         appendLine("  <!-- $cat -->")
                         skills.forEach { s ->
-                            append("  - ${s.name}: ${s.description.take(80)}")
-                            if (s.triggers.isNotEmpty()) append(" [触发: ${s.triggers.take(3).joinToString()}]")
+                            // 技能可能来自第三方导入，转义并限长，防止闭合标签注入任意系统提示
+                            append("  - ${s.name.escapeXml()}: ${s.description.take(MAX_SKILL_DESCRIPTION_LENGTH).escapeXml()}")
+                            if (s.triggers.isNotEmpty()) append(" [触发: ${s.triggers.take(3).joinToString().escapeXml()}]")
                             if (s.linkedFiles.isNotEmpty()) {
                                 val count = s.linkedFiles.values.sumOf { it.size }
                                 append(" (+${count}文件)")
@@ -76,9 +80,10 @@ fun createSkillTools(
             execute = { args ->
                 val obj = args.jsonObject
                 val name = obj["name"]?.jsonPrimitive?.content ?: error("name required")
-                if (name !in enabledSkills) error("'$name' not available")
-                val skill = available.find { it.name == name }
+                // 模型可能照抄系统提示中转义后的名称，两种形式都接受
+                val skill = available.firstOrNull { it.name == name || it.name.escapeXml() == name }
                     ?: error("Skill '$name' not found")
+                if (skill.name !in enabledSkills) error("'${skill.name}' not available")
 
                 val filePath = obj["file_path"]?.jsonPrimitive?.content
                 val content = if (filePath.isNullOrBlank()) {
@@ -106,4 +111,15 @@ fun createSkillTools(
             }
         )
     )
+}
+
+private fun String.escapeXml(): String = buildString(length) {
+    for (c in this@escapeXml) {
+        when (c) {
+            '&' -> append("&amp;")
+            '<' -> append("&lt;")
+            '>' -> append("&gt;")
+            else -> append(c)
+        }
+    }
 }

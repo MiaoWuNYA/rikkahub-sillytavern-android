@@ -2833,4 +2833,5 @@
   <string name="workspace_terminal_no_tabs">沒有開啟的終端</string>
   <string name="workspace_terminal_tab">終端標籤</string>
 >>>>>>> rikkahub/master
+  <string name="skills_page_search_no_result">找不到符合的技能</string>
 </resources>
