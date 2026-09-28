@@ -129,6 +129,10 @@ sealed class LocalToolOption {
     @Serializable
     @SerialName("life_companion")
     data object LifeCompanion : LocalToolOption()
+
+    @Serializable
+    @SerialName("couple_space")
+    data object CoupleSpace : LocalToolOption()
 }
 
 class LocalTools(

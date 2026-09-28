@@ -124,7 +124,7 @@
   <string name="assistant_page_regex_name">이름</string>
   <string name="assistant_page_regex_replace_string">문자열 바꾸기</string>
   <string name="assistant_page_regex_title">메시지 정규식</string>
-  <string name="assistant_page_regex_visual_only">시각적 표시만 (실제 메시지에는 영향을 주지 않고 표시만 변경)</string>
+  <string name="assistant_page_regex_visual_only">표시 전용 (체크 시 표시에만 적용, 해제 시 표시와 프롬프트 모두 적용)</string>
   <string name="assistant_page_remove">제거</string>
   <string name="assistant_page_remove_background">배경 제거</string>
   <string name="assistant_page_save">저장</string>
@@ -1901,6 +1901,8 @@ mDNS 주소: .local 호스트네임을 사용하며, IP를 몰라도 같은 네�
   <string name="local_tool_js_timeout_desc">JavaScript 실행의 최대 시간</string>
   <string name="local_tool_js_timeout_title">JS 제한 시간</string>
   <string name="local_tool_life_companion_desc">라이프 스페이스의 캘린더·메모·독서 기록을 읽습니다</string>
+  <string name="local_tool_couple_space_title">커플 스페이스</string>
+  <string name="local_tool_couple_space_desc">커플 스페이스 AI 도구: 바인딩된 커플 스페이스의 게시물을 읽기/작성/댓글/삭제합니다 (바인딩 필요)</string>
   <string name="local_tool_life_companion_title">라이프 컴패니언</string>
   <string name="local_tool_parallel_desc">여러 도구를 동시에 호출할 수 있게 합니다</string>
   <string name="local_tool_parallel_title">병렬 도구 호출</string>

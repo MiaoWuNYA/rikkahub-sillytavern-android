@@ -174,7 +174,7 @@
   <string name="assistant_page_regex_name">名称</string>
   <string name="assistant_page_regex_replace_string">替换字符串</string>
   <string name="assistant_page_regex_title">消息正则表达式</string>
-  <string name="assistant_page_regex_visual_only">仅视觉（仅影响显示，不影响实际消息）</string>
+  <string name="assistant_page_regex_visual_only">仅显示（勾选后只影响界面显示；不勾选则显示和提示词都生效）</string>
   <string name="assistant_page_remove">移除</string>
   <string name="assistant_page_remove_background">移除背景</string>
   <string name="assistant_page_save">保存</string>
@@ -2301,6 +2301,8 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="local_tool_js_timeout_desc">JavaScript代码执行超时，默认15</string>
   <string name="local_tool_js_timeout_title">JS引擎超时(秒)</string>
   <string name="local_tool_life_companion_desc">生活备忘、日历提醒、共读书架、一起听歌等 AI 工具（情侣空间绑定时还会加入共读日记与纪念册）</string>
+  <string name="local_tool_couple_space_title">情侣空间</string>
+  <string name="local_tool_couple_space_desc">情侣空间 AI 工具：AI 可读取/发布/评论/删除已绑定情侣空间的动态（需已绑定情侣空间）</string>
   <string name="local_tool_life_companion_title">生活空间</string>
   <string name="local_tool_parallel_desc">同时执行多个工具调用，加速搜索、文件操作等</string>
   <string name="local_tool_parallel_title">并行执行工具</string>

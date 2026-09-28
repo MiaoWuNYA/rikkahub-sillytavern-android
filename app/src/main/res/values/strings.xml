@@ -173,7 +173,7 @@
   <string name="assistant_page_regex_name">Name</string>
   <string name="assistant_page_regex_replace_string">Replace String</string>
   <string name="assistant_page_regex_title">Message Regexes</string>
-  <string name="assistant_page_regex_visual_only">Visual Only (affects display only, not actual message)</string>
+  <string name="assistant_page_regex_visual_only">Display Only (also affects what is shown; uncheck to affect display and prompt)</string>
   <string name="assistant_page_remove">Remove</string>
   <string name="assistant_page_remove_background">Remove Background</string>
   <string name="assistant_page_save">Save</string>
@@ -2299,6 +2299,8 @@
   <string name="local_tool_js_timeout_desc">JavaScript execution timeout, default 15</string>
   <string name="local_tool_js_timeout_title">JS Engine Timeout (s)</string>
   <string name="local_tool_life_companion_desc">Life memos, calendar reminders, shared reading shelf, listening together and other AI tools (shared reading journal and album included when Couple Space is bound)</string>
+  <string name="local_tool_couple_space_title">Couple Space</string>
+  <string name="local_tool_couple_space_desc">Couple Space AI tools: the AI can read/post/comment/delete posts in the bound couple space (requires a bound Couple Space)</string>
   <string name="local_tool_life_companion_title">Life Space</string>
   <string name="local_tool_parallel_desc">Run multiple tool calls at the same time to speed up search, file operations and more</string>
   <string name="local_tool_parallel_title">Parallel Tool Execution</string>

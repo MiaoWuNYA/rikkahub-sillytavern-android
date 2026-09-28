@@ -398,6 +398,16 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            item(
+                headlineContent = { Text(stringResource(R.string.local_tool_couple_space_title)) },
+                supportingContent = { Text(stringResource(R.string.local_tool_couple_space_desc)) },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.CoupleSpace),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.CoupleSpace, it) }
+                    )
+                }
+            )
         }
     }
 }

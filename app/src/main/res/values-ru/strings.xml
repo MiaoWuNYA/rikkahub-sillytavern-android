@@ -124,7 +124,7 @@
   <string name="assistant_page_regex_name">Имя</string>
   <string name="assistant_page_regex_replace_string">Заменить строку</string>
   <string name="assistant_page_regex_title">Регулярные выражения для сообщений</string>
-  <string name="assistant_page_regex_visual_only">Только визуально (влияет только на отображение, не на само сообщение)</string>
+  <string name="assistant_page_regex_visual_only">Только отображение (вкл. — только показ; выкл. — отображение и промпт)</string>
   <string name="assistant_page_remove">Удалить</string>
   <string name="assistant_page_remove_background">Убрать фон</string>
   <string name="assistant_page_save">Сохранить</string>
@@ -1901,6 +1901,8 @@
   <string name="local_tool_js_timeout_desc">Тайм-аут выполнения JavaScript, по умолчанию 15</string>
   <string name="local_tool_js_timeout_title">Тайм-аут движка JS (с)</string>
   <string name="local_tool_life_companion_desc">Жизненные заметки, напоминания в календаре, общая книжная полка, совместное прослушивание и другие ИИ-инструменты (дневник совместного чтения и альбом включаются при привязке «Пространства пары»)</string>
+  <string name="local_tool_couple_space_title">Пространство пары</string>
+  <string name="local_tool_couple_space_desc">ИИ-инструменты «Пространства пары»: чтение, публикация, комментирование и удаление записей в привязанном пространстве (требуется привязка)</string>
   <string name="local_tool_life_companion_title">Пространство жизни</string>
   <string name="local_tool_parallel_desc">Запускает несколько вызовов инструментов одновременно, ускоряя поиск, операции с файлами и другое</string>
   <string name="local_tool_parallel_title">Параллельное выполнение инструментов</string>

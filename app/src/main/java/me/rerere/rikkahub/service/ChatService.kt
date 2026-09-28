@@ -1429,8 +1429,10 @@ class ChatService(
                     createLifeCompanionTools(context, coupleRepository, assistant.id.toString())
                 }.getOrDefault(emptyList())
             } else emptyList()
-            // 情侣空间 4 个工具：仅当情侣空间已绑定且绑定角色是当前助手时加入
-            val coupleSpaceTools = if (settings.huadengSettings.enableCleanMode) {
+            // 情侣空间 4 个工具：助手开启“情侣空间”开关、非清爽模式，且情侣空间已绑定且绑定角色是当前助手时加入
+            val coupleSpaceTools = if (settings.huadengSettings.enableCleanMode ||
+                !assistant.localTools.contains(LocalToolOption.CoupleSpace)
+            ) {
                 emptyList()
             } else runCatching {
                 val relationship = coupleRepository.relationship.first()
