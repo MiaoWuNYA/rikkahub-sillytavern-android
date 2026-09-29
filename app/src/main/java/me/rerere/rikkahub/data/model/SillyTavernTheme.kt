@@ -323,8 +323,13 @@ fun SillyTavernTheme.applyTo(base: DisplaySetting): DisplaySetting {
             ?.let { 1.0 + (it - 1.0) * 0.5 }
             ?.toFloat()?.coerceIn(0.85f, 1.6f)
             ?: base.fontSizeRatio,
-        // 仅气泡模式开启 AI 气泡；平铺/文档模式不强制关闭用户的气泡设置
-        showAssistantBubble = if (chatDisplay == 1) true else base.showAssistantBubble,
+        // 仅气泡模式开启 AI 气泡；主题若给 AI 侧气泡铺了底图，也必须开启，
+        // 否则底图没有承载元素、等于静默丢失
+        showAssistantBubble = if (chatDisplay == 1 || !extractBubbleBackgroundImageUrl(customCss, forUser = false).isNullOrBlank()) {
+            true
+        } else {
+            base.showAssistantBubble
+        },
         bubbleCornerRadius = extractBubbleCornerRadius(customCss) ?: base.bubbleCornerRadius,
     )
 }
@@ -345,6 +350,21 @@ private fun mixTowardWhite(color: Long, ratio: Float): Long {
 
 // ── custom_css 提取 ──
 
+/**
+ * 去掉 CSS 注释。
+ *
+ * 主题作者普遍用注释标注用途（如「ui背景图」「想换壁纸删除这段」），
+ * 有模板甚至把占位串写在注释里（先写「你的图片链接」占位，后面才跟真实 url）。
+ * 规则正则会把注释和它后面的选择器粘成一段文本，导致两类错误：
+ * - 注释里的词被选择器白名单误命中（如注释提到 body，就把图标背景当成聊天背景导入）；
+ * - 注释里的示例 url 被当成真实背景图（已实测有主题导入了字面量「你的图片链接」）。
+ * 因此所有提取都必须先剥注释。
+ */
+private val CSS_COMMENT = Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL)
+
+/** 剥掉注释后的 CSS，供各提取器使用 */
+private fun stripCssComments(css: String): String = CSS_COMMENT.replace(css, "")
+
 /** 逐条匹配 CSS 规则（不含嵌套花括号的规则体；@media 外层规则自然被跳过、内层规则正常匹配） */
 private val CSS_RULE = Regex("([^{}]+)\\{([^{}]*)\\}")
 
@@ -358,7 +378,7 @@ private val MESSAGE_SELECTOR = Regex("""(^|[\s,>+~])(\.mes\b|\.mes_block\b|#chat
  */
 fun extractBubbleCornerRadius(css: String?): Float? {
     if (css.isNullOrBlank()) return null
-    for (m in CSS_RULE.findAll(css)) {
+    for (m in CSS_RULE.findAll(stripCssComments(css))) {
         if (!MESSAGE_SELECTOR.containsMatchIn(m.groupValues[1])) continue
         val body = m.groupValues[2]
         val radius = Regex("""border-radius\s*:\s*([^;}!]+)""").find(body)?.groupValues?.get(1) ?: continue
@@ -394,7 +414,7 @@ fun extractBackgroundImageUrl(css: String?): String? {
     if (css.isNullOrBlank()) return null
     var bestPriority = Int.MAX_VALUE
     var bestUrl: String? = null
-    for (m in CSS_RULE.findAll(css)) {
+    for (m in CSS_RULE.findAll(stripCssComments(css))) {
         val selector = m.groupValues[1]
         val priority = BACKGROUND_SELECTORS.firstOrNull { it.second.containsMatchIn(selector) }?.first
             ?: continue
@@ -408,6 +428,48 @@ fun extractBackgroundImageUrl(css: String?): String? {
     }
     return bestUrl
 }
+
+/**
+ * 消息气泡自身的背景图。
+ *
+ * 实测 553 个主题里有 165 个把纹理/图片直接铺在 `.mes` / `.mes_block` 上（如"bjd""蝶"系列），
+ * 这是主题最显眼的特征之一。必须排除伪元素：`::before`/`::after` 上的图是头像框、
+ * 角标之类的装饰（实测 801 处），当作气泡底图会完全错位。
+ *
+ * @param forUser true 取用户侧气泡，false 取 AI 侧；主题若只写了 .mes（未区分 is_user）
+ *                则两侧都用同一张。
+ */
+fun extractBubbleBackgroundImageUrl(css: String?, forUser: Boolean): String? {
+    if (css.isNullOrBlank()) return null
+    val plain = stripCssComments(css)
+    var generic: String? = null      // .mes / .mes_block（不分侧）
+    var specific: String? = null     // .mes[is_user="true"] 之类
+
+    for (m in CSS_RULE.findAll(plain)) {
+        val selector = m.groupValues[1]
+        if (!MESSAGE_BUBBLE_SELECTOR.containsMatchIn(selector)) continue
+        // 伪元素上的图是装饰，不是气泡底图
+        if (selector.contains("::")) continue
+        val url = BACKGROUND_URL.find(m.groupValues[2])?.groupValues?.get(2)?.trim()
+            ?.takeIf { it.isNotEmpty() && !it.startsWith("var(") } ?: continue
+        val wantUser = USER_SIDE_SELECTOR.containsMatchIn(selector)
+        val wantBot = BOT_SIDE_SELECTOR.containsMatchIn(selector)
+        when {
+            wantUser && forUser -> specific = specific ?: url
+            wantBot && !forUser -> specific = specific ?: url
+            !wantUser && !wantBot -> generic = generic ?: url
+        }
+    }
+    return specific ?: generic
+}
+
+/** 气泡选择器：.mes / .mes_block（排除 .mes_text、.mes_buttons 等子元素） */
+private val MESSAGE_BUBBLE_SELECTOR =
+    Regex("""(^|[\s,>+~])(\.mes|\.mes_block)(?![\w-])""")
+
+/** 酒馆用 is_user 属性区分消息归属 */
+private val USER_SIDE_SELECTOR = Regex("""is_user\s*=\s*['"]?true""", RegexOption.IGNORE_CASE)
+private val BOT_SIDE_SELECTOR = Regex("""is_user\s*=\s*['"]?false""", RegexOption.IGNORE_CASE)
 
 /** @font-face 块（font-family + src url + format） */
 private val FONT_FACE = Regex("""@font-face\s*\{([^}]*)\}""", RegexOption.IGNORE_CASE)
@@ -426,7 +488,7 @@ fun extractThemeFontUrl(css: String?): String? = extractThemeFont(css)?.url
 /** 同 [extractThemeFontUrl]，同时带出 font-family 名称 */
 fun extractThemeFont(css: String?): ThemeFont? {
     if (css.isNullOrBlank()) return null
-    for (m in FONT_FACE.findAll(css)) {
+    for (m in FONT_FACE.findAll(stripCssComments(css))) {
         val body = m.groupValues[1]
         val url = CSS_URL.find(body)?.groupValues?.get(2)?.trim()?.takeIf { it.isNotEmpty() }
             ?: continue

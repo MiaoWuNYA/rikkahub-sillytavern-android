@@ -2353,6 +2353,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_display_st_theme_bg_note_failed">；背景图获取失败（%1$s），已跳过</string>
   <string name="setting_display_st_theme_default_font_name">酒馆主题字体</string>
   <string name="setting_display_st_theme_font_note_failed">；主题字体获取失败（%1$s），已跳过</string>
+  <string name="setting_display_st_theme_bubble_note_failed">；气泡底图获取失败（%1$s），已跳过</string>
   <string name="setting_display_st_theme_label_assistant_bubble_color">AI气泡颜色</string>
   <string name="setting_display_st_theme_label_assistant_bubble_display">AI 气泡显示</string>
   <string name="setting_display_st_theme_label_bubble_corner_radius">气泡圆角</string>

@@ -54,6 +54,7 @@ import me.rerere.rikkahub.data.model.SillyTavernTheme
 import me.rerere.rikkahub.data.model.ThemeFont
 import me.rerere.rikkahub.data.model.applyTo
 import me.rerere.rikkahub.data.model.extractBackgroundImageUrl
+import me.rerere.rikkahub.data.model.extractBubbleBackgroundImageUrl
 import me.rerere.rikkahub.data.model.extractThemeFont
 import me.rerere.rikkahub.data.model.parseSillyTavernTheme
 import me.rerere.rikkahub.ui.components.nav.BackButton
@@ -243,6 +244,32 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                             }.onFailure {
                                 bgNote = context.getString(
                                     R.string.setting_display_st_theme_bg_note_failed,
+                                    it.message ?: context.getString(R.string.setting_display_st_theme_unknown_error)
+                                )
+                            }
+                        }
+                        // 气泡底图：主题常把纹理直接铺在 .mes/.mes_block 上，与聊天背景图分开处理
+                        val userBubbleUrl = extractBubbleBackgroundImageUrl(theme.customCss, forUser = true)
+                        val botBubbleUrl = extractBubbleBackgroundImageUrl(theme.customCss, forUser = false)
+                        for ((url, isUser) in listOf(userBubbleUrl to true, botBubbleUrl to false)) {
+                            if (url == null) continue
+                            runCatching {
+                                withContext(Dispatchers.IO) { storeThemeBackground(context, url, "bubble") }
+                            }.onSuccess { path ->
+                                val old = if (isUser) {
+                                    displaySetting.userBubbleImagePath
+                                } else {
+                                    displaySetting.assistantBubbleImagePath
+                                }
+                                deleteThemeFileIfOwned(context, old, path)
+                                patched = if (isUser) {
+                                    patched.copy(userBubbleImagePath = path)
+                                } else {
+                                    patched.copy(assistantBubbleImagePath = path)
+                                }
+                            }.onFailure {
+                                bgNote += context.getString(
+                                    R.string.setting_display_st_theme_bubble_note_failed,
                                     it.message ?: context.getString(R.string.setting_display_st_theme_unknown_error)
                                 )
                             }
@@ -647,11 +674,11 @@ private fun fetchThemeFile(url: String): ThemeFileBytes {
 }
 
 /** 把酒馆主题里的背景图（http URL 或 data URI）保存到应用私有目录，返回文件 URI */
-private fun storeThemeBackground(context: Context, url: String): String {
+private fun storeThemeBackground(context: Context, url: String, kind: String = "bg"): String {
     val fetched = fetchThemeFile(url)
     check(fetched.bytes.size <= 25_000_000) { "背景图过大（>25MB）" }
     val imageDir = File(context.filesDir, "images/theme").apply { mkdirs() }
-    val targetFile = File(imageDir, "theme_bg_${System.currentTimeMillis()}.${fetched.extension.ifBlank { "png" }}")
+    val targetFile = File(imageDir, "theme_${kind}_${System.currentTimeMillis()}.${fetched.extension.ifBlank { "png" }}")
     targetFile.writeBytes(fetched.bytes)
     return Uri.fromFile(targetFile).toString()
 }
