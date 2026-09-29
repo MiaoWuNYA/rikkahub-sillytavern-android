@@ -331,6 +331,10 @@ fun SillyTavernTheme.applyTo(base: DisplaySetting): DisplaySetting {
             base.showAssistantBubble
         },
         bubbleCornerRadius = extractBubbleCornerRadius(customCss) ?: base.bubbleCornerRadius,
+        // 主题的 background-size 决定底图是裁切还是等比
+        bubbleBackgroundSize = extractBubbleBackgroundSize(customCss) ?: base.bubbleBackgroundSize,
+        // 图标主题：发送栏/菜单/扩展/停止 + 头像框
+        themeIcons = extractThemeIconSet(customCss).takeUnless { it.isEmpty } ?: base.themeIcons,
     )
 }
 
@@ -368,9 +372,6 @@ private fun stripCssComments(css: String): String = CSS_COMMENT.replace(css, "")
 /** 逐条匹配 CSS 规则（不含嵌套花括号的规则体；@media 外层规则自然被跳过、内层规则正常匹配） */
 private val CSS_RULE = Regex("([^{}]+)\\{([^{}]*)\\}")
 
-/** 选择器是否直接指向 .mes / .mes_block / #chat（不含类名/ID 的其他前后缀，如 .mes_text、#chat_form 不算） */
-private val MESSAGE_SELECTOR = Regex("""(^|[\s,>+~])(\.mes\b|\.mes_block\b|#chat\b)(?![\w-])""")
-
 /**
  * 从 custom_css 中提取消息气泡圆角（px 近似为 dp）。
  * 优先取 .mes/.mes_block 上的 border-radius，其次 #chat；多值取最大；百分比忽略，0px（方角）照搬；
@@ -378,18 +379,34 @@ private val MESSAGE_SELECTOR = Regex("""(^|[\s,>+~])(\.mes\b|\.mes_block\b|#chat
  */
 fun extractBubbleCornerRadius(css: String?): Float? {
     if (css.isNullOrBlank()) return null
-    for (m in CSS_RULE.findAll(stripCssComments(css))) {
-        if (!MESSAGE_SELECTOR.containsMatchIn(m.groupValues[1])) continue
-        val body = m.groupValues[2]
-        val radius = Regex("""border-radius\s*:\s*([^;}!]+)""").find(body)?.groupValues?.get(1) ?: continue
-        val px = Regex("""(\d+(?:\.\d+)?)px""").findAll(radius)
-            .mapNotNull { it.groupValues[1].toFloatOrNull() }
-            .maxOrNull()
+    // 合并同选择器声明：主题常把 border-radius 与其它视觉声明拆开写
+    for ((selector, body) in mergeRulesBySelector(css)) {
+        if (!containsMessageBubble(selector)) continue
+        val radius = Regex("""border-radius\s*:\s*([^;}!]+)""", RegexOption.IGNORE_CASE)
+            .find(body)?.groupValues?.get(1) ?: continue
+        // 百分比是相对气泡自身尺寸的，无法在 Compose 侧直接换算成一个 dp 值，
+        // 超过 50% 已等同于胶囊/圆形，按大圆角处理即可
+        if (radius.contains('%')) return PERCENT_RADIUS_DP
+        // 只取首个数值：`10px 10px 0 0` 这类四角写法取左上角，避免 maxOf 把
+        // 「某角特意的 0」忽略掉、也避免 999px 之类的胶囊写法被误判成具体像素。
+        // 注意 `0 8px 8px 0` 的首值是裸 0（无单位），必须一并支持。
+        val first = radius.trim().split(Regex("""[\s/]+""")).firstOrNull() ?: continue
+        val px = Regex("""^(\d+(?:\.\d+)?)(?:px)?$""").find(first)
+            ?.groupValues?.get(1)?.toFloatOrNull()
             ?: continue
-        if (px >= 0f) return px.coerceIn(0f, 28f)
+        if (px < 0f) continue
+        // 真实主题圆角上限可达 999px（胶囊），不再夹到 28px——
+        // 夹取会让「大圆角」主题看起来几乎没圆角，与官方观感不符。
+        return px.coerceAtMost(MAX_RADIUS_DP)
     }
     return null
 }
+
+/** 百分比圆角统一按大圆角处理（50% 即胶囊） */
+private const val PERCENT_RADIUS_DP = 24f
+
+/** 允许的圆角上限：超过此值视觉上已是胶囊，再大无意义且会裁掉内容 */
+private const val MAX_RADIUS_DP = 40f
 
 /** 聊天背景所在元素的优先级：#bg1（酒馆专用背景层）> body > .bg1 > #chat > #main */
 private val BACKGROUND_SELECTORS = listOf(
@@ -433,24 +450,43 @@ fun extractBackgroundImageUrl(css: String?): String? {
  * 消息气泡自身的背景图。
  *
  * 实测 553 个主题里有 165 个把纹理/图片直接铺在 `.mes` / `.mes_block` 上（如"bjd""蝶"系列），
- * 这是主题最显眼的特征之一。必须排除伪元素：`::before`/`::after` 上的图是头像框、
- * 角标之类的装饰（实测 801 处），当作气泡底图会完全错位。
+ * 这是主题最显眼的特征之一。
+ *
+ * 伪元素必须一并处理：官方主题最主流的写法是
+ *
+ *     .mes_block::before { position:absolute; top:0; left:0; width:100%; height:200px;
+ *                          background-size: cover; background-position: center; }
+ *     .mes[is_user="false"] .mes_block::before { background-image: url(...); }
+ *     .mes[is_user="true"]  .mes_block::before { background-image: url(...); }
+ *
+ * 注意几何声明（size/position）与实际图片（background-image）**分处两条规则**，
+ * 且用 `is_user` 区分两侧。只匹配"同一条规则里既有选择器又有 url"会全部漏掉——
+ * 实测 436 个带气泡底图的主题里有 188 个因此完全导不进来。
+ * 因此这里按「同选择器文本合并声明」再取图。
  *
  * @param forUser true 取用户侧气泡，false 取 AI 侧；主题若只写了 .mes（未区分 is_user）
  *                则两侧都用同一张。
  */
 fun extractBubbleBackgroundImageUrl(css: String?, forUser: Boolean): String? {
     if (css.isNullOrBlank()) return null
-    val plain = stripCssComments(css)
-    var generic: String? = null      // .mes / .mes_block（不分侧）
+    val merged = mergeRulesBySelector(css)
+    // 先汇总各宿主元素上的铺满几何：几何与图片常写在两条不同规则里，
+    // 例如 .mes_block::before{width:100%;height:200px} 与
+    //      .mes[is_user="true"] .mes_block::before{background-image:url(...)}
+    val fillingHosts = merged.filter { (sel, body) -> looksLikeBubbleFill(sel, body) }
+        .map { it.first }
+        .map(::bubbleHostKey)
+        .toSet()
+    var generic: String? = null      // .mes / .mes_block（不分侧，纯元素选择器）
     var specific: String? = null     // .mes[is_user="true"] 之类
 
-    for (m in CSS_RULE.findAll(plain)) {
-        val selector = m.groupValues[1]
-        if (!MESSAGE_BUBBLE_SELECTOR.containsMatchIn(selector)) continue
-        // 伪元素上的图是装饰，不是气泡底图
-        if (selector.contains("::")) continue
-        val url = BACKGROUND_URL.find(m.groupValues[2])?.groupValues?.get(2)?.trim()
+    for ((selector, body) in merged) {
+        if (!containsMessageBubble(selector)) continue
+        // 几何与图片通常分处两条规则：几何写在裸宿主上（.mes_block::before{width:100%}），
+        // 图片写在带 is_user 的变体上（.mes[is_user="true"] .mes_block::before{background-image}）。
+        // 因此只要该规则自身带几何、或其「去 is_user 后的宿主选择器」带几何，就算铺满型。
+        if (!looksLikeBubbleFill(selector, body) && bubbleHostKey(selector) !in fillingHosts) continue
+        val url = BACKGROUND_URL.find(body)?.groupValues?.get(2)?.trim()
             ?.takeIf { it.isNotEmpty() && !it.startsWith("var(") } ?: continue
         val wantUser = USER_SIDE_SELECTOR.containsMatchIn(selector)
         val wantBot = BOT_SIDE_SELECTOR.containsMatchIn(selector)
@@ -462,6 +498,94 @@ fun extractBubbleBackgroundImageUrl(css: String?, forUser: Boolean): String? {
     }
     return specific ?: generic
 }
+
+/**
+ * 气泡底图的缩放方式。
+ *
+ * 主题里 `background-size: cover` 配 `height: 200px` 是很常见的写法，
+ * 官方页面里靠元素自身高度约束；本地气泡高度由文字撑开，
+ * 直接用 cover 会把图压成扁条，所以取到值后由调用方决定如何落版。
+ */
+fun extractBubbleBackgroundSize(css: String?): String? {
+    if (css.isNullOrBlank()) return null
+    for ((selector, body) in mergeRulesBySelector(css)) {
+        if (!containsMessageBubble(selector)) continue
+        val v = Regex("""background-size\s*:\s*([^;}!]+)""", RegexOption.IGNORE_CASE)
+            .find(body)?.groupValues?.get(1)?.trim()?.takeIf { it.isNotEmpty() } ?: continue
+        // 多图主题（逗号分隔）取第一个，避免把多段尺寸串当成一个值
+        return v.split(',').first().trim()
+    }
+    return null
+}
+
+/**
+ * 把同一选择器的多条规则合并成一条（后者覆盖前者，符合 CSS 层叠）。
+ *
+ * 主题作者常把一条视觉规则拆成多段书写，例如 `.mes_block::before` 先写几何、
+ * 再由 `.mes[is_user="false"] .mes_block::before` 单独写图。不合并就只能看到半条。
+ */
+private fun mergeRulesBySelector(css: String): List<Pair<String, String>> {
+    val order = LinkedHashMap<String, StringBuilder>()
+    for (m in CSS_RULE.findAll(stripCssComments(css))) {
+        val selector = m.groupValues[1].trim().replace(Regex("""\s+"""), " ")
+        if (selector.isEmpty()) continue
+        val acc = order.getOrPut(selector) { StringBuilder() }
+        acc.append(m.groupValues[2]).append(';')
+    }
+    return order.map { it.key to it.value.toString() }
+}
+
+/**
+ * 选择器是否指向消息气泡本体。
+ *
+ * 伪元素要单独判断：官方主题里 `.mes_block::before` / `.mes::before` 这类伪元素
+ * 正是最主流的气泡底图承载者（实测带图规则 847 条，其中 562 条带铺满型几何声明），
+ * 一律排除会丢掉绝大多数主题。但 `.avatar::after` 这类纯装饰也必须排除。
+ *
+ * 判据不是「有没有 `::`」，而是宿主是不是气泡本体 + 声明里有没有铺满意图：
+ * `content:''` / `position:absolute` / `width:100%` / `height:Npx` 占 ≥2 项即认定为底图，
+ * 只有 url 没有几何的伪元素视为角标、装饰。
+ */
+private fun containsMessageBubble(selector: String): Boolean {
+    val withoutPseudo = selector.substringBefore("::")
+    if (withoutPseudo.isEmpty()) return false
+    // 剥离属性选择器，避免 .mes[is_user="false"] 里的引号干扰判定
+    val bare = withoutPseudo.replace(Regex("""\[[^\]]*\]"""), "")
+    return MESSAGE_BUBBLE_SELECTOR.containsMatchIn(bare)
+}
+
+/** 伪元素是否在「铺满气泡」（而非贴一个角标） */
+private fun looksLikeBubbleFill(selector: String, body: String): Boolean {
+    if (!selector.contains("::")) return true
+    var score = 0
+    if (Regex("""content\s*:\s*['"]""").containsMatchIn(body)) score++
+    if (Regex("""position\s*:\s*absolute""", RegexOption.IGNORE_CASE).containsMatchIn(body)) score++
+    if (Regex("""width\s*:\s*100%""").containsMatchIn(body)) score++
+    if (Regex("""height\s*:\s*[\d.]+(px|%)""").containsMatchIn(body)) score++
+    return score >= 2
+}
+
+/**
+ * 归一化「气泡宿主」标识，用于跨规则比对。
+ *
+ * 必须剥掉 `is_user` 属性、多余空白与伪元素之前的前置选择器差异，
+ * 使 `.mes[is_user="true"] .mes_block::before` 与 `.mes_block::before`
+ * 归到同一个 key 上——几何与前缀写法不同但指向同一块气泡。
+ */
+private fun bubbleHostKey(selector: String): String =
+    selector
+        .replace(USER_SIDE_SELECTOR, "")
+        .replace(BOT_SIDE_SELECTOR, "")
+        // 去掉空属性残留与可能的 `[` 悬空
+        .replace(Regex("""\[\s*\]"""), "")
+        .replace(Regex("""\s+"""), " ")
+        .trim()
+        // 只保留伪元素之前的「最后一段宿主」+ 伪元素本身，忽略前置上下文
+        .let { normalized ->
+            val pseudo = normalized.substringAfter("::", missingDelimiterValue = "")
+            val head = normalized.substringBefore("::").trim().split(' ').lastOrNull().orEmpty()
+            if (pseudo.isEmpty()) head else "$head::$pseudo"
+        }
 
 /** 气泡选择器：.mes / .mes_block（排除 .mes_text、.mes_buttons 等子元素） */
 private val MESSAGE_BUBBLE_SELECTOR =
@@ -507,3 +631,182 @@ data class ThemeFont(
     val family: String?,
     val url: String,
 )
+
+// ── 图标主题（发送栏 / 头像框） ──
+
+/**
+ * 酒馆主题对 UI 图标的自定义。
+ *
+ * 官方把发送栏、抽屉、扩展菜单等做成纯 CSS 的元素（如 `#send_but` 就是带
+ * FontAwesome 字体的 div），所以主题可以直接改写它们。实测 553 个主题里：
+ * 452 个改过发送栏、510 个带头像框、483 个动过下拉/模型区。
+ *
+ * 主题的改写手段按频率排序为：换色（276）> 隐藏（140）> 换字号（127）> 换图（111）。
+ * 其中「换图」是作者明确挑选的素材，保真度最高，因此优先映射为图标图片；
+ * 「换色」「换字号」映射到图标的 tint 与尺寸；「隐藏」映射为不显示该按钮。
+ */
+@Serializable
+data class ThemeIconSet(
+    /** 发送按钮图标（官方 #send_but） */
+    val sendImageUrl: String? = null,
+    /** 发送按钮颜色（官方 #send_but 的 color） */
+    val sendTint: Long? = null,
+    /** 发送按钮字号→图标尺寸缩放 */
+    val sendScale: Float? = null,
+    /** 主题是否隐藏了发送按钮 */
+    val hideSend: Boolean = false,
+
+    /** 选项/菜单按钮图标（官方 #options_button） */
+    val optionsImageUrl: String? = null,
+    val optionsTint: Long? = null,
+    val optionsScale: Float? = null,
+    val hideOptions: Boolean = false,
+
+    /** 扩展菜单按钮图标（官方 #extensionsMenuButton） */
+    val extensionsImageUrl: String? = null,
+    val extensionsTint: Long? = null,
+    val extensionsScale: Float? = null,
+    val hideExtensions: Boolean = false,
+
+    /** 停止/中断按钮图标（官方 #mes_stop） */
+    val stopImageUrl: String? = null,
+    val stopTint: Long? = null,
+    val stopScale: Float? = null,
+
+    /** 用户侧头像框（官方 .mes[is_user="true"] .avatar::before） */
+    val userAvatarFrameUrl: String? = null,
+    /** AI 侧头像框 */
+    val botAvatarFrameUrl: String? = null,
+    /** 不分侧的头像框（主题只写了 .avatar::before） */
+    val avatarFrameUrl: String? = null,
+    /** 头像框相对头像的放大倍率（官方常用 112px 框套 50px 头像） */
+    val avatarFrameScale: Float? = null,
+) {
+    /** 是否有任何图标被主题定制 */
+    val isEmpty: Boolean
+        get() = sendImageUrl == null && optionsImageUrl == null && extensionsImageUrl == null &&
+            stopImageUrl == null && avatarFrameUrl == null &&
+            userAvatarFrameUrl == null && botAvatarFrameUrl == null &&
+            !hideSend && !hideOptions && !hideExtensions &&
+            sendTint == null && optionsTint == null && extensionsTint == null && stopTint == null
+
+    /** 取指定侧的头像框，带回退 */
+    fun avatarFrame(forUser: Boolean): String? =
+        (if (forUser) userAvatarFrameUrl else botAvatarFrameUrl) ?: avatarFrameUrl
+}
+
+/** 图标宿主元素 ID → 主题里的选择器（对齐官方 index.html） */
+private val ICON_TARGETS = listOf(
+    "send" to "#send_but",
+    "options" to "#options_button",
+    "extensions" to "#extensionsMenuButton",
+    "stop" to "#mes_stop",
+)
+
+/**
+ * 从 custom_css 提取图标主题。
+ *
+ * 每个按钮独立解析：先按选择器定位规则，再依次读取 background-image（换图）、
+ * color（换色）、font-size（换尺寸）、display:none（隐藏）。
+ * `background-image: none` 表示作者清掉了默认图标，此时不当作图片，但保留其它属性。
+ */
+fun extractThemeIconSet(css: String?): ThemeIconSet {
+    if (css.isNullOrBlank()) return ThemeIconSet()
+    val merged = mergeRulesBySelector(css)
+
+    /** 收集所有命中该 id 的规则体（含伪元素写法） */
+    fun bodiesFor(id: String): List<String> = merged
+        .filter { (sel, _) ->
+            val bare = sel.replace(Regex("""\[[^\]]*\]"""), "")
+            Regex(Regex.escape(id) + """(?![\w-])""").containsMatchIn(bare)
+        }
+        .map { it.second }
+
+    fun imageOf(bodies: List<String>): String? {
+        for (body in bodies) {
+            // 显式 none 代表清除默认图标，不再向后找
+            if (Regex("""background-image\s*:\s*none""", RegexOption.IGNORE_CASE).containsMatchIn(body)) return null
+            val u = Regex(
+                """background(?:-image)?\s*:\s*[^;{}]*url\(\s*(['"]?)([^)'"]+)\1\s*\)""",
+                RegexOption.IGNORE_CASE,
+            ).find(body)?.groupValues?.get(2)?.trim()
+            if (!u.isNullOrEmpty() && !u.startsWith("var(")) return u
+        }
+        return null
+    }
+
+    fun colorOf(bodies: List<String>): Long? {
+        for (body in bodies) {
+            val c = Regex("""(?:^|;)\s*color\s*:\s*([^;}!]+)""", RegexOption.IGNORE_CASE)
+                .find(body)?.groupValues?.get(1)?.trim() ?: continue
+            parseCssColor(c)?.let { return it }
+        }
+        return null
+    }
+
+    fun scaleOf(bodies: List<String>): Float? {
+        for (body in bodies) {
+            val v = Regex("""font-size\s*:\s*([\d.]+)px""", RegexOption.IGNORE_CASE)
+                .find(body)?.groupValues?.get(1)?.toFloatOrNull() ?: continue
+            // 官方默认图标约 20px；换算成相对倍率并限制在合理区间
+            return (v / 20f).coerceIn(0.6f, 2.5f)
+        }
+        return null
+    }
+
+    fun hiddenOf(bodies: List<String>): Boolean =
+        bodies.any { Regex("""display\s*:\s*none""", RegexOption.IGNORE_CASE).containsMatchIn(it) }
+
+    val sendB = bodiesFor(ICON_TARGETS[0].second)
+    val optB = bodiesFor(ICON_TARGETS[1].second)
+    val extB = bodiesFor(ICON_TARGETS[2].second)
+    val stopB = bodiesFor(ICON_TARGETS[3].second)
+
+    // 头像框：.avatar::before / ::after 上带 url 的规则，按 is_user 分侧
+    var userFrame: String? = null
+    var botFrame: String? = null
+    var anyFrame: String? = null
+    var frameScale: Float? = null
+    for ((sel, body) in merged) {
+        if (!Regex("""\.avatar\s*::(?:before|after)""").containsMatchIn(sel)) continue
+        if (Regex("""background-image\s*:\s*none""", RegexOption.IGNORE_CASE).containsMatchIn(body)) continue
+        val url = Regex(
+            """background(?:-image)?\s*:\s*[^;{}]*url\(\s*(['"]?)([^)'"]+)\1\s*\)""",
+            RegexOption.IGNORE_CASE,
+        ).find(body)?.groupValues?.get(2)?.trim()?.takeIf { it.isNotEmpty() && !it.startsWith("var(") }
+            ?: continue
+        when {
+            USER_SIDE_SELECTOR.containsMatchIn(sel) -> userFrame = userFrame ?: url
+            BOT_SIDE_SELECTOR.containsMatchIn(sel) -> botFrame = botFrame ?: url
+            else -> anyFrame = anyFrame ?: url
+        }
+        if (frameScale == null) {
+            // 框比头像大是常态（112px 框 / 50px 头像），换算成倍率上限 2.4
+            Regex("""width\s*:\s*(\d+)px""", RegexOption.IGNORE_CASE)
+                .find(body)?.groupValues?.get(1)?.toFloatOrNull()
+                ?.let { frameScale = (it / 50f).coerceIn(0.8f, 2.4f) }
+        }
+    }
+
+    return ThemeIconSet(
+        sendImageUrl = imageOf(sendB),
+        sendTint = colorOf(sendB),
+        sendScale = scaleOf(sendB),
+        hideSend = hiddenOf(sendB),
+        optionsImageUrl = imageOf(optB),
+        optionsTint = colorOf(optB),
+        optionsScale = scaleOf(optB),
+        hideOptions = hiddenOf(optB),
+        extensionsImageUrl = imageOf(extB),
+        extensionsTint = colorOf(extB),
+        extensionsScale = scaleOf(extB),
+        hideExtensions = hiddenOf(extB),
+        stopImageUrl = imageOf(stopB),
+        stopTint = colorOf(stopB),
+        stopScale = scaleOf(stopB),
+        userAvatarFrameUrl = userFrame,
+        botAvatarFrameUrl = botFrame,
+        avatarFrameUrl = anyFrame,
+        avatarFrameScale = frameScale,
+    )
+}
