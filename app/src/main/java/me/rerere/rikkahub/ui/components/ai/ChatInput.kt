@@ -435,6 +435,7 @@ fun ChatInput(
                             SearchPickerButton(
                                 enableSearch = enableSearch,
                                 settings = settings,
+                                themeIcons = settings.displaySetting.themeIcons,
                                 onUpdateSearchMode = { mode ->
                                     onUpdateSearchMode(mode)
                                     val enabled = mode != SearchMode.OFF
@@ -457,6 +458,7 @@ fun ChatInput(
                             if (model?.abilities?.contains(ModelAbility.REASONING) == true) {
                                 ReasoningButton(
                                     reasoningLevel = assistant.reasoningLevel,
+                                    themeIcons = settings.displaySetting.themeIcons,
                                     onUpdateReasoningLevel = {
                                         onUpdateAssistant(assistant.copy(reasoningLevel = it))
                                     },

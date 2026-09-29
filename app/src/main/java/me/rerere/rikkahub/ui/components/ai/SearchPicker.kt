@@ -49,6 +49,8 @@ import me.rerere.ai.provider.BuiltInTools
 import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.hugeicons.HugeIcons
+import me.rerere.rikkahub.data.model.ThemeIconSet
+import me.rerere.rikkahub.ui.components.ui.ThemedIcon
 import me.rerere.hugeicons.stroke.AiSearch02
 import me.rerere.hugeicons.stroke.ArrowLeft01
 import me.rerere.hugeicons.stroke.ArrowRight01
@@ -76,6 +78,7 @@ fun SearchPickerButton(
     enableSearch: Boolean,
     settings: Settings,
     modifier: Modifier = Modifier,
+    themeIcons: ThemeIconSet = ThemeIconSet(),
     onUpdateSearchMode: (SearchMode) -> Unit,
     onUpdateSearchService: (Int) -> Unit,
     model: Model?,
@@ -111,9 +114,12 @@ fun SearchPickerButton(
                         color = Color.Transparent
                     )
                 } else {
-                    Icon(
+                    ThemedIcon(
                         imageVector = HugeIcons.Search01,
                         contentDescription = stringResource(R.string.use_web_search),
+                        imageUrl = themeIcons.effectiveSearchImageUrl,
+                        tint = themeIcons.effectiveSearchTint?.let { Color(it) },
+                        scale = themeIcons.effectiveSearchScale,
                     )
                 }
             }
@@ -158,6 +164,7 @@ fun SearchPickerButton(
                         settings = settings,
                         onUpdateSearchMode = onUpdateSearchMode,
                         model = model,
+                        themeIcons = themeIcons,
                         onSelectProvider = { selectingProvider = true },
                         onDismiss = { showSearchPicker = false }
                     )
@@ -172,6 +179,7 @@ private fun SearchPicker(
     enableSearch: Boolean,
     settings: Settings,
     model: Model?,
+    themeIcons: ThemeIconSet,
     onUpdateSearchMode: (SearchMode) -> Unit,
     onSelectProvider: () -> Unit,
     onDismiss: () -> Unit,
@@ -212,7 +220,13 @@ private fun SearchPicker(
                         navBackStack.navigate(Screen.SettingSearch)
                     }
                 ) {
-                    Icon(HugeIcons.Settings03, contentDescription = null)
+                    ThemedIcon(
+                        imageVector = HugeIcons.Settings03,
+                        contentDescription = null,
+                        imageUrl = themeIcons.effectiveSettingsImageUrl,
+                        tint = themeIcons.effectiveSettingsTint?.let { Color(it) },
+                        scale = themeIcons.effectiveSettingsScale,
+                    )
                 }
             }
         )

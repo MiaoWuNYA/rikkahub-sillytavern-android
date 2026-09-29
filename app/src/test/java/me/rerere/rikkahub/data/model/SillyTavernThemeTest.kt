@@ -2,6 +2,7 @@ package me.rerere.rikkahub.data.model
 
 import me.rerere.rikkahub.data.datastore.DisplaySetting
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -653,5 +654,166 @@ class SillyTavernThemeTest {
         assertNull(extractBackgroundImageUrl(css))
         assertNull(extractBubbleBackgroundImageUrl(css, forUser = true))
         assertNull(extractBubbleBackgroundImageUrl(css, forUser = false))
+    }
+
+    @Test
+    fun `avatar wrapper decoration is not a bubble background`() {
+        // 真实主题 Titania_柴犬主题美化_0326 的写法：气泡本身没有底图，
+        // 只在 .mesAvatarWrapper 上铺了一张 250px 宽的名牌图。
+        // 旧实现按「祖先链里有 .mes 就算气泡」判定，会把名牌图导成气泡底图，
+        // 表现为气泡背景完全不对、主题真正的 background-color 反而看不见。
+        val css = """
+            .mes { border: none !important; background-color: #7C4F49 !important; }
+            .mes_block { background-color: #7C4F49; border-radius: 0px 0px 12px 12px; }
+            .mes[is_user='true'] .mesAvatarWrapper {
+                width: 100%; height: 100px; position: relative;
+                background: url(https://x/nameplate-user.jpg) repeat center;
+            }
+            .mes[is_user='false'] .mesAvatarWrapper {
+                width: 100%; height: 100px; position: relative;
+                background: url(https://x/nameplate-bot.jpg) repeat center;
+            }
+        """.trimIndent()
+        assertNull(extractBubbleBackgroundImageUrl(css, forUser = true))
+        assertNull(extractBubbleBackgroundImageUrl(css, forUser = false))
+    }
+
+    @Test
+    fun `avatar wrapper pseudo decoration is not a bubble background`() {
+        val css = """
+            .mes { background-color: #222; }
+            .mes[is_user='true'] .mesAvatarWrapper::before {
+                content: ''; position: absolute; width: 250px; height: 100px;
+                background: url(https://x/plate.png) no-repeat center;
+            }
+            .mes[is_user='true'] .mesAvatarWrapper .avatar::after {
+                content: ''; position: absolute; width: 100%; height: 100%;
+                background: url(https://x/frame.png) no-repeat center / contain;
+            }
+        """.trimIndent()
+        assertNull(extractBubbleBackgroundImageUrl(css, forUser = true))
+    }
+
+    @Test
+    fun `avatar image no longer leaks into bubble when real bubble art exists`() {
+        // 既有真气泡底图、又有名牌图时，必须取气泡那张
+        val css = """
+            .mes_block::before {
+                content: ''; position: absolute; width: 100%; height: 200px;
+                background-image: url(https://x/bubble-user.png);
+                background-size: cover;
+            }
+            .mes[is_user='true'] .mes_block::before {
+                background-image: url(https://x/bubble-user.png);
+            }
+            .mes[is_user='true'] .mesAvatarWrapper {
+                width: 100%; height: 100px; background: url(https://x/nameplate.jpg);
+            }
+        """.trimIndent()
+        assertEquals("https://x/bubble-user.png", extractBubbleBackgroundImageUrl(css, forUser = true))
+    }
+
+    @Test
+    fun `search icon maps from character list search entry`() {
+        val css = """
+            #rm_print_characters_block { color: #ff8800; }
+            #rm_print_characters_block::before {
+                background-image: url(https://x/search.png);
+                font-size: 40px;
+            }
+        """.trimIndent()
+        val icons = extractThemeIconSet(css)
+        assertEquals("https://x/search.png", icons.searchImageUrl)
+        assertEquals(0xFFFF8800L, icons.searchTint)
+    }
+
+    @Test
+    fun `settings icon maps from drawer entry`() {
+        val css = """
+            #rightNavDrawerIcon {
+                background-image: url(https://x/gear.svg);
+                color: rgba(12, 34, 56, 1);
+            }
+        """.trimIndent()
+        val icons = extractThemeIconSet(css)
+        assertEquals("https://x/gear.svg", icons.settingsImageUrl)
+        assertEquals(0xFF0C2238L, icons.settingsTint)
+    }
+
+    @Test
+    fun `model and reasoning icons have their own slots`() {
+        val css = """
+            #generic_model_select { background-image: url(https://x/model.png); }
+            #reasoning_effort { background-image: url(https://x/think.png); }
+        """.trimIndent()
+        val icons = extractThemeIconSet(css)
+        assertEquals("https://x/model.png", icons.modelImageUrl)
+        assertEquals("https://x/think.png", icons.reasoningImageUrl)
+        // 有专属槽位时直接用它，不参与回退
+        assertEquals("https://x/model.png", icons.effectiveModelImageUrl)
+        assertEquals("https://x/think.png", icons.effectiveReasoningImageUrl)
+    }
+
+    @Test
+    fun `missing slots reuse the theme icon instead of built-in default`() {
+        // 主题只给了发送按钮的图：搜索/设置/模型/思考等级必须复用这张，
+        // 否则界面上会一半是主题画风、一半是内置矢量图标
+        val css = """
+            #send_but {
+                background-image: url(https://x/theme-icon.png);
+                color: #ff0000;
+                font-size: 30px;
+            }
+        """.trimIndent()
+        val icons = extractThemeIconSet(css)
+        assertEquals("https://x/theme-icon.png", icons.sendImageUrl)
+        assertNull(icons.searchImageUrl)
+        assertEquals("https://x/theme-icon.png", icons.effectiveSearchImageUrl)
+        assertEquals("https://x/theme-icon.png", icons.effectiveSettingsImageUrl)
+        assertEquals("https://x/theme-icon.png", icons.effectiveModelImageUrl)
+        assertEquals("https://x/theme-icon.png", icons.effectiveReasoningImageUrl)
+        // 颜色与缩放跟随同一槽位
+        assertEquals(0xFFFF0000L, icons.effectiveSearchTint)
+        assertEquals(1.5f, icons.effectiveSearchScale)
+    }
+
+    @Test
+    fun `fallback prefers the most prominent available theme icon`() {
+        // 同时有菜单与停止图标时，应优先复用更显眼的菜单图标
+        val css = """
+            #options_button { background-image: url(https://x/menu.png); }
+            #mes_stop { background-image: url(https://x/stop.png); }
+        """.trimIndent()
+        val icons = extractThemeIconSet(css)
+        assertEquals("https://x/menu.png", icons.effectiveSearchImageUrl)
+    }
+
+    @Test
+    fun `no theme icon anywhere means no fallback`() {
+        val icons = extractThemeIconSet(".mes { color: #fff; }")
+        assertTrue(icons.isEmpty)
+        assertNull(icons.effectiveSearchImageUrl)
+        assertNull(icons.effectiveSettingsImageUrl)
+        assertNull(icons.effectiveModelImageUrl)
+        assertNull(icons.effectiveReasoningImageUrl)
+    }
+
+    @Test
+    fun `extra icon slots keep the set non-empty`() {
+        // 只有搜索图标时，isEmpty 必须为 false，否则 applyTo 会把整套图标丢掉
+        val icons = extractThemeIconSet("#search { color: #ffffff; }")
+        assertFalse(icons.isEmpty)
+        assertNull(icons.sendImageUrl)
+    }
+
+    @Test
+    fun `extracted radius never exceeds the shared slider cap`() {
+        // 提取端与设置滑条共用 MAX_BUBBLE_RADIUS_DP；若不一致，
+        // 主题圆角会被滑条静默夹小，表现为"圆角程度不对"
+        val css = """
+            .mes_block { border-radius: 999px; }
+        """.trimIndent()
+        val r = extractBubbleCornerRadius(css)
+        assertEquals(MAX_BUBBLE_RADIUS_DP, r)
     }
 }
