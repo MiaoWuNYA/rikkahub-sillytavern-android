@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -34,6 +35,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import me.rerere.ai.core.ReasoningLevel
 import me.rerere.hugeicons.HugeIcons
+import me.rerere.rikkahub.data.model.ThemeIconSet
+import me.rerere.rikkahub.ui.components.ui.ThemedIcon
 import me.rerere.hugeicons.stroke.Idea
 import me.rerere.hugeicons.stroke.Idea01
 import me.rerere.rikkahub.R
@@ -51,6 +54,7 @@ fun ReasoningButton(
     modifier: Modifier = Modifier,
     onlyIcon: Boolean = false,
     reasoningLevel: ReasoningLevel,
+    themeIcons: ThemeIconSet = ThemeIconSet(),
     onUpdateReasoningLevel: (ReasoningLevel) -> Unit,
 ) {
     var showPicker by remember { mutableStateOf(false) }
@@ -77,7 +81,7 @@ fun ReasoningButton(
                 modifier = Modifier.size(24.dp),
                 contentAlignment = Alignment.Center
             ) {
-                ReasoningIcon(reasoningLevel)
+                ReasoningIcon(reasoningLevel, themeIcons)
             }
             if (!onlyIcon) Text(stringResource(R.string.setting_provider_page_reasoning))
         }
@@ -199,16 +203,24 @@ fun ReasoningPicker(
 }
 
 @Composable
-private fun ReasoningIcon(level: ReasoningLevel) {
-    when (level) {
-        ReasoningLevel.OFF -> Icon(HugeIcons.Idea, null)
-        ReasoningLevel.AUTO -> Icon(HugeIcons.Idea01, null)
-        ReasoningLevel.LOW -> Icon(ReasoningLow, null)
-        ReasoningLevel.MEDIUM -> Icon(ReasoningMedium, null)
-        ReasoningLevel.HIGH -> Icon(ReasoningHigh, null)
-        ReasoningLevel.XHIGH -> Icon(ReasoningHigh, null)
-        ReasoningLevel.MAX -> Icon(ReasoningHigh, null)
+private fun ReasoningIcon(level: ReasoningLevel, themeIcons: ThemeIconSet = ThemeIconSet()) {
+    val vector = when (level) {
+        ReasoningLevel.OFF -> HugeIcons.Idea
+        ReasoningLevel.AUTO -> HugeIcons.Idea01
+        ReasoningLevel.LOW -> ReasoningLow
+        ReasoningLevel.MEDIUM -> ReasoningMedium
+        ReasoningLevel.HIGH -> ReasoningHigh
+        ReasoningLevel.XHIGH -> ReasoningHigh
+        ReasoningLevel.MAX -> ReasoningHigh
     }
+    // 主题可换图/换色/换尺寸（官方推理强度入口无固定 id，取候选集合）
+    ThemedIcon(
+        imageVector = vector,
+        contentDescription = null,
+        imageUrl = themeIcons.effectiveReasoningImageUrl,
+        tint = themeIcons.effectiveReasoningTint?.let { Color(it) },
+        scale = themeIcons.effectiveReasoningScale,
+    )
 }
 
 @Composable

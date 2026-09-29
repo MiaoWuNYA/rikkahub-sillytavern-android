@@ -294,9 +294,11 @@ internal fun ModelSelectorButton(
                 ThemedIcon(
                     imageVector = HugeIcons.Brain02,
                     contentDescription = stringResource(R.string.setting_model_page_chat_model),
-                    imageUrl = themeIcons.optionsImageUrl,
-                    tint = themeIcons.optionsTint?.let { Color(it) },
-                    scale = themeIcons.optionsScale,
+                    // 模型选择有主题专属映射：主题对模型下拉/设置预设的改写
+                    // 优先于菜单按钮，两者都缺时回退到菜单按钮的图标
+                    imageUrl = themeIcons.effectiveModelImageUrl,
+                    tint = themeIcons.effectiveModelTint?.let { Color(it) },
+                    scale = themeIcons.effectiveModelScale,
                 )
             }
         }
@@ -513,7 +515,14 @@ private fun ColumnScope.ModelList(
                 unfocusedContainerColor = Color.Transparent,
             ),
             leadingIcon = {
-                Icon(HugeIcons.Search01, null)
+                val modelSearchIcons = settings.value.displaySetting.themeIcons
+                ThemedIcon(
+                    imageVector = HugeIcons.Search01,
+                    contentDescription = null,
+                    imageUrl = modelSearchIcons.effectiveSearchImageUrl,
+                    tint = modelSearchIcons.effectiveSearchTint?.let { Color(it) },
+                    scale = modelSearchIcons.effectiveSearchScale,
+                )
             },
             maxLines = 1,
         )

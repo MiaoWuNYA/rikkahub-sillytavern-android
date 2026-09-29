@@ -508,7 +508,15 @@ internal data class BubbleShadow(val color: Long?, val width: Float)
 private const val PERCENT_RADIUS_DP = 24f
 
 /** 允许的圆角上限：超过此值视觉上已是胶囊，再大无意义且会裁掉内容 */
-private const val MAX_RADIUS_DP = 40f
+/**
+ * 气泡圆角上限（dp）。
+ *
+ * 同时约束「主题导入时的提取结果」与「设置页滑条上限」，两处必须共用同一个值，
+ * 否则主题圆角会被滑条静默夹小，看起来像圆角程度不对。
+ */
+const val MAX_BUBBLE_RADIUS_DP = 40f
+
+private const val MAX_RADIUS_DP = MAX_BUBBLE_RADIUS_DP
 
 /** 聊天背景所在元素的优先级：#bg1（酒馆专用背景层）> body > .bg1 > #chat > #main */
 private val BACKGROUND_SELECTORS = listOf(
@@ -653,7 +661,11 @@ private fun containsMessageBubble(selector: String): Boolean {
     if (withoutPseudo.isEmpty()) return false
     // 剥离属性选择器，避免 .mes[is_user="false"] 里的引号干扰判定
     val bare = withoutPseudo.replace(Regex("""\[[^\]]*\]"""), "")
-    return MESSAGE_BUBBLE_SELECTOR.containsMatchIn(bare)
+    // 只认「被样式的那个元素」是气泡本身，而不是祖先链里出现过 .mes。
+    // 反例：`.mes[is_user='true'] .mesAvatarWrapper` 的目标是头像/名牌容器，
+    // 它整体铺一张 250px 图，命中铺满判定后会被当成气泡底图导入 ——
+    // 结果是气泡被糊上一张名牌图，主题真正的 background-color 反而看不出来。
+    return targetsBubbleItself(bare)
 }
 
 /** 伪元素是否在「铺满气泡」（而非贴一个角标） */
@@ -692,6 +704,27 @@ private fun bubbleHostKey(selector: String): String =
 /** 气泡选择器：.mes / .mes_block（排除 .mes_text、.mes_buttons 等子元素） */
 private val MESSAGE_BUBBLE_SELECTOR =
     Regex("""(^|[\s,>+~])(\.mes|\.mes_block)(?![\w-])""")
+
+/**
+ * 选择器链里「最后一个复合选择器」是否为气泡本身。
+ *
+ * 关键：必须看**被样式的目标元素**（选择器最后一段），而不是祖先链里出现过
+ * `.mes`。`.mes[is_user] .mesAvatarWrapper` 的目标是名牌容器，
+ * `.mes_block .mes_text` 的目标是正文，两者都不是气泡。
+ */
+private fun targetsBubbleItself(bare: String): Boolean {
+    // 逗号分隔的每个选择器分别判定，任一命中即算
+    return bare.split(',').any { part ->
+        val last = part.trim()
+            .substringBefore('>').substringBefore('+').substringBefore('~')
+            .trim()
+            .split(Regex("""\s+"""))
+            .lastOrNull()
+            .orEmpty()
+        // 末段必须是纯 .mes / .mes_block（可带属性选择器，已被剥离）
+        last == ".mes" || last == ".mes_block"
+    }
+}
 
 /** 酒馆用 is_user 属性区分消息归属 */
 private val USER_SIDE_SELECTOR = Regex("""is_user\s*=\s*['"]?true""", RegexOption.IGNORE_CASE)
@@ -775,6 +808,26 @@ data class ThemeIconSet(
     val stopTint: Long? = null,
     val stopScale: Float? = null,
 
+    /** 搜索按钮图标（官方 #rm_print_characters_block 等列表搜索入口） */
+    val searchImageUrl: String? = null,
+    val searchTint: Long? = null,
+    val searchScale: Float? = null,
+
+    /** 设置/参数按钮图标（官方 #rightNavDrawerIcon / #leftNavDrawerIcon） */
+    val settingsImageUrl: String? = null,
+    val settingsTint: Long? = null,
+    val settingsScale: Float? = null,
+
+    /** 模型选择图标（官方模型下拉 #model_*_select / .generic_model_select 一带） */
+    val modelImageUrl: String? = null,
+    val modelTint: Long? = null,
+    val modelScale: Float? = null,
+
+    /** 思考等级图标（官方 #reasoning_effort / 推理强度入口） */
+    val reasoningImageUrl: String? = null,
+    val reasoningTint: Long? = null,
+    val reasoningScale: Float? = null,
+
     /** 用户侧头像框（官方 .mes[is_user="true"] .avatar::before） */
     val userAvatarFrameUrl: String? = null,
     /** AI 侧头像框 */
@@ -787,14 +840,80 @@ data class ThemeIconSet(
     /** 是否有任何图标被主题定制 */
     val isEmpty: Boolean
         get() = sendImageUrl == null && optionsImageUrl == null && extensionsImageUrl == null &&
-            stopImageUrl == null && avatarFrameUrl == null &&
+            stopImageUrl == null && searchImageUrl == null && settingsImageUrl == null &&
+            modelImageUrl == null && reasoningImageUrl == null && avatarFrameUrl == null &&
             userAvatarFrameUrl == null && botAvatarFrameUrl == null &&
             !hideSend && !hideOptions && !hideExtensions &&
-            sendTint == null && optionsTint == null && extensionsTint == null && stopTint == null
+            sendTint == null && optionsTint == null && extensionsTint == null && stopTint == null &&
+            searchTint == null && settingsTint == null && modelTint == null &&
+            reasoningTint == null
 
     /** 取指定侧的头像框，带回退 */
     fun avatarFrame(forUser: Boolean): String? =
         (if (forUser) userAvatarFrameUrl else botAvatarFrameUrl) ?: avatarFrameUrl
+
+    /**
+     * 主题提供的「任一」图标图，作为缺失槽位的共享素材。
+     *
+     * 实测主题集里只有极少数会给搜索/思考等级单独换图 —— 作者通常只挑了发送、
+     * 菜单等显眼按钮。此时若目标按钮回退到内置矢量图标，整套皮肤会显得割裂：
+     * 一半是主题画风、一半是默认风格。因此这里挑一张主题已经用过的图复用，
+     * 让风格统一。
+     *
+     * 优先级按「按钮显眼程度」排：发送 > 菜单 > 扩展 > 停止 > 设置 > 模型 >
+     * 搜索 > 思考等级。尺寸与颜色也一并复用，保持同批素材观感一致。
+     */
+    val anyImageUrl: String?
+        get() = sendImageUrl ?: optionsImageUrl ?: extensionsImageUrl ?: stopImageUrl
+            ?: settingsImageUrl ?: modelImageUrl ?: searchImageUrl ?: reasoningImageUrl
+
+    /** 与 [anyImageUrl] 配套的颜色，取自同一张图的来源槽位 */
+    val anyTint: Long?
+        get() = when {
+            sendImageUrl != null -> sendTint
+            optionsImageUrl != null -> optionsTint
+            extensionsImageUrl != null -> extensionsTint
+            stopImageUrl != null -> stopTint
+            settingsImageUrl != null -> settingsTint
+            modelImageUrl != null -> modelTint
+            searchImageUrl != null -> searchTint
+            reasoningImageUrl != null -> reasoningTint
+            else -> null
+        }
+
+    /** 与 [anyImageUrl] 配套的缩放，取自同一张图的来源槽位 */
+    val anyScale: Float?
+        get() = when {
+            sendImageUrl != null -> sendScale
+            optionsImageUrl != null -> optionsScale
+            extensionsImageUrl != null -> extensionsScale
+            stopImageUrl != null -> stopScale
+            settingsImageUrl != null -> settingsScale
+            modelImageUrl != null -> modelScale
+            searchImageUrl != null -> searchScale
+            reasoningImageUrl != null -> reasoningScale
+            else -> null
+        }
+
+    /** 搜索按钮最终使用的图（缺失时复用主题其它图标） */
+    val effectiveSearchImageUrl: String? get() = searchImageUrl ?: anyImageUrl
+    val effectiveSearchTint: Long? get() = if (searchImageUrl != null) searchTint else anyTint
+    val effectiveSearchScale: Float? get() = if (searchImageUrl != null) searchScale else anyScale
+
+    /** 设置按钮最终使用的图 */
+    val effectiveSettingsImageUrl: String? get() = settingsImageUrl ?: anyImageUrl
+    val effectiveSettingsTint: Long? get() = if (settingsImageUrl != null) settingsTint else anyTint
+    val effectiveSettingsScale: Float? get() = if (settingsImageUrl != null) settingsScale else anyScale
+
+    /** 模型选择按钮最终使用的图 */
+    val effectiveModelImageUrl: String? get() = modelImageUrl ?: anyImageUrl
+    val effectiveModelTint: Long? get() = if (modelImageUrl != null) modelTint else anyTint
+    val effectiveModelScale: Float? get() = if (modelImageUrl != null) modelScale else anyScale
+
+    /** 思考等级按钮最终使用的图 */
+    val effectiveReasoningImageUrl: String? get() = reasoningImageUrl ?: anyImageUrl
+    val effectiveReasoningTint: Long? get() = if (reasoningImageUrl != null) reasoningTint else anyTint
+    val effectiveReasoningScale: Float? get() = if (reasoningImageUrl != null) reasoningScale else anyScale
 }
 
 /** 图标宿主元素 ID → 主题里的选择器（对齐官方 index.html） */
@@ -803,6 +922,67 @@ private val ICON_TARGETS = listOf(
     "options" to "#options_button",
     "extensions" to "#extensionsMenuButton",
     "stop" to "#mes_stop",
+)
+
+/**
+ * 各宿主在主题里的等价选择器集合。
+ *
+ * 官方界面里同一个功能区往往有多个 id（左右抽屉、字符卡搜索、各类设置面板），
+ * 主题作者会挑其中一个来写样式。只认单一 id 会漏掉大部分主题，
+ * 因此这里给出候选集合，任一命中即算。
+ */
+private val ICON_ALIASES: Map<String, List<String>> = mapOf(
+    "send" to listOf("#send_but", "#send_form", "#rightSendForm"),
+    "options" to listOf("#options_button", "#leftSendForm"),
+    "extensions" to listOf("#extensionsMenuButton", "#extensionsMenu"),
+    "stop" to listOf("#mes_stop", "#mes_pause", "#stscript_stop"),
+    // 搜索：实测命中的选择器（按主题里出现频次排序）
+    "search" to listOf(
+        "#search_field",
+        "#extensionTopBarSearchInput",
+        "#settingsSearch",
+        "#character_search_bar",
+        "#form_character_search_form",
+        "#persona_search_bar",
+        "#rm_print_characters_block",
+        "#search",
+    ),
+    // 设置：实测换图都写在容器内的 .drawer-icon 上
+    "settings" to listOf(
+        "#top-settings-holder .drawer-icon",
+        "#user-settings-block .drawer-icon",
+        "#rightNavDrawerIcon .drawer-icon",
+        "#leftNavDrawerIcon .drawer-icon",
+        "#WIDrawerIcon .drawer-icon",
+        "#table_drawer_icon .drawer-icon",
+        "#sys-settings-button .drawer-icon",
+        "#extensions-settings-button .drawer-icon",
+        "#user-settings-button .drawer-icon",
+        "#top-settings-holder",
+        "#user-settings-block",
+        "#rightNavDrawerIcon",
+        "#leftNavDrawerIcon",
+        "#settings",
+    ),
+    // 模型选择：官方聊天顶栏的 API/模型配置入口（#ai-config-button 是实测主力）
+    "model" to listOf(
+        "#ai-config-button .drawer-icon",
+        "#ai-config-button",
+        "#API-status-top .drawer-icon",
+        "#API-status-top",
+        "#custom_model_id",
+        "#generic_model_select",
+        "#settings_preset_openai",
+        "#rm_api_block",
+    ),
+    // 思考等级：官方消息上的推理按钮
+    "reasoning" to listOf(
+        "#reasoning_effort",
+        "#mes_button_reasoning",
+        "#mes_reasoning_header",
+        "#mes_reasoning_arrow",
+        "#openai_reasoning_effort",
+    ),
 )
 
 /**
@@ -817,12 +997,55 @@ fun extractThemeIconSet(css: String?): ThemeIconSet {
     val merged = mergeRulesBySelector(css)
 
     /** 收集所有命中该 id 的规则体（含伪元素写法） */
-    fun bodiesFor(id: String): List<String> = merged
-        .filter { (sel, _) ->
-            val bare = sel.replace(Regex("""\[[^\]]*\]"""), "")
-            Regex(Regex.escape(id) + """(?![\w-])""").containsMatchIn(bare)
-        }
-        .map { it.second }
+    /**
+     * 规则选择器的「目标元素」（最后一段复合选择器）。
+     *
+     * 主题写 `#top-settings-holder .drawer-icon` 时，真正被换图的是末尾的
+     * `.drawer-icon`；而 `#top-settings-holder` 只是作用域。按整串做子串匹配
+     * 会把作用域当作目标，导致抓错规则。这里统一取末段。
+     */
+    fun targetOf(sel: String): String {
+        val head = sel.substringBefore("::")
+        val bare = head.replace(Regex("""\[[^\]]*\]"""), "")
+        // 先按组合器切掉兄弟/子代后段，再取空格分隔的最后一段
+        val last = bare.split(',')
+            .flatMap { it.split(Regex("""\s*[>+~]\s*""")) }
+            .lastOrNull()
+            .orEmpty()
+            .trim()
+            .split(Regex("""\s+"""))
+            .lastOrNull()
+            .orEmpty()
+        return last
+    }
+
+    /** 规则目标元素是否就是该选择器指定的元素（支持 `#id .cls` 形式） */
+    fun bodiesFor(id: String): List<String> {
+        val want = id.trim().split(Regex("""\s+"""))      // 允许 "#id .cls"
+        val wantId = want.firstOrNull().orEmpty()
+        val wantCls = want.getOrNull(1)?.trim().orEmpty()
+        return merged
+            .filter { (sel, _) ->
+                val full = sel.replace(Regex("""\[[^\]]*\]"""), "")
+                // 目标元素必须精确等于期望的「末段」（或末段以它起头）
+                val target = targetOf(sel)
+                val targetOk = when {
+                    wantCls.isNotEmpty() -> target == wantCls
+                    else -> target == wantId
+                }
+                if (!targetOk) return@filter false
+                // 若指定了容器，作用域里必须出现该 id
+                if (wantCls.isNotEmpty() && !full.contains(wantId)) return@filter false
+                true
+            }
+            .map { it.second }
+    }
+
+    /** 候选选择器任一命中即收集；按候选顺序优先，先命中的排前面 */
+    fun bodiesForAny(key: String): List<String> {
+        val aliases = ICON_ALIASES[key].orEmpty()
+        return aliases.flatMap { bodiesFor(it) }
+    }
 
     fun imageOf(bodies: List<String>): String? {
         for (body in bodies) {
@@ -863,6 +1086,11 @@ fun extractThemeIconSet(css: String?): ThemeIconSet {
     val optB = bodiesFor(ICON_TARGETS[1].second)
     val extB = bodiesFor(ICON_TARGETS[2].second)
     val stopB = bodiesFor(ICON_TARGETS[3].second)
+    // 搜索/设置/模型/思考等级：主题里没有统一 id，按候选集合命中
+    val searchB = bodiesForAny("search")
+    val settingsB = bodiesForAny("settings")
+    val modelB = bodiesForAny("model")
+    val reasoningB = bodiesForAny("reasoning")
 
     // 头像框：.avatar::before / ::after 上带 url 的规则，按 is_user 分侧
     var userFrame: String? = null
@@ -906,6 +1134,18 @@ fun extractThemeIconSet(css: String?): ThemeIconSet {
         stopImageUrl = imageOf(stopB),
         stopTint = colorOf(stopB),
         stopScale = scaleOf(stopB),
+        searchImageUrl = imageOf(searchB),
+        searchTint = colorOf(searchB),
+        searchScale = scaleOf(searchB),
+        settingsImageUrl = imageOf(settingsB),
+        settingsTint = colorOf(settingsB),
+        settingsScale = scaleOf(settingsB),
+        modelImageUrl = imageOf(modelB),
+        modelTint = colorOf(modelB),
+        modelScale = scaleOf(modelB),
+        reasoningImageUrl = imageOf(reasoningB),
+        reasoningTint = colorOf(reasoningB),
+        reasoningScale = scaleOf(reasoningB),
         userAvatarFrameUrl = userFrame,
         botAvatarFrameUrl = botFrame,
         avatarFrameUrl = anyFrame,

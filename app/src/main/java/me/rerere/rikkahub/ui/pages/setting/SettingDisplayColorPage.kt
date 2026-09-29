@@ -64,6 +64,7 @@ import me.rerere.rikkahub.ui.components.ui.ColorPickerDialog
 import me.rerere.rikkahub.ui.components.ui.toComposeColor
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.theme.CustomColors
+import me.rerere.rikkahub.data.model.MAX_BUBBLE_RADIUS_DP
 import me.rerere.rikkahub.utils.plus
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -480,11 +481,18 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                         supportingContent = { Text("${displaySetting.bubbleCornerRadius.toInt()} dp") },
                         trailingContent = {
                             Slider(
-                                value = displaySetting.bubbleCornerRadius,
+                                // 上限必须与主题提取端的 MAX_RADIUS_DP 一致：
+                                // 若滑条只到 28 而导入的主题圆角是 40，滑块位置会被
+                                // 夹在末端，主题看起来"圆角程度不对"。
+                                value = displaySetting.bubbleCornerRadius.coerceIn(0f, MAX_BUBBLE_RADIUS_DP),
                                 onValueChange = {
-                                    updateDisplaySetting(displaySetting.copy(bubbleCornerRadius = it.coerceIn(0f, 28f)))
+                                    updateDisplaySetting(
+                                        displaySetting.copy(
+                                            bubbleCornerRadius = it.coerceIn(0f, MAX_BUBBLE_RADIUS_DP),
+                                        )
+                                    )
                                 },
-                                valueRange = 0f..28f,
+                                valueRange = 0f..MAX_BUBBLE_RADIUS_DP,
                                 modifier = Modifier.width(160.dp),
                             )
                         },
