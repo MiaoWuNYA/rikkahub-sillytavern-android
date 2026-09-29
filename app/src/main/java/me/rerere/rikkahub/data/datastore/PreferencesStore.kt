@@ -993,6 +993,16 @@ data class DisplaySetting(
     val chatBackgroundImagePath: String = "",
     // 酒馆主题图标定制（发送栏/菜单/扩展/停止/头像框），空值 = 未导入主题图标
     val themeIcons: ThemeIconSet = ThemeIconSet(),
+    // 气泡边框：对齐官方 --SmartThemeBorderColor + border 简写（含宽度/颜色/样式）
+    val bubbleBorderColor: Long? = null,
+    val bubbleBorderWidth: Float = 0f,
+    // 气泡阴影：对齐官方 --SmartThemeShadowColor + --shadowWidth
+    val bubbleShadowColor: Long? = null,
+    val bubbleShadowWidth: Float = 0f,
+    // 引用块背景色（官方 --SmartThemeQuoteColor 常同时用于引用框）
+    val quoteBackgroundColor: Long? = null,
+    // 下划线颜色（官方 --SmartThemeUnderlineColor）
+    val underlineColor: Long? = null,
 )
 
 @Serializable
