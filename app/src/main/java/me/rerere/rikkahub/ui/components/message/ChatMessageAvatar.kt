@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.ui.components.message
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
@@ -19,6 +20,7 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
+import me.rerere.rikkahub.ui.components.ui.ThemedAvatarFrame
 import me.rerere.rikkahub.ui.components.ui.UIAvatar
 import me.rerere.rikkahub.ui.context.LocalSettings
 
@@ -44,13 +46,47 @@ fun ChatMessageUserAvatar(
                 style = MaterialTheme.typography.labelLargeEmphasized,
                 maxLines = 1,
             )
-            UIAvatar(
-                name = displayName,
-                modifier = Modifier.size(28.dp),
-                value = avatar,
-                loading = false,
-            )
+            FramedAvatar(
+                frameUrl = settings.displaySetting.themeIcons.avatarFrame(forUser = true),
+                frameScale = settings.displaySetting.themeIcons.avatarFrameScale,
+            ) {
+                UIAvatar(
+                    name = displayName,
+                    modifier = Modifier.size(AVATAR_BASE_SIZE),
+                    value = avatar,
+                    loading = false,
+                )
+            }
         }
+    }
+}
+
+/** 头像基准尺寸；主题头像框按此尺寸等比放大叠加 */
+private val AVATAR_BASE_SIZE = 28.dp
+
+/**
+ * 头像 + 主题头像框。
+ *
+ * 官方主题用 `.avatar::before` 叠一圈装饰图，尺寸常比头像大（112px 框套 50px 头像），
+ * 所以这里不替换头像，而是在外层 Box 里把框放大居中画在上面。
+ */
+@Composable
+private fun FramedAvatar(
+    frameUrl: String?,
+    frameScale: Float?,
+    content: @Composable () -> Unit,
+) {
+    if (frameUrl.isNullOrBlank()) {
+        content()
+        return
+    }
+    Box(contentAlignment = Alignment.Center) {
+        content()
+        ThemedAvatarFrame(
+            frameUrl = frameUrl,
+            avatarSize = AVATAR_BASE_SIZE,
+            scale = frameScale,
+        )
     }
 }
 
@@ -75,12 +111,17 @@ fun ChatMessageAssistantAvatar(
                 ?: (assistant?.name ?: "").ifEmpty { stringResource(R.string.assistant_page_default_assistant) }
             if (useAssistantAvatar) {
                 if (showIcon) {
-                    UIAvatar(
-                        name = displayName,
-                        modifier = Modifier.size(28.dp),
-                        value = assistant.avatar,
-                        loading = loading,
-                    )
+                    FramedAvatar(
+                        frameUrl = settings.displaySetting.themeIcons.avatarFrame(forUser = false),
+                        frameScale = settings.displaySetting.themeIcons.avatarFrameScale,
+                    ) {
+                        UIAvatar(
+                            name = displayName,
+                            modifier = Modifier.size(AVATAR_BASE_SIZE),
+                            value = assistant.avatar,
+                            loading = loading,
+                        )
+                    }
                 }
                 Row(
                     modifier = Modifier.weight(1f),
@@ -97,11 +138,16 @@ fun ChatMessageAssistantAvatar(
                 }
             } else if (model != null) {
                 if (showIcon) {
-                    AutoAIIcon(
-                        name = model.modelId,
-                        modifier = Modifier.size(28.dp),
-                        loading = loading
-                    )
+                    FramedAvatar(
+                        frameUrl = settings.displaySetting.themeIcons.avatarFrame(forUser = false),
+                        frameScale = settings.displaySetting.themeIcons.avatarFrameScale,
+                    ) {
+                        AutoAIIcon(
+                            name = model.modelId,
+                            modifier = Modifier.size(AVATAR_BASE_SIZE),
+                            loading = loading
+                        )
+                    }
                 }
                 Row(
                     modifier = Modifier.weight(1f),

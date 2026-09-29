@@ -54,6 +54,7 @@ import me.rerere.rikkahub.data.model.Persona
 import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.QuickMessage
 import me.rerere.rikkahub.data.model.Tag
+import me.rerere.rikkahub.data.model.ThemeIconSet
 import me.rerere.rikkahub.data.model.parseAuthorNotePosition
 import me.rerere.rikkahub.data.sync.s3.S3Config
 import me.rerere.rikkahub.ui.theme.CustomTheme
@@ -981,10 +982,17 @@ data class DisplaySetting(
     val bubbleImageOverlayEnabled: Boolean = false,
     // 气泡圆角半径（dp）
     val bubbleCornerRadius: Float = 16f,
+    // 气泡背景图的缩放方式（对齐酒馆 background-size）：
+    // "cover" = 裁切铺满；"contain" / 空 = 等比完整显示。
+    // 主题常写 width:100% + height:200px + cover，本地气泡高度由文字撑开，
+    // 无条件裁切会把图纵向拉扯变形，故默认等比。
+    val bubbleBackgroundSize: String = "contain",
     // 抽屉（侧边栏）背景图路径
     val drawerBackgroundPath: String = "",
     // 聊天背景图路径（酒馆主题导入或手动设置），优先于助手背景；叠加聊天背景色遮罩
     val chatBackgroundImagePath: String = "",
+    // 酒馆主题图标定制（发送栏/菜单/扩展/停止/头像框），空值 = 未导入主题图标
+    val themeIcons: ThemeIconSet = ThemeIconSet(),
 )
 
 @Serializable

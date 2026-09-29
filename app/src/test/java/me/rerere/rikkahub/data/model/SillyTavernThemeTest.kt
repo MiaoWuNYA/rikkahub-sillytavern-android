@@ -340,17 +340,78 @@ class SillyTavernThemeTest {
             """.trimIndent()
         )
         assertEquals(12f, theme.applyTo(base).bubbleCornerRadius)
-        // 多值取最大，.mes_text / #chat_form 不算消息气泡
+        // 四角写法取首个数值（左上角），不再用 maxOf 忽略作者刻意的 0
         val theme2 = parseSillyTavernTheme(
             """{"custom_css": ".mes { border-radius: 0 8px 8px 0; }"}"""
         )
-        assertEquals(8f, theme2.applyTo(base).bubbleCornerRadius)
-        // 超范围 clamp 到滑条上限
+        assertEquals(0f, theme2.applyTo(base).bubbleCornerRadius)
+        // 大圆角不再被夹到 28px（旧实现会截断，导致"大圆角主题看起来几乎没圆角"）
         val theme3 = parseSillyTavernTheme("""{"custom_css": ".mes_block { border-radius: 50px; }"}""")
-        assertEquals(28f, theme3.applyTo(base).bubbleCornerRadius)
-        // 只有百分比 / 没有 px → 保持原值
+        assertEquals(40f, theme3.applyTo(base).bubbleCornerRadius)
+        // 百分比圆角按胶囊处理，映射为固定大圆角
         val theme4 = parseSillyTavernTheme("""{"custom_css": ".mes { border-radius: 50%; }"}""")
-        assertEquals(16f, theme4.applyTo(base).bubbleCornerRadius)
+        assertEquals(24f, theme4.applyTo(base).bubbleCornerRadius)
+    }
+
+    // ---- 图标主题 ----
+
+    @Test
+    fun `theme icons map send button image color size and hide`() {
+        val css = """
+            #send_but {
+                background-image: url('https://x/send.png');
+                color: #ff8800;
+                font-size: 30px;
+            }
+        """.trimIndent()
+        val icons = extractThemeIconSet(css)
+        assertEquals("https://x/send.png", icons.sendImageUrl)
+        // #ff8800 → ARGB 0xFFFF8800
+        assertEquals(0xFFFF8800L, icons.sendTint)
+        // 30px / 20px 基准 = 1.5 倍
+        assertEquals(1.5f, icons.sendScale)
+        assertTrue(!icons.hideSend)
+    }
+
+    @Test
+    fun `theme icons detect hidden send button`() {
+        val icons = extractThemeIconSet("#send_but { display: none; }")
+        assertTrue(icons.hideSend)
+    }
+
+    @Test
+    fun `background image none is not treated as a themed icon`() {
+        // 作者清掉默认图标（为配合字体图标），不应把 "none" 当图片地址
+        val icons = extractThemeIconSet("#send_but { background-image: none; color: rgb(1,2,3); }")
+        assertNull(icons.sendImageUrl)
+        assertEquals(0xFF010203L, icons.sendTint)
+    }
+
+    @Test
+    fun `avatar frames are split by is_user side`() {
+        val css = """
+            .mes[is_user="true"] .avatar::before { background-image: url('https://x/u.png'); width: 112px; }
+            .mes[is_user="false"] .avatar::before { background-image: url('https://x/b.png'); }
+        """.trimIndent()
+        val icons = extractThemeIconSet(css)
+        assertEquals("https://x/u.png", icons.avatarFrame(forUser = true))
+        assertEquals("https://x/b.png", icons.avatarFrame(forUser = false))
+        // 112px 框相对 50px 基准 → 2.24，落在允许区间内
+        assertEquals(2.24f, icons.avatarFrameScale)
+    }
+
+    @Test
+    fun `generic avatar frame applies to both sides`() {
+        val icons = extractThemeIconSet(".avatar::after { background-image: url('https://x/ring.png'); }")
+        assertEquals("https://x/ring.png", icons.avatarFrame(forUser = true))
+        assertEquals("https://x/ring.png", icons.avatarFrame(forUser = false))
+    }
+
+    @Test
+    fun `empty css yields empty icon set`() {
+        assertTrue(extractThemeIconSet(null).isEmpty)
+        assertTrue(extractThemeIconSet("").isEmpty)
+        assertTrue(extractThemeIconSet(".mes { color: red; }").isEmpty)
     }
 
     @Test
@@ -449,13 +510,41 @@ class SillyTavernThemeTest {
     }
 
     @Test
-    fun `extractBubbleBackgroundImageUrl ignores pseudo element decorations`() {
-        // ::before/::after 上的图是头像框/角标，不是气泡底图（实测 800+ 处）
+    fun `pseudo element on bubble body is treated as the bubble background`() {
+        // 官方主题最主流的写法：几何与图片分处两条规则，几何在 .mes_block::before
         val css = """
-            .mes::after { background-image: url('https://x/frame.png'); }
-            .mes::before { background: url('https://x/corner.png'); }
+            .mes_block::before {
+                content: ''; position: absolute; top: 0; left: 0;
+                width: 100%; height: 200px;
+                background-size: cover; background-position: center;
+            }
+            .mes[is_user="false"] .mes_block::before { background-image: url('https://x/bot.png'); }
+            .mes[is_user="true"] .mes_block::before { background-image: url('https://x/user.png'); }
+        """.trimIndent()
+        assertEquals("https://x/user.png", extractBubbleBackgroundImageUrl(css, forUser = true))
+        assertEquals("https://x/bot.png", extractBubbleBackgroundImageUrl(css, forUser = false))
+        assertEquals("cover", extractBubbleBackgroundSize(css))
+    }
+
+    @Test
+    fun `pseudo element on unrelated element is not a bubble background`() {
+        // 头像框、抽屉图标等装饰伪元素仍必须排除
+        val css = """
+            .avatar::before { background-image: url('https://x/frame.png'); }
+            .drawer-icon::after { background-image: url('https://x/icon.png'); }
         """.trimIndent()
         assertNull(extractBubbleBackgroundImageUrl(css, forUser = true))
+        assertNull(extractBubbleBackgroundImageUrl(css, forUser = false))
+    }
+
+    @Test
+    fun `background size is read from a separate rule from the image`() {
+        // 拆分书写：尺寸规则里没有 url，图片规则里没有尺寸
+        val css = """
+            .mes_block { background-size: contain; }
+            .mes { background-image: url('https://x/a.png'); }
+        """.trimIndent()
+        assertEquals("contain", extractBubbleBackgroundSize(css))
     }
 
     @Test

@@ -118,6 +118,7 @@ import me.rerere.rikkahub.data.datastore.getQuickMessagesOfAssistant
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.files.SkillManager
 import me.rerere.rikkahub.data.model.Assistant
+import me.rerere.rikkahub.data.model.ThemeIconSet
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.model.QuickMessage
 import me.rerere.rikkahub.service.ChatService
@@ -131,6 +132,7 @@ import me.rerere.rikkahub.ui.components.ai.SlashCommand
 import me.rerere.rikkahub.ui.components.ai.collectSlashCommands
 import me.rerere.rikkahub.ui.components.ai.matchSlashCommand
 import me.rerere.rikkahub.ui.components.ui.KeepScreenOn
+import me.rerere.rikkahub.ui.components.ui.ThemedIcon
 import me.rerere.rikkahub.ui.components.ui.toComposeColor
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionManager
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionRecordAudio
@@ -467,9 +469,14 @@ fun ChatInput(
                         ActionIconButton(
                             onClick = onMoreClick
                         ) {
-                            Icon(
+                            // 主题可换「更多」图标（官方对应 #extensionsMenuButton）
+                            val moreIcons = settings.displaySetting.themeIcons
+                            ThemedIcon(
                                 imageVector = HugeIcons.Add01,
-                                contentDescription = stringResource(R.string.more_options)
+                                contentDescription = stringResource(R.string.more_options),
+                                imageUrl = moreIcons.extensionsImageUrl,
+                                tint = moreIcons.extensionsTint?.let { Color(it) },
+                                scale = moreIcons.extensionsScale,
                             )
                         }
 
@@ -512,6 +519,7 @@ fun ChatInput(
                                 empty = state.isEmpty(),
                                 onClick = { sendMessage() },
                                 onLongClick = { sendMessageWithoutAnswer() },
+                                themeIcons = settings.displaySetting.themeIcons,
                             )
                         }
                     }
@@ -534,6 +542,7 @@ private fun SendButton(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
+    themeIcons: ThemeIconSet = ThemeIconSet(),
 ) {
     val showStop = loading && empty
     val containerColor = when {
@@ -564,11 +573,17 @@ private fun SendButton(
             color = containerColor,
             content = {},
         )
-        Icon(
+        // 主题可换图/换色/换尺寸（官方 #send_but 支持 background-image / color / font-size）
+        val themedUrl = if (showStop) themeIcons.stopImageUrl else themeIcons.sendImageUrl
+        val themedTint = (if (showStop) themeIcons.stopTint else themeIcons.sendTint)
+            ?.let { Color(it) } ?: contentColor
+        ThemedIcon(
             imageVector = if (showStop) HugeIcons.Cancel01 else HugeIcons.ArrowUp02,
             contentDescription = stringResource(if (showStop) R.string.stop else R.string.send),
-            tint = contentColor,
-            modifier = Modifier.size(18.dp)
+            tint = themedTint,
+            imageUrl = themedUrl,
+            scale = if (showStop) themeIcons.stopScale else themeIcons.sendScale,
+            baseSize = 18.dp,
         )
     }
 }

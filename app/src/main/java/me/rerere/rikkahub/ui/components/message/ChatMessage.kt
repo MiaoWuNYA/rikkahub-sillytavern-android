@@ -414,6 +414,9 @@ private fun MessagePartsBlock(
                                                     alpha = 0.55f,
                                                 )
                                             } else null,
+                                            contentScale = bubbleContentScale(
+                                                settings.displaySetting.bubbleBackgroundSize
+                                            ),
                                             modifier = Modifier.matchParentSize(),
                                         )
                                         Column(modifier = Modifier.padding(8.dp)) {
@@ -450,6 +453,9 @@ private fun MessagePartsBlock(
                                                         alpha = 0.55f,
                                                     )
                                                 } else null,
+                                                contentScale = bubbleContentScale(
+                                                    settings.displaySetting.bubbleBackgroundSize
+                                                ),
                                                 modifier = Modifier.matchParentSize(),
                                             )
                                             Column(modifier = Modifier.padding(8.dp)) {
@@ -727,16 +733,28 @@ private fun customBubbleColor(
 private fun BubbleBackgroundImage(
     path: String,
     overlayColor: Color?,
+    contentScale: ContentScale,
     modifier: Modifier = Modifier,
 ) {
     if (path.isBlank()) return
     AsyncImage(
         model = path,
         contentDescription = null,
-        contentScale = ContentScale.Crop,
+        contentScale = contentScale,
         modifier = modifier,
     )
     if (overlayColor != null) {
         Box(modifier = modifier.background(overlayColor))
     }
 }
+
+/**
+ * 把主题里的 background-size 映射为 Compose 的 ContentScale。
+ *
+ * 官方主题普遍写 `.mes_block::before { width:100%; height:200px; background-size:cover }`，
+ * 元素本身是固定高度的小条；而本地气泡高度由文字撑开，长消息会变成很高的条。
+ * 此时若仍无条件 Crop，图片就被纵向拉伸——这正是「拉伸得太长、非常难看」的来源。
+ * 因此默认改为 Fit（等比完整显示、不裁不拉），仅在主题明确要求时裁切。
+ */
+private fun bubbleContentScale(size: String?): ContentScale =
+    if (size?.contains("cover", ignoreCase = true) == true) ContentScale.Crop else ContentScale.Fit

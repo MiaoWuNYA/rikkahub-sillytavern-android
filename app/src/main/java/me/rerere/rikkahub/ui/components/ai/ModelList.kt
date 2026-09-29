@@ -92,6 +92,8 @@ import org.koin.compose.koinInject
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import kotlin.uuid.Uuid
+import me.rerere.rikkahub.ui.components.ui.ThemedIcon
+import me.rerere.rikkahub.ui.context.LocalSettings
 
 class ModelListState internal constructor(
     modelId: Uuid?,
@@ -275,6 +277,8 @@ internal fun ModelSelectorButton(
             }
         }
     } else {
+        // 主题可换模型选择图标（官方对应 #options_button / 模型下拉区域）
+        val themeIcons = LocalSettings.current.displaySetting.themeIcons
         IconButton(
             onClick = {
                 state.open()
@@ -287,10 +291,12 @@ internal fun ModelSelectorButton(
                     color = Color.Transparent
                 )
             } else {
-                Icon(
+                ThemedIcon(
                     imageVector = HugeIcons.Brain02,
                     contentDescription = stringResource(R.string.setting_model_page_chat_model),
-                    modifier = Modifier.size(20.dp)
+                    imageUrl = themeIcons.optionsImageUrl,
+                    tint = themeIcons.optionsTint?.let { Color(it) },
+                    scale = themeIcons.optionsScale,
                 )
             }
         }
