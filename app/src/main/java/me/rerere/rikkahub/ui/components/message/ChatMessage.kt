@@ -103,6 +103,8 @@ import kotlinx.datetime.toJavaLocalDateTime
 import coil3.compose.AsyncImage
 import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.shadow
 
 @Composable
 fun ChatMessage(
@@ -395,7 +397,15 @@ private fun MessagePartsBlock(
                         val textContent = @Composable {
                             if (role == MessageRole.USER) {
                                 Surface(
-                                    modifier = Modifier.animateContentSize(),
+                                    modifier = Modifier
+                                        .animateContentSize()
+                                        .themeBubbleBorder(
+                                            color = settings.displaySetting.bubbleBorderColor,
+                                            width = settings.displaySetting.bubbleBorderWidth,
+                                            shadowColor = settings.displaySetting.bubbleShadowColor,
+                                            shadowWidth = settings.displaySetting.bubbleShadowWidth,
+                                            cornerRadius = settings.displaySetting.bubbleCornerRadius,
+                                        ),
                                     shape = RoundedCornerShape(settings.displaySetting.bubbleCornerRadius.dp),
                                     color = customBubbleColor(
                                         custom = settings.displaySetting.userBubbleColor,
@@ -435,7 +445,15 @@ private fun MessagePartsBlock(
                             } else {
                                 if (settings.displaySetting.showAssistantBubble) {
                                     Surface(
-                                        modifier = Modifier.animateContentSize(),
+                                        modifier = Modifier
+                                            .animateContentSize()
+                                            .themeBubbleBorder(
+                                                color = settings.displaySetting.bubbleBorderColor,
+                                                width = settings.displaySetting.bubbleBorderWidth,
+                                                shadowColor = settings.displaySetting.bubbleShadowColor,
+                                                shadowWidth = settings.displaySetting.bubbleShadowWidth,
+                                                cornerRadius = settings.displaySetting.bubbleCornerRadius,
+                                            ),
                                         shape = RoundedCornerShape(settings.displaySetting.bubbleCornerRadius.dp),
                                         color = customBubbleColor(
                                             custom = settings.displaySetting.assistantBubbleColor,
@@ -758,3 +776,35 @@ private fun BubbleBackgroundImage(
  */
 private fun bubbleContentScale(size: String?): ContentScale =
     if (size?.contains("cover", ignoreCase = true) == true) ContentScale.Crop else ContentScale.Fit
+
+/**
+ * 气泡外框与阴影：对齐官方 `--SmartThemeBorderColor` + `border` 简写、
+ * `--SmartThemeShadowColor` + `--shadowWidth`。
+ *
+ * 实测 553 个主题里气泡边框出现 307 次（1px 110、2px 41）、阴影 337 次，
+ * 是仅次于圆角与底图的视觉特征。Compose 的 Surface 不带边框/阴影参数，
+ * 这里用 Modifier 按相同圆角绘制，保证边框贴合圆角形状。
+ */
+private fun Modifier.themeBubbleBorder(
+    color: Long?,
+    width: Float,
+    shadowColor: Long?,
+    shadowWidth: Float,
+    cornerRadius: Float,
+): Modifier {
+    val shape = RoundedCornerShape(cornerRadius.dp)
+    var m = this
+    if (shadowColor != null && shadowWidth > 0f) {
+        // 官方阴影是 `0 Ny blur`，向下偏移；这里同样下移，保持观感一致
+        m = m.shadow(
+            elevation = shadowWidth.dp,
+            shape = shape,
+            ambientColor = Color(shadowColor.toInt()),
+            spotColor = Color(shadowColor.toInt()),
+        )
+    }
+    if (color != null && width > 0f) {
+        m = m.border(width = width.dp, color = Color(color.toInt()), shape = shape)
+    }
+    return m
+}
