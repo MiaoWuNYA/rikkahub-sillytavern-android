@@ -367,10 +367,10 @@ private fun mixTowardWhite(color: Long, ratio: Float): Long {
 private val CSS_COMMENT = Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL)
 
 /** 剥掉注释后的 CSS，供各提取器使用 */
-private fun stripCssComments(css: String): String = CSS_COMMENT.replace(css, "")
+internal fun stripCssComments(css: String): String = CSS_COMMENT.replace(css, "")
 
 /** 逐条匹配 CSS 规则（不含嵌套花括号的规则体；@media 外层规则自然被跳过、内层规则正常匹配） */
-private val CSS_RULE = Regex("([^{}]+)\\{([^{}]*)\\}")
+internal val CSS_RULE = Regex("([^{}]+)\\{([^{}]*)\\}")
 
 /**
  * 从 custom_css 中提取消息气泡圆角（px 近似为 dp）。
@@ -379,27 +379,45 @@ private val CSS_RULE = Regex("([^{}]+)\\{([^{}]*)\\}")
  */
 fun extractBubbleCornerRadius(css: String?): Float? {
     if (css.isNullOrBlank()) return null
-    // 合并同选择器声明：主题常把 border-radius 与其它视觉声明拆开写
-    for ((selector, body) in mergeRulesBySelector(css)) {
-        if (!containsMessageBubble(selector)) continue
-        val radius = Regex("""border-radius\s*:\s*([^;}!]+)""", RegexOption.IGNORE_CASE)
-            .find(body)?.groupValues?.get(1) ?: continue
-        // 百分比是相对气泡自身尺寸的，无法在 Compose 侧直接换算成一个 dp 值，
-        // 超过 50% 已等同于胶囊/圆形，按大圆角处理即可
-        if (radius.contains('%')) return PERCENT_RADIUS_DP
-        // 只取首个数值：`10px 10px 0 0` 这类四角写法取左上角，避免 maxOf 把
-        // 「某角特意的 0」忽略掉、也避免 999px 之类的胶囊写法被误判成具体像素。
-        // 注意 `0 8px 8px 0` 的首值是裸 0（无单位），必须一并支持。
-        val first = radius.trim().split(Regex("""[\s/]+""")).firstOrNull() ?: continue
-        val px = Regex("""^(\d+(?:\.\d+)?)(?:px)?$""").find(first)
-            ?.groupValues?.get(1)?.toFloatOrNull()
-            ?: continue
-        if (px < 0f) continue
-        // 真实主题圆角上限可达 999px（胶囊），不再夹到 28px——
-        // 夹取会让「大圆角」主题看起来几乎没圆角，与官方观感不符。
-        return px.coerceAtMost(MAX_RADIUS_DP)
+    // 用 CSS 引擎算层叠结果：主题常把圆角写成变量（实测 138 处 var() 引用）、
+    // 或与其它规则争抢同一属性，靠正则逐条扫描会取到被覆盖的旧值。
+    // 只取首个数值：`10px 10px 0 0` 取左上角，避免 maxOf 忽略掉作者刻意的 0；
+    // 同时必须支持裸 0（`0 8px 8px 0` 的首值没有单位）。
+    val radius = bubbleDeclarations(css)["border-radius"] ?: return null
+    if (radius.contains('%')) return PERCENT_RADIUS_DP
+    val first = radius.trim().split(Regex("""[\s/]+""")).firstOrNull() ?: return null
+    val px = Regex("""^(\d+(?:\.\d+)?)(?:px)?$""").find(first)
+        ?.groupValues?.get(1)?.toFloatOrNull()
+        ?: return null
+    if (px < 0f) return null
+    // 真实主题圆角上限可达 999px（胶囊），不再夹到 28px——
+    // 夹取会让「大圆角」主题看起来几乎没圆角，与官方观感不符。
+    return px.coerceAtMost(MAX_RADIUS_DP)
+}
+
+/**
+ * 按 CSS 层叠算出的气泡声明。
+ *
+ * 「气泡本体」在官方 DOM 里是 `.mes`；主题绝大多数把视觉写在 `.mes` / `.mes_block`
+ * 及其伪元素上。这里把三类规则合并参与计算：
+ * 1. 命中宿主 `.mes` / `.mes_block`
+ * 2. 命中其伪元素 `.mes::before` 等（几何/圆角常写在这里）
+ * 3. 带 `is_user` 的变体（侧别相关，取并集以便单侧缺失时回退）
+ */
+internal fun bubbleDeclarations(css: String, extraVars: Map<String, String> = emptyMap()): Map<String, String> {
+    val rules = parseCssRules(css, extraVars)
+    return cascadeDeclarations(rules) { selector ->
+        containsMessageBubble(selector) && looksLikeBubbleFillOrPlain(selector, rules)
+            || containsMessageBubble(selector.substringBefore("::"))
     }
-    return null
+}
+
+/** 伪元素只有在铺满气泡时才参与气泡声明计算；普通元素总是参与 */
+private fun looksLikeBubbleFillOrPlain(selector: String, rules: List<CssRule>): Boolean {
+    if (!selector.contains("::")) return true
+    val all = rules.filter { it.selector == selector }.flatMap { it.declarations }
+    val body = all.joinToString(";") { "${it.property}:${it.value}" }
+    return looksLikeBubbleFill(selector, body)
 }
 
 /** 百分比圆角统一按大圆角处理（50% 即胶囊） */
