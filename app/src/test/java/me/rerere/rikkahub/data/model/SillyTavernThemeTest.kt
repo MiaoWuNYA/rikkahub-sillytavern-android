@@ -340,11 +340,17 @@ class SillyTavernThemeTest {
             """.trimIndent()
         )
         assertEquals(12f, theme.applyTo(base).bubbleCornerRadius)
-        // 四角写法取首个数值（左上角），不再用 maxOf 忽略作者刻意的 0
+        // 只圆部分角时取最大角：`0 8px 8px 0` 若取首值会得到 0、气泡变直角，
+        // 作者本意是圆右侧两角，Compose 整体圆角取 8 最接近
         val theme2 = parseSillyTavernTheme(
             """{"custom_css": ".mes { border-radius: 0 8px 8px 0; }"}"""
         )
-        assertEquals(0f, theme2.applyTo(base).bubbleCornerRadius)
+        assertEquals(8f, theme2.applyTo(base).bubbleCornerRadius)
+        // 真实主题常见「只圆下方两角」，必须取到 12 而不是 0
+        val theme2b = parseSillyTavernTheme(
+            """{"custom_css": ".mes_block { border-radius: 0px 0px 12px 12px; }"}"""
+        )
+        assertEquals(12f, theme2b.applyTo(base).bubbleCornerRadius)
         // 大圆角不再被夹到 28px（旧实现会截断，导致"大圆角主题看起来几乎没圆角"）
         val theme3 = parseSillyTavernTheme("""{"custom_css": ".mes_block { border-radius: 50px; }"}""")
         assertEquals(40f, theme3.applyTo(base).bubbleCornerRadius)

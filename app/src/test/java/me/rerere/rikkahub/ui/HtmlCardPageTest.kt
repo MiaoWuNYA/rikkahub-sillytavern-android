@@ -104,4 +104,54 @@ class HtmlCardPageTest {
         val bodyScriptCount = Regex("</script>").findAll(html).count()
         assertTrue("脚本标签数量异常: $bodyScriptCount", bodyScriptCount in 1..6)
     }
+
+    // === 卡片显示不全的回归测试 ===
+    // 症状：内容多的前端卡只显示前六七十行，网页本身也不能上下滑动，
+    // 只能点右下角小眼睛进全屏。根因有三，逐一守住。
+
+    @Test
+    fun `height measurement walks the whole subtree`() {
+        val html = buildCardDocumentPage(card, Color.White, Color.Black)
+        // 只量根盒 rect 会漏掉内层 max-height + overflow 溢出的内容，
+        // 必须遍历子树取最大下沿
+        assertTrue("高度测量未遍历子树", html.contains("querySelectorAll('*')"))
+        assertTrue("高度测量未考虑内层溢出", html.contains("scrollHeight"))
+    }
+
+    @Test
+    fun `height measurement is not capped by viewport`() {
+        val html = buildCardDocumentPage(card, Color.White, Color.Black)
+        // 不能因为 innerHeight 把内容高度截断
+        assertFalse(
+            "高度测量不应把内容限制在视口内",
+            html.contains("Math.min(") && html.contains("innerHeight")
+        )
+    }
+
+    @Test
+    fun `late rendering cards keep being measured`() {
+        val html = buildCardDocumentPage(card, Color.White, Color.Black)
+        // 字体就绪会改变换行进而改变高度
+        assertTrue("缺少 document.fonts.ready 复查", html.contains("fonts.ready"))
+        // 内层容器展开/折叠也要复查
+        assertTrue("缺少滚动复查", html.contains("addEventListener('scroll'"))
+    }
+
+    @Test
+    fun `height reporting script stays syntactically valid`() {
+        val html = buildCardDocumentPage(card, Color.White, Color.Black)
+        // 高度脚本必须真的产出可执行 JS：关键调用点齐全
+        assertTrue(html.contains("rikkaHost.reportHeight"))
+        assertTrue(html.contains("setTimeout(report"))
+        // Kotlin 原始字符串不处理转义，一旦在 JS 里误写成连续两个反斜杠，
+        // 产出的正则会静默失效且不报错。这里只检查高度脚本自身的形状。
+        val heightScript = html
+            .substringAfter("function contentHeight()")
+            .substringBefore("</script>")
+        val doubledBackslash = "\\" + "\\"
+        assertFalse(
+            "高度脚本出现双重反斜杠，JS 会静默失效",
+            heightScript.contains(doubledBackslash),
+        )
+    }
 }

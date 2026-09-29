@@ -43,6 +43,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -230,21 +231,31 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
             confirmButton = {
                 Button(onClick = {
                     pendingTheme = null
+                    // 关键：主题属性先同步生效，背景图/字体再异步补。
+                    // 旧实现把图片下载放在 updateDisplaySetting 之前，而下载最长要等
+                    // 60s 读超时、且 runCatching 会把协程取消异常一并吞掉 —— 一旦用户
+                    // 中途离开页面，协程被取消，updateDisplaySetting 根本不会执行，
+                    // 但提示语照样弹「已应用主题」，表现为"主题完全不生效"。
+                    val applied = theme.applyTo(displaySetting)
+                    updateDisplaySetting(applied)
                     scope.launch {
-                        var patched = theme.applyTo(displaySetting)
                         var bgNote = ""
+                        var patched = applied
                         // 背景图：从 custom_css 提取地址并下载到应用私有目录
                         val bgUrl = extractBackgroundImageUrl(theme.customCss)
                         if (bgUrl != null) {
-                            runCatching {
-                                withContext(Dispatchers.IO) { storeThemeBackground(context, bgUrl) }
-                            }.onSuccess { path ->
-                                deleteThemeFileIfOwned(context, displaySetting.chatBackgroundImagePath, path)
+                            // 不用 runCatching：它会吞掉 CancellationException，让协程
+                            // 取消被误报成普通的下载失败
+                            try {
+                                val path = withContext(Dispatchers.IO) { storeThemeBackground(context, bgUrl) }
+                                deleteThemeFileIfOwned(context, applied.chatBackgroundImagePath, path)
                                 patched = patched.copy(chatBackgroundImagePath = path)
-                            }.onFailure {
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Throwable) {
                                 bgNote = context.getString(
                                     R.string.setting_display_st_theme_bg_note_failed,
-                                    it.message ?: context.getString(R.string.setting_display_st_theme_unknown_error)
+                                    e.message ?: context.getString(R.string.setting_display_st_theme_unknown_error)
                                 )
                             }
                         }
@@ -253,13 +264,12 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                         val botBubbleUrl = extractBubbleBackgroundImageUrl(theme.customCss, forUser = false)
                         for ((url, isUser) in listOf(userBubbleUrl to true, botBubbleUrl to false)) {
                             if (url == null) continue
-                            runCatching {
-                                withContext(Dispatchers.IO) { storeThemeBackground(context, url, "bubble") }
-                            }.onSuccess { path ->
+                            try {
+                                val path = withContext(Dispatchers.IO) { storeThemeBackground(context, url, "bubble") }
                                 val old = if (isUser) {
-                                    displaySetting.userBubbleImagePath
+                                    applied.userBubbleImagePath
                                 } else {
-                                    displaySetting.assistantBubbleImagePath
+                                    applied.assistantBubbleImagePath
                                 }
                                 deleteThemeFileIfOwned(context, old, path)
                                 patched = if (isUser) {
@@ -267,34 +277,37 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                                 } else {
                                     patched.copy(assistantBubbleImagePath = path)
                                 }
-                            }.onFailure {
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Throwable) {
                                 bgNote += context.getString(
                                     R.string.setting_display_st_theme_bubble_note_failed,
-                                    it.message ?: context.getString(R.string.setting_display_st_theme_unknown_error)
+                                    e.message ?: context.getString(R.string.setting_display_st_theme_unknown_error)
                                 )
                             }
                         }
                         // 主题字体：@font-face 里的 ttf/otf 自动下载并设为聊天字体
                         val themeFont = extractThemeFont(theme.customCss)
                         if (themeFont != null) {
-                            runCatching {
-                                withContext(Dispatchers.IO) { storeThemeFont(context, themeFont) }
-                            }.onSuccess { relativePath ->
-                                deleteThemeFontIfOwned(context, displaySetting.chatCustomFontPath, relativePath)
+                            try {
+                                val relativePath = withContext(Dispatchers.IO) { storeThemeFont(context, themeFont) }
+                                deleteThemeFontIfOwned(context, applied.chatCustomFontPath, relativePath)
                                 patched = patched.copy(
                                     chatFontFamily = ChatFontFamily.CUSTOM,
                                     chatCustomFontPath = relativePath,
                                     chatCustomFontName = themeFont.family
                                         ?: context.getString(R.string.setting_display_st_theme_default_font_name),
                                 )
-                            }.onFailure {
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Throwable) {
                                 bgNote += context.getString(
                                     R.string.setting_display_st_theme_font_note_failed,
-                                    it.message ?: context.getString(R.string.setting_display_st_theme_unknown_error)
+                                    e.message ?: context.getString(R.string.setting_display_st_theme_unknown_error)
                                 )
                             }
                         }
-                        updateDisplaySetting(patched)
+                        if (patched != applied) updateDisplaySetting(patched)
                         toaster.show(
                             context.getString(
                                 R.string.setting_display_st_theme_applied_toast,

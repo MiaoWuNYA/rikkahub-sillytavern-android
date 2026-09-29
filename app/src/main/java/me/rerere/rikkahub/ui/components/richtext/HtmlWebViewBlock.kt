@@ -69,6 +69,16 @@ import me.rerere.rikkahub.utils.base64Encode
 /** 卡片未完成首次测量时的最小高度，避免高度上报前的塌陷与闪烁。 */
 private val CARD_MIN_HEIGHT = 80.dp
 
+/**
+ * 卡片内联渲染的最大高度。
+ *
+ * 不设上限时，一张长卡会把消息列表撑到几屏高，用户滑很久都过不去这条消息；
+ * 设得太小又会像以前那样把内容直接裁掉、只能靠小眼睛看全 —— 那正是要修的问题。
+ * 因此这里只做「软上限」：超出后卡片高度停在 [CARD_MAX_HEIGHT]，
+ * 但 WebView 自身保持可滚动，内容一个不丢，也不需要跳全屏。
+ */
+private val CARD_MAX_HEIGHT = 520.dp
+
 
 /**
  * 渲染消息中的 HTML 卡片。
@@ -130,13 +140,23 @@ fun HtmlWebViewBlock(
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
+        val maxHeightDp = with(density) { CARD_MAX_HEIGHT.roundToPx() }
+        // 内容高度超过软上限时，卡片停在 maxHeight 并允许自身滚动；
+        // 这样长卡不会撑爆列表，也不会像以前那样被裁掉、只能点小眼睛看全。
+        val boundedHeight = if (contentHeight > 0) {
+            contentHeight.coerceAtMost(maxHeightDp)
+        } else {
+            0
+        }
+        val scrollable = contentHeight > maxHeightDp
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 // 高度跟随内容：上报前留一个最小高度，避免塌陷导致列表跳动
                 .then(
-                    if (contentHeight > 0) {
-                        Modifier.height(with(density) { contentHeight.toDp() })
+                    if (boundedHeight > 0) {
+                        Modifier.height(with(density) { boundedHeight.toDp() })
                     } else {
                         Modifier.heightIn(min = CARD_MIN_HEIGHT)
                     }
@@ -168,8 +188,10 @@ fun HtmlWebViewBlock(
 
                             override fun onPageFinished(view: WebView, url: String?) {
                                 super.onPageFinished(view, url)
-                                // 图片/字体异步加载会继续撑高内容，轮询兜底
+                                // 图片/字体异步加载会继续撑高内容，轮询兜底；
+                                // 高频窗口结束后接一段低频复查，覆盖脚本延迟渲染
                                 pollContentHeight(view) { h -> applyHeight(h) }
+                                pollContentHeightSlow(view) { h -> applyHeight(h) }
                             }
                         }
                     }
@@ -236,23 +258,24 @@ fun HtmlWebViewBlock(
 /**
  * 内联卡片 WebView。
  *
- * 手势策略：由于卡片高度**始终等于内容高度**（见 heightReportScript 上报 +
- * 外层按上报值设高），这个 WebView 自身永远没有可滚动余量——也就根本不需要
- * 自己滚动。因此正确的做法是：
+ * 手势策略分两种情况，由 `View.canScrollVertically` 现场判定：
  *
- * - 竖向滑动一律交还外层聊天列表（返回 false），让列表接管滚动；
- * - 点击/长按仍交给 WebView，保证卡内按钮、折叠面板可交互。
+ * - 卡片高度已达软上限、内容仍有剩余 → WebView 自己滚动，把内容滚完；
+ * - 卡片完整铺开（无剩余）或已滚到边界 → 把滑动交还外层聊天列表。
  *
- * 这正是官方把卡片内联进 `.mes_text` 后天然得到的行为：内容随页面滚动，
- * 不存在"卡片和列表抢手势"的问题。原先靠 computeVerticalScrollRange() 猜测
- * 是否消费滑动的实现，在高度尚未上报时会误判并吞掉手势，是滑动异常的根源。
+ * 这样既不会像早期实现那样"卡片比内容矮却不让它滚"导致内容永久看不见，
+ * 也不会像纯交还外层那样让长卡在列表里只能露出一截。点击/长按始终交给
+ * WebView，保证卡内按钮与折叠面板可交互。
  */
 private class CardWebView(context: Context) : WebView(context) {
     init {
+        // 卡片超出软上限时需要自身可滚动，滚动条保持不可见以避免破坏卡片外观
         isVerticalScrollBarEnabled = false
         isHorizontalScrollBarEnabled = false
-        // 交给外层列表处理，自身不显示过度滚动光晕
         overScrollMode = View.OVER_SCROLL_NEVER
+        // 保证能接到竖向滑动（部分卡片样式会禁用触摸）
+        isClickable = true
+        isFocusable = true
     }
 
     private var downX = 0f
@@ -261,6 +284,8 @@ private class CardWebView(context: Context) : WebView(context) {
     private var forwardingToParent = false
     /** 抬手时是否为一次点击（需要让 WebView 收到完整事件序列才能触发卡内交互） */
     private var possibleTap = true
+
+
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
@@ -274,13 +299,20 @@ private class CardWebView(context: Context) : WebView(context) {
             }
 
             MotionEvent.ACTION_MOVE -> {
-                val dy = kotlin.math.abs(event.y - downY)
+                val dy = event.y - downY
                 val dx = kotlin.math.abs(event.x - downX)
-                if (dy > 8f || dx > 8f) possibleTap = false
-                // 竖向位移占主导 → 判定为列表滚动，把剩余事件让给外层
-                if (!forwardingToParent && dy > 10f && dy > dx) {
-                    forwardingToParent = true
-                    requestDisallowInterceptTouchEvent(false)
+                if (kotlin.math.abs(dy) > 8f || dx > 8f) possibleTap = false
+                // 竖向位移占主导时，先看卡片自己还能不能滚：
+                // 能滚就让它消费（长卡在有限高度内也能滚到底，无需小眼睛）；
+                // 滚到边界了才让外层列表接管，保证手势不会"卡死"在卡片上。
+                if (!forwardingToParent && kotlin.math.abs(dy) > 10f && kotlin.math.abs(dy) > dx) {
+                    // 手指上滑（dy<0）表示要看下面 → 需要还能向下滚
+                    // 手指上滑（dy<0）= 想看下方内容 → 问 WebView 能否再向下滚
+                    val wantsDown = dy < 0f
+                    if (!canScrollVertically(if (wantsDown) 1 else -1)) {
+                        forwardingToParent = true
+                        requestDisallowInterceptTouchEvent(false)
+                    }
                 }
             }
 
@@ -300,7 +332,13 @@ private class CardWebView(context: Context) : WebView(context) {
 private const val HEIGHT_JS =
     "(function(){return Math.max(document.documentElement.scrollHeight,document.body?document.body.scrollHeight:0);})()"
 
-/** 页面加载后周期性读取内容高度，只上报变大值避免抖动。 */
+/**
+ * 页面加载后周期性读取内容高度。
+ *
+ * 轮询窗口刻意拉长（前 20 次 350ms 高频，之后降到 1s 继续到约 30s）：
+ * 前端卡常靠脚本延迟渲染（等字体/图片/接口返回），早停会把卡片高度定格在
+ * 骨架屏的尺寸上，表现为"内容只显示了一部分、下面再也出不来"。
+ */
 private fun pollContentHeight(
     view: WebView,
     remaining: Int = 20,
@@ -316,6 +354,24 @@ private fun pollContentHeight(
         }
         pollContentHeight(view, remaining - 1, onHeight)
     }, 350)
+}
+
+/** 高频轮询结束后继续低频复查，覆盖脚本延迟渲染的卡片。 */
+private fun pollContentHeightSlow(
+    view: WebView,
+    remaining: Int = 30,
+    onHeight: (Int) -> Unit = {},
+) {
+    if (remaining <= 0) return
+    view.postDelayed({
+        runCatching {
+            view.evaluateJavascript(HEIGHT_JS) { value ->
+                val h = value?.trim()?.removeSurrounding("\"")?.toDoubleOrNull()?.toInt() ?: 0
+                if (h > 0) onHeight(h)
+            }
+        }
+        pollContentHeightSlow(view, remaining - 1, onHeight)
+    }, 1000)
 }
 
 private class HeightBridge(private val onHeight: (Int) -> Unit) {
@@ -374,23 +430,45 @@ private fun cardBaseCss(
 private fun heightReportScript(extraDelays: String = "1500, 4000"): String = """
 <script>
 (function() {
+  /**
+   * 量出卡片的真实内容高度。
+   *
+   * 只取根盒 rect 是不够的：卡片常把内容放进自带 max-height + overflow 的内层
+   * 容器（状态栏、日志窗、选项卡面板），这些子元素会溢出让根盒看不出来，
+   * 于是卡片被报成一个偏矮的高度、内容被永久截断 —— 这正是"只能显示六七十行"
+   * 的成因。因此这里对整棵子树取最大下沿，并同时考虑 scrollHeight/clientHeight。
+   */
   function contentHeight() {
     var root = document.getElementById('$CARD_ROOT_ID');
     if (!root) return 0;
-    // 用内容盒的边界而非 scrollHeight：scrollHeight 会被视口最小高度撑大，
-    // 导致卡片被报成一个空屏高度、下面留一大片空白。
     var rect = root.getBoundingClientRect();
-    var h = rect.height;
-    // 卡片里有 position:absolute 的装饰层时，rect 可能不包含它们，取子元素最大值兜底
-    var maxChild = 0;
-    for (var i = 0; i < root.children.length; i++) {
-      var c = root.children[i];
-      if (!c.getBoundingClientRect) continue;
-      var cr = c.getBoundingClientRect();
-      var bottom = (cr.bottom - rect.top);
-      if (bottom > maxChild) maxChild = bottom;
+    var h = Math.max(rect.height, root.scrollHeight || 0);
+
+    // 遍历整棵子树，取所有元素相对卡片顶部的最大下沿。
+    // 内层 max-height + overflow 的子元素自身可能不滚动，但其内容更高，
+    // 故 scrollHeight 也要一并算进来。
+    var nodes = root.querySelectorAll('*');
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      var cs;
+      try { cs = window.getComputedStyle(el); } catch (e) { continue; }
+      // 完全脱离文档流的装饰层不参与撑高（避免把浮层算成内容）
+      if (cs && cs.display === 'none') continue;
+      var r = el.getBoundingClientRect();
+      if (r.height > 0) {
+        var bottom = r.bottom - rect.top;
+        if (bottom > h) h = bottom;
+      }
+      // 内层溢出：元素自身高度被 max-height 压住，内容仍更高
+      if (el.scrollHeight && el.scrollHeight > (r.height + 1)) {
+        var scrollBottom = (r.top - rect.top) + el.scrollHeight;
+        if (scrollBottom > h) h = scrollBottom;
+      }
     }
-    if (maxChild > h) h = maxChild;
+    if (document.body) {
+      var bh = document.body.scrollHeight || 0;
+      if (bh > h) h = bh;
+    }
     return Math.ceil(h);
   }
   function report() {
@@ -417,6 +495,12 @@ private fun heightReportScript(extraDelays: String = "1500, 4000"): String = """
   document.addEventListener('load', function(e){
     if (e.target && (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO')) report();
   }, true);
+  // 字体就绪后重新测量：字体换入会改变换行、进而改变高度
+  if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+    try { document.fonts.ready.then(report); } catch (e) {}
+  }
+  // 卡片内部自身滚动时也要复查高度（内层容器展开/折叠会改变内容高度）
+  window.addEventListener('scroll', function(){ report(); }, true);
 })();
 </script>
 """
