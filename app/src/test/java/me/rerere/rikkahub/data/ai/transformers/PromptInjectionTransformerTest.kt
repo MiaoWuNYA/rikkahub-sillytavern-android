@@ -8,9 +8,13 @@ import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.model.SelectiveLogic
+import me.rerere.rikkahub.data.model.TavernBookEntry
+import me.rerere.rikkahub.data.model.TavernCharacterData
+import me.rerere.rikkahub.data.model.TavernEmbeddedBook
 import me.rerere.rikkahub.data.model.isTriggered
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.uuid.Uuid
@@ -21,12 +25,32 @@ class PromptInjectionTransformerTest {
     private fun createAssistant(
         modeInjectionIds: Set<Uuid> = emptySet(),
         lorebookIds: Set<Uuid> = emptySet(),
-        allowConversationPromptInjection: Boolean = false
+        allowConversationPromptInjection: Boolean = false,
+        tavernData: TavernCharacterData? = null,
     ) = Assistant(
         modeInjectionIds = modeInjectionIds,
         lorebookIds = lorebookIds,
-        allowConversationPromptInjection = allowConversationPromptInjection
+        allowConversationPromptInjection = allowConversationPromptInjection,
+        tavernData = tavernData,
     )
+
+    private fun characterCardWithBook(
+        entries: List<TavernBookEntry> = emptyList(),
+        postHistoryInstructions: String = "",
+        depthPrompt: String = "",
+    ) = TavernCharacterData(
+        name = "Test Char",
+        embeddedBook = TavernEmbeddedBook(name = "Card Book", entries = entries),
+        postHistoryInstructions = postHistoryInstructions,
+        depthPrompt = depthPrompt,
+    )
+
+    private fun tavernEntry(
+        id: Int = 0,
+        keys: List<String> = listOf("dragon"),
+        content: String = "Dragon lore",
+        constant: Boolean = false,
+    ) = TavernBookEntry(id = id, keys = keys, content = content, constant = constant)
 
     private fun createModeInjection(
         id: Uuid = Uuid.random(),
@@ -339,6 +363,103 @@ class PromptInjectionTransformerTest {
 
         assertFalse(systemText.contains("Assistant lorebook content"))
         assertTrue(systemText.contains("Conversation lorebook content"))
+    }
+    // endregion
+
+    // region 角色卡内嵌世界书（官方模型：随卡生效，与全局书合并，不互相覆盖）
+    @Test
+    fun `character book entry injects even without any bound lorebook`() {
+        // 官方：character_book 是卡的一部分，未绑定任何外置书也应生效
+        val assistant = createAssistant(
+            tavernData = characterCardWithBook(entries = listOf(tavernEntry(keys = listOf("dragon")))),
+        )
+        val messages = listOf(
+            UIMessage.system("System prompt"),
+            UIMessage.user("Tell me about the dragon"),
+        )
+
+        val result = transformMessages(
+            messages = messages,
+            assistant = assistant,
+            modeInjections = emptyList(),
+            lorebooks = emptyList(),
+        )
+
+        // 卡内条目默认 position=after_char，注入位置不一定是首条 system 消息，故全文检索
+        assertTrue(result.joinToString("\n") { getMessageText(it) }.contains("Dragon lore"))
+    }
+
+    @Test
+    fun `character book and global lorebook both inject together`() {
+        // issue #3：内嵌书与全局书必须同时生效，而不是互相覆盖
+        val globalId = Uuid.random()
+        val globalLorebook = createLorebook(
+            id = globalId,
+            name = "Global",
+            entries = listOf(
+                createRegexInjection(keywords = listOf("dragon"), content = "Global dragon lore")
+            ),
+        )
+        val assistant = createAssistant(
+            lorebookIds = setOf(globalId),
+            tavernData = characterCardWithBook(entries = listOf(tavernEntry(keys = listOf("dragon")))),
+        )
+        val messages = listOf(
+            UIMessage.system("System prompt"),
+            UIMessage.user("Tell me about the dragon"),
+        )
+
+        val result = transformMessages(
+            messages = messages,
+            assistant = assistant,
+            modeInjections = emptyList(),
+            lorebooks = listOf(globalLorebook),
+        )
+
+        val text = result.joinToString("\n") { getMessageText(it) }
+        assertTrue(text.contains("Dragon lore"))
+        assertTrue(text.contains("Global dragon lore"))
+    }
+
+    @Test
+    fun `character book entries have stable ids across calls`() {
+        // sticky/cooldown/向量激活按 id 追踪：同一条目每次必须得到同一个 id
+        val tav = characterCardWithBook(entries = listOf(tavernEntry(keys = listOf("dragon"))))
+        val first = buildCharacterBookEntries(tav).single().id
+        val second = buildCharacterBookEntries(tav).single().id
+        assertEquals(first, second)
+    }
+
+    @Test
+    fun `different character book entries get different ids`() {
+        val tav = characterCardWithBook(
+            entries = listOf(
+                tavernEntry(id = 0, keys = listOf("dragon"), content = "Dragon lore"),
+                tavernEntry(id = 1, keys = listOf("sword"), content = "Sword lore"),
+            ),
+        )
+        val ids = buildCharacterBookEntries(tav).map { it.id }
+        assertEquals(2, ids.size)
+        assertNotEquals(ids[0], ids[1])
+    }
+
+    @Test
+    fun `post history instructions and depth prompt become character entries`() {
+        val tav = characterCardWithBook(
+            entries = listOf(tavernEntry(keys = listOf("dragon"))),
+            postHistoryInstructions = "Stay in character",
+            depthPrompt = "Depth reminder",
+        )
+        val entries = buildCharacterBookEntries(tav)
+        // 内嵌条目 + PHI + 深度提示
+        assertEquals(3, entries.size)
+        assertTrue(entries.any { it.content == "Stay in character" })
+        assertTrue(entries.any { it.content == "Depth reminder" })
+    }
+
+    @Test
+    fun `null tavern data yields no character entries`() {
+        assertTrue(buildCharacterBookEntries(null).isEmpty())
     }
     // endregion
 

@@ -22,10 +22,6 @@ import me.rerere.rikkahub.data.files.SkillMetadata
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantMemory
 import me.rerere.rikkahub.data.model.Avatar
-import me.rerere.rikkahub.data.model.Lorebook
-import me.rerere.rikkahub.data.model.InjectionPosition
-import me.rerere.rikkahub.data.model.PromptInjection
-import me.rerere.rikkahub.data.model.SelectiveLogic
 import me.rerere.rikkahub.data.model.Tag
 import me.rerere.rikkahub.data.memory.MemoryEmbeddingService
 import me.rerere.rikkahub.data.repository.MemoryRepository
@@ -169,10 +165,8 @@ class AssistantDetailVM(
     fun update(assistant: Assistant) {
         viewModelScope.launch {
             val settings = settings.value
-            val updatedLorebooks = syncEmbeddedToExternal(assistant, settings.lorebooks)
             settingsStore.update(
                 settings = settings.copy(
-                    lorebooks = updatedLorebooks,
                     assistants = settings.assistants.map {
                         if (it.id == assistant.id) {
                             checkAvatarDelete(old = it, new = assistant)
@@ -190,76 +184,6 @@ class AssistantDetailVM(
     fun updateSettings(settings: Settings) {
         viewModelScope.launch {
             settingsStore.update(settings)
-        }
-    }
-
-    /** 内嵌世界书 → 外置 lorebook 同步 */
-    private fun syncEmbeddedToExternal(
-        assistant: Assistant,
-        lorebooks: List<Lorebook>,
-    ): List<Lorebook> {
-        val tav = assistant.tavernData ?: return lorebooks
-        val book = tav.embeddedBook ?: return lorebooks
-        if (assistant.lorebookIds.isEmpty()) return lorebooks
-        return lorebooks.map { lb ->
-            if (lb.id !in assistant.lorebookIds) return@map lb
-            val synced = book.entries.map { e ->
-                // 按内容+触发词匹配已有外置条目保留 id，避免条目增删/排序后按位置错位
-                val existing = lb.entries.firstOrNull { inj ->
-                    inj.content == e.content && inj.keywords == e.keys
-                }
-                PromptInjection.RegexInjection(
-                    id = existing?.id ?: Uuid.random(),
-                    name = e.comment.ifEmpty { e.keys.firstOrNull() ?: "Entry ${e.id}" },
-                    enabled = !e.disable,
-                    priority = e.priority,
-                    position = mapTavernPosition(e.position),
-                    injectDepth = e.depth,
-                    content = e.content,
-                    role = mapTavernRole(e.role),
-                    keywords = e.keys,
-                    secondaryKeys = e.secondaryKeys,
-                    useRegex = e.useRegex,
-                    caseSensitive = e.caseSensitive,
-                    matchWholeWords = e.matchWholeWords,
-                    excludeRecursion = e.excludeRecursion,
-                    preventRecursion = e.preventRecursion,
-                    delayUntilRecursion = e.delayUntilRecursion,
-                    scanDepth = e.scanDepth,
-                    constantActive = e.constant,
-                    selective = e.selective,
-                    // 官方 world_info_logic：0=AND_ANY 1=NOT_ALL 2=NOT_ANY 3=AND_ALL
-                    selectiveLogic = when (e.selectiveLogic) {
-                        1 -> SelectiveLogic.NOT_ALL
-                        2 -> SelectiveLogic.NOT_ANY
-                        3 -> SelectiveLogic.AND_ALL
-                        else -> SelectiveLogic.AND_ANY
-                    },
-                    group = e.group,
-                    probability = e.probability,
-                    sticky = e.sticky,
-                    cooldown = e.cooldown,
-                    delay = e.delay,
-                    groupWeight = e.groupWeight,
-                    groupOverride = e.groupOverride,
-                    useProbability = e.useProbability,
-                    inclusionGroup = e.inclusionGroup,
-                    useGroupScoring = e.useGroupScoring,
-                    groupPriority = e.groupPriority,
-                    automationId = e.automationId,
-                    displayIndex = e.displayIndex,
-                    displayPosition = e.displayPosition,
-                    triggers = e.triggers,
-                    matchPersonaDescription = e.matchPersonaDescription,
-                    matchCharacterDescription = e.matchCharacterDescription,
-                    matchCharacterPersonality = e.matchCharacterPersonality,
-                    matchCharacterDepthPrompt = e.matchCharacterDepthPrompt,
-                    matchScenario = e.matchScenario,
-                    matchCreatorNotes = e.matchCreatorNotes,
-                    ignoreBudget = e.ignoreBudget,
-                )
-            }
-            lb.copy(entries = synced)
         }
     }
 

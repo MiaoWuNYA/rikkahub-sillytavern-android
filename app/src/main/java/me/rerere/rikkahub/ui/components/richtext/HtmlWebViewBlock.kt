@@ -24,6 +24,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -41,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.ArrowUp01
 import me.rerere.hugeicons.stroke.Earth
 import me.rerere.hugeicons.stroke.View as ViewIcon
@@ -165,6 +167,8 @@ fun HtmlWebViewBlock(
     }
     // JS 上报的内容高度（CSS px ≈ Compose dp），0 表示尚未上报
     var contentHeight by remember { mutableIntStateOf(0) }
+    // 内容是否超过封顶高度：超过时卡片只显示前 70% 屏高，需给用户一个进入全屏的入口
+    val clipped = contentHeight > 0 && with(density) { contentHeight.toDp() } > maxCardHeight.dp
     val page = remember(html, colorScheme, markedJs) {
         buildHtmlBlockPage(html, textColor = colorScheme.onSurface, markedJs = markedJs)
     }
@@ -202,6 +206,8 @@ fun HtmlWebViewBlock(
                     },
                     "rikkaHost",
                 )
+                // 点按交给 Compose 的 clickable 进全屏（见下方 clipped 分支），避免 WebView 吞掉点击
+                isLongClickable = false
                 webViewClient = object : WebViewClient() {
                     override fun shouldInterceptRequest(
                         view: WebView,
@@ -252,6 +258,26 @@ fun HtmlWebViewBlock(
             .heightIn(max = maxCardHeight.dp),
         )
 
+        // 超过封顶高度时给出显式入口：卡片只显示前 70% 屏高，点击查看完整网页。
+        // 不能依赖"点卡片"——内容超出时 WebView 会消费 ACTION_DOWN（内部滚动），
+        // Compose 的 clickable 收不到手势；封顶外的按钮则始终可用。
+        if (clipped) {
+            TextButton(
+                onClick = { openFullscreen() },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(
+                    HugeIcons.ViewIcon,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
+                Text(
+                    text = stringResource(R.string.html_block_fullscreen),
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            }
+        }
+
         // 内联 WebView 为保证聊天列表可滚动不消费触摸事件（只读），
         // 长按选择/内部滚动等交互放到全屏页完成
         Row(
@@ -285,10 +311,11 @@ fun HtmlWebViewBlock(
 }
 
 /**
- * HTML 角色卡容器：默认直接展开渲染 WebView（点卡片即进全屏），
- * 可手动折叠回按钮状态；折叠状态经 rememberSaveable 在列表滚动回收后恢复。
- * 超大前端卡（完整 HTML 文档）默认折叠：一次渲染 20KB+ 的脚本化文档
- * 是"随缘卡死/闪退"的主要来源，用户点开后再渲染（且全屏页渲染）。
+ * HTML 角色卡容器。
+ * 完整 HTML 文档（前端卡）默认折叠为按钮：一次渲染 20KB+ 的脚本化文档
+ * 是"随缘卡死/闪退"的主要来源。点击折叠按钮直接进入全屏查看器渲染完整网页——
+ * 既不触发聊天列表内联渲染大文档的卡顿，也能一次看到完整内容（issue #3）。
+ * 混排小卡片照旧默认展开内联渲染。
  */
 @Composable
 fun HtmlCardBlock(
@@ -296,31 +323,75 @@ fun HtmlCardBlock(
     modifier: Modifier = Modifier,
 ) {
     // 完整 HTML 文档（前端卡）默认折叠，混排小卡片照旧默认展开
-    var expanded by rememberSaveable { mutableStateOf(!isFullHtmlDocument(html)) }
+    val fullDocument = remember(html) { isFullHtmlDocument(html) }
+    var expanded by rememberSaveable(html) { mutableStateOf(!fullDocument) }
     if (expanded) {
         HtmlWebViewBlock(html = html, modifier = modifier, onCollapse = { expanded = false })
     } else {
-        Surface(
-            onClick = { expanded = true },
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            modifier = modifier.fillMaxWidth(),
+        // 折叠态的完整文档：点击直接进全屏，而不是展开内联（内联仍会封顶 70% 屏高）
+        HtmlDocumentLaunchCard(html = html, modifier = modifier, onExpand = { expanded = true })
+    }
+}
+
+/** 折叠态的完整 HTML 文档卡片：点主体进全屏查看器，点展开按钮则内联渲染 */
+@Composable
+private fun HtmlDocumentLaunchCard(
+    html: String,
+    modifier: Modifier = Modifier,
+    onExpand: () -> Unit,
+) {
+    val context = LocalContext.current
+    val colorScheme = MaterialTheme.colorScheme
+    val navController = LocalNavController.current
+    val markedJs = remember {
+        runCatching {
+            context.assets.open("html/marked.min.js").bufferedReader().use { it.readText() }
+        }.getOrDefault("")
+    }
+    val fullscreenPage = remember(html, colorScheme, markedJs) {
+        buildHtmlBlockPage(
+            html,
+            textColor = colorScheme.onSurface,
+            markedJs = markedJs,
+            backgroundColor = colorScheme.surface,
+        )
+    }
+    val openFullscreen = {
+        val contentId = WebViewContentCache.store(context.cacheDir, fullscreenPage)
+        navController.navigate(Screen.WebView(contentId = contentId))
+    }
+
+    Surface(
+        onClick = openFullscreen,
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            Icon(
+                HugeIcons.Earth,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text = stringResource(R.string.html_card_expand),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(
+                onClick = onExpand,
+                modifier = Modifier.size(32.dp),
             ) {
                 Icon(
-                    HugeIcons.Earth,
+                    HugeIcons.ArrowRight01,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp),
-                )
-                Text(
-                    text = stringResource(R.string.html_card_expand),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

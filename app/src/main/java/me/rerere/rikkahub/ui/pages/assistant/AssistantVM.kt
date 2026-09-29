@@ -12,7 +12,6 @@ import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Avatar
-import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.data.repository.MemoryRepository
 import kotlin.uuid.Uuid
@@ -91,16 +90,4 @@ class AssistantVM(
         } else {
             memoryRepository.getMemoriesOfAssistantFlow(assistant.id.toString())
         }
-
-    /**
-     * 添加 Lorebook 到 settings，返回新创建的 ID 列表
-     */
-    fun addLorebooks(lorebooks: List<Lorebook>): List<Uuid> {
-        val ids = lorebooks.map { it.id }
-        viewModelScope.launch {
-            val s = settings.value
-            settingsStore.update(s.copy(lorebooks = s.lorebooks + lorebooks))
-        }
-        return ids
-    }
 }
