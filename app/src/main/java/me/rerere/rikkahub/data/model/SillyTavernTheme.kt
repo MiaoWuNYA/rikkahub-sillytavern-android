@@ -309,6 +309,11 @@ fun SillyTavernTheme.applyTo(base: DisplaySetting): DisplaySetting {
         base.inputFieldColor
     }
 
+    // 气泡外框/阴影：官方用 --SmartThemeBorderColor + --SmartThemeShadowColor 控制，
+    // 由 CSS 引擎从层叠后的声明里取，避免正则误收 border-top/border-image 等
+    val border = extractBubbleBorder(customCss)
+    val shadow = extractBubbleShadow(customCss)
+
     return base.copy(
         globalTextColor = text ?: base.globalTextColor,
         chatBackgroundColor = chatBackground ?: base.chatBackgroundColor,
@@ -335,6 +340,16 @@ fun SillyTavernTheme.applyTo(base: DisplaySetting): DisplaySetting {
         bubbleBackgroundSize = extractBubbleBackgroundSize(customCss) ?: base.bubbleBackgroundSize,
         // 图标主题：发送栏/菜单/扩展/停止 + 头像框
         themeIcons = extractThemeIconSet(customCss).takeUnless { it.isEmpty } ?: base.themeIcons,
+        // 气泡外框/阴影：官方用 --SmartThemeBorderColor + --SmartThemeShadowColor 控制，
+        // 由 CSS 引擎从层叠后的声明里取，避免正则误收 border-top/border-image 等
+        bubbleBorderColor = border?.color ?: base.bubbleBorderColor,
+        bubbleBorderWidth = border?.width ?: base.bubbleBorderWidth,
+        bubbleShadowColor = shadow?.color ?: base.bubbleShadowColor,
+        bubbleShadowWidth = shadow?.width ?: base.bubbleShadowWidth,
+        // 下划线色（官方 underline_text_color）；与其它文字特效色同样叠在背景上合成
+        underlineColor = parseCssColor(underlineTextColor)
+            ?.let { over(it.toCssColor(), accentBottom).toArgbLong() }
+            ?: base.underlineColor,
     )
 }
 
@@ -419,6 +434,71 @@ private fun looksLikeBubbleFillOrPlain(selector: String, rules: List<CssRule>): 
     val body = all.joinToString(";") { "${it.property}:${it.value}" }
     return looksLikeBubbleFill(selector, body)
 }
+
+/**
+ * 从已计算的气泡声明里取边框/阴影。
+ *
+ * 官方用 `--SmartThemeBorderColor` + `border` 简写、`--SmartThemeShadowColor` +
+ * `--shadowWidth` 控制气泡外框。主题里 `border: 1px solid var(--SmartThemeBorderColor)`
+ * 是极常见写法，靠正则匹配 `border` 会误收 `border-top` / `border-image` 等。
+ */
+internal fun extractBubbleBorder(css: String?): BubbleBorder? {
+    if (css.isNullOrBlank()) return null
+    val decls = bubbleDeclarations(css)
+    // border 简写：宽度 样式 颜色（顺序任意）
+    val shorthand = decls["border"] ?: decls["border-width"]?.let { null as String? }
+    val widthFromShorthand = shorthand?.let { v ->
+        Regex("""(\d+(?:\.\d+)?)px""").find(v)?.groupValues?.get(1)?.toFloatOrNull()
+    }
+    val colorFromShorthand = shorthand?.let { v ->
+        Regex("""(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\))""").find(v)
+            ?.value?.let { parseCssColor(it) }
+    }
+    val explicitWidth = decls["border-width"]?.let { v ->
+        Regex("""(\d+(?:\.\d+)?)px""").find(v)?.groupValues?.get(1)?.toFloatOrNull()
+    }
+    val explicitColor = cssColorFrom(decls, "border-color")
+    val width = explicitWidth ?: widthFromShorthand ?: 0f
+    val color = explicitColor ?: colorFromShorthand
+    val hasBorder = decls.containsKey("border") || decls.containsKey("border-width") ||
+        decls.containsKey("border-color") || decls.containsKey("border-style")
+    if (!hasBorder) return null
+    // border: none / 0 表示无边框
+    val styleNone = shorthand?.let { Regex("""\bnone\b|\bhidden\b""", RegexOption.IGNORE_CASE).containsMatchIn(it) } == true ||
+        decls["border-style"]?.equals("none", ignoreCase = true) == true
+    // 零宽度边框在视觉上不存在，即使写了颜色也不该画出边框
+    if (styleNone || width <= 0f) return null
+    return BubbleBorder(color = color, width = width)
+}
+
+/** 气泡阴影：`box-shadow` 的偏移/模糊/颜色 */
+internal fun extractBubbleShadow(css: String?): BubbleShadow? {
+    if (css.isNullOrBlank()) return null
+    val decls = bubbleDeclarations(css)
+    val shadow = decls["box-shadow"] ?: return null
+    if (shadow.equals("none", ignoreCase = true)) return null
+    // 阴影语法为 `[inset] offsetX offsetY [blur] [spread] color`。
+    // 必须按「位置」取长度，且裸 0 也是合法长度（`0 6px 20px` 的 offsetX 就是裸 0）——
+    // 只匹配带 px 的值会把 offsetX 吞掉，导致模糊半径整体错位一格。
+    val lengths = SHADOW_LENGTH.findAll(shadow)
+        .mapNotNull { it.groupValues[1].toFloatOrNull() }.toList()
+    if (lengths.size < 2) return null
+    // 第 3 个长度才是模糊半径；只有两个长度时说明没有模糊，用第二个
+    val blur = lengths.getOrNull(2) ?: lengths[1]
+    if (blur <= 0f) return null
+    val color = Regex("""(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\))""").find(shadow)
+        ?.value?.let { parseCssColor(it) }
+    return BubbleShadow(color = color, width = blur)
+}
+
+/** 阴影里的长度：裸 0 与带单位值都算（`0 6px 20px` 的首个 0 不能漏） */
+private val SHADOW_LENGTH = Regex("""(?:^|\s)(-?\d+(?:\.\d+)?)(?:px)?(?=\s|$)""")
+
+/** 气泡外框（官方 --SmartThemeBorderColor + border 简写） */
+internal data class BubbleBorder(val color: Long?, val width: Float)
+
+/** 气泡阴影（官方 --SmartThemeShadowColor + --shadowWidth） */
+internal data class BubbleShadow(val color: Long?, val width: Float)
 
 /** 百分比圆角统一按大圆角处理（50% 即胶囊） */
 private const val PERCENT_RADIUS_DP = 24f

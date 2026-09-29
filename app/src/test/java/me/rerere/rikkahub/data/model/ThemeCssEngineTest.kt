@@ -154,6 +154,48 @@ class ThemeCssEngineTest {
     }
 
     @Test
+    fun `bubble border shorthand is parsed into color and width`() {
+        val css = """
+            :root { --SmartThemeBorderColor: #d0d0d0; }
+            .mes { border: 1px solid var(--SmartThemeBorderColor); }
+        """.trimIndent()
+        val border = extractBubbleBorder(css)
+        assertTrue(border != null)
+        assertEquals(0xFFD0D0D0L, border!!.color)
+        assertEquals(1f, border.width)
+    }
+
+    @Test
+    fun `border none yields no border`() {
+        assertNull(extractBubbleBorder(".mes { border: none; }"))
+    }
+
+    @Test
+    fun `border zero width yields no border`() {
+        assertNull(extractBubbleBorder(".mes { border: 0px solid #fff; }"))
+    }
+
+    @Test
+    fun `bubble shadow takes blur radius and color`() {
+        // 官方主题常见写法：0 6px 20px rgba(0,0,0,0.4) —— 第 3 个长度为模糊半径
+        val shadow = extractBubbleShadow(".mes { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); }")
+        assertTrue(shadow != null)
+        assertEquals(20f, shadow!!.width)
+        assertTrue(shadow.color != null)
+    }
+
+    @Test
+    fun `box-shadow none yields no shadow`() {
+        assertNull(extractBubbleShadow(".mes { box-shadow: none; }"))
+    }
+
+    @Test
+    fun `border only on unrelated selector is ignored`() {
+        // 头像框的 border 不能当成气泡边框
+        assertNull(extractBubbleBorder(".avatar::before { border: 2px solid #fff; }"))
+    }
+
+    @Test
     fun `media queries do not break rule parsing`() {
         val css = """
             @media (max-width: 600px) {
