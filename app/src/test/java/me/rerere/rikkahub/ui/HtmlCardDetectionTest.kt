@@ -52,8 +52,12 @@ class HtmlCardDetectionTest {
     }
 
     @Test
-    fun `fenced card without closing fence falls back to null`() {
-        assertNull(findFencedHtmlDocument("```html\n<!DOCTYPE html><html></html>"))
+    fun `fenced card without closing fence still renders as document`() {
+        // 真实卡常因截断/流式输出缺少闭合围栏；此时退化为"到文本末尾"，
+        // 而不是整段退回 Markdown 把源码显示出来
+        val (_, doc) = findFencedHtmlDocument("```html\n<!DOCTYPE html><html></html>")!!
+        assertTrue(doc.startsWith("<!DOCTYPE html>"))
+        assertTrue(doc.endsWith("</html>"))
     }
 
     @Test
