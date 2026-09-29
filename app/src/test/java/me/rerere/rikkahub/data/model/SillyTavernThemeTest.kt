@@ -402,4 +402,161 @@ class SillyTavernThemeTest {
         assertNull(extractThemeFont("""body { font-family: sans-serif; }"""))
         assertNull(extractThemeFont(null))
     }
+
+    // ---- 注释剥离：主题作者把占位串/说明写在注释里 ----
+
+    @Test
+    fun `comments are stripped before extracting background url`() {
+        // 实测主题写法：注释里写占位串，真正的 url 在后面
+        val css = """
+            /*你的图片链接*/
+            body { background-image: url('https://real.example/bg.jpg'); }
+        """.trimIndent()
+        assertEquals("https://real.example/bg.jpg", extractBackgroundImageUrl(css))
+    }
+
+    @Test
+    fun `comment mentioning body does not hijack background extraction`() {
+        // 注释里出现 body，不应让图标背景被当成聊天背景
+        val css = """
+            /* 这个 body 图标说明 */
+            .drawer-icon { background-image: url('https://x/icon.png'); }
+        """.trimIndent()
+        assertNull(extractBackgroundImageUrl(css))
+    }
+
+    @Test
+    fun `comment containing mes does not create bubble background`() {
+        val css = """
+            /* 修改 .mes 样式 */
+        """.trimIndent()
+        assertNull(extractBubbleBackgroundImageUrl(css, forUser = true))
+        assertNull(extractBubbleBackgroundImageUrl(css, forUser = false))
+    }
+
+    // ---- 气泡底图 ----
+
+    @Test
+    fun `extractBubbleBackgroundImageUrl reads mes and mes_block`() {
+        assertEquals(
+            "https://x/bubble.png",
+            extractBubbleBackgroundImageUrl(""".mes { background-image: url('https://x/bubble.png'); }""", true)
+        )
+        assertEquals(
+            "https://x/block.png",
+            extractBubbleBackgroundImageUrl(""".mes_block { background: url(https://x/block.png) no-repeat; }""", false)
+        )
+    }
+
+    @Test
+    fun `extractBubbleBackgroundImageUrl ignores pseudo element decorations`() {
+        // ::before/::after 上的图是头像框/角标，不是气泡底图（实测 800+ 处）
+        val css = """
+            .mes::after { background-image: url('https://x/frame.png'); }
+            .mes::before { background: url('https://x/corner.png'); }
+        """.trimIndent()
+        assertNull(extractBubbleBackgroundImageUrl(css, forUser = true))
+    }
+
+    @Test
+    fun `extractBubbleBackgroundImageUrl respects is_user sides`() {
+        val css = """
+            .mes[is_user="true"] { background-image: url('https://x/user.png'); }
+            .mes[is_user="false"] { background-image: url('https://x/bot.png'); }
+        """.trimIndent()
+        assertEquals("https://x/user.png", extractBubbleBackgroundImageUrl(css, forUser = true))
+        assertEquals("https://x/bot.png", extractBubbleBackgroundImageUrl(css, forUser = false))
+    }
+
+    @Test
+    fun `generic mes background applies to both sides`() {
+        val css = """.mes { background-image: url('https://x/same.png'); }"""
+        assertEquals("https://x/same.png", extractBubbleBackgroundImageUrl(css, forUser = true))
+        assertEquals("https://x/same.png", extractBubbleBackgroundImageUrl(css, forUser = false))
+    }
+
+    @Test
+    fun `side specific background wins over generic`() {
+        val css = """
+            .mes { background-image: url('https://x/generic.png'); }
+            .mes[is_user="true"] { background-image: url('https://x/user.png'); }
+        """.trimIndent()
+        assertEquals("https://x/user.png", extractBubbleBackgroundImageUrl(css, forUser = true))
+        assertEquals("https://x/generic.png", extractBubbleBackgroundImageUrl(css, forUser = false))
+    }
+
+    @Test
+    fun `bubble background ignores css variable and unrelated elements`() {
+        assertNull(extractBubbleBackgroundImageUrl(""".mes { background-image: var(--bg); }""", true))
+        // .mes_text / .mes_buttons 是子元素，不是气泡本体
+        assertNull(extractBubbleBackgroundImageUrl(""".mes_text { background: url(https://x/t.png); }""", true))
+        assertNull(extractBubbleBackgroundImageUrl(null, true))
+    }
+
+    @Test
+    fun `theme with bubble background enables assistant bubble`() {
+        val base = DisplaySetting(showAssistantBubble = false)
+        val theme = SillyTavernTheme(
+            name = "bubble-card",
+            customCss = """.mes_block { background-image: url('https://x/b.png'); }"""
+        )
+        // 底图需要承载元素，否则静默丢失
+        assertTrue(theme.applyTo(base).showAssistantBubble)
+    }
+
+    // ---- 真实主题夹具回归 ----
+
+    @Test
+    fun `real theme with commented placeholder extracts the real url`() {
+        // 朝雾系列：旧实现会导入注释里的字面量「你的图片链接」
+        val url = extractBackgroundImageUrl(ThemeCssFixtures.PLACEHOLDER_IN_COMMENT)
+        assertEquals("https://i.postimg.cc/43Jv3pM5/IMG-4662.jpg", url)
+    }
+
+    @Test
+    fun `real theme comment mentioning body does not hijack background`() {
+        assertNull(extractBackgroundImageUrl(ThemeCssFixtures.COMMENT_MENTIONS_BODY))
+    }
+
+    @Test
+    fun `real theme with bubble texture on mes_block is extracted`() {
+        assertEquals(
+            "https://files.catbox.moe/im5vzu.jpeg",
+            extractBubbleBackgroundImageUrl(ThemeCssFixtures.BUBBLE_ON_MES_BLOCK, forUser = false)
+        )
+        assertEquals(
+            "https://files.catbox.moe/im5vzu.jpeg",
+            extractBubbleBackgroundImageUrl(ThemeCssFixtures.BUBBLE_ON_MES_BLOCK, forUser = true)
+        )
+    }
+
+    @Test
+    fun `real theme bubble on mes applies to both sides`() {
+        val css = ThemeCssFixtures.BUBBLE_ON_MES
+        assertEquals("https://iili.io/fWSOCIR.png", extractBubbleBackgroundImageUrl(css, forUser = true))
+        assertEquals("https://iili.io/fWSOCIR.png", extractBubbleBackgroundImageUrl(css, forUser = false))
+    }
+
+    @Test
+    fun `real theme is_user sides are separated`() {
+        val css = ThemeCssFixtures.BUBBLE_IS_USER
+        assertEquals("https://x.example/user.png", extractBubbleBackgroundImageUrl(css, forUser = true))
+        assertEquals("https://x.example/bot.png", extractBubbleBackgroundImageUrl(css, forUser = false))
+    }
+
+    @Test
+    fun `real theme avatar frames are never treated as bubbles`() {
+        val css = ThemeCssFixtures.PSEUDO_DECORATIONS
+        assertNull(extractBubbleBackgroundImageUrl(css, forUser = true))
+        assertNull(extractBubbleBackgroundImageUrl(css, forUser = false))
+        assertNull(extractBackgroundImageUrl(css))
+    }
+
+    @Test
+    fun `real theme ui shell skin yields no chat or bubble background`() {
+        val css = ThemeCssFixtures.UI_SHELL_ONLY
+        assertNull(extractBackgroundImageUrl(css))
+        assertNull(extractBubbleBackgroundImageUrl(css, forUser = true))
+        assertNull(extractBubbleBackgroundImageUrl(css, forUser = false))
+    }
 }

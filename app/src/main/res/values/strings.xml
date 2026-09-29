@@ -2352,6 +2352,7 @@
   <string name="setting_display_st_theme_bg_note_failed">; failed to fetch background image (%1$s), skipped</string>
   <string name="setting_display_st_theme_default_font_name">Tavern theme font</string>
   <string name="setting_display_st_theme_font_note_failed">; failed to fetch theme font (%1$s), skipped</string>
+  <string name="setting_display_st_theme_bubble_note_failed">; failed to fetch bubble background (%1$s), skipped</string>
   <string name="setting_display_st_theme_label_assistant_bubble_color">AI Bubble Color</string>
   <string name="setting_display_st_theme_label_assistant_bubble_display">AI Bubble Display</string>
   <string name="setting_display_st_theme_label_bubble_corner_radius">Bubble Corner Radius</string>
