@@ -154,4 +154,52 @@ class HtmlCardPageTest {
             heightScript.contains(doubledBackslash),
         )
     }
+
+    // === 卡片滚动手势的回归测试（源码级） ===
+    //
+    // 「能滑但几乎划不动」曾反复出现，根因是在 WebView 上覆写 onTouchEvent：
+    // 它会切断触摸与 WebView 内部 OverScroller 的联系，把顺滑惯性退化成
+    // 逐段 scrollBy；同时外层 NestedScrollConnection 又在滚同一个 View，
+    // 同一次拖动被应用两遍后互相抵消。这里直接对源码做约束，防止再被改回去。
+
+    @Test
+    fun `card webview does not override onTouchEvent`() {
+        val src = cardWebViewSource()
+        assertFalse(
+            "CardWebView 不应覆写 onTouchEvent：会破坏 WebView 自身的惯性滚动，导致划不动",
+            src.contains("override fun onTouchEvent"),
+        )
+    }
+
+    @Test
+    fun `nested scroll only hands off after the card is exhausted`() {
+        val src = cardWebViewSource()
+        // 必须用 onPostScroll（消费后剩余量）而不是 onPreScroll（先抢走整段）
+        assertTrue("应交由 onPostScroll 处理越界剩余量", src.contains("override fun onPostScroll"))
+        assertFalse("onPreScroll 会把整段位移抢先吃掉，外层列表将完全收不到滚动", src.contains("override fun onPreScroll"))
+    }
+
+    @Test
+    fun `scroll handoff reports the actually consumed distance`() {
+        val src = cardWebViewSource()
+        assertTrue(
+            "交还外层时应以 scrollBy 的真实位移为准，谎报消费量会让列表跳动",
+            src.contains("val actually = (view.scrollY - before).toFloat()"),
+        )
+    }
+
+    private companion object {
+        const val CARD_SOURCE =
+            "app/src/main/java/me/rerere/rikkahub/ui/components/richtext/HtmlWebViewBlock.kt"
+    }
+
+    /** 读取 HtmlWebViewBlock.kt 源码，从测试工作目录向上找到仓库根 */
+    private fun cardWebViewSource(): String {
+        var root: java.io.File = java.io.File(".").absoluteFile
+        while (!java.io.File(root, CARD_SOURCE).exists()) {
+            root = root.parentFile ?: break
+        }
+        return java.io.File(root, "app/src/main/java/me/rerere/rikkahub/ui/components/richtext/HtmlWebViewBlock.kt")
+            .readText()
+    }
 }

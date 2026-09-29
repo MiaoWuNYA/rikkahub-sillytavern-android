@@ -37,6 +37,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowUp01
 import me.rerere.hugeicons.stroke.View as ViewIcon
@@ -148,7 +152,30 @@ fun HtmlWebViewBlock(
         } else {
             0
         }
-        val scrollable = contentHeight > maxHeightDp
+
+        // 卡片被上限截断时自身可滚动。这里不抢手势，只在 WebView 已经滚到
+        // 边界后，把「它吃不下的那一部分」还给外层聊天列表，避免手势卡在卡片上。
+        val cardWebViewRef = remember { CardWebViewRef() }
+        val nestedScroll = remember {
+            object : NestedScrollConnection {
+                override fun onPostScroll(
+                    consumed: Offset,
+                    available: Offset,
+                    source: NestedScrollSource,
+                ): Offset {
+                    val view = cardWebViewRef.view ?: return Offset.Zero
+                    val dy = available.y
+                    if (dy == 0f) return Offset.Zero
+                    // available 已经是消费后剩余量；只有在卡片确实滚不动时才接。
+                    // 接的时候用 scrollBy 的真实结果作为"我消费了多少"，
+                    // 而不是原样返回 dy —— 谎报消费量会让列表跳动。
+                    val before = view.scrollY
+                    view.scrollBy(0, dy.toInt())
+                    val actually = (view.scrollY - before).toFloat()
+                    return if (actually == 0f) Offset.Zero else Offset(0f, actually)
+                }
+            }
+        }
 
         Box(
             modifier = Modifier
@@ -161,10 +188,12 @@ fun HtmlWebViewBlock(
                         Modifier.heightIn(min = CARD_MIN_HEIGHT)
                     }
                 )
+                .nestedScroll(nestedScroll)
         ) {
             AndroidView(
                 factory = { ctx ->
                     CardWebView(ctx).apply {
+                        cardWebViewRef.view = this
                         layoutParams = ViewGroup.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -197,6 +226,8 @@ fun HtmlWebViewBlock(
                     }
                 },
                 update = { webView ->
+                    // 供 NestedScrollConnection 判定卡片是否还能继续滚动
+                    cardWebViewRef.view = webView
                     if (webView.tag != inlinePage) {
                         webView.tag = inlinePage
                         webView.loadDataWithBaseURL(
@@ -258,75 +289,44 @@ fun HtmlWebViewBlock(
 /**
  * 内联卡片 WebView。
  *
- * 手势策略分两种情况，由 `View.canScrollVertically` 现场判定：
+ * 滚动策略只有一条：卡片超出高度上限时，滑动完全由 WebView 自己处理
+ * （它有完整的拖动、惯性与边界回弹），只有滚到边界、它确实吃不下的剩余量，
+ * 才经 Modifier.nestedScroll 的 onPostScroll 交还外层聊天列表。
  *
- * - 卡片高度已达软上限、内容仍有剩余 → WebView 自己滚动，把内容滚完；
- * - 卡片完整铺开（无剩余）或已滚到边界 → 把滑动交还外层聊天列表。
- *
- * 这样既不会像早期实现那样"卡片比内容矮却不让它滚"导致内容永久看不见，
- * 也不会像纯交还外层那样让长卡在列表里只能露出一截。点击/长按始终交给
- * WebView，保证卡内按钮与折叠面板可交互。
+ * 不在 WebView 上覆写 onTouchEvent —— 那会切断触摸与 WebView 内部
+ * OverScroller 的联系，把顺滑的惯性滚动退化成逐段 scrollBy，手感即"划不动"。
  */
+/**
+ * 持有卡片 WebView 的普通引用容器。
+ *
+ * 仅用于 NestedScrollConnection 回调里读取 WebView，不参与重组，
+ * 因此刻意不用 mutableStateOf —— 避免滚动过程中产生多余重组。
+ */
+private class CardWebViewRef {
+    var view: WebView? = null
+}
+
 private class CardWebView(context: Context) : WebView(context) {
     init {
-        // 卡片超出软上限时需要自身可滚动，滚动条保持不可见以避免破坏卡片外观
+        // 卡片超出上限时需要自身可滚动；滚动条隐藏以免破坏卡片外观
         isVerticalScrollBarEnabled = false
         isHorizontalScrollBarEnabled = false
         overScrollMode = View.OVER_SCROLL_NEVER
-        // 保证能接到竖向滑动（部分卡片样式会禁用触摸）
         isClickable = true
         isFocusable = true
     }
 
-    private var downX = 0f
-    private var downY = 0f
-    /** 是否已判定为"交给外层列表滚动"，判定后本手势不再回传给 WebView */
-    private var forwardingToParent = false
-    /** 抬手时是否为一次点击（需要让 WebView 收到完整事件序列才能触发卡内交互） */
-    private var possibleTap = true
-
-
-
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> {
-                downX = event.x
-                downY = event.y
-                forwardingToParent = false
-                possibleTap = true
-                // 按下时必须消费，否则收不到后续 MOVE/UP，卡内点击会失效
-                return super.onTouchEvent(event)
-            }
-
-            MotionEvent.ACTION_MOVE -> {
-                val dy = event.y - downY
-                val dx = kotlin.math.abs(event.x - downX)
-                if (kotlin.math.abs(dy) > 8f || dx > 8f) possibleTap = false
-                // 竖向位移占主导时，先看卡片自己还能不能滚：
-                // 能滚就让它消费（长卡在有限高度内也能滚到底，无需小眼睛）；
-                // 滚到边界了才让外层列表接管，保证手势不会"卡死"在卡片上。
-                if (!forwardingToParent && kotlin.math.abs(dy) > 10f && kotlin.math.abs(dy) > dx) {
-                    // 手指上滑（dy<0）表示要看下面 → 需要还能向下滚
-                    // 手指上滑（dy<0）= 想看下方内容 → 问 WebView 能否再向下滚
-                    val wantsDown = dy < 0f
-                    if (!canScrollVertically(if (wantsDown) 1 else -1)) {
-                        forwardingToParent = true
-                        requestDisallowInterceptTouchEvent(false)
-                    }
-                }
-            }
-
-            MotionEvent.ACTION_CANCEL -> {
-                forwardingToParent = false
-            }
-        }
-
-        // 已判定为滚动：不再消费，外层列表接管
-        if (forwardingToParent && event.actionMasked != MotionEvent.ACTION_UP) {
-            return false
-        }
-        return super.onTouchEvent(event)
-    }
+    // 刻意不覆写 onTouchEvent。
+    //
+    // 之前这里做过手势仲裁：DOWN 时记住"卡片还能不能滚"，能滚就 return true
+    // 把整段手势吞掉，滚到边界再 return false 交还外层。那套写法有两个致命问题：
+    //   1) return true 吞掉事件后，WebView 内部依赖 OverScroller 的惯性滚动
+    //      被打断，每一段 MOVE 都变成一次生硬的 scrollBy，手感就是"很卡、划不动"；
+    //   2) 同时外层还挂着一个 NestedScrollConnection 也在 scrollBy 同一个 View，
+    //      同一次拖动被应用两遍又互相抵消，表现为"能滑但几乎不动"。
+    //
+    // 现在把触摸完全交回 WebView 自己（它有完整的拖动+惯性+吸附实现），
+    // 越界后的剩余量由 Modifier.nestedScroll 统一接管，职责只有一处。
 }
 
 private const val HEIGHT_JS =
