@@ -86,7 +86,7 @@ import kotlin.uuid.Uuid
  */
 data class TavernImportResult(
     val assistant: Assistant,
-    val newLorebooks: List<Lorebook> = emptyList(),  // 从内嵌世界书创建的新Lorebook
+    val newLorebooks: List<Lorebook> = emptyList(),  // 保留字段：当前导入不再产生外置书（内嵌书随卡存储）
 )
 
 @Composable
@@ -520,7 +520,6 @@ private fun parseV2Card(context: Context, json: JsonObject, background: String?,
 
     val systemPrompt = buildTavernSystemPrompt(tavData)
     val presetMessages = buildPresetMessages(tavData, mergeGreetings)
-    val lorebooks = buildEmbeddedLorebooks(tavData)
 
     val assistant = Assistant(
         name = name,
@@ -531,7 +530,9 @@ private fun parseV2Card(context: Context, json: JsonObject, background: String?,
         tavernData = tavData,
     )
 
-    return assistant to lorebooks
+    // 内嵌世界书不再物化成独立外置书：官方模型里它就是卡的一部分，
+    // 由 PromptInjectionTransformer 在注入时直接从卡片构建，避免与全局书互相覆盖
+    return assistant to emptyList()
 }
 
 // ==================== V3 Parser ====================
@@ -574,7 +575,6 @@ private fun parseV3Card(context: Context, json: JsonObject, background: String?,
 
     val systemPrompt = buildTavernSystemPrompt(tavData)
     val presetMessages = buildPresetMessages(tavData, mergeGreetings)
-    val lorebooks = buildEmbeddedLorebooks(tavData)
 
     val assistant = Assistant(
         name = name,
@@ -585,7 +585,9 @@ private fun parseV3Card(context: Context, json: JsonObject, background: String?,
         tavernData = tavData,
     )
 
-    return assistant to lorebooks
+    // 内嵌世界书不再物化成独立外置书：官方模型里它就是卡的一部分，
+    // 由 PromptInjectionTransformer 在注入时直接从卡片构建，避免与全局书互相覆盖
+    return assistant to emptyList()
 }
 
 // ==================== Helpers ====================
@@ -904,7 +906,7 @@ private fun parseStickyInt(element: kotlinx.serialization.json.JsonElement?): In
 }
 
 /**
- * 将内嵌世界书条目转为Rikkahub的RegexInjection
+ * 将内嵌世界书条目转为Rikkahub的RegexInjection（用于导出/反向同步，故 id 随机）
  */
 private fun tavernEntryToInjection(entry: TavernBookEntry): PromptInjection.RegexInjection {
     return PromptInjection.RegexInjection(
@@ -970,37 +972,6 @@ internal fun mapTavernRole(role: String): me.rerere.ai.core.MessageRole = when (
     else -> me.rerere.ai.core.MessageRole.SYSTEM   // 官方世界书/深度提示默认 system
 }
 
-/**
- * 外置世界书 → 内嵌世界书同步：
- * 编辑外置世界书后，把绑定该世界书的角色卡内嵌世界书条目一并更新（最后修改生效）
- */
-internal fun syncExternalToEmbedded(
-    assistants: List<me.rerere.rikkahub.data.model.Assistant>,
-    lorebooks: List<me.rerere.rikkahub.data.model.Lorebook>,
-): List<me.rerere.rikkahub.data.model.Assistant> {
-    return assistants.map { assistant ->
-        val tav = assistant.tavernData ?: return@map assistant
-        val book = tav.embeddedBook ?: return@map assistant
-        val boundBook = lorebooks.firstOrNull { lb -> lb.id in assistant.lorebookIds }
-            ?: return@map assistant
-        val newEntries = boundBook.entries.map { injection ->
-            // 按内容+触发词匹配已有内嵌条目作为模板，避免条目增删/排序后按位置错位；
-            // 匹配不到（新增条目）用全新模板，保留各自独立 id
-            val template = book.entries.firstOrNull { e ->
-                e.content == injection.content && e.keys == injection.keywords
-            } ?: TavernBookEntry()
-            injectionToTavernEntry(injection, template)
-        }
-        assistant.copy(
-            tavernData = tav.copy(
-                embeddedBook = book.copy(
-                    entries = newEntries,
-                )
-            )
-        )
-    }
-}
-
 /** 映射酒馆 selectiveLogic Int 到 SelectiveLogic 枚举（官方 world_info_logic：0=AND_ANY 1=NOT_ALL 2=NOT_ANY 3=AND_ALL） */
 internal fun mapSelectiveLogic(logic: Int): SelectiveLogic = when (logic) {
     0 -> SelectiveLogic.AND_ANY
@@ -1010,7 +981,7 @@ internal fun mapSelectiveLogic(logic: Int): SelectiveLogic = when (logic) {
     else -> SelectiveLogic.AND_ANY
 }
 
-/** 反向转换：RegexInjection → TavernBookEntry（用于外置世界书→内嵌同步） */
+/** 反向转换：RegexInjection → TavernBookEntry（内嵌书编辑/导出用） */
 internal fun injectionToTavernEntry(
     injection: PromptInjection.RegexInjection,
     template: TavernBookEntry,
@@ -1085,59 +1056,6 @@ private fun mapInjectionToPosition(pos: InjectionPosition): Int = when (pos) {
     InjectionPosition.ANTAGONIZE, InjectionPosition.AFTER_DIALOG -> 7
     InjectionPosition.EM_TOP -> 5
     InjectionPosition.EM_BOTTOM -> 6
-}
-
-/**
- * 从内嵌世界书 + PHI + creator_notes 构建 Lorebook 列表
- */
-private fun buildEmbeddedLorebooks(tavData: TavernCharacterData): List<Lorebook> {
-    val entries = mutableListOf<PromptInjection.RegexInjection>()
-
-    // 内嵌世界书条目
-    tavData.embeddedBook?.let { book ->
-        entries.addAll(book.entries.map { tavernEntryToInjection(it) })
-    }
-
-    // PHI（post_history_instructions）→ 官方行为：聊天历史末尾之后追加（user 消息）
-    if (tavData.postHistoryInstructions.isNotBlank()) {
-        entries.add(PromptInjection.RegexInjection(
-            id = Uuid.random(),
-            name = "历史后续指令",
-            enabled = true,
-            priority = 0,
-            position = InjectionPosition.AFTER_DIALOG,
-            content = tavData.postHistoryInstructions,
-            constantActive = true,
-        ))
-    }
-
-    // 官方深度提示（extensions.depth_prompt）→ 按深度/角色注入对话（默认深度4、system）
-    if (tavData.depthPrompt.isNotBlank()) {
-        entries.add(PromptInjection.RegexInjection(
-            id = Uuid.random(),
-            name = "深度提示",
-            enabled = true,
-            priority = 0,
-            position = InjectionPosition.AT_DEPTH,
-            injectDepth = tavData.depthPromptDepth,
-            content = tavData.depthPrompt,
-            constantActive = true,
-            role = mapTavernRole(tavData.depthPromptRole),
-        ))
-    }
-
-    if (entries.isEmpty()) return emptyList()
-
-    return listOf(
-        Lorebook(
-            id = Uuid.random(),
-            name = tavData.embeddedBook?.name?.ifEmpty { "${tavData.name}的世界书" } ?: "${tavData.name}的世界书",
-            description = tavData.embeddedBook?.description ?: "",
-            isCharacterBook = true,
-            enabled = true,
-            entries = entries,
-        )
-    )
 }
 
 /**

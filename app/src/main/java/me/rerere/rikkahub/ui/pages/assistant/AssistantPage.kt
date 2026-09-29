@@ -343,14 +343,8 @@ private fun AssistantCreationSheet(
 
                     AssistantImporter(
                         onImport = { result ->
+                            // 内嵌世界书不再物化成独立外置书：随卡存储，注入时自动与全局书合并生效
                             update(result.assistant)
-                            // 保存内嵌世界书到 settings
-                            if (result.newLorebooks.isNotEmpty()) {
-                                val lorebookIds = vm.addLorebooks(result.newLorebooks)
-                                update(result.assistant.copy(
-                                    lorebookIds = result.assistant.lorebookIds + lorebookIds
-                                ))
-                            }
                             state.confirm()
                         },
                         modifier = Modifier.fillMaxWidth(),

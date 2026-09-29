@@ -17,9 +17,14 @@ import me.rerere.rikkahub.data.model.AuthorNotePosition
 import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.Lorebook
+import me.rerere.rikkahub.data.model.TavernBookEntry
+import me.rerere.rikkahub.data.model.TavernCharacterData
 import me.rerere.rikkahub.data.model.extractContextForMatching
 import me.rerere.rikkahub.data.model.isTriggered
 import me.rerere.rikkahub.data.model.matchedKeyScore
+import me.rerere.rikkahub.ui.pages.assistant.detail.mapSelectiveLogic
+import me.rerere.rikkahub.ui.pages.assistant.detail.mapTavernPosition
+import me.rerere.rikkahub.ui.pages.assistant.detail.mapTavernRole
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.uuid.Uuid
@@ -147,16 +152,19 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
             val (providerSetting, model) = settings.resolveEmbeddingModel()
                 ?: return@runCatching emptySet()
 
-            // 与 collectInjections 相同的书绑定过滤，只检索已绑定的书
+            // 与 collectInjections 相同的书绑定过滤，只检索已绑定的书。
+            // 角色卡内嵌书不在绑定列表里，单独从卡片构建（官方模型：内嵌书始终随卡生效）
             val effectiveLorebookIds = if (ctx.assistant.allowConversationPromptInjection) {
                 ctx.conversationLorebookIds
             } else {
                 ctx.assistant.lorebookIds
             }
-            val vectorizedEntries = settings.lorebooks
-                .filter { it.enabled && it.id in effectiveLorebookIds }
-                .flatMap { it.entries }
-                .filter { it.enabled && it.vectorized }
+            val vectorizedEntries = (
+                settings.lorebooks
+                    .filter { it.enabled && it.id in effectiveLorebookIds }
+                    .flatMap { it.entries } +
+                    buildCharacterBookEntries(ctx.assistant.tavernData)
+                ).filter { it.enabled && it.vectorized }
             if (vectorizedEntries.isEmpty()) return@runCatching emptySet()
 
             val query = messages.filter { it.role != MessageRole.SYSTEM }
@@ -228,6 +236,121 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
 
     @Volatile
     private var embedFailureUntil = 0L
+}
+
+/**
+ * 角色卡内嵌世界书 → RegexInjection 列表。
+ *
+ * 官方模型（world-info.js）：角色卡的 character_book 属于 characterLore，始终随卡生效，
+ * 与全局/会话世界书合并扫描，互不覆盖。这里直接从卡片构建，不走"物化成独立外置书"，
+ * 从结构上杜绝内嵌书与全局书互相覆盖。
+ *
+ * 同一卡片的同一条目在多次调用间需要稳定 id（sticky/cooldown/向量激活按 id 追踪），
+ * 用卡内 entry.id + 内容哈希生成，保证跨轮一致。
+ */
+internal fun buildCharacterBookEntries(tav: TavernCharacterData?): List<PromptInjection.RegexInjection> {
+    if (tav == null) return emptyList()
+    val entries = mutableListOf<PromptInjection.RegexInjection>()
+    // 内嵌世界书条目
+    tav.embeddedBook?.let { book ->
+        entries.addAll(book.entries.map { tavernEntryToRegexInjection(it) })
+    }
+    // PHI（post_history_instructions）→ 官方行为：聊天历史末尾之后追加（user 消息）
+    if (tav.postHistoryInstructions.isNotBlank()) {
+        entries.add(
+            PromptInjection.RegexInjection(
+                id = stableCharacterEntryId("phi", tav.postHistoryInstructions),
+                name = "历史后续指令",
+                enabled = true,
+                priority = 0,
+                position = InjectionPosition.AFTER_DIALOG,
+                content = tav.postHistoryInstructions,
+                constantActive = true,
+            )
+        )
+    }
+    // 官方深度提示（extensions.depth_prompt）→ 按深度/角色注入对话（默认深度4、system）
+    if (tav.depthPrompt.isNotBlank()) {
+        entries.add(
+            PromptInjection.RegexInjection(
+                id = stableCharacterEntryId("depth", tav.depthPrompt),
+                name = "深度提示",
+                enabled = true,
+                priority = 0,
+                position = InjectionPosition.AT_DEPTH,
+                injectDepth = tav.depthPromptDepth,
+                content = tav.depthPrompt,
+                constantActive = true,
+                role = mapTavernRole(tav.depthPromptRole),
+            )
+        )
+    }
+    return entries
+}
+
+/** 卡内条目 → RegexInjection（id 稳定，保证 sticky/cooldown 跨轮生效） */
+private fun tavernEntryToRegexInjection(entry: TavernBookEntry): PromptInjection.RegexInjection {
+    return PromptInjection.RegexInjection(
+        id = stableCharacterEntryId("entry:${entry.id}", entry.content),
+        name = entry.comment.ifEmpty { entry.keys.firstOrNull() ?: "Entry ${entry.id}" },
+        enabled = !entry.disable,
+        priority = entry.priority,
+        position = mapTavernPosition(entry.position),
+        injectDepth = entry.depth,
+        content = entry.content,
+        role = mapTavernRole(entry.role),
+        keywords = entry.keys,
+        secondaryKeys = entry.secondaryKeys,
+        useRegex = entry.useRegex,
+        caseSensitive = entry.caseSensitive,
+        matchWholeWords = entry.matchWholeWords,
+        excludeRecursion = entry.excludeRecursion,
+        preventRecursion = entry.preventRecursion,
+        delayUntilRecursion = entry.delayUntilRecursion,
+        scanDepth = entry.scanDepth,
+        constantActive = entry.constant,
+        selective = entry.selective,
+        selectiveLogic = mapSelectiveLogic(entry.selectiveLogic),
+        group = entry.group,
+        probability = entry.probability,
+        sticky = entry.sticky,
+        cooldown = entry.cooldown,
+        delay = entry.delay,
+        groupWeight = entry.groupWeight,
+        groupOverride = entry.groupOverride,
+        useProbability = entry.useProbability,
+        inclusionGroup = entry.inclusionGroup,
+        useGroupScoring = entry.useGroupScoring,
+        groupPriority = entry.groupPriority,
+        automationId = entry.automationId,
+        displayIndex = entry.displayIndex,
+        displayPosition = entry.displayPosition,
+        triggers = entry.triggers,
+        matchPersonaDescription = entry.matchPersonaDescription,
+        matchCharacterDescription = entry.matchCharacterDescription,
+        matchCharacterPersonality = entry.matchCharacterPersonality,
+        matchCharacterDepthPrompt = entry.matchCharacterDepthPrompt,
+        matchScenario = entry.matchScenario,
+        matchCreatorNotes = entry.matchCreatorNotes,
+        ignoreBudget = entry.ignoreBudget,
+    )
+}
+
+/**
+ * 卡内条目在排序时借用的占位书：只用于 world_info_character_strategy 的 isCharacterBook 判定，
+ * 不会作为"外置绑定书"被引用。
+ */
+private val CHARACTER_BOOK_PLACEHOLDER = Lorebook(name = "character_book", isCharacterBook = true)
+
+/**
+ * 卡内条目的稳定 id：以 (卡内 key, 内容) 哈希生成，同一卡同一条目每次得到同一个 id。
+ * 注意与"导入时物化的外置书"条目的随机 id 不同，故迁移时必须删除旧的物化书，
+ * 否则同一份内容会以两个 id 注入两次。
+ */
+private fun stableCharacterEntryId(key: String, content: String): Uuid {
+    val h = (key.hashCode().toLong() shl 32) or (content.hashCode().toLong() and 0xFFFFFFFFL)
+    val h2 = (h * 31 + content.length).toLong()
+    return Uuid.fromLongs(h, h2)
 }
 
 /**
@@ -397,19 +520,23 @@ internal fun collectInjections(
         .forEach { injections.add(it) }
 
     // 2. 获取关联的 Lorebook 中被触发的 RegexInjection。
-    //    官方模型（world-info.js checkWorldInfo）：角色卡内嵌书在导入时转成独立外置书并绑定，
-    //    注入只读外置绑定；解绑后不再注入。所有选中书的条目合并成一个列表统一扫描（全局设置）
-    val enabledLorebooks = lorebooks.filter {
+    //    官方模型（world-info.js checkWorldInfo）：characterLore（角色卡内嵌书）+ globalLore
+    //    （绑定的外置书）合并成一个列表统一扫描，两者始终同时生效、互不覆盖。
+    //    内嵌书直接从卡片构建（不物化成外置书），所以不可能与全局书互相改写。
+    val boundLorebooks = lorebooks.filter {
         it.enabled && effectiveLorebookIds.contains(it.id)
     }
+    // 角色卡内嵌书始终生效，不受绑定开关影响（解绑外置书不影响卡内书）
+    val characterEntries = buildCharacterBookEntries(assistant.tavernData)
     android.util.Log.d(
         "WorldInfo",
         "assistant=${assistant.name}(${assistant.id}) allowConv=${assistant.allowConversationPromptInjection} " +
             "assistantBooks=${assistant.lorebookIds.size} convBooks=${conversationLorebookIds.size} " +
             "effective=${effectiveLorebookIds.size} allBooks=${lorebooks.size} " +
-            "enabledBooks=${enabledLorebooks.map { it.name to it.entries.size }}",
+            "boundBooks=${boundLorebooks.map { it.name to it.entries.size }} " +
+            "characterEntries=${characterEntries.size}",
     )
-    if (enabledLorebooks.isNotEmpty()) {
+    if (boundLorebooks.isNotEmpty() || characterEntries.isNotEmpty()) {
         // 提取上下文用于匹配（只取非 SYSTEM 消息）
         val nonSystemMessages = messages.filter { it.role != MessageRole.SYSTEM }
         // 官方 failedProbabilityChecks：本次扫描中概率未通过的条目，后续递归/补扫不再重新掷
@@ -428,9 +555,11 @@ internal fun collectInjections(
 
         // 官方 getSortedEntries：所有选中书的条目合并成一个列表，按策略排序。
         // 排序顺序影响扫描顺序（概率/预算检查顺序），官方 sortFn = (a, b) => b.order - a.order（order 降序）
-        val sortedEntries = enabledLorebooks
-            .flatMap { book -> book.entries.map { entry -> book to entry } }
-            .let { pairs ->
+        // 内嵌书条目按 isCharacterBook=true 参与官方排序策略
+        val sortedEntries = (
+            boundLorebooks.flatMap { book -> book.entries.map { entry -> book to entry } } +
+                characterEntries.map { CHARACTER_BOOK_PLACEHOLDER to it }
+            ).let { pairs ->
                 when (worldInfoCharacterStrategy) {
                     // 0 = evenly：全局与角色卡条目混排（官方 [...globalLore, ...characterLore].sort(sortFn)）
                     0 -> pairs.sortedWith(compareByDescending { it.second.priority })
