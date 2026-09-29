@@ -112,6 +112,10 @@ fun ChatMessage(
     model: Model? = null,
     assistant: Assistant? = null,
     lastMessage: Boolean = false,
+    // 消息深度：0 = 最新一条，向前递增。正则脚本（尤其前端卡的 HTML 注入）
+    // 用 minDepth/maxDepth 限定生效范围，必须传真实值，否则 maxDepth 失效、
+    // 历史消息会被重复注入 HTML。
+    messageDepth: Int = 0,
     onFork: () -> Unit,
     onRegenerate: () -> Unit,
     onImpersonate: (() -> Unit)? = null,
@@ -169,6 +173,7 @@ fun ChatMessage(
         ProvideTextStyle(textStyle) {
             MessagePartsBlock(
                 assistant = assistant,
+                messageDepth = messageDepth,
                 role = message.role,
                 parts = message.parts,
                 annotations = message.annotations,
@@ -284,6 +289,7 @@ fun ChatMessage(
 @Composable
 private fun MessagePartsBlock(
     assistant: Assistant?,
+    messageDepth: Int,
     role: MessageRole,
     model: Model?,
     parts: List<UIMessagePart>,
@@ -416,6 +422,7 @@ private fun MessagePartsBlock(
                                                     assistant = assistant,
                                                     scope = AssistantAffectScope.USER,
                                                     visual = true,
+                                                    depth = messageDepth,
                                                 ),
                                                 onClickCitation = handleClickCitation
                                             )
@@ -451,6 +458,7 @@ private fun MessagePartsBlock(
                                                         assistant = assistant,
                                                         scope = AssistantAffectScope.ASSISTANT,
                                                         visual = true,
+                                                        depth = messageDepth,
                                                     ),
                                                     onClickCitation = handleClickCitation,
                                                 )
@@ -463,6 +471,7 @@ private fun MessagePartsBlock(
                                             assistant = assistant,
                                             scope = AssistantAffectScope.ASSISTANT,
                                             visual = true,
+                                            depth = messageDepth,
                                         ),
                                         onClickCitation = handleClickCitation,
                                         modifier = Modifier

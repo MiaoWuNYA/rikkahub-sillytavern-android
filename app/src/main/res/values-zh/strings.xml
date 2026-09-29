@@ -175,6 +175,7 @@
   <string name="assistant_page_regex_replace_string">替换字符串</string>
   <string name="assistant_page_regex_title">消息正则表达式</string>
   <string name="assistant_page_regex_visual_only">仅显示（勾选后只影响界面显示；不勾选则显示和提示词都生效）</string>
+  <string name="assistant_page_regex_prompt_only">仅提示词（勾选后只影响发送给 AI 的内容；界面显示保留原文）</string>
   <string name="assistant_page_remove">移除</string>
   <string name="assistant_page_remove_background">移除背景</string>
   <string name="assistant_page_save">保存</string>
