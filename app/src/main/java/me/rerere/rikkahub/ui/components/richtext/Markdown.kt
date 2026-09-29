@@ -242,12 +242,13 @@ fun MarkdownBlock(
     val settings = LocalSettings.current.displaySetting
     val darkMode = LocalDarkMode.current
 
-    // 酒馆角色卡等 HTML 富文本：把 HTML 卡片拆出来折叠渲染（支持 <style>/class CSS），
-    // 必须在引号染色前处理，否则染色注入的 <span> 会破坏 HTML 属性。
-    // HTML 部分默认折叠成按钮：WebView 为保证聊天列表可滚动不消费触摸事件，
-    // 整段塞进 WebView 会让卡片前后的普通文本也无法选中/交互
+    // 酒馆角色卡等 HTML 富文本：把 HTML 卡片拆出来交给 WebView 渲染
+    // （支持 <style>/class CSS），必须在引号染色前处理，否则染色注入的
+    // <span> 会破坏 HTML 属性。
     // 前端卡（```html 围栏包完整 HTML 文档）优先按围栏拆分，否则 <html> 前的
-    // DOCTYPE/head 会被当成散文渲染出一堆源码
+    // DOCTYPE/head 会被当成散文渲染出一堆源码。
+    // 卡片默认内联展开、高度自适应——对齐官方把卡片内联进消息 DOM 的行为，
+    // 用户不需要额外点击就能看到完整卡片（issue：网页卡滑动/显示异常）。
     val fencedCard = findFencedHtmlDocument(content)
     val htmlCard = fencedCard ?: findHtmlCard(content)?.let { (start, html) ->
         content.substring(0, start).trim() to html
@@ -257,7 +258,7 @@ fun MarkdownBlock(
             if (prose.isNotEmpty()) {
                 MarkdownBlock(content = prose, onClickCitation = onClickCitation)
             }
-            HtmlCardBlock(html = cardHtml)
+            HtmlWebViewBlock(html = cardHtml)
         }
         return
     }
