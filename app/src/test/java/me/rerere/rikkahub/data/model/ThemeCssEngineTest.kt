@@ -196,6 +196,32 @@ class ThemeCssEngineTest {
     }
 
     @Test
+    fun `real theme with bottom-only radius keeps its radius`() {
+        // 真实主题 Titania_柴犬主题美化_0326 的写法：气泡只圆下方两角。
+        // 若按首值取值会得到 0，气泡渲染成完全直角，用户观感就是"主题完全没生效"。
+        val css = """
+            :root { --box-border-radius: 5px; }
+            .mes { width: 100%; border: none !important; }
+            .mes_block {
+                background-color: #7C4F49;
+                border: 1px solid transparent;
+                border-top: 2px solid #63382f;
+                border-radius: 0px 0px 12px 12px;
+            }
+        """.trimIndent()
+        assertEquals(12f, extractBubbleCornerRadius(css))
+    }
+
+    @Test
+    fun `radius resolves through a variable`() {
+        val css = """
+            :root { --box-border-radius: 18px; }
+            .mes_block { border-radius: var(--box-border-radius); }
+        """.trimIndent()
+        assertEquals(18f, extractBubbleCornerRadius(css))
+    }
+
+    @Test
     fun `media queries do not break rule parsing`() {
         val css = """
             @media (max-width: 600px) {

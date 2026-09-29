@@ -396,14 +396,18 @@ fun extractBubbleCornerRadius(css: String?): Float? {
     if (css.isNullOrBlank()) return null
     // 用 CSS 引擎算层叠结果：主题常把圆角写成变量（实测 138 处 var() 引用）、
     // 或与其它规则争抢同一属性，靠正则逐条扫描会取到被覆盖的旧值。
-    // 只取首个数值：`10px 10px 0 0` 取左上角，避免 maxOf 忽略掉作者刻意的 0；
-    // 同时必须支持裸 0（`0 8px 8px 0` 的首值没有单位）。
     val radius = bubbleDeclarations(css)["border-radius"] ?: return null
     if (radius.contains('%')) return PERCENT_RADIUS_DP
-    val first = radius.trim().split(Regex("""[\s/]+""")).firstOrNull() ?: return null
-    val px = Regex("""^(\d+(?:\.\d+)?)(?:px)?$""").find(first)
-        ?.groupValues?.get(1)?.toFloatOrNull()
-        ?: return null
+    // 四角写法取最大角，而不是首个值。
+    // 主题大量使用「只圆某几角」的写法（如 `0px 0px 12px 12px` 只圆下方两角、
+    // `12px 12px 0 0` 只圆上方），若按首个值取会得到 0，气泡渲染成完全直角，
+    // 看上去就是"主题一丁点都没生效"。Compose 只能整体圆角，取最大值最接近作者意图。
+    val corners = radius.trim().split(Regex("""[\s/]+""")).filter { it.isNotBlank() }
+    val values = corners.mapNotNull { corner ->
+        Regex("""^(\d+(?:\.\d+)?)(?:px)?$""").find(corner)?.groupValues?.get(1)?.toFloatOrNull()
+    }
+    if (values.isEmpty()) return null
+    val px = values.max()
     if (px < 0f) return null
     // 真实主题圆角上限可达 999px（胶囊），不再夹到 28px——
     // 夹取会让「大圆角」主题看起来几乎没圆角，与官方观感不符。
