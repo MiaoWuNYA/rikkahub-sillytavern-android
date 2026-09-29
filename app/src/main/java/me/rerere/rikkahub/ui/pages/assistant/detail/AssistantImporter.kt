@@ -66,6 +66,8 @@ import me.rerere.rikkahub.data.model.TavernEmbeddedBook
 import me.rerere.rikkahub.data.model.TavernBookEntry
 import me.rerere.rikkahub.data.model.TavernAsset
 import me.rerere.rikkahub.data.model.SelectiveLogic
+import me.rerere.rikkahub.data.model.AssistantRegex
+import me.rerere.rikkahub.data.export.SillyTavernRegexImporter
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
@@ -528,6 +530,11 @@ private fun parseV2Card(context: Context, json: JsonObject, background: String?,
         presetMessages = presetMessages,
         background = background,
         tavernData = tavData,
+        // 前端卡（HTML 卡）靠 extensions.regex_scripts 在渲染时把占位标签
+        // （<zd_status>、<StatusPlaceHolderImpl/> 等）替换成整段 HTML 文档。
+        // 不导入这些脚本，卡只会显示成标签文字。复用全局正则脚本的导入实现，
+        // 避免两套语义分叉。
+        regexes = extractCardRegexScripts(tavData),
     )
 
     // 内嵌世界书不再物化成独立外置书：官方模型里它就是卡的一部分，
@@ -583,6 +590,11 @@ private fun parseV3Card(context: Context, json: JsonObject, background: String?,
         presetMessages = presetMessages,
         background = background,
         tavernData = tavData,
+        // 前端卡（HTML 卡）靠 extensions.regex_scripts 在渲染时把占位标签
+        // （<zd_status>、<StatusPlaceHolderImpl/> 等）替换成整段 HTML 文档。
+        // 不导入这些脚本，卡只会显示成标签文字。复用全局正则脚本的导入实现，
+        // 避免两套语义分叉。
+        regexes = extractCardRegexScripts(tavData),
     )
 
     // 内嵌世界书不再物化成独立外置书：官方模型里它就是卡的一部分，
@@ -1084,4 +1096,20 @@ private fun buildPresetMessages(d: TavernCharacterData, mergeGreetings: Boolean 
         }
     }
     return messages
+}
+
+/**
+ * 从角色卡 extensions.regex_scripts 提取正则脚本。
+ *
+ * 官方把前端卡的 HTML 挂在正则脚本的 replaceString 上，由渲染阶段执行；
+ * 解析复用 [SillyTavernRegexImporter]（与用户手动导入正则脚本走同一条路径）。
+ */
+private fun extractCardRegexScripts(tavData: TavernCharacterData): List<AssistantRegex> {
+    val raw = tavData.extensionsRaw.ifBlank { return emptyList() }
+    val extensions = runCatching {
+        Json.parseToJsonElement(raw) as? JsonObject
+    }.getOrNull() ?: return emptyList()
+    val scripts = extensions["regex_scripts"] as? JsonArray ?: return emptyList()
+    if (scripts.isEmpty()) return emptyList()
+    return SillyTavernRegexImporter.parse(scripts.toString())
 }

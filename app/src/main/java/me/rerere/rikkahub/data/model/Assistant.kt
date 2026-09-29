@@ -155,6 +155,11 @@ data class AssistantRegex(
     val replaceString: String = "", // 替换字符串
     val affectingScope: Set<AssistantAffectScope> = setOf(),
     val visualOnly: Boolean = false, // 仅显示层生效；false = 显示与提示词两层都生效（对齐酒馆 markdownOnly/promptOnly 语义）
+    // 酒馆 promptOnly：只改「发送给 AI」的内容，显示用原文。
+    // 单靠 visualOnly 无法表达三态，导致前端卡的「对 AI 隐藏状态栏」脚本
+    // 按数组顺序先清掉占位标签，后续注入 HTML 的显示脚本再也匹配不到，
+    // 卡片整体不渲染。默认 false：老数据行为不变。
+    val promptOnly: Boolean = false,
     // 官方酒馆深度过滤：1 = 最新一条消息，0 = 不限制；导入 minDepth/maxDepth 字段
     val minDepth: Int = 0,
     val maxDepth: Int = 0,
@@ -207,11 +212,15 @@ fun String.replaceRegexes(
     return assistant.regexes.fold(this) { acc, regex ->
         val depthOk = depth <= 0 || ((regex.minDepth <= 0 || depth >= regex.minDepth) &&
             (regex.maxDepth <= 0 || depth <= regex.maxDepth))
-        // 层级语义（对齐官方酒馆 markdownOnly/promptOnly）：
-        // visualOnly=true 仅影响显示；false/默认则显示与提示词两层都生效。
-        // 旧实现用 visualOnly == visual 严格相等，一条规则只能命中一层，
-        // 酒馆默认导入（markdownOnly=false, promptOnly=false → visualOnly=false）在聊天界面完全看不到效果。
-        val layerOk = visual || !regex.visualOnly
+        // 层级语义（对齐官方酒馆 markdownOnly/promptOnly 三态）：
+        //   markdownOnly=true         → 仅显示层
+        //   promptOnly=true           → 仅提示词层（显示层必须放行，否则会误清占位标签）
+        //   两者都 false（酒馆默认）    → 两层都生效
+        val layerOk = when {
+            regex.promptOnly -> !visual
+            regex.visualOnly -> visual
+            else -> true
+        }
         if (regex.enabled && depthOk && layerOk && regex.affectingScope.contains(scope)) {
             replaceWithRegex(acc, regex)
         } else {

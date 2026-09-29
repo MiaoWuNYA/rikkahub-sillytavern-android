@@ -441,8 +441,8 @@ private data class SillyTavernPresetFlat(
  * 酒馆正则脚本（Regex Script）解析：
  * 单对象或数组（酒馆"导出全部"为数组），映射为 AssistantRegex。
  * placement：1=用户输入 2=AI输出 3=Slash命令 4=世界信息 5=推理（3-5 本地不适用，忽略）；
- * markdownOnly=仅影响显示 → visualOnly；promptOnly=仅影响发送给 AI 的提示；
- * 两者都未勾选（酒馆默认）= 显示与提示词两层都生效 → visualOnly=false。
+ * markdownOnly=仅影响显示 → visualOnly；promptOnly=仅影响发送给 AI 的提示 → promptOnly；
+ * 两者都未勾选（酒馆默认）= 显示与提示词两层都生效。
  */
 object SillyTavernRegexImporter {
     fun parse(json: String): List<AssistantRegex> = runCatching {
@@ -467,12 +467,12 @@ object SillyTavernRegexImporter {
             if (placement.isEmpty() || 1 in placement) add(AssistantAffectScope.USER)
             if (placement.isEmpty() || 2 in placement) add(AssistantAffectScope.ASSISTANT)
         }
-        // 官方语义：(F,F)=两层都生效（最常见）→ visualOnly=false；
-        // (T,F)=仅显示 → visualOnly=true；(F,T)=仅提示词 → visualOnly=false；
-        // (T,T)=官方 UI 互斥取值异常，按仅显示处理（宁可影响显示也不动提示词）
+        // 官方语义三态：(F,F)=两层都生效（最常见）；(T,F)=仅显示；(F,T)=仅提示词。
+        // promptOnly 必须单独记录：前端卡常在显示脚本之前放一条 promptOnly 的
+        // 「对 AI 隐藏状态栏」，若也作用到显示层，占位标签会被提前清掉，卡片不渲染。
         val markdownOnly = obj["markdownOnly"]?.jsonPrimitive?.booleanOrNull ?: false
         val promptOnly = obj["promptOnly"]?.jsonPrimitive?.booleanOrNull ?: false
-        val visualOnly = markdownOnly || (markdownOnly && promptOnly)
+        val visualOnly = markdownOnly && !promptOnly
         // 官方深度过滤：minDepth/maxDepth 为 null 时不限制（本地 0 表示不限制）
         val minDepth = obj["minDepth"]?.jsonPrimitive?.intOrNull ?: 0
         val maxDepth = obj["maxDepth"]?.jsonPrimitive?.intOrNull ?: 0
@@ -484,6 +484,7 @@ object SillyTavernRegexImporter {
             replaceString = obj["replaceString"]?.jsonPrimitive?.contentOrNull ?: "",
             affectingScope = scopes,
             visualOnly = visualOnly,
+            promptOnly = promptOnly,
             minDepth = minDepth,
             maxDepth = maxDepth,
         )

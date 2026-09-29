@@ -337,6 +337,8 @@ private fun ChatListNormal(
                             model = node.currentMessage.modelId?.let(modelById::get),
                             assistant = assistant,
                             loading = loading && index == lastMessageIndex,
+                            // 官方深度语义：最新一条为 0，向前递增
+                            messageDepth = lastMessageIndex - index,
                             onRegenerate = {
                                 onRegenerate(node.currentMessage)
                             },
