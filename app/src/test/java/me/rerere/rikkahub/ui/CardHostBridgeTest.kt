@@ -163,6 +163,46 @@ class CardHostBridgeTest {
         assertTrue("错误应透传宿主", shim.contains("rikkaHostGen.toast("))
     }
 
+    // ---- setChatMessages：卡写回开局正文的唯一通道 ----
+
+    @Test
+    fun `setChatMessages is provided and returns a promise`() {
+        val shim = cardHostShim()
+        // 卡里对缺失是硬失败：
+        // if (typeof setChatMessages !== 'function') throw new Error('当前宿主没有 setChatMessages...')
+        // 所以它必须真的存在，而不是靠 typeof 守卫降级
+        assertTrue("应提供 setChatMessages", shim.contains("window.setChatMessages = function"))
+        assertTrue("应返回 Promise", shim.contains("return awaitHost(window.rikkaHostGen.setChatMessages("))
+    }
+
+    @Test
+    fun `setChatMessages normalizes the card's message shape`() {
+        val shim = cardHostShim()
+        // 卡传的是 [{message_id, is_hidden, message}] + {refresh}
+        assertTrue("应读取 message_id", shim.contains("msg.message_id"))
+        assertTrue("应读取 message", shim.contains("msg.message"))
+        assertTrue("应读取 is_hidden", shim.contains("msg.is_hidden"))
+        assertTrue("应读取 refresh", shim.contains("options.refresh"))
+    }
+
+    @Test
+    fun `hidden-only writes do not fail on a missing message field`() {
+        val shim = cardHostShim()
+        // 卡会调 setChatMessages([{message_id:0, is_hidden:true}], {refresh:'none'})
+        // 这条没有 message 字段；若把它当成空正文直接 reject，
+        // 卡的 hideOpeningUiFromAI() 会静默失败，卡面就一直留在消息里
+        assertTrue("message 缺失应归一为空串", shim.contains("(msg.message == null) ? ''"))
+    }
+
+    @Test
+    fun `shared await helper is used by every host round-trip`() {
+        val shim = cardHostShim()
+        // generate 与 setChatMessages 共用同一套轮询协议；
+        // 各写一份迟早会在某一侧漏掉冒号比较之类的细节
+        assertTrue("应抽出 awaitHost", shim.contains("function awaitHost(id)"))
+        assertTrue("generate 应复用它", shim.contains("return awaitHost(id);"))
+    }
+
     @Test
     fun `card code never sees a host call that would throw synchronously`() {
         val shim = cardHostShim()

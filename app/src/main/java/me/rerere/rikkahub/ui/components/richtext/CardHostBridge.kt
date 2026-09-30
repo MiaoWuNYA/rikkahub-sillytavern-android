@@ -35,6 +35,8 @@ class CardHostBridge(
     private val onGenerate: suspend (prompt: String, onDelta: (String) -> Unit) -> String,
     /** 透传卡的 toastr 提示；simple=true 表示警告级 */
     private val onToast: (message: String, warning: Boolean) -> Unit = { _, _ -> },
+    /** 把卡产出的一段正文写进指定序号的聊天消息（卡用它落开局正文） */
+    private val onWriteMessage: suspend (nodeIndex: Int, text: String) -> Unit = { _, _ -> },
 ) {
     /** 未完成请求：id → 等待结果。JS 侧的 Promise 与之对应。 */
     private val pending = ConcurrentHashMap<String, CompletableDeferred<String>>()
@@ -140,6 +142,44 @@ class CardHostBridge(
     @JavascriptInterface
     fun toast(message: String, warning: Boolean) {
         onToast(message, warning)
+    }
+
+    /**
+     * 卡调用 `setChatMessages(messages, options)` 把开局正文写回第 0 条消息。
+     *
+     * 这是开出开局后**必须**走通的一步：卡里写着
+     * `if (typeof setChatMessages !== 'function') throw new Error('当前宿主没有 setChatMessages，无法写入第 0 条消息')`，
+     * 缺了它，生成再成功也落不了地。
+     *
+     * 返回约定与 `generate` 一致：立刻返回请求 id，
+     * JS 侧用同一个 [poll] 轮询结果（成功时正文为空串）。
+     * 卡里是 `await setChatMessages(...)`，await 一个 Promise 即可。
+     */
+    @JavascriptInterface
+    fun setChatMessages(payloadJson: String): String {
+        val id = "msg-" + idSeed.incrementAndGet()
+        val deferred = CompletableDeferred<String>()
+        pending[id] = deferred
+
+        val parsed = runCatching { JSONObject(payloadJson) }.getOrNull()
+        val messageId = parsed?.optInt("message_id", 0) ?: 0
+        val text = parsed?.optString("message").orEmpty()
+
+        if (text.isBlank()) {
+            pending.remove(id)
+            deferred.completeExceptionally(IllegalArgumentException("开场白正文为空"))
+            return id
+        }
+
+        scope.launch(Dispatchers.IO) {
+            try {
+                onWriteMessage(messageId, text)
+                deferred.complete("")
+            } catch (t: Throwable) {
+                deferred.completeExceptionally(t)
+            }
+        }
+        return id
     }
 
     fun dispose() {

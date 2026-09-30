@@ -104,6 +104,11 @@ fun HtmlWebViewBlock(
     modifier: Modifier = Modifier,
     onCollapse: (() -> Unit)? = null,
     onGenerate: (suspend (prompt: String, onDelta: (String) -> Unit) -> String)? = null,
+    /**
+     * 卡把开局正文写回指定序号消息的入口（卡内 `setChatMessages`）。
+     * 为 null 时卡会抛「当前宿主没有 setChatMessages」。
+     */
+    onWriteMessage: (suspend (nodeIndex: Int, text: String) -> Unit)? = null,
 ) {
     val density = LocalDensity.current
     val colorScheme = MaterialTheme.colorScheme
@@ -164,11 +169,12 @@ fun HtmlWebViewBlock(
     // 让卡走到它自己的「宿主未注入」分支，而不是拿到一个永远 reject 的假接口。
     val toaster = LocalToaster.current
     val hostScope = rememberCoroutineScope()
-    val hostBridge = remember(html, onGenerate) {
+    val hostBridge = remember(html, onGenerate, onWriteMessage) {
         if (onGenerate == null) null
         else CardHostBridge(
             scope = hostScope,
             onGenerate = onGenerate,
+            onWriteMessage = { nodeIndex, text -> onWriteMessage?.invoke(nodeIndex, text) },
             onToast = { msg, warning ->
                 // 从 IO 线程回主线程弹提示
                 hostScope.launch {

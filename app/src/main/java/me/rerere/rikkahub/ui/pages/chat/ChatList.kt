@@ -169,6 +169,28 @@ fun ChatList(
                 )
             }
         }
+    // 卡产出开局正文后写回第 0 条消息。卡里的 message_id 是"消息序号"，
+    // 对应这里的 messageNodes 下标；写回即替换该节点的正文。
+    val onCardWriteMessage: suspend (Int, String) -> Unit =
+        remember(chatService, conversation.id) {
+            { nodeIndex, text ->
+                chatService.updateConversationState(conversation.id) { conv ->
+                    if (nodeIndex !in conv.messageNodes.indices) conv
+                    else conv.copy(
+                        messageNodes = conv.messageNodes.mapIndexed { i, node ->
+                            if (i != nodeIndex) node
+                            else {
+                                val updated = node.messages.map { m ->
+                                    m.copy(parts = listOf(me.rerere.ai.ui.UIMessagePart.Text(text)))
+                                }
+                                if (updated.isEmpty()) node
+                                else node.copy(messages = updated)
+                            }
+                        }
+                    )
+                }
+            }
+        }
     AnimatedContent(
         targetState = previewMode,
         label = "ChatListMode",
@@ -212,6 +234,7 @@ fun ChatList(
                 onToggleFavorite = onToggleFavorite,
                 onConversationSystemPromptChange = onConversationSystemPromptChange,
                 onCardGenerate = onCardGenerate,
+                onCardWriteMessage = onCardWriteMessage,
             )
         }
     }
@@ -244,6 +267,7 @@ private fun ChatListNormal(
     onToggleFavorite: ((MessageNode) -> Unit)? = null,
     onConversationSystemPromptChange: ((String?) -> Unit)? = null,
     onCardGenerate: (suspend (prompt: String, onDelta: (String) -> Unit) -> String)? = null,
+    onCardWriteMessage: (suspend (Int, String) -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     val loadingState by rememberUpdatedState(loading)

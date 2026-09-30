@@ -79,6 +79,31 @@ internal fun cardHostShim(): String = """
   var POLL_MS = 120;
 
   /**
+   * 轮询一个宿主请求直到出结果。
+   *
+   * 成功/失败协议：空串=还在跑；"ok:\u0000<正文>"=成功；"err:\u0000<消息>"=失败。
+   * kind 截出来自带尾冒号（"ok:" / "err:"），比较时必须带上，
+   * 否则永远走 reject 分支，卡会显示「生成失败：<正文>」。
+   */
+  function awaitHost(id) {
+    return new Promise(function (resolve, reject) {
+      var timer = setInterval(function () {
+        var raw;
+        try { raw = window.rikkaHostGen.poll(id); } catch (e) { return; }
+        if (raw === '') return; // 还在跑
+        clearInterval(timer);
+        // 分隔符是 NUL：正文里出现的冒号不会把结果切坏
+        var sep = raw.indexOf('\u0000');
+        if (sep < 0) { reject(new Error('宿主返回格式异常')); return; }
+        var kind = raw.substring(0, sep);
+        var body = raw.substring(sep + 1);
+        if (kind === 'ok:') resolve(body);
+        else reject(new Error(body || '操作失败'));
+      }, POLL_MS);
+    });
+  }
+
+  /**
    * window.generate(request) → Promise<string>
    *
    * 官方契约：request.user_input 是 prompt，generation_id 用于流式过滤。
@@ -86,29 +111,40 @@ internal fun cardHostShim(): String = """
    * 所以必须返回标准 Promise。
    */
   window.generate = function (request) {
-    return new Promise(function (resolve, reject) {
-      var id;
-      try {
-        id = window.rikkaHostGen.generate(JSON.stringify(request || {}));
-      } catch (e) { reject(e); return; }
-      if (!id || id === '-') { reject(new Error('生成请求无效：prompt 为空')); return; }
+    var id;
+    try {
+      id = window.rikkaHostGen.generate(JSON.stringify(request || {}));
+    } catch (e) { return Promise.reject(e); }
+    if (!id || id === '-') return Promise.reject(new Error('生成请求无效：prompt 为空'));
+    return awaitHost(id);
+  };
 
-      var timer = setInterval(function () {
-        var raw;
-        try { raw = window.rikkaHostGen.poll(id); } catch (e) { return; }
-        if (raw === '') return; // 还在跑
-        clearInterval(timer);
-        // 分隔符是 NUL：正文里出现的冒号不会把结果切坏。
-        // kind 截出来自带尾冒号（"ok:" / "err:"），比较时必须带上，
-        // 否则永远走 reject 分支，卡会显示「生成失败：<正文>」。
-        var sep = raw.indexOf('\u0000');
-        if (sep < 0) { reject(new Error('宿主返回格式异常')); return; }
-        var kind = raw.substring(0, sep);
-        var body = raw.substring(sep + 1);
-        if (kind === 'ok:') resolve(body);
-        else reject(new Error(body || '生成失败'));
-      }, POLL_MS);
-    });
+  /**
+   * window.setChatMessages(messages, options) → Promise
+   *
+   * 卡用它把开局正文写回第 0 条消息：
+   *   await setChatMessages([{message_id:0, is_hidden:false, message:正文}], {refresh:'affected'})
+   * 以及隐藏卡面：
+   *   setChatMessages([{message_id:0, is_hidden:true}], {refresh:'none'})
+   *
+   * 卡里对缺失是硬失败：
+   *   if (typeof setChatMessages !== 'function') throw new Error('当前宿主没有 setChatMessages，无法写入第 0 条消息')
+   * 所以必须真的存在，且返回 Promise（卡用 await / .catch）。
+   */
+  window.setChatMessages = function (messages, options) {
+    var list = Array.isArray(messages) ? messages : [];
+    var msg = list[0] || {};
+    var payload = {
+      message_id: (typeof msg.message_id === 'number') ? msg.message_id : 0,
+      message: (msg.message == null) ? '' : String(msg.message),
+      is_hidden: !!msg.is_hidden,
+      refresh: (options && options.refresh) ? String(options.refresh) : 'affected'
+    };
+    try {
+      return awaitHost(window.rikkaHostGen.setChatMessages(JSON.stringify(payload)));
+    } catch (e) {
+      return Promise.reject(e);
+    }
   };
 
   // ---- toastr：卡用 window.toastr && typeof window.toastr.error === 'function' 守卫 ----
