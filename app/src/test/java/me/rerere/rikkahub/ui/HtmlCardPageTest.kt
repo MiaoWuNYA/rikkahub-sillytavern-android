@@ -157,83 +157,82 @@ class HtmlCardPageTest {
 
     // === 卡片滚动手势的回归测试（源码级） ===
     //
-    // 「能滑但几乎划不动」曾反复出现，根因是在 WebView 上覆写 onTouchEvent：
-    // 它会切断触摸与 WebView 内部 OverScroller 的联系，把顺滑惯性退化成
-    // 逐段 scrollBy；同时外层 NestedScrollConnection 又在滚同一个 View，
-    // 同一次拖动被应用两遍后互相抵消。这里直接对源码做约束，防止再被改回去。
+    // 症状反复出现：「界面抢网页滑动」，卡片里怎么划都不动。
+    //
+    // 真正的原因：消息列表是 LazyColumn，它和 WebView 都是原生 View，
+    // 两者的滑动竞争发生在 Android 视图树的 onInterceptTouchEvent 分发里。
+    // LazyColumn 会在第一次 MOVE 时把手势整体截走，WebView 只收到一个 DOWN。
+    //
+    // 曾被误用的两种 Compose 方案都无效，因为 Modifier.nestedScroll 属于
+    // Compose 的机制，在原生容器面前插不上手 —— onPostScroll 版、onPreScroll
+    // 版实测均毫无效果。正解是在原生层禁止祖先拦截。
+    //
+    // 这里直接对源码做约束，防止再被改回 Compose 方案。
 
     @Test
-    fun `card webview does not override onTouchEvent`() {
+    fun `card webview forbids ancestors from stealing the gesture`() {
         val src = cardWebViewSource()
-        assertFalse(
-            "CardWebView 不应覆写 onTouchEvent：会破坏 WebView 自身的惯性滚动，导致划不动",
-            src.contains("override fun onTouchEvent"),
-        )
-    }
-
-    @Test
-    fun `the card takes the gesture before the outer list`() {
-        val src = cardWebViewSource()
-        // 必须用 onPreScroll：它是手势链里从内向外派发的第一站。
-        //
-        // 曾经用过 onPostScroll 并以为"让外层先消费、剩余量再给卡片"更安全，
-        // 实际效果相反 —— onPostScroll 触发时外层列表**已经**把手势吃完了，
-        // 留给卡片的只有残渣，用户看到的就是"滑一下里面只动一点点，
-        // 整段滚动被原生列表吃掉"。
         assertTrue(
-            "卡片必须在 onPreScroll 里优先消费手势",
-            src.contains("override fun onPreScroll"),
+            "必须在按下时禁止祖先拦截，否则 LazyColumn 会把手势整体截走",
+            src.contains("requestDisallowInterceptTouchEvent"),
         )
     }
 
     @Test
-    fun `the post-scroll hook never re-applies the same gesture`() {
+    fun `the gesture is handed back at the card boundary`() {
         val src = cardWebViewSource()
-        // 同一次拖动被 onPreScroll 与 onPostScroll 各 scrollBy 一遍，
-        // 正是"能滑但几乎不动"的成因。onPostScroll 必须保持空实现，
-        // 只返回 Offset.Zero。
-        val start = src.indexOf("override fun onPostScroll")
-        assertTrue("应当保留 onPostScroll 覆写", start >= 0)
-        // 截取到该方法自身的收尾花括号（缩进 16 空格）为止，
-        // 不能只看 400 字符窗口 —— 那会越过方法边界，把后面
-        // WebViewClient 里的 scrollBy 一并算进来。
-        val tail = src.substring(start)
-        val close = tail.indexOf("\n                }\n")
-        assertTrue("onPostScroll 应当正常闭合", close > 0)
-        // 必须剥掉注释再断言：方法体里那句解释性注释本身就写着 "scrollBy"，
-        // 直接 contains 会把说明文字误判成真实调用。
-        val body = tail.substring(0, close)
-            .lineSequence()
+        // 到达边界后要放行，否则手势卡死在卡片上，整个页面都动不了
+        assertTrue(
+            "到边界必须放行给外层",
+            src.contains("requestDisallowInterceptTouchEvent(false)"),
+        )
+        assertTrue(
+            "边界判定需要同时看顶部与底部",
+            src.contains("atTop") && src.contains("atBottom"),
+        )
+    }
+
+    @Test
+    fun `a card with nothing to scroll never blocks the list`() {
+        val src = cardWebViewSource()
+        // 短卡片不该有阻断感
+        assertTrue(
+            "必须按可滚区间决定是否抢手势",
+            src.contains("hasScrollableRange"),
+        )
+        assertTrue(
+            "可滚区间 = 内容高度 > 视口高度",
+            src.contains("contentHeight > height"),
+        )
+    }
+
+    @Test
+    fun `native scrolling is delegated to the webview itself`() {
+        val src = cardWebViewSource()
+        // 不能自己实现滚动：必须 super.onTouchEvent 让 WebView 原生
+        // OverScroller 干活，否则惯性滚动退化成逐段 scrollBy（"很卡、划不动"）。
+        assertTrue(
+            "必须把事件交回 WebView 原生处理",
+            src.contains("super.onTouchEvent(event)"),
+        )
+    }
+
+    @Test
+    fun `the ineffective compose nested scroll approach is gone`() {
+        val src = cardWebViewSource()
+        // 剥掉注释再断言，避免把解释性文字当成真实代码
+        val code = src.lineSequence()
             .joinToString("\n") { line ->
                 val t = line.trimStart()
-                if (t.startsWith("//")) "" else line
+                if (t.startsWith("//") || t.startsWith("*") || t.startsWith("/*")) "" else line
             }
-        assertTrue(
-            "onPostScroll 不应再出现 scrollBy，否则同一次拖动会被应用两遍",
-            !body.contains("scrollBy"),
+        assertFalse(
+            "Modifier.nestedScroll 对原生容器的滑动竞争无效，不应再出现",
+            code.contains(".nestedScroll("),
         )
-        assertTrue(
-            "onPostScroll 应显式返回 Offset.Zero",
-            body.contains("Offset.Zero"),
-        )
-    }
-
-    @Test
-    fun `scroll handoff reports the actually consumed distance`() {
-        val src = cardWebViewSource()
-        assertTrue(
-            "交还外层时应以 scrollBy 的真实位移为准，谎报消费量会让列表跳动",
-            src.contains("val actually = view.scrollY - before"),
-        )
-    }
-
-    @Test
-    fun `sub-pixel scrolling is accumulated rather than truncated away`() {
-        val src = cardWebViewSource()
-        // 慢速滑动每帧常常不足 1px；直接 toInt() 丢弃会让内容纹丝不动。
-        assertTrue(
-            "应保留截断余数，避免慢速滑动完全不动",
-            src.contains("scrollRemainder"),
+        assertFalse(
+            "onPreScroll/onPostScroll 同样无效，不应再出现",
+            code.contains("override fun onPreScroll") || code.contains("override fun onPostScroll"),
         )
     }
 
