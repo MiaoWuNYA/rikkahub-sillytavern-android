@@ -326,8 +326,15 @@ fun SillyTavernTheme.applyTo(base: DisplaySetting): DisplaySetting {
     val userTint = parseCssColor(userMesBlurTintColor)
     val botTint = parseCssColor(botMesBlurTintColor)
 
-    // 聊天背景：chat_tint → blur_tint → 底色（酒馆里底层是背景图，这里用亮度推断的中性色近似）
-    val chatBackground: Long? = if (chatTint != null || blurTint != null) {
+    // 聊天背景：优先取 custom_css 里聊天宿主上的 background（纯色或渐变主色），
+    // 其次才回落到 chat_tint → blur_tint 字段。
+    //
+    // 顺序不能反：字段常常为空或近乎透明，而主题主流写法是把底色/渐变直接写在
+    // CSS 的 .mes_block / #sheld / body 上。只读字段会让这些主题的底色整体丢失，
+    // 表现就是"只有纯色背景才可以生效"——实际只有恰好设了那两个字段的主题才生效。
+    val cssChatBgColor = extractChatBackgroundColor(customCss, themeVars)
+        ?: extractChatBackgroundGradientColor(customCss, themeVars)
+    val fieldChatBackground: Long? = if (chatTint != null || blurTint != null) {
         val bottom = when {
             text != null -> if (relativeLuminance(text) > 0.5) DARK_BASE else LIGHT_BASE
             base.chatBackgroundColor != null -> base.chatBackgroundColor ?: LIGHT_BASE
@@ -338,6 +345,7 @@ fun SillyTavernTheme.applyTo(base: DisplaySetting): DisplaySetting {
         chatTint?.let { acc = over(it.toCssColor(), acc) }
         acc.toArgbLong()
     } else null
+    val chatBackground: Long? = cssChatBgColor ?: fieldChatBackground
 
     // 气泡底色：优先取 custom_css 里 .mes/.mes_block 的 background，其次才是字段 token。
     // 实测 452/534 个主题把气泡背景写在 CSS 里（其中 113 个是显式 transparent、
@@ -816,19 +824,116 @@ const val MAX_BUBBLE_SHADOW_DP = 24f
 
 private const val MAX_RADIUS_DP = MAX_BUBBLE_RADIUS_DP
 
-/** 聊天背景所在元素的优先级：#bg1（酒馆专用背景层）> body > .bg1 > #chat > #main */
+/**
+ * 聊天背景所在元素的优先级。
+ *
+ * 实测这批主题把背景图挂在**各种**宿主上，远不止 body/#chat：
+ * 「去海边」用 `.drawer-content`(侧栏) 与 `#sheld`(聊天主容器)，
+ * 「独自青青」用 `#send_form`(输入框) 与 `#top-bar`(顶栏)。
+ * 只认最初的 5 个选择器会让 362/534 个主题的背景图完全导不进来。
+ *
+ * 优先级数字越小越优先：越靠前的越接近"整个聊天区"的语义。
+ */
 private val BACKGROUND_SELECTORS = listOf(
     0 to Regex("""(^|[\s,>+~])#bg1(?![\w-])"""),
     1 to Regex("""(^|[\s,>+~])body(?![\w-])"""),
     2 to Regex("""(^|[\s,>+~])\.bg1(?![\w-])"""),
-    3 to Regex("""(^|[\s,>+~])#chat(?![\w-])"""),
-    4 to Regex("""(^|[\s,>+~])#main(?![\w-])"""),
+    // #sheld 是酒馆的聊天滚动主容器，等价于我们的"聊天背景"
+    3 to Regex("""(^|[\s,>+~])#sheld(?![\w-])"""),
+    4 to Regex("""(^|[\s,>+~])#chat(?![\w-])"""),
+    5 to Regex("""(^|[\s,>+~])#main(?![\w-])"""),
+    6 to Regex("""(^|[\s,>+~])#chat_container(?![\w-])"""),
+    7 to Regex("""(^|[\s,>+~])\.chat(?![\w-])"""),
+    // 「去海边」等主题把主视觉铺在侧栏容器上，这是它们在移动端最醒目的一块背景
+    8 to Regex("""(^|[\s,>+~])\.drawer-content(?![\w-])"""),
+)
+
+/**
+ * 仅供「聊天背景色」使用的宿主选择器：额外包含输入框与顶栏这类局部容器。
+ *
+ * 与背景图共用一份表会互相拖累：背景图要求宿主足够"大"（整块聊天区），
+ * 而底色可以退而取输入框/顶栏的色作为整体基调的近似。
+ */
+private val CHAT_BACKGROUND_SELECTORS = BACKGROUND_SELECTORS + listOf(
+    8 to Regex("""(^|[\s,>+~])#send_form(?![\w-])"""),
+    9 to Regex("""(^|[\s,>+~])#top-bar(?![\w-])"""),
+    10 to Regex("""(^|[\s,>+~])\.drawer-content(?![\w-])"""),
 )
 
 private val BACKGROUND_URL = Regex(
     """background(?:-image)?\s*:\s*[^;{}]*url\(\s*(['"]?)([^)'"]+)\1\s*\)""",
     RegexOption.IGNORE_CASE,
 )
+
+/** 背景里的渐变（linear-/radial-/conic-gradient），整条取出用于近似 */
+private val BACKGROUND_GRADIENT = Regex(
+    """background(?:-image)?\s*:\s*([^;{}]*?(?:linear|radial|conic)-gradient\([^;{}]*)\)""",
+    RegexOption.IGNORE_CASE,
+)
+
+/**
+ * 从 custom_css 提取聊天区背景色（纯色）。
+ *
+ * 为什么必须走 CSS：主题把底色写在 `.mes_block` / `#sheld` / `body` 的 `background`
+ * 上是主流做法，而字段 `chat_tint_color` / `blur_tint_color` 常常为空或近乎透明。
+ * 只读字段会让绝大多数主题的底色丢失，表现就是"只有纯色背景才可以生效"
+ * ——实际只有恰好写了那两个字段的主题才生效。
+ *
+ * 只认 [CHAT_BACKGROUND_SELECTORS] 里的宿主，避免把气泡底色当成聊天底色。
+ */
+internal fun extractChatBackgroundColor(
+    css: String?,
+    extraVars: CssVariables = emptyMap(),
+): Long? {
+    if (css.isNullOrBlank()) return null
+    val merged = mergeRulesBySelector(css, extraVars)
+    var bestPriority = Int.MAX_VALUE
+    var best: Long? = null
+    for ((selector, body) in merged) {
+        // 气泡自身的规则一律排除，否则气泡色会被当成聊天底色
+        if (containsMessageBubble(selector)) continue
+        val priority = CHAT_BACKGROUND_SELECTORS
+            .firstOrNull { it.second.containsMatchIn(selector) }?.first ?: continue
+        if (priority > bestPriority) continue
+        val color = parseBackgroundColor(body)?.takeIf { !it.transparent }?.color ?: continue
+        if (priority < bestPriority || best == null) {
+            bestPriority = priority
+            best = color
+        }
+    }
+    return best
+}
+
+/**
+ * 从 custom_css 提取聊天区背景渐变。
+ *
+ * Compose 侧无法还原任意 CSS 渐变，取渐变里的**主色**（第一个颜色停靠点）作为近似，
+ * 比整条丢弃更接近作者观感 —— 这与气泡的渐变处理策略保持一致。
+ *
+ * @return 主色 ARGB，找不到返回 null。
+ */
+internal fun extractChatBackgroundGradientColor(
+    css: String?,
+    extraVars: CssVariables = emptyMap(),
+): Long? {
+    if (css.isNullOrBlank()) return null
+    val merged = mergeRulesBySelector(css, extraVars)
+    var bestPriority = Int.MAX_VALUE
+    var best: Long? = null
+    for ((selector, body) in merged) {
+        if (containsMessageBubble(selector)) continue
+        val priority = CHAT_BACKGROUND_SELECTORS
+            .firstOrNull { it.second.containsMatchIn(selector) }?.first ?: continue
+        if (priority > bestPriority) continue
+        val gradient = BACKGROUND_GRADIENT.find(body)?.groupValues?.get(1) ?: continue
+        val color = gradientPrimaryColor(gradient) ?: continue
+        if (priority < bestPriority || best == null) {
+            bestPriority = priority
+            best = color
+        }
+    }
+    return best
+}
 
 /**
  * 从 custom_css 中提取聊天背景图地址（http(s) URL 或 data URI）。
