@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -93,7 +94,7 @@ private val CARD_MAX_HEIGHT = 520.dp
  *
  * @param html 卡片 HTML（完整文档或 HTML 片段）
  * @param modifier 外层修饰符
- * @param onGenerate 前端卡调用 `window.generate` 时的生成入口；
+ * @param cardHost 前端卡的宿主能力包（generate / 写回正文 / 切开局 / 变量初值）；
  *   参数是卡拼好的 prompt 与流式增量回调，返回最终文本。
  *   为 null 时卡片拿不到 generate，会显示「宿主未注入 generate 接口」。
  */
@@ -103,12 +104,13 @@ fun HtmlWebViewBlock(
     html: String,
     modifier: Modifier = Modifier,
     onCollapse: (() -> Unit)? = null,
-    onGenerate: (suspend (prompt: String, onDelta: (String) -> Unit) -> String)? = null,
     /**
-     * 卡把开局正文写回指定序号消息的入口（卡内 `setChatMessages`）。
-     * 为 null 时卡会抛「当前宿主没有 setChatMessages」。
+     * 前端卡的宿主能力包。为 null 时不注入任何宿主 API ——
+     * 卡会干净地走到它自己的「宿主未注入」分支，比拿到假接口好排查。
      */
-    onWriteMessage: (suspend (nodeIndex: Int, text: String) -> Unit)? = null,
+    cardHost: CardHostContext? = null,
+    /** 当前对话的消息快照（官方 swipes 结构），供 `getChatMessages` 读取。 */
+    cardMessagesJson: String = "[]",
 ) {
     val density = LocalDensity.current
     val colorScheme = MaterialTheme.colorScheme
@@ -134,10 +136,10 @@ fun HtmlWebViewBlock(
     }
 
     // 宿主 API 垫片：只有真的能生成注入时，才把 generate/eventOn 暴露给卡。
-    // 没有 onGenerate 却注入 shim，卡会拿到一个永远失败的假接口，
+    // 没有宿主能力却注入 shim，卡会拿到一个永远失败的假接口，
     // 反而比让它走自己的「宿主未注入」分支更难排查。
-    val hostShim = remember(onGenerate) {
-        if (onGenerate == null) "" else cardHostShim()
+    val hostShim = remember(cardHost) {
+        if (cardHost == null) "" else cardHostShim()
     }
     val inlinePage = remember(html, colorScheme, markedJs, hostShim) {
         buildCardPage(
@@ -164,27 +166,40 @@ fun HtmlWebViewBlock(
         navController.navigate(Screen.WebView(contentId = contentId))
     }
 
-    // 前端卡的宿主桥。没有 onGenerate 时也照样注册 —— 卡会自行探测
+    // 前端卡的宿主桥。没有宿主能力时也照样注册 —— 卡会自行探测
     // typeof window.generate === 'function'，我们宁可不提供 shim，
     // 让卡走到它自己的「宿主未注入」分支，而不是拿到一个永远 reject 的假接口。
     val toaster = LocalToaster.current
     val hostScope = rememberCoroutineScope()
-    val hostBridge = remember(html, onGenerate, onWriteMessage) {
-        if (onGenerate == null) null
+    val hostBridge = remember(html, cardHost) {
+        if (cardHost == null) null
         else CardHostBridge(
             scope = hostScope,
-            onGenerate = onGenerate,
-            onWriteMessage = { nodeIndex, text -> onWriteMessage?.invoke(nodeIndex, text) },
-            onToast = { msg, warning ->
-                // 从 IO 线程回主线程弹提示
-                hostScope.launch {
-                    toaster.show(
-                        msg,
-                        type = if (warning) ToastType.Warning else ToastType.Error,
-                    )
-                }
-            },
+            host = cardHost.copy(
+                toast = { msg, warning ->
+                    // 从 IO 线程回主线程弹提示
+                    hostScope.launch {
+                        toaster.show(
+                            msg,
+                            type = if (warning) ToastType.Warning else ToastType.Error,
+                        )
+                    }
+                },
+            ),
         )
+    }
+    // 变量树初值：把世界书 `[initvar]` 的 YAML 解析成 stat_data 交给桥。
+    // 卡拿到之后 Mvu.getMvuData() 才有内容可读，整套角色状态才成立。
+    val initVarJson = remember(cardHost?.initVars, cardHost?.userName) {
+        val vars = cardHost?.initVars.orEmpty()
+        val userName = cardHost?.userName ?: "user"
+        vars.firstNotNullOfOrNull { raw ->
+            MvuStore.encode(MvuStore.wrap(MvuStore.parseInitVar(raw, userName)))
+        }
+    }
+    LaunchedEffect(hostBridge, initVarJson, cardMessagesJson) {
+        hostBridge?.seedMvuData(initVarJson)
+        hostBridge?.seedChatMessages(cardMessagesJson)
     }
     DisposableEffect(hostBridge) {
         onDispose { hostBridge?.dispose() }
@@ -418,12 +433,14 @@ private class CardWebView(context: Context) : WebView(context) {
             MotionEvent.ACTION_MOVE -> {
                 // 到达边界后要**放行**，否则手势会卡死在卡片上，
                 // 用户继续往上/下划时整个页面反而动不了。
-                if (!hasScrollableRange()) {
+                val maxScroll = scrollableRangePx()
+                if (maxScroll <= 0) {
                     parent?.requestDisallowInterceptTouchEvent(false)
                 } else {
                     val pullingDown = event.y > downY
+                    // 边界统一在物理像素空间比较：scrollY 与 maxScroll 同源。
                     val atTop = scrollY <= 0
-                    val atBottom = scrollY >= contentHeight - height
+                    val atBottom = scrollY >= maxScroll
                     if ((pullingDown && atTop) || (!pullingDown && atBottom)) {
                         parent?.requestDisallowInterceptTouchEvent(false)
                     }
@@ -439,12 +456,24 @@ private class CardWebView(context: Context) : WebView(context) {
     }
 
     /**
+     * 卡片自身还能滚多少（物理像素）。
+     *
+     * 必须用 WebView 自己的 [getContentHeight] 而不是外层上报的 CSS 高度：
+     * 后者是 dp 空间的值（JS 上报 1 CSS px ≈ 1 dp），而 [getHeight] 与
+     * scrollY 都是物理像素。混着算会得到量纲错误的结果 ——
+     * 3x 屏上内容 600dp 的卡片会被判成「没有可滚区间」，
+     * 于是按下时不抢手势，外层列表把手势整段截走，
+     * 表现就是「弹一下翻一点、然后又翻不动」。
+     */
+    private fun scrollableRangePx(): Int = (contentHeight - height).coerceAtLeast(0)
+
+    /**
      * 判断卡片当前是否还有可滚动空间。
      *
      * 有空间就自己处理整段手势，没空间就完全不抢，让外层列表照常滚动 ——
      * 短卡片（内容没超过高度上限）不应该表现出任何阻断感。
      */
-    fun hasScrollableRange(): Boolean = contentHeight > height
+    fun hasScrollableRange(): Boolean = scrollableRangePx() > 0
 }
 
 private const val HEIGHT_JS =

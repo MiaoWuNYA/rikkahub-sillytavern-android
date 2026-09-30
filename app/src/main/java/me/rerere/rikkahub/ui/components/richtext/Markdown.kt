@@ -240,12 +240,12 @@ fun MarkdownBlock(
     style: TextStyle = LocalTextStyle.current,
     onClickCitation: (String) -> Unit = {},
     /**
-     * 前端卡的宿主生成入口；透传给 [HtmlWebViewBlock]。
-     * 为 null 时卡内 `window.generate` 不会被注入。
+     * 前端卡的宿主能力包；透传给 [HtmlWebViewBlock]。
+     * 为 null 时不注入任何宿主 API，卡会走它自己的「宿主未注入」分支。
      */
-    onGenerate: (suspend (prompt: String, onDelta: (String) -> Unit) -> String)? = null,
-    /** 卡把开局正文写回消息的入口；透传给 [HtmlWebViewBlock]。 */
-    onWriteMessage: (suspend (nodeIndex: Int, text: String) -> Unit)? = null,
+    cardHost: CardHostContext? = null,
+    /** 当前对话消息快照（官方 swipes 结构），供卡内 `getChatMessages` 读取。 */
+    cardMessagesJson: String = "[]",
 ) {
     val settings = LocalSettings.current.displaySetting
     val darkMode = LocalDarkMode.current
@@ -270,12 +270,12 @@ fun MarkdownBlock(
                 if (prose.isNotEmpty()) {
                     MarkdownBlock(content = prose, onClickCitation = onClickCitation)
                 }
-                HtmlWebViewBlock(html = fenced, onGenerate = onGenerate, onWriteMessage = onWriteMessage)
+                HtmlWebViewBlock(html = fenced, cardHost = cardHost, cardMessagesJson = cardMessagesJson)
                 return@Column
             }
             segments.forEach { (isCard, text) ->
                 if (isCard) {
-                    HtmlWebViewBlock(html = text, onGenerate = onGenerate, onWriteMessage = onWriteMessage)
+                    HtmlWebViewBlock(html = text, cardHost = cardHost, cardMessagesJson = cardMessagesJson)
                 } else {
                     MarkdownBlock(content = text, onClickCitation = onClickCitation)
                 }

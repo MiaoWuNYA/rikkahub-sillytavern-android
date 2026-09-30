@@ -212,4 +212,100 @@ class CardHostBridgeTest {
         val guarded = Regex("""try \{[^}]*rikkaHostGen\.\w+\(""").findAll(shim).count()
         assertTrue("存在未做异常保护的宿主调用（$guarded/$calls）", guarded == calls)
     }
+
+    // ---- MVU 变量系统 ----
+    //
+    // 卡里对 MVU 是 typeof 软降级：缺失时只写正文、跳过全部角色状态。
+    // 这张卡的所有属性/世界/剧情线都在变量树里，所以这几个接口是「卡内容
+    // 能不能真正跑起来」的关键，不能只靠 cardHostShim() 里有字符串就算过。
+
+    @Test
+    fun `Mvu global exposes the two card-facing methods`() {
+        val shim = cardHostShim()
+        assertTrue("必须暴露 window.Mvu", shim.contains("window.Mvu = {"))
+        assertTrue("卡会读 Mvu.getMvuData", shim.contains("getMvuData: function"))
+        assertTrue("卡会写 Mvu.replaceMvuData", shim.contains("replaceMvuData: function"))
+    }
+
+    @Test
+    fun `getMvuData returns null instead of throwing when host has no data`() {
+        val shim = cardHostShim()
+        // 卡里是 `try { initializedMvuData = clone(Mvu.getMvuData(...)) } catch(e){}`
+        // 返回 null 让它走「无变量」软降级，比抛异常安全
+        assertTrue(
+            "getMvuData 必须在拿不到数据时返回 null",
+            shim.contains("if (!raw) return null;"),
+        )
+    }
+
+    @Test
+    fun `replaceMvuData resolves so the card's await does not hang`() {
+        val shim = cardHostShim()
+        // 卡里是 await Mvu.replaceMvuData(...)；不返回 Promise 会让 await 拿到
+        // undefined 后继续（可接受），但返回一个已兑现的 Promise 更贴合官方语义
+        assertTrue(
+            "replaceMvuData 应返回已兑现 Promise",
+            shim.contains("return Promise.resolve();"),
+        )
+    }
+
+    @Test
+    fun `waitGlobalInitialized is provided so the card skips its MVU timeout`() {
+        val shim = cardHostShim()
+        // 卡的 waitMvu 里：没有 waitGlobalInitialized 就直接 resolve(false)，
+        // 于是 getOpeningAllowedPaths 返回 []，模型看到的允许路径是空的
+        assertTrue(
+            "必须提供 waitGlobalInitialized，否则卡会跳过变量初始化",
+            shim.contains("window.waitGlobalInitialized = function"),
+        )
+    }
+
+    @Test
+    fun `chat scoped variables are backed by a store with persistence`() {
+        val shim = cardHostShim()
+        assertTrue("需要 getVariables", shim.contains("window.getVariables = function"))
+        assertTrue("需要 updateVariablesWith", shim.contains("window.updateVariablesWith = function"))
+        // 卡里传的是 {type:'chat'}，只认这个作用域即可
+        assertTrue("应按 type 区分作用域", shim.contains("option.type"))
+    }
+
+    // ---- getChatMessages / setChatMessage：切开局 ----
+
+    @Test
+    fun `swipe APIs exist with the exact card-facing signatures`() {
+        val shim = cardHostShim()
+        assertTrue("卡探测 getChatMessages", shim.contains("window.getChatMessages = function"))
+        assertTrue("卡探测 setChatMessage", shim.contains("window.setChatMessage = function"))
+        // 卡读的是 msgs[0].swipes，宿主侧必须给 swipes 数组
+        assertTrue("getChatMessages 要支持 begin 偏移", shim.contains("all.slice(from)"))
+        assertTrue("setChatMessage 要读 swipe_id", shim.contains("opts.swipe_id"))
+    }
+
+    @Test
+    fun `getChatMessages tolerates a malformed host payload`() {
+        val shim = cardHostShim()
+        // 宿主返回坏 JSON 时卡里会 alert；这里必须返回空数组让卡走自己的提示分支
+        assertTrue(
+            "解析失败应返回空数组",
+            shim.contains("catch (e) { return []; }"),
+        )
+    }
+
+    // ---- 宿主桥对象名 ----
+
+    @Test
+    fun `host bridge still exposes every JS-facing endpoint`() {
+        // 这些名字必须与 CardHostBridge 上的 @JavascriptInterface 方法一一对应，
+        // 少一个就是运行时的 undefined is not a function
+        val src = java.io.File(
+            "src/main/java/me/rerere/rikkahub/ui/components/richtext/CardHostBridge.kt"
+        ).readText()
+        listOf(
+            "fun generate(", "fun poll(", "fun pollStream(", "fun toast(",
+            "fun setChatMessages(", "fun setChatMessage(",
+            "fun getMvuData(", "fun replaceMvuData(", "fun getChatMessages(",
+        ).forEach { sig ->
+            assertTrue("CardHostBridge 缺少 $sig", src.contains(sig))
+        }
+    }
 }
