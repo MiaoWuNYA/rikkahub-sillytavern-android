@@ -47,7 +47,7 @@ typealias CssVariables = Map<String, String>
  * 解析失败后整条规则被丢弃——实测 138 处 border-radius 与大量颜色都栽在这。
  */
 fun parseCssVariables(css: String): CssVariables {
-    val clean = stripCssComments(css)
+    val clean = stripBlocklessAtRules(stripCssComments(css))
     val vars = LinkedHashMap<String, String>()
     for (m in CSS_RULE.findAll(clean)) {
         // 只认 :root / html / * / documentElement 上的变量定义
@@ -65,18 +65,23 @@ fun parseCssVariables(css: String): CssVariables {
 }
 
 private fun isVariableScope(selector: String): Boolean {
-    val s = selector.trim().lowercase()
+    // 注释常独占一行（主题作者用注释分节），剥掉注释后会留下换行，
+    // 选择器就会变成 "\n:root" 这种带空白的形式；不归一化会让 removePrefix
+    // 直接失配，整块变量读不到——实测表现为 var(--paper) 原样留在声明里，
+    // 气泡背景被当成无效值丢弃，气泡与背景都不显示。
+    val s = selector.trim().replace(Regex("""\s+"""), " ").lowercase()
     if (s.isEmpty()) return false
-    // :root / html / body / * 以及它们的组合（如 ":root, html"）
-    return s.split(',').all { part ->
-        val p = part.trim().removePrefix(":root").removePrefix("html").removePrefix("body").removePrefix("*").trim()
-        p.isEmpty() || p == "," || p.startsWith(":") && p.length == 1
-    } && s.split(',').any { part ->
-        val p = part.trim()
-        p == ":root" || p == "html" || p == "body" || p == "*" ||
-            p.startsWith(":root") || p.startsWith("html") || p.startsWith("body")
+    val parts = s.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+    if (parts.isEmpty()) return false
+    // 每个部分都必须落在变量作用域上
+    val allScoped = parts.all { part ->
+        VAL_SCOPE_HEAD.find(part) != null
     }
+    return allScoped
 }
+
+/** `:root` / `html` / `body` / `*`，允许后面跟伪类（如 `:root:has(...)`） */
+private val VAL_SCOPE_HEAD = Regex("""^(?::root|html|body|\*)(?![\w-])""")
 
 /**
  * 展开 `var(--x)` / `var(--x, fallback)`，最多递归 [depth] 层（CSS 变量可互相引用）。
@@ -161,7 +166,7 @@ internal fun splitDeclarations(body: String): List<String> {
  *                  官方先 setProperty 再插入 custom-style，同特异度后者（custom_css）胜。
  */
 fun parseCssRules(css: String, extraVars: CssVariables = emptyMap()): List<CssRule> {
-    val clean = stripCssComments(css)
+    val clean = stripBlocklessAtRules(stripCssComments(css))
     // custom_css 自己的 :root 变量覆盖字段注入的变量
     val ownVars = parseCssVariables(clean)
     val vars: CssVariables = extraVars + ownVars

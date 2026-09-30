@@ -1,5 +1,8 @@
 package me.rerere.rikkahub.data.model
 
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.graphics.Color
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -273,17 +276,34 @@ fun SillyTavernTheme.applyTo(base: DisplaySetting): DisplaySetting {
         acc.toArgbLong()
     } else null
 
-    // 气泡 = 消息色调叠在聊天背景上。
-    // 酒馆里全透明的气泡色调意味着"文字直接浮在背景上"（背景图由 CSS 提供），
-    // 应用没有该背景图时合成结果与聊天背景同色 → 气泡隐形。
-    // 色调 alpha 过低或合成结果与背景同色时，保留应用原气泡色。
+    // 气泡底色：优先取 custom_css 里 .mes/.mes_block 的 background，其次才是字段 token。
+    // 实测 452/534 个主题把气泡背景写在 CSS 里（其中 113 个是显式 transparent、
+    // 64 个是渐变），只读 user_mes_blur_tint_color 会让绝大多数主题的气泡颜色丢失。
+    val cssBubbleBg = extractBubbleBackgroundColor(customCss)
+
+    /**
+     * CSS 侧结果优先，且**允许透明**。
+     *
+     * `transparent` 是主题的明确意图（冬之誓系列等 113 个主题就靠它做"文字浮在背景上"），
+     * 旧实现把「合成后与背景同色」一律当成没算出来并回退默认色，
+     * 等于把作者刻意做的透明气泡换成实心色块 —— 这正是"气泡背景失效"的观感来源。
+     */
+    fun cssBubbleColor(forUser: Boolean): Long? {
+        val bg = cssBubbleBg ?: return null
+        val side = if (forUser) bg.forUser else bg.forBot
+        val pick = side ?: bg.generic ?: return null
+        return if (pick.transparent) TRANSPARENT_BUBBLE else pick.color
+    }
+
+    // 字段 token 回退：叠在聊天背景上合成不透明色，alpha 过低视为无效
     val bubbleBottom = (chatBackground ?: base.chatBackgroundColor ?: LIGHT_BASE).toCssColor()
-    fun bubbleColor(tint: Long?): Long? = tint
+    fun tokenBubbleColor(tint: Long?): Long? = tint
         ?.takeIf { it.toCssColor().a / 255.0 >= BUBBLE_MIN_VISIBLE_ALPHA }
         ?.let { over(it.toCssColor(), bubbleBottom).toArgbLong() }
         ?.takeIf { chatBackground == null || it != chatBackground }
-    val userBubble = bubbleColor(userTint)
-    val botBubble = bubbleColor(botTint)
+
+    val userBubble = cssBubbleColor(forUser = true) ?: tokenBubbleColor(userTint)
+    val botBubble = cssBubbleColor(forUser = false) ?: tokenBubbleColor(botTint)
 
     // 引用/斜体等文字特效色：叠在聊天背景上合成不透明色再导入，
     // 保证深浅背景下都可见（酒馆里这些色常带 alpha）
@@ -340,6 +360,11 @@ fun SillyTavernTheme.applyTo(base: DisplaySetting): DisplaySetting {
         bubbleBackgroundSize = extractBubbleBackgroundSize(customCss) ?: base.bubbleBackgroundSize,
         // 图标主题：发送栏/菜单/扩展/停止 + 头像框
         themeIcons = extractThemeIconSet(customCss).takeUnless { it.isEmpty } ?: base.themeIcons,
+        // 气泡内层（代码框/引用块/高亮/斜体/思维链）的底色与几何，主题几乎都写了。
+        // 提取不到时保留用户当前设置，避免"导入一个没写这些样式的主题"把已有样式清空。
+        themeMarkdownStyle = extractThemeMarkdownStyle(customCss)
+            .takeUnless { it.isEmpty }
+            ?: base.themeMarkdownStyle,
         // 气泡外框/阴影：官方用 --SmartThemeBorderColor + --SmartThemeShadowColor 控制，
         // 由 CSS 引擎从层叠后的声明里取，避免正则误收 border-top/border-image 等
         bubbleBorderColor = border?.color ?: base.bubbleBorderColor,
@@ -354,6 +379,168 @@ fun SillyTavernTheme.applyTo(base: DisplaySetting): DisplaySetting {
 }
 
 private const val BUBBLE_MIN_VISIBLE_ALPHA = 0.08
+
+/** 透明气泡的哨兵值：告知渲染层"不要画底色"，而不是回退默认色 */
+const val TRANSPARENT_BUBBLE = 0L
+
+/** 单侧气泡背景（纯色或显式透明） */
+internal data class CssBackgroundColor(
+    val color: Long? = null,
+    val transparent: Boolean = false,
+)
+
+/** 气泡背景：两侧可分别指定，`generic` 为不分侧的写法 */
+internal data class CssBubbleBackground(
+    val forUser: CssBackgroundColor? = null,
+    val forBot: CssBackgroundColor? = null,
+    val generic: CssBackgroundColor? = null,
+)
+
+/**
+ * 从 custom_css 的 `.mes` / `.mes_block` 上取气泡背景色。
+ *
+ * 主题两种写法都要支持：
+ * - `background-color: #fff` / `background-color: transparent`
+ * - `background: <简写>`（可含渐变、多个空格分隔的层）
+ *
+ * 渐变无法在 Compose 侧还原成一个颜色，此时取渐变里的**主色**近似
+ * （第一个颜色停靠点），比整条丢弃更接近作者观感。
+ */
+internal fun extractBubbleBackgroundColor(css: String?): CssBubbleBackground? {
+    if (css.isNullOrBlank()) return null
+    val merged = mergeRulesBySelector(css)
+    var generic: CssBackgroundColor? = null
+    var user: CssBackgroundColor? = null
+    var bot: CssBackgroundColor? = null
+    // 主题普遍是双层的：`.mes` 是外层容器（常被显式清成 transparent），
+    // `.mes_block` 才是真正承载视觉的气泡本体（如冬之誓 `.mes_block{background:#fff}`）。
+    // 若按出现顺序取第一条，外层那条 transparent 会赢下来，气泡就被判成透明，
+    // 观感上等于"主题的气泡样式完全没生效"。因此给内层更高优先级。
+    var genericDepth = -1
+    var userDepth = -1
+    var botDepth = -1
+
+    for ((selector, body) in merged) {
+        if (!containsMessageBubble(selector)) continue
+        if (!looksLikeBubbleFill(selector, body)) continue
+        val parsed = parseBackgroundColor(body) ?: continue
+        val depth = bubbleLayerDepth(selector)
+        val wantUser = USER_SIDE_SELECTOR.containsMatchIn(selector)
+        val wantBot = BOT_SIDE_SELECTOR.containsMatchIn(selector)
+        when {
+            wantUser && depth > userDepth -> { user = parsed; userDepth = depth }
+            wantBot && depth > botDepth -> { bot = parsed; botDepth = depth }
+            !wantUser && !wantBot && depth > genericDepth -> { generic = parsed; genericDepth = depth }
+        }
+    }
+    if (generic == null && user == null && bot == null) return null
+    return CssBubbleBackground(forUser = user, forBot = bot, generic = generic)
+}
+
+/**
+ * 气泡层级深度：选择器里 `.mes` 之后每多一层就 +1。
+ *
+ * `.mes` = 0（外层容器）、`.mes .mes_block` / `.mes_block` = 1（气泡本体）。
+ * 越靠内越接近用户看到的那块背景，取值时优先。
+ */
+private fun bubbleLayerDepth(selector: String): Int {
+    val bare = selector.substringBefore("::").replace(Regex("""\[[^\]]*\]"""), "")
+    return bare.split(',').maxOfOrNull { part ->
+        part.trim().split(Regex("""\s+""")).count { it.isNotEmpty() }
+    } ?: 0
+}
+
+/** 从声明体里解析背景色；返回 null 表示这条规则没写背景（继续看下一条） */
+private fun parseBackgroundColor(body: String): CssBackgroundColor? {
+    // 主题几乎处处写 !important（实测冬之誓系列每条背景都带），
+    // 正则取到的值会连带 " !important" 一起进来，直接送给颜色解析必然失败。
+    // 这里统一剥掉再解析，否则整条规则被当成"没写背景"静默丢弃。
+    fun clean(v: String?): String? = v
+        ?.replace(Regex("""!important""", RegexOption.IGNORE_CASE), "")
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() }
+
+    // 长属性优先：与 CSS 层叠一致，长属性会覆盖简写里的对应分量
+    val longColor = clean(
+        Regex("""(?:^|;)\s*background-color\s*:\s*([^;}]*)""", RegexOption.IGNORE_CASE)
+            .find(body)?.groupValues?.get(1)
+    )
+    val longImage = clean(
+        Regex("""(?:^|;)\s*background-image\s*:\s*([^;}]*)""", RegexOption.IGNORE_CASE)
+            .find(body)?.groupValues?.get(1)
+    )
+    val shorthand = clean(
+        Regex("""(?:^|;)\s*background\s*:\s*([^;}]*)""", RegexOption.IGNORE_CASE)
+            .find(body)?.groupValues?.get(1)
+    )
+
+    longColor?.let { v ->
+        if (isTransparentKeyword(v)) return CssBackgroundColor(transparent = true)
+        parseCssColor(v)?.let { return CssBackgroundColor(color = it) }
+    }
+    // background-image: url(...) 时不产生纯色，交给底图通道处理
+    if (longImage != null && !isNoneKeyword(longImage)) return null
+    if (longImage != null && isNoneKeyword(longImage)) {
+        // image:none 且没写 color → 视作透明
+        if (longColor == null && (shorthand == null || isTransparentKeyword(shorthand))) {
+            return CssBackgroundColor(transparent = true)
+        }
+    }
+
+    shorthand?.let { v ->
+        if (isTransparentKeyword(v)) return CssBackgroundColor(transparent = true)
+        if (isNoneKeyword(v)) return CssBackgroundColor(transparent = true)
+        // url(...) 作底图时不取色（由 extractBubbleBackgroundImageUrl 负责）
+        if (Regex("""url\s*\(""", RegexOption.IGNORE_CASE).containsMatchIn(v)) return null
+        // 渐变：取第一个颜色停靠点近似主色
+        if (Regex("""(linear|radial|conic|repeating)-gradient""", RegexOption.IGNORE_CASE).containsMatchIn(v)) {
+            gradientPrimaryColor(v)?.let { return CssBackgroundColor(color = it) }
+            return null
+        }
+        parseCssColor(v)?.let { return CssBackgroundColor(color = it) }
+    }
+    return null
+}
+
+/** 渐变里的第一个颜色停靠点（用于无纯色时的近似） */
+private fun gradientPrimaryColor(value: String): Long? {
+    val start = value.indexOf('(')
+    if (start < 0) return null
+    val inner = value.substring(start + 1).substringBeforeLast(')')
+    // 按逗号切，跳过角度/位置等非颜色段，取第一个能解析成颜色的
+    var depth = 0
+    val segs = mutableListOf<String>()
+    val cur = StringBuilder()
+    for (ch in inner) {
+        when (ch) {
+            '(' -> { depth++; cur.append(ch) }
+            ')' -> { depth--; cur.append(ch) }
+            ',' -> if (depth == 0) { segs += cur.toString(); cur.clear() } else cur.append(ch)
+            else -> cur.append(ch)
+        }
+    }
+    if (cur.isNotEmpty()) segs += cur.toString()
+    for (s in segs) {
+        val t = s.trim()
+        // 纯角度/百分比不是颜色
+        if (Regex("""^[\d.]+(deg|grad|rad|turn|%)?$""", RegexOption.IGNORE_CASE).matches(t)) continue
+        // 色标常带位置："#ffeedd 0%" / "rgb(0 0 0) 40%" / "#fff 12px"。
+        // 位置必须剥掉再解析，否则整段解析失败、渐变主题取不到任何颜色。
+        val bare = t.replace(
+            Regex("""\s+[\d.]+(?:px|%|em|rem)?\s*$""", RegexOption.IGNORE_CASE),
+            "",
+        ).trim()
+        parseCssColor(bare)?.let { return it }
+        parseCssColor(t)?.let { return it }
+    }
+    return null
+}
+
+private fun isTransparentKeyword(v: String): Boolean =
+    Regex("""^\s*(transparent|unset|initial|inherit)\s*$""", RegexOption.IGNORE_CASE).matches(v)
+
+private fun isNoneKeyword(v: String): Boolean =
+    Regex("""^\s*(none|unset|initial)\s*$""", RegexOption.IGNORE_CASE).matches(v)
 
 /** 输入框底色：无文字色时回退聊天背景或浅色底 */
 private fun bottomBaseForInput(base: DisplaySetting, text: Long?): Long =
@@ -383,6 +570,27 @@ private val CSS_COMMENT = Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL)
 
 /** 剥掉注释后的 CSS，供各提取器使用 */
 internal fun stripCssComments(css: String): String = CSS_COMMENT.replace(css, "")
+
+/**
+ * 剥掉没有规则体的 at 语句：`@import ...;` / `@charset ...;` / `@namespace ...;`。
+ *
+ * 必须做这一步：`CSS_RULE` 用 `([^{}]+)\{` 抓选择器，而 `@import` 后面没有花括号，
+ * 于是它会被并进**下一条真正规则的选择器**里。实测 389/534 个主题用 @import 引远程
+ * 字体，导致 `@import url(...);\n\n:root` 被当成一个选择器，`:root` 再也不是独立作用域，
+ * 整块 CSS 变量读不到 —— 表现为 `var(--paper)` 原样留在声明里，气泡背景被丢弃。
+ *
+ * 只在规则解析前调用；`extractThemeFontImportUrl` 另行从原文取 @import 地址。
+ */
+internal fun stripBlocklessAtRules(css: String): String =
+    BLOCKLESS_AT_RULE.replace(css) { m ->
+        // 保留 @media/@supports 等有块的前缀（它们前面带 `{` 的由 CSS_RULE 处理），
+        // 这里只清掉整条以分号结束的语句，用等长空白替换以免下标错位
+        " ".repeat(m.value.length)
+    }
+
+/** `@import` / `@charset` / `@namespace`（不含大括号、以分号结束） */
+private val BLOCKLESS_AT_RULE =
+    Regex("""@(?:import|charset|namespace)\b[^;{}]*;""", RegexOption.IGNORE_CASE)
 
 /** 逐条匹配 CSS 规则（不含嵌套花括号的规则体；@media 外层规则自然被跳过、内层规则正常匹配） */
 internal val CSS_RULE = Regex("([^{}]+)\\{([^{}]*)\\}")
@@ -516,6 +724,21 @@ private const val PERCENT_RADIUS_DP = 24f
  */
 const val MAX_BUBBLE_RADIUS_DP = 40f
 
+/**
+ * 气泡边框粗细上限（dp）。
+ *
+ * 主题里的边框实测多为 1-3px，少数"粗描边"风格会到 8-12px；
+ * 上限给 12 既能完整表达主题，也不会让滑条失去调节精度。
+ */
+const val MAX_BUBBLE_BORDER_DP = 12f
+
+/**
+ * 气泡阴影范围上限（dp）。
+ *
+ * 由 `--shadowWidth` 与 `box-shadow` 的模糊半径共同决定，实测常见 2-24px。
+ */
+const val MAX_BUBBLE_SHADOW_DP = 24f
+
 private const val MAX_RADIUS_DP = MAX_BUBBLE_RADIUS_DP
 
 /** 聊天背景所在元素的优先级：#bg1（酒馆专用背景层）> body > .bg1 > #chat > #main */
@@ -635,12 +858,25 @@ fun extractBubbleBackgroundSize(css: String?): String? {
  * 再由 `.mes[is_user="false"] .mes_block::before` 单独写图。不合并就只能看到半条。
  */
 private fun mergeRulesBySelector(css: String): List<Pair<String, String>> {
+    val clean = stripBlocklessAtRules(stripCssComments(css))
+    // 变量必须先展开：主题普遍把颜色写成 var(--paper) 这类变量，
+    // 不展开会让 parseCssColor 收到字面量 "var(--paper)" 直接失败，
+    // 表现为"主题写了背景色但导不进来"。
+    val vars = parseCssVariables(clean)
     val order = LinkedHashMap<String, StringBuilder>()
-    for (m in CSS_RULE.findAll(stripCssComments(css))) {
+    for (m in CSS_RULE.findAll(clean)) {
         val selector = m.groupValues[1].trim().replace(Regex("""\s+"""), " ")
         if (selector.isEmpty()) continue
         val acc = order.getOrPut(selector) { StringBuilder() }
-        acc.append(m.groupValues[2]).append(';')
+        val body = splitDeclarations(m.groupValues[2]).joinToString(";") { decl ->
+            val idx = decl.indexOf(':')
+            if (idx <= 0) decl else {
+                val prop = decl.substring(0, idx).trim()
+                val value = expandVariables(decl.substring(idx + 1).trim(), vars)
+                "$prop: $value"
+            }
+        }
+        acc.append(body).append(';')
     }
     return order.map { it.key to it.value.toString() }
 }
@@ -733,6 +969,30 @@ private val BOT_SIDE_SELECTOR = Regex("""is_user\s*=\s*['"]?false""", RegexOptio
 /** @font-face 块（font-family + src url + format） */
 private val FONT_FACE = Regex("""@font-face\s*\{([^}]*)\}""", RegexOption.IGNORE_CASE)
 
+/**
+ * `@import url("...")` 引入的远程字体样式表。
+ *
+ * 实测 534 个带 custom_css 的主题里有 389 个（73%）用 @import 引第三方字体
+ * （最常见是 zeoseven 的思源/京华系列）。旧实现只看 @font-face，这些主题的字体完全没有入口。
+ */
+private val FONT_IMPORT = Regex(
+    """@import\s+(?:url\(\s*)?['"]?(https?://[^'")\s;]+)['"]?\s*\)?\s*;""",
+    RegexOption.IGNORE_CASE,
+)
+
+/** 主题给正文/消息指定的字体族，用于决定"这个主题到底想用什么字体" */
+private val BODY_FONT_FAMILY = Regex(
+    """(?:^|[,}\s])(?:body|html|\.mes\b[^{},]*(?:\s+\S+)?)[^{},]*\{[^}]*?font-family\s*:\s*([^;}]+)""",
+    RegexOption.IGNORE_CASE,
+)
+
+/** 提取 font-family 列表里的首选族名（跳过 sans-serif 这类通用族与 emoji 字体） */
+private val GENERIC_FONT_FAMILIES = setOf(
+    "serif", "sans-serif", "monospace", "cursive", "fantasy",
+    "system-ui", "ui-serif", "ui-sans-serif", "ui-monospace", "ui-rounded",
+    "inherit", "initial", "unset", "revert",
+)
+
 /** Android Typeface 只认 ttf/otf（woff/woff2 无法原生加载），按 URL 扩展名或 format 判断 */
 private val USABLE_FONT_EXT = Regex("""\.(ttf|otf)(\?|#|$)""", RegexOption.IGNORE_CASE)
 private val USABLE_FONT_FORMAT = Regex("""format\(\s*['"]?(truetype|opentype)""", RegexOption.IGNORE_CASE)
@@ -747,7 +1007,16 @@ fun extractThemeFontUrl(css: String?): String? = extractThemeFont(css)?.url
 /** 同 [extractThemeFontUrl]，同时带出 font-family 名称 */
 fun extractThemeFont(css: String?): ThemeFont? {
     if (css.isNullOrBlank()) return null
-    for (m in FONT_FACE.findAll(stripCssComments(css))) {
+    val clean = stripCssComments(css)
+
+    // 主题声明的字体族（body/.mes 上的 font-family），用于给 @import 场景定名
+    val declaredFamily = BODY_FONT_FAMILY.findAll(clean)
+        .flatMap { it.groupValues[1].split(',') }
+        .map { it.trim().trim('"', '\'').trim() }
+        .firstOrNull { it.isNotEmpty() && it.lowercase() !in GENERIC_FONT_FAMILIES }
+
+    // 1) 优先本地 @font-face：作者自带 ttf/otf，能直接下载加载
+    for (m in FONT_FACE.findAll(clean)) {
         val body = m.groupValues[1]
         val url = CSS_URL.find(body)?.groupValues?.get(2)?.trim()?.takeIf { it.isNotEmpty() }
             ?: continue
@@ -759,12 +1028,28 @@ fun extractThemeFont(css: String?): ThemeFont? {
             .find(body)?.groupValues?.get(1)?.trim()?.takeIf { it.isNotEmpty() }
         return ThemeFont(family = family, url = url)
     }
+
+    // 2) 退到 @import 的远程样式表。
+    //    这类表几乎全是 woff2 分片（Android 原生 Typeface 无法加载），所以这里
+    //    不改 url —— 只把"主题想要哪个字体"记录下来，交给调用方判断能否取得 ttf/otf。
+    FONT_IMPORT.find(clean)?.groupValues?.get(1)?.trim()?.takeIf { it.isNotEmpty() }?.let { importUrl ->
+        return ThemeFont(family = declaredFamily, url = importUrl, isRemoteCss = true)
+    }
     return null
 }
 
 data class ThemeFont(
     val family: String?,
     val url: String,
+    /**
+     * 该 url 是否是「字体样式表」而不是字体文件本身。
+     *
+     * 官方主题里 73% 用 `@import url(https://fontsapi.zeoseven.com/N/main/result.css)`
+     * 引第三方字体。那种 CSS 里定义的是按 unicode-range 切片的 woff2 分片，
+     * Android 的 `Typeface.createFromFile` 不支持 woff2、项目也没有 woff2 解码器，
+     * 因此这条路径**只在解析出 ttf/otf 时**才可用；否则应当跳过而不是下载一堆分片。
+     */
+    val isRemoteCss: Boolean = false,
 )
 
 // ── 图标主题（发送栏 / 头像框） ──
@@ -1151,4 +1436,111 @@ fun extractThemeIconSet(css: String?): ThemeIconSet {
         avatarFrameUrl = anyFrame,
         avatarFrameScale = frameScale,
     )
+}
+
+// ── 气泡内层元素样式（代码框 / 引用块 / 高亮 / 斜体 / 思维链） ──
+
+/**
+ * 从主题 CSS 提取气泡**内层**元素样式。
+ *
+ * 官方 DOM 里消息正文是 `.mes_text`，其子元素拿到主题样式；主题也常直接写 `.mes blockquote`。
+ * 这里对每类元素按「选择器是否命中该类元素」挑出对应声明，并用与浏览器一致的层叠取值。
+ *
+ * 只取真正会被渲染的几何/颜色属性；`!important` 由 [parseCssRules] 归一化后不影响取值。
+ */
+fun extractThemeMarkdownStyle(css: String?): ThemeMarkdownStyle {
+    if (css.isNullOrBlank()) return ThemeMarkdownStyle()
+    val rules = parseCssRules(css)
+    if (rules.isEmpty()) return ThemeMarkdownStyle()
+
+    fun declsFor(vararg tags: String): Map<String, String> {
+        val wanted = tags.toSet()
+        return cascadeDeclarations(rules) { selector ->
+            // 去掉伪元素与伪类后，判断最后一段是不是目标标签
+            val bare = selector.substringBefore("::").substringBefore(":")
+                .replace(Regex("""\[[^\]]*\]"""), "")
+                .trim()
+            if (bare.isEmpty()) return@cascadeDeclarations false
+            bare.split(Regex("""[\s>+~]+"""))
+                .lastOrNull()
+                ?.trim()
+                ?.lowercase() in wanted
+        }
+    }
+
+    val inlineCode = declsFor("code")
+    val codeBlock = declsFor("pre")
+    val quote = declsFor("blockquote")
+    val mark = declsFor("mark")
+    val emphasis = declsFor("em", "i")
+    val reasoning = declsFor("reasoning", ".mes_reasoning")
+
+    fun colorOf(d: Map<String, String>): Color? =
+        cssColorFrom(d, "color")?.toComposeColor()
+
+    fun bgOf(d: Map<String, String>): Color? {
+        val v = d["background-color"] ?: d["background"] ?: return null
+        if (isTransparentKeyword(v.trim())) return null
+        if (Regex("""url\s*\(""", RegexOption.IGNORE_CASE).containsMatchIn(v)) return null
+        val raw = if (Regex("""gradient""", RegexOption.IGNORE_CASE).containsMatchIn(v)) {
+            gradientPrimaryColor(v)?.let { argbToCss(it) } ?: return null
+        } else v
+        return parseCssColor(raw)?.toComposeColor()
+    }
+
+    fun radiusOf(d: Map<String, String>): Dp? =
+        d["border-radius"]?.let { cssLengthToDp(it.split(Regex("""[\s/]+""")).firstOrNull()) }
+
+    /** 边框：优先读简写，其次读单边（主题大量用 border-inline-start 画引用块竖线） */
+    fun borderOf(d: Map<String, String>, side: String = "border"): Pair<Color?, Dp?> {
+        val v = d[side] ?: return null to null
+        val w = Regex("""(\d+(?:\.\d+)?)px""").find(v)?.groupValues?.get(1)?.toFloatOrNull()?.dp
+        val c = Regex("""(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\))""", RegexOption.IGNORE_CASE)
+            .find(v)?.value?.let { parseCssColor(it) }?.toComposeColor()
+        return c to w
+    }
+
+    val quoteBorder = borderOf(quote)
+    val quoteStartBorder = borderOf(quote, "border-inline-start")
+    val codeBorder = borderOf(codeBlock)
+
+    return ThemeMarkdownStyle(
+        inlineCodeBackgroundArgb = bgOf(inlineCode)?.toArgbOrNull(),
+        inlineCodeColorArgb = colorOf(inlineCode)?.toArgbOrNull(),
+        inlineCodeCornerRadiusDp = radiusOf(inlineCode)?.value,
+
+        codeBlockBackgroundArgb = bgOf(codeBlock)?.toArgbOrNull(),
+        codeBlockColorArgb = colorOf(codeBlock)?.toArgbOrNull(),
+        codeBlockCornerRadiusDp = radiusOf(codeBlock)?.value,
+        codeBlockBorderColorArgb = codeBorder.first?.toArgbOrNull(),
+        codeBlockBorderWidthDp = codeBorder.second?.value,
+
+        quoteBackgroundArgb = bgOf(quote)?.toArgbOrNull(),
+        quoteColorArgb = colorOf(quote)?.toArgbOrNull(),
+        quoteCornerRadiusDp = radiusOf(quote)?.value,
+        quoteBorderColorArgb = (quoteBorder.first ?: quoteStartBorder.first)?.toArgbOrNull(),
+        quoteBorderWidthDp = (quoteBorder.second ?: quoteStartBorder.second)?.value,
+        quoteAccentWidthDp = (quoteStartBorder.second ?: quoteBorder.second)?.value,
+
+        markBackgroundArgb = bgOf(mark)?.toArgbOrNull(),
+        markColorArgb = colorOf(mark)?.toArgbOrNull(),
+        markCornerRadiusDp = radiusOf(mark)?.value,
+
+        emphasisBackgroundArgb = bgOf(emphasis)?.toArgbOrNull(),
+        emphasisColorArgb = colorOf(emphasis)?.toArgbOrNull(),
+        emphasisCornerRadiusDp = radiusOf(emphasis)?.value,
+
+        reasoningBackgroundArgb = bgOf(reasoning)?.toArgbOrNull(),
+        reasoningColorArgb = colorOf(reasoning)?.toArgbOrNull(),
+        reasoningCornerRadiusDp = radiusOf(reasoning)?.value,
+    )
+}
+
+/** ARGB Long → CSS 颜色字符串（供复用同一套颜色解析） */
+private fun argbToCss(argb: Long): String {
+    val a = (argb shr 24) and 0xFF
+    val r = (argb shr 16) and 0xFF
+    val g = (argb shr 8) and 0xFF
+    val b = argb and 0xFF
+    return "rgba($r, $g, $b, ${"%.3f".format(a / 255.0)})"
 }

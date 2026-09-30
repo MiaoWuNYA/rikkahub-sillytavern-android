@@ -1,5 +1,8 @@
 package me.rerere.rikkahub.ui.components.richtext
 
+import me.rerere.rikkahub.data.model.ThemeMarkdownStyle
+import me.rerere.rikkahub.data.model.LocalThemeMarkdownStyle
+import me.rerere.rikkahub.data.model.EmptyThemeMarkdownStyle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -546,6 +549,19 @@ private fun HtmlCodeBlock(element: Element) {
         ?: "plaintext"
     val code = codeElement?.wholeText()?.trimEnd('\n') ?: element.wholeText().trimEnd('\n')
 
+    // 主题给代码块指定了底色/字色（冬之誓是白底 + 1px 描边 + 12px 圆角）。
+    // HighlightCodeBlock 的 style 直接作用到代码正文，用 background 把底色带进去；
+    // 主题没写时保持 null，交给组件按暗色模式自动选配色。
+    val theme = LocalThemeMarkdownStyle.current
+    val themedStyle = if (theme.codeBlockBackground != null || theme.codeBlockColor != null) {
+        TextStyle(
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            color = theme.codeBlockColor ?: Color.Unspecified,
+            background = theme.codeBlockBackground ?: Color.Unspecified,
+        )
+    } else null
+
     HighlightCodeBlock(
         code = code,
         language = language,
@@ -553,20 +569,39 @@ private fun HtmlCodeBlock(element: Element) {
             .fillMaxWidth()
             .padding(bottom = 4.dp),
         completeCodeBlock = true,
+        style = themedStyle,
     )
 }
 
 @Composable
 private fun HtmlBlockquote(element: Element, onClickCitation: (String) -> Unit) {
-    ProvideTextStyle(LocalTextStyle.current.copy(fontStyle = FontStyle.Italic)) {
-        val borderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-        val bgColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+    // 主题对引用块通常同时指定底色、右侧不对称圆角与左侧竖线（border-inline-start），
+    // 只跟随一个 quoteColor 会丢掉全部几何，看起来像"主题的引用样式没生效"。
+    val theme = LocalThemeMarkdownStyle.current
+    val textColor = theme.quoteColor ?: Color.Unspecified
+    ProvideTextStyle(
+        LocalTextStyle.current.copy(
+            fontStyle = FontStyle.Italic,
+            color = if (textColor == Color.Unspecified) LocalTextStyle.current.color else textColor,
+        )
+    ) {
+        val borderColor = theme.quoteBorderColor
+            ?: MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+        val bgColor = theme.quoteBackground
+            ?: MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+        val accentWidth = (theme.quoteAccentWidth ?: theme.quoteBorderWidth ?: 3.dp).value
+            .coerceAtLeast(1f)
+        val shape = RoundedCornerShape(theme.quoteCornerRadius ?: 0.dp)
         Column(
             modifier = Modifier
+                .clip(shape)
                 .drawWithContent {
                     drawContent()
                     drawRect(color = bgColor, size = size)
-                    drawRect(color = borderColor, size = Size(10f, size.height))
+                    drawRect(
+                        color = borderColor,
+                        size = Size(accentWidth.dp.toPx(), size.height),
+                    )
                 }
                 .padding(8.dp),
         ) {
@@ -833,6 +868,7 @@ private fun AnnotatedString.Builder.appendHtmlInlineNode(
     enableLatexRendering: Boolean,
     onClickCitation: (String) -> Unit,
     italicsColor: String? = null,
+    themeStyle: ThemeMarkdownStyle = EmptyThemeMarkdownStyle,
 ) {
     when (node) {
         is TextNode -> append(node.text())
@@ -845,6 +881,7 @@ private fun AnnotatedString.Builder.appendHtmlInlineNode(
             enableLatexRendering = enableLatexRendering,
             onClickCitation = onClickCitation,
             italicsColor = italicsColor,
+            themeStyle = themeStyle,
         )
     }
 }
@@ -858,6 +895,7 @@ private fun AnnotatedString.Builder.appendHtmlInlineElement(
     enableLatexRendering: Boolean,
     onClickCitation: (String) -> Unit,
     italicsColor: String? = null,
+    themeStyle: ThemeMarkdownStyle = EmptyThemeMarkdownStyle,
 ) {
     val cssStyle = element.attr("style").takeIf { it.isNotBlank() }?.let {
         parseInlineSpanStyle(
@@ -879,6 +917,7 @@ private fun AnnotatedString.Builder.appendHtmlInlineElement(
             enableLatexRendering = enableLatexRendering,
             onClickCitation = onClickCitation,
             italicsColor = italicsColor,
+            themeStyle = themeStyle,
         )
     }
 
@@ -899,13 +938,21 @@ private fun AnnotatedString.Builder.appendHtmlInlineElement(
         "b", "strong" -> appendElementChildren(SpanStyle(fontWeight = FontWeight.Bold))
 
         "i", "em" -> {
-            val color = if (!insideQuote && italicsColor != null) {
-                parseColor(italicsColor)
-            } else null
-            appendElementChildren(SpanStyle(
-                fontStyle = FontStyle.Italic,
-                color = color ?: Color.Unspecified,
-            ))
+            // 主题对斜体是整体重绘的（如冬之誓给 em 深底白字 + 内边距），
+            // 不是只改字色，所以底色优先于 italicsColor 生效。
+            val themeEm = themeStyle.emphasisColor
+            val color = when {
+                themeEm != null -> themeEm
+                !insideQuote && italicsColor != null -> parseColor(italicsColor)
+                else -> null
+            }
+            appendElementChildren(
+                SpanStyle(
+                    fontStyle = FontStyle.Italic,
+                    color = color ?: Color.Unspecified,
+                    background = themeStyle.emphasisBackground ?: Color.Unspecified,
+                )
+            )
         }
 
         "del", "s", "strike" -> appendElementChildren(SpanStyle(textDecoration = TextDecoration.LineThrough))
@@ -916,13 +963,21 @@ private fun AnnotatedString.Builder.appendHtmlInlineElement(
             SpanStyle(
                 fontFamily = JetbrainsMono,
                 fontSize = 0.9.em,
-                color = colorScheme.primary,
+                color = themeStyle.inlineCodeColor ?: colorScheme.primary,
+                background = themeStyle.inlineCodeBackground ?: Color.Unspecified,
             ).merge(cssStyle ?: SpanStyle())
         ) {
             append(' ')
             append(element.text())
             append(' ')
         }
+
+        "mark" -> appendElementChildren(
+            SpanStyle(
+                color = themeStyle.markColor ?: Color.Unspecified,
+                background = themeStyle.markBackground ?: Color.Unspecified,
+            )
+        )
 
         "a" -> {
             val href = element.attr("href")

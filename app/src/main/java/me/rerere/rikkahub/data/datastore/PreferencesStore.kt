@@ -54,6 +54,7 @@ import me.rerere.rikkahub.data.model.Persona
 import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.QuickMessage
 import me.rerere.rikkahub.data.model.Tag
+import me.rerere.rikkahub.data.model.ThemeMarkdownStyle
 import me.rerere.rikkahub.data.model.ThemeIconSet
 import me.rerere.rikkahub.data.model.parseAuthorNotePosition
 import me.rerere.rikkahub.data.sync.s3.S3Config
@@ -1003,6 +1004,9 @@ data class DisplaySetting(
     val quoteBackgroundColor: Long? = null,
     // 下划线颜色（官方 --SmartThemeUnderlineColor）
     val underlineColor: Long? = null,
+    // 气泡内层元素样式（代码框/引用块/高亮/斜体/思维链）：主题导入时从 custom_css 提取，
+    // 旧实现只搬了纯色 token，导致这些元素"只有文字变色、底色圆角全丢"。
+    val themeMarkdownStyle: ThemeMarkdownStyle = ThemeMarkdownStyle(),
 )
 
 @Serializable

@@ -79,6 +79,7 @@ import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantAffectScope
 import me.rerere.rikkahub.data.model.MessageNode
+import me.rerere.rikkahub.data.model.TRANSPARENT_BUBBLE as TRANSPARENT_BUBBLE_SENTINEL
 import me.rerere.rikkahub.data.model.replaceRegexes
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import me.rerere.rikkahub.ui.components.richtext.ZoomableAsyncImage
@@ -741,7 +742,13 @@ private fun customBubbleColor(
     custom: Long?,
     fallback: Color,
     alpha: Float,
-): Color = (custom?.toComposeColor() ?: fallback).copy(alpha = alpha)
+): Color {
+    val base = custom?.toComposeColor() ?: fallback
+    // 主题显式声明的气泡背景为 transparent 时，不能再用 bubbleOpacity 把 alpha 顶回去，
+    // 否则作者刻意做的"文字浮在背景上"会被糊成一块实色气泡。
+    if (custom != null && custom == TRANSPARENT_BUBBLE_SENTINEL) return base
+    return base.copy(alpha = alpha)
+}
 
 /**
  * 气泡背景图：路径为空时不绘制；叠加遮罩颜色可空。

@@ -816,4 +816,121 @@ class SillyTavernThemeTest {
         val r = extractBubbleCornerRadius(css)
         assertEquals(MAX_BUBBLE_RADIUS_DP, r)
     }
+
+    // ── 气泡背景 / 内层样式 / 字体：对齐官方主题的真实写法 ──
+
+    @Test
+    fun `blockless import does not swallow the following variable scope`() {
+        // 534 个主题里 389 个（73%）用 @import 引第三方字体。旧解析器的 CSS_RULE
+        // 匹配不了无块 at-rule，会把它并进下一条规则的**选择器**，于是 :root 不再是
+        // 独立作用域、全部 CSS 变量丢失，气泡背景 var(--paper) 永远解析不出来。
+        val css = """
+            @import url("https://fontsapi.zeoseven.com/309/main/result.css");
+            :root { --paper: #fff; }
+            .mes .mes_block { background: var(--paper) !important; }
+        """.trimIndent()
+        val bg = extractBubbleBackgroundColor(css)
+        assertEquals(0xFFFFFFFFL, bg?.generic?.color)
+    }
+
+    @Test
+    fun `important suffix does not break colour parsing`() {
+        // 主题大量写 `background: var(--x) !important`，展开后得到 "#fff !important"，
+        // 直接喂给颜色解析会失败，整条规则被静默丢弃 —— 这就是"气泡不生效"的成因。
+        val css = """
+            .mes_block { background: #fff !important; }
+        """.trimIndent()
+        assertEquals(0xFFFFFFFFL, extractBubbleBackgroundColor(css)?.generic?.color)
+    }
+
+    @Test
+    fun `inner mes_block fill outranks transparent outer mes`() {
+        // 官方双层结构：.mes 是外层容器（常被清成 transparent），.mes_block 才是气泡本体。
+        // 按出现顺序取第一条会把外层 transparent 当成气泡背景。
+        val css = """
+            .mes { background: transparent; }
+            .mes .mes_block { background: #fff; }
+        """.trimIndent()
+        val bg = extractBubbleBackgroundColor(css)
+        assertEquals(0xFFFFFFFFL, bg?.generic?.color)
+    }
+
+    @Test
+    fun `explicitly transparent bubble stays transparent`() {
+        // 113 个主题刻意把气泡做成透明的（内容直接浮在背景图上），
+        // 不能被回落成应用默认气泡色，否则这些主题全部失真。
+        val css = """
+            .mes .mes_block { background: transparent !important; border: 0; }
+        """.trimIndent()
+        val bg = extractBubbleBackgroundColor(css)
+        assertTrue(bg?.generic?.transparent == true)
+        assertNull(bg?.generic?.color)
+    }
+
+    @Test
+    fun `gradient bubble background keeps its first colour stop`() {
+        val css = """
+            .mes .mes_block { background: linear-gradient(180deg, #ffeedd 0%, #ffccdd 100%); }
+        """.trimIndent()
+        assertEquals(0xFFFFEEDDL, extractBubbleBackgroundColor(css)?.generic?.color)
+    }
+
+    @Test
+    fun `inner element styles are extracted from real theme shapes`() {
+        // 主题给代码框/引用块/高亮写的远不止颜色：底色、圆角、左侧竖线都要带出来。
+        val css = """
+            .mes .mes_text blockquote { background: #f0f0f080; border-inline-start: 3px solid #c8c8c866; }
+            .mes .mes_text code { background: #ccedfc26; color: #7ab8d9; }
+            .mes .mes_text pre { background: #fff; border: 1px solid #dcdcdc66; border-radius: 12px; }
+            .mes .mes_text mark { background: #ccedfc4d; }
+        """.trimIndent()
+        val s = extractThemeMarkdownStyle(css)
+        assertFalse(s.isEmpty)
+        assertEquals(0xFF7AB8D9L, s.inlineCodeColorArgb)
+        assertEquals(12f, s.codeBlockCornerRadiusDp)
+        assertEquals(3f, s.quoteAccentWidthDp)
+        assertTrue(s.markBackgroundArgb != null)
+    }
+
+    @Test
+    fun `empty markdown style when theme defines none`() {
+        // 主题没写这些元素时必须返回空样式，渲染层才能走回自己的默认外观，
+        // 而不是把元素涂成某种"主题色"。
+        assertTrue(extractThemeMarkdownStyle(".mes { background: #fff; }").isEmpty)
+    }
+
+    @Test
+    fun `import font carries the declared family and is marked remote`() {
+        // 73% 的主题用 @import 引第三方字体表；woff2 无法被 Android 加载，
+        // 所以必须标记 isRemoteCss，由调用方解析出 ttf/otf 才应用。
+        val css = """
+            @import url("https://fontsapi.zeoseven.com/309/main/result.css");
+            body { font-family: "KingHwaOldSong", sans-serif; }
+        """.trimIndent()
+        val f = extractThemeFont(css)
+        assertEquals("KingHwaOldSong", f?.family)
+        assertTrue(f?.isRemoteCss == true)
+    }
+
+    @Test
+    fun `local ttf font face wins over remote import`() {
+        val css = """
+            @import url("https://example.com/f.css");
+            @font-face { font-family: "MyFace"; src: url("https://example.com/a.ttf") format("truetype"); }
+        """.trimIndent()
+        val f = extractThemeFont(css)
+        assertEquals("MyFace", f?.family)
+        assertEquals("https://example.com/a.ttf", f?.url)
+        assertFalse(f?.isRemoteCss == true)
+    }
+
+    @Test
+    fun `woff2 only font face is not treated as loadable`() {
+        // Android Typeface.createFromFile 不支持 woff2，也没有内置解码器，
+        // 这类 @font-face 必须被跳过，否则会下到一个永远加载不了的"字体"。
+        val css = """
+            @font-face { font-family: "W2"; src: url("https://example.com/a.woff2") format("woff2"); }
+        """.trimIndent()
+        assertNull(extractThemeFont(css))
+    }
 }
