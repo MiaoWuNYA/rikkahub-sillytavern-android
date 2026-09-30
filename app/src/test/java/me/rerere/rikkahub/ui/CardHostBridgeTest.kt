@@ -308,4 +308,25 @@ class CardHostBridgeTest {
             assertTrue("CardHostBridge 缺少 $sig", src.contains(sig))
         }
     }
+
+    @Test
+    fun `fullscreen preview registers the same host bridge`() {
+        val src = java.io.File(
+            "src/main/java/me/rerere/rikkahub/ui/components/richtext/HtmlWebViewBlock.kt"
+        ).readText()
+        // 全屏页曾经跳转到 WebViewPage（裸 WebView、无任何接口），
+        // 卡在那里必然报「宿主未注入 generate 接口」。现在改为就地 Dialog，
+        // 必须注册 rikkaHostGen，展开态的生成才与内联一致。
+        assertTrue(
+            "全屏必须是就地 Dialog 而不是跳 WebViewPage",
+            !src.contains("WebViewContentCache.store"),
+        )
+        val dialogIdx = src.indexOf("Dialog(")
+        val bridgeIdx = src.indexOf("addJavascriptInterface(it, \"rikkaHostGen\")")
+        org.junit.Assert.assertTrue("缺少宿主桥注册", bridgeIdx > 0)
+        org.junit.Assert.assertTrue(
+            "Dialog 之后必须再注册一次宿主桥（全屏态也要能生成）",
+            src.indexOf("addJavascriptInterface(it, \"rikkaHostGen\")", dialogIdx) > dialogIdx,
+        )
+    }
 }

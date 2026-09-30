@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,6 +29,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.Dialog
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -43,13 +47,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.geometry.Offset
 import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.ArrowUp01
 import me.rerere.hugeicons.stroke.View as ViewIcon
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import kotlinx.coroutines.launch
 import me.rerere.rikkahub.ui.components.webview.WEB_VIEW_BASE_URL
-import me.rerere.rikkahub.ui.components.webview.WebViewContentCache
 import me.rerere.rikkahub.ui.components.webview.WebViewLocalAssets
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.context.LocalToaster
@@ -78,16 +82,6 @@ import kotlin.math.roundToInt
 /** 卡片未完成首次测量时的最小高度，避免高度上报前的塌陷与闪烁。 */
 private val CARD_MIN_HEIGHT = 80.dp
 
-/**
- * 卡片内联渲染的最大高度。
- *
- * 不设上限时，一张长卡会把消息列表撑到几屏高，用户滑很久都过不去这条消息；
- * 设得太小又会像以前那样把内容直接裁掉、只能靠小眼睛看全 —— 那正是要修的问题。
- * 因此这里只做「软上限」：超出后卡片高度停在 [CARD_MAX_HEIGHT]，
- * 但 WebView 自身保持可滚动，内容一个不丢，也不需要跳全屏。
- */
-private val CARD_MAX_HEIGHT = 520.dp
-
 
 /**
  * 渲染消息中的 HTML 卡片。
@@ -115,7 +109,6 @@ fun HtmlWebViewBlock(
     val density = LocalDensity.current
     val colorScheme = MaterialTheme.colorScheme
     val context = LocalContext.current
-    val navController = LocalNavController.current
 
     val markedJs = remember {
         runCatching {
@@ -161,10 +154,11 @@ fun HtmlWebViewBlock(
         )
     }
 
-    val openFullscreen = {
-        val contentId = WebViewContentCache.store(context.cacheDir, fullscreenPage)
-        navController.navigate(Screen.WebView(contentId = contentId))
-    }
+    // 全屏用就地 Dialog 而不是跳 WebViewPage：全屏里卡一样要调宿主 API
+    // （生成/写回/变量）。WebViewPage 是裸 WebView、不注册任何接口，
+    // 卡在那里的确会报「宿主未注入 generate 接口，无法生成」——
+    // 内联能用而全屏不能，这种半个功能的入口比没有更糟。
+    var showFullscreen = remember { mutableStateOf(false) }
 
     // 前端卡的宿主桥。没有宿主能力时也照样注册 —— 卡会自行探测
     // typeof window.generate === 'function'，我们宁可不提供 shim，
@@ -206,27 +200,15 @@ fun HtmlWebViewBlock(
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        // 整个高度计算必须统一在 dp 空间。
+        // 高度 = 内容全高（官方行为：卡整条内联进消息 DOM，随页面滚动）。
         //
-        // 原实现把 CARD_MAX_HEIGHT(520dp) 先 roundToPx() 换成物理像素再去夹
-        // contentHeight（JS 上报的是 CSS px ≈ dp），夹完又 toDp() 换回来 ——
-        // 一进一出差了一个 density。3x 屏上"内容 800dp、上限 520dp"的卡片
-        // 会被算成 267dp，视口只剩一半，可滚动距离同样缩水，
-        // 表现就是"滑一下里面只动 2 毫米"。
-        val boundedHeightDp = if (contentHeight > 0) {
-            contentHeight.coerceAtMost(CARD_MAX_HEIGHT.value.roundToInt()).dp
-        } else {
-            null
-        }
-
-        // 卡片超出高度上限时由 WebView 自身滚动。
-        //
-        // 这里刻意**不再**用 Modifier.nestedScroll：消息列表（LazyColumn）与
-        // WebView 都是原生 View，它们之间的滑动竞争发生在 Android 视图树的
-        // 拦截分发里，Compose 的 nestedScroll 完全插不上手 —— 之前 onPostScroll、
-        // onPreScroll 两版都毫无效果，根因就在这里。
-        // 现在改由 CardWebView 自己 requestDisallowInterceptTouchEvent，
-        // 详见该类的 onTouchEvent。
+        // 之前的 520dp「软上限」制造了内外两个滚动体：卡内 WebView 要自己滚，
+        // 外层 LazyColumn 也要滚，手势归属只能靠 requestDisallowInterceptTouchEvent
+        // 仲裁 —— 而 Compose 的 LazyColumn 滚动走的是指针消费，不走原生视图
+        // 拦截链，仲裁天然不可靠，表现就是"弹一下翻一点、然后又翻不动"。
+        // 现在只有一个滚动体（外层列表），冲突从构造上消失。
+        // 官方酒馆正是这么渲染的：长卡就是长消息，页面直接滚过去。
+        val cardHeightDp = if (contentHeight > 0) contentHeight.dp else null
         val cardWebViewRef = remember { CardWebViewRef() }
 
         Box(
@@ -234,8 +216,8 @@ fun HtmlWebViewBlock(
                 .fillMaxWidth()
                 // 高度跟随内容：上报前留一个最小高度，避免塌陷导致列表跳动
                 .then(
-                    if (boundedHeightDp != null) {
-                        Modifier.height(boundedHeightDp)
+                    if (cardHeightDp != null) {
+                        Modifier.height(cardHeightDp)
                     } else {
                         Modifier.heightIn(min = CARD_MIN_HEIGHT)
                     }
@@ -341,12 +323,79 @@ fun HtmlWebViewBlock(
                     )
                 }
             }
-            IconButton(onClick = openFullscreen, modifier = Modifier.size(32.dp)) {
+            IconButton(onClick = { showFullscreen.value = true }, modifier = Modifier.size(32.dp)) {
                 Icon(
                     HugeIcons.ViewIcon,
                     contentDescription = stringResource(R.string.html_block_fullscreen),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+        }
+    }
+
+    if (showFullscreen.value) {
+        Dialog(
+            onDismissRequest = { showFullscreen.value = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(colorScheme.surface)
+            ) {
+                AndroidView(
+                    factory = { ctx ->
+                        CardWebView(ctx).apply {
+                            layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                            )
+                            settings.javaScriptEnabled = true
+                            settings.domStorageEnabled = true
+                            settings.allowContentAccess = true
+                            settings.loadWithOverviewMode = false
+                            settings.useWideViewPort = false
+                            setBackgroundColor(AndroidColor.TRANSPARENT)
+                            // 全屏里注册同一座宿主桥：卡的生成/写回/变量在全屏态照常工作
+                            hostBridge?.let { addJavascriptInterface(it, "rikkaHostGen") }
+                            isLongClickable = false
+                            webViewClient = object : WebViewClient() {
+                                override fun shouldInterceptRequest(
+                                    view: WebView,
+                                    request: WebResourceRequest,
+                                ): WebResourceResponse? = WebViewLocalAssets.intercept(
+                                    view.context.applicationContext,
+                                    request.url,
+                                ) ?: super.shouldInterceptRequest(view, request)
+                            }
+                        }
+                    },
+                    update = { webView ->
+                        if (webView.tag != fullscreenPage) {
+                            webView.tag = fullscreenPage
+                            webView.loadDataWithBaseURL(
+                                WEB_VIEW_BASE_URL,
+                                fullscreenPage,
+                                "text/html",
+                                "utf-8",
+                                null,
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                )
+                IconButton(
+                    onClick = { showFullscreen.value = false },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp),
+                ) {
+                    Icon(
+                        HugeIcons.Cancel01,
+                        contentDescription = stringResource(android.R.string.cancel),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
@@ -470,10 +519,17 @@ private class CardWebView(context: Context) : WebView(context) {
     /**
      * 判断卡片当前是否还有可滚动空间。
      *
-     * 有空间就自己处理整段手势，没空间就完全不抢，让外层列表照常滚动 ——
-     * 短卡片（内容没超过高度上限）不应该表现出任何阻断感。
+     * 有空间就自己处理整段手势，没空间就完全不抢，让外层列表照常滚动。
+     * 全高内联后内容与视口等高，理论上 range 恒为 0；这里仍保留判断并加
+     * 一个小的阈值，吸收 getContentHeight() 与视口之间的缩放舍入差，
+     * 避免几个像素的假可滚区间让 WebView 抢走列表手势。
      */
-    fun hasScrollableRange(): Boolean = scrollableRangePx() > 0
+    fun hasScrollableRange(): Boolean = scrollableRangePx() > GRAB_THRESHOLD_PX
+
+    private companion object {
+        /** 小于这个可滚距离就不抢手势：吸收缩放舍入误差。 */
+        const val GRAB_THRESHOLD_PX = 4
+    }
 }
 
 private const val HEIGHT_JS =
