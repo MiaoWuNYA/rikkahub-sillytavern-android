@@ -137,6 +137,8 @@ fun ChatMessage(
      * 为 null 时卡会显示「宿主未注入 generate 接口，无法生成」。
      */
     onCardGenerate: (suspend (prompt: String, onDelta: (String) -> Unit) -> String)? = null,
+    /** 卡把开局正文写回消息的入口。 */
+    onCardWriteMessage: (suspend (nodeIndex: Int, text: String) -> Unit)? = null,
 ) {
     val message = node.messages[node.selectIndex]
     val settings = LocalSettings.current.displaySetting
@@ -191,6 +193,7 @@ fun ChatMessage(
                 onToolAnswer = onToolAnswer,
                 onUserMessageClick = if (message.role == MessageRole.USER) onEdit else null,
                 onCardGenerate = onCardGenerate,
+                onCardWriteMessage = onCardWriteMessage,
             )
 
             message.translation?.let { translation ->
@@ -308,6 +311,7 @@ private fun MessagePartsBlock(
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onUserMessageClick: (() -> Unit)? = null,
     onCardGenerate: (suspend (prompt: String, onDelta: (String) -> Unit) -> String)? = null,
+    onCardWriteMessage: (suspend (nodeIndex: Int, text: String) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
@@ -447,6 +451,7 @@ private fun MessagePartsBlock(
                                                 ),
                                                 onClickCitation = handleClickCitation,
                                                 onGenerate = onCardGenerate,
+                                                onWriteMessage = onCardWriteMessage,
                                             )
                                         }
                                     }
@@ -495,6 +500,7 @@ private fun MessagePartsBlock(
                                                     ),
                                                     onClickCitation = handleClickCitation,
                                                     onGenerate = onCardGenerate,
+                                                onWriteMessage = onCardWriteMessage,
                                                 )
                                             }
                                         }
@@ -509,6 +515,7 @@ private fun MessagePartsBlock(
                                         ),
                                         onClickCitation = handleClickCitation,
                                         onGenerate = onCardGenerate,
+                                                onWriteMessage = onCardWriteMessage,
                                         modifier = Modifier
                                             .animateContentSize()
                                     )
