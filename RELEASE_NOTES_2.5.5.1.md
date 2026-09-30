@@ -24,6 +24,12 @@
 
 以前围栏 HTML 和普通 HTML 片段会被误当成卡片，把正常消息渲染成源码；现在只有真正的完整网页才走卡片路径。
 
+**6. 卡内嵌世界书不再覆盖全局世界书**
+
+以前导入角色卡时，会把卡里的世界书复制成一份独立的外置书再绑定给助手，靠两个同步函数维持一致。但这两个函数只判断「有没有绑定」、不看来源，结果编辑助手会把卡内条目写进绑定的全局书（甚至清空），编辑全局书又会反过来覆盖卡内条目——两边互相覆盖。
+
+现在回归官方模型：卡内的世界书就是角色卡的一部分，注入时直接从卡片构建、和全局书合并扫描，**从结构上不可能互相覆盖**。同时加了数据迁移，清理历史遗留的复制书和绑定（否则同一份内容会被注入两次）。
+
 ---
 
 ## English
@@ -47,6 +53,12 @@ The status bar is a read-only view of MVU variables, rendered per message — ol
 **5. Card detection no longer misfires**
 
 Fenced and plain HTML fragments used to be mistaken for cards, rendering normal messages as raw source. Only genuine full HTML documents take the card path now.
+
+**6. Embedded character world books no longer overwrite global ones**
+
+Importing a character card used to copy the card's embedded world book into a separate standalone book bound to the assistant, kept in sync by two functions. Those functions only checked whether a book was bound — not where it came from — so editing the assistant wrote card entries into the bound global book (sometimes wiping it), and editing the global book wrote back over the card entries. Each side clobbered the other.
+
+This now follows the official model: the embedded world book is simply part of the character card. It's built directly from the card at injection time and scanned alongside global books, so **overwriting is structurally impossible**. A data migration also cleans up the leftover duplicated books and bindings (otherwise the same content would be injected twice).
 
 ---
 
