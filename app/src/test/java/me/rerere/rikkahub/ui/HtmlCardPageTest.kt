@@ -172,11 +172,50 @@ class HtmlCardPageTest {
     }
 
     @Test
-    fun `nested scroll only hands off after the card is exhausted`() {
+    fun `the card takes the gesture before the outer list`() {
         val src = cardWebViewSource()
-        // 必须用 onPostScroll（消费后剩余量）而不是 onPreScroll（先抢走整段）
-        assertTrue("应交由 onPostScroll 处理越界剩余量", src.contains("override fun onPostScroll"))
-        assertFalse("onPreScroll 会把整段位移抢先吃掉，外层列表将完全收不到滚动", src.contains("override fun onPreScroll"))
+        // 必须用 onPreScroll：它是手势链里从内向外派发的第一站。
+        //
+        // 曾经用过 onPostScroll 并以为"让外层先消费、剩余量再给卡片"更安全，
+        // 实际效果相反 —— onPostScroll 触发时外层列表**已经**把手势吃完了，
+        // 留给卡片的只有残渣，用户看到的就是"滑一下里面只动一点点，
+        // 整段滚动被原生列表吃掉"。
+        assertTrue(
+            "卡片必须在 onPreScroll 里优先消费手势",
+            src.contains("override fun onPreScroll"),
+        )
+    }
+
+    @Test
+    fun `the post-scroll hook never re-applies the same gesture`() {
+        val src = cardWebViewSource()
+        // 同一次拖动被 onPreScroll 与 onPostScroll 各 scrollBy 一遍，
+        // 正是"能滑但几乎不动"的成因。onPostScroll 必须保持空实现，
+        // 只返回 Offset.Zero。
+        val start = src.indexOf("override fun onPostScroll")
+        assertTrue("应当保留 onPostScroll 覆写", start >= 0)
+        // 截取到该方法自身的收尾花括号（缩进 16 空格）为止，
+        // 不能只看 400 字符窗口 —— 那会越过方法边界，把后面
+        // WebViewClient 里的 scrollBy 一并算进来。
+        val tail = src.substring(start)
+        val close = tail.indexOf("\n                }\n")
+        assertTrue("onPostScroll 应当正常闭合", close > 0)
+        // 必须剥掉注释再断言：方法体里那句解释性注释本身就写着 "scrollBy"，
+        // 直接 contains 会把说明文字误判成真实调用。
+        val body = tail.substring(0, close)
+            .lineSequence()
+            .joinToString("\n") { line ->
+                val t = line.trimStart()
+                if (t.startsWith("//")) "" else line
+            }
+        assertTrue(
+            "onPostScroll 不应再出现 scrollBy，否则同一次拖动会被应用两遍",
+            !body.contains("scrollBy"),
+        )
+        assertTrue(
+            "onPostScroll 应显式返回 Offset.Zero",
+            body.contains("Offset.Zero"),
+        )
     }
 
     @Test
@@ -184,7 +223,17 @@ class HtmlCardPageTest {
         val src = cardWebViewSource()
         assertTrue(
             "交还外层时应以 scrollBy 的真实位移为准，谎报消费量会让列表跳动",
-            src.contains("val actually = (view.scrollY - before).toFloat()"),
+            src.contains("val actually = view.scrollY - before"),
+        )
+    }
+
+    @Test
+    fun `sub-pixel scrolling is accumulated rather than truncated away`() {
+        val src = cardWebViewSource()
+        // 慢速滑动每帧常常不足 1px；直接 toInt() 丢弃会让内容纹丝不动。
+        assertTrue(
+            "应保留截断余数，避免慢速滑动完全不动",
+            src.contains("scrollRemainder"),
         )
     }
 

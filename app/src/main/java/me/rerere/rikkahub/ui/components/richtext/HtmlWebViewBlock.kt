@@ -159,26 +159,49 @@ fun HtmlWebViewBlock(
             null
         }
 
-        // 卡片被上限截断时自身可滚动。这里不抢手势，只在 WebView 已经滚到
-        // 边界后，把「它吃不下的那一部分」还给外层聊天列表，避免手势卡在卡片上。
+        // 卡片被上限截断时，滑动必须优先给卡片，滚到边界才交还外层聊天列表。
+        //
+        // 关键在用 onPreScroll 而不是 onPostScroll：
+        // onPostScroll 是**外层列表已经消费完手势之后**才被调用，此时分给卡片
+        // 的只剩残渣，表现为"卡片几乎不动、整段滚动被原生列表吃掉"。
+        // onPreScroll 是从内向外派发的第一站，卡片在这里先把可用位移吃掉，
+        // 吃掉多少就报多少 consumed，剩下的才轮到外层列表 —— 这正是用户要的
+        // "滑动网页时屏蔽原生界面的翻动"。
         val cardWebViewRef = remember { CardWebViewRef() }
+        // 承载 scrollBy 的整数截断余数：慢速滑动每帧可能不足 1px，
+        // 若直接丢弃，用户会感觉"手指在动但内容纹丝不动"。
+        val scrollRemainder = remember { floatArrayOf(0f) }
         val nestedScroll = remember {
             object : NestedScrollConnection {
+                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    val view = cardWebViewRef.view ?: return Offset.Zero
+                    val dy = available.y
+                    if (dy == 0f) return Offset.Zero
+                    // 用 scrollBy 的真实结果作为"我消费了多少"。
+                    // 谎报消费量（例如原样返回 dy）会让外层列表少滚或跳动，
+                    // 因为上层相信位移已经被处理掉了。
+                    val delta = dy + scrollRemainder[0]
+                    val step = delta.toInt()
+                    if (step == 0) {
+                        scrollRemainder[0] = delta
+                        return Offset.Zero
+                    }
+                    val before = view.scrollY
+                    view.scrollBy(0, step)
+                    val actually = view.scrollY - before
+                    // 舍掉的部分留到下一帧，保证慢速滑动也能累积出位移
+                    scrollRemainder[0] = delta - actually
+                    return if (actually == 0) Offset.Zero else Offset(0f, actually.toFloat())
+                }
+
                 override fun onPostScroll(
                     consumed: Offset,
                     available: Offset,
                     source: NestedScrollSource,
                 ): Offset {
-                    val view = cardWebViewRef.view ?: return Offset.Zero
-                    val dy = available.y
-                    if (dy == 0f) return Offset.Zero
-                    // available 已经是消费后剩余量；只有在卡片确实滚不动时才接。
-                    // 接的时候用 scrollBy 的真实结果作为"我消费了多少"，
-                    // 而不是原样返回 dy —— 谎报消费量会让列表跳动。
-                    val before = view.scrollY
-                    view.scrollBy(0, dy.toInt())
-                    val actually = (view.scrollY - before).toFloat()
-                    return if (actually == 0f) Offset.Zero else Offset(0f, actually)
+                    // 卡片已在 onPreScroll 里优先消化过手势。这里不再二次 scrollBy ——
+                    // 同一次拖动被应用两遍正是"能滑但几乎不动"的成因。
+                    return Offset.Zero
                 }
             }
         }
@@ -306,8 +329,9 @@ fun HtmlWebViewBlock(
  * 内联卡片 WebView。
  *
  * 滚动策略只有一条：卡片超出高度上限时，滑动完全由 WebView 自己处理
- * （它有完整的拖动、惯性与边界回弹），只有滚到边界、它确实吃不下的剩余量，
- * 才经 Modifier.nestedScroll 的 onPostScroll 交还外层聊天列表。
+ * （它有完整的拖动、惯性与边界回弹），而且必须在手势链里**优先**于外层聊天列表
+ * 拿到位移 —— 由 Modifier.nestedScroll 的 onPreScroll 承担，吃掉多少报多少，
+ * 剩下的才轮到列表。这样滑网页时就不会把原生界面一起翻动。
  *
  * 不在 WebView 上覆写 onTouchEvent —— 那会切断触摸与 WebView 内部
  * OverScroller 的联系，把顺滑的惯性滚动退化成逐段 scrollBy，手感即"划不动"。
