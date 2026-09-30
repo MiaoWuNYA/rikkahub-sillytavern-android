@@ -34,3 +34,18 @@
 -keepclassmembers class * extends android.webkit.WebChromeClient {
     public *;
 }
+
+# ---- SnakeYAML ----
+#
+# SnakeYAML 的 MethodProperty 引用了 java.beans.*（JavaBeans 内省），
+# 而 Android 运行时根本没有这个包。我们只用 Yaml().load() 解析 Map/List，
+# 走的是 SafeConstructor，从不触发 Bean 内省路径。
+#
+# R8 是静态分析，看到 java.beans 就报 Missing class 并中断整个 release 构建。
+# 这里声明「这些缺失类不影响运行」，让 R8 放心删掉那条走不到的分支。
+-dontwarn java.beans.BeanInfo
+-dontwarn java.beans.FeatureDescriptor
+-dontwarn java.beans.IntrospectionException
+-dontwarn java.beans.Introspector
+-dontwarn java.beans.PropertyDescriptor
+-dontwarn org.yaml.snakeyaml.**

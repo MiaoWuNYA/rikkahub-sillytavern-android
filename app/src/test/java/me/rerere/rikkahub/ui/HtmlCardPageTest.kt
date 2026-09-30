@@ -200,9 +200,14 @@ class HtmlCardPageTest {
             "必须按可滚区间决定是否抢手势",
             src.contains("hasScrollableRange"),
         )
+        // 判定必须落在同一量纲里：WebView 的 getContentHeight() 与 getHeight()
+        // 都是物理像素；而外层上报的 contentHeight 是 dp 语义的 CSS 高度。
+        // 早先直接比 contentHeight > height，在 3x 屏上把 600dp 的卡片
+        // 判成「滚不动」，按下时不抢手势，外层列表把手势整段截走 ——
+        // 现象就是「弹一下翻一点、然后又翻不动」。
         assertTrue(
-            "可滚区间 = 内容高度 > 视口高度",
-            src.contains("contentHeight > height"),
+            "可滚区间 = WebView 内容高度 > 视口高度（同为物理像素）",
+            src.contains("(contentHeight - height).coerceAtLeast(0)"),
         )
     }
 

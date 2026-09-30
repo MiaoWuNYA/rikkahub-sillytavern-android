@@ -31,13 +31,11 @@ import java.util.concurrent.atomic.AtomicLong
  */
 class CardHostBridge(
     private val scope: CoroutineScope,
-    /** 把一段 prompt 交给模型生成，流式回调累积全文；返回最终文本，失败抛异常 */
-    private val onGenerate: suspend (prompt: String, onDelta: (String) -> Unit) -> String,
-    /** 透传卡的 toastr 提示；simple=true 表示警告级 */
-    private val onToast: (message: String, warning: Boolean) -> Unit = { _, _ -> },
-    /** 把卡产出的一段正文写进指定序号的聊天消息（卡用它落开局正文） */
-    private val onWriteMessage: suspend (nodeIndex: Int, text: String) -> Unit = { _, _ -> },
+    private val host: CardHostContext,
 ) {
+    private val onGenerate = host.generate
+    private val onWriteMessage = host.writeMessage
+    private val onToast = host.toast
     /** 未完成请求：id → 等待结果。JS 侧的 Promise 与之对应。 */
     private val pending = ConcurrentHashMap<String, CompletableDeferred<String>>()
 
@@ -164,8 +162,11 @@ class CardHostBridge(
         val parsed = runCatching { JSONObject(payloadJson) }.getOrNull()
         val messageId = parsed?.optInt("message_id", 0) ?: 0
         val text = parsed?.optString("message").orEmpty()
+        // 卡隐藏卡面时调 setChatMessages([{message_id:0, is_hidden:true}], {refresh:'none'})，
+        // 这条**没有** message 字段。把它当空正文拒掉的话，卡面就永远留在消息里。
+        val hiddenOnly = parsed?.optBoolean("is_hidden", false) == true && text.isBlank()
 
-        if (text.isBlank()) {
+        if (text.isBlank() && !hiddenOnly) {
             pending.remove(id)
             deferred.completeExceptionally(IllegalArgumentException("开场白正文为空"))
             return id
@@ -173,7 +174,7 @@ class CardHostBridge(
 
         scope.launch(Dispatchers.IO) {
             try {
-                onWriteMessage(messageId, text)
+                if (!hiddenOnly) onWriteMessage(messageId, text)
                 deferred.complete("")
             } catch (t: Throwable) {
                 deferred.completeExceptionally(t)
@@ -182,9 +183,118 @@ class CardHostBridge(
         return id
     }
 
+    // ---- MVU 变量 ----
+    //
+    // 酒馆前端卡的整套状态（角色属性、世界状态、剧情线进度）都存在 MVU 变量树里，
+    // 卡通过 `Mvu.getMvuData({type:'message', message_id:N})` 读、
+    // `Mvu.replaceMvuData(data, option)` 整体写回。
+    //
+    // 初值来自卡内世界书那条 `[initvar]变量初始化勿开`；卡在确认开局时会读出来，
+    // 按 allowed_json_patch_paths 打补丁，再整棵写回。所以宿主只需保存字符串。
+
+    /** 当前消息的变量树（已含 `stat_data` 包装）。volatile：JS 线程直接读。 */
+    @Volatile
+    private var mvuData: String = ""
+
+    /** 变量树的 JSON 文本；没有变量时返回空串，卡会走软降级分支。 */
+    @JavascriptInterface
+    fun getMvuData(): String = mvuData
+
+    /**
+     * 卡调用 `Mvu.replaceMvuData(data, option)` 整体写回变量树。
+     *
+     * 同步返回：卡里是 `await Mvu.replaceMvuData(...)`，但它紧接着就往下走，
+     * 不依赖返回值内容，所以这里存完即可，不必再绕一轮轮询。
+     */
+    @JavascriptInterface
+    fun replaceMvuData(dataJson: String) {
+        if (dataJson.isBlank()) return
+        mvuData = dataJson
+        onMvuChanged?.invoke(dataJson)
+    }
+
+    /** 变量树变更回调，供宿主持久化。 */
+    var onMvuChanged: ((String) -> Unit)? = null
+
+    /** 宿主注入初始变量树（来自世界书 initvar）。 */
+    fun seedMvuData(json: String?) {
+        if (!json.isNullOrBlank()) mvuData = json
+    }
+
+    /**
+     * 卡调用 `setChatMessage(text, messageId, options)` 切换开局分支。
+     *
+     * 这是卡里「命牌问卜」按钮的全部实现 —— 它把 alternate greeting 当作
+     * 官方 swipe：
+     *   const msgs = await getChatMessages(0, {include_swipe:true})
+     *   await setChatMessage(msgs[0].swipes[1], 0, {swipe_id:1, ...})
+     *
+     * 返回请求 id + 轮询，与 [setChatMessages] 一致（卡是 await 它）。
+     */
+    @JavascriptInterface
+    fun setChatMessage(payloadJson: String): String {
+        val id = "swipe-" + idSeed.incrementAndGet()
+        val deferred = CompletableDeferred<String>()
+        pending[id] = deferred
+
+        val parsed = runCatching { JSONObject(payloadJson) }.getOrNull()
+        val messageId = parsed?.optInt("message_id", 0) ?: 0
+        val swipeId = parsed?.optInt("swipe_id", 0) ?: 0
+
+        scope.launch(Dispatchers.IO) {
+            try {
+                host.switchSwipe(messageId, swipeId)
+                deferred.complete("")
+            } catch (t: Throwable) {
+                deferred.completeExceptionally(t)
+            }
+        }
+        return id
+    }
+
+    /**
+     * 卡调用 `getChatMessages(begin, options)` 读消息，取 `msgs[0].swipes`。
+     *
+     * 同步返回 JSON 字符串数组；读不到时返回 `[]`，
+     * 卡里会走它自己的 `alert('没有检测到第二开局…')` 分支。
+     */
+    @JavascriptInterface
+    fun getChatMessages(): String = chatMessagesJson
+
+    /** 宿主在加载卡片前把消息快照交给桥。 */
+    fun seedChatMessages(json: String) {
+        chatMessagesJson = json
+    }
+
+    @Volatile
+    private var chatMessagesJson: String = "[]"
+
     fun dispose() {
         pending.values.forEach { it.cancel() }
         pending.clear()
         stream = null
     }
 }
+
+/**
+ * 前端卡在宿主侧需要的全部能力打包。
+ *
+ * 之前每个能力都是一个独立回调参数，从 ChatList 一路透传到 WebView，
+ * 每加一个宿主 API 就要改 5 个文件的签名。卡需要的宿主面只会越来越多
+ * （generate / setChatMessages / MVU / swipe / 变量），打包成一个上下文
+ * 可以让渲染层保持稳定，新增能力不影响调用链。
+ */
+data class CardHostContext(
+    /** 把卡拼好的 prompt 交给模型；onDelta 收累积全文，返回最终文本。 */
+    val generate: suspend (prompt: String, onDelta: (String) -> Unit) -> String,
+    /** 把正文写回指定序号的消息。 */
+    val writeMessage: suspend (nodeIndex: Int, text: String) -> Unit = { _, _ -> },
+    /** 切换到指定消息的第 N 条开局（官方 swipe）。 */
+    val switchSwipe: suspend (nodeIndex: Int, swipeId: Int) -> Unit = { _, _ -> },
+    /** 卡片变量树初值（世界书 `[initvar]` 的 YAML 原文）。 */
+    val initVars: List<String> = emptyList(),
+    /** 替换 `{{user}}` 的键名。 */
+    val userName: String = "user",
+    /** 透传卡的 toastr 提示。 */
+    val toast: (message: String, warning: Boolean) -> Unit = { _, _ -> },
+)

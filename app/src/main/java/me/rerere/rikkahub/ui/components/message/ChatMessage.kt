@@ -81,6 +81,7 @@ import me.rerere.rikkahub.data.model.AssistantAffectScope
 import me.rerere.rikkahub.data.model.MessageNode
 import me.rerere.rikkahub.data.model.TRANSPARENT_BUBBLE as TRANSPARENT_BUBBLE_SENTINEL
 import me.rerere.rikkahub.data.model.replaceRegexes
+import me.rerere.rikkahub.ui.components.richtext.CardHostContext
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import me.rerere.rikkahub.ui.components.richtext.ZoomableAsyncImage
 import me.rerere.rikkahub.ui.components.richtext.buildMarkdownPreviewHtml
@@ -136,9 +137,9 @@ fun ChatMessage(
      * 前端角色卡的宿主生成入口（卡内 `window.generate`）。
      * 为 null 时卡会显示「宿主未注入 generate 接口，无法生成」。
      */
-    onCardGenerate: (suspend (prompt: String, onDelta: (String) -> Unit) -> String)? = null,
+    cardHost: CardHostContext? = null,
     /** 卡把开局正文写回消息的入口。 */
-    onCardWriteMessage: (suspend (nodeIndex: Int, text: String) -> Unit)? = null,
+    cardMessagesJson: String = "[]",
 ) {
     val message = node.messages[node.selectIndex]
     val settings = LocalSettings.current.displaySetting
@@ -192,8 +193,8 @@ fun ChatMessage(
                 onToolApproval = onToolApproval,
                 onToolAnswer = onToolAnswer,
                 onUserMessageClick = if (message.role == MessageRole.USER) onEdit else null,
-                onCardGenerate = onCardGenerate,
-                onCardWriteMessage = onCardWriteMessage,
+                cardHost = cardHost,
+                cardMessagesJson = cardMessagesJson,
             )
 
             message.translation?.let { translation ->
@@ -310,8 +311,8 @@ private fun MessagePartsBlock(
     onToolApproval: ((toolCallId: String, approved: Boolean, reason: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onUserMessageClick: (() -> Unit)? = null,
-    onCardGenerate: (suspend (prompt: String, onDelta: (String) -> Unit) -> String)? = null,
-    onCardWriteMessage: (suspend (nodeIndex: Int, text: String) -> Unit)? = null,
+    cardHost: CardHostContext? = null,
+    cardMessagesJson: String = "[]",
 ) {
     val context = LocalContext.current
     val contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
@@ -450,8 +451,8 @@ private fun MessagePartsBlock(
                                                     depth = messageDepth,
                                                 ),
                                                 onClickCitation = handleClickCitation,
-                                                onGenerate = onCardGenerate,
-                                                onWriteMessage = onCardWriteMessage,
+                                                cardHost = cardHost,
+                                                cardMessagesJson = cardMessagesJson,
                                             )
                                         }
                                     }
@@ -499,8 +500,8 @@ private fun MessagePartsBlock(
                                                         depth = messageDepth,
                                                     ),
                                                     onClickCitation = handleClickCitation,
-                                                    onGenerate = onCardGenerate,
-                                                onWriteMessage = onCardWriteMessage,
+                                                    cardHost = cardHost,
+                                                cardMessagesJson = cardMessagesJson,
                                                 )
                                             }
                                         }
@@ -514,8 +515,8 @@ private fun MessagePartsBlock(
                                             depth = messageDepth,
                                         ),
                                         onClickCitation = handleClickCitation,
-                                        onGenerate = onCardGenerate,
-                                                onWriteMessage = onCardWriteMessage,
+                                        cardHost = cardHost,
+                                                cardMessagesJson = cardMessagesJson,
                                         modifier = Modifier
                                             .animateContentSize()
                                     )

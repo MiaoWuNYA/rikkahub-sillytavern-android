@@ -147,6 +147,107 @@ internal fun cardHostShim(): String = """
     }
   };
 
+  // ---- MVU 变量系统 ----
+  //
+  // 卡里对 MVU 是**软降级**：
+  //   if (typeof Mvu !== 'undefined' && Mvu && typeof Mvu.getMvuData === 'function')
+  // 缺失时只写正文、跳过变量，并提示「未检测到可用 MVU，已只写入开场白正文」。
+  // 但整套角色状态（属性/世界/剧情线）都在这棵树里，缺了它卡等于残废。
+  //
+  // 变量初值由宿主从卡内世界书 `[initvar]变量初始化勿开` 解析后注入。
+  window.Mvu = {
+    /** 读变量树。卡只关心 .stat_data，取不到就当没有。 */
+    getMvuData: function (option) {
+      var raw;
+      try { raw = window.rikkaHostGen.getMvuData(); } catch (e) { return null; }
+      if (!raw) return null;
+      try {
+        var parsed = JSON.parse(raw);
+        // 卡会先 clone() 再改，返回普通对象即可；
+        // 但它会连 stat_data 一起结构化克隆，所以必须保证是纯 JSON 数据。
+        return parsed && typeof parsed === 'object' ? parsed : null;
+      } catch (e) { return null; }
+    },
+    /** 整体写回变量树。卡里是 await，这里直接同步存完。 */
+    replaceMvuData: function (data, option) {
+      try {
+        window.rikkaHostGen.replaceMvuData(JSON.stringify(data == null ? {} : data));
+      } catch (e) {}
+      return Promise.resolve();
+    }
+  };
+
+  // 官方 waitGlobalInitialized('Mvu')：卡会等这个再取变量。
+  // 我们的 Mvu 是同步就绪的，立刻兑现即可，省掉卡里的 2.5s 超时等待。
+  if (typeof window.waitGlobalInitialized !== 'function') {
+    window.waitGlobalInitialized = function () { return Promise.resolve(); };
+  }
+
+  // ---- getVariables / updateVariablesWith：chat 作用域变量 ----
+  //
+  // 卡用它记界面偏好（XY_UI_KEY = '${'$'}xuanyin_ui_v0883'）。
+  // 卡里两处都带 typeof 守卫并有 localStorage 兜底，所以缺失不会致命；
+  // 但补上能让「显示模式」这类设置跟着对话走，而不是每台设备各存一份。
+  var chatVarStore = {};
+  try {
+    var persisted = window.localStorage.getItem('__rikka_chat_vars__');
+    if (persisted) chatVarStore = JSON.parse(persisted) || {};
+  } catch (e) { chatVarStore = {}; }
+
+  function persistChatVars() {
+    try {
+      window.localStorage.setItem('__rikka_chat_vars__', JSON.stringify(chatVarStore));
+    } catch (e) {}
+  }
+
+  window.getVariables = function (option) {
+    var scope = (option && option.type) ? String(option.type) : 'chat';
+    if (scope !== 'chat') return {};
+    try { return JSON.parse(JSON.stringify(chatVarStore)); } catch (e) { return {}; }
+  };
+
+  window.updateVariablesWith = function (updater, option) {
+    var scope = (option && option.type) ? String(option.type) : 'chat';
+    if (scope !== 'chat') return Promise.resolve(chatVarStore);
+    try {
+      var next = typeof updater === 'function' ? updater(chatVarStore) : chatVarStore;
+      if (next && typeof next === 'object') {
+        chatVarStore = next;
+        persistChatVars();
+      }
+    } catch (e) {}
+    return Promise.resolve(chatVarStore);
+  };
+
+  // ---- getChatMessages / setChatMessage：读消息与切开局 ----
+  //
+  // 卡的「命牌问卜」按钮靠这两个把第二条开局（Alternate Greeting）切出来。
+  // 卡里对缺失只弹 alert，不影响其他功能，但那个按钮就废了。
+  //
+  // 宿主把 MessageNode.messages 映射成官方 swipes 数组。
+  window.getChatMessages = function (begin, options) {
+    var all;
+    try { all = JSON.parse(window.rikkaHostGen.getChatMessages()); } catch (e) { return []; }
+    if (!Array.isArray(all)) return [];
+    var from = (typeof begin === 'number' && begin > 0) ? begin : 0;
+    return all.slice(from);
+  };
+
+  window.setChatMessage = function (text, messageId, options) {
+    var opts = options || {};
+    var swipeId = (typeof opts.swipe_id === 'number') ? opts.swipe_id : 0;
+    var payload = {
+      message_id: (typeof messageId === 'number') ? messageId : 0,
+      swipe_id: swipeId,
+      text: (text == null) ? '' : String(text)
+    };
+    try {
+      return awaitHost(window.rikkaHostGen.setChatMessage(JSON.stringify(payload)));
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  };
+
   // ---- toastr：卡用 window.toastr && typeof window.toastr.error === 'function' 守卫 ----
   window.toastr = window.toastr || {};
   window.toastr.error = function (msg) {

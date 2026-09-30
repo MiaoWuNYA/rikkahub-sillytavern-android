@@ -111,6 +111,7 @@ import me.rerere.rikkahub.ui.theme.ChatFontProvider
 import me.rerere.rikkahub.utils.plus
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
+import me.rerere.rikkahub.ui.components.richtext.CardHostContext
 
 private const val TAG = "ChatList"
 private const val LoadingIndicatorKey = "LoadingIndicator"
@@ -171,6 +172,9 @@ fun ChatList(
         }
     // 卡产出开局正文后写回第 0 条消息。卡里的 message_id 是"消息序号"，
     // 对应这里的 messageNodes 下标；写回即替换该节点的正文。
+    //
+    // 注意 MessageNode.messages 就是官方的 swipes：卡切开局走 selectIndex，
+    // 这里重写正文只动 messages，避免手滑把同一条消息的其余分支擦掉。
     val onCardWriteMessage: suspend (Int, String) -> Unit =
         remember(chatService, conversation.id) {
             { nodeIndex, text ->
@@ -191,6 +195,84 @@ fun ChatList(
                 }
             }
         }
+
+    // 切开局（卡里的「命牌问卜」）。官方 swipe 语义：
+    //   getChatMessages(0, {include_swipe:true}) → msgs[0].swipes
+    //   setChatMessage(text, 0, {swipe_id:N})    → 选中第 N 条
+    // 这里 nodeIndex → messageNodes 下标，swipeId → selectIndex。
+    val onCardSwitchSwipe: suspend (Int, Int) -> Unit =
+        remember(chatService, conversation.id) {
+            { nodeIndex, swipeId ->
+                chatService.updateConversationState(conversation.id) { conv ->
+                    if (nodeIndex !in conv.messageNodes.indices) conv
+                    else conv.copy(
+                        messageNodes = conv.messageNodes.mapIndexed { i, node ->
+                            if (i != nodeIndex || swipeId !in node.messages.indices) node
+                            else node.copy(selectIndex = swipeId)
+                        }
+                    )
+                }
+            }
+        }
+
+    // 卡片变量树初值：卡内世界书那条 `[initvar]` 的 YAML。
+    // 没有它 Mvu.getMvuData 拿不到东西，卡的整套角色状态就是空的。
+    val cardInitVars: List<String> = remember(conversation.assistantId, settingsStore) {
+        val settings = settingsStore.settingsFlow.value
+        val assistant = settings.getAssistantById(conversation.assistantId)
+        val ids = assistant?.lorebookIds.orEmpty()
+        settings.lorebooks
+            .filter { it.id in ids && it.isCharacterBook }
+            .flatMap { it.entries }
+            .filter { it.name.contains("[initvar]") && it.content.isNotBlank() }
+            .map { it.content }
+    }
+
+    // 卡内的 `{{user}}` 必须和开场白宏替换用同一个名字，否则
+    // 世界书里的 `{{user}}:` 键和卡运行时算出来的用户键对不上，变量树就散了。
+    val cardUserName: String = remember(conversation.assistantId, settingsStore) {
+        settingsStore.settingsFlow.value.displaySetting.userNickname.ifBlank { "user" }
+    }
+
+    val cardHost = remember(
+        chatService, conversation.id, cardInitVars, cardUserName,
+    ) {
+        CardHostContext(
+            generate = onCardGenerate,
+            writeMessage = onCardWriteMessage,
+            switchSwipe = onCardSwitchSwipe,
+            initVars = cardInitVars,
+            userName = cardUserName,
+        )
+    }
+
+    // 卡内 getChatMessages 读的就是这份快照，字段对齐官方：
+    // 一条消息的多个开局分支 = MessageNode.messages（官方叫 swipes）。
+    val cardMessagesJson: String = remember(conversation.messageNodes) {
+        val arr = kotlinx.serialization.json.JsonArray(
+            conversation.messageNodes.mapIndexed { index, node ->
+                kotlinx.serialization.json.buildJsonObject {
+                    put("message_id", kotlinx.serialization.json.JsonPrimitive(index))
+                    put("swipe_id", kotlinx.serialization.json.JsonPrimitive(node.selectIndex))
+                    put(
+                        "message",
+                        kotlinx.serialization.json.JsonPrimitive(
+                            node.messages.getOrNull(node.selectIndex)?.toText().orEmpty()
+                        ),
+                    )
+                    put(
+                        "swipes",
+                        kotlinx.serialization.json.JsonArray(
+                            node.messages.map { m ->
+                                kotlinx.serialization.json.JsonPrimitive(m.toText())
+                            }
+                        ),
+                    )
+                }
+            }
+        )
+        arr.toString()
+    }
     AnimatedContent(
         targetState = previewMode,
         label = "ChatListMode",
@@ -233,8 +315,8 @@ fun ChatList(
                 onToolAnswer = onToolAnswer,
                 onToggleFavorite = onToggleFavorite,
                 onConversationSystemPromptChange = onConversationSystemPromptChange,
-                onCardGenerate = onCardGenerate,
-                onCardWriteMessage = onCardWriteMessage,
+                cardHost = cardHost,
+                cardMessagesJson = cardMessagesJson,
             )
         }
     }
@@ -266,8 +348,8 @@ private fun ChatListNormal(
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onToggleFavorite: ((MessageNode) -> Unit)? = null,
     onConversationSystemPromptChange: ((String?) -> Unit)? = null,
-    onCardGenerate: (suspend (prompt: String, onDelta: (String) -> Unit) -> String)? = null,
-    onCardWriteMessage: (suspend (Int, String) -> Unit)? = null,
+    cardHost: CardHostContext? = null,
+    cardMessagesJson: String = "[]",
 ) {
     val scope = rememberCoroutineScope()
     val loadingState by rememberUpdatedState(loading)
@@ -428,6 +510,8 @@ private fun ChatListNormal(
                             onToolApproval = onToolApproval,
                             onToolAnswer = onToolAnswer,
                             lastMessage = index == lastMessageIndex,
+                            cardHost = cardHost,
+                            cardMessagesJson = cardMessagesJson,
                         )
                     }
                 }
