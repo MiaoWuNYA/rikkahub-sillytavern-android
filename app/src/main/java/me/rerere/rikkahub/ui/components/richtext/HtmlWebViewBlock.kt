@@ -39,9 +39,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowUp01
 import me.rerere.hugeicons.stroke.View as ViewIcon
@@ -159,52 +156,15 @@ fun HtmlWebViewBlock(
             null
         }
 
-        // 卡片被上限截断时，滑动必须优先给卡片，滚到边界才交还外层聊天列表。
+        // 卡片超出高度上限时由 WebView 自身滚动。
         //
-        // 关键在用 onPreScroll 而不是 onPostScroll：
-        // onPostScroll 是**外层列表已经消费完手势之后**才被调用，此时分给卡片
-        // 的只剩残渣，表现为"卡片几乎不动、整段滚动被原生列表吃掉"。
-        // onPreScroll 是从内向外派发的第一站，卡片在这里先把可用位移吃掉，
-        // 吃掉多少就报多少 consumed，剩下的才轮到外层列表 —— 这正是用户要的
-        // "滑动网页时屏蔽原生界面的翻动"。
+        // 这里刻意**不再**用 Modifier.nestedScroll：消息列表（LazyColumn）与
+        // WebView 都是原生 View，它们之间的滑动竞争发生在 Android 视图树的
+        // 拦截分发里，Compose 的 nestedScroll 完全插不上手 —— 之前 onPostScroll、
+        // onPreScroll 两版都毫无效果，根因就在这里。
+        // 现在改由 CardWebView 自己 requestDisallowInterceptTouchEvent，
+        // 详见该类的 onTouchEvent。
         val cardWebViewRef = remember { CardWebViewRef() }
-        // 承载 scrollBy 的整数截断余数：慢速滑动每帧可能不足 1px，
-        // 若直接丢弃，用户会感觉"手指在动但内容纹丝不动"。
-        val scrollRemainder = remember { floatArrayOf(0f) }
-        val nestedScroll = remember {
-            object : NestedScrollConnection {
-                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                    val view = cardWebViewRef.view ?: return Offset.Zero
-                    val dy = available.y
-                    if (dy == 0f) return Offset.Zero
-                    // 用 scrollBy 的真实结果作为"我消费了多少"。
-                    // 谎报消费量（例如原样返回 dy）会让外层列表少滚或跳动，
-                    // 因为上层相信位移已经被处理掉了。
-                    val delta = dy + scrollRemainder[0]
-                    val step = delta.toInt()
-                    if (step == 0) {
-                        scrollRemainder[0] = delta
-                        return Offset.Zero
-                    }
-                    val before = view.scrollY
-                    view.scrollBy(0, step)
-                    val actually = view.scrollY - before
-                    // 舍掉的部分留到下一帧，保证慢速滑动也能累积出位移
-                    scrollRemainder[0] = delta - actually
-                    return if (actually == 0) Offset.Zero else Offset(0f, actually.toFloat())
-                }
-
-                override fun onPostScroll(
-                    consumed: Offset,
-                    available: Offset,
-                    source: NestedScrollSource,
-                ): Offset {
-                    // 卡片已在 onPreScroll 里优先消化过手势。这里不再二次 scrollBy ——
-                    // 同一次拖动被应用两遍正是"能滑但几乎不动"的成因。
-                    return Offset.Zero
-                }
-            }
-        }
 
         Box(
             modifier = Modifier
@@ -217,7 +177,6 @@ fun HtmlWebViewBlock(
                         Modifier.heightIn(min = CARD_MIN_HEIGHT)
                     }
                 )
-                .nestedScroll(nestedScroll)
         ) {
             AndroidView(
                 factory = { ctx ->
@@ -257,7 +216,7 @@ fun HtmlWebViewBlock(
                     }
                 },
                 update = { webView ->
-                    // 供 NestedScrollConnection 判定卡片是否还能继续滚动
+                    // 保留引用，供全屏/边界判定使用
                     cardWebViewRef.view = webView
                     if (webView.tag != inlinePage) {
                         webView.tag = inlinePage
@@ -281,8 +240,10 @@ fun HtmlWebViewBlock(
                 // 而外层 Box 只有 maxHeight 那么高。结果是 WebView 认为"整个文档都在可视区里"，
                 // scrollY 恒为 0、内部没有任何可滚区间；外层又只是裁剪，也不滚动。
                 // 用户看到的就是"消息里的网页怎么划都不动"。
-                // 改成 matchParentSize 后 WebView 视口 = Box 高度，超长内容由它自己滚动，
-                // 越界部分再由上面的 NestedScrollConnection 交还外层列表。
+                // 改成 matchParentSize 后 WebView 视口 = Box 高度，超长内容由它自己滚动。
+                // 手势归属由 CardWebView.onTouchEvent 里的
+                // requestDisallowInterceptTouchEvent 仲裁：卡片能滚时禁止外层拦截，
+                // 滚到边界再放行，因此不会出现"界面抢网页滑动"。
                 modifier = Modifier.fillMaxSize(),
             )
 
@@ -328,25 +289,47 @@ fun HtmlWebViewBlock(
 /**
  * 内联卡片 WebView。
  *
- * 滚动策略只有一条：卡片超出高度上限时，滑动完全由 WebView 自己处理
- * （它有完整的拖动、惯性与边界回弹），而且必须在手势链里**优先**于外层聊天列表
- * 拿到位移 —— 由 Modifier.nestedScroll 的 onPreScroll 承担，吃掉多少报多少，
- * 剩下的才轮到列表。这样滑网页时就不会把原生界面一起翻动。
+ * 滚动的唯一正解：**让 WebView 自己吃掉手势，并禁止外层列表抢夺**。
  *
- * 不在 WebView 上覆写 onTouchEvent —— 那会切断触摸与 WebView 内部
- * OverScroller 的联系，把顺滑的惯性滚动退化成逐段 scrollBy，手感即"划不动"。
+ * 消息列表是 LazyColumn（一个原生 ViewGroup 滚动容器）。手指落在 WebView 上
+ * 滑动时，LazyColumn 会在 onInterceptTouchEvent 里把 MOVE 事件全部截走，
+ * WebView 只收到一个 DOWN 就再没有后续 —— 表现就是"界面抢网页滑动"，
+ * 卡片里几乎纹丝不动。
+ *
+ * 因此必须在手势按下时调用 requestDisallowInterceptTouchEvent(true)，
+ * 让所有祖先容器放弃拦截，把整段手势完整交给 WebView 自己的
+ * OverScroller（拖动 + 惯性 + 边界吸附都是它原生的实现，手感最好）。
+ *
+ * 为什么不用 Modifier.nestedScroll：
+ * 它是 Compose 侧的机制，而 WebView 是原生 View、LazyColumn 也是原生容器，
+ * 两者之间的手势竞争发生在 Android 原生视图树里，根本不经过 Compose 的
+ * nestedScroll 分发 —— 那个 Modifier 在原生容器面前形同虚设。
+ * 之前用 onPreScroll/onPostScroll 两版都没效果，根因就在这里。
+ *
+ * 卡片滚到边界时不再需要手动交还：边界处的"吃不下的位移"由
+ * [boundaryHandoff] 判断后放行给外层，避免手势卡死在卡片上。
  */
 /**
  * 持有卡片 WebView 的普通引用容器。
  *
- * 仅用于 NestedScrollConnection 回调里读取 WebView，不参与重组，
+ * 仅用于边界放行回调里读取 WebView，不参与重组，
  * 因此刻意不用 mutableStateOf —— 避免滚动过程中产生多余重组。
  */
 private class CardWebViewRef {
     var view: WebView? = null
 }
 
+/**
+ * 卡片 WebView：自行处理手势，并禁止祖先抢占。
+ *
+ * @param canScrollDown 卡片当前是否还能向下滚（用于边界放行判定）
+ */
 private class CardWebView(context: Context) : WebView(context) {
+
+    /** 手势按下时记录方向，决定这一整段手势归谁 */
+    private var downY = 0f
+    private var downScrollY = 0
+
     init {
         // 卡片超出上限时需要自身可滚动；滚动条隐藏以免破坏卡片外观
         isVerticalScrollBarEnabled = false
@@ -356,17 +339,61 @@ private class CardWebView(context: Context) : WebView(context) {
         isFocusable = true
     }
 
-    // 刻意不覆写 onTouchEvent。
+    // 手势仲裁必须在原生层做，而不是 Compose 层的 nestedScroll。
     //
-    // 之前这里做过手势仲裁：DOWN 时记住"卡片还能不能滚"，能滚就 return true
-    // 把整段手势吞掉，滚到边界再 return false 交还外层。那套写法有两个致命问题：
-    //   1) return true 吞掉事件后，WebView 内部依赖 OverScroller 的惯性滚动
-    //      被打断，每一段 MOVE 都变成一次生硬的 scrollBy，手感就是"很卡、划不动"；
-    //   2) 同时外层还挂着一个 NestedScrollConnection 也在 scrollBy 同一个 View，
-    //      同一次拖动被应用两遍又互相抵消，表现为"能滑但几乎不动"。
+    // 消息列表是 LazyColumn，它和 WebView 都是原生 View，两者的滑动竞争
+    // 发生在 Android 视图树的 onInterceptTouchEvent/dispatchTouchEvent 里，
+    // Compose 的 Modifier.nestedScroll 完全插不上手 —— 之前两版
+    // （onPostScroll / onPreScroll）因此都没有任何效果。
     //
-    // 现在把触摸完全交回 WebView 自己（它有完整的拖动+惯性+吸附实现），
-    // 越界后的剩余量由 Modifier.nestedScroll 统一接管，职责只有一处。
+    // 这里的做法只有一条：按下时禁止祖先拦截，把整段手势交给 WebView 自己。
+    // 关键在于**不自己实现滚动**，而是 super.onTouchEvent(event) 让 WebView
+    // 原生的 OverScroller 干活（拖动、惯性、边界吸附都是它自带的，手感最好）；
+    // 覆写只是为了让祖先在合适的时候重新获得拦截权。
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                downY = event.y
+                downScrollY = scrollY
+                // 只有卡片真的还有可滚区间时才禁止祖先拦截。
+                //
+                // 短卡片（内容没超过高度上限）本来就没得滚，如果也去抢手势，
+                // 用户在这条消息上滑动时列表会"卡住"—— 那是更糟的体验。
+                // 关键一步：让 LazyColumn 等所有祖先放弃拦截，
+                // 否则它们会在第一次 MOVE 时把手势整体截走（"界面抢滑动"）。
+                parent?.requestDisallowInterceptTouchEvent(hasScrollableRange())
+            }
+
+            MotionEvent.ACTION_MOVE -> {
+                // 到达边界后要**放行**，否则手势会卡死在卡片上，
+                // 用户继续往上/下划时整个页面反而动不了。
+                if (!hasScrollableRange()) {
+                    parent?.requestDisallowInterceptTouchEvent(false)
+                } else {
+                    val pullingDown = event.y > downY
+                    val atTop = scrollY <= 0
+                    val atBottom = scrollY >= contentHeight - height
+                    if ((pullingDown && atTop) || (!pullingDown && atBottom)) {
+                        parent?.requestDisallowInterceptTouchEvent(false)
+                    }
+                }
+            }
+
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                // 手势结束，恢复祖先的拦截权
+                parent?.requestDisallowInterceptTouchEvent(false)
+            }
+        }
+        return super.onTouchEvent(event)
+    }
+
+    /**
+     * 判断卡片当前是否还有可滚动空间。
+     *
+     * 有空间就自己处理整段手势，没空间就完全不抢，让外层列表照常滚动 ——
+     * 短卡片（内容没超过高度上限）不应该表现出任何阻断感。
+     */
+    fun hasScrollableRange(): Boolean = contentHeight > height
 }
 
 private const val HEIGHT_JS =
