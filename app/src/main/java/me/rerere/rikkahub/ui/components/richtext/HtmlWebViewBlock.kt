@@ -28,7 +28,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,10 +46,13 @@ import me.rerere.hugeicons.stroke.ArrowUp01
 import me.rerere.hugeicons.stroke.View as ViewIcon
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
+import kotlinx.coroutines.launch
 import me.rerere.rikkahub.ui.components.webview.WEB_VIEW_BASE_URL
 import me.rerere.rikkahub.ui.components.webview.WebViewContentCache
 import me.rerere.rikkahub.ui.components.webview.WebViewLocalAssets
 import me.rerere.rikkahub.ui.context.LocalNavController
+import me.rerere.rikkahub.ui.context.LocalToaster
+import com.dokar.sonner.ToastType
 import me.rerere.rikkahub.utils.base64Encode
 import kotlin.math.roundToInt
 
@@ -88,6 +93,9 @@ private val CARD_MAX_HEIGHT = 520.dp
  *
  * @param html 卡片 HTML（完整文档或 HTML 片段）
  * @param modifier 外层修饰符
+ * @param onGenerate 前端卡调用 `window.generate` 时的生成入口；
+ *   参数是卡拼好的 prompt 与流式增量回调，返回最终文本。
+ *   为 null 时卡片拿不到 generate，会显示「宿主未注入 generate 接口」。
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -95,6 +103,7 @@ fun HtmlWebViewBlock(
     html: String,
     modifier: Modifier = Modifier,
     onCollapse: (() -> Unit)? = null,
+    onGenerate: (suspend (prompt: String, onDelta: (String) -> Unit) -> String)? = null,
 ) {
     val density = LocalDensity.current
     val colorScheme = MaterialTheme.colorScheme
@@ -119,27 +128,60 @@ fun HtmlWebViewBlock(
         }
     }
 
-    val inlinePage = remember(html, colorScheme, markedJs) {
+    // 宿主 API 垫片：只有真的能生成注入时，才把 generate/eventOn 暴露给卡。
+    // 没有 onGenerate 却注入 shim，卡会拿到一个永远失败的假接口，
+    // 反而比让它走自己的「宿主未注入」分支更难排查。
+    val hostShim = remember(onGenerate) {
+        if (onGenerate == null) "" else cardHostShim()
+    }
+    val inlinePage = remember(html, colorScheme, markedJs, hostShim) {
         buildCardPage(
             html = html,
             textColor = colorScheme.onSurface,
             markedJs = markedJs,
             backgroundColor = null,
+            hostShim = hostShim,
         )
     }
     // 全屏页用不透明背景：全屏 WebView 默认白底，深色主题下浅色文字会看不清
-    val fullscreenPage = remember(html, colorScheme, markedJs) {
+    val fullscreenPage = remember(html, colorScheme, markedJs, hostShim) {
         buildCardPage(
             html = html,
             textColor = colorScheme.onSurface,
             markedJs = markedJs,
             backgroundColor = colorScheme.surface,
+            hostShim = hostShim,
         )
     }
 
     val openFullscreen = {
         val contentId = WebViewContentCache.store(context.cacheDir, fullscreenPage)
         navController.navigate(Screen.WebView(contentId = contentId))
+    }
+
+    // 前端卡的宿主桥。没有 onGenerate 时也照样注册 —— 卡会自行探测
+    // typeof window.generate === 'function'，我们宁可不提供 shim，
+    // 让卡走到它自己的「宿主未注入」分支，而不是拿到一个永远 reject 的假接口。
+    val toaster = LocalToaster.current
+    val hostScope = rememberCoroutineScope()
+    val hostBridge = remember(html, onGenerate) {
+        if (onGenerate == null) null
+        else CardHostBridge(
+            scope = hostScope,
+            onGenerate = onGenerate,
+            onToast = { msg, warning ->
+                // 从 IO 线程回主线程弹提示
+                hostScope.launch {
+                    toaster.show(
+                        msg,
+                        type = if (warning) ToastType.Warning else ToastType.Error,
+                    )
+                }
+            },
+        )
+    }
+    DisposableEffect(hostBridge) {
+        onDispose { hostBridge?.dispose() }
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -195,6 +237,9 @@ fun HtmlWebViewBlock(
                         settings.useWideViewPort = false
                         setBackgroundColor(AndroidColor.TRANSPARENT)
                         addJavascriptInterface(HeightBridge(applyHeight), "rikkaHost")
+                        // 宿主桥挂在同一个 rikkaHost 上：高度上报已在用这个对象名，
+                        // 分开注册会互相覆盖，所以两者合并成一个接口对象。
+                        hostBridge?.let { addJavascriptInterface(it, "rikkaHostGen") }
                         isLongClickable = false
                         webViewClient = object : WebViewClient() {
                             override fun shouldInterceptRequest(
@@ -461,12 +506,13 @@ internal fun buildCardPage(
     textColor: androidx.compose.ui.graphics.Color,
     markedJs: String,
     backgroundColor: androidx.compose.ui.graphics.Color?,
+    hostShim: String = "",
 ): String {
     val normalized = normalizeNewlines(html).trimCardEdges()
     return if (isFullHtmlDocument(normalized)) {
-        buildCardDocumentPage(normalized, textColor, backgroundColor)
+        buildCardDocumentPage(normalized, textColor, backgroundColor, hostShim)
     } else {
-        buildFragmentPage(normalized, textColor, markedJs, backgroundColor)
+        buildFragmentPage(normalized, textColor, markedJs, backgroundColor, hostShim)
     }
 }
 
@@ -582,6 +628,7 @@ internal fun buildCardDocumentPage(
     doc: String,
     textColor: androidx.compose.ui.graphics.Color,
     backgroundColor: androidx.compose.ui.graphics.Color?,
+    hostShim: String = "",
 ): String {
     val parsed = parseCardDocument(doc)
     val scopedCss = scopeCardCss(parsed.styleCss)
@@ -595,6 +642,7 @@ internal fun buildCardDocumentPage(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+$hostShim
 <style>
 $baseCss
 </style>
@@ -694,6 +742,7 @@ internal fun buildFragmentPage(
     textColor: androidx.compose.ui.graphics.Color,
     markedJs: String,
     backgroundColor: androidx.compose.ui.graphics.Color?,
+    hostShim: String = "",
 ): String {
     val b64 = html.base64Encode()
     val baseCss = cardBaseCss(textColor, backgroundColor)
@@ -709,6 +758,7 @@ internal fun buildFragmentPage(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+$hostShim
 <title>HTML</title>
 <style>
 $baseCss

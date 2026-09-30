@@ -23,6 +23,13 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import kotlinx.coroutines.flow.first
+import me.rerere.rikkahub.data.datastore.SettingsStore
+import me.rerere.rikkahub.data.datastore.getCurrentAssistant
+import me.rerere.ai.core.MessageRole
+import me.rerere.rikkahub.data.model.GenerationType
+import me.rerere.rikkahub.service.ChatService
+import org.koin.compose.koinInject
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -137,6 +144,31 @@ fun ChatList(
     onToggleFavorite: ((MessageNode) -> Unit)? = null,
     onConversationSystemPromptChange: ((String?) -> Unit)? = null,
 ) {
+    // 前端角色卡（PNG 里带完整互动网页的那种）会调用 window.generate 让宿主
+    // 帮忙生成开场白。这里接上真实生成能力：卡拼好的 prompt 送给当前对话模型，
+    // 结果只回给卡、不写入聊天（卡确认后自己决定怎么用）。
+    val chatService: ChatService = koinInject()
+    val settingsStore: SettingsStore = koinInject()
+    val onCardGenerate: suspend (String, (String) -> Unit) -> String =
+        remember(chatService, conversation.id) {
+            { prompt, onDelta ->
+                val settings = settingsStore.settingsFlow.first()
+                val assistant = settings.getAssistantById(conversation.assistantId)
+                    ?: settings.getCurrentAssistant()
+                // 卡自己拼好了完整 prompt（世界观、路线、输出格式都在里面），
+                // 所以这里按 QUIET 类型一次调用即可：不进聊天历史、不触发工具循环。
+                chatService.generateForAssistant(
+                    assistant = assistant,
+                    settings = settings,
+                    prompt = prompt,
+                    history = emptyList(),
+                    conversationId = conversation.id,
+                    generationType = GenerationType.QUIET,
+                    promptRole = MessageRole.USER,
+                    onChunk = { text, _ -> onDelta(text) },
+                )
+            }
+        }
     AnimatedContent(
         targetState = previewMode,
         label = "ChatListMode",
@@ -179,6 +211,7 @@ fun ChatList(
                 onToolAnswer = onToolAnswer,
                 onToggleFavorite = onToggleFavorite,
                 onConversationSystemPromptChange = onConversationSystemPromptChange,
+                onCardGenerate = onCardGenerate,
             )
         }
     }
@@ -210,6 +243,7 @@ private fun ChatListNormal(
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onToggleFavorite: ((MessageNode) -> Unit)? = null,
     onConversationSystemPromptChange: ((String?) -> Unit)? = null,
+    onCardGenerate: (suspend (prompt: String, onDelta: (String) -> Unit) -> String)? = null,
 ) {
     val scope = rememberCoroutineScope()
     val loadingState by rememberUpdatedState(loading)

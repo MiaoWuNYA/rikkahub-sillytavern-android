@@ -94,6 +94,14 @@ android {
             signingConfig = signingConfigs.getByName("release")
             optimization {
                 enable = true
+                // 前端卡宿主桥走 WebView 反射，R8 看不见调用方，
+                // 会把 @JavascriptInterface 方法改名、把注入的 JS 常量整段删掉。
+                // 不挂这份规则时 debug 正常、release 静默失效，只在真机上表现为
+                // 「宿主未注入 generate 接口」。
+                proguardFiles(
+                    getDefaultProguardFile("proguard-android-optimize.txt"),
+                    "proguard-rules.pro",
+                )
             }
             buildConfigField("String", "VERSION_NAME", "\"${android.defaultConfig.versionName}\"")
             buildConfigField("String", "VERSION_CODE", "\"${android.defaultConfig.versionCode}\"")
