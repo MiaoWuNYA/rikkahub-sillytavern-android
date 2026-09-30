@@ -251,15 +251,28 @@ fun MarkdownBlock(
     // 卡片默认内联展开、高度自适应——对齐官方把卡片内联进消息 DOM 的行为，
     // 用户不需要额外点击就能看到完整卡片（issue：网页卡滑动/显示异常）。
     val fencedCard = findFencedHtmlDocument(content)
-    val htmlCard = fencedCard ?: findHtmlCard(content)?.let { (start, html) ->
-        content.substring(0, start).trim() to html
-    }
-    htmlCard?.let { (prose, cardHtml) ->
+    // 裸 HTML 路径要按「散文 / 卡片」交替拆段。
+    // 酒馆卡开场白常是「<normal_status> + 大段正文 + <UI> + <special_status>」，
+    // 卡片块被正文隔开；只取一个起点会把中间正文吞进 WebView 显示成源码。
+    val segments = if (fencedCard == null) splitCardSegments(content) else emptyList()
+    val hasCard = fencedCard != null || segments.any { it.first }
+    if (hasCard) {
         Column(modifier) {
-            if (prose.isNotEmpty()) {
-                MarkdownBlock(content = prose, onClickCitation = onClickCitation)
+            if (fencedCard != null) {
+                val (prose, fenced) = fencedCard
+                if (prose.isNotEmpty()) {
+                    MarkdownBlock(content = prose, onClickCitation = onClickCitation)
+                }
+                HtmlWebViewBlock(html = fenced)
+                return@Column
             }
-            HtmlWebViewBlock(html = cardHtml)
+            segments.forEach { (isCard, text) ->
+                if (isCard) {
+                    HtmlWebViewBlock(html = text)
+                } else {
+                    MarkdownBlock(content = text, onClickCitation = onClickCitation)
+                }
+            }
         }
         return
     }

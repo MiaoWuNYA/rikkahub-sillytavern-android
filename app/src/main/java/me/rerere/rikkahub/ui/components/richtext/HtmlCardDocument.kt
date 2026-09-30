@@ -48,6 +48,30 @@ private val CUSTOM_TAG_LINE_START = Regex(
     RegexOption.MULTILINE,
 )
 
+/**
+ * 自定义标签包着某种块状内容（HTML 标签、或 ``` 围栏）。
+ *
+ * 实测（宝可梦卡 first_mes）两种真实形态：
+ *
+ *     <UI>
+ *     <details><summary>…</summary>…</details>      ← 内部有成对 HTML
+ *     </UI>
+ *
+ *     <normal_status>                              ← 内部只有 ```yaml 围栏
+ *     ```yaml
+ *     『时间』: 夜 23:03
+ *     ```
+ *     </normal_status>
+ *
+ * 旧实现只认第一种（要求内部出现两个成对标签），于是状态栏那种
+ * 「自定义标签 + 围栏」被判成非卡片，整个开场白控件不再解析。
+ * 现在把围栏也计入块状内容。
+ */
+private val CUSTOM_TAG_WRAPPED_BLOCK = Regex(
+    """<([a-zA-Z][a-zA-Z0-9_-]*)>[^<]*(?:<(?:[a-zA-Z][\w-]*)\b|```)[\s\S]*?</\1\s*>""",
+    RegexOption.IGNORE_CASE,
+)
+
 // ```html 围栏开头
 private val FENCED_HTML_OPEN = Regex(
     """```[ \t]*html[ \t]*\n""",
@@ -77,25 +101,102 @@ fun isHtmlRichContent(text: String): Boolean {
  * 当成前端卡渲染，表现就是「回复的消息变成网页显示」。
  *
  * 因此裸 HTML（无围栏）路径要求是**文档级**内容；只有行首标签不算数。
+ *
+ * 注意卡片通常不是从消息开头开始：宝可梦卡这类开场白是
+ * 「一大段散文 + `<normal_status>` 状态栏 + `<UI>` 面板」，
+ * 若从第一个标签起整体交给 WebView，中间几千字正文会被当成 HTML 源码吞掉。
+ * 所以这里从每个候选起点向右截取，取**第一个能通过判定**的片段。
+ */
+/**
+ * 把消息拆成「散文 / 卡片」交替的段落。
+ *
+ * 为什么不能只找一个起点：酒馆卡的开场白经常是
+ * 「`<normal_status>` 状态栏 + 大段正文 + `<UI>` 面板 + `<special_status>`」，
+ * 卡片块被正文隔开。若只取第一个能通过判定的起点并吞掉其后全部内容，
+ * 中间一千多字正文会变成 HTML 源码显示在 WebView 里。
+ *
+ * 返回每个段落的 (是否是卡片, 文本)，按原顺序拼接即等于原文。
+ */
+fun splitCardSegments(text: String): List<Pair<Boolean, String>> {
+    val normalized = normalizeNewlines(text)
+    val starts = (BLOCK_TAG_AT.findAll(normalized).map { it.range.first }.toList() +
+        CUSTOM_TAG_LINE_START.findAll(normalized).map { it.range.first }.toList())
+        .distinct()
+        .sorted()
+    val segments = mutableListOf<Pair<Boolean, String>>()
+    var cursor = 0
+    var i = 0
+    while (i < starts.size) {
+        val start = starts[i]
+        if (start < cursor) { i++; continue }
+        val rest = normalized.substring(start)
+        if (!looksLikeCardMarkup(rest)) { i++; continue }
+        // 该卡片块的结束位置：自定义标签的闭合处；没有就取到文末
+        val selfClose = CUSTOM_TAG_SELF_CLOSE.find(rest)
+        val end = selfClose?.range?.last?.plus(start + 1) ?: normalized.length
+        val piece = normalized.substring(start, end).trimCardEdges()
+        if (piece.isEmpty()) { i++; continue }
+        if (start > cursor) {
+            val prose = normalized.substring(cursor, start).trimCardEdges()
+            if (prose.isNotEmpty()) segments += false to prose
+        }
+        segments += true to piece
+        cursor = end
+        i++
+    }
+    if (cursor < normalized.length) {
+        val tail = normalized.substring(cursor).trimCardEdges()
+        if (tail.isNotEmpty()) segments += false to tail
+    }
+    return segments
+}
+
+/**
+ * 定位第一处 HTML 卡片起点，返回 (起始下标, 从该处到结尾的片段)。
+ *
+ * 与 [splitCardSegments] 的区别：这里只回答「卡片从哪开始」，
+ * 用于只需要一个边界、不需要多段拆分的场景。
  */
 fun findHtmlCard(text: String): Pair<Int, String>? {
     val normalized = normalizeNewlines(text)
-    val match = listOfNotNull(
-        BLOCK_TAG_AT.find(normalized),
-        CUSTOM_TAG_LINE_START.find(normalized),
-    ).minByOrNull { it.range.first } ?: return null
-    val candidate = normalized.substring(match.range.first)
-    if (!looksLikeCardMarkup(candidate)) return null
-    return match.range.first to candidate
+    val starts = (BLOCK_TAG_AT.findAll(normalized).map { it.range.first }.toList() +
+        CUSTOM_TAG_LINE_START.findAll(normalized).map { it.range.first }.toList())
+        .distinct()
+        .sorted()
+    for (start in starts) {
+        val candidate = normalized.substring(start)
+        if (looksLikeCardMarkup(candidate)) return start to candidate
+    }
+    return null
 }
+
+/** 自定义标签在本片段内的闭合位置（用于判断它与后续区块是否相连） */
+private val CUSTOM_TAG_SELF_CLOSE = Regex(
+    // 非贪婪：必须停在**本标签**的第一个闭合处。
+    // 贪婪会让 <UI>…</UI> 一路吃到后面的 <special_status>…</special_status>，
+    // 把相邻卡片块吞并成一个，后续块就再也切不出来了。
+    """^<([a-zA-Z][a-zA-Z0-9_-]*)>[\s\S]*?</\1\s*>""",
+    RegexOption.IGNORE_CASE,
+)
 
 /**
  * 裸 HTML（无围栏）能否当作卡片渲染。
  *
  * 两条通路：
  * - 文档级内容（`<!DOCTYPE`/`<html>…</html>`）无条件接受；
- * - 片段级内容必须「看起来是一张卡」——有闭合结构、并且带卡片特征
- *   （`<style>`、多个块级标签、或带 class 的成对标签）。
+ * - 片段级内容必须「看起来是一张卡」——有闭合结构、并且带卡片特征。
+ *
+ * 卡片特征按可靠性排序：
+ * 1. `<style>`（前端卡必有）；
+ * 2. 自定义标签包着成对的 HTML —— 酒馆卡最典型的写法是
+ *    `<UI><details><summary>…</summary>…</details></UI>`、
+ *    `<StatusBlock><table>…</table></StatusBlock>`。
+ *    **只看块级标签数量是不够的**：`<UI>` 里常只有一个 `<details>`，
+ *    达不到「≥3 个块级标签」的门槛，于是这类开场白控件会被整体拒掉，
+ *    表现就是「宝可梦卡的开场白控件直接失效不解析」。
+ *    自定义标签 + 内部成对标签才是真正的判据。
+ * 3. 多个块级标签；
+ * 4. 多个带 class 的成对标签。
  *
  * 这样既保住「开场白 + 状态面板」这类酒馆卡写法，又不会让散文里的
  * 零散标签（含插件要求模型自造的 `<TARGET>` 之类占位符）把整条消息变成网页。
@@ -109,10 +210,13 @@ internal fun looksLikeCardMarkup(html: String): Boolean {
     // 必须有闭合标签，否则只是残缺片段
     if (!Regex("""</[a-zA-Z][\w-]*\s*>""").containsMatchIn(t)) return false
     val hasStyle = Regex("""<style\b""", RegexOption.IGNORE_CASE).containsMatchIn(t)
+    if (hasStyle) return true
+    // 自定义标签包裹块状内容：酒馆卡的状态面板/UI 控件
+    if (CUSTOM_TAG_WRAPPED_BLOCK.containsMatchIn(t)) return true
     val blockTags = BLOCK_TAG_AT.findAll(t).count()
     val classedPairs = Regex("""<([a-zA-Z][\w-]*)[^>]*\bclass\s*=""", RegexOption.IGNORE_CASE)
         .findAll(t).count()
-    return hasStyle || blockTags >= 3 || classedPairs >= 2
+    return blockTags >= 3 || classedPairs >= 2
 }
 
 /**

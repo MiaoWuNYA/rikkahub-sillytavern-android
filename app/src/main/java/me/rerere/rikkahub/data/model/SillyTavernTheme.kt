@@ -41,8 +41,10 @@ data class SillyTavernTheme(
     @SerialName("bot_mes_blur_tint_color") val botMesBlurTintColor: String? = null,
     // 阴影颜色（本仓库无对应字段，忽略）
     @SerialName("shadow_color") val shadowColor: String? = null,
-    // 边框颜色（本仓库无对应字段，忽略）
+    // 边框颜色
     @SerialName("border_color") val borderColor: String? = null,
+    // 阴影宽度（官方 --shadowWidth，单位 px）
+    @SerialName("shadow_width") val shadowWidth: Int? = null,
     // 字号缩放
     @SerialName("font_scale") val fontScale: Double? = null,
     // 模糊强度（本仓库无对应字段，忽略；用 Double 兼容 "3" / 3 / 3.0 多种写法）
@@ -56,6 +58,63 @@ data class SillyTavernTheme(
     // 自定义 CSS（Compose 无法渲染，不参与映射）
     @SerialName("custom_css") val customCss: String? = null,
 )
+
+/**
+ * 构建酒馆官方的 CSS 变量表，供 [parseCssRules] / [mergeRulesBySelector] 展开变量时使用。
+ *
+ * 为什么必须有这一层：主题 CSS 大量直接写 `var(--SmartThemeChatTintColor)`、
+ * `var(--ui-color-main)`、`var(--chat-background-color)` 这类**官方运行时注入**的变量，
+ * 主题文件里并不定义它们。我们若不提供，`var()` 展开不出来，整条声明被丢弃，
+ * 表现就是"气泡完全不生效、所有主题背景都不生效"。
+ *
+ * 实测：534 个主题里 457 个（86%）引用了至少一个主题自身未定义的变量；
+ * `--SmartThemeBodyColor`(166)、`--SmartThemeChatTintColor`(103)、
+ * `--SmartThemeBorderColor`(93) 位列前茅。
+ *
+ * 取值来源是本主题的 JSON 字段（main_text_color 等），即酒馆把这些字段
+ * 注入成同名变量的那份数据。
+ */
+fun SillyTavernTheme.officialCssVariables(): Map<String, String> {
+    val vars = LinkedHashMap<String, String>()
+
+    fun put(vararg names: String, value: String?) {
+        val v = value?.takeIf { it.isNotBlank() } ?: return
+        names.forEach { vars[it] = v }
+    }
+
+    // 文字色
+    put("--SmartThemeBodyColor", value = mainTextColor)
+    put("--SmartThemeEmColor", value = italicsTextColor)
+    put("--SmartThemeUnderlineColor", value = underlineTextColor)
+    put("--SmartThemeQuoteColor", value = quoteTextColor)
+
+    // 底色 / 色调：气泡与聊天背景的主要来源
+    put("--SmartThemeBlurTintColor", value = blurTintColor)
+    put("--SmartThemeChatTintColor", value = chatTintColor)
+    put("--SmartThemeUserMesBlurTintColor", value = userMesBlurTintColor)
+    put("--SmartThemeBotMesBlurTintColor", value = botMesBlurTintColor)
+
+    // 边框 / 阴影
+    put("--SmartThemeBorderColor", value = borderColor)
+    put("--SmartThemeShadowColor", value = shadowColor)
+
+    // 几何
+    put("--SmartThemeShadowWidth", value = shadowWidth?.let { "${it}px" })
+    put("--shadowWidth", value = shadowWidth?.let { "${it}px" })
+    put("--SmartThemeBlurStrength", value = blurStrength?.toString())
+    put("--blurStrength", value = blurStrength?.toString())
+    put("--SmartThemeFontScale", value = fontScale?.toString())
+
+    // 常用别名：不同主题作者写法不一，统一补齐
+    // （--ui-color-main / --chat-background-color / --text-color-sec 等）
+    (vars["--SmartThemeBotMesBlurTintColor"]
+        ?: vars["--SmartThemeBlurTintColor"])?.let { vars["--ui-color-main"] = it }
+    (vars["--SmartThemeChatTintColor"]
+        ?: vars["--SmartThemeBlurTintColor"])?.let { vars["--chat-background-color"] = it }
+    vars["--SmartThemeEmColor"]?.let { vars["--text-color-sec"] = it }
+
+    return vars
+}
 
 private val ThemeJson = Json {
     ignoreUnknownKeys = true
@@ -257,6 +316,10 @@ private fun Long.opaqueHexOrNull(): String? =
  * - 无背景图时 blur_tint 推导输入框颜色 → inputFieldColor
  */
 fun SillyTavernTheme.applyTo(base: DisplaySetting): DisplaySetting {
+    // 酒馆官方注入的变量表。主题大量引用 --SmartTheme* / --ui-color-main /
+    // --chat-background-color 等并未在主题里定义的变量；不提供它们，
+    // var() 展开不出来会导致整条声明被丢弃（实测 457/534 个主题受影响）。
+    val themeVars = officialCssVariables()
     val text = parseCssColor(mainTextColor)
     val blurTint = parseCssColor(blurTintColor)
     val chatTint = parseCssColor(chatTintColor)
@@ -279,7 +342,7 @@ fun SillyTavernTheme.applyTo(base: DisplaySetting): DisplaySetting {
     // 气泡底色：优先取 custom_css 里 .mes/.mes_block 的 background，其次才是字段 token。
     // 实测 452/534 个主题把气泡背景写在 CSS 里（其中 113 个是显式 transparent、
     // 64 个是渐变），只读 user_mes_blur_tint_color 会让绝大多数主题的气泡颜色丢失。
-    val cssBubbleBg = extractBubbleBackgroundColor(customCss)
+    val cssBubbleBg = extractBubbleBackgroundColor(customCss, themeVars)
 
     /**
      * CSS 侧结果优先，且**允许透明**。
@@ -331,8 +394,8 @@ fun SillyTavernTheme.applyTo(base: DisplaySetting): DisplaySetting {
 
     // 气泡外框/阴影：官方用 --SmartThemeBorderColor + --SmartThemeShadowColor 控制，
     // 由 CSS 引擎从层叠后的声明里取，避免正则误收 border-top/border-image 等
-    val border = extractBubbleBorder(customCss)
-    val shadow = extractBubbleShadow(customCss)
+    val border = extractBubbleBorder(customCss, themeVars)
+    val shadow = extractBubbleShadow(customCss, themeVars)
 
     return base.copy(
         globalTextColor = text ?: base.globalTextColor,
@@ -350,16 +413,16 @@ fun SillyTavernTheme.applyTo(base: DisplaySetting): DisplaySetting {
             ?: base.fontSizeRatio,
         // 仅气泡模式开启 AI 气泡；主题若给 AI 侧气泡铺了底图，也必须开启，
         // 否则底图没有承载元素、等于静默丢失
-        showAssistantBubble = if (chatDisplay == 1 || !extractBubbleBackgroundImageUrl(customCss, forUser = false).isNullOrBlank()) {
+        showAssistantBubble = if (chatDisplay == 1 || !extractBubbleBackgroundImageUrl(customCss, forUser = false, themeVars).isNullOrBlank()) {
             true
         } else {
             base.showAssistantBubble
         },
-        bubbleCornerRadius = extractBubbleCornerRadius(customCss) ?: base.bubbleCornerRadius,
+        bubbleCornerRadius = extractBubbleCornerRadius(customCss, themeVars) ?: base.bubbleCornerRadius,
         // 主题的 background-size 决定底图是裁切还是等比
-        bubbleBackgroundSize = extractBubbleBackgroundSize(customCss) ?: base.bubbleBackgroundSize,
+        bubbleBackgroundSize = extractBubbleBackgroundSize(customCss, themeVars) ?: base.bubbleBackgroundSize,
         // 图标主题：发送栏/菜单/扩展/停止 + 头像框
-        themeIcons = extractThemeIconSet(customCss).takeUnless { it.isEmpty } ?: base.themeIcons,
+        themeIcons = extractThemeIconSet(customCss, themeVars).takeUnless { it.isEmpty } ?: base.themeIcons,
         // 气泡内层（代码框/引用块/高亮/斜体/思维链）的底色与几何，主题几乎都写了。
         // 提取不到时保留用户当前设置，避免"导入一个没写这些样式的主题"把已有样式清空。
         themeMarkdownStyle = extractThemeMarkdownStyle(customCss)
@@ -406,9 +469,12 @@ internal data class CssBubbleBackground(
  * 渐变无法在 Compose 侧还原成一个颜色，此时取渐变里的**主色**近似
  * （第一个颜色停靠点），比整条丢弃更接近作者观感。
  */
-internal fun extractBubbleBackgroundColor(css: String?): CssBubbleBackground? {
+internal fun extractBubbleBackgroundColor(
+    css: String?,
+    extraVars: CssVariables = emptyMap(),
+): CssBubbleBackground? {
     if (css.isNullOrBlank()) return null
-    val merged = mergeRulesBySelector(css)
+    val merged = mergeRulesBySelector(css, extraVars)
     var generic: CssBackgroundColor? = null
     var user: CssBackgroundColor? = null
     var bot: CssBackgroundColor? = null
@@ -600,11 +666,14 @@ internal val CSS_RULE = Regex("([^{}]+)\\{([^{}]*)\\}")
  * 优先取 .mes/.mes_block 上的 border-radius，其次 #chat；多值取最大；百分比忽略，0px（方角）照搬；
  * 结果 clamp 到应用气泡圆角滑条范围 0-28dp。找不到返回 null。
  */
-fun extractBubbleCornerRadius(css: String?): Float? {
+fun extractBubbleCornerRadius(
+    css: String?,
+    extraVars: Map<String, String> = emptyMap(),
+): Float? {
     if (css.isNullOrBlank()) return null
     // 用 CSS 引擎算层叠结果：主题常把圆角写成变量（实测 138 处 var() 引用）、
     // 或与其它规则争抢同一属性，靠正则逐条扫描会取到被覆盖的旧值。
-    val radius = bubbleDeclarations(css)["border-radius"] ?: return null
+    val radius = bubbleDeclarations(css, extraVars)["border-radius"] ?: return null
     if (radius.contains('%')) return PERCENT_RADIUS_DP
     // 四角写法取最大角，而不是首个值。
     // 主题大量使用「只圆某几角」的写法（如 `0px 0px 12px 12px` 只圆下方两角、
@@ -654,9 +723,12 @@ private fun looksLikeBubbleFillOrPlain(selector: String, rules: List<CssRule>): 
  * `--shadowWidth` 控制气泡外框。主题里 `border: 1px solid var(--SmartThemeBorderColor)`
  * 是极常见写法，靠正则匹配 `border` 会误收 `border-top` / `border-image` 等。
  */
-internal fun extractBubbleBorder(css: String?): BubbleBorder? {
+internal fun extractBubbleBorder(
+    css: String?,
+    extraVars: Map<String, String> = emptyMap(),
+): BubbleBorder? {
     if (css.isNullOrBlank()) return null
-    val decls = bubbleDeclarations(css)
+    val decls = bubbleDeclarations(css, extraVars)
     // border 简写：宽度 样式 颜色（顺序任意）
     val shorthand = decls["border"] ?: decls["border-width"]?.let { null as String? }
     val widthFromShorthand = shorthand?.let { v ->
@@ -684,9 +756,12 @@ internal fun extractBubbleBorder(css: String?): BubbleBorder? {
 }
 
 /** 气泡阴影：`box-shadow` 的偏移/模糊/颜色 */
-internal fun extractBubbleShadow(css: String?): BubbleShadow? {
+internal fun extractBubbleShadow(
+    css: String?,
+    extraVars: Map<String, String> = emptyMap(),
+): BubbleShadow? {
     if (css.isNullOrBlank()) return null
-    val decls = bubbleDeclarations(css)
+    val decls = bubbleDeclarations(css, extraVars)
     val shadow = decls["box-shadow"] ?: return null
     if (shadow.equals("none", ignoreCase = true)) return null
     // 阴影语法为 `[inset] offsetX offsetY [blur] [spread] color`。
@@ -804,9 +879,13 @@ fun extractBackgroundImageUrl(css: String?): String? {
  * @param forUser true 取用户侧气泡，false 取 AI 侧；主题若只写了 .mes（未区分 is_user）
  *                则两侧都用同一张。
  */
-fun extractBubbleBackgroundImageUrl(css: String?, forUser: Boolean): String? {
+fun extractBubbleBackgroundImageUrl(
+    css: String?,
+    forUser: Boolean,
+    extraVars: CssVariables = emptyMap(),
+): String? {
     if (css.isNullOrBlank()) return null
-    val merged = mergeRulesBySelector(css)
+    val merged = mergeRulesBySelector(css, extraVars)
     // 先汇总各宿主元素上的铺满几何：几何与图片常写在两条不同规则里，
     // 例如 .mes_block::before{width:100%;height:200px} 与
     //      .mes[is_user="true"] .mes_block::before{background-image:url(...)}
@@ -843,9 +922,12 @@ fun extractBubbleBackgroundImageUrl(css: String?, forUser: Boolean): String? {
  * 官方页面里靠元素自身高度约束；本地气泡高度由文字撑开，
  * 直接用 cover 会把图压成扁条，所以取到值后由调用方决定如何落版。
  */
-fun extractBubbleBackgroundSize(css: String?): String? {
+fun extractBubbleBackgroundSize(
+    css: String?,
+    extraVars: CssVariables = emptyMap(),
+): String? {
     if (css.isNullOrBlank()) return null
-    for ((selector, body) in mergeRulesBySelector(css)) {
+    for ((selector, body) in mergeRulesBySelector(css, extraVars)) {
         if (!containsMessageBubble(selector)) continue
         val v = Regex("""background-size\s*:\s*([^;}!]+)""", RegexOption.IGNORE_CASE)
             .find(body)?.groupValues?.get(1)?.trim()?.takeIf { it.isNotEmpty() } ?: continue
@@ -861,12 +943,18 @@ fun extractBubbleBackgroundSize(css: String?): String? {
  * 主题作者常把一条视觉规则拆成多段书写，例如 `.mes_block::before` 先写几何、
  * 再由 `.mes[is_user="false"] .mes_block::before` 单独写图。不合并就只能看到半条。
  */
-private fun mergeRulesBySelector(css: String): List<Pair<String, String>> {
+private fun mergeRulesBySelector(
+    css: String,
+    extraVars: CssVariables = emptyMap(),
+): List<Pair<String, String>> {
     val clean = stripBlocklessAtRules(stripCssComments(css))
     // 变量必须先展开：主题普遍把颜色写成 var(--paper) 这类变量，
     // 不展开会让 parseCssColor 收到字面量 "var(--paper)" 直接失败，
     // 表现为"主题写了背景色但导不进来"。
-    val vars = parseCssVariables(clean)
+    //
+    // extraVars 是酒馆官方注入的变量表（--SmartThemeBodyColor 等）。
+    // 主题自身定义优先：`extraVars + ownVars` 里 ownVars 在右、覆盖前者。
+    val vars = extraVars + parseCssVariables(clean)
     val order = LinkedHashMap<String, StringBuilder>()
     for (m in CSS_RULE.findAll(clean)) {
         val selector = m.groupValues[1].trim().replace(Regex("""\s+"""), " ")
@@ -1281,9 +1369,12 @@ private val ICON_ALIASES: Map<String, List<String>> = mapOf(
  * color（换色）、font-size（换尺寸）、display:none（隐藏）。
  * `background-image: none` 表示作者清掉了默认图标，此时不当作图片，但保留其它属性。
  */
-fun extractThemeIconSet(css: String?): ThemeIconSet {
+fun extractThemeIconSet(
+    css: String?,
+    extraVars: CssVariables = emptyMap(),
+): ThemeIconSet {
     if (css.isNullOrBlank()) return ThemeIconSet()
-    val merged = mergeRulesBySelector(css)
+    val merged = mergeRulesBySelector(css, extraVars)
 
     /** 收集所有命中该 id 的规则体（含伪元素写法） */
     /**

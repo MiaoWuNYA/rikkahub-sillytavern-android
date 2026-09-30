@@ -3,7 +3,9 @@ package me.rerere.rikkahub.ui
 import me.rerere.rikkahub.ui.components.richtext.findFencedHtmlDocument
 import me.rerere.rikkahub.ui.components.richtext.findHtmlCard
 import me.rerere.rikkahub.ui.components.richtext.isFullHtmlDocument
+import me.rerere.rikkahub.ui.components.richtext.splitCardSegments
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -109,5 +111,80 @@ class HtmlCardDetectionTest {
         val text = "前面的话\n```html\n<!DOCTYPE html><html></html>\n```"
         val (prose, _) = findFencedHtmlDocument(text)!!
         assertEquals("前面的话", prose)
+    }
+
+    // 真实宝可梦卡 first_mes 的骨架：自定义状态栏 + 大段正文 + UI 面板 + 状态栏。
+    // 卡片块被正文隔开，必须按「散文 / 卡片」交替拆段，
+    // 只取第一个起点会把中间一千多字正文当成 HTML 源码渲染进 WebView。
+    private val pokemonCard = buildString {
+        append("<normal_status>\n```yaml\n『时间』: 夜 23:03\n```\n</normal_status>\n\n")
+        append("已经是夜里十一点了，同事们这个时间已经都离开了公司，")
+        append("唯独剩下了倒霉的{{user}}还在加班。劈了啪啦的键盘声回荡在空旷的办公区里。\n\n")
+        append("<UI>\n<details>\n<summary>【点击查看系统面板】</summary>\n")
+        append("```yaml\n任务奖励：500金币\n```\n</details>\n</UI>\n\n")
+        append("<special_status>\n```yaml\n『状态』\n穿着: 酒红色休闲衬衫\n```\n</special_status>")
+    }
+
+    @Test
+    fun `pokemon card splits into card and prose segments`() {
+        val segs = splitCardSegments(pokemonCard)
+        // 必须是 4 段：卡片 / 散文 / 卡片 / 卡片
+        assertEquals(listOf(true, false, true, true), segs.map { it.first })
+        // 中间那段是散文，且保留完整正文
+        val prose = segs[1].second
+        assertTrue("散文应包含正文开头", prose.startsWith("已经是夜里十一点了"))
+        assertTrue("散文应包含正文结尾", prose.contains("空旷的办公区里"))
+        // 三块卡片都以各自的自定义标签开头
+        assertTrue(segs[0].second.startsWith("<normal_status>"))
+        assertTrue(segs[2].second.startsWith("<UI>"))
+        assertTrue(segs[3].second.startsWith("<special_status>"))
+    }
+
+    @Test
+    fun `adjacent custom tag blocks are not merged by a greedy match`() {
+        // <UI>...</UI> 与紧随其后的 <special_status>...</special_status> 必须切成两块。
+        // 贪婪的 [\s\S]*</\1> 会一路吃到后一个标签的闭合处，把两块并成一块。
+        val segs = splitCardSegments(pokemonCard)
+        val cardCount = segs.count { it.first }
+        assertEquals("应拆出 3 个独立卡片块", 3, cardCount)
+    }
+
+    @Test
+    fun `status panel with only a fenced body still counts as a card`() {
+        // <normal_status> 内部只有 ```yaml 围栏、没有第二个成对 HTML 标签。
+        // 旧判据要求"内部出现两个成对标签"，于是整块被判成散文，
+        // 表现就是"宝可梦卡的开场白控件直接失效不解析"。
+        val only = "<normal_status>\n```yaml\n『时间』: 夜 23:03\n```\n</normal_status>"
+        val segs = splitCardSegments(only)
+        assertEquals(1, segs.size)
+        assertTrue("围栏状态栏应识别为卡片", segs[0].first)
+    }
+
+    @Test
+    fun `plain prose is not turned into a card`() {
+        val segs = splitCardSegments("今晚我们一起去看海吧。\n\n路上记得买点吃的。")
+        assertEquals(1, segs.size)
+        assertFalse(segs[0].first)
+    }
+
+    @Test
+    fun `placeholder tags in prose do not become cards`() {
+        // 用户在对话里写 <TARGET>/<HOST> 这类占位符是常态，不能当成卡片
+        val segs = splitCardSegments("把 DOMAIN 换成真实域名：\n<TARGET>\n<HOST>\n然后重跑。")
+        assertTrue("占位符不应产生卡片段", segs.none { it.first })
+    }
+
+    @Test
+    fun `card segments lose only the inter-block whitespace`() {
+        // 段与段之间的空行会被 trim 掉（它本来也不是内容），
+        // 但每一段的**正文**必须原样保留 —— 不能吞字、不能改写。
+        val joined = splitCardSegments(pokemonCard).joinToString("") { it.second }
+        val squashedOriginal = pokemonCard
+            .split("\n\n")
+            .joinToString("\n\n") { it.trim(' ', '\n', '\r', '\t') }
+            .trim(' ', '\n', '\r', '\t')
+        // 去掉所有空白后逐字符比对，确保语义内容零丢失
+        fun squash(s: String) = s.filterNot { it.isWhitespace() }
+        assertEquals("拆段不得吞掉任何字符", squash(squashedOriginal), squash(joined))
     }
 }

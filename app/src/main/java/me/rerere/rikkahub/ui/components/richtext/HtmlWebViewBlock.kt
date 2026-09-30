@@ -52,6 +52,7 @@ import me.rerere.rikkahub.ui.components.webview.WebViewContentCache
 import me.rerere.rikkahub.ui.components.webview.WebViewLocalAssets
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.utils.base64Encode
+import kotlin.math.roundToInt
 
 /**
  * 酒馆 HTML 前端卡渲染。
@@ -145,13 +146,17 @@ fun HtmlWebViewBlock(
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        val maxHeightDp = with(density) { CARD_MAX_HEIGHT.roundToPx() }
-        // 内容高度超过软上限时，卡片停在 maxHeight 并允许自身滚动；
-        // 这样长卡不会撑爆列表，也不会像以前那样被裁掉、只能点小眼睛看全。
-        val boundedHeight = if (contentHeight > 0) {
-            contentHeight.coerceAtMost(maxHeightDp)
+        // 整个高度计算必须统一在 dp 空间。
+        //
+        // 原实现把 CARD_MAX_HEIGHT(520dp) 先 roundToPx() 换成物理像素再去夹
+        // contentHeight（JS 上报的是 CSS px ≈ dp），夹完又 toDp() 换回来 ——
+        // 一进一出差了一个 density。3x 屏上"内容 800dp、上限 520dp"的卡片
+        // 会被算成 267dp，视口只剩一半，可滚动距离同样缩水，
+        // 表现就是"滑一下里面只动 2 毫米"。
+        val boundedHeightDp = if (contentHeight > 0) {
+            contentHeight.coerceAtMost(CARD_MAX_HEIGHT.value.roundToInt()).dp
         } else {
-            0
+            null
         }
 
         // 卡片被上限截断时自身可滚动。这里不抢手势，只在 WebView 已经滚到
@@ -183,8 +188,8 @@ fun HtmlWebViewBlock(
                 .fillMaxWidth()
                 // 高度跟随内容：上报前留一个最小高度，避免塌陷导致列表跳动
                 .then(
-                    if (boundedHeight > 0) {
-                        Modifier.height(with(density) { boundedHeight.toDp() })
+                    if (boundedHeightDp != null) {
+                        Modifier.height(boundedHeightDp)
                     } else {
                         Modifier.heightIn(min = CARD_MIN_HEIGHT)
                     }

@@ -2380,6 +2380,9 @@
   <string name="setting_display_bubble_shadow_desc">Shadow spread; set to 0 to remove a theme-imported shadow</string>
   <string name="setting_display_bubble_shadow_color">Bubble Shadow Color</string>
   <string name="setting_display_bubble_clear_style_action">Clear</string>
+  <string name="setting_display_theme_icon_clear">Reset icon style</string>
+  <string name="setting_display_theme_icon_clear_desc">Restore every button icon the theme changed (image, colour, size, hidden)</string>
+  <string name="setting_display_theme_icon_clear_action">Reset</string>
   <string name="setting_display_bubble_clear_style">Clear Bubble Border and Shadow</string>
   <string name="setting_display_bubble_clear_style_desc">Restore the look from before the theme was imported</string>
   <string name="setting_display_user_bubble_color">User Bubble Color</string>
