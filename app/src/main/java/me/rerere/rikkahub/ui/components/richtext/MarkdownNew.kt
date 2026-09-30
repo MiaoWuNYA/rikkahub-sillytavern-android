@@ -589,18 +589,19 @@ private fun HtmlBlockquote(element: Element, onClickCitation: (String) -> Unit) 
             ?: MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
         val bgColor = theme.quoteBackground
             ?: MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
-        val accentWidth = (theme.quoteAccentWidth ?: theme.quoteBorderWidth ?: 3.dp).value
-            .coerceAtLeast(1f)
-        val shape = RoundedCornerShape(theme.quoteCornerRadius ?: 0.dp)
+        // 未导入主题时保持原有的 10f(px) 竖线宽度与直角，避免改动既有观感；
+        // 只有主题确实给了宽度/圆角才用主题值。
+        val themeAccent = theme.quoteAccentWidth ?: theme.quoteBorderWidth
+        val themeRadius = theme.quoteCornerRadius
         Column(
             modifier = Modifier
-                .clip(shape)
+                .then(if (themeRadius != null) Modifier.clip(RoundedCornerShape(themeRadius)) else Modifier)
                 .drawWithContent {
                     drawContent()
                     drawRect(color = bgColor, size = size)
                     drawRect(
                         color = borderColor,
-                        size = Size(accentWidth.dp.toPx(), size.height),
+                        size = Size(themeAccent?.toPx() ?: 10f, size.height),
                     )
                 }
                 .padding(8.dp),

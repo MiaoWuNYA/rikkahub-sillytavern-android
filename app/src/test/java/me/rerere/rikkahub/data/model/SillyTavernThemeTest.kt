@@ -933,4 +933,25 @@ class SillyTavernThemeTest {
         """.trimIndent()
         assertNull(extractThemeFont(css))
     }
+
+    @Test
+    fun `blockless import does not corrupt the background image selector`() {
+        // 与变量作用域同一个根因：@import 被并进下一条规则的选择器后，
+        // `body { background-image: url(...) }` 的选择器被污染，背景图导不进来。
+        val css = """
+            @import url("https://fontsapi.zeoseven.com/309/main/result.css");
+            body { background-image: url("https://example.com/bg.png"); background-size: cover; }
+        """.trimIndent()
+        assertEquals("https://example.com/bg.png", extractBackgroundImageUrl(css))
+    }
+
+    @Test
+    fun `pseudo class containing chat is not treated as the chat container`() {
+        // `.mes:not(#chat-end)` 里含 "#chat" 子串，旧解析器会把它当成 #chat 容器，
+        // 于是气泡上的装饰图被误当成聊天背景图。
+        val css = """
+            .mes:not(#chat-end) { background-image: url("https://example.com/bubble.png"); }
+        """.trimIndent()
+        assertNull(extractBackgroundImageUrl(css))
+    }
 }
