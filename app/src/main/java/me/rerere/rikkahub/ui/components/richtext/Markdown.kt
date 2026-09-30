@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.ui.components.richtext
 
+import me.rerere.rikkahub.data.model.LocalThemeMarkdownStyle
 import android.content.ClipData
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -289,22 +290,29 @@ fun MarkdownBlock(
             .collect { setData(it) }
     }
 
+    // 气泡内层元素（代码框/引用块/高亮/斜体）的主题样式：两条渲染分支都要覆盖，
+    // 否则同一段内容在「含 HTML」与「纯 Markdown」两种走法下外观不一致。
+    val themeMarkdownStyle = settings.themeMarkdownStyle
     if (data.hasHtml) {
-        MarkdownNew(
-            content = coloredContent,
-            modifier = modifier,
-            style = style,
-            onClickCitation = onClickCitation,
-        )
+        CompositionLocalProvider(LocalThemeMarkdownStyle provides themeMarkdownStyle) {
+            MarkdownNew(
+                content = coloredContent,
+                modifier = modifier,
+                style = style,
+                onClickCitation = onClickCitation,
+            )
+        }
     } else {
         ProvideTextStyle(style) {
             Column(
                 modifier = modifier.padding(horizontal = 4.dp)
             ) {
-                data.astTree.children.fastForEach { child ->
-                    MarkdownNode(
-                        node = child, content = data.preprocessed, onClickCitation = onClickCitation
-                    )
+                CompositionLocalProvider(LocalThemeMarkdownStyle provides themeMarkdownStyle) {
+                    data.astTree.children.fastForEach { child ->
+                        MarkdownNode(
+                            node = child, content = data.preprocessed, onClickCitation = onClickCitation
+                        )
+                    }
                 }
             }
         }

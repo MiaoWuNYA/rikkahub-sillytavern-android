@@ -64,7 +64,9 @@ import me.rerere.rikkahub.ui.components.ui.ColorPickerDialog
 import me.rerere.rikkahub.ui.components.ui.toComposeColor
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.theme.CustomColors
+import me.rerere.rikkahub.data.model.MAX_BUBBLE_BORDER_DP
 import me.rerere.rikkahub.data.model.MAX_BUBBLE_RADIUS_DP
+import me.rerere.rikkahub.data.model.MAX_BUBBLE_SHADOW_DP
 import me.rerere.rikkahub.utils.plus
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -108,6 +110,8 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
     var showChatBackgroundColorPicker by remember { mutableStateOf(false) }
     var showPrimaryColorPicker by remember { mutableStateOf(false) }
     var showInputFieldColorPicker by remember { mutableStateOf(false) }
+    var showBubbleBorderColorPicker by remember { mutableStateOf(false) }
+    var showBubbleShadowColorPicker by remember { mutableStateOf(false) }
 
     val drawerImagePicker = rememberImageImporter { path ->
         updateDisplaySetting(displaySetting.copy(drawerBackgroundPath = path))
@@ -171,6 +175,22 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
             defaultColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             onConfirm = { updateDisplaySetting(displaySetting.copy(assistantBubbleColor = it)) },
             onDismiss = { showAssistantBubbleColorPicker = false }
+        )
+    }
+    if (showBubbleBorderColorPicker) {
+        ColorPickerDialog(
+            initialColor = displaySetting.bubbleBorderColor,
+            defaultColor = MaterialTheme.colorScheme.outline,
+            onConfirm = { updateDisplaySetting(displaySetting.copy(bubbleBorderColor = it)) },
+            onDismiss = { showBubbleBorderColorPicker = false }
+        )
+    }
+    if (showBubbleShadowColorPicker) {
+        ColorPickerDialog(
+            initialColor = displaySetting.bubbleShadowColor,
+            defaultColor = MaterialTheme.colorScheme.outlineVariant,
+            onConfirm = { updateDisplaySetting(displaySetting.copy(bubbleShadowColor = it)) },
+            onDismiss = { showBubbleShadowColorPicker = false }
         )
     }
     if (showThinkingBubbleColorPicker) {
@@ -497,6 +517,86 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                             )
                         },
                     )
+                    // 主题会把气泵外框/阴影写进 custom_css，导入后用户之前没有入口能改回来，
+                    // 表现为"套了主题就再也去不掉边框"。这里补上粗细与颜色的可控项。
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_bubble_border)) },
+                        supportingContent = { Text("${displaySetting.bubbleBorderWidth.toInt()} dp") },
+                        trailingContent = {
+                            Slider(
+                                value = displaySetting.bubbleBorderWidth.coerceIn(0f, MAX_BUBBLE_BORDER_DP),
+                                onValueChange = {
+                                    updateDisplaySetting(
+                                        displaySetting.copy(
+                                            bubbleBorderWidth = it.coerceIn(0f, MAX_BUBBLE_BORDER_DP),
+                                        )
+                                    )
+                                },
+                                valueRange = 0f..MAX_BUBBLE_BORDER_DP,
+                                modifier = Modifier.width(160.dp),
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_bubble_border_color)) },
+                        trailingContent = {
+                            ColorItemTrailing(
+                                color = displaySetting.bubbleBorderColor?.toComposeColor()
+                                    ?: MaterialTheme.colorScheme.outline,
+                                onPick = { showBubbleBorderColorPicker = true },
+                                onReset = { updateDisplaySetting(displaySetting.copy(bubbleBorderColor = null)) },
+                                resetEnabled = displaySetting.bubbleBorderColor != null,
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_bubble_shadow)) },
+                        supportingContent = { Text("${displaySetting.bubbleShadowWidth.toInt()} dp") },
+                        trailingContent = {
+                            Slider(
+                                value = displaySetting.bubbleShadowWidth.coerceIn(0f, MAX_BUBBLE_SHADOW_DP),
+                                onValueChange = {
+                                    updateDisplaySetting(
+                                        displaySetting.copy(
+                                            bubbleShadowWidth = it.coerceIn(0f, MAX_BUBBLE_SHADOW_DP),
+                                        )
+                                    )
+                                },
+                                valueRange = 0f..MAX_BUBBLE_SHADOW_DP,
+                                modifier = Modifier.width(160.dp),
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_bubble_shadow_color)) },
+                        trailingContent = {
+                            ColorItemTrailing(
+                                color = displaySetting.bubbleShadowColor?.toComposeColor()
+                                    ?: MaterialTheme.colorScheme.outlineVariant,
+                                onPick = { showBubbleShadowColorPicker = true },
+                                onReset = { updateDisplaySetting(displaySetting.copy(bubbleShadowColor = null)) },
+                                resetEnabled = displaySetting.bubbleShadowColor != null,
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_bubble_clear_style)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_bubble_clear_style_desc)) },
+                        trailingContent = {
+                            TextButton(
+                                onClick = {
+                                    updateDisplaySetting(
+                                        displaySetting.copy(
+                                            bubbleBorderColor = null,
+                                            bubbleBorderWidth = 0f,
+                                            bubbleShadowColor = null,
+                                            bubbleShadowWidth = 0f,
+                                        )
+                                    )
+                                },
+                            ) { Text(stringResource(R.string.setting_display_bubble_clear_style_action)) }
+                        },
+                    )
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_user_bubble_image)) },
                         supportingContent = {
@@ -706,7 +806,21 @@ private fun storeThemeBackground(context: Context, url: String, kind: String = "
 
 /** 把 @font-face 里的主题字体下载为应用聊天字体，返回 filesDir 相对路径（并验证可被 Android 加载） */
 private fun storeThemeFont(context: Context, font: ThemeFont): String {
-    val fetched = fetchThemeFile(font.url)
+    // 主题用 @import 引的是「字体样式表」而不是字体文件。直接按字体下载会把 CSS 文本
+    // 存成 .ttf，createFromFile 必然失败。
+    //
+    // 这里解析该样式表，只在其中能找到 ttf/otf 时才用；网上绝大多数第三方字体
+    // （如 zeoseven）只提供按 unicode-range 切片的 woff2，而 Android 的
+    // Typeface.createFromFile 不支持 woff2、项目也没有 woff2 解码器，
+    // 因此这种情况明确放弃，让外层保持用户原有字体，而不是制造一个坏文件。
+    val url = if (font.isRemoteCss) {
+        resolveTtfOrOtfUrl(font.url)
+            ?: throw IllegalArgumentException("该主题字体只提供 woff2，系统无法加载")
+    } else {
+        font.url
+    }
+
+    val fetched = fetchThemeFile(url)
     check(fetched.bytes.size <= 30_000_000) { "字体文件过大（>30MB）" }
     val fontDir = File(context.filesDir, FileFolders.FONTS).apply { mkdirs() }
     val targetFile = File(fontDir, "theme_font_${System.currentTimeMillis()}.${fetched.extension.ifBlank { "ttf" }}")
@@ -717,6 +831,29 @@ private fun storeThemeFont(context: Context, font: ThemeFont): String {
             throw IllegalArgumentException("字体文件无法被系统加载", it)
         }
     return "${FileFolders.FONTS}/${targetFile.name}"
+}
+
+/**
+ * 在远程字体样式表里找一个 Android 能加载的 ttf/otf 地址。
+ *
+ * `@font-face` 的 `src` 常写成 `local("名"), url("./x.woff2") format("woff2"),
+ * url("./y.ttf") format("truetype")` —— 只要其中任一项是 ttf/otf 就能用。
+ * 找不到返回 null（调用方据此放弃，不做降级猜测）。
+ */
+private fun resolveTtfOrOtfUrl(cssUrl: String): String? {
+    val css = runCatching { fetchThemeFile(cssUrl).bytes.toString(Charsets.UTF_8) }
+        .getOrNull() ?: return null
+    val face = Regex("""@font-face\s*\{([^}]*)\}""", RegexOption.IGNORE_CASE)
+    for (m in face.findAll(css)) {
+        val body = m.groupValues[1]
+        for (u in Regex("""url\(\s*(['"]?)([^)'"]+)\1\s*\)""", RegexOption.IGNORE_CASE).findAll(body)) {
+            val raw = u.groupValues[2].trim()
+            if (Regex("""\.(ttf|otf)(\?|#|$)""", RegexOption.IGNORE_CASE).containsMatchIn(raw)) {
+                return java.net.URI(cssUrl).resolve(raw).toString()
+            }
+        }
+    }
+    return null
 }
 
 /** 删除被替换/重置的旧主题背景文件（仅限应用私有 images/theme 目录内的文件） */
