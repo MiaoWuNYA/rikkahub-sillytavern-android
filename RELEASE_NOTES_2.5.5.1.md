@@ -1,4 +1,4 @@
-# 华灯 2.5.5 · 前端卡与主题导入大修
+# 华灯 2.5.5.1 · 前端卡与主题导入大修
 
 > ~~历时一百万年~~ 修复了绝大多数前端酒馆卡奇怪的 bug，建议更新。
 
@@ -39,6 +39,20 @@
 - `getChatMessages` / `setChatMessage` —— 切开局（卡的「命牌问卜」按钮）
 - `getVariables` / `updateVariablesWith` —— chat 作用域变量
 - `eventOn` / `iframe_events` / `toastr` —— 事件与提示
+
+### 3.1 状态栏 / 世界书显示单独适配
+
+这张卡的状态栏不是写死的界面，而是**MVU 变量的只读视图**，且按楼渲染——卡内的世界书桥条目写得很明确：
+
+> 状态栏读取当前消息楼层的 MVU 快照，因此旧楼显示旧状态、新楼显示新状态；不得把最新 MVU 反向覆盖所有历史楼。
+
+为此 MVU 变量**挂在每条消息上**做持久化，而不是存在全局或 WebView 内存里：
+
+- 每条消息独立保存自己的 `stat_data` 快照，卡写回时立刻落盘
+- 渲染时优先读取**该楼层已保存的快照**，没有才退回世界书 `[initvar]` 初值
+- 卡片被列表回收重组后状态栏照常恢复，不会空白，也不会串楼
+
+状态栏点名要展示的字段（`identity`、`名声`、`stats`、`状态栏`、`attitudes`、`world`、`物品栏`、`NPC列表`、`生理期系统`）都已确认在初始化变量树里真实存在，并有单元测试锁定。
 
 ### 4. 一批只在 release 包才炸的问题
 
@@ -86,6 +100,20 @@ The card's "character intake" flow runs end to end:
 - `getVariables` / `updateVariablesWith` — chat-scoped variables
 - `eventOn` / `iframe_events` / `toastr` — events and toasts
 
+### 3.1 Status bar / world book rendering adapted separately
+
+This card's status bar is not a hard-coded UI — it's a **read-only view of MVU variables**, rendered per message floor. The card's own world book entry states it plainly:
+
+> The status bar reads the MVU snapshot of the current message floor, so old floors show old state and new floors show new state; the latest MVU must not be written back over all historical floors.
+
+MVU variables are therefore **persisted on each message** rather than in a global or WebView-local store:
+
+- Every message keeps its own `stat_data` snapshot, written through as soon as the card calls `replaceMvuData`
+- Rendering prefers the **snapshot already saved for that floor**, falling back to the world book's `[initvar]` seed only when absent
+- When the list recycles and rebuilds the card, the status bar restores correctly — no blank, no cross-floor bleed
+
+Every field the status bar names (`identity`, `名声`, `stats`, `状态栏`, `attitudes`, `world`, `物品栏`, `NPC列表`, `生理期系统`) is verified present in the initialised variable tree, locked by unit tests.
+
 ### 4. Release-only failures
 
 **Worth calling out**: the host bridge worked perfectly in debug builds and was **stripped entirely by R8 in release builds** — `@JavascriptInterface` is only reachable via reflection, and R8 cannot see that path. Users on release saw "host did not inject a generate interface", as if the bridge had never been written.
@@ -100,6 +128,6 @@ Fenced and bare HTML fragments were being mistaken for cards, rendering normal m
 
 ## 验证 / Verification
 
-- 579 单元测试全绿 / 579 unit tests passing
+- 584 单元测试全绿 / 584 unit tests passing
 - release DEX 逐字符串验证 17 项宿主 API 全部保留 / all 17 host API strings verified present in release DEX
 - 签名 / signature: `CN=HuaDeng`, SHA-256 `f25c3c0987033896e2c23e3c4aef454a12b9aa95aa938c601dfeb5f025230a4b`

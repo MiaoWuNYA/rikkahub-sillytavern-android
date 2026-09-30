@@ -26,6 +26,15 @@ data class UIMessage(
     val modelId: Uuid? = null,
     val usage: TokenUsage? = null,
     val translation: String? = null,
+    /**
+     * 该楼层的 MVU 变量快照（`stat_data` 整棵树，JSON 文本）。
+     *
+     * 酒馆前端卡的状态栏是 **MVU 的只读视图**，且按楼渲染：
+     * 「状态栏读取当前消息楼层的 MVU 快照，因此旧楼显示旧状态、新楼显示新状态」。
+     * 所以变量必须跟着消息走，而不是存在全局或 WebView 内存里 ——
+     * 否则一旦消息被回收重组，状态栏就会空白或串楼。
+     */
+    val mvuData: String? = null,
     // 请求期间生成的内部消息；该标记仅在内存中使用
     @Transient
     val isSynthetic: Boolean = false,
