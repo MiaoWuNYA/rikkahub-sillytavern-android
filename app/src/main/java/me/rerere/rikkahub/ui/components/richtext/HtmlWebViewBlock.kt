@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -194,9 +195,11 @@ fun HtmlWebViewBlock(
                 factory = { ctx ->
                     CardWebView(ctx).apply {
                         cardWebViewRef.view = this
+                        // MATCH_PARENT 高度：与 AndroidView 的 fillMaxSize 一致，
+                        // 让 WebView 视口等于卡片高度而不是文档高度（否则内部无可滚区间）。
                         layoutParams = ViewGroup.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT,
                         )
                         settings.javaScriptEnabled = true
                         settings.domStorageEnabled = true
@@ -244,7 +247,15 @@ fun HtmlWebViewBlock(
                     it.removeAllViews()
                     it.destroy()
                 },
-                modifier = Modifier.fillMaxWidth(),
+                // 高度必须填满外层 Box，不能用 wrap_content。
+                //
+                // 之前是 WRAP_CONTENT：WebView 会按文档完整高度（可能几千 px）自我测量，
+                // 而外层 Box 只有 maxHeight 那么高。结果是 WebView 认为"整个文档都在可视区里"，
+                // scrollY 恒为 0、内部没有任何可滚区间；外层又只是裁剪，也不滚动。
+                // 用户看到的就是"消息里的网页怎么划都不动"。
+                // 改成 matchParentSize 后 WebView 视口 = Box 高度，超长内容由它自己滚动，
+                // 越界部分再由上面的 NestedScrollConnection 交还外层列表。
+                modifier = Modifier.fillMaxSize(),
             )
 
             // 上报前显示占位，避免空白卡片

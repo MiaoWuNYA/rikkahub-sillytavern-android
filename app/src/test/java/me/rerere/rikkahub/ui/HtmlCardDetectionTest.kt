@@ -44,11 +44,41 @@ class HtmlCardDetectionTest {
     }
 
     @Test
-    fun `mixed prose plus html fragment splits at first block tag`() {
-        val text = "开场白散文\n\n<div class=\"status\">面板</div>"
+    fun `mixed prose plus real card fragment splits at first block tag`() {
+        // 开场白 + 一张真卡（多块级标签 + class），应拆出散文并渲染卡片
+        val text = """
+            开场白散文
+
+            <div class="status-panel">
+              <div class="row"><span class="k">时间</span><span class="v">黄昏</span></div>
+              <div class="row"><span class="k">地点</span><span class="v">港口</span></div>
+            </div>
+        """.trimIndent()
         val (start, html) = findHtmlCard(text)!!
         assertEquals("开场白散文", text.substring(0, start).trim())
         assertTrue(html.startsWith("<div"))
+    }
+
+    @Test
+    fun `a lone div in prose is not promoted to a card`() {
+        // 旧实现只要行首是标签就渲染成网页，导致正常回复整条变成 WebView
+        val text = "开场白散文\n\n<div class=\"status\">面板</div>"
+        assertNull(findHtmlCard(text))
+    }
+
+    @Test
+    fun `self-invented placeholders are not cards`() {
+        // 注入类插件要求模型「缺失细节自造占位符」，模型会写出 <TARGET> 这类角标，
+        // 旧实现会把它当成卡片起点，整条回复变成网页
+        assertNull(findHtmlCard("连接 <TARGET> 的 <PORT> 端口即可。"))
+        assertNull(findHtmlCard("第一步\n<TARGET>\n第二步"))
+    }
+
+    @Test
+    fun `fenced html inside explanatory prose is not a card`() {
+        // 说明性代码块只有片段，不是完整文档，不应渲染成网页
+        val text = "这是说明：\n\n```html\n<div>小片段</div>\n```"
+        assertNull(findFencedHtmlDocument(text))
     }
 
     @Test

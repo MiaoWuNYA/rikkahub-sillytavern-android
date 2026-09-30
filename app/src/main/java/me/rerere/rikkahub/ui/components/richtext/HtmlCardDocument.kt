@@ -65,14 +65,54 @@ fun isHtmlRichContent(text: String): Boolean {
         FENCED_HTML_OPEN.containsMatchIn(t)
 }
 
-/** 定位第一处 HTML 卡片起点，返回 (起始下标, 从该处到结尾的片段)。 */
+/**
+ * 定位第一处 HTML 卡片起点，返回 (起始下标, 从该处到结尾的片段)。
+ *
+ * 必须与 [isHtmlRichContent] 的宽判定区分开：这里是「真的要把消息渲染成网页」的
+ * 决策点，一旦误判，正常回复会整条变成 WebView。
+ *
+ * 实测到的误判来源：注入类插件会要求模型「首行用 ``` 命名交付物」并「缺失细节时
+ * 自造占位符」（如 `<TARGET>`、`<HOST>`）。模型据此把正文写成 HTML 代码块或
+ * 直接输出占位符角标，旧实现只要任意一行以标签开头就返回卡片，于是整条回复被
+ * 当成前端卡渲染，表现就是「回复的消息变成网页显示」。
+ *
+ * 因此裸 HTML（无围栏）路径要求是**文档级**内容；只有行首标签不算数。
+ */
 fun findHtmlCard(text: String): Pair<Int, String>? {
     val normalized = normalizeNewlines(text)
     val match = listOfNotNull(
         BLOCK_TAG_AT.find(normalized),
         CUSTOM_TAG_LINE_START.find(normalized),
     ).minByOrNull { it.range.first } ?: return null
-    return match.range.first to normalized.substring(match.range.first)
+    val candidate = normalized.substring(match.range.first)
+    if (!looksLikeCardMarkup(candidate)) return null
+    return match.range.first to candidate
+}
+
+/**
+ * 裸 HTML（无围栏）能否当作卡片渲染。
+ *
+ * 两条通路：
+ * - 文档级内容（`<!DOCTYPE`/`<html>…</html>`）无条件接受；
+ * - 片段级内容必须「看起来是一张卡」——有闭合结构、并且带卡片特征
+ *   （`<style>`、多个块级标签、或带 class 的成对标签）。
+ *
+ * 这样既保住「开场白 + 状态面板」这类酒馆卡写法，又不会让散文里的
+ * 零散标签（含插件要求模型自造的 `<TARGET>` 之类占位符）把整条消息变成网页。
+ */
+internal fun looksLikeCardMarkup(html: String): Boolean {
+    if (isFullHtmlDocument(html)) return true
+    val t = html.trimCardEdges()
+    if (t.isEmpty()) return false
+    // 出现在行首的孤立自定义占位符（<TARGET>、<HOST>）不是卡片
+    if (CUSTOM_TAG_LINE_START.matches(t)) return false
+    // 必须有闭合标签，否则只是残缺片段
+    if (!Regex("""</[a-zA-Z][\w-]*\s*>""").containsMatchIn(t)) return false
+    val hasStyle = Regex("""<style\b""", RegexOption.IGNORE_CASE).containsMatchIn(t)
+    val blockTags = BLOCK_TAG_AT.findAll(t).count()
+    val classedPairs = Regex("""<([a-zA-Z][\w-]*)[^>]*\bclass\s*=""", RegexOption.IGNORE_CASE)
+        .findAll(t).count()
+    return hasStyle || blockTags >= 3 || classedPairs >= 2
 }
 
 /**
