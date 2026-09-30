@@ -234,8 +234,29 @@ fun ChatList(
         settingsStore.settingsFlow.value.displaySetting.userNickname.ifBlank { "user" }
     }
 
+    // 卡写回 MVU 变量后持久化到对应楼层。
+    //
+    // 状态栏是「逐楼快照」：旧楼显示旧状态、新楼显示新状态。所以变量挂在
+    // 消息上而不是全局，卡片被回收重组后仍能恢复。
+    val onCardPersistMvu: suspend (Int, String) -> Unit =
+        remember(chatService, conversation.id) {
+            { nodeIndex, dataJson ->
+                chatService.updateConversationState(conversation.id) { conv ->
+                    if (nodeIndex !in conv.messageNodes.indices) conv
+                    else conv.copy(
+                        messageNodes = conv.messageNodes.mapIndexed { i, node ->
+                            if (i != nodeIndex) node
+                            else node.copy(
+                                messages = node.messages.map { m -> m.copy(mvuData = dataJson) }
+                            )
+                        }
+                    )
+                }
+            }
+        }
+
     val cardHost = remember(
-        chatService, conversation.id, cardInitVars, cardUserName,
+        chatService, conversation.id, cardInitVars, cardUserName, onCardPersistMvu,
     ) {
         CardHostContext(
             generate = onCardGenerate,
@@ -243,6 +264,7 @@ fun ChatList(
             switchSwipe = onCardSwitchSwipe,
             initVars = cardInitVars,
             userName = cardUserName,
+            persistMvu = onCardPersistMvu,
         )
     }
 
@@ -510,7 +532,12 @@ private fun ChatListNormal(
                             onToolApproval = onToolApproval,
                             onToolAnswer = onToolAnswer,
                             lastMessage = index == lastMessageIndex,
-                            cardHost = cardHost,
+                            // 每条消息带自己的楼层序号与 MVU 快照：
+                            // 状态栏按楼渲染，旧楼旧状态、新楼新状态
+                            cardHost = cardHost?.copy(
+                                nodeIndex = index,
+                                existingMvu = node.currentMessage.mvuData,
+                            ),
                             cardMessagesJson = cardMessagesJson,
                         )
                     }

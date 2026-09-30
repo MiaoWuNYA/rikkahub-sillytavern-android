@@ -191,9 +191,19 @@ fun HtmlWebViewBlock(
             MvuStore.encode(MvuStore.wrap(MvuStore.parseInitVar(raw, userName)))
         }
     }
-    LaunchedEffect(hostBridge, initVarJson, cardMessagesJson) {
-        hostBridge?.seedMvuData(initVarJson)
+    // 状态栏是 MVU 的只读视图，且按楼渲染：优先用该楼层已保存的快照，
+    // 没有才退回世界书 initvar 初值。
+    LaunchedEffect(hostBridge, initVarJson, cardHost?.existingMvu, cardMessagesJson) {
+        hostBridge?.seedMvuData(cardHost?.existingMvu, initVarJson)
         hostBridge?.seedChatMessages(cardMessagesJson)
+    }
+    // 卡写回变量后立刻持久化到该楼层，否则重组一次状态栏就空白
+    LaunchedEffect(hostBridge, cardHost?.nodeIndex, cardHost?.persistMvu) {
+        hostBridge?.onMvuChanged = { dataJson ->
+            val node = cardHost?.nodeIndex
+            val persist = cardHost?.persistMvu
+            if (node != null && persist != null) hostScope.launch { persist(node, dataJson) }
+        }
     }
     DisposableEffect(hostBridge) {
         onDispose { hostBridge?.dispose() }

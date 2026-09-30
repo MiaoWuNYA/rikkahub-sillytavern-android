@@ -205,6 +205,9 @@ class CardHostBridge(
      *
      * 同步返回：卡里是 `await Mvu.replaceMvuData(...)`，但它紧接着就往下走，
      * 不依赖返回值内容，所以这里存完即可，不必再绕一轮轮询。
+     *
+     * 写完立刻回调宿主持久化到该条消息 —— 状态栏是「逐楼快照」语义，
+     * 只留在内存里的话，卡片被回收重组后状态栏就空白了。
      */
     @JavascriptInterface
     fun replaceMvuData(dataJson: String) {
@@ -213,12 +216,19 @@ class CardHostBridge(
         onMvuChanged?.invoke(dataJson)
     }
 
-    /** 变量树变更回调，供宿主持久化。 */
+    /** 变量树变更回调，供宿主持久化到对应消息楼层。 */
     var onMvuChanged: ((String) -> Unit)? = null
 
-    /** 宿主注入初始变量树（来自世界书 initvar）。 */
-    fun seedMvuData(json: String?) {
-        if (!json.isNullOrBlank()) mvuData = json
+    /**
+     * 宿主注入该楼层已有的变量快照；没有时退回世界书 initvar 初值。
+     *
+     * @param existing 该消息已保存的 MVU 快照（优先，保证逐楼快照语义）
+     * @param fallback 世界书 `[initvar]` 解析出的初值
+     */
+    fun seedMvuData(existing: String?, fallback: String?) {
+        mvuData = existing?.takeIf { it.isNotBlank() }
+            ?: fallback?.takeIf { it.isNotBlank() }
+            ?: ""
     }
 
     /**
@@ -293,6 +303,12 @@ data class CardHostContext(
     val switchSwipe: suspend (nodeIndex: Int, swipeId: Int) -> Unit = { _, _ -> },
     /** 卡片变量树初值（世界书 `[initvar]` 的 YAML 原文）。 */
     val initVars: List<String> = emptyList(),
+    /** 该楼层已保存的 MVU 快照；保证「旧楼旧状态、新楼新状态」。 */
+    val existingMvu: String? = null,
+    /** 卡写回变量树时持久化到该楼层。 */
+    val persistMvu: suspend (nodeIndex: Int, dataJson: String) -> Unit = { _, _ -> },
+    /** 本卡片所在的消息楼层序号（持久化 MVU 时定位用）。 */
+    val nodeIndex: Int? = null,
     /** 替换 `{{user}}` 的键名。 */
     val userName: String = "user",
     /** 透传卡的 toastr 提示。 */
