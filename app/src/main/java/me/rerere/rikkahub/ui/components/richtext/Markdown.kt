@@ -238,7 +238,12 @@ fun MarkdownBlock(
     content: String,
     modifier: Modifier = Modifier,
     style: TextStyle = LocalTextStyle.current,
-    onClickCitation: (String) -> Unit = {}
+    onClickCitation: (String) -> Unit = {},
+    /**
+     * 前端卡的宿主生成入口；透传给 [HtmlWebViewBlock]。
+     * 为 null 时卡内 `window.generate` 不会被注入。
+     */
+    onGenerate: (suspend (prompt: String, onDelta: (String) -> Unit) -> String)? = null,
 ) {
     val settings = LocalSettings.current.displaySetting
     val darkMode = LocalDarkMode.current
@@ -263,12 +268,12 @@ fun MarkdownBlock(
                 if (prose.isNotEmpty()) {
                     MarkdownBlock(content = prose, onClickCitation = onClickCitation)
                 }
-                HtmlWebViewBlock(html = fenced)
+                HtmlWebViewBlock(html = fenced, onGenerate = onGenerate)
                 return@Column
             }
             segments.forEach { (isCard, text) ->
                 if (isCard) {
-                    HtmlWebViewBlock(html = text)
+                    HtmlWebViewBlock(html = text, onGenerate = onGenerate)
                 } else {
                     MarkdownBlock(content = text, onClickCitation = onClickCitation)
                 }

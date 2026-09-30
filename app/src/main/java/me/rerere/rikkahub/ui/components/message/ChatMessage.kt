@@ -132,6 +132,11 @@ fun ChatMessage(
     onClearTranslation: (UIMessage) -> Unit = {},
     onToolApproval: ((toolCallId: String, approved: Boolean, reason: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
+    /**
+     * 前端角色卡的宿主生成入口（卡内 `window.generate`）。
+     * 为 null 时卡会显示「宿主未注入 generate 接口，无法生成」。
+     */
+    onCardGenerate: (suspend (prompt: String, onDelta: (String) -> Unit) -> String)? = null,
 ) {
     val message = node.messages[node.selectIndex]
     val settings = LocalSettings.current.displaySetting
@@ -185,6 +190,7 @@ fun ChatMessage(
                 onToolApproval = onToolApproval,
                 onToolAnswer = onToolAnswer,
                 onUserMessageClick = if (message.role == MessageRole.USER) onEdit else null,
+                onCardGenerate = onCardGenerate,
             )
 
             message.translation?.let { translation ->
@@ -301,6 +307,7 @@ private fun MessagePartsBlock(
     onToolApproval: ((toolCallId: String, approved: Boolean, reason: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onUserMessageClick: (() -> Unit)? = null,
+    onCardGenerate: (suspend (prompt: String, onDelta: (String) -> Unit) -> String)? = null,
 ) {
     val context = LocalContext.current
     val contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
@@ -438,7 +445,8 @@ private fun MessagePartsBlock(
                                                     visual = true,
                                                     depth = messageDepth,
                                                 ),
-                                                onClickCitation = handleClickCitation
+                                                onClickCitation = handleClickCitation,
+                                                onGenerate = onCardGenerate,
                                             )
                                         }
                                     }
@@ -486,6 +494,7 @@ private fun MessagePartsBlock(
                                                         depth = messageDepth,
                                                     ),
                                                     onClickCitation = handleClickCitation,
+                                                    onGenerate = onCardGenerate,
                                                 )
                                             }
                                         }
@@ -499,6 +508,7 @@ private fun MessagePartsBlock(
                                             depth = messageDepth,
                                         ),
                                         onClickCitation = handleClickCitation,
+                                        onGenerate = onCardGenerate,
                                         modifier = Modifier
                                             .animateContentSize()
                                     )
