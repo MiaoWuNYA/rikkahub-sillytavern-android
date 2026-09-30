@@ -2381,6 +2381,9 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_display_bubble_shadow_desc">阴影范围，调为 0 可取消主题导入的阴影</string>
   <string name="setting_display_bubble_shadow_color">气泡阴影颜色</string>
   <string name="setting_display_bubble_clear_style_action">清除</string>
+  <string name="setting_display_theme_icon_clear">重置小图标样式</string>
+  <string name="setting_display_theme_icon_clear_desc">恢复所有被主题改写的按钮图标（图片、颜色、尺寸与隐藏状态）</string>
+  <string name="setting_display_theme_icon_clear_action">重置</string>
   <string name="setting_display_bubble_clear_style">清除气泡边框与阴影</string>
   <string name="setting_display_bubble_clear_style_desc">恢复为主题导入前的默认外观</string>
   <string name="setting_display_user_bubble_color">用户气泡颜色</string>

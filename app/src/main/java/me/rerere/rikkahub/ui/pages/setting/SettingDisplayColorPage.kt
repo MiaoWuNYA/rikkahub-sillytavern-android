@@ -53,6 +53,7 @@ import me.rerere.rikkahub.data.datastore.DisplaySetting
 import me.rerere.rikkahub.data.files.FileFolders
 import me.rerere.rikkahub.data.model.SillyTavernTheme
 import me.rerere.rikkahub.data.model.ThemeFont
+import me.rerere.rikkahub.data.model.ThemeIconSet
 import me.rerere.rikkahub.data.model.applyTo
 import me.rerere.rikkahub.data.model.extractBackgroundImageUrl
 import me.rerere.rikkahub.data.model.extractBubbleBackgroundImageUrl
@@ -595,6 +596,23 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                                     )
                                 },
                             ) { Text(stringResource(R.string.setting_display_bubble_clear_style_action)) }
+                        },
+                    )
+                    // 主题会改写一批按钮的图标：background-image 换图、color 换色、
+                    // font-size 改尺寸、display:none 直接隐藏。导入后若不满意，
+                    // 用户此前只能重新导入别的主题或手动重装，缺少一键还原入口。
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_theme_icon_clear)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_theme_icon_clear_desc)) },
+                        trailingContent = {
+                            TextButton(
+                                enabled = !displaySetting.themeIcons.isEmpty,
+                                onClick = {
+                                    updateDisplaySetting(
+                                        displaySetting.copy(themeIcons = ThemeIconSet())
+                                    )
+                                },
+                            ) { Text(stringResource(R.string.setting_display_theme_icon_clear_action)) }
                         },
                     )
                     item(
