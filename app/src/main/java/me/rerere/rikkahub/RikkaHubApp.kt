@@ -65,6 +65,9 @@ class RikkaHubApp : Application() {
     override fun onCreate() {
         super.onCreate()
         trace("onCreate start")
+        // 插件解密密钥依赖 APK 签名，必须在任何插件读取之前完成初始化
+        me.rerere.rikkahub.plugin.crypto.PluginCrypto.init(this)
+        trace("plugin crypto init")
         // Restore files and settings before eager Koin singletons or workers can access them.
         try {
             val restored = runBlocking(Dispatchers.IO) {
