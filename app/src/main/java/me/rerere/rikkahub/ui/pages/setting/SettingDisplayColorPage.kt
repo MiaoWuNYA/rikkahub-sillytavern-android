@@ -59,6 +59,7 @@ import me.rerere.rikkahub.data.model.extractBackgroundImageUrl
 import me.rerere.rikkahub.data.model.extractBubbleBackgroundImageUrl
 import me.rerere.rikkahub.data.model.extractThemeFont
 import me.rerere.rikkahub.data.model.parseSillyTavernTheme
+import me.rerere.rikkahub.data.model.resetThemeAppearance
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.ColorPickerDialog
@@ -377,6 +378,26 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                         trailingContent = {
                             TextButton(onClick = { themePickerLauncher.launch("application/json") }) {
                                 Text(stringResource(R.string.setting_display_import_button))
+                            }
+                        },
+                    )
+                    // 主题只导入不清除的话，主题里的引用块/代码块样式会跟随字段兜底逻辑
+                    // 一直留着（applyTo 对缺失字段保留当前值），换主题也带不走。
+                    // 这里给一个显式出口，把主题写入的外观字段整体清回默认。
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_reset_theme)) },
+                        supportingContent = {
+                            Text(stringResource(R.string.setting_display_reset_theme_desc))
+                        },
+                        trailingContent = {
+                            TextButton(onClick = {
+                                updateDisplaySetting(resetThemeAppearance(displaySetting))
+                                toaster.show(
+                                    context.getString(R.string.setting_display_reset_theme_done),
+                                    type = ToastType.Success,
+                                )
+                            }) {
+                                Text(stringResource(R.string.setting_display_reset_button))
                             }
                         },
                     )
