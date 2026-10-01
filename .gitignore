@@ -44,6 +44,7 @@ keystore-backup/
 cocoon_plugin/
 *plugin.zip
 *插件*.zip
+*主题增强*.zip
 
 # 本地素材与杂项文件，不推远程
 plugins.zip
