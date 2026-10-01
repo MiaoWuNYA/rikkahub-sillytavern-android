@@ -211,6 +211,48 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
+                        headlineContent = { Text(stringResource(R.string.huadeng_tavern_mode)) },
+                        supportingContent = {
+                            Text(stringResource(R.string.huadeng_tavern_mode_desc))
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = settings.huadengSettings.enableTavernMode,
+                                onCheckedChange = { enabled ->
+                                    vm.updateSettings(
+                                        settings.copy(
+                                            huadengSettings = settings.huadengSettings.copy(
+                                                enableTavernMode = enabled,
+                                            ),
+                                        )
+                                    )
+                                },
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.huadeng_tavern_keep_tools)) },
+                        supportingContent = {
+                            Text(stringResource(R.string.huadeng_tavern_keep_tools_desc))
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = settings.huadengSettings.tavernModeKeepTools,
+                                // 仅在酒馆模式开启时可用，避免误认为独立功能
+                                enabled = settings.huadengSettings.enableTavernMode,
+                                onCheckedChange = { enabled ->
+                                    vm.updateSettings(
+                                        settings.copy(
+                                            huadengSettings = settings.huadengSettings.copy(
+                                                tavernModeKeepTools = enabled,
+                                            ),
+                                        )
+                                    )
+                                },
+                            )
+                        },
+                    )
+                    item(
                         headlineContent = { Text(stringResource(R.string.huadeng_system_prompt_escape)) },
                         supportingContent = {
                             Text(stringResource(R.string.huadeng_system_prompt_escape_desc))

@@ -2075,6 +2075,10 @@
   <string name="huadeng_tool_result_truncation_desc">Tool output over 32 KB is truncated and saved to a file. Turn off to keep full tool results in message history (try this if tool calls misbehave through a proxy)</string>
   <string name="huadeng_system_prompt_escape">System Prompt Escaping</string>
   <string name="huadeng_system_prompt_escape_desc">Escapes &lt; and &gt; in system messages as HTML entities to bypass proxy WAF blocking (enable this if you see upstream_content_rejected errors). Usually not needed</string>
+  <string name="huadeng_tavern_mode">Tavern Mode (Clean Request)</string>
+  <string name="huadeng_tavern_mode_desc">Only sends: the character card (including lorebook / example messages / system prompt), chat history, and minimal tool definitions. Plugin prompts, memory retrieval, cross-window life stream, all injections other than template macros, workspace reminders, time reminders, author's note, skill auto-trigger, document-to-prompt, OCR, Recent Chats, rolling summary, tool routing and work ethic blocks, and tool system prompts are all dropped. Suited to roleplay and creative writing where workflow noise degrades output quality</string>
+  <string name="huadeng_tavern_keep_tools">Tavern Mode · Keep Tools</string>
+  <string name="huadeng_tavern_keep_tools_desc">Keeps file/search/web-fetch/calculator basics (JSON definitions only, no tool prompts). Turn off to degrade to a pure text model with no tools in the request at all</string>
   <string name="huadeng_section_integration">Integrations &amp; Automation</string>
   <!-- Couple Space -->
   <string name="couple_space_title">Couple Space</string>

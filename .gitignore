@@ -39,3 +39,17 @@ GEMINI.md
 
 # 华灯正式签名密钥（勿提交）
 keystore-backup/
+
+# 本地插件开发与提示词工程产物，不推远程
+cocoon_plugin/
+*plugin.zip
+*插件*.zip
+
+# 本地素材与杂项文件，不推远程
+plugins.zip
+1_plugins.zip
+前端.zip
+素材/
+酒馆500+美化/
+云南财经/
+test/

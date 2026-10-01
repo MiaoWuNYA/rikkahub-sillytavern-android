@@ -1492,17 +1492,53 @@ class ChatService(
                     }
                 },
                 inputTransformers = buildList {
-                    addAll(inputTransformers)
+                    // ── 酒馆模式：对齐原版酒馆（SillyTavern）的原生上下文构成 ──
+                    // 原版酒馆会发送的东西，全部保留：
+                    //   ① 角色卡模板展开（{{char}}/{{user}}/{{description}}/{{personality}}/
+                    //      {{scenario}}/{{mesExamples}}/{{system}}）、示例消息、首条问候
+                    //   ② 世界书 / 对话模式注入（PromptInjectionTransformer：关键词触发条目、
+                    //      角色内嵌 character_book、before/after_char 锚点、sticky/cooldown）
+                    //   ③ 作者注释（Authors Note）与人设的 TOP/BOTTOM 位置注入
+                    // 原版酒馆没有、属于本 App 工作流的注入，一律不发：
+                    //   记忆检索、跨窗口生活流、工作空间提醒、时间提醒、技能自动触发、
+                    //   文档转 Prompt、OCR、占位符替换。
                     add(templateTransformer)
-                    add(workspaceReminderTransformer)
-                    add(memoryRetrievalTransformer)
-                    // 跨窗口生活流：注入到最新 user 消息之前（不进 system，保前缀缓存）
-                    if (assistant.enableCrossWindowMemory) {
-                        add(crossWindowMemoryTransformer)
+                    add(PromptInjectionTransformer)
+                    add(AuthorsNoteTransformer)
+                    if (!settings.huadengSettings.enableTavernMode) {
+                        add(workspaceReminderTransformer)
+                        add(memoryRetrievalTransformer)
+                        // 跨窗口生活流：注入到最新 user 消息之前（不进 system，保前缀缓存）
+                        if (assistant.enableCrossWindowMemory) {
+                            add(crossWindowMemoryTransformer)
+                        }
                     }
                 },
                 outputTransformers = outputTransformers,
                 tools = buildList {
+                    // ── 酒馆模式：只保留最小可用工具面 ──
+                    // 目的：工具仍然能用（模型知道有它、能调），但不带任何工具系统提示词，
+                    // 也不注册任何会往上下文里塞工作流产物的工具（记忆、技能、插件、MCP、
+                    // 任务、生活/情侣空间等全部不注册）。
+                    if (settings.huadengSettings.enableTavernMode) {
+                        // 插件工具一律保留：插件是用户主动安装的能力（可携带自己的提示词与工具），
+                        // 属于用户明确要用的东西，与 App 自带工作流不同，酒馆模式下不裁剪
+                        addAll(pluginToolProvider.getTools())
+                        if (settings.huadengSettings.tavernModeKeepTools) {
+                            // 只留与"聊天/创作"直接相关、且不注入额外上下文的基础工具
+                            if (assistant.localTools.contains(LocalToolOption.FileTools)) {
+                                addAll(createFileTools(context = context))
+                            }
+                            if (useExternalWebSearch) {
+                                addAll(createSearchTools(settings))
+                            }
+                            add(createWebFetchTool())
+                            if (assistant.localTools.contains(LocalToolOption.Calculator)) {
+                                add(createCalculatorTool(context))
+                            }
+                        }
+                        return@buildList
+                    }
                     if (assistant.localTools.contains(LocalToolOption.FileTools)) {
                         addAll(createFileTools(context = context))
                     }
@@ -2042,9 +2078,13 @@ class ChatService(
                 }
             },
             inputTransformers = buildList {
-                addAll(inputTransformers)
                 add(templateTransformer)
-                add(memoryRetrievalTransformer)
+                add(PromptInjectionTransformer)
+                add(AuthorsNoteTransformer)
+                if (!settings.huadengSettings.enableTavernMode) {
+                    addAll(inputTransformers)
+                    add(memoryRetrievalTransformer)
+                }
             },
             outputTransformers = outputTransformers,
             // 官方 /gen length=：临时覆盖响应长度（TempResponseLength 语义），用完即弃
