@@ -871,6 +871,15 @@ data class HuaDengSettings(
     // 系统提示词转义：将系统消息中的 < > 转为 HTML 实体，绕过中转站 WAF 安全策略拦截
     val enableSystemPromptEscape: Boolean = false,
 
+    // ---- 酒馆模式：纯净请求 ----
+    // 开启后请求里只保留「角色卡（含世界书/示例消息/系统提示）+ 聊天历史 + 工具最小可用定义」，
+    // 其余一律不发：插件提示词、记忆检索、跨窗口生活流、模板宏、工作空间提醒、时间提醒、
+    // 作者注释、技能自动触发、文档转提示词、OCR、占位符替换、Recent Chats、滚动压缩摘要、
+    // 用户上下文（记忆/日期）、工具路由与工作伦理区、工具系统提示词。
+    val enableTavernMode: Boolean = false,
+    // 酒馆模式·保留工具：关掉后连工具都不注册，退化为纯文本模型（最干净）
+    val tavernModeKeepTools: Boolean = true,
+
     // ---- Jev 智能决策（TypeSafe System One Model）----
     // 只做判断不生成文本的隐形决策层，永不进入用户可选模型列表。全部字段必须在请求失败时静默回退。
     // 注意：本类整体以 JSON 存在 DataStore，任一字段解析失败会整块回退默认值，

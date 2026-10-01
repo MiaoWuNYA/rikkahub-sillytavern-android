@@ -171,7 +171,11 @@ class GenerationLoop(
                 assistant.contextTemplate.trim() == me.rerere.rikkahub.data.model.DEFAULT_CONTEXT_TEMPLATE)
         val conversationOverride = assistant.allowConversationSystemPrompt && !conversationSystemPrompt.isNullOrBlank()
 
-        // 收集插件系统提示词
+        // 收集插件系统提示词。
+        // 酒馆模式下同样注入：插件是用户主动安装的注入内容，属于用户明确要发送的东西，
+        // 与 App 自带的工作流（记忆/技能/工作空间）性质不同，必须保留，
+        // 否则酒馆模式一开、依赖插件注入的功能就会失效。
+        val tavernMode = settings.huadengSettings.enableTavernMode
         val pluginSystemPromptText = run {
             val pluginPrompts = pluginToolProvider.getPluginSystemPrompts()
             if (pluginPrompts.isEmpty()) "" else pluginPrompts.joinToString("\n\n")
@@ -221,7 +225,8 @@ class GenerationLoop(
         }
         val assemblerContext = me.rerere.rikkahub.data.ai.prompts.PromptContext(
             identitySection = mainIdentity,
-            leadInInstructions = if (routingLines.isEmpty()) "" else buildString {
+            // 酒馆模式：工具路由与工作伦理区全部去掉，只留角色卡本身
+            leadInInstructions = if (tavernMode || routingLines.isEmpty()) "" else buildString {
                 appendLine("<tool_selection>")
                 routingLines.forEach { appendLine(it) }
                 appendLine("</tool_selection>")
@@ -231,7 +236,7 @@ class GenerationLoop(
                 appendLine("</work_ethic>")
                 appendLine()
             },
-            workspaceDescription = if (hasTool("workspace_read", "workspace_write", "workspace_shell")) {
+            workspaceDescription = if (!tavernMode && hasTool("workspace_read", "workspace_write", "workspace_shell")) {
                 "Working directory: ${context.filesDir?.absolutePath ?: "."}"
             } else "",
             extraInstructions = pluginSystemPromptText,
@@ -242,9 +247,12 @@ class GenerationLoop(
         val system = me.rerere.rikkahub.data.ai.prompts.SystemPromptAssembler.assemble(assemblerContext)
         val mainText = buildString {
             append(system)
-            tools.forEach { tool ->
-                appendLine()
-                append(tool.systemPrompt(model, messages))
+            // 酒馆模式：工具的 systemPrompt 段全部不发，工具仍有 JSON schema 可用
+            if (!tavernMode) {
+                tools.forEach { tool ->
+                    appendLine()
+                    append(tool.systemPrompt(model, messages))
+                }
             }
         }
         return buildList {
@@ -636,6 +644,8 @@ class GenerationLoop(
             messages
         }
         val limitedChat = requestMessages.limitContext(assistant.contextMessageLimit)
+        // 酒馆模式：请求中只保留原版酒馆的上下文构成（角色卡/世界书/示例消息/作者注释）
+        val tavernMode = settings.huadengSettings.enableTavernMode
         // 收集插件系统提示词（suspend 调用，需在 coroutine 上下文中）
         val pluginSystemPromptText = run {
             val pluginPrompts = pluginToolProvider.getPluginSystemPrompts()
@@ -700,11 +710,13 @@ class GenerationLoop(
             }
 
             // ── 上下文滚动压缩摘要：作为 system 消息注入，替代被覆盖的早期前缀 ──
-            if (!rollingContextSummary.isNullOrBlank()) {
+            // 酒馆模式：摘要属于"工作流产物"，不发，避免干扰纯净上下文
+            if (!tavernMode && !rollingContextSummary.isNullOrBlank()) {
                 add(UIMessage.system(prompt = ROLLING_CONTEXT_SYSTEM_PROMPT + "\n" + rollingContextSummary + "\n</rolling_context_summary>"))
             }
 
             // ── 官方 mes_example：作为示例消息注入（story string 之后、聊天历史之前）──
+            // 酒馆模式：角色卡自带内容，保留（属于用户明确要发送的部分）
             if (assistant.tavernData != null) {
                 addAll(
                     assistant.buildExampleMessages(
@@ -719,7 +731,8 @@ class GenerationLoop(
             // 内容不变时钉在首次出现的位置，历史纯追加；内容变化时旧块原位保留、新块追加尾部，
             // token 前缀仍然可命中。临时会话（无 conversationId）退化为尾部注入。
             val recentChats = prebuiltRecentChats
-            val userContext = buildUserContext(memories, assistant, settings, recentChats)
+            // 酒馆模式：记忆 / 日期 / Recent Chats 一律不发
+            val userContext = if (tavernMode) "" else buildUserContext(memories, assistant, settings, recentChats)
             // 华灯：上下文瞬态内容裁剪——两轮之前的网页搜索结果/图片/音视频不再随请求发送
             //（占位说明带消息 ID，AI 可用 read_history_message 取回），存储与 UI 不受影响
             val requestChat = if (settings.huadengSettings.enableTransientContentPrune) {
@@ -770,6 +783,8 @@ class GenerationLoop(
             }
         }.let { base ->
             val persona = settings.personas.find { it.id == settings.activePersonaId }
+            // 酒馆模式：用户 Persona 属于用户明确设定的人物信息，保留；
+            // 但它不应带 WorkflowInjection 之类的附加块（在 Persona 描述里，此处无法拆分，整体保留）
             if (persona != null && persona.enabled && persona.description.isNotBlank() &&
                 (persona.lockedCharacterIds.isEmpty() || assistant.id in persona.lockedCharacterIds)
             ) {
