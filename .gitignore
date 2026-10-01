@@ -76,3 +76,7 @@ log.txt
 2.txt
 18.json
 66666*.txt
+
+# ── 临时打包与日志产物 ──
+ci_latest_logs.zip
+dsh-purge.zip
