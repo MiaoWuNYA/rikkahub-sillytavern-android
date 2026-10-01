@@ -2347,6 +2347,10 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_display_global_text_color">全局字体颜色</string>
   <string name="setting_display_import_button">导入</string>
   <string name="setting_display_import_section">导入</string>
+  <string name="setting_display_reset_theme">恢复默认外观</string>
+  <string name="setting_display_reset_theme_desc">清除已导入主题写入的全部样式，回到 App 默认外观。导入新主题后若残留旧样式，用这个清掉</string>
+  <string name="setting_display_reset_button">恢复</string>
+  <string name="setting_display_reset_theme_done">已恢复默认外观</string>
   <string name="setting_display_import_st_theme">导入酒馆（SillyTavern）主题</string>
   <string name="setting_display_import_st_theme_desc">选择酒馆主题 JSON，按酒馆叠层语义应用配色、字号、气泡圆角、背景图与主题字体</string>
   <string name="setting_display_input_bg_color">输入框背景颜色</string>

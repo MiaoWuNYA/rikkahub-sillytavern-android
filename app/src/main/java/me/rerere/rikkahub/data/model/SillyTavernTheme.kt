@@ -315,6 +315,34 @@ private fun Long.opaqueHexOrNull(): String? =
  * - custom_css 中 .mes/#chat 的 border-radius → bubbleCornerRadius
  * - 无背景图时 blur_tint 推导输入框颜色 → inputFieldColor
  */
+/**
+ * 把主题带来的外观字段全部清回默认，用于「恢复默认外观」。
+ *
+ * 为什么需要单独一个函数：applyTo 对每个字段都写成
+ * `extractXxx() ?: base.xxx`，语义是"主题没写这项就保留当前值"。
+ * 这个语义保证了导入残缺主题不会把已有样式洗掉，但也导致
+ * **无法回到默认** —— 导入主题 A 后，再导入不含引用块样式的主题 B，
+ * 引用块样式仍停留在 A 的值。
+ *
+ * 这里把所有由主题写入的字段显式置为默认值，与 applyTo 的"保留"语义互补：
+ * 用户想清空时走这条路，主题残缺时走 applyTo 的保留分支。
+ */
+fun resetThemeAppearance(base: DisplaySetting): DisplaySetting {
+    val defaults = DisplaySetting()
+    return base.copy(
+        // 主题内层样式（引用块/代码块/高亮/斜体/思维链的底色与几何）
+        themeMarkdownStyle = ThemeMarkdownStyle(),
+        // 主题可能写入的配色与几何
+        bubbleCornerRadius = defaults.bubbleCornerRadius,
+        bubbleBackgroundSize = defaults.bubbleBackgroundSize,
+        themeIcons = ThemeIconSet(),
+        bubbleBorderColor = null,
+        bubbleBorderWidth = defaults.bubbleBorderWidth,
+        bubbleShadowColor = null,
+        bubbleShadowWidth = defaults.bubbleShadowWidth,
+    )
+}
+
 fun SillyTavernTheme.applyTo(base: DisplaySetting): DisplaySetting {
     // 酒馆官方注入的变量表。主题大量引用 --SmartTheme* / --ui-color-main /
     // --chat-background-color 等并未在主题里定义的变量；不提供它们，

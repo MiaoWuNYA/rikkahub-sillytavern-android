@@ -733,6 +733,12 @@ class GenerationLoop(
             val recentChats = prebuiltRecentChats
             // 酒馆模式：记忆 / 日期 / Recent Chats 一律不发
             val userContext = if (tavernMode) "" else buildUserContext(memories, assistant, settings, recentChats)
+            // 锚点缓存里可能残留上一个模式注入的块（记忆/日期/Recent Chats）。
+            // userContext 置空只是不再新增，旧块仍会被下面的循环按 afterMessageId 命中并注入，
+            // 表现为「关掉酒馆模式之外仍收到近期对话」。此处显式清空以保证语义一致。
+            if (tavernMode) {
+                conversationId?.let { UserContextAnchorCache.getOrCreate(it).blocks.clear() }
+            }
             // 华灯：上下文瞬态内容裁剪——两轮之前的网页搜索结果/图片/音视频不再随请求发送
             //（占位说明带消息 ID，AI 可用 read_history_message 取回），存储与 UI 不受影响
             val requestChat = if (settings.huadengSettings.enableTransientContentPrune) {

@@ -2346,6 +2346,10 @@
   <string name="setting_display_global_text_color">Global Font Color</string>
   <string name="setting_display_import_button">Import</string>
   <string name="setting_display_import_section">Import</string>
+  <string name="setting_display_reset_theme">Reset Appearance</string>
+  <string name="setting_display_reset_theme_desc">Clears all styles written by imported themes and returns to the app default appearance</string>
+  <string name="setting_display_reset_button">Reset</string>
+  <string name="setting_display_reset_theme_done">Appearance reset</string>
   <string name="setting_display_import_st_theme">Import SillyTavern Theme</string>
   <string name="setting_display_import_st_theme_desc">Select a SillyTavern theme JSON and apply colors, font size, bubble corner radius, background image and theme font with tavern layering semantics</string>
   <string name="setting_display_input_bg_color">Input Field Background Color</string>

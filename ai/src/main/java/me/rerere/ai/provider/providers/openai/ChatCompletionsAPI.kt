@@ -278,7 +278,43 @@ class ChatCompletionsAPI(
                 }
             }
 
-            if (params.model.abilities.contains(ModelAbility.REASONING) && !params.disableReasoning) {
+            // 需要显式声明"关闭思考"的上游：这类服务的默认行为是开思考，
+            // 仅仅"不发送参数"不会关掉它，必须主动下发 disabled。
+            // 与下面主分支的 $disableReasoning 逻辑区分开：
+            // 主分支负责"调档位"，这里负责"真正关掉"。
+            val explicitlyDisabled = params.disableReasoning &&
+                params.model.abilities.contains(ModelAbility.REASONING)
+            if (explicitlyDisabled) {
+                when (host) {
+                    "api.deepseek.com" -> {
+                        // DeepSeek 官方：thinking.type=disabled 才是真正关闭
+                        put("thinking", buildJsonObject { put("type", "disabled") })
+                    }
+                    "open.bigmodel.cn", "api.moonshot.cn", "api.xiaomimimo.com",
+                    "token-plan-cn.xiaomimimo.com", "ark.cn-beijing.volces.com" -> {
+                        put("thinking", buildJsonObject { put("type", "disabled") })
+                    }
+                    "api.siliconflow.cn", "aiping.cn" -> {
+                        put("enable_thinking", false)
+                    }
+                    "chat.intern-ai.org.cn" -> {
+                        put("thinking_mode", false)
+                    }
+                    "dashscope.aliyuncs.com" -> {
+                        put("reasoning_effort", "none")
+                    }
+                    "openrouter.ai" -> {
+                        put("reasoning", buildJsonObject { put("effort", "none") })
+                    }
+                    "integrate.api.nvidia.com" -> {
+                        put("reasoning_effort", "none")
+                    }
+                    else -> {
+                        // 未列出的上游按 OpenAI 兼容约定下发 none
+                        put("reasoning_effort", "none")
+                    }
+                }
+            } else if (params.model.abilities.contains(ModelAbility.REASONING)) {
                 val level = params.reasoningLevel
                 when (host) {
                     "openrouter.ai" -> {
