@@ -59,6 +59,32 @@ android {
         versionCode = 231
         versionName = "2.5.5.1"
 
+        // 插件解密密钥的派生因子之一：由签名口令做 HMAC，口令只存在于
+        // local.properties / CI secrets，不写入 APK 明文。APK 内只保留 HMAC 结果，
+        // 缺少口令则无法反推出原始密钥材料。
+        val kdfProps = Properties().apply {
+            val f = rootProject.file("local.properties")
+            if (f.exists()) f.inputStream().use { load(it) }
+        }
+        val signSecret = kdfProps.getProperty("keyPassword")
+            ?: kdfProps.getProperty("storePassword")
+            ?: ""
+        val kdfFactor = if (signSecret.isEmpty()) {
+            // 未配置签名口令（如 CI 未注入 secrets）：退化为占位值。
+            // 该分支构建出的包无法解密证书派生的插件，属预期行为。
+            logger.warn(
+                "[华灯] PLUGIN_KDF_FACTOR 降级为占位值：local.properties 缺少 " +
+                "keyPassword/storePassword，本次构建的 APK 无法解密 v2 加密插件。"
+            )
+            "NO_SIGNING_SECRET"
+        } else {
+            val mac = javax.crypto.Mac.getInstance("HmacSHA256")
+            mac.init(javax.crypto.spec.SecretKeySpec(
+                "hd.plugin.kdf.factor".toByteArray(), "HmacSHA256"))
+            mac.doFinal(signSecret.toByteArray()).joinToString("") { "%02x".format(it) }
+        }
+        buildConfigField("String", "PLUGIN_KDF_FACTOR", "\"$kdfFactor\"")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("boolean", "ENABLE_FIREBASE", enableFirebase.toString())

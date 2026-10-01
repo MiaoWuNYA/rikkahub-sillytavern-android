@@ -898,7 +898,11 @@ class GenerationLoop(
             internalMessages
         }
 
-        // 提示词查看器：缓存最终发送给模型的完整消息列表（转义后），供聊天抽屉"查看提示词"调试入口渲染
+        // 提示词查看器：缓存最终发送给模型的完整消息列表（转义后），供聊天抽屉"查看提示词"调试入口渲染。
+        // 插件注入的提示词先登记为遮蔽片段，避免该调试入口成为插件内容的提取通道。
+        PromptDebugCache.setRedactions(
+            if (pluginSystemPromptText.isNotBlank()) listOf(pluginSystemPromptText) else emptyList()
+        )
         PromptDebugCache.store(conversationId, escapedMessages)
 
         var messages: List<UIMessage> = messages
@@ -920,6 +924,10 @@ class GenerationLoop(
             sessionId = conversationId?.toString(),
             systemPromptInChat = assistant.enableAntiEmptyResponse || settings.huadengSettings.enableAntiEmptyResponse,
             enableProxyFix = assistant.enableProxyFix || settings.huadengSettings.enableProxyFix,
+            // 酒馆模式：强制关闭深度思考。注意不是传 reasoning_effort="none"——
+            // 实测部分中转站只要收到该字段就会开启思考链（服务端真实推理，但流式
+            // 通道不回传 reasoning_content，因而界面上看不到），故必须整个字段都不写。
+            disableReasoning = settings.huadengSettings.enableTavernMode,
         )
         try {
             if (stream) {

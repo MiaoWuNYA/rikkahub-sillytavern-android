@@ -241,7 +241,7 @@ class ResponseAPI(
             put("input", buildMessages(messages, params.systemPromptInChat, firstSystemMessage))
 
             // reasoning
-            if (params.model.abilities.contains(ModelAbility.REASONING)) {
+            if (params.model.abilities.contains(ModelAbility.REASONING) && !params.disableReasoning) {
                 val level = params.reasoningLevel
                 put("reasoning", buildJsonObject {
                     if (capabilities.supportsReasoningSummary) {

@@ -278,7 +278,7 @@ class ChatCompletionsAPI(
                 }
             }
 
-            if (params.model.abilities.contains(ModelAbility.REASONING)) {
+            if (params.model.abilities.contains(ModelAbility.REASONING) && !params.disableReasoning) {
                 val level = params.reasoningLevel
                 when (host) {
                     "openrouter.ai" -> {

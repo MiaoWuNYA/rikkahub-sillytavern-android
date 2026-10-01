@@ -80,6 +80,10 @@ data class TextGenerationParams(
     val systemPromptInChat: Boolean = false,
     // 中转站兼容：修复 Gemini 经 OpenAI 兼容中转时 reasoning_content 吞掉正文的问题
     val enableProxyFix: Boolean = false,
+    // 强制关闭深度思考：置位后本请求不写入任何思考相关字段（reasoning_effort /
+    // reasoning / thinking），而不是传 "none" 之类的关闭值——实测部分中转站
+    // 只要收到该字段就会开启思考链，故必须整个字段都不出现。
+    val disableReasoning: Boolean = false,
 )
 
 @Serializable
