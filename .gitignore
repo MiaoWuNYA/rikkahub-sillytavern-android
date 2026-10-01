@@ -55,3 +55,24 @@ plugins.zip
 云南财经/
 test/
 aaa.txt
+
+# ── 插件编辑器（含加密实现，不随仓库分发）──
+docs/plugin-editor/
+
+# ── 构建产物 ──
+rikkahub-plus-*.apk
+*.apk
+
+# ── 个人素材 ──
+1.png
+v0.8.9.19__R6.4_.png
+真人宝可梦*.png
+新图标.jpg
+*版截图.zip
+
+# ── 临时文件与日志 ──
+log.txt
+111.txt
+2.txt
+18.json
+66666*.txt
