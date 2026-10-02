@@ -105,18 +105,38 @@ jobs:
       - name: Gradle Build
         run: |
           chmod +x gradlew
-          # 重新生成 update.json，保证「关于页 → 检查更新」拿到的版本号与本次构建一致；
-          # 未变化时不产生 diff，后面的提交步骤会自然跳过。
-          export REL_VERSION="2.5.4.$(date -u +%m%d)"
+          # 重新生成 update.json，保证「关于页 → 检查更新」拿到的版本号与下载链接
+          # 都和本次构建一致；未变化时不产生 diff，后面的提交步骤会自然跳过。
+          #
+          # 注意 downloads 必须一起重写：这个文件是 GitHub API 拉不通时的兜底源
+          # （国内网络很常见），链接写死就会把用户导向过期安装包。
+          export REL_VERSION="2.5.6.$(date -u +%m%d)"
           export REL_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          export REL_REPO="MiaoWuNYA/rikkahub-sillytavern-android"
           python3 - <<'PY'
           import json, os, pathlib
           p = pathlib.Path("update.json")
           data = json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
-          data["version"] = os.environ["REL_VERSION"]
+
+          version = os.environ["REL_VERSION"]
+          repo = os.environ["REL_REPO"]
+          # nightly 用固定 tag 覆盖同一个预发布，链接因此长期稳定，
+          # 不会随版本号变化而失效。
+          tag = "nightly"
+          asset = "rikkahub-plus-nightly-arm64-v8a.apk"
+          url = "https://github.com/%s/releases/download/%s/%s" % (repo, tag, asset)
+
+          data["version"] = version
           data["publishedAt"] = os.environ["REL_DATE"]
-          data.setdefault("changelog", "Nightly auto-build / 每日自动构建")
-          data["changelog"] = "Nightly auto-build (%s) / 每日自动构建（%s）" % (os.environ["REL_DATE"][:10], os.environ["REL_DATE"][:10])
+          day = os.environ["REL_DATE"][:10]
+          data["changelog"] = "Nightly auto-build (%s) / 每日自动构建（%s）" % (day, day)
+          data["downloads"] = [
+              {
+                  "name": asset,
+                  "url": url,
+                  "size": "约 104 MB",
+              }
+          ]
           p.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
           PY
 
@@ -132,6 +152,16 @@ jobs:
           git commit -m "chore: nightly 更新 update.json"
           git push
 
+      # 先把 APK 改成与 update.json 中 downloads[].name 完全一致的固定名字：
+      # nightly 是覆盖式预发布，固定文件名可让下载直链长期有效，
+      # 也避免每次构建都往同一个 release 里堆积新的 asset。
+      - name: Rename APK
+        run: |
+          set -e
+          f=$(ls app/build/outputs/apk/release/*.apk)
+          mv "$f" "app/build/outputs/apk/release/rikkahub-plus-nightly-arm64-v8a.apk"
+          ls -lh app/build/outputs/apk/release/
+
       # 把 APK 直接发布为 Prerelease，用户点链接即可下载单个 apk，无需登录、无需解压
       - name: Publish nightly prerelease
         uses: softprops/action-gh-release@v2
@@ -144,4 +174,4 @@ jobs:
             Nightly auto-build (commit `${{ github.sha }}`) / 自动每日构建（commit `${{ github.sha }}`）
 
             > ⚠️ Development build — may be unstable, for testing only. / 开发版本，可能不稳定，仅供测试。
-          files: app/build/outputs/apk/release/*.apk
+          files: app/build/outputs/apk/release/rikkahub-plus-nightly-arm64-v8a.apk

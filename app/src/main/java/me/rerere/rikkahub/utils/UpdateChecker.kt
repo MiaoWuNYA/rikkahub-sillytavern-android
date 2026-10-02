@@ -3,6 +3,7 @@ package me.rerere.rikkahub.utils
 import android.app.DownloadManager
 import android.content.Context
 import android.os.Environment
+import android.util.Log
 import android.widget.Toast
 import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +30,8 @@ import java.util.concurrent.TimeUnit
 /** 本定制版的仓库。GitHub Release 是权威来源，仓库根目录的 update.json 是兜底快照。 */
 private const val REPO = "MiaoWuNYA/rikkahub-sillytavern-android"
 private const val BRANCH = "huadeng"
+
+private const val TAG = "UpdateChecker"
 
 private const val API_URL = "https://api.github.com/repos/$REPO/releases/latest"
 private const val JSON_URL = "https://raw.githubusercontent.com/$REPO/$BRANCH/update.json"
@@ -152,6 +155,17 @@ class UpdateChecker(
             throw IllegalStateException("$url responded ${response.code}")
         }
         val info = json.decodeFromString<UpdateInfo>(response.body.string())
+        // 历史事故：update.json 的 version 会被工作流刷新，downloads 却写死不动，
+        // 结果兜底源把用户导向几个月前的旧包。这里做一次一致性检查并留痕，
+        // 至少让这类回归在日志里可见，而不是静默装到旧版本。
+        info.downloads.forEach { d ->
+            if (!d.url.contains(info.version) && !d.url.contains("/nightly/")) {
+                Log.w(
+                    TAG,
+                    "update.json version=${info.version} 与下载链接不匹配: ${d.url}",
+                )
+            }
+        }
         return info.copy(
             downloads = info.downloads.map { download ->
                 download.copy(
