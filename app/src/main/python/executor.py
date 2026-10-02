@@ -27,7 +27,8 @@ Available built-in functions (call these from your code):
   rev_functions(target, arch="arm64")              - 列出识别出的函数
   rev_xrefs(target, va, arch="arm64", direction="to")  - 交叉引用
   rev_cfg(target, func_va, arch="arm64")           - 控制流图
-  rev_search(target, pattern, arch="arm64")        - 字节模式搜索（支持 ?? 通配）
+  rev_search(target, pattern, arch="arm64", range_start=0, range_end=0)
+                                                     - 字节模式搜索（支持 ?? 通配）
   rev_crypto(target, arch="arm64")                 - 扫描加密常量（AES S-box/CRC/魔数）
   rev_esil(target, start_va, steps, arch="arm64")  - ESIL 指令级模拟
   rev_diff(file_a, file_b)                       - 二进制差异
@@ -67,6 +68,11 @@ if not hasattr(_random, '_traced_calls'):
 # 用一个可重入锁把「替换流 → 执行 → 取回输出 → 还原」整段串起来。
 import threading as _threading
 _exec_lock = _threading.RLock()
+
+# 并发上限：锁保证了正确性，但一堆调用排队等待时仍会占满线程与内存，
+# 实测 8 并发会拖垮解释器（5 并发尚可）。这里限制同时在跑的执行数，
+# 超出的调用会阻塞等待而不是失败——对模型表现为"稍慢"，而不是报错。
+_exec_sem = _threading.Semaphore(4)
 
 import sys
 import json
@@ -198,8 +204,9 @@ def execute(code: str, workdir: str, bridge=None) -> str:
     必须串行，否则并发调用会互相破坏（详见 _exec_lock 注释）。
     """
     global _bridge
-    with _exec_lock:
-        return _execute_locked(code, workdir, bridge)
+    with _exec_sem:
+        with _exec_lock:
+            return _execute_locked(code, workdir, bridge)
 
 
 def _execute_locked(code: str, workdir: str, bridge=None) -> str:
@@ -384,9 +391,14 @@ def rev_cfg(target, func_va, arch="arm64"):
     """某个函数的控制流图。"""
     return _rev("rizinCfg", target, int(func_va), arch)
 
-def rev_search(target, pattern, arch="arm64", from_va=0, to_va=0):
-    """字节模式搜索，pattern 支持空格与 ?? 通配，如 '1f 20 ?? d5'。"""
-    return _rev("rizinSearchBytes", target, pattern, arch, int(from_va), int(to_va))
+def rev_search(target, pattern, arch="arm64", range_start=0, range_end=0):
+    """字节模式搜索。
+
+    pattern     : 支持空格与 ?? 通配，如 '1f 20 ?? d5'
+    range_start : 起始地址，0 表示从头
+    range_end   : 结束地址，0 表示到文件末尾
+    """
+    return _rev("rizinSearchBytes", target, pattern, arch, int(range_start), int(range_end))
 
 def rev_crypto(target, arch="arm64"):
     """扫描常见加密常量（AES S-box、CRC 表、哈希魔数）。"""

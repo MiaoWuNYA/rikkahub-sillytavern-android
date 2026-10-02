@@ -53,8 +53,33 @@ private fun bridge(context: Context): PythonBridge = PythonBridge(
     conversationRepo = KoinJavaComponent.get<ConversationRepository>(ConversationRepository::class.java),
 )
 
-private fun text(s: String): List<UIMessagePart> =
-    listOf(UIMessagePart.Text(s.ifBlank { "(empty result)" }))
+/**
+ * 把引擎返回值变成给模型看的文本。
+ *
+ * 引擎大量返回 JSON 字符串。原样塞回去时，长数组会被压成一行，
+ * 模型很难定位到具体字段（实测 rev_functions 的 368 条挤在一行里）。
+ * 这里对可解析的 JSON 做缩进美化；解析失败就原样返回，绝不吞内容。
+ * 同时给出空结果的明确提示——空串往往意味着失败，不该显示成"没内容"。
+ */
+private fun text(s: String): List<UIMessagePart> {
+    val t = s.trim()
+    if (t.isEmpty()) return listOf(UIMessagePart.Text("(empty result)"))
+    val pretty = try {
+        val el = kotlinx.serialization.json.Json.parseToJsonElement(t)
+        // 仅对结构化结果做美化，裸字符串/数字保持原样
+        when (el) {
+            is kotlinx.serialization.json.JsonObject,
+            is kotlinx.serialization.json.JsonArray ->
+                kotlinx.serialization.json.Json { prettyPrint = true }.encodeToString(
+                    kotlinx.serialization.json.JsonElement.serializer(), el
+                )
+            else -> t
+        }
+    } catch (_: Exception) {
+        t
+    }
+    return listOf(UIMessagePart.Text(pretty))
+}
 
 private fun props(extra: MutableMap<String, kotlinx.serialization.json.JsonElement> = mutableMapOf()) = buildJsonObject {
     put("target", buildJsonObject {
