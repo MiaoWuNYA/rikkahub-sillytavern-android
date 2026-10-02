@@ -28,6 +28,22 @@ fun createPythonTool(context: Context, timeoutSec: Int = 30): Tool = Tool(
     description = "Execute Python code on-device (isolated environment) for data processing, API calls,\n" +
         "file generation, or programmatic logic beyond simple math (simple math → calculator;\n" +
         "shell ops → execute_command; file ops → file tools).\n" +
+        "\n" +
+        "REVERSE ENGINEERING — a full Rizin + Ghidra engine is built in. Call these directly:\n" +
+        "  rev_status()                      engine availability\n" +
+        "  rev_disasm(target, arch, addr, thumb, limit)   disassemble, returns '0xADDR: BB BB  mnemonic op'\n" +
+        "  rev_asm(asm, arch, addr, thumb)   assemble to hex bytes\n" +
+        "  rev_analyze(target, arch)         auto-analysis (functions/symbols/strings)\n" +
+        "  rev_functions(target, arch)       list recovered functions\n" +
+        "  rev_xrefs(target, va, arch, direction)   cross references ('to' or 'from')\n" +
+        "  rev_cfg(target, func_va, arch)    control-flow graph\n" +
+        "  rev_search(target, pattern, arch) byte pattern search, '?? ' wildcards allowed\n" +
+        "  rev_crypto(target, arch)          scan for AES S-box / CRC tables / crypto magic\n" +
+        "  rev_esil(target, start_va, steps, arch)  instruction-level emulation\n" +
+        "  rev_diff(file_a, file_b)          binary diff\n" +
+        "  rev_decompile(target, func_va, arch)     decompile to pseudo-C\n" +
+        "  rev_cmd(target, command, arch)    raw rizin command, e.g. 'aaa; afl', 'iS', 'iz'\n" +
+        "  target = file path OR hex string like '1f2003d5'. arch = arm/arm64/x86/x86_64/mips/riscv.\n" +
         "code: Python code to execute. Last expression value returned. Use print() for debugging.",
     needsApproval = { false },
     parameters = {

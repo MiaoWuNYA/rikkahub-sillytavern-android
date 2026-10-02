@@ -80,3 +80,15 @@ log.txt
 # ── 临时打包与日志产物 ──
 ci_latest_logs.zip
 dsh-purge.zip
+
+# ── 第三方逆向引擎源码包（211MB，仅本地参考，不入库）──
+玄星逆核-开源源码.zip
+XuanXingNieHe/
+*.zip
+
+# ── 杂项测试文本 ──
+3.txt
+4.txt
+aaa.txt
+001.txt
+材料/
