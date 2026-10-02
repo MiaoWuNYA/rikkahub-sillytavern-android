@@ -49,3 +49,30 @@
 -dontwarn java.beans.Introspector
 -dontwarn java.beans.PropertyDescriptor
 -dontwarn org.yaml.snakeyaml.**
+
+# ── JNI 符号的保留规则 ────────────────────────────────────────────────
+#
+# 背景：native 侧的符号名是「类的全限定名 + 方法名」拼出来的，例如
+#   Java_com_soreverse_mcp_nativecore_HdGuard_hdKdfFactor
+# R8 一旦重命名类或方法，这个符号就对不上，运行时报 UnsatisfiedLinkError。
+#
+# 这类问题的特征是：debug 包正常、release 包静默失效，
+# 而且往往表现为某个功能「取不到数据」而不是明显崩溃，
+# 与上面前端桥那段是同一类陷阱。
+#
+# 此前只有 RizinBridge 的 external 方法侥幸没中招——它们恰好都是 public，
+# 而 R8 默认保留 public 成员名。依赖这种巧合不可靠，这里显式声明。
+
+# 保留 native 方法所在类的类名与方法名
+-keepclasseswithmembernames,includedescriptorclasses class com.soreverse.mcp.nativecore.** {
+    native <methods>;
+}
+-keep class com.soreverse.mcp.nativecore.HdGuard { *; }
+-keep class com.soreverse.mcp.nativecore.RizinNativeEngine { *; }
+
+# 兼容：RizinBridge 是 RizinNativeEngine 的 typealias，
+# 旧调用点可能仍以该名字引用
+-keep class com.soreverse.mcp.nativecore.RizinBridge { *; }
+
+# 插件解密入口：被插件加载器经反射/间接路径调用，R8 看不到调用方
+-keep class me.rerere.rikkahub.plugin.crypto.PluginCrypto { *; }
