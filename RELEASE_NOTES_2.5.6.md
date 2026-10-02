@@ -13,7 +13,7 @@
 
 **新增**
 
-- 酒馆模式：请求只保留角色卡与世界书
+- 酒馆模式：模仿酒馆请求模式，请求只保留角色卡与世界书，大幅度减少模型对角色卡的内容拦截
 - 插件密钥改为签名证书派生，调试入口遮蔽插件内容
 
 **上游 2.5.6**
@@ -41,7 +41,7 @@ Crash and frame-drop fixes, plus upstream 2.5.6.
 
 **New**
 
-- Tavern mode: requests carry only the character card and world book
+- Tavern mode: mimics SillyTavern's request shape, sending only the character card and world book, greatly reducing the model's content refusals on character cards
 - Plugin keys derived from the signing certificate; debug entry hides plugin content
 
 **Upstream 2.5.6**
