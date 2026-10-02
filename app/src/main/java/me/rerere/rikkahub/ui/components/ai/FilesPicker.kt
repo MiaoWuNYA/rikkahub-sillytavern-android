@@ -49,10 +49,12 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.dokar.sonner.ToastType
 import kotlinx.coroutines.Job
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Voice
+import me.rerere.hugeicons.stroke.Book02
 import me.rerere.hugeicons.stroke.Camera01
 import me.rerere.hugeicons.stroke.Codesandbox
 import me.rerere.hugeicons.stroke.ComputerTerminal01
@@ -80,9 +82,11 @@ import me.rerere.rikkahub.ui.components.ui.permission.PermissionManager
 import me.rerere.rikkahub.ui.components.ui.permission.rememberPermissionState
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.context.LocalSettings
+import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.hooks.ChatInputState
 import me.rerere.workspace.WorkspaceShellStatus
 import org.koin.compose.koinInject
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 @Composable
@@ -105,6 +109,7 @@ internal fun FilesPicker(
     onPickAudio: () -> Unit,
     onPickFile: () -> Unit,
     onStartVoiceMode: (() -> Unit)? = null,
+    onToggleTavernMode: ((Boolean) -> Unit)? = null,
 ) {
     val settings = LocalSettings.current
     val provider = settings.getCurrentChatModel()?.findProvider(providers = settings.providers)
@@ -149,6 +154,12 @@ internal fun FilesPicker(
                     onDismiss()
                     navController.navigate(Screen.Plugins)
                 },
+            )
+
+            // 酒馆模式快捷开关：主动在发送栏就地切换，省去进设置页的往返
+            TavernModeQuickButton(
+                enabled = settings.huadengSettings.enableTavernMode,
+                onToggle = onToggleTavernMode,
             )
         }
 
@@ -506,9 +517,52 @@ fun FilePickButton(onClick: () -> Unit = {}) {
     }
 }
 
+/**
+ * 酒馆模式快捷按钮：与「插件」并列，点击即开关酒馆模式。
+ * 开启态用主色容器高亮，一眼看出当前是否处于纯净请求。
+ */
+@Composable
+fun TavernModeQuickButton(
+    enabled: Boolean,
+    onToggle: ((Boolean) -> Unit)? = null,
+) {
+    val toaster = LocalToaster.current
+    val onMsg = stringResource(R.string.tavern_quick_toggle_on)
+    val offMsg = stringResource(R.string.tavern_quick_toggle_off)
+    BigIconTextButton(
+        icon = {
+            Icon(
+                imageVector = HugeIcons.Book02,
+                contentDescription = stringResource(R.string.tavern_quick_toggle),
+                tint = if (enabled) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+            )
+        },
+        text = { Text(stringResource(R.string.tavern_quick_toggle)) },
+        containerColor = if (enabled) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainer
+        },
+        onClick = {
+            val next = !enabled
+            onToggle?.invoke(next)
+            toaster.show(
+                message = if (next) onMsg else offMsg,
+                duration = 1.seconds,
+                type = if (next) ToastType.Success else ToastType.Normal,
+            )
+        },
+    )
+}
+
 @Composable
 private fun BigIconTextButton(
     modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
     icon: @Composable () -> Unit,
     text: @Composable () -> Unit,
     onClick: () -> Unit,
@@ -527,7 +581,7 @@ private fun BigIconTextButton(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Surface(
-            color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(8.dp)
+            color = containerColor, shape = RoundedCornerShape(8.dp)
         ) {
             Box(
                 modifier = Modifier.padding(horizontal = 32.dp, vertical = 16.dp)

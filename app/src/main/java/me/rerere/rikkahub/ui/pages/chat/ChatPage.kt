@@ -861,6 +861,14 @@ private fun ChatFilesPickerSheet(
                     onStartVoiceMode()
                 }
             } else null,
+            // 酒馆模式快捷开关：就地写入华灯设置，保持面板不关闭，方便连点确认状态
+            onToggleTavernMode = { enabled ->
+                vm.updateSettings(
+                    setting.copy(
+                        huadengSettings = setting.huadengSettings.copy(enableTavernMode = enabled),
+                    )
+                )
+            },
         )
     }
 }
