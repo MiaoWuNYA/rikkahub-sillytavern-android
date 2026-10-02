@@ -167,6 +167,12 @@ object ModelRegistry {
         toolReasoningAbility()
     }
 
+    val GEMINI_4 = defineModel {
+        tokens("gemini", "4")
+        visionInput()
+        toolReasoningAbility()
+    }
+
     val GEMINI_FLASH_LATEST = defineModel {
         exact("gemini-flash-latest")
         visionInput()
@@ -188,19 +194,7 @@ object ModelRegistry {
     }
 
     val GEMINI_SERIES = defineGroup {
-        add(GEMINI_20_FLASH, GEMINI_2_5_FLASH, GEMINI_2_5_PRO, GEMINI_3_SERIES, GEMINI_LATEST)
-    }
-
-    private val CLAUDE_SONNET_3_5 = defineModel {
-        tokens("claude", "3", "5", "sonnet")
-        visionInput()
-        toolReasoningAbility()
-    }
-
-    private val CLAUDE_SONNET_3_7 = defineModel {
-        tokens("claude", "3", "7", "sonnet")
-        visionInput()
-        toolReasoningAbility()
+        add(GEMINI_20_FLASH, GEMINI_2_5_FLASH, GEMINI_2_5_PRO, GEMINI_3_SERIES, GEMINI_4, GEMINI_LATEST)
     }
 
     private val CLAUDE_4 = defineModel {
@@ -255,10 +249,24 @@ object ModelRegistry {
         contextLength(1.m)
     }
 
+    private val CLAUDE_SONNET_5_5 = defineModel {
+        tokens("claude", "sonnet", "5", "5")
+        notTokens("claude", "sonnet", "4")
+        visionInput()
+        toolReasoningAbility()
+        contextLength(1.m)
+    }
+
+    private val CLAUDE_OPUS_5_5 = defineModel {
+        tokens("claude", "opus", "5", "5")
+        notTokens("claude", "opus", "4")
+        visionInput()
+        toolReasoningAbility()
+        contextLength(1.m)
+    }
+
     val CLAUDE_SERIES = defineGroup {
         add(
-            CLAUDE_SONNET_3_5,
-            CLAUDE_SONNET_3_7,
             CLAUDE_4,
             CLAUDE_4_5,
             CLAUDE_SONNET_4_6,
@@ -266,7 +274,9 @@ object ModelRegistry {
             CLAUDE_OPUS_4_7,
             CLAUDE_OPUS_4_8,
             CLAUDE_SONNET_5,
-            CLAUDE_OPUS_5
+            CLAUDE_OPUS_5,
+            CLAUDE_SONNET_5_5,
+            CLAUDE_OPUS_5_5
         )
     }
 
@@ -626,10 +636,9 @@ object ModelRegistry {
         GEMINI_3_1_PRO_PREVIEW_CUSTOMTOOLS,
         GEMINI_3_1_FLASH_IMAGE,
         GEMINI_3_5,
+        GEMINI_4,
         GEMINI_FLASH_LATEST,
         GEMINI_PRO_LATEST,
-        CLAUDE_SONNET_3_5,
-        CLAUDE_SONNET_3_7,
         CLAUDE_4,
         CLAUDE_4_5,
         CLAUDE_SONNET_4_6,
@@ -638,6 +647,8 @@ object ModelRegistry {
         CLAUDE_OPUS_4_8,
         CLAUDE_SONNET_5,
         CLAUDE_OPUS_5,
+        CLAUDE_SONNET_5_5,
+        CLAUDE_OPUS_5_5,
         DEEPSEEK_V3_MODEL,
         DEEPSEEK_CHAT,
         DEEPSEEK_R1_MODEL,

@@ -408,6 +408,21 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            // 上游 2.5.6：chart_display 本地工具
+            item(
+                headlineContent = {
+                    Text(stringResource(R.string.assistant_page_local_tools_chart_display_title))
+                },
+                supportingContent = {
+                    Text(stringResource(R.string.assistant_page_local_tools_chart_display_desc))
+                },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.ChartDisplay),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.ChartDisplay, it) }
+                    )
+                }
+            )
         }
     }
 }

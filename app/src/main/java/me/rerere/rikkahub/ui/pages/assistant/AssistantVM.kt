@@ -68,7 +68,7 @@ class AssistantVM(
         }
     }
 
-    fun copyAssistant(assistant: Assistant) {
+    fun copyAssistant(assistant: Assistant, copyMemories: Boolean = false) {
         viewModelScope.launch {
             val settings = settings.value
             val copiedAssistant = assistant.copy(
@@ -81,6 +81,12 @@ class AssistantVM(
                     assistants = settings.assistants.plus(copiedAssistant)
                 )
             )
+            if (copyMemories) {
+                memoryRepository.copyMemories(
+                    fromAssistantId = assistant.id.toString(),
+                    toAssistantId = copiedAssistant.id.toString(),
+                )
+            }
         }
     }
 

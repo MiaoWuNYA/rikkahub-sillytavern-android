@@ -99,15 +99,16 @@ import me.rerere.rikkahub.ui.pages.chat.GroupChatPage
 import me.rerere.rikkahub.ui.pages.setting.PersonaPage
 import me.rerere.rikkahub.ui.pages.setting.AuthorsNotePage
 import me.rerere.rikkahub.ui.pages.debug.DebugPage
+import me.rerere.rikkahub.ui.pages.extensions.ExtensionsPage
+import me.rerere.rikkahub.ui.pages.extensions.PromptPage
+import me.rerere.rikkahub.ui.pages.extensions.QuickMessagesPage
+// 本地 Skills 页仍位于 extensions 包（未随上游迁移到 .skills 子包），故此处保持本地路径
+import me.rerere.rikkahub.ui.pages.extensions.SkillDetailPage
+import me.rerere.rikkahub.ui.pages.extensions.SkillsPage
 import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspacePage
 import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspaceDetailPage
 import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspaceFileEditorPage
 import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspaceTerminalPage
-import me.rerere.rikkahub.ui.pages.extensions.ExtensionsPage
-import me.rerere.rikkahub.ui.pages.extensions.PromptPage
-import me.rerere.rikkahub.ui.pages.extensions.QuickMessagesPage
-import me.rerere.rikkahub.ui.pages.extensions.SkillDetailPage
-import me.rerere.rikkahub.ui.pages.extensions.SkillsPage
 import me.rerere.rikkahub.plugin.ui.PluginDetailPage
 import me.rerere.rikkahub.plugin.ui.PluginFolderPage
 import me.rerere.rikkahub.plugin.ui.PluginManagePage
@@ -159,6 +160,7 @@ import kotlin.uuid.Uuid
 
 private const val TAG = "RouteActivity"
 private const val ACTION_TRANSLATE = "me.rerere.rikkahub.action.TRANSLATE"
+private const val ACTION_IMAGE_GEN = "me.rerere.rikkahub.action.IMAGE_GEN"
 
 class RouteActivity : ComponentActivity() {
     private val okHttpClient by inject<OkHttpClient>()
@@ -246,6 +248,7 @@ class RouteActivity : ComponentActivity() {
         }
         val destination = when (intent.action) {
             ACTION_TRANSLATE -> Screen.Translator
+            ACTION_IMAGE_GEN -> Screen.ImageGen
             Intent.ACTION_SEND -> Screen.ShareHandler(
                 text = intent.getStringExtra(Intent.EXTRA_TEXT).orEmpty(),
                 streamUri = intent.getStringExtra(Intent.EXTRA_STREAM),
@@ -544,7 +547,6 @@ class RouteActivity : ComponentActivity() {
                             entry<Screen.SettingProactiveMessage> {
                                 SettingProactiveMessagePage()
                             }
-
 
                             entry<Screen.Debug> {
                                 DebugPage()
@@ -849,6 +851,8 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingJev : Screen
+
+    @Serializable
     data object SettingSecurity : Screen
 
     @Serializable

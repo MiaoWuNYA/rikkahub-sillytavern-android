@@ -18,7 +18,7 @@
 
 </div>
 
-> **RikkaHub 的深度定制分支**（已合入上游 v2.5.4，另有 2150+ 提交的增量），Kotlin + Jetpack Compose 原生实现。
+> **RikkaHub 的深度定制分支**（已合入上游 v2.5.6，另有 2150+ 提交的增量），Kotlin + Jetpack Compose 原生实现。
 >
 > - **只想找个好用的 AI 聊天 App**：接上任意 API 就能聊——多供应商、流式输出、语音通话、插件工具、记忆系统、缓存省钱，装上就用，酒馆功能默认不增加上下文，不浪费用量。
 > - **想找一个安卓酒馆 APP**：角色卡、世界书、预设、正则、美化主题按官方语义无损导入，无需 Termux 或 Node.js
@@ -75,7 +75,7 @@
 本仓库有两条上游血脉，理解这个才能看懂差异：
 
 ```
-rikkahub/rikkahub (最上游，v2.5.4)
+rikkahub/rikkahub (最上游，v2.5.6)
         │
         ├──► heikeyangle-code/rikkahub-plus (中间分支 mingli2)
         │            │  酒馆系统 / 宏引擎 / 斜杠命令 / 群聊
@@ -556,8 +556,8 @@ TypeSafe System One 判断模型的接入配置页：API 地址 / Key / 模型�
 
 | 渠道 | 说明 |
 |---|---|
-| **稳定版** | [Releases](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases) 按版本发布（`2.5.4.N`，历史版本曾是 `2.5.4fixN`，可直接覆盖安装升级） |
-| **Nightly** | Actions 每天两次自动构建（过去 24 小时无新提交则跳过），覆盖 [nightly](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/tag/nightly) 预发布；版本按日期推进（`2.5.4.YYYYMMDD`） |
+| **稳定版** | [Releases](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases) 按版本发布（`2.5.6.N`，历史版本曾是 `2.5.4fixN`，可直接覆盖安装升级） |
+| **Nightly** | Actions 每天两次自动构建（过去 24 小时无新提交则跳过），覆盖 [nightly](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/tag/nightly) 预发布；版本按日期推进（`2.5.6.YYYYMMDD`） |
 | **手动构建产物** | 每次推送在 [Actions](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/actions) 产出 APK Artifact（构建页底部「Artifacts → rikkahub-plus-fresh」，需登录） |
 | **应用内更新** | 设置 → 关于 → 检查更新（GitHub Releases API，国内可达镜像自动回退） |
 

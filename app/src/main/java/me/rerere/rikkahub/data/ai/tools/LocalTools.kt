@@ -133,6 +133,11 @@ sealed class LocalToolOption {
     @Serializable
     @SerialName("couple_space")
     data object CoupleSpace : LocalToolOption()
+
+    // 上游 2.5.6：chart_display 本地工具
+    @Serializable
+    @SerialName("chart_display")
+    data object ChartDisplay : LocalToolOption()
 }
 
 class LocalTools(
@@ -442,6 +447,9 @@ class LocalTools(
     // 设备工具箱元工具：懒发现模式，内部工具不直接注册
     val deviceToolboxTool by lazy { createDeviceToolboxTool(context) }
 
+    // 上游 2.5.6：图表展示工具
+    val chartDisplayTool by lazy { buildChartDisplayTool() }
+
     fun getTools(options: List<LocalToolOption>): List<Tool> {
         val tools = mutableListOf<Tool>()
         if (options.contains(LocalToolOption.JavascriptEngine)) {
@@ -471,6 +479,9 @@ class LocalTools(
         }
         if (options.contains(LocalToolOption.DeviceToolbox)) {
             tools.add(deviceToolboxTool)
+        }
+        if (options.contains(LocalToolOption.ChartDisplay)) {
+            tools.add(chartDisplayTool)
         }
         return tools
     }
