@@ -20,22 +20,25 @@ Available built-in functions (call these from your code):
 
 逆向引擎（Rizin + Capstone + Keystone + Unicorn + Ghidra，需 arm64 设备）：
   rev_status()                                   - 引擎是否可用
-  rev_disasm(target, arch="arm", addr=0, thumb=False, limit=200)
+  rev_disasm(target, arch="arm64", addr=0, thumb=False, limit=200)
                                                  - 反汇编，返回 "0xADDR: BB BB  mnemonic op"
-  rev_asm(asm, arch="arm", addr=0, thumb=False)  - 汇编，返回十六进制机器码
-  rev_analyze(target, arch="arm")                - 自动分析（函数识别/符号/字符串）
-  rev_functions(target, arch="arm")              - 列出识别出的函数
-  rev_xrefs(target, va, arch="arm", direction="to")  - 交叉引用
-  rev_cfg(target, func_va, arch="arm")           - 控制流图
-  rev_search(target, pattern, arch="arm")        - 字节模式搜索（支持 ?? 通配）
-  rev_crypto(target, arch="arm")                 - 扫描加密常量（AES S-box/CRC/魔数）
-  rev_esil(target, start_va, steps, arch="arm")  - ESIL 指令级模拟
+  rev_asm(asm, arch="arm64", addr=0, thumb=False)  - 汇编，返回十六进制机器码
+  rev_analyze(target, arch="arm64")                - 自动分析（函数识别/符号/字符串）
+  rev_functions(target, arch="arm64")              - 列出识别出的函数
+  rev_xrefs(target, va, arch="arm64", direction="to")  - 交叉引用
+  rev_cfg(target, func_va, arch="arm64")           - 控制流图
+  rev_search(target, pattern, arch="arm64")        - 字节模式搜索（支持 ?? 通配）
+  rev_crypto(target, arch="arm64")                 - 扫描加密常量（AES S-box/CRC/魔数）
+  rev_esil(target, start_va, steps, arch="arm64")  - ESIL 指令级模拟
   rev_diff(file_a, file_b)                       - 二进制差异
-  rev_decompile(target, func_va, arch="arm")     - 反编译为伪 C（首次较慢，会释放 sleigh）
-  rev_cmd(target, command, arch="arm")           - 执行 rizin 原生命令（如 "aaa; afl"）
+  rev_prepare()                                    - 预热 Ghidra（反编译前先调，避免超时）
+  rev_decompile(target, func_va, arch="arm64")     - 反编译为伪 C（首次较慢，会释放 sleigh）
+  rev_cmd(target, command, arch="arm64")           - 执行 rizin 原生命令（如 "aaa; afl"）
 
-  target 可以是文件路径，也可以是十六进制字符串（如 "1f2003d5"）。
-  arch 取值：arm / arm64 / x86 / x86_64 / mips / riscv 等。
+  target 可以是绝对路径，也可以是十六进制字符串（如 "1f2003d5"）。
+  arch 只接受：arm64 / arm32 / x86_64 / x86 / mips，默认 arm64。
+       其它值会被拒绝——native 层遇到未知值会静默按 x86/32 处理，产生错误结果。
+  建议先用 rev_analyze 列出函数，再对目标函数地址调 rev_decompile。
 
 """
 
@@ -280,39 +283,39 @@ def rev_status():
     """逆向引擎是否可用。"""
     return _rev("rizinStatus")
 
-def rev_disasm(target, arch="arm", addr=0, thumb=False, limit=200):
+def rev_disasm(target, arch="arm64", addr=0, thumb=False, limit=200):
     """反汇编。target 为文件路径或十六进制串。"""
     return _rev("rizinDisasm", target, arch, int(addr), bool(thumb), int(limit))
 
-def rev_asm(asm, arch="arm", addr=0, thumb=False):
+def rev_asm(asm, arch="arm64", addr=0, thumb=False):
     """把汇编指令转成十六进制机器码。"""
     return _rev("rizinAsm", asm, arch, int(addr), bool(thumb))
 
-def rev_analyze(target, arch="arm"):
+def rev_analyze(target, arch="arm64"):
     """自动分析：函数边界、符号、字符串识别。"""
     return _rev("rizinAnalyze", target, arch)
 
-def rev_functions(target, arch="arm"):
+def rev_functions(target, arch="arm64"):
     """列出识别出的函数及其地址。"""
     return _rev("rizinFunctions", target, arch)
 
-def rev_xrefs(target, va, arch="arm", direction="to"):
+def rev_xrefs(target, va, arch="arm64", direction="to"):
     """交叉引用。direction 取 'to' 或 'from'。"""
     return _rev("rizinXrefs", target, int(va), arch, direction)
 
-def rev_cfg(target, func_va, arch="arm"):
+def rev_cfg(target, func_va, arch="arm64"):
     """某个函数的控制流图。"""
     return _rev("rizinCfg", target, int(func_va), arch)
 
-def rev_search(target, pattern, arch="arm", from_va=0, to_va=0):
+def rev_search(target, pattern, arch="arm64", from_va=0, to_va=0):
     """字节模式搜索，pattern 支持空格与 ?? 通配，如 '1f 20 ?? d5'。"""
     return _rev("rizinSearchBytes", target, pattern, arch, int(from_va), int(to_va))
 
-def rev_crypto(target, arch="arm"):
+def rev_crypto(target, arch="arm64"):
     """扫描常见加密常量（AES S-box、CRC 表、哈希魔数）。"""
     return _rev("rizinScanCrypto", target, arch)
 
-def rev_esil(target, start_va, steps, arch="arm"):
+def rev_esil(target, start_va, steps, arch="arm64"):
     """ESIL 指令级模拟执行。"""
     return _rev("rizinEsil", target, int(start_va), int(steps), arch)
 
@@ -320,10 +323,14 @@ def rev_diff(file_a, file_b):
     """比较两个二进制（文件路径）。"""
     return _rev("rizinDiff", file_a, file_b)
 
-def rev_decompile(target, func_va, arch="arm"):
+def rev_prepare():
+    """预热 Ghidra（首次反编译前调用，避免撞上工具超时）。可重复调用。"""
+    return _rev("rizinPrepare")
+
+def rev_decompile(target, func_va, arch="arm64"):
     """反编译为伪 C 代码。首次调用会释放 sleigh 数据，可能较慢。"""
     return _rev("rizinDecompile", target, int(func_va), arch)
 
-def rev_cmd(target, command, arch="arm"):
+def rev_cmd(target, command, arch="arm64"):
     """执行 rizin 原生命令，多条用 ; 分隔，如 'aaa; afl'、'iS'、'iz'。"""
     return _rev("rizinCmd", target, command, arch)
