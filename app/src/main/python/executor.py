@@ -35,6 +35,14 @@ Available built-in functions (call these from your code):
   rev_decompile(target, func_va, arch="arm64")     - 反编译为伪 C（首次较慢，会释放 sleigh）
   rev_cmd(target, command, arch="arm64")           - 执行 rizin 原生命令（如 "aaa; afl"）
 
+  另外提供 bindisasm 模块（无需安装，直接 import）：不依赖 Rizin，
+  单独走 libcapstone，适合快速反汇编一小段字节。
+    import bindisasm
+    bindisasm.status()                      - 引擎状态与版本
+    bindisasm.disasm(data, arch, address)   - 反汇编，data 为 bytes 或 hex 串
+    bindisasm.info(path)                    - 读 ELF 头，判断架构
+    bindisasm.bytes_at(path, offset, length)- 按偏移读文件片段
+
   target 可以是绝对路径，也可以是十六进制字符串（如 "1f2003d5"）。
   arch 只接受：arm64 / arm32 / x86_64 / x86 / mips，默认 arm64。
        其它值会被拒绝——native 层遇到未知值会静默按 x86/32 处理，产生错误结果。
@@ -50,6 +58,15 @@ Available built-in functions (call these from your code):
 import random as _random
 if not hasattr(_random, '_traced_calls'):
     _random._traced_calls = []
+
+# ── 执行串行化锁 ───────────────────────────────────────────────
+# execute() 会临时替换进程级的 sys.stdout / sys.stderr，并调用 os.chdir()。
+# 这两者都是全局状态：并发调用时会互相踩踏，典型症状是
+#   AttributeError: 'TextLogStream' object has no attribute 'getvalue'
+# 因为 A 还没取回输出，B 已经把 sys.stdout 还原成系统流了。
+# 用一个可重入锁把「替换流 → 执行 → 取回输出 → 还原」整段串起来。
+import threading as _threading
+_exec_lock = _threading.RLock()
 
 import sys
 import json
@@ -175,7 +192,17 @@ def update_setting(key, value):
 # ============================================================
 
 def execute(code: str, workdir: str, bridge=None) -> str:
-    """Execute Python code, return JSON with results."""
+    """Execute Python code, return JSON with results.
+
+    整个函数体在 _exec_lock 内运行：输出捕获与工作目录切换都是进程级全局状态，
+    必须串行，否则并发调用会互相破坏（详见 _exec_lock 注释）。
+    """
+    global _bridge
+    with _exec_lock:
+        return _execute_locked(code, workdir, bridge)
+
+
+def _execute_locked(code: str, workdir: str, bridge=None) -> str:
     global _bridge
     _bridge = bridge
     old_stdout = sys.stdout
@@ -211,11 +238,21 @@ def execute(code: str, workdir: str, bridge=None) -> str:
         pass
 
     try:
-        try:
-            result = eval(code)
-        except SyntaxError:
-            exec(code)
-            result = None
+        # 用户代码的命名空间。
+        #
+        # 两个约束必须同时满足：
+        # 1) 必须是独立字典，不能直接用 globals()——否则用户定义的变量会污染
+        #    executor 模块本身，多次调用互相串值。
+        # 2) 必须能看见本模块的所有公开函数（query_knowledge_base、
+        #    capstone_disasm、rev_* 等），因为工具描述就是让模型直接调用它们的。
+        #    裸 exec(code) 天然满足第 2 点，所以这里手动把模块全局拷进来再覆盖
+        #    __name__，等价于「一个新的模块级命名空间」。
+        #
+        # globals 与 locals 传同一份 _scope，这样模块级的 def / lambda 才能
+        # 看到顶层变量（若传两份，def 的 __globals__ 指向另一份字典会 NameError）。
+        _scope = dict(globals())
+        _scope["__name__"] = "__main__"
+        result = _run_user_code(code, _scope)
 
         # Auto-save matplotlib figures
         try:
@@ -234,8 +271,10 @@ def execute(code: str, workdir: str, bridge=None) -> str:
         error = "{}\n{}".format(e, traceback.format_exc())
 
     finally:
-        stdout = sys.stdout.getvalue()
-        stderr = sys.stderr.getvalue()
+        # 防御性取回：即使有外部代码在用户代码里改掉了 sys.stdout，
+        # 也不能让清理路径本身抛异常（否则真的会把异常盖住）。
+        stdout = _safe_getvalue(sys.stdout)
+        stderr = _safe_getvalue(sys.stderr)
         sys.stdout = old_stdout
         sys.stderr = old_stderr
 
@@ -270,6 +309,44 @@ def execute(code: str, workdir: str, bridge=None) -> str:
 # 逆向引擎桥接（Rizin / Ghidra）
 # 所有函数在引擎不可用时返回以 "Error:" 开头的可读字符串，不抛异常。
 # ============================================================
+
+def _run_user_code(code, scope):
+    """执行用户代码，并返回最后一个表达式的值。
+
+    直接 "eval 失败就 exec" 的写法有个真实缺陷：多语句代码若以表达式结尾，
+    表达式的结果会被丢掉。例如
+        a = 5
+        a + 1
+    原实现走 exec 分支，result 恒为 None，用户拿不到 6。
+
+    这里按 AST 拆分：前面部分 exec，最后一条若是表达式则单独 eval 取回其值。
+    这样单表达式、纯语句、语句+表达式三种形态都符合直觉。
+    """
+    import ast as _ast
+    tree = _ast.parse(code, "<user_code>", "exec")
+    if not tree.body:
+        return None
+
+    if isinstance(tree.body[-1], _ast.Expr):
+        head = _ast.Module(body=tree.body[:-1], type_ignores=[])
+        tail = _ast.Expression(body=tree.body[-1].value)
+        if head.body:
+            exec(compile(head, "<user_code>", "exec"), scope, scope)
+        return eval(compile(tail, "<user_code>", "eval"), scope, scope)
+
+    exec(compile(tree, "<user_code>", "exec"), scope, scope)
+    return None
+
+
+def _safe_getvalue(stream):
+    """安全读取捕获流；流被替换或没有 getvalue 时回退为空串。"""
+    try:
+        if hasattr(stream, 'getvalue'):
+            return stream.getvalue()
+        return ''
+    except Exception:
+        return ''
+
 
 def _rev(fn, *args, **kwargs):
     if not _bridge:
@@ -334,3 +411,40 @@ def rev_decompile(target, func_va, arch="arm64"):
 def rev_cmd(target, command, arch="arm64"):
     """执行 rizin 原生命令，多条用 ; 分隔，如 'aaa; afl'、'iS'、'iz'。"""
     return _rev("rizinCmd", target, command, arch)
+
+
+# ============================================================
+# 轻量反汇编（libcapstone，独立于 Rizin）
+# 引擎不可用或输入无效时返回 'Error: ...' 文本，不抛异常。
+# ============================================================
+
+def capstone_status():
+    """反汇编引擎（libcapstone）是否可用及版本。"""
+    try:
+        import bindisasm
+        return bindisasm.status()
+    except Exception as e:
+        return "Error: %s" % e
+
+def capstone_disasm(data, arch="arm64", address=0, count=0):
+    """用 libcapstone 反汇编。
+
+    data    : bytes 或十六进制字符串，如 "1f2003d5"
+    arch    : arm64/arm32/thumb/x86/x86_64/mips/mips64/riscv/riscv64/ppc/sparc
+    address : 首字节虚拟地址
+    count   : 最多反汇编条数，0 为不限
+    返回 '0xADDR: BB BB  mnemonic op' 逐行文本。
+    """
+    try:
+        import bindisasm
+        return bindisasm.disasm(data, arch=arch, address=int(address), count=int(count))
+    except Exception as e:
+        return "Error: %s" % e
+
+def elf_info(path):
+    """读取 ELF 头，判断位数/端序/机器类型。"""
+    try:
+        import bindisasm
+        return bindisasm.info(path)
+    except Exception as e:
+        return "Error: %s" % e

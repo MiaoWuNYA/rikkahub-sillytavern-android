@@ -436,16 +436,30 @@ private fun formatSize(bytes: Long): String = when {
     else -> "${bytes / (1024 * 1024)} MB"
 }
 
-private fun String.toGlobRegex(): Regex {
-    val pattern = Regex.escape(this)
-        .replace("\\*", ".*")
-        .replace("\\?", ".")
-    return Regex("^${pattern}$", RegexOption.IGNORE_CASE)
+/**
+ * 把 glob 模式转成正则。
+ *
+ * 这里**不能**用 Regex.escape()：它会把整个串包进 \Q...\E，
+ * 之后 replace("\\*", ".*") 根本匹配不到被包起来的星号，
+ * 结果 `*.apk` 变成字面量，永远搜不到任何文件。
+ * 改为逐字符转义：白名单内的正则元字符才加反斜杠，
+ * 同时把 * 和 ? 替换成对应语义。
+ */
+private fun globToRegex(glob: String): Regex {
+    val sb = StringBuilder("^")
+    for (ch in glob) {
+        when (ch) {
+            '*' -> sb.append(".*")
+            '?' -> sb.append('.')
+            // 正则元字符需转义，其余原样保留（含中文、`.`、`-` 等）
+            '.', '(', ')', '[', ']', '{', '}', '+', '^', '$', '|', '\\' -> sb.append('\\').append(ch)
+            else -> sb.append(ch)
+        }
+    }
+    sb.append('$')
+    return Regex(sb.toString(), RegexOption.IGNORE_CASE)
 }
 
-private fun String.toGlobRegexForFile(): Regex {
-    val pattern = Regex.escape(this)
-        .replace("\\*", ".*")
-        .replace("\\?", ".")
-    return Regex("^${pattern}$", RegexOption.IGNORE_CASE)
-}
+private fun String.toGlobRegex(): Regex = globToRegex(this)
+
+private fun String.toGlobRegexForFile(): Regex = globToRegex(this)
