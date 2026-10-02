@@ -121,22 +121,35 @@ object RizinNativeEngine {
             "arm32" -> if (thumb) 2 else 4
             else -> 0   // 不定长架构无法切片，走整体调用
         }
+
+        // address 有两个彼此独立的含义，必须分开处理：
+        //   1) 从哪儿开始读 —— 只有输入是 ELF 文件时才需要用它定位；
+        //   2) 显示成什么地址 —— 任何输入都要用。
+        // 早先把两者混为一谈，对裸 hex 数据也拿 address 去当下标，
+        // 于是 addr=0x1000 在 8 字节输入上被夹到末尾，输出空串。
+        val isElf = bytes.size >= 64 &&
+                bytes[0] == 0x7F.toByte() && bytes[1] == 'E'.code.toByte() &&
+                bytes[2] == 'L'.code.toByte() && bytes[3] == 'F'.code.toByte()
+
+        // 读取起点：ELF 按段表换算；裸数据永远从 0 开始。
+        val start = if (isElf) vaToOffset(bytes, address) else 0
+        // 显示基址：给了地址就用它，否则从 0 起算。
+        val baseVa = if (address > 0L) address else 0L
+
         if (step == 0) {
-            val start = vaToOffset(bytes, address)
-            return normalizeDisasm(
-                rzDisassemble(bytes.copyOfRange(start, bytes.size), arch, address, thumb, limit)
-            )
+            val view = if (isElf && start > 0) bytes.copyOfRange(start, bytes.size) else bytes
+            return normalizeDisasm(rzDisassemble(view, arch, baseVa, thumb, limit))
         }
 
-        val start = vaToOffset(bytes, address)
         val sb = StringBuilder()
-        var off = if (address > 0L) start else 0
-        val baseVa = if (address > 0L && start > 0) address else 0L
+        var off = if (isElf) start else 0
         var produced = 0
         while (off < bytes.size && produced < limit) {
             val chunk = bytes.copyOfRange(off, minOf(off + step, bytes.size))
+            // 显示地址 = 基址 + 相对起点的偏移
+            val shownVa = baseVa + (off - start)
             val one = runCatching {
-                rzDisassemble(chunk, arch, baseVa + (off - start), thumb, 1)
+                rzDisassemble(chunk, arch, shownVa, thumb, 1)
             }.getOrDefault("")
             val line = normalizeDisasm(one).trim()
             if (line.isNotEmpty()) {
@@ -157,12 +170,11 @@ object RizinNativeEngine {
      */
     private fun vaToOffset(bytes: ByteArray, va: Long): Int {
         if (va <= 0L) return 0
-        if (bytes.size < 64) return va.toInt().coerceIn(0, bytes.size)
-        // 非 ELF：地址当数组下标
+        if (bytes.size < 64) return 0
         if (bytes[0] != 0x7F.toByte() || bytes[1] != 'E'.code.toByte() ||
             bytes[2] != 'L'.code.toByte() || bytes[3] != 'F'.code.toByte()
         ) {
-            return va.toInt().coerceIn(0, bytes.size)
+            return 0
         }
         return try {
             val is64 = bytes[4].toInt() == 2

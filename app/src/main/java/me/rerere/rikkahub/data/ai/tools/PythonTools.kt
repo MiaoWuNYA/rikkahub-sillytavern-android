@@ -37,12 +37,12 @@ fun createPythonTool(context: Context, timeoutSec: Int = 30): Tool = Tool(
         "  rev_disasm(target, arch, addr, thumb, limit)   disassemble, returns '0xADDR: BB BB  mnemonic op'\n" +
         "  rev_asm(asm, arch, addr, thumb)   assemble to hex bytes\n" +
         "  rev_analyze(target, arch)         auto-analysis (functions/symbols/strings)\n" +
-        "  rev_functions(target, arch)       list recovered functions\n" +
-        "  rev_xrefs(target, va, arch, direction)   cross references ('to' or 'from')\n" +
+        "  rev_functions(target, arch)       list recovered functions (returns a list)\n" +
+        "  rev_xrefs(target, va, arch, direction)   cross refs, returns a list ('to' or 'from')\n" +
         "  rev_cfg(target, func_va, arch)    control-flow graph\n" +
         "  rev_search(target, pattern, arch, range_start, range_end)  byte pattern search,\n" +
         "                                   '??' wildcards allowed; range_* narrow the scan window\n" +
-        "  rev_crypto(target, arch)          scan for AES S-box / CRC tables / crypto magic\n" +
+        "  rev_crypto(target, arch)          scan AES S-box / CRC / magic, returns a list\n" +
         "  rev_esil(target, start_va, steps, arch)  instruction-level emulation\n" +
         "  rev_diff(file_a, file_b)          binary diff\n" +
         "  rev_decompile(target, func_va, arch)     decompile to pseudo-C\n" +
@@ -62,15 +62,18 @@ fun createPythonTool(context: Context, timeoutSec: Int = 30): Tool = Tool(
         "  Before the FIRST rev_decompile, call rev_prepare() once: it unpacks 13MB of Ghidra\n" +
         "  sleigh data (392 files) and would otherwise eat into the 120s tool timeout.\n" +
         "\n" +
-        "  RETURN SHAPES (all JSON except rev_disasm/rev_asm/rev_cmd):\n" +
+        "  RETURN SHAPES:\n" +
         "    rev_disasm      plain text, one line per insn: '0xADDR: BB BB  mnemonic op'\n" +
         "    rev_asm         hex string, e.g. '1f2003d5'\n" +
-        "    rev_functions   [{\"name\",\"addr\",\"size\",\"ninstr\",\"complexity\",\"loops\",\"isPure\"}]\n" +
-        "    rev_xrefs       {\"xrefs\":[{\"from\",\"to\",\"type\",\"direction\"}]}\n" +
-        "    rev_crypto      {\"hits\":[{\"type\",\"addr\",\"size\"}]}\n" +
-        "    rev_decompile   {\"addr\",\"engine\",\"backend\",\"command\",\"diagnostic\",\"evidence\"}\n" +
-        "                    or {\"error\",\"message\"} on failure\n" +
-        "    any failure     {\"error\":\"...\"}  or '' for rev_disasm\n" +
+        "    rev_functions   list of {name, addr, size, ninstr, complexity, loops, isPure}\n" +
+        "                    -> iterate/filter directly: [f for f in rev_functions(p) if f['size']>64]\n" +
+        "    rev_xrefs       list of {from, to, type, direction}\n" +
+        "    rev_crypto      list of {type, addr, size}\n" +
+        "    rev_decompile   dict {addr, engine, backend, command, diagnostic, evidence}\n" +
+        "    Others return dicts. Every *_raw variant returns the undecoded JSON text,\n" +
+        "    e.g. rev_functions_raw / rev_xrefs_raw / rev_crypto_raw.\n" +
+        "    Parsing failures yield an empty list rather than raising, so always check length.\n" +
+        "    any failure     {'error':'...'}  or '' for rev_disasm\n" +
         "  Output over 32K chars may be truncated — narrow the request (limit / address range) instead\n" +
         "  of dumping everything at once.\n" +
         "code: Python code to execute. Last expression value returned. Use print() for debugging.",
