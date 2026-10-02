@@ -69,10 +69,19 @@ if not hasattr(_random, '_traced_calls'):
 import threading as _threading
 _exec_lock = _threading.RLock()
 
-# 并发上限：锁保证了正确性，但一堆调用排队等待时仍会占满线程与内存，
-# 实测 8 并发会拖垮解释器（5 并发尚可）。这里限制同时在跑的执行数，
-# 超出的调用会阻塞等待而不是失败——对模型表现为"稍慢"，而不是报错。
-_exec_sem = _threading.Semaphore(4)
+# 并发上限：锁保证了正确性，但一堆调用排队等待时仍会占满线程与内存。
+# 这里限制同时在跑的执行数，超出的调用会阻塞等待而不是失败——
+# 对模型表现为"稍慢"，而不是报错。
+#
+# 上限取 8：本机实测 16 线程 × 6 次共 96 次调用零错误，耗时随线程数线性增长，
+# 说明排队本身是健康的。原先取 4 时，Android 侧的单工具超时（默认 120s）
+# 会把「排队等待」也算进去，8 并发下排在后面的调用会在轮到之前就被
+# Generation cancelled 掐断——那看起来像崩溃，其实是排队加超时的组合效应。
+# 提高上限可显著降低这种误伤，同时仍保有过载保护。
+#
+# 注意：threading.Semaphore 没有公开的 .value 属性，内部是 ._value。
+# 在任意一次调用内部读到 ._value == 7 是正常的（当前调用自己占了一个名额）。
+_exec_sem = _threading.Semaphore(8)
 
 import sys
 import json
@@ -380,11 +389,55 @@ def rev_analyze(target, arch="arm64"):
     return _rev("rizinAnalyze", target, arch)
 
 def rev_functions(target, arch="arm64"):
-    """列出识别出的函数及其地址。"""
+    """列出识别出的函数。
+
+    返回 list（每项为 {name, addr, size, ninstr, complexity, loops, isPure}），
+    而不是 JSON 字符串——这样可以直接遍历、过滤、排序，
+    例如 [f for f in rev_functions(p) if f["size"] > 64]。
+
+    解析失败时返回空 list，原始文本可通过 rev_functions_raw 取得。
+    """
+    raw = _rev("rizinFunctions", target, arch)
+    return _as_list(raw)
+
+
+def rev_functions_raw(target, arch="arm64"):
+    """列出识别出的函数，返回原始 JSON 文本。"""
     return _rev("rizinFunctions", target, arch)
 
+
+def _as_list(raw, keys=("functions", "items", "data", "result")):
+    """把引擎返回的 JSON 文本解析成 list。
+
+    引擎的返回形态有两种：直接是数组 [...]，或包成对象 {"functions":[...]}。
+    两种都接受；解析不出结构时返回空 list，不把异常抛给模型。
+    """
+    if not raw or not isinstance(raw, str):
+        return []
+    try:
+        v = json.loads(raw)
+    except Exception:
+        return []
+    if isinstance(v, list):
+        return v
+    if isinstance(v, dict):
+        for k in keys:
+            if isinstance(v.get(k), list):
+                return v[k]
+    return []
+
 def rev_xrefs(target, va, arch="arm64", direction="to"):
-    """交叉引用。direction 取 'to' 或 'from'。"""
+    """交叉引用。direction 取 'to' 或 'from'。
+
+    返回 list，每项为 {from, to, type, direction}，可直接遍历。
+    原始 JSON 文本用 rev_xrefs_raw 取。
+    """
+    return _as_list(_rev("rizinXrefs", target, int(va), arch, direction),
+                    keys=("xrefs",))
+
+
+def rev_xrefs_raw(target, va, arch="arm64", direction="to"):
+    """交叉引用，返回原始 JSON 文本。"""
     return _rev("rizinXrefs", target, int(va), arch, direction)
 
 def rev_cfg(target, func_va, arch="arm64"):
@@ -401,7 +454,16 @@ def rev_search(target, pattern, arch="arm64", range_start=0, range_end=0):
     return _rev("rizinSearchBytes", target, pattern, arch, int(range_start), int(range_end))
 
 def rev_crypto(target, arch="arm64"):
-    """扫描常见加密常量（AES S-box、CRC 表、哈希魔数）。"""
+    """扫描常见加密常量（AES S-box、CRC 表、哈希魔数）。
+
+    返回 list，每项为 {type, addr, size}。
+    原始 JSON 文本用 rev_crypto_raw 取。
+    """
+    return _as_list(_rev("rizinScanCrypto", target, arch), keys=("hits",))
+
+
+def rev_crypto_raw(target, arch="arm64"):
+    """扫描加密常量，返回原始 JSON 文本。"""
     return _rev("rizinScanCrypto", target, arch)
 
 def rev_esil(target, start_va, steps, arch="arm64"):
