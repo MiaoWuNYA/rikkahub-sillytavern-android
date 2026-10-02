@@ -157,6 +157,14 @@ class PythonBridge(
                 "tool_task_tools" -> toggleTool(a, LocalToolOption.TaskTools, bool())
                 "tool_calculator" -> toggleTool(a, LocalToolOption.Calculator, bool())
                 "tool_worker_tools" -> toggleTool(a, LocalToolOption.WorkerTools, bool())
+                // 二进制分析工具
+                "tool_disassemble", "tool_disasm" -> toggleTool(a, LocalToolOption.Disassemble, bool())
+                "tool_analyze_binary" -> toggleTool(a, LocalToolOption.AnalyzeBinary, bool())
+                "tool_decompile" -> toggleTool(a, LocalToolOption.Decompile, bool())
+                "tool_scan_binary" -> toggleTool(a, LocalToolOption.ScanBinary, bool())
+                "tool_emulate_code" -> toggleTool(a, LocalToolOption.EmulateCode, bool())
+                "tool_diff_binary" -> toggleTool(a, LocalToolOption.DiffBinary, bool())
+                "tool_binary_command" -> toggleTool(a, LocalToolOption.BinaryCommand, bool())
 
                 else -> return@runBlocking "Error: 未知设置 $key"
             }
