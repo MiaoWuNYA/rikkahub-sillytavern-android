@@ -108,10 +108,7 @@ class MemoryRepository(private val memoryDAO: MemoryDAO) {
         )
     }
 
-    suspend fun deleteMemory(id: Int): Boolean {
-        return memoryDAO.deleteMemory(id) > 0
-    }
-
+    // 本地：向量检索所需的嵌入写回（MemoryEmbeddingService 依赖）
     suspend fun updateEmbedding(
         id: Int,
         embedding: ByteArray,
@@ -124,6 +121,21 @@ class MemoryRepository(private val memoryDAO: MemoryDAO) {
             embeddingModelId = modelId,
             embeddingDimension = dimension,
         )
+    }
+
+    // 上游 2.5.6：复制助手时一并复制记忆
+    suspend fun copyMemories(fromAssistantId: String, toAssistantId: String) {
+        val memories = memoryDAO.getMemoriesOfAssistant(fromAssistantId)
+        if (memories.isEmpty()) return
+        memoryDAO.insertMemories(
+            memories.map { MemoryEntity(assistantId = toAssistantId, content = it.content) }
+        )
+    }
+
+    // 保留本地 Boolean 返回值：ChatToolFactory 的 onDelete 需要据此反馈删除结果，
+    // 上游的 Unit 版本是本地的功能子集，故取本地实现。
+    suspend fun deleteMemory(id: Int): Boolean {
+        return memoryDAO.deleteMemory(id) > 0
     }
 }
 

@@ -56,8 +56,10 @@ android {
         applicationId = "me.rerere.rikkahub.huadeng"
         minSdk = 26
         targetSdk = 37
-        versionCode = 231
-        versionName = "2.5.5.1"
+        // 版本号对齐上游 2.5.6；versionCode 保持本地递增（高于历史 231，
+        // 避免已装 2.5.5.1 的用户覆盖安装时被系统判定为降级）。
+        versionCode = 232
+        versionName = "2.5.6"
 
         // 插件解密密钥的派生因子之一：由签名口令做 HMAC，口令只存在于
         // local.properties / CI secrets，不写入 APK 明文。APK 内只保留 HMAC 结果，
