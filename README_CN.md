@@ -568,9 +568,9 @@ TypeSafe System One 判断模型的接入配置页：API 地址 / Key / 模型�
 ## ✅ 与上游的关系
 
 - **上游功能全部保留**：Material You 主题、多供应商、流式生成、会话分叉与重新生成、消息编辑 / 删除 / 翻译、全文搜索（jieba）、收藏、图片生成、TTS / ASR、MCP、工作区沙箱（终端多 Tab + Shell 兼容模式）、备份（S3 / WebDAV）、网络对话端、聊天导出等一切照旧
-- **已合入上游版本**：`rikkahub/rikkahub` master **v2.5.4**（2026-09）
+- **已合入上游版本**：`rikkahub/rikkahub` master **v2.5.6**（2026-10，含提供商高级设置 tab 与自定义请求头、复制助手时一并复制记忆、MCP OAuth 回调改 localhost 规避 WAF 403、MCP 工具 inputSchema 的 `$ref` 内联、Gemini Interactions API、Claude Opus/Sonnet 5.5 与 Gemini 4 注册、模型列表按供应商折叠、`chart_display` 本地工具、导出可选不含思考过程）
 - **相对中间分支 mingli2**：除酒馆增强外，新增提示词前缀缓存、语义记忆 RAG 与滚动压缩、Jev 智能决策、中转站兼容与防空回复、豆包语音、隐私加固
-- **v2.5.4 以来新增**：教务系统移出应用改为插件、卡路里与蛋白质记录插件、插件沙箱的会话式 HTTP 与图片解码、详情页数据卡片、更新检查改用 GitHub Releases API、Jev 智能决策接入
+- **v2.5.6 以来新增**：教务系统移出应用改为插件、卡路里与蛋白质记录插件、插件沙箱的会话式 HTTP 与图片解码、详情页数据卡片、更新检查改用 GitHub Releases API、Jev 智能决策接入，以及主动消息前台服务启动崩溃修复
 - **合并上游**：见 [DIVERGENCE.md](DIVERGENCE.md) 的冲突处理手册
 
 ---
