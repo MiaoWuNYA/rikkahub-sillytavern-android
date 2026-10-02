@@ -1,6 +1,8 @@
 package me.rerere.rikkahub.data.ai.python
 
 import android.content.Context
+import com.soreverse.mcp.nativecore.RizinBridge
+import java.io.File
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import me.rerere.rikkahub.data.ai.tools.LocalToolOption
@@ -214,4 +216,85 @@ class PythonBridge(
         appendLine("FilesDir: ${context.filesDir.absolutePath}")
         appendLine("SkillsDir: ${context.filesDir.resolve("skills").absolutePath}")
     }
+
+    // ============================================================
+    // 逆向引擎（Rizin / Capstone / Keystone / Unicorn / Ghidra）
+    // ------------------------------------------------------------
+    // 全部由 librz_native.so 提供，走 com.soreverse.mcp.nativecore.RizinBridge。
+    // 未加载（ABI 不匹配）时统一返回 "Error: ..." 而非抛异常，
+    // 这样 AI 能拿到可读的失败原因而不是一段堆栈。
+    // ============================================================
+
+    private fun rizinGuard(block: () -> String): String =
+        if (!RizinBridge.available()) "Error: 逆向引擎未加载（${RizinBridge.status()}）"
+        else try { block() } catch (e: Throwable) { "Error: ${e.message}" }
+
+    /** 把 AI 传入的十六进制字符串或文件路径统一转成字节数组。 */
+    private fun toBytes(input: String): ByteArray {
+        val f = File(input)
+        if (f.isFile) return f.readBytes()
+        val hex = input.filter { !it.isWhitespace() && it != ':' && it != '-' }
+        if (hex.length % 2 != 0) throw IllegalArgumentException("十六进制长度必须为偶数")
+        return ByteArray(hex.length / 2) {
+            hex.substring(it * 2, it * 2 + 2).toInt(16).toByte()
+        }
+    }
+
+    fun rizinStatus(): String = "engine=${RizinBridge.status()}"
+
+    /** 反汇编：返回 "0xADDR: BB BB  mnemonic op" 逐行文本。 */
+    fun rizinDisasm(input: String, arch: String = "arm", address: Long = 0L,
+                    thumb: Boolean = false, limit: Int = 200): String =
+        rizinGuard { RizinBridge.disassemble(toBytes(input), arch, address, thumb, limit) }
+
+    /** 汇编：返回十六进制机器码。 */
+    fun rizinAsm(asm: String, arch: String = "arm", address: Long = 0L,
+                 thumb: Boolean = false): String = rizinGuard {
+        RizinBridge.assemble(asm, arch, address, thumb)
+            .joinToString("") { "%02x".format(it) }
+    }
+
+    /** 自动分析（函数识别、符号、字符串）。 */
+    fun rizinAnalyze(input: String, arch: String = "arm"): String =
+        rizinGuard { RizinBridge.analyze(toBytes(input), arch) }
+
+    /** 列出识别出的函数。 */
+    fun rizinFunctions(input: String, arch: String = "arm"): String =
+        rizinGuard { RizinBridge.functions(toBytes(input), arch) }
+
+    /** 交叉引用。direction 取 "to" 或 "from"。 */
+    fun rizinXrefs(input: String, atVa: Long, arch: String = "arm",
+                   direction: String = "to"): String =
+        rizinGuard { RizinBridge.xrefs(toBytes(input), arch, atVa, direction) }
+
+    /** 控制流图。 */
+    fun rizinCfg(input: String, funcVa: Long, arch: String = "arm"): String =
+        rizinGuard { RizinBridge.cfg(toBytes(input), arch, funcVa) }
+
+    /** 字节模式搜索（支持 ?? 通配）。 */
+    fun rizinSearchBytes(input: String, pattern: String, arch: String = "arm",
+                         fromVa: Long = 0L, toVa: Long = 0L): String =
+        rizinGuard { RizinBridge.searchBytes(toBytes(input), arch, pattern, fromVa, toVa) }
+
+    /** 扫描加密常量（AES S-box、CRC 表、魔数等）。 */
+    fun rizinScanCrypto(input: String, arch: String = "arm"): String =
+        rizinGuard { RizinBridge.scanCrypto(toBytes(input), arch) }
+
+    /** ESIL 指令级模拟执行。 */
+    fun rizinEsil(input: String, startVa: Long, steps: Int, arch: String = "arm"): String =
+        rizinGuard { RizinBridge.esilStep(toBytes(input), arch, startVa, steps) }
+
+    /** 二进制差异。 */
+    fun rizinDiff(a: String, b: String): String =
+        rizinGuard { RizinBridge.diff(toBytes(a), toBytes(b)) }
+
+    /** 反编译为伪 C 代码（依赖 sleigh 数据，首次调用会自动释放）。 */
+    fun rizinDecompile(input: String, funcVa: Long, arch: String = "arm"): String = rizinGuard {
+        RizinBridge.configureGhidra(context)
+        RizinBridge.decompile(toBytes(input), arch, funcVa)
+    }
+
+    /** 执行任意 rizin 命令（如 `aaa; afl`、`iS`、`iz`）。 */
+    fun rizinCmd(input: String, cmd: String, arch: String = "arm"): String =
+        rizinGuard { RizinBridge.command(toBytes(input), arch, cmd, false) }
 }
