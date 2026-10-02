@@ -3,7 +3,9 @@ package me.rerere.rikkahub.data.service
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
@@ -60,6 +62,8 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.Uuid
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * AI 主动发消息前台服务.
@@ -80,7 +84,48 @@ class ProactiveMessageTriggerService : Service(), KoinComponent {
     private val localTools: LocalTools by inject()
     private val mcpManager: McpManager by inject()
     private val json: Json by inject()
-    private val chatService: ChatService by inject()
+
+    // 惰性解析：ChatService 构造时会注册 ProcessLifecycleOwner 观察者，
+    // 首次解析必须在主线程完成（本服务由闹钟/WorkManager 在后台线程拉起，直接注入会崩溃）。
+    // 这里统一在主线程取一次并缓存，之后所有访问复用同一实例。
+    @Volatile
+    private var lazyChatService: ChatService? = null
+
+    private val chatService: ChatService
+        get() = lazyChatService ?: synchronized(this) {
+            lazyChatService ?: resolveChatServiceOnMain().also { lazyChatService = it }
+        }
+
+    /**
+     * 在主线程同步解析 ChatService。
+     *
+     * 用 CountDownLatch + Handler 而非 runBlocking(Dispatchers.Main)：后者会占用主线程调度器，
+     * 若调用方已持有主线程相关锁会造成死锁；Latch 方式只阻塞当前后台线程，投递后立即返回。
+     */
+    private fun resolveChatServiceOnMain(): ChatService {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            return getKoin().get()
+        }
+        var result: ChatService? = null
+        var error: Throwable? = null
+        val latch = CountDownLatch(1)
+        Handler(Looper.getMainLooper()).post {
+            try {
+                result = getKoin().get()
+            } catch (t: Throwable) {
+                error = t
+            } finally {
+                latch.countDown()
+            }
+        }
+        // 超时兜底：主线程若长时间不可用，不无限期卡住前台服务
+        if (!latch.await(10, TimeUnit.SECONDS)) {
+            throw IllegalStateException("Timed out resolving ChatService on main thread")
+        }
+        error?.let { throw it }
+        return result ?: throw IllegalStateException("ChatService resolution returned null")
+    }
+
     private val proactiveMessageService = ProactiveMessageService()
 
     private val scope = CoroutineScope(Dispatchers.IO)

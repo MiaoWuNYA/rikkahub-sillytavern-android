@@ -4,6 +4,8 @@ import android.app.Application
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import me.rerere.rikkahub.data.db.AppDatabase
 import me.rerere.rikkahub.data.event.AppEvent
@@ -250,6 +252,9 @@ class ChatService(
 
 
 
+    // 主线程 Handler：用于把 LifecycleRegistry 的注册/注销强制派发到主线程
+    private val mainHandler = Handler(Looper.getMainLooper())
+
     // 统一会话管理
     private val sessions = ConcurrentHashMap<Uuid, ConversationSession>()
     private val _sessionsVersion = MutableStateFlow(0L)
@@ -301,13 +306,26 @@ class ChatService(
         }
     }
 
+    // 注册/注销 ProcessLifecycleOwner 观察者必须在主线程执行（LifecycleRegistry 的硬性约束，
+    // 违规会抛 IllegalStateException: Method addObserver must be called on the main thread）。
+    // 本类由 Koin 以 single 形式提供，可能被后台线程首次解析（如主动消息前台服务在
+    // Dispatchers.IO 上取依赖），因此这里统一派发到主线程，绝不依赖调用方线程。
+    private fun registerLifecycleObserver() {
+        mainHandler.post {
+            runCatching { ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleObserver) }
+                .onFailure { Log.w(TAG, "addObserver failed", it) }
+        }
+    }
+
     init {
-        // 添加生命周期观察者
-        ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleObserver)
+        registerLifecycleObserver()
     }
 
     fun cleanup() = runCatching {
-        ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleObserver)
+        // removeObserver 同样限定主线程；先摘链再清理会话，避免主线程回调命中已清空的会话表。
+        mainHandler.post {
+            runCatching { ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleObserver) }
+        }
         sessions.values.forEach { it.cleanup() }
         sessions.clear()
     }
