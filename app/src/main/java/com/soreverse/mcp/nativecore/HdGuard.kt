@@ -34,7 +34,15 @@ object HdGuard {
     @Volatile
     private var cached: String? = null
 
-    private external fun hdKdfFactor(certDigest: ByteArray): String?
+    /**
+     * 与 libhdguard.so 的 JNI 符号绑定。
+     *
+     * 必须保持 public：JNI 按「类的全限定名 + 方法名」解析符号，
+     * 声明为 private 会被 R8 改名，而改名后 native 侧就找不到这个符号，
+     * 表现为 UnsatisfiedLinkError，进而使整个插件解密失败。
+     * 同包的 RizinBridge 正是因为 external 方法都是 public 才没有中招。
+     */
+    external fun hdKdfFactor(certDigest: ByteArray): String?
 
     init {
         libLoaded = runCatching {

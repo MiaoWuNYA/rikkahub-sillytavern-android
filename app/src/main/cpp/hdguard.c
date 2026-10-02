@@ -93,8 +93,13 @@ static int check_prefix(const unsigned char *p, int n) {
     return acc == 0;
 }
 
+// 符号名必须与 Kotlin 侧的类的全限定名逐字对应：
+//   object HdGuard 在 com.soreverse.mcp.nativecore 包下
+//   → Java_com_soreverse_mcp_nativecore_HdGuard_hdKdfFactor
+// 写错不会有编译期报错，只在运行时表现为 UnsatisfiedLinkError，
+// 而插件解密会因为取不到因子而整体失败。
 JNIEXPORT jstring JNICALL
-Java_com_soreverse_mcp_nativecore_RizinNativeEngine_hdKdfFactor(
+Java_com_soreverse_mcp_nativecore_HdGuard_hdKdfFactor(
         JNIEnv *env, jobject thiz, jbyteArray cert_digest) {
     (void) thiz;
     if (!cert_digest) return NULL;
