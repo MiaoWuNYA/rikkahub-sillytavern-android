@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Base64
 import me.rerere.rikkahub.BuildConfig
+import com.soreverse.mcp.nativecore.HdGuard
 import java.security.MessageDigest
 import javax.crypto.Cipher
 import javax.crypto.Mac
@@ -72,6 +73,7 @@ object PluginCrypto {
             derivedKeyCache?.let { return@synchronized it }
 
             val certMaterial = StringBuilder()
+            var certDigestHex = ""
             try {
                 val pm = context.packageManager
                 val pkg = context.packageName
@@ -83,19 +85,30 @@ object PluginCrypto {
                     pm.getPackageInfo(pkg, PackageManager.GET_SIGNATURES).signatures
                 }
                 signatures?.forEach { sig ->
-                    certMaterial.append(
-                        MessageDigest.getInstance("SHA-256")
-                            .digest(sig.toByteArray())
-                            .joinToString("") { "%02x".format(it) }
-                    )
+                    val hex = MessageDigest.getInstance("SHA-256")
+                        .digest(sig.toByteArray())
+                        .joinToString("") { "%02x".format(it) }
+                    if (certDigestHex.isEmpty()) certDigestHex = hex
+                    certMaterial.append(hex)
                 }
             } catch (_: Exception) {
-                // 取签名失败时退化为包名派生，仍强于明文常量
+                // 取签名失败时退化为包名派生
             }
             certMaterial.append('|').append(context.packageName)
-            // 第三因子：构建期由签名口令 HMAC 得到的值。口令不在 APK 中，
-            // 反编译只能拿到这个 HMAC 结果，无法反推口令，也无法自行派生密钥。
-            certMaterial.append('|').append(BuildConfig.PLUGIN_KDF_FACTOR)
+
+            // 第三因子：由 libhdguard.so 在运行时供给。
+            //
+            // 此前这里是 BuildConfig.PLUGIN_KDF_FACTOR —— 一个编译进 dex 的字符串常量，
+            // 任何人 strings | grep 就能取出，配合公开的签名证书即可完整复现密钥派生，
+            // 从而解开插件载荷。现改由 native 供给，明文不再出现在 dex 或 so 的可读区。
+            //
+            // 刻意不保留 BuildConfig 回退：留着回退等于原漏洞原样存在。
+            // so 取不到因子时直接失败，行为是「插件无法解密」，而不是「静默降级到不安全路径」。
+            val factor = HdGuard.kdfFactor(certDigestHex)
+                ?: throw IllegalStateException(
+                    "无法获取插件解密因子：${HdGuard.status()}"
+                )
+            certMaterial.append('|').append(factor)
 
             val ikm = MessageDigest.getInstance("SHA-256")
                 .digest(certMaterial.toString().toByteArray(Charsets.UTF_8))

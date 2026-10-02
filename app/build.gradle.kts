@@ -10,6 +10,18 @@ val enableFirebase = providers.gradleProperty("rikkahub.enableFirebase")
     .map { it.equals("true", ignoreCase = true) }
     .getOrElse(false)
 
+/**
+ * libhdguard.so 内置的派生因子。
+ *
+ * 它与由签名口令推导出的 kdfFactor 必须一致——native 侧按这个值分段异或存放。
+ * 不一致说明签名口令变了或 hdguard.c 未同步，此时构建立即失败，
+ * 而不是产出一个「装上去才发现解不开插件」的包。
+ *
+ * 该常量只参与构建期校验，不会写入 APK。
+ */
+val HD_GUARD_EXPECTED_FACTOR =
+    "cc655f7608689bb5fe6003d206f8e38731c2cc0cbade823a83194c58b46efb12"
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -80,7 +92,17 @@ android {
                 "hd.plugin.kdf.factor".toByteArray(), "HmacSHA256"))
             mac.doFinal(signSecret.toByteArray()).joinToString("") { "%02x".format(it) }
         }
-        buildConfigField("String", "PLUGIN_KDF_FACTOR", "\"$kdfFactor\"")
+        // 注意：PLUGIN_KDF_FACTOR 不再写入 BuildConfig。
+        //
+        // 该常量会被编译成 dex 里的字符串字面量，任何 strings | grep 都能取出，
+        // 配合公开的签名证书即可完整复现密钥派生、解开插件载荷。
+        // 因子现由 libhdguard.so 在运行时供给（见 app/src/main/cpp/hdguard.c），
+        // 上面算出的 kdfFactor 仍用于校验 native 侧数据的一致性，但不进入 APK。
+        check(kdfFactor == HD_GUARD_EXPECTED_FACTOR) {
+            "[华灯] 签名口令推导出的因子与 libhdguard.so 内置值不一致。" +
+                "两者必须相同，否则 APK 无法解密 v2 插件。" +
+                "请重新生成 hdguard.c 中的 BLOB，或检查 local.properties 的签名口令。"
+        }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -89,6 +111,21 @@ android {
         ndk {
             // 只出 arm64-v8a 单一 APK（Chaquopy 要求 ndk.abiFilters，故不再用 splits abi）
             abiFilters += listOf("arm64-v8a")
+        }
+
+        externalNativeBuild {
+            cmake {
+                // hdguard：插件密钥派生因子的运行时供给，不依赖第三方库
+                arguments += listOf("-DANDROID_STL=none")
+                cFlags += listOf("-O2", "-fvisibility=hidden", "-fno-stack-protector")
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
         }
     }
     signingConfigs {
