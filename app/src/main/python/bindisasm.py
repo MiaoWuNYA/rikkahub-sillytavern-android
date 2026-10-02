@@ -67,19 +67,34 @@ _ARCH_TABLE = {
 
 # capstone 的 cs_insn 结构体。
 #
-# 必须完整声明到末尾的 detail 指针：cs_disasm 返回的是**连续数组**，
-# 少一个字段会让 ctypes 算错 sizeof，访问 insn_ptr[i] 时按错误的步长跳转，
-# 表现为第 1 条正确、后续全乱。
-class _CsInsn(ctypes.Structure):
-    _fields_ = [
-        ("id", ctypes.c_uint),
-        ("address", ctypes.c_uint64),
-        ("size", ctypes.c_uint16),
-        ("bytes", ctypes.c_ubyte * 24),
-        ("mnemonic", ctypes.c_char * 32),   # CS_MNEMONIC_SIZE
-        ("op_str", ctypes.c_char * 160),
-        ("detail", ctypes.c_void_p),        # cs_detail*
-    ]
+# 关键：bytes 数组长度随版本变化——
+#   capstone 4.x: uint8_t bytes[16]   → sizeof(cs_insn) = 240
+#   capstone 5.x: uint8_t bytes[24]   → sizeof(cs_insn) = 248
+# 写死任何一个长度，在另一个版本上整个结构体偏移都会错 8 字节：
+# mnemonic 会读到相邻字段，地址会变成乱码，字节列会读到结构体外的内存
+# （表现为每次运行输出都不一样）。
+#
+# 因此这里不硬编码，而是运行时用 cs_version() 探测主版本再选布局。
+# cs_disasm 返回的是连续数组，步长必须与真实 sizeof 一致，别无选择。
+def _make_insn_struct(bytes_len):
+    class _CsInsn(ctypes.Structure):
+        _fields_ = [
+            ("id", ctypes.c_uint),
+            ("address", ctypes.c_uint64),
+            ("size", ctypes.c_uint16),
+            ("bytes", ctypes.c_ubyte * bytes_len),
+            ("mnemonic", ctypes.c_char * 32),   # CS_MNEMONIC_SIZE，4/5 均为 32
+            ("op_str", ctypes.c_char * 160),
+            ("detail", ctypes.c_void_p),        # cs_detail*
+        ]
+    return _CsInsn
+
+
+# 4.x 用 16，其余（含 5.x）用 24
+_CsInsn = _make_insn_struct(16)
+_INSN_BYTES_LEN = 16
+_INSN_LAYOUT_LOCK = __import__("threading").Lock()
+_INSN_LAYOUT_DETECTED = False
 
 
 _lib = None
@@ -110,6 +125,87 @@ def _find_lib():
     raise OSError("找不到 libcapstone.so")
 
 
+def _set_disasm_sig(lib):
+    """按当前 _CsInsn 设定 cs_disasm 的参数类型。"""
+    lib.cs_disasm.argtypes = [
+        ctypes.c_void_p, ctypes.c_char_p, ctypes.c_size_t,
+        ctypes.c_uint64, ctypes.c_size_t,
+        ctypes.POINTER(ctypes.POINTER(_CsInsn)),
+    ]
+    lib.cs_disasm.restype = ctypes.c_size_t
+    lib.cs_free.argtypes = [ctypes.POINTER(_CsInsn), ctypes.c_size_t]
+    lib.cs_free.restype = None
+
+
+def _detect_insn_layout(lib):
+    """按实际 capstone 主版本选择 cs_insn 布局。
+
+    这是此前输出乱码的根因：capstone 4 的 bytes[16] 与 5 的 bytes[24]
+    使 sizeof 相差 8 字节，按错版本解读会导致助记符错位、地址乱码、
+    以及越界读取（字节列每次运行都不同）。
+    """
+    global _CsInsn, _INSN_BYTES_LEN, _INSN_LAYOUT_DETECTED
+    with _INSN_LAYOUT_LOCK:
+        if _INSN_LAYOUT_DETECTED:
+            return
+        try:
+            lib.cs_version.argtypes = [ctypes.POINTER(ctypes.c_int),
+                                       ctypes.POINTER(ctypes.c_int)]
+            lib.cs_version.restype = ctypes.c_uint
+            major, minor = ctypes.c_int(), ctypes.c_int()
+            lib.cs_version(ctypes.byref(major), ctypes.byref(minor))
+            # 先解 4 字节 ARM 指令，用两种布局各试一次，选能解出 nop 的那个。
+            # 仅凭版本号判断有风险（某些发行版会回填错值），实测更可靠。
+            probe = bytes.fromhex("1f2003d5")
+            chosen = None
+            for blen in (16, 24):
+                if _try_layout(lib, blen, probe):
+                    chosen = blen
+                    break
+            if chosen is None:
+                # 都解不出时退回版本号推断
+                chosen = 16 if (major.value, minor.value) < (5, 0) else 24
+            _CsInsn = _make_insn_struct(chosen)
+            _INSN_BYTES_LEN = chosen
+            _INSN_LAYOUT_DETECTED = True
+        except Exception:
+            # 探测失败时保留默认布局，不阻断后续调用
+            _INSN_LAYOUT_DETECTED = True
+
+
+def _try_layout(lib, blen, probe):
+    """用指定布局尝试解码，成功且助记符可打印才算匹配。"""
+    try:
+        cls = _make_insn_struct(blen)
+        # 探测期间临时按本布局设签名，探测结束由调用方重设
+        lib.cs_disasm.argtypes = [
+            ctypes.c_void_p, ctypes.c_char_p, ctypes.c_size_t,
+            ctypes.c_uint64, ctypes.c_size_t,
+            ctypes.POINTER(ctypes.POINTER(cls)),
+        ]
+        lib.cs_disasm.restype = ctypes.c_size_t
+        handle = ctypes.c_void_p()
+        if lib.cs_open(ctypes.c_int(1), ctypes.c_int(0), ctypes.byref(handle)) != 0:
+            return False
+        try:
+            ptr = ctypes.POINTER(cls)()
+            buf = ctypes.create_string_buffer(probe, len(probe))
+            n = lib.cs_disasm(handle, buf, len(probe), ctypes.c_uint64(0),
+                              ctypes.c_size_t(1), ctypes.byref(ptr))
+            if n != 1:
+                return False
+            b = bytes(ptr[0].bytes[:ptr[0].size])
+            m = ptr[0].mnemonic
+            # 校验：字节应与输入一致，助记符应全是可打印 ASCII
+            if b != probe or not m:
+                return False
+            return all(32 <= c < 127 for c in m)
+        finally:
+            lib.cs_close(ctypes.byref(handle))
+    except Exception:
+        return False
+
+
 def _get_lib():
     global _lib, _load_error
     if _lib is not None:
@@ -120,14 +216,16 @@ def _get_lib():
         lib = _find_lib()
         lib.cs_open.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_void_p)]
         lib.cs_open.restype = ctypes.c_int
-        lib.cs_disasm.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_size_t,
-                                  ctypes.c_uint64, ctypes.c_size_t, ctypes.POINTER(ctypes.POINTER(_CsInsn))]
-        lib.cs_disasm.restype = ctypes.c_size_t
+        _set_disasm_sig(lib)
         lib.cs_free.argtypes = [ctypes.POINTER(_CsInsn), ctypes.c_size_t]
         lib.cs_free.restype = None
         lib.cs_close.argtypes = [ctypes.POINTER(ctypes.c_void_p)]
         lib.cs_close.restype = ctypes.c_int
         _lib = lib
+        _detect_insn_layout(lib)
+        # 布局可能在探测中变化，必须按最终布局重设签名，
+        # 否则 ctypes 会因 POINTER(_CsInsn) 指向旧类型而拒绝传参。
+        _set_disasm_sig(lib)
         return lib
     except Exception as e:
         _load_error = "libcapstone 加载失败: %s" % e
@@ -149,7 +247,8 @@ def status():
         lib = _get_lib()
         major, minor = ctypes.c_int(), ctypes.c_int()
         lib.cs_version(ctypes.byref(major), ctypes.byref(minor))
-        return "ok capstone %d.%d" % (major.value, minor.value)
+        return "ok capstone %d.%d (cs_insn bytes[%d])" % (
+            major.value, minor.value, _INSN_BYTES_LEN)
     except Exception as e:
         return "unavailable: %s" % e
 

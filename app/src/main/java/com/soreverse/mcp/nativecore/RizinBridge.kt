@@ -78,19 +78,136 @@ object RizinNativeEngine {
     external fun rzConfigureGhidra(pluginDir: String, sleighHome: String): Boolean
 
     // ── 安全包装：native 异常一律吞掉并返回空结果 ─────────────────────
+    /**
+     * 反汇编。
+     *
+     * native 侧（预编译 librz_native.so，无源码可改）的实现有个规模缺陷：
+     * 它的循环条件虽是 count < limit，但每轮把「剩余全部字节」交给
+     * rz_asm_mdisassemble，该调用会一次性解码 buf 内能解出的所有指令，
+     * 于是 code->assembly 可能是几千条指令拼成的巨型字符串，而 count 只 +1。
+     * 结果 limit=6 也可能产出上百万字符。
+     *
+     * 修复：在 Kotlin 层按「单条指令长度」切片，逐片调用 native，
+     * 让每次 native 调用只面对一条指令，count 才真正等于指令数。
+     * 指令长度按架构给定：arm64 固定 4；arm32 为 4（thumb 为 2）；
+     * x86/mips 不定长，退回整体调用并用字符上限兜底。
+     */
     fun disassemble(bytes: ByteArray, arch: String, address: Long = 0L, thumb: Boolean = false, limit: Int = 200): String {
         if (!loaded) return ""
-        // limit 必须夹取：native 侧按「指令条数」循环，单条 arm64 指令输出约 40 字符，
-        // 放任大值会让真实 .so 产出千万级字符，直接把调用方撑爆。
-        // 这里再叠一层字符上限兜底——native 返回后再截断，保证不管上层怎么传都有界。
         val n = limit.coerceIn(1, MAX_DISASM_INSN)
-        val raw = runCatching { rzDisassemble(bytes, arch, address, thumb, n) }.getOrDefault("")
-        val out = normalizeDisasm(raw)
+        val out = runCatching { disassembleStepped(bytes, arch, address, thumb, n) }.getOrDefault("")
         return if (out.length > MAX_DISASM_CHARS) {
             out.substring(0, MAX_DISASM_CHARS) +
                 "\n... [输出已截断：共 ${out.length} 字符，上限 $MAX_DISASM_CHARS。" +
                 "请用更小的 limit 或更窄的 address 范围分段查看]"
         } else out
+    }
+
+    /**
+     * 按固定指令长度逐条调用 native，保证 limit 精确等于输出条数。
+     *
+     * address 是 rizin 语义的**虚拟地址**（与 rev_functions / rev_decompile 返回的
+     * addr 同一坐标系）。native 只把它当显示前缀，不会用它定位数据，
+     * 因此这里必须自己把 VA 映射成字节数组内的偏移：
+     *   - 输入是 ELF 文件时，按程序头表做 VA→文件偏移 映射；
+     *   - 输入是裸 hex 时，地址即数组下标。
+     * 映射不出来的地址退回 0，并显式标注，避免静默给出错误结果。
+     */
+    private fun disassembleStepped(
+        bytes: ByteArray, arch: String, address: Long, thumb: Boolean, limit: Int
+    ): String {
+        val step = when (arch) {
+            "arm64" -> 4
+            "arm32" -> if (thumb) 2 else 4
+            else -> 0   // 不定长架构无法切片，走整体调用
+        }
+        if (step == 0) {
+            val start = vaToOffset(bytes, address)
+            return normalizeDisasm(
+                rzDisassemble(bytes.copyOfRange(start, bytes.size), arch, address, thumb, limit)
+            )
+        }
+
+        val start = vaToOffset(bytes, address)
+        val sb = StringBuilder()
+        var off = if (address > 0L) start else 0
+        val baseVa = if (address > 0L && start > 0) address else 0L
+        var produced = 0
+        while (off < bytes.size && produced < limit) {
+            val chunk = bytes.copyOfRange(off, minOf(off + step, bytes.size))
+            val one = runCatching {
+                rzDisassemble(chunk, arch, baseVa + (off - start), thumb, 1)
+            }.getOrDefault("")
+            val line = normalizeDisasm(one).trim()
+            if (line.isNotEmpty()) {
+                sb.append(line).append('\n')
+                produced++
+            }
+            off += step
+        }
+        return sb.toString()
+    }
+
+    /**
+     * 把虚拟地址映射为字节数组下标。
+     *
+     * ELF 按 PT_LOAD 段的 p_vaddr / p_offset / p_filesz 换算；
+     * 非 ELF（裸数据或 hex）直接返回原值，由调用方自行判断。
+     * 映射不到时返回 0。
+     */
+    private fun vaToOffset(bytes: ByteArray, va: Long): Int {
+        if (va <= 0L) return 0
+        if (bytes.size < 64) return va.toInt().coerceIn(0, bytes.size)
+        // 非 ELF：地址当数组下标
+        if (bytes[0] != 0x7F.toByte() || bytes[1] != 'E'.code.toByte() ||
+            bytes[2] != 'L'.code.toByte() || bytes[3] != 'F'.code.toByte()
+        ) {
+            return va.toInt().coerceIn(0, bytes.size)
+        }
+        return try {
+            val is64 = bytes[4].toInt() == 2
+            val le = bytes[5].toInt() == 1
+            fun u16(o: Int): Int = if (le)
+                (bytes[o].toInt() and 0xFF) or ((bytes[o + 1].toInt() and 0xFF) shl 8)
+            else
+                ((bytes[o].toInt() and 0xFF) shl 8) or (bytes[o + 1].toInt() and 0xFF)
+            fun u32(o: Int): Long {
+                var v = 0L
+                for (i in 0 until 4) {
+                    val idx = if (le) o + i else o + 3 - i
+                    v = (v shl 8) or (bytes[idx].toLong() and 0xFF)
+                }
+                return v
+            }
+            fun u64(o: Int): Long {
+                var v = 0L
+                for (i in 0 until 8) {
+                    val idx = if (le) o + i else o + 7 - i
+                    v = (v shl 8) or (bytes[idx].toLong() and 0xFF)
+                }
+                return v
+            }
+
+            val phOff = if (is64) u64(0x20) else u32(0x1C).toLong()
+            val phEntSize = u16(if (is64) 0x36 else 0x2A)
+            val phNum = u16(if (is64) 0x38 else 0x2C)
+            for (i in 0 until phNum) {
+                val base = (phOff + (phEntSize.toLong() * i)).toInt()
+                if (base < 0 || base + phEntSize > bytes.size) break
+                val type = if (is64) u32(base) else u32(base)
+                if (type != 1L) continue          // PT_LOAD
+                val pOffset = if (is64) u64(base + 0x08) else u32(base + 0x04).toLong()
+                val pVaddr = if (is64) u64(base + 0x10) else u32(base + 0x08).toLong()
+                val pFilesz = if (is64) u64(base + 0x20) else u32(base + 0x10).toLong()
+                if (va >= pVaddr && va < pVaddr + pFilesz) {
+                    val off = pOffset + (va - pVaddr)
+                    if (off in 0..bytes.size.toLong()) return off.toInt()
+                }
+            }
+            0
+        } catch (_: Exception) {
+            0
+        }
     }
 
     fun assemble(asm: String, arch: String, address: Long = 0L, thumb: Boolean = false): ByteArray =

@@ -243,6 +243,9 @@ class PythonBridge(
      */
     private val VALID_ARCH = setOf("arm64", "arm32", "x86_64", "x86", "mips")
 
+    /** native 用 %llu 打印未设值的地址字段时产生的哨兵值（UT64_MAX）。 */
+    private val CFG_SENTINEL = "18446744073709551615"
+
     /** 逐字节差分的输入上限；超过它算法复杂度会失控。 */
     private val MAX_DIFF_BYTES = 128L * 1024
 
@@ -334,15 +337,28 @@ class PythonBridge(
         rizinGuard {
             checkArch(arch)
             val bytes = toBytes(input)
-            // 只挑必定成功的只读命令：文件信息、入口点、函数数、字符串数、节区、导入。
-            // 不要用 ?v $s 这类表达式——rizin 对未定义变量的反应是整条命令失败，
-            // 反而让 summary 什么都拿不到。
-            val viaCmd = RizinBridge.command(
-                bytes, arch,
-                "iI; ie; aflc; izc; iSc; ii",
-                false
-            )
-            if (viaCmd.isNotBlank() && !viaCmd.contains("\"error\"")) return@rizinGuard viaCmd
+            // 逐条执行再合并，不要用 "iI; ie; aflc" 这种分号链：
+            // 实测单条 rev_cmd(target,"iI") 正常，而 "iI; ie; aflc; izc; iSc; ii"
+            // 返回空串——rizin 的 rz_core_cmd_str 在多命令链下遇到
+            // 上下文不一致的命令会整体返回空，导致 summary 聚合失败。
+            // 逐条调用则互不影响，且能明确指出哪一条没拿到数据。
+            val cmds = listOf("iI" to "文件信息", "ie" to "入口点", "aflc" to "函数数",
+                              "izc" to "字符串数", "iSc" to "节区数", "ii" to "导入数")
+            val parts = mutableListOf<String>()
+            val missing = mutableListOf<String>()
+            for ((c, label) in cmds) {
+                val r = RizinBridge.command(bytes, arch, c, false).trim()
+                if (r.isNotEmpty() && !r.contains("\"error\"")) {
+                    parts.add("--- $c ($label) ---\n$r")
+                } else {
+                    missing.add("$c($label)")
+                }
+            }
+            if (parts.isNotEmpty()) {
+                val head = "已自动分析：${parts.size}/${cmds.size} 项可用"
+                val tail = if (missing.isEmpty()) "" else "\n未取得数据：${missing.joinToString(", ")}"
+                return@rizinGuard "$head\n${parts.joinToString("\n")}$tail"
+            }
             RizinBridge.analyze(bytes, arch)
         }
 
@@ -359,11 +375,28 @@ class PythonBridge(
             checkArch(arch)
             RizinBridge.xrefs(toBytes(input), arch, atVa, direction) }
 
-    /** 控制流图。 */
+    /**
+     * 控制流图。
+     *
+     * native 侧基本块输出用 %llu 直接打印 jump / fail 字段，
+     * 未做 UT64_MAX 检查，因此没有后继的分支会显示成 18446744073709551615。
+     * 那不是一个地址，是「无目标」的哨兵值。这里把它改写成 null，
+     * 避免模型误以为存在一个位于 0xFFFFFFFFFFFFFFFF 的跳转目标。
+     */
     fun rizinCfg(input: String, funcVa: Long, arch: String = "arm64"): String =
         rizinGuard {
             checkArch(arch)
-            RizinBridge.cfg(toBytes(input), arch, funcVa) }
+            val raw = RizinBridge.cfg(toBytes(input), arch, funcVa)
+            normalizeCfgSentinel(raw)
+        }
+
+    /** 把 64 位无符号上限（UT64_MAX）写成 null。 */
+    private fun normalizeCfgSentinel(json: String): String {
+        if (json.isEmpty()) return json
+        val fixed = json.replace(CFG_SENTINEL, "null")
+        // 只做字符串替换，不解析重排，保证任何情况下都不丢字段
+        return if (fixed == json) json else fixed
+    }
 
     /**
      * 字节模式搜索（支持 ?? 通配）。
