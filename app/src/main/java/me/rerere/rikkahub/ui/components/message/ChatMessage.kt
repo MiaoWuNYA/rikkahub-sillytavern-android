@@ -356,6 +356,36 @@ private fun MessagePartsBlock(
 
     // Render parts in original order (group thinking/tool as chain-of-thought)
     val groupedParts = remember(parts) { parts.groupMessageParts() }
+
+    // 正则可视化替换的缓存：replaceRegexes 会遍历助手全部正则并做字符串替换，
+    // 流式生成期间每个 chunk、每次重组都会对每条消息重跑一遍，长会话下是主线程卡顿
+    // （Choreographer Skipped frames）的主要来源。这里按 (原文, 作用域, 视觉层, 深度, 助手正则表)
+    // 缓存结果，内容不变时直接复用。
+    // 注意：不缓存正在流式增长的那条消息之外的稳定消息；缓存 key 含文本本身，
+    // 因此流式文本变化时会自然 miss 并重算，语义与原先一致。
+    val regexVisualCache = remember(assistant?.id, assistant?.regexes, messageDepth) {
+        mutableMapOf<Pair<String, AssistantAffectScope>, String>()
+    }
+    fun applyVisualRegexes(text: String, scope: AssistantAffectScope): String {
+        if (assistant == null || assistant.regexes.isEmpty()) return text
+        // 流式消息文本不断变化，缓存对它是纯开销，直接计算
+        if (loading) return text.replaceRegexes(
+            assistant = assistant,
+            scope = scope,
+            visual = true,
+            depth = messageDepth,
+        )
+        val key = text to scope
+        return regexVisualCache.getOrPut(key) {
+            text.replaceRegexes(
+                assistant = assistant,
+                scope = scope,
+                visual = true,
+                depth = messageDepth,
+            )
+        }
+    }
+
     groupedParts.fastForEach { block ->
         when (block) {
             is MessagePartBlock.ThinkingBlock -> {
@@ -451,12 +481,7 @@ private fun MessagePartsBlock(
                                         )
                                         Column(modifier = Modifier.padding(8.dp)) {
                                             MarkdownBlock(
-                                                content = part.text.replaceRegexes(
-                                                    assistant = assistant,
-                                                    scope = AssistantAffectScope.USER,
-                                                    visual = true,
-                                                    depth = messageDepth,
-                                                ),
+                                                content = applyVisualRegexes(part.text, AssistantAffectScope.USER),
                                                 onClickCitation = handleClickCitation,
                                                 cardHost = cardHost,
                                                 cardMessagesJson = cardMessagesJson,
@@ -500,12 +525,7 @@ private fun MessagePartsBlock(
                                             )
                                             Column(modifier = Modifier.padding(8.dp)) {
                                                 MarkdownBlock(
-                                                    content = part.text.replaceRegexes(
-                                                        assistant = assistant,
-                                                        scope = AssistantAffectScope.ASSISTANT,
-                                                        visual = true,
-                                                        depth = messageDepth,
-                                                    ),
+                                                    content = applyVisualRegexes(part.text, AssistantAffectScope.ASSISTANT),
                                                     onClickCitation = handleClickCitation,
                                                     cardHost = cardHost,
                                                 cardMessagesJson = cardMessagesJson,
@@ -515,12 +535,7 @@ private fun MessagePartsBlock(
                                     }
                                 } else {
                                     MarkdownBlock(
-                                        content = part.text.replaceRegexes(
-                                            assistant = assistant,
-                                            scope = AssistantAffectScope.ASSISTANT,
-                                            visual = true,
-                                            depth = messageDepth,
-                                        ),
+                                        content = applyVisualRegexes(part.text, AssistantAffectScope.ASSISTANT),
                                         onClickCitation = handleClickCitation,
                                         cardHost = cardHost,
                                                 cardMessagesJson = cardMessagesJson,
