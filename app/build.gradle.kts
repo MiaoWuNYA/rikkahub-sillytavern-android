@@ -30,6 +30,9 @@ chaquopy {
     defaultConfig {
         version = "3.12"
         pip {
+            // 只保留实际被引用的包。
+            // 移除 numpy/geocoder/geopy/timezonefinder/python-dateutil/pyyaml/markupsafe
+            // 后 requirements-common.imy 从 58.9MB 降到 ~1MB。
             install("requests")
             install("beautifulsoup4")
             install("markdown")
@@ -37,15 +40,7 @@ chaquopy {
             install("openpyxl")
             install("markdownify")
             install("tabulate")
-            install("python-dateutil")
-            install("numpy")
-            install("geocoder")
-            install("geopy")
             install("pytz")
-            install("timezonefinder")
-            install("pyyaml")
-            install("markupsafe")
-            install("setuptools")
         }
     }
 }
