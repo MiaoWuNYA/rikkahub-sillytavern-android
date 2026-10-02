@@ -320,6 +320,77 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            // ── 二进制分析工具（各自独立开关）──────────────────
+            item(
+                headlineContent = { Text(stringResource(R.string.local_tool_disasm_title)) },
+                supportingContent = { Text(stringResource(R.string.local_tool_disasm_desc)) },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.Disassemble),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.Disassemble, it) }
+                    )
+                }
+            )
+            item(
+                headlineContent = { Text(stringResource(R.string.local_tool_analyze_binary_title)) },
+                supportingContent = { Text(stringResource(R.string.local_tool_analyze_binary_desc)) },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.AnalyzeBinary),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.AnalyzeBinary, it) }
+                    )
+                }
+            )
+            item(
+                headlineContent = { Text(stringResource(R.string.local_tool_decompile_title)) },
+                supportingContent = { Text(stringResource(R.string.local_tool_decompile_desc)) },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.Decompile),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.Decompile, it) }
+                    )
+                }
+            )
+            item(
+                headlineContent = { Text(stringResource(R.string.local_tool_scan_binary_title)) },
+                supportingContent = { Text(stringResource(R.string.local_tool_scan_binary_desc)) },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.ScanBinary),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.ScanBinary, it) }
+                    )
+                }
+            )
+            item(
+                headlineContent = { Text(stringResource(R.string.local_tool_emulate_title)) },
+                supportingContent = { Text(stringResource(R.string.local_tool_emulate_desc)) },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.EmulateCode),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.EmulateCode, it) }
+                    )
+                }
+            )
+            item(
+                headlineContent = { Text(stringResource(R.string.local_tool_diff_binary_title)) },
+                supportingContent = { Text(stringResource(R.string.local_tool_diff_binary_desc)) },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.DiffBinary),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.DiffBinary, it) }
+                    )
+                }
+            )
+            item(
+                headlineContent = { Text(stringResource(R.string.local_tool_binary_command_title)) },
+                supportingContent = { Text(stringResource(R.string.local_tool_binary_command_desc)) },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.BinaryCommand),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.BinaryCommand, it) }
+                    )
+                }
+            )
             item(
                 headlineContent = { Text(stringResource(R.string.local_tool_file_title)) },
                 supportingContent = { Text(stringResource(R.string.local_tool_file_desc)) },
