@@ -52,6 +52,12 @@ object RizinNativeEngine {
         if (loaded) Log.i(TAG, "逆向引擎加载成功（符号已验证）")
     }
 
+    /** 单次反汇编的指令条数上限。 */
+    private const val MAX_DISASM_INSN = 4000
+
+    /** 单次反汇编返回的字符上限，约 8 万字符，足够阅读且不会撑爆上下文。 */
+    private const val MAX_DISASM_CHARS = 80_000
+
     fun available(): Boolean = loaded
 
     fun status(): String = if (loaded) "loaded（符号已验证）" else loadError
@@ -72,8 +78,20 @@ object RizinNativeEngine {
     external fun rzConfigureGhidra(pluginDir: String, sleighHome: String): Boolean
 
     // ── 安全包装：native 异常一律吞掉并返回空结果 ─────────────────────
-    fun disassemble(bytes: ByteArray, arch: String, address: Long = 0L, thumb: Boolean = false, limit: Int = 200): String =
-        if (!loaded) "" else runCatching { rzDisassemble(bytes, arch, address, thumb, limit) }.getOrDefault("")
+    fun disassemble(bytes: ByteArray, arch: String, address: Long = 0L, thumb: Boolean = false, limit: Int = 200): String {
+        if (!loaded) return ""
+        // limit 必须夹取：native 侧按「指令条数」循环，单条 arm64 指令输出约 40 字符，
+        // 放任大值会让真实 .so 产出千万级字符，直接把调用方撑爆。
+        // 这里再叠一层字符上限兜底——native 返回后再截断，保证不管上层怎么传都有界。
+        val n = limit.coerceIn(1, MAX_DISASM_INSN)
+        val raw = runCatching { rzDisassemble(bytes, arch, address, thumb, n) }.getOrDefault("")
+        val out = normalizeDisasm(raw)
+        return if (out.length > MAX_DISASM_CHARS) {
+            out.substring(0, MAX_DISASM_CHARS) +
+                "\n... [输出已截断：共 ${out.length} 字符，上限 $MAX_DISASM_CHARS。" +
+                "请用更小的 limit 或更窄的 address 范围分段查看]"
+        } else out
+    }
 
     fun assemble(asm: String, arch: String, address: Long = 0L, thumb: Boolean = false): ByteArray =
         if (!loaded) ByteArray(0) else runCatching { rzAssemble(asm, arch, address, thumb) }.getOrDefault(ByteArray(0))
@@ -107,6 +125,36 @@ object RizinNativeEngine {
 
     fun decompile(bytes: ByteArray, arch: String, funcVa: Long): String =
         if (!loaded) "" else runCatching { rzDecompile(bytes, arch, funcVa) }.getOrDefault("")
+
+    /**
+     * 规范化反汇编输出为「每条指令一行」：
+     *   0xADDR: BB BB BB BB  mnemonic operands
+     *
+     * rot 侧给的 assembly 字段偶尔已含地址或冗余空白，导致一行里混入多段内容。
+     * 这里统一收口：拆分粘连行、压缩多余空格、丢弃空行，
+     * 保证下游（模型、UI）拿到稳定格式。
+     */
+    private fun normalizeDisasm(raw: String): String {
+        if (raw.isEmpty()) return raw
+        val sb = StringBuilder(raw.length)
+        for (lineRaw in raw.split('\n')) {
+            val line = lineRaw.trim()
+            if (line.isEmpty()) continue
+            // 单条指令形如 "0x1234: 1F 20 03 D5    nop"；
+            // 地址与字节之间可能是 tab 或空格，统一成 "addr: bytes  mnemonic"
+            val m = Regex("^(0x[0-9a-fA-F]+):\\s*([0-9A-Fa-f ]+?)\\s{2,}(.*)$").find(line)
+            if (m != null) {
+                val (a, bytesPart, text) = m.destructured
+                val bytesClean = bytesPart.trim().replace(Regex("\\s+"), " ")
+                sb.append(a).append(": ").append(bytesClean).append("  ")
+                    .append(text.trim()).append('\n')
+            } else {
+                // .byte 回退行或非标准行，原样保留（仅压缩尾部空白）
+                sb.append(line).append('\n')
+            }
+        }
+        return sb.toString()
+    }
 
     /**
      * 将 assets/rizin/plugins/rz_ghidra_sleigh 释放到 filesDir，

@@ -14,7 +14,11 @@ import me.rerere.rikkahub.data.model.TavernEmbeddedBook
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.ai.ui.UIMessagePart
 import org.koin.java.KoinJavaComponent
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.uuid.Uuid
@@ -239,6 +243,9 @@ class PythonBridge(
      */
     private val VALID_ARCH = setOf("arm64", "arm32", "x86_64", "x86", "mips")
 
+    /** 逐字节差分的输入上限；超过它算法复杂度会失控。 */
+    private val MAX_DIFF_BYTES = 128L * 1024
+
     /** 十六进制串上限：解析成字节后不超过 4MB，避免误把超长字符串当 hex 处理。 */
     private val MAX_HEX_CHARS = 8 * 1024 * 1024
 
@@ -311,11 +318,33 @@ class PythonBridge(
             .joinToString("") { "%02x".format(it) }
     }
 
-    /** 自动分析（函数识别、符号、字符串）。 */
+    /**
+     * 自动分析概览。
+     *
+     * native 的 rzAnalyze 在 rz_core_new() 之后调用了 applyGhidraConfig()，
+     * 那一步会 setenv + rz_core_loadlibs 改写 core 状态，导致紧随其后的
+     * rz_core_file_open_load 返回失败，最终只能回 {"error":"open"}。
+     * 对照 rzFunctions（同样流程但不调 applyGhidraConfig）则一切正常。
+     *
+     * 无法改 native（预编译 so），因此这里改走 rzCommand：
+     * 它内部另起 core 且不碰 ghidra 配置，能稳定拿到统计信息。
+     * 失败时再退回 rzAnalyze，至少不吞掉任何一条路径。
+     */
     fun rizinAnalyze(input: String, arch: String = "arm64"): String =
         rizinGuard {
             checkArch(arch)
-            RizinBridge.analyze(toBytes(input), arch) }
+            val bytes = toBytes(input)
+            // 只挑必定成功的只读命令：文件信息、入口点、函数数、字符串数、节区、导入。
+            // 不要用 ?v $s 这类表达式——rizin 对未定义变量的反应是整条命令失败，
+            // 反而让 summary 什么都拿不到。
+            val viaCmd = RizinBridge.command(
+                bytes, arch,
+                "iI; ie; aflc; izc; iSc; ii",
+                false
+            )
+            if (viaCmd.isNotBlank() && !viaCmd.contains("\"error\"")) return@rizinGuard viaCmd
+            RizinBridge.analyze(bytes, arch)
+        }
 
     /** 列出识别出的函数。 */
     fun rizinFunctions(input: String, arch: String = "arm64"): String =
@@ -336,12 +365,47 @@ class PythonBridge(
             checkArch(arch)
             RizinBridge.cfg(toBytes(input), arch, funcVa) }
 
-    /** 字节模式搜索（支持 ?? 通配）。 */
+    /**
+     * 字节模式搜索（支持 ?? 通配）。
+     *
+     * native 层的 rzSearchBytes 虽然签收了 fromVa/toVa，但函数体里从未使用，
+     * 因此 range 参数实际上被忽略、永远全文件扫描。
+     * 无法改 native（预编译 so），改为在返回的 JSON 上做后置过滤：
+     * 解析 hits 数组，丢弃落在 [fromVa, toVa] 之外的项。
+     */
     fun rizinSearchBytes(input: String, pattern: String, arch: String = "arm64",
                          fromVa: Long = 0L, toVa: Long = 0L): String =
         rizinGuard {
             checkArch(arch)
-            RizinBridge.searchBytes(toBytes(input), arch, pattern, fromVa, toVa) }
+            val raw = RizinBridge.searchBytes(toBytes(input), arch, pattern, fromVa, toVa)
+            filterHitsByRange(raw, fromVa, toVa)
+        }
+
+    /**
+     * 按地址区间过滤 searchBytes 返回的 JSON。
+     * toVa <= 0 表示不设上界；解析失败时原样返回，绝不吞掉结果。
+     */
+    private fun filterHitsByRange(json: String, fromVa: Long, toVa: Long): String {
+        if (fromVa <= 0L && toVa <= 0L) return json
+        return try {
+            val obj = kotlinx.serialization.json.Json.parseToJsonElement(json).jsonObject
+            val hits = obj["hits"]?.jsonArray ?: return json
+            val kept = hits.filter { h ->
+                val addr = h.jsonObject["addr"]?.jsonPrimitive?.content?.toLongOrNull()
+                addr != null && (fromVa <= 0L || addr >= fromVa) && (toVa <= 0L || addr <= toVa)
+            }
+            val dropped = hits.size - kept.size
+            buildJsonObject {
+                obj.forEach { (k, v) -> if (k != "hits") put(k, v) }
+                put("hits", JsonArray(kept))
+                put("rangeStart", JsonPrimitive(fromVa))
+                put("rangeEnd", JsonPrimitive(toVa))
+                put("droppedOutsideRange", JsonPrimitive(dropped))
+            }.toString()
+        } catch (_: Exception) {
+            json
+        }
+    }
 
     /** 扫描加密常量（AES S-box、CRC 表、魔数等）。 */
     fun rizinScanCrypto(input: String, arch: String = "arm64"): String =
@@ -355,9 +419,30 @@ class PythonBridge(
             checkArch(arch)
             RizinBridge.esilStep(toBytes(input), arch, startVa, steps) }
 
-    /** 二进制差异。 */
-    fun rizinDiff(a: String, b: String): String =
-        rizinGuard { RizinBridge.diff(toBytes(a), toBytes(b)) }
+    /**
+     * 二进制差异。
+     *
+     * 底层是 O(N·D) 的逐字节差分：几十万字节的 .so 会退化成"跑不完"，
+     * 表现为调用方卡死（native 是同步阻塞，协程超时也打断不了它）。
+     * 因此在入口就限制规模，超限直接给出可执行的替代建议，而不是挂住。
+     */
+    fun rizinDiff(a: String, b: String): String = rizinGuard {
+        val sizes = listOf(a, b).map { t ->
+            val f = File(t)
+            if (f.isFile) f.length() else t.length / 2L
+        }
+        val over = sizes.filter { it > MAX_DIFF_BYTES }
+        if (over.isNotEmpty()) {
+            return@rizinGuard "Error: 文件过大，逐字节差分不可行（" +
+                sizes.joinToString(" vs ") { "$it 字节" } +
+                "，上限 $MAX_DIFF_BYTES）。\n" +
+                "建议改用以下方式定位差异：\n" +
+                "  1) binary_command 执行 'iS' 对比节区表\n" +
+                "  2) scan_binary view='pattern' 按特征字节搜索\n" +
+                "  3) 先用 execute_python 的 hashlib 算各段哈希，只对哈希不同的段做细粒度对比"
+        }
+        RizinBridge.diff(toBytes(a), toBytes(b))
+    }
 
     /**
      * 预热 Ghidra：释放 sleigh 数据（392 个文件 / 约 13MB）到 filesDir。

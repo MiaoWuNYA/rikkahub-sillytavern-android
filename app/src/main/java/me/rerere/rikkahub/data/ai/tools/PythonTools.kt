@@ -40,7 +40,8 @@ fun createPythonTool(context: Context, timeoutSec: Int = 30): Tool = Tool(
         "  rev_functions(target, arch)       list recovered functions\n" +
         "  rev_xrefs(target, va, arch, direction)   cross references ('to' or 'from')\n" +
         "  rev_cfg(target, func_va, arch)    control-flow graph\n" +
-        "  rev_search(target, pattern, arch) byte pattern search, '?? ' wildcards allowed\n" +
+        "  rev_search(target, pattern, arch, range_start, range_end)  byte pattern search,\n" +
+        "                                   '??' wildcards allowed; range_* narrow the scan window\n" +
         "  rev_crypto(target, arch)          scan for AES S-box / CRC tables / crypto magic\n" +
         "  rev_esil(target, start_va, steps, arch)  instruction-level emulation\n" +
         "  rev_diff(file_a, file_b)          binary diff\n" +
