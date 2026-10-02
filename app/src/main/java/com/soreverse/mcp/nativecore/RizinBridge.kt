@@ -136,6 +136,15 @@ object RizinNativeEngine {
         // 显示基址：给了地址就用它，否则从 0 起算。
         val baseVa = if (address > 0L) address else 0L
 
+        // 映射失败时不能退回从文件偏移 0 读——那会静默给出 ELF 头，
+        // 而调用方看到地址标签仍然是自己传的值，很容易当成正确结果。
+        // 宁可明确报错。
+        if (isElf && address > 0L && start <= 0) {
+            return "Error: 地址 0x${address.toString(16)} 未落在任何 PT_LOAD 段内，" +
+                "无法映射到文件偏移。可用 binary_command 执行 'iS' 查看节区地址范围，" +
+                "或 'iE' 查看入口点。"
+        }
+
         if (step == 0) {
             val view = if (isElf && start > 0) bytes.copyOfRange(start, bytes.size) else bytes
             return normalizeDisasm(rzDisassemble(view, arch, baseVa, thumb, limit))
@@ -183,9 +192,15 @@ object RizinNativeEngine {
                 (bytes[o].toInt() and 0xFF) or ((bytes[o + 1].toInt() and 0xFF) shl 8)
             else
                 ((bytes[o].toInt() and 0xFF) shl 8) or (bytes[o + 1].toInt() and 0xFF)
+            // 注意字节序方向：小端是「低地址存放最低有效字节」，
+            // 而 (v shl 8) or byte 的累加方式会把先读到的字节放到最高位，
+            // 也就是按大端解释。因此小端必须从高地址往低地址读，
+            // 否则 p_offset / p_vaddr 会得到 0x4000000000000000 这类量级，
+            // 段表匹配必然落空，地址映射静默退回 0——表现为「无论传什么地址，
+            // 都从文件偏移 0 开始反汇编，吐出 ELF 头」。
             fun u32(o: Int): Long {
                 var v = 0L
-                for (i in 0 until 4) {
+                for (i in 3 downTo 0) {
                     val idx = if (le) o + i else o + 3 - i
                     v = (v shl 8) or (bytes[idx].toLong() and 0xFF)
                 }
@@ -193,7 +208,7 @@ object RizinNativeEngine {
             }
             fun u64(o: Int): Long {
                 var v = 0L
-                for (i in 0 until 8) {
+                for (i in 7 downTo 0) {
                     val idx = if (le) o + i else o + 7 - i
                     v = (v shl 8) or (bytes[idx].toLong() and 0xFF)
                 }
