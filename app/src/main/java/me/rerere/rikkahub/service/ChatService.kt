@@ -1556,9 +1556,10 @@ class ChatService(
                 outputTransformers = outputTransformers,
                 tools = buildList {
                     // ── 酒馆模式：只保留最小可用工具面 ──
-                    // 目的：工具仍然能用（模型知道有它、能调），但不带任何工具系统提示词，
-                    // 也不注册任何会往上下文里塞工作流产物的工具（记忆、技能、插件、MCP、
-                    // 任务、生活/情侣空间等全部不注册）。
+                    // 实现见 buildTavernModeTools：插件工具保留（用户主动安装的能力，
+                    // 与 App 自带工作流性质不同），其余只留文件/搜索/抓取/计算器，
+                    // 且受「允许调用工具」开关控制。记忆、技能、MCP、任务、
+                    // 生活/情侣空间等一律不注册。
                     if (settings.huadengSettings.enableTavernMode) {
                         addAll(buildTavernModeTools(assistant, settings, useExternalWebSearch))
                         return@buildList
