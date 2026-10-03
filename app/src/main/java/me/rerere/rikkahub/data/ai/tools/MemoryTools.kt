@@ -31,26 +31,15 @@ fun buildMemoryTools(
 ): List<Tool> = listOf(
     Tool(
         name = "memory_tool",
+        // 描述精简过：原先含 4 行 Examples 与整段存储规则，约 1336 字符，
+        // 而 schema 已经把 action / id / content / type / offset / limit 全列了出来，
+        // 示例与规则属于重复表述。现压到约 400 字符，语义信息不丢。
         description = """
-            The memory tool stores long-term information across conversations.
-            Use `action` to control the operation: `create` (add), `edit` (update), `delete` (remove), `list` (read).
-            - No relevant record: `create` + `content`
-            - Existing relevant record: `edit` + `id` + `content`
-            - Outdated/irrelevant record: `delete` + `id`
-            - To inspect saved memories before changing one: `list`, optionally with `offset` and `limit`
-            ${if (allowEpisodicMemory) "You may use type=episodic for a concrete event, decision, or experience from this conversation. Use type=fact for durable user preferences or profile information." else "Use type=fact. Episodic memory is disabled for this assistant."}
-            Memories may be retrieved in later conversations when relevant.
-            Do not store sensitive information (e.g., ethnicity, religion, sexual orientation, political views, sex life, criminal records).
-            You may store: preferred name, preferences, plans, work-related notes, chat style preferences, first chat time, etc.
-            Do not show memory content directly in the conversation unless the user explicitly asks.
-            Today is ${LocalDate.now().toLocalString(true)}.
-            Similar memories should be merged; prefer updating existing records.
-
-            Examples:
-            {"action":"create","content":"User prefers brief replies and is more active on weekends."}
-            {"action":"edit","id":12,"content":"User’s preferred name updated to “A-Xing”, prefers Chinese replies."}
-            {"action":"delete","id":7}
-            {"action":"list","offset":0,"limit":50}
+            Long-term memory across conversations. `action`: create (add) / edit (update) / delete (remove) / list (read).
+            create needs `content`; edit needs `id` + `content`; delete needs `id`; list takes optional `offset`/`limit`.
+            ${if (allowEpisodicMemory) "type=fact for durable preferences and profile; type=episodic for a concrete event or decision." else "Use type=fact. Episodic memory is disabled for this assistant."}
+            Merge similar records instead of adding duplicates. Never store sensitive information.
+            Do not show memory content in the conversation unless the user asks. Today is ${LocalDate.now().toLocalString(true)}.
         """.trimIndent(),
         parameters = {
             InputSchema.Obj(
