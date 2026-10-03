@@ -269,7 +269,19 @@ class GenerationLoop(
     // ── 预构建：tools + systemPrompt（循环不变，移到外面）──
     val toolsInternal = buildList {
         Log.i(TAG, "generateInternal: build tools($assistant)")
-        if (assistant?.enableMemory == true) {
+        // 酒馆模式：不注册记忆工具。
+        //
+        // 记忆是 App 自带的工作流，不是原版酒馆的上下文构成——原版酒馆没有
+        // 让模型自行读写长期记忆的能力。开着它会让助手在本该纯角色扮演的
+        // 对话里主动 create/edit/delete 记忆记录，既污染上下文，
+        // 也和「酒馆模式 = 纯净请求」的定位冲突。
+        //
+        // 这里必须判断，而不是依赖调用方裁剪：tools 参数来自 ChatService
+        // 的两条不同路径，其中 generateForAssistant 完全没做酒馆裁剪，
+        // 而本层是所有路径的公共叠加点。
+        // 上层已排除记忆检索（memoryRetrievalTransformer），
+        // 本层再排除记忆写入工具，酒馆模式下记忆才算真正隔离。
+        if (assistant?.enableMemory == true && !settings.huadengSettings.enableTavernMode) {
             val memoryAssistantId = if (assistant.useGlobalMemory) {
                 MemoryRepository.GLOBAL_MEMORY_ID
             } else {
@@ -304,6 +316,11 @@ class GenerationLoop(
             ).let(this::addAll)
         }
         addAll(tools)
+        // 便于核对酒馆模式的实际工具面：把最终注册的工具名列出来。
+        // 排查「记忆工具为何还在」这类问题时，这一行直接给出答案。
+        if (settings.huadengSettings.enableTavernMode) {
+            Log.i(TAG, "tavern mode tools: ${if (isEmpty()) "(none)" else joinToString(", ") { it.name }}")
+        }
     }
     val statusTrackedTools = toolsInternal.map { tool ->
         if (tool.name == "ask_user") tool else tool.copy(
