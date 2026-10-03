@@ -72,9 +72,22 @@ private val CUSTOM_TAG_WRAPPED_BLOCK = Regex(
     RegexOption.IGNORE_CASE,
 )
 
-// ```html 围栏开头
+// 围栏开头。
+//
+// 原实现只认 ```html，但裸 ``` 同样常见——酒馆卡把整篇 HTML 文档直接塞进
+// 无语言标注的围栏里，例如：
+//     ```
+//     <html lang="en"><head><meta charset="UTF-8" /><style>…</style>…
+//     ```
+// 此时旧的 FENCED_HTML_OPEN 不匹配，findFencedHtmlDocument 返回 null，
+// 于是整段被交给 splitCardSegments 按「散文 / 卡片」拆，
+// <title>、<meta>、<style> 全被当正文渲染成源码，卡片样式整体失效。
+//
+// 放宽为「可选的 html 标注」即可。安全性由调用方的 isFullHtmlDocument
+// 兜底：只有围栏内容确实是完整 HTML 文档（<!DOCTYPE / <html>…</html>）
+// 才会被当成卡片，普通代码块（```python 等）不会误判。
 private val FENCED_HTML_OPEN = Regex(
-    """```[ \t]*html[ \t]*\n""",
+    """```[ \t]*(?:html)?[ \t]*\n""",
     RegexOption.IGNORE_CASE,
 )
 
