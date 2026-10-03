@@ -1560,22 +1560,7 @@ class ChatService(
                     // 也不注册任何会往上下文里塞工作流产物的工具（记忆、技能、插件、MCP、
                     // 任务、生活/情侣空间等全部不注册）。
                     if (settings.huadengSettings.enableTavernMode) {
-                        // 插件工具一律保留：插件是用户主动安装的能力（可携带自己的提示词与工具），
-                        // 属于用户明确要用的东西，与 App 自带工作流不同，酒馆模式下不裁剪
-                        addAll(pluginToolProvider.getTools())
-                        if (settings.huadengSettings.tavernModeKeepTools) {
-                            // 只留与"聊天/创作"直接相关、且不注入额外上下文的基础工具
-                            if (assistant.localTools.contains(LocalToolOption.FileTools)) {
-                                addAll(createFileTools(context = context))
-                            }
-                            if (useExternalWebSearch) {
-                                addAll(createSearchTools(settings))
-                            }
-                            add(createWebFetchTool())
-                            if (assistant.localTools.contains(LocalToolOption.Calculator)) {
-                                add(createCalculatorTool(context))
-                            }
-                        }
+                        addAll(buildTavernModeTools(assistant, settings, useExternalWebSearch))
                         return@buildList
                     }
                     if (assistant.localTools.contains(LocalToolOption.FileTools)) {
@@ -2034,6 +2019,50 @@ class ChatService(
     /**
      * 为指定 Assistant 生成回复（群聊用），支持流式回调
      */
+    /**
+     * 酒馆模式下的最小可用工具面。
+     *
+     * 目的：工具仍然能用（模型知道有它、能调），但不注册任何会往上下文里
+     * 塞工作流产物的工具（记忆、技能、任务、MCP、数据库、生活/情侣空间等
+     * 全部不注册），也不发送任何工具系统提示词。
+     *
+     * 抽出来是因为此前这段逻辑只存在于 handleMessageComplete 里，
+     * 而 generateForAssistant 是完全独立的另一条生成路径（群聊、QUIET、
+     * 聊天列表入口都走它），没有这份裁剪——于是酒馆模式下记忆工具照样
+     * 被注册，助手会自行读写记忆。两条路径共用同一份实现，避免再次分叉。
+     *
+     * @param useExternalWebSearch 是否使用 App 自带的联网搜索。
+     *        统一由 shouldUseExternalWebSearch 计算，不要分别判断
+     *        assistant.enableWebSearch，否则两条路径口径会不一致。
+     */
+    private suspend fun buildTavernModeTools(
+        assistant: Assistant,
+        settings: Settings,
+        useExternalWebSearch: Boolean,
+    ): List<Tool> = buildList {
+        // 插件工具一律保留：插件是用户主动安装的能力（可携带自己的提示词与工具），
+        // 属于用户明确要用的东西，与 App 自带工作流不同，酒馆模式下不裁剪
+        addAll(pluginToolProvider.getTools())
+
+        // 关闭「保留工具」后退化为纯文本模型，请求中不含任何工具
+        if (!settings.huadengSettings.tavernModeKeepTools) return@buildList
+
+        // 只留与聊天/创作直接相关、且不注入额外上下文的基础工具
+        if (assistant.localTools.contains(LocalToolOption.FileTools)) {
+            addAll(createFileTools(context = context))
+        }
+        // 联网搜索：仅在启用且模型本身没内置搜索时注册
+        if (useExternalWebSearch) {
+            addAll(createSearchTools(settings))
+            // 网页抓取与搜索配套：没有搜索时不单独给抓取，
+            // 否则模型会拿到一个它无从获取 URL 的工具。
+            add(createWebFetchTool())
+        }
+        if (assistant.localTools.contains(LocalToolOption.Calculator)) {
+            add(createCalculatorTool(context))
+        }
+    }
+
     suspend fun generateForAssistant(
         assistant: Assistant,
         settings: Settings,
@@ -2091,6 +2120,20 @@ class ChatService(
                 memoryRepository.getMemoriesOfAssistant(assistant.id.toString())
             },
             tools = buildList {
+                // 酒馆模式：与 handleMessageComplete 走同一份裁剪实现。
+                // 此前本路径完全没有酒馆判断，会注册全套工具：
+                // 记忆工具（模型自行读写记忆）、技能、任务、MCP、数据库等，
+                // 与「酒馆模式 = 纯净请求」的定位冲突。
+                if (settings.huadengSettings.enableTavernMode) {
+                    addAll(
+                        buildTavernModeTools(
+                            assistant,
+                            settings,
+                            shouldUseExternalWebSearch(assistant, model),
+                        )
+                    )
+                    return@buildList
+                }
                 if (assistant.localTools.contains(LocalToolOption.FileTools)) {
                     addAll(createFileTools(context = context))
                 }
