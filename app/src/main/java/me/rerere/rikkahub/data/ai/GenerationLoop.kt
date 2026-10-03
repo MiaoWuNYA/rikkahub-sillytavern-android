@@ -727,7 +727,11 @@ class GenerationLoop(
                         }
                     append(effectiveSystemPrompt)
                 },
-                leadInInstructions = buildString {
+                // 酒馆模式：工具路由与工作伦理区不发，与 buildCachedSystemPrompt
+                // 的 253 行保持一致。此前这里是硬编码的，无论什么模式都发，
+                // 一旦走到 fallback 路径，酒馆模式就会多背这 193 字符。
+                leadInInstructions = if (tavernMode) ""
+                else buildString {
                     appendLine("Guidelines:")
                     appendLine("- Prefer dedicated tools over shell commands for file operations")
                     appendLine("- When a tool fails, try an alternative approach before giving up")
@@ -751,9 +755,15 @@ class GenerationLoop(
 
             // ── 工具prompt（追加在 assembler 结果之后）──
             append(system)
-            tools.forEach { tool ->
-                appendLine()
-                append(tool.systemPrompt(model, messages))
+            // 酒馆模式：工具的 systemPrompt 段全部不发（工具仍有 JSON schema 可用）。
+            // 必须与 buildCachedSystemPrompt 的同名处理保持一致——那处一直是带
+            // tavernMode 判断的，这里此前漏了，导致走 fallback 路径时酒馆模式
+            // 仍会把全部工具的系统提示词拼进 system，纯净请求不成立。
+            if (!tavernMode) {
+                tools.forEach { tool ->
+                    appendLine()
+                    append(tool.systemPrompt(model, messages))
+                }
             }
             }
             }
