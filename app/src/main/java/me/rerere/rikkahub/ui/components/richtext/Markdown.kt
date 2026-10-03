@@ -131,7 +131,54 @@ private val BREAK_LINE_REGEX = Regex("(?i)<br\\s*/?>")
 private val LATEX_BLOCK_LINE_BREAK_REGEX = Regex("""[ \t]*\r?\n[ \t]*""")
 
 // 预处理markdown内容
-private fun preProcess(content: String): String {
+/**
+ * 中文语气波浪线 → 全角 ～，避免被 GFM 当成删除线。
+ *
+ * 中文里 `~` 是语气/拖长音记号（`啊~嗯❤~`、`好舒服~`），不是删除线语法；
+ * 但 GFM 的删除线既支持 `~~文字~~` 也支持单个 `~文字~`，于是
+ *     "啊~嗯❤~"是这个...啊~嗯❤~
+ * 这种两段语气词之间的内容会被整段吞成删除线，表现为「莫名其妙出现一条
+ * 划线」。这是中文角色扮演文本的高频写法，实测复现率很高。
+ *
+ * 处理策略刻意保守：**只改单个 ~**，且它与 CJK 字符相邻时才改。
+ * - 连续的 `~~` 一律不动——那是用户明确写出的删除线语法，必须保留原义；
+ * - 与 ASCII 相邻的 `~` 也不动（路径、正则、数学式里常见）。
+ * 转成全角 ～（U+FF5E）而不是删除：视觉几乎一致，但 GFM 不认它是标记，
+ * 因此既不触发删除线，也不改变用户看到的字符形状。
+ */
+internal fun String.normalizeCjkTildes(): String {
+    if ('~' !in this) return this
+    fun isCjk(ch: Char): Boolean =
+        ch.code in 0x4E00..0x9FFF ||   // CJK 统一表意文字
+        ch.code in 0x3000..0x303F ||   // CJK 标点
+        ch.code in 0xFF00..0xFFEF ||   // 全角字符
+        ch.code in 0x2600..0x27BF ||   // 各类符号 / emoji 装饰（❤ 等）
+        ch.code in 0x1F300..0x1FAFF
+
+    val out = StringBuilder(length)
+    var i = 0
+    while (i < length) {
+        if (this[i] != '~') { out.append(this[i]); i++; continue }
+        var j = i
+        while (j < length && this[j] == '~') j++
+        val runLength = j - i
+        val prev = if (i > 0) this[i - 1] else ' '
+        val next = if (j < length) this[j] else ' '
+        if (runLength == 1 && (isCjk(prev) || isCjk(next))) {
+            out.append('\uFF5E')
+        } else {
+            repeat(runLength) { out.append('~') }
+        }
+        i = j
+    }
+    return out.toString()
+}
+
+// internal 而非 private：波浪线消歧是中文场景的高频修正，
+// 规则需要可单测（见 CjkTildeTest），否则以后改动无法验证。
+// 命名加 Mk 前缀是因为同包的 MarkdownNew.kt 也有一个 preProcess，
+// 两者预处理规则不同，不能混用。
+internal fun preProcessMarkdown(content: String): String {
     // 先找出所有代码块的位置
     val codeBlocks = mutableListOf<IntRange>()
     CODE_BLOCK_REGEX.findAll(content).forEach { match ->
@@ -164,7 +211,32 @@ private fun preProcess(content: String): String {
         }
     }
 
+    // 中文语气波浪线消歧：必须在解析前完成，否则 GFM 已把 `~文字~` 判成删除线。
+    // 代码块重新定位——上面的 LaTeX 替换可能改变了文本长度。
+    if ('~' in result) {
+        val blocks = CODE_BLOCK_REGEX.findAll(result).map { it.range }.toList()
+        result = result.normalizeCjkTildesOutside(blocks)
+    }
+
     return result
+}
+
+/**
+ * 对代码块之外的部分做波浪线消歧，代码块内原样保留
+ * （代码里的 `~` 可能是运算符、路径或正则的一部分）。
+ */
+private fun String.normalizeCjkTildesOutside(codeBlocks: List<IntRange>): String {
+    if (codeBlocks.isEmpty()) return normalizeCjkTildes()
+    val out = StringBuilder(length)
+    var cursor = 0
+    for (range in codeBlocks) {
+        if (range.first < cursor) continue
+        out.append(substring(cursor, range.first).normalizeCjkTildes())
+        out.append(substring(range.first, range.last + 1))
+        cursor = range.last + 1
+    }
+    if (cursor < length) out.append(substring(cursor).normalizeCjkTildes())
+    return out.toString()
 }
 
 @Preview(showBackground = true)
@@ -228,7 +300,7 @@ private fun ASTNode.containsHtml(): Boolean {
 }
 
 private fun parseMarkdown(content: String): MarkdownParseResult {
-    val preprocessed = preProcess(content)
+    val preprocessed = preProcessMarkdown(content)
     val astTree = parser.buildMarkdownTreeFromString(preprocessed)
     return MarkdownParseResult(preprocessed, astTree, astTree.containsHtml())
 }
