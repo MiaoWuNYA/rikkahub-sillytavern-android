@@ -688,7 +688,16 @@ class GenerationLoop(
                     appendLine("- When a tool fails, try an alternative approach before giving up")
                     appendLine("- If you need clarification, ask the user directly")
                 },
-                workspaceDescription = "Working directory: ${context.filesDir?.absolutePath ?: "."}",
+                // 原先无条件写入工作目录。但那 89 字符对没有 workspace 工具的会话
+                // 毫无用处——模型拿不到任何能读写该路径的工具，路径只是白占上下文。
+                // 与 buildCachedSystemPrompt 的 239 行保持一致：只在确有 workspace
+                // 工具且非酒馆模式时才给。
+                workspaceDescription = if (!tavernMode && tools.any { t ->
+                        t.name.startsWith("workspace_")
+                    }
+                ) {
+                    "Working directory: ${context.filesDir?.absolutePath ?: "."}"
+                } else "",
                 extraInstructions = pluginSystemPromptText,
                 // 提示词缓存：Recent Chats 已挪到上下文尾部（buildUserContext）
                 constraints = emptyList(),
