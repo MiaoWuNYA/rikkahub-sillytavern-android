@@ -16,7 +16,6 @@ import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.model.AssistantMemory
 import me.rerere.rikkahub.data.model.MemoryType
 import me.rerere.rikkahub.utils.toLocalString
-import java.time.LocalDate
 
 private const val DEFAULT_LIST_LIMIT = 50
 private const val MAX_LIST_LIMIT = 100
@@ -39,7 +38,7 @@ fun buildMemoryTools(
             create needs `content`; edit needs `id` + `content`; delete needs `id`; list takes optional `offset`/`limit`.
             ${if (allowEpisodicMemory) "type=fact for durable preferences and profile; type=episodic for a concrete event or decision." else "Use type=fact. Episodic memory is disabled for this assistant."}
             Merge similar records instead of adding duplicates. Never store sensitive information.
-            Do not show memory content in the conversation unless the user asks. Today is ${LocalDate.now().toLocalString(true)}.
+            Do not show memory content in the conversation unless the user asks.
         """.trimIndent(),
         parameters = {
             InputSchema.Obj(
