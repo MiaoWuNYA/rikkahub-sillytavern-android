@@ -704,13 +704,23 @@ internal fun collectInjections(
             var pendingIgnoreBudget = found.count { it.ignoreBudget }
             // 官方 newContent：本轮概率已通过的条目内容（含预算溢出的，官方 += 在预算检查之前）
             var newContentTokens = 0
+            // 角色卡内嵌世界书的条目不参与预算裁剪。
+            // 这些条目是卡的骨架：<生成格式> 教模型写 <mainbody>/<phone> 结构，
+            // <Status>/<twitter>/<bilibili>/<choice> 各自定义一块内容的格式。
+            // 它们被预算挤掉时，模型不再输出对应标签，卡内 JS 拿不到数据，
+            // 表现是「卡片只剩一个 HTML 空壳」「弹幕/选项面板显示未激活」——
+            // 用户看到的是卡坏了，根因却是一句预算裁剪。卡是用户主动导入的，
+            // 它的必需内容不应该和文风/人物生动化这类可裁条目争夺额度。
+            val characterBookEntryIds = characterEntries.mapTo(mutableSetOf()) { it.id }
             for (entry in found.sortedWith(
                 compareByDescending<PromptInjection.RegexInjection> { activeStickyEntries.containsKey(it.id) }
                     .thenByDescending { it.priority }
             )) {
-                pendingIgnoreBudget -= if (entry.ignoreBudget) 1 else 0
                 // 官方：预算溢出后非 ignoreBudget 条目不再注入（后面还有 ignoreBudget 则跳过，否则停止）
-                if (overflowed && !entry.ignoreBudget) {
+                // 卡内条目同样豁免：一处溢出不该连带砍掉后面定义格式的条目
+                val exemptFromOverflow = entry.ignoreBudget || entry.id in characterBookEntryIds
+                pendingIgnoreBudget -= if (exemptFromOverflow) 1 else 0
+                if (overflowed && !exemptFromOverflow) {
                     if (pendingIgnoreBudget > 0) continue else break
                 }
                 // 官方 verifyProbability：useProbability 且 <100 才掷；sticky 免掷；失败记入 failedProbabilityChecks
@@ -720,7 +730,9 @@ internal fun collectInjections(
                         continue
                     }
                 }
-                if (!entry.ignoreBudget) {
+                // 卡内条目豁免预算；外部世界书条目仍按官方预算裁剪
+                val budgetExempt = entry.ignoreBudget || entry.id in characterBookEntryIds
+                if (!budgetExempt) {
                     // 官方预算检查：递归缓冲 token + 本轮内容 token >= 预算 → 溢出，该条目也不注入
                     if (estimateTokens(recursionContext) + newContentTokens + estimateTokens(entry.content) >= budget) {
                         overflowed = true
@@ -728,8 +740,8 @@ internal fun collectInjections(
                         newContentTokens += estimateTokens(entry.content)
                         continue
                     }
-                    newContentTokens += estimateTokens(entry.content)
                 }
+                newContentTokens += estimateTokens(entry.content)
                 accepted.add(entry)
             }
 

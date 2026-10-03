@@ -456,7 +456,8 @@ class SettingsStore(
                     JsonInstant.decodeFromString(it)
                 } ?: emptyList(),
                 // 官方 world_info_budget：世界书预算 = 上下文 token 的百分比（0-100，官方默认 25）
-                worldInfoBudget = preferences[WORLD_INFO_BUDGET]?.coerceIn(0, 100) ?: 25,
+                // 未设置过时给 100（不裁剪），理由见 Settings.worldInfoBudget 的注释
+                worldInfoBudget = preferences[WORLD_INFO_BUDGET]?.coerceIn(0, 100) ?: 100,
                 worldInfoBudgetCap = preferences[WORLD_INFO_BUDGET_CAP] ?: 0,
                 worldInfoMinActivations = preferences[WORLD_INFO_MIN_ACTIVATIONS] ?: 0,
                 worldInfoMinActivationsDepthMax = preferences[WORLD_INFO_MIN_ACTIVATIONS_DEPTH_MAX] ?: 0,
@@ -763,7 +764,14 @@ data class Settings(
     val selectedASRProviderId: Uuid? = null,
     val modeInjections: List<PromptInjection.ModeInjection> = DEFAULT_MODE_INJECTIONS,
     val lorebooks: List<Lorebook> = emptyList(),
-    val worldInfoBudget: Int = 25,                  // 官方 world_info_budget：世界书预算 = 上下文 token 的百分比（官方默认 25%）
+    // 官方 world_info_budget 是上下文 token 的百分比，官方默认 25%。
+    // 本地默认改成 100（不裁剪）：官方那个 25% 是按短条目英文书设计的，
+    // 中文角色卡的世界书动辄几万 token——一张卡 22 条里 11 条 constant 合计
+    // 3.7 万字符，25% 预算下 <twitter>/<Status>/生成格式 会被逐条丢弃。
+    // 而「生成格式」正是教模型写 <mainbody>/<phone> 骨架的条目，一丢卡就整个失效：
+    // 模型不再输出标签 → 卡内 JS 拿不到数据 → 显示「您未打开 choice 世界书」
+    // 或只剩一个 HTML 空壳。用户看到的是"卡片坏了"，根因却在这个百分比上。
+    val worldInfoBudget: Int = 100,
     val worldInfoBudgetCap: Int = 0,                // 官方 world_info_budget_cap：预算绝对 token 上限（0=不限制，官方默认 0）
     val worldInfoMinActivations: Int = 0,           // 世界书最少激活数（0=关闭，酒馆 min_activations）
     val worldInfoMinActivationsDepthMax: Int = 0,   // 官方 world_info_min_activations_depth_max：min_activations 最大扫描深度（0=不限制）

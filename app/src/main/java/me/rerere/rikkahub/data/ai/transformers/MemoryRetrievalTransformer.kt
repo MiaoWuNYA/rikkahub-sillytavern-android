@@ -57,6 +57,32 @@ private const val JEV_SCREENING_MAX_CANDIDATES = 96
 private const val JEV_MEMORY_PROBABILITY_FLOOR = 0.5
 
 /**
+ * 语义检索的相关性下限（余弦相似度）。
+ *
+ * 此前这里是 `score > 0f`——等于没有门槛：余弦 0.01（几乎不相关）也照收，
+ * 再被 `take(RESULT_LIMIT)` 硬凑成 6 条塞进上下文。用户看到的就是
+ * 「提取的记忆跟我这段对话毫无关系」。
+ *
+ * 0.35 是常用经验值：同一件事的不同表述通常落在 0.5-0.9，主题相关但用词
+ * 不同的落在 0.35-0.5，无关内容基本在 0.3 以下。取不到足够条目时宁可少注入
+ * 也不要凑数——记忆块本身会占用上下文，塞错内容比不塞更糟。
+ */
+private const val SEMANTIC_SCORE_FLOOR = 0.35f
+
+/**
+ * 词法检索的相关性下限（命中词数占比）。
+ *
+ * 词法路径是 embedding 不可用时的兜底，中文按二元组切分，噪音本来就大：
+ * 查询 20 个词只命中 1 个也有 0.05 分。门槛设得比语义路径高，筛掉
+ * 「只碰巧共用一个词」的条目。查询词很少（<=2）时按全中才要处理，
+ * 由下面的 effectiveFloor 保证。
+ */
+private const val LEXICAL_SCORE_FLOOR = 0.34f
+
+/** 查询词少于这个数量时，要求全部命中——词太少时比例没有区分度 */
+private const val LEXICAL_FEW_TERMS = 3
+
+/**
  * 记忆 RAG 检索（移植自 Rikkahub-Revised）：
  * 以最近的用户消息为查询，对记忆做嵌入语义检索（失败时退回词法检索），
  * 将最相关的记忆注入 system 消息。开启后不再全量注入记忆列表。
@@ -136,7 +162,7 @@ class MemoryRetrievalTransformer(
         }
 
         val semanticMatches = semanticSearch(ctx, records, query)
-            .filter { (_, score) -> score > 0f }
+            .filter { (_, score) -> score >= SEMANTIC_SCORE_FLOOR }
         val baseMatches = when {
             // Jev 接管：直接用 Jev 判相关性，省掉 embedding 调用。
             // 空列表（没配置/批次失败/全不相关）都退回原检索兜底，不能静默少注入。
@@ -362,8 +388,16 @@ class MemoryRetrievalTransformer(
                 searchTerms.count(text::contains).toFloat() / searchTerms.size
             }
             record to score
-        }.filter { it.second > 0f }.sortedByDescending { it.second }
+        }.filter { it.second >= effectiveFloor(searchTerms.size) }
+            .sortedByDescending { it.second }
     }
+
+    /**
+     * 词法命中的门槛：查询词很少时（<=2）必须全中，否则按比例。
+     * 查询词只有 1 个时 1/1=1.0 才留下，避免单个常见词召回一堆无关记忆。
+     */
+    private fun effectiveFloor(termCount: Int): Float =
+        if (termCount < LEXICAL_FEW_TERMS) 1f else LEXICAL_SCORE_FLOOR
 }
 
 internal fun applyEpisodicRecencyBoost(
