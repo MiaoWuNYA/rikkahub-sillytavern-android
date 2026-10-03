@@ -66,6 +66,30 @@ import java.net.UnknownHostException
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
+/**
+ * 本轮是否注册记忆工具（memory_tool）。
+ *
+ * 两条规则缺一不可：
+ * - 助手自身要开着记忆功能；
+ * - 非酒馆模式。
+ *
+ * 酒馆模式下不注册记忆工具，因为记忆是 App 自带的工作流，不属于原版酒馆的
+ * 上下文构成——原版酒馆没有让模型自行管理长期记忆的能力。开着它会让助手
+ * 在本该纯角色扮演的对话里主动 create/edit/delete 记忆记录，既污染上下文，
+ * 也和「酒馆模式 = 纯净请求」的定位冲突。
+ *
+ * 判定必须放在这里而不是只依赖调用方裁剪：tools 参数来自 ChatService 的
+ * 两条不同路径（handleMessageComplete 与 generateForAssistant），后者历史上
+ * 没有做酒馆裁剪，而本函数所在的一层是所有路径的公共叠加点。
+ *
+ * 抽成纯函数是为了让这条规则可单测——它此前是散在 buildList 里的内联条件，
+ * 一旦被改动没有任何测试会发现。
+ */
+internal fun shouldRegisterMemoryTool(
+    memoryEnabled: Boolean,
+    tavernMode: Boolean,
+): Boolean = memoryEnabled && !tavernMode
+
 private const val TAG = "GenerationHandler"
 private const val MAX_EMPTY_RESPONSE_RETRIES = 3
 private const val ROLLING_CONTEXT_SYSTEM_PROMPT =
@@ -281,7 +305,11 @@ class GenerationLoop(
         // 而本层是所有路径的公共叠加点。
         // 上层已排除记忆检索（memoryRetrievalTransformer），
         // 本层再排除记忆写入工具，酒馆模式下记忆才算真正隔离。
-        if (assistant?.enableMemory == true && !settings.huadengSettings.enableTavernMode) {
+        if (shouldRegisterMemoryTool(
+                memoryEnabled = assistant?.enableMemory == true,
+                tavernMode = settings.huadengSettings.enableTavernMode,
+            )
+        ) {
             val memoryAssistantId = if (assistant.useGlobalMemory) {
                 MemoryRepository.GLOBAL_MEMORY_ID
             } else {
