@@ -250,14 +250,48 @@ private fun replaceWithRegex(input: String, regex: AssistantRegex): String {
         try {
             return input.replace(regex = compiled, replacement = replacement)
         } catch (e: Exception) {
-            e.printStackTrace()
-            // 替换字符串可能引用不存在的分组，失败时返回原字符串
-            return input
+            // 走降级路径：见 applyReplacementManually 的说明
+            return applyReplacementManually(input, compiled, replacement) ?: input
         }
     }
     // 编译失败：尝试变长 lookbehind 模拟（官方 JS 引擎支持，java.util.regex 不支持）
     val simulated = VariableLookbehind.replace(input, regex.findRegex, replacement)
     return simulated ?: input
+}
+
+/**
+ * 逐匹配手动应用替换串。
+ *
+ * 为什么需要它：Kotlin 的 `Regex.replace` 把替换串里的 `$` 一概当作组引用，
+ * 遇到 `$1` 之外的写法会抛 `IllegalArgumentException: Illegal group reference`。
+ * 而酒馆正则的替换串常常是**整段 HTML 文档**，里面 `$` 属于 CSS/JS 语法——
+ * 典型如 JS 模板字符串 `${i + 4}`、`${characterName}`，它们不是组引用。
+ *
+ * 实测一张 iPhone UI 卡：findRegex 命中 3253 字符，
+ * 替换串 157901 字符里含 110 处 `${...}`，标准 replace 直接抛异常；
+ * 而旧代码在 catch 里 `return input`，于是**静默地什么都不替换**，
+ * 表现为「卡的正则明明解析成功、也匹配到了，但标签原样显示成纯文本」。
+ *
+ * 官方酒馆跑在 JS 引擎上，`String.replace` 对不存在的命名组不会抛异常
+ * （替换为空串），所以同一张卡在酒馆里正常。这里用同样的语义兜底。
+ */
+private fun applyReplacementManually(input: String, compiled: Regex, replacement: String): String? {
+    return runCatching {
+        val out = StringBuilder()
+        var last = 0
+        for (m in compiled.findAll(input)) {
+            out.append(input, last, m.range.first)
+            out.append(VariableLookbehind.applyReplacement(m, replacement))
+            last = m.range.last + 1
+        }
+        // 注意：不要写成 out.append(input, last)。
+        // Kotlin 对 StringBuilder 没有 (CharSequence, Int) 这个重载，
+        // 两参调用会被解析成 append(input) + append(last)，
+        // 即「把整段原文再追加一遍，末尾拼上偏移量」，
+        // 实测产出形如 "...</mainbody>3253" 的脏数据（3253 就是 last 的值）。
+        out.append(input.substring(last))
+        out.toString()
+    }.getOrNull()
 }
 
 /**
@@ -374,14 +408,36 @@ private object VariableLookbehind {
         return true
     }
 
+    /**
+     * 按名字取捕获组，组不存在时返回 null。
+     *
+     * Kotlin 的 `MatchResult.groups[name]` 对未定义的名字会抛
+     * `IllegalArgumentException: No group with name <x>`，而不是返回 null。
+     * 酒馆正则的替换串常是整段 HTML 文档，里面的 `${i + 4}`、`${characterName}`
+     * 属于 JS 模板字符串而非组引用；JS 引擎遇到不存在的组会静默替换成空串。
+     * 不对齐这个语义，整条替换就会被异常打断，卡片渲染不出来。
+     */
+    private fun safeNamedGroup(m: MatchResult, name: String): String? = try {
+        m.groups[name]?.value
+    } catch (_: IllegalArgumentException) {
+        null
+    }
+
     /** 手动应用替换字符串：$N、${name}、$&（=$0）、\$ 与 \\ 转义。 */
-    private fun applyReplacement(m: MatchResult, replacement: String): String {
+    internal fun applyReplacement(m: MatchResult, replacement: String): String {
         val sb = StringBuilder()
         var i = 0
         while (i < replacement.length) {
             val c = replacement[i]
             when {
-                c == '\\' && i + 1 < replacement.length -> {
+                // 反斜杠只在转义「对替换有特殊含义的字符」时才是转义符，
+                // 其余一律原样保留。此前无条件把 \X 折叠成 X，会把替换串里的
+                // JS 正则字面量毁掉：`/</Status>/gi` 被写成 `/</Status>/gi`
+                // —— 反斜杠一丢，正则字面量提前闭合，整段 <script>
+                // 直接 SyntaxError，卡片内容渲染为空。
+                // 酒馆跑在 JS 上，只有 \$ 与 \\ 是真转义，其它反斜杠原样透传。
+                c == '\\' && i + 1 < replacement.length &&
+                    (replacement[i + 1] == '$' || replacement[i + 1] == '\\') -> {
                     sb.append(replacement[i + 1])
                     i += 2
                 }
@@ -389,8 +445,12 @@ private object VariableLookbehind {
                     val close = replacement.indexOf('}', i)
                     if (close > 0) {
                         val name = replacement.substring(i + 2, close)
-                        val group = m.groups[name]
-                        sb.append(group?.value ?: "")
+                        // m.groups[name] 对不存在的名字会抛 IllegalArgumentException
+                        // （"No group with name <x>"），不是返回 null。酒馆正则的
+                        // 替换串常是整段 HTML，里面的 ${i + 4} 属于 JS 模板字符串，
+                        // 不是组引用；JS 引擎遇到不存在的组会静默替换为空串，
+                        // 这里对齐同样的语义，否则整条替换会被异常打断。
+                        sb.append(safeNamedGroup(m, name) ?: "")
                         i = close + 1
                     } else {
                         sb.append('$')
