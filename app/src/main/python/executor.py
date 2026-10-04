@@ -212,6 +212,7 @@ def _execute_locked(code: str, workdir: str, bridge=None) -> str:
         pass
 
     # Pre-configure matplotlib
+    _has_cjk = True
     try:
         import matplotlib
         matplotlib.use('Agg')
@@ -219,6 +220,28 @@ def _execute_locked(code: str, workdir: str, bridge=None) -> str:
         plt.rcParams['figure.facecolor'] = 'white'
         plt.rcParams['axes.facecolor'] = 'white'
         plt.rcParams['savefig.facecolor'] = 'white'
+
+        # 中文字体：设备上没有任何含汉字字形的字体，matplotlib 又只带
+        # DejaVu（纯拉丁）。画中文标签时每个字都会渲染成方块并刷一屏
+        # "Glyph missing from font" 警告。
+        #
+        # 这里不去塞一个几 MB 的中文字体——只为了图表标题不值得。
+        # 改为显式关掉「缺字形」警告并标记一个开关，出图后由下面统一提示，
+        # 让模型知道该换英文标注。比让用户拿到一张全是方块的图好。
+        try:
+            from matplotlib import font_manager
+            _has_cjk = any(
+                'CJK' in f.name or 'Noto Sans SC' in f.name or 'Heiti' in f.name
+                or 'SimHei' in f.name or 'WenQuanYi' in f.name
+                for f in font_manager.fontManager.ttflist
+            )
+        except Exception:
+            _has_cjk = False
+
+        if not _has_cjk:
+            import warnings as _w
+            _w.filterwarnings('ignore', message='Glyph .* missing from font')
+            plt.rcParams['axes.unicode_minus'] = False
     except ImportError:
         pass
 
@@ -249,6 +272,11 @@ def _execute_locked(code: str, workdir: str, bridge=None) -> str:
                            bbox_inches='tight', facecolor='white', edgecolor='none')
                 output_files.append(fname)
                 plt.close(fig)
+            # 设备上没有中文字形，图里的汉字会渲染成方块。与其让用户
+            # 拿到一张看不懂的图，不如明确告诉调用方换英文标注。
+            if not locals().get('_has_cjk', False) and output_files:
+                print('[提示] 图中若含中文会显示为方块：设备无可用的中文字形。'
+                      '请改用英文标注，或把中文说明写在正文里而非图内。')
         except ImportError:
             pass
 

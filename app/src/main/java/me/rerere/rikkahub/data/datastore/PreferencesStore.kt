@@ -45,6 +45,7 @@ import me.rerere.rikkahub.data.datastore.migration.PreferenceStoreV3Migration
 import me.rerere.rikkahub.data.datastore.migration.PreferenceStoreV4Migration
 import me.rerere.rikkahub.data.datastore.migration.PreferenceStoreV5Migration
 import me.rerere.rikkahub.data.model.Assistant
+import me.rerere.rikkahub.data.model.withNewLocalTools
 import me.rerere.rikkahub.data.model.AuthorNotePosition
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.GroupChat
@@ -399,7 +400,8 @@ class SettingsStore(
                     JsonInstant.decodeFromString(it)
                 } ?: emptyList(),
                 providers = JsonInstant.decodeFromString(preferences[PROVIDERS] ?: "[]"),
-                assistants = JsonInstant.decodeFromString(preferences[ASSISTANTS] ?: "[]"),
+                assistants = JsonInstant.decodeFromString<List<Assistant>>(preferences[ASSISTANTS] ?: "[]")
+                    .map { it.withNewLocalTools() },
                 dynamicColor = preferences[DYNAMIC_COLOR] != false,
                 themeId = preferences[THEME_ID] ?: PresetThemes[0].id,
                 customThemes = preferences[CUSTOM_THEMES]?.let {

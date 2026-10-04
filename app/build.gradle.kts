@@ -78,6 +78,36 @@ chaquopy {
             install("regex")           // 变长后顾/反向引用，标准 re 做不到
             install("dateparser")      // 自然语言日期："下周三下午三点"
             install("pytz")
+
+            // ── 补齐：代码在用但从未安装的包 ────────────────────
+            // convert.py 的 epub 分支 import ebooklib，executor.py 的绘图分支
+            // import matplotlib ——两个包都不在清单里，运行到那条路径必然
+            // ImportError，而工具描述还向模型宣传支持 epub。属于宣传与能力脱节。
+            install("ebooklib")
+            install("matplotlib")
+            install("pyyaml")          // convert.py 的 yaml 分支用它做严格解析
+            install("pypdfium2")       // 自带 android wheel 的 PDFium，PDF 页面渲染
+
+            // ── 符号数学与代码解析 ──────────────────────────────
+            // 纯 Python 无原生依赖，且都是「聊天里真的会用到」的：
+            // 解方程/求导/化简，以及给代码做词法分析。
+            install("sympy")           // 符号数学：解方程、微积分、化简、矩阵
+            install("pygments")        // 500+ 语言的词法分析器（可做代码结构解析）
+
+            // ── 中文与结构化数据的小件 ──────────────────────────
+            install("cn2an")           // 中文数字 ↔ 阿拉伯数字："三千零二十" → 3020
+            install("zhon")            // 中文标点/字符常量表，写中文正则时省事
+            install("jsonschema")      // JSON Schema 校验，约束结构化输出
+            install("python-frontmatter")  // YAML frontmatter 解析（卡片/笔记头部）
+
+            // ── 老式 .xls 支持 ──────────────────────────────────
+            // openpyxl 只认 .xlsx；用户手上仍有大量 .xls，这是真实缺口。
+            install("xlrd")
+            install("xlwt")
+            install("xlutils")
+
+            // ── Word 模板渲染 ───────────────────────────────────
+            install("docxtpl")         // Jinja2 语法填充 docx 模板
         }
     }
 }
@@ -431,3 +461,42 @@ tasks.register("checkJsEngines") {
     }
 }
 tasks.named("preBuild") { dependsOn("checkJsEngines") }
+
+// ── Chaquopy 依赖瘦身 ──
+//
+// requirements-common.imy 是一个 stored（不再二次压缩）的 zip，直接决定 APK
+// 体积的一半。里面带着每个包完整的 tests/ 目录——pandas 的测试套件单独就占
+// 十几 MB，全包合计约 15.7 MB。
+//
+// 生产环境永远不会跑这些测试：包里没有 pytest，也没有代码 import 它们。
+// 属于「引入了资源但实际不会被使用」的典型形态，删掉零功能影响。
+//
+// 实现交给 build-tools/strip_chaquopy.py：Gradle 的 Kotlin DSL 里 java.util.zip
+// 会被解析成项目属性而报 Unresolved reference，用外部脚本反而干净可控。
+//
+// 时机：mergeReleaseAssets 之后、packageRelease 之前就地重写那些 imy。
+// 之所以原地改而不是产出到新目录：AGP 9 没有公开 API 去替换 packageRelease
+// 读取 assets 的位置，原地替换是唯一不依赖其内部结构的接法。
+val stripChaquopyTests = tasks.register<Exec>("stripChaquopyTests") {
+    description = "剔除 Chaquopy imy 中的 tests / .pyi / .h 条目以减小 APK 体积"
+    group = "build"
+
+    val assetsDir = layout.buildDirectory.dir("intermediates/assets/release/mergeReleaseAssets")
+    val script = rootProject.layout.projectDirectory.file("build-tools/strip_chaquopy.py")
+
+    onlyIf { assetsDir.get().asFile.resolve("chaquopy").exists() }
+
+    commandLine(
+        "python3", script.asFile.absolutePath,
+        assetsDir.get().asFile.absolutePath,
+    )
+    // Exec 任务的输出不可预测，关掉 up-to-date 检查，保证每次打包都真的执行
+    outputs.upToDateWhen { false }
+}
+
+tasks.matching { it.name == "mergeReleaseAssets" }.configureEach {
+    finalizedBy(stripChaquopyTests)
+}
+tasks.matching { it.name == "packageRelease" }.configureEach {
+    mustRunAfter(stripChaquopyTests)
+}

@@ -24,43 +24,49 @@ import org.koin.java.KoinJavaComponent
 import java.io.File
 
 /**
- * 工具描述的可选部分。
+ * execute_python 的描述。
  *
- * 列出可用的第三方库，模型才知道该往哪个方向写代码——不写这段，它往往只用
- * 标准库手搓，明明装了 pandas 却去手写 CSV 解析。代价是几百 token，
- * 所以在华灯设置里给了开关：长对话token紧张时可以关掉。
+ * 开销敏感：这段文字每次请求都会随工具定义发给模型，所以只保留
+ * 「模型自己推断不出来的信息」——也就是有哪些库可用。
+ * 每个库的功能不写，模型认识 numpy/pandas/PIL 这些名字，逐条解释
+ * 功能纯属浪费 token（早先版本每个库带一句说明，约 270 token，
+ * 压到现在这个规模）。
  */
-private const val PYTHON_LIBRARY_HINTS = "AVAILABLE LIBRARIES (import normally, they are pre-installed):\n" +
-        "  numpy             numerical arrays, statistics, linear algebra\n" +
-        "  pandas            DataFrame: CSV/Excel analysis, groupby, merge, pivot\n" +
-        "  PIL (Pillow)      image open/resize/crop/rotate/convert/watermark\n" +
-        "  docx              read & write Word .docx (python-docx)\n" +
-        "  pptx              read PowerPoint .pptx (python-pptx)\n" +
-        "  fpdf              build PDF from scratch (fpdf2)\n" +
-        "  pypdf, pdfminer   read/split/merge PDF; pdfminer for layout & text flow\n" +
-        "  openpyxl, xlsxwriter   read/write Excel .xlsx\n" +
-        "  bs4, lxml         HTML/XML parsing (lxml is several times faster than html.parser)\n" +
-        "  requests          HTTP calls\n" +
-        "  markdown, markdownify   markdown <-> HTML\n" +
-        "  regex             advanced regular expressions (variable-length lookbehind)\n" +
-        "  chardet           detect text encoding — use before reading unknown/GBK files\n" +
-        "  dateparser        parse natural-language dates (\"下周三下午三点\")\n" +
-        "  pypinyin          Chinese -> pinyin (sorting, ruby annotation)\n" +
-        "  opencc            Simplified <-> Traditional Chinese\n" +
-        "  tabulate, pytz\n" +
-        "\n"
+private const val PYTHON_TOOL_HEAD =
+    "Run Python 3.12 on-device (isolated). For computation, data handling, file and\n" +
+        "document generation. (simple math -> calculator; shell -> execute_command)\n"
 
-private const val PYTHON_TOOL_INTRO =
-    "Execute Python code on-device (isolated environment) for data processing, API calls,\n" +
-        "file generation, or programmatic logic beyond simple math (simple math → calculator;\n" +
-        "shell ops → execute_command; file ops → file tools).\n" +
-        "\n"
+/** 库清单：约 60 token。关掉后模型仍可 import，只是不知道装了哪些。 */
+private const val PYTHON_LIBRARY_HINTS =
+    "Preinstalled: numpy, pandas, PIL(Pillow), docx, pptx, fpdf, pypdf, pdfminer,\n" +
+        "openpyxl, xlsxwriter, bs4, lxml, requests, markdown, markdownify, regex,\n" +
+        "chardet, dateparser, pypinyin, opencc, tabulate, pytz.\n" +
+        "Also: sympy (symbolic math), matplotlib (plots), pygments (code lexing),\n" +
+        "xlrd/xlwt (legacy .xls), docxtpl (docx templates), ebooklib (epub),\n" +
+        "cn2an (Chinese numerals), zhon (Chinese punctuation), jsonschema,\n" +
+        "python-frontmatter, pyyaml, pypdfium2 (PDF render).\n" +
+        // 中文画图是个真实的坑：设备上没有含汉字字形的字体，图里的中文
+        // 会渲染成方块。事先说一句，比让模型画完发现看不懂要省事。
+        "(matplotlib has no CJK glyphs — use English labels in plots.)\n"
 
-private const val PYTHON_CONVERT_HINTS = "A convert module ships with the app for format conversion:\n" +
-    "  import convert; convert.convert(path, None, 'pdf', 'md', workdir)\n" +
-    "  supports txt/md/html/docx/pdf/xlsx/pptx/epub/csv/json/yaml/toml, and csv/json/yaml <-> table\n" +
-    "\n" +
-    "code: Python code to execute. Last expression value returned. Use print() for debugging."
+/**
+ * convert 模块的入口说明。
+ *
+ * 这一条不随库清单开关关闭：模块名和签名是模型自己推断不出来的，
+ * 去掉之后它完全不知道有这个转换入口，只能去手搓。
+ */
+private const val PYTHON_CONVERT_HINTS =
+    "Format conversion helper: convert.convert(path, None, src_fmt, dst_fmt, workdir)\n" +
+        "handles txt/md/html/docx/pdf/xlsx/pptx/epub/csv/json/yaml/toml and *->table\n" +
+        "\n" +
+        // office 模块每个函数能做什么写在它自己的 docstring 里，模型
+        // 用 help(office.<fn>) 就能拿到。描述里只留「有这么个模块、
+        // 干什么用」——十几个操作名不该出现在每次请求都发的工具定义里。
+        "office.* : read/edit Word/PPT/Excel in place (tables, formulas, slides, sheets).\n" +
+        "  inspect + edit pairs; help(office) lists operations.\n"
+
+private const val PYTHON_TOOL_TAIL =
+    "code: Python source. Last expression is returned; use print() to debug."
 
 fun createPythonTool(
     context: Context,
@@ -69,9 +75,15 @@ fun createPythonTool(
 ): Tool = Tool(
     name = "execute_python",
     description = buildString {
-        append(PYTHON_TOOL_INTRO)
-        if (includeLibraryHints) append(PYTHON_LIBRARY_HINTS)
+        append(PYTHON_TOOL_HEAD)
+        if (includeLibraryHints) {
+            append("\n")
+            append(PYTHON_LIBRARY_HINTS)
+        }
+        append("\n")
         append(PYTHON_CONVERT_HINTS)
+        append("\n")
+        append(PYTHON_TOOL_TAIL)
     },
     needsApproval = { false },
     parameters = {
