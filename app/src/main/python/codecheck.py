@@ -404,6 +404,127 @@ HEURISTIC_NOTE = (
 )
 
 
+def check_structured(code, language, filename='<code>'):
+    """
+    结构化数据格式的**精确**检查：JSON / YAML / TOML / XML。
+
+    这些格式有现成的解析器，一跑就知道对错，还能给出准确的行列号。
+    之前它们和 C 一样被归到 check_generic 走括号配对，结果
+    `{"a": 1, "b": [1,2,],}` 这种尾逗号错误完全查不出来——
+    明明 json.loads 一次调用就能精确定位。白白浪费了手上的解析器。
+
+    所以这里的 reliable 是 True：解析成功就是真成功，失败就是真失败。
+    """
+    import json as _json
+
+    def mk(line, col, kind, message):
+        return {'line': line, 'col': col, 'kind': kind, 'message': message}
+
+    try:
+        if language == 'json':
+            # json 模块的报错信息带 "line 1 column 20 (char 19)"，
+            # 提取出来能让模型直接定位，比自己猜强。
+            try:
+                _json.loads(code)
+            except _json.JSONDecodeError as e:
+                return {
+                    'language': language,
+                    'reliable': True,
+                    'syntax_ok': False,
+                    'issues': [mk(e.lineno, e.colno, 'syntax', e.msg)],
+                    'note': 'JSON 语法错误，无法解析。',
+                }
+            return {
+                'language': language, 'reliable': True, 'syntax_ok': True,
+                'issues': [], 'note': '语法正确。',
+            }
+
+        if language in ('yaml',):
+            try:
+                import yaml
+            except ImportError:
+                return None  # 交给通用路径
+            try:
+                list(yaml.safe_load_all(code))
+            except yaml.YAMLError as e:
+                line = col = 0
+                mark = getattr(e, 'problem_mark', None)
+                if mark is not None:
+                    line, col = mark.line + 1, mark.column + 1
+                msg = getattr(e, 'problem', None) or str(e)
+                ctx = getattr(e, 'context', None)
+                if ctx:
+                    msg = f'{ctx}: {msg}'
+                return {
+                    'language': language, 'reliable': True, 'syntax_ok': False,
+                    'issues': [mk(line, col, 'syntax', msg)],
+                    'note': 'YAML 语法错误，无法解析。',
+                }
+            return {
+                'language': language, 'reliable': True, 'syntax_ok': True,
+                'issues': [], 'note': '语法正确。',
+            }
+
+        if language == 'toml':
+            # Python 3.11+ 自带 tomllib；这里跑在 3.12 上
+            try:
+                import tomllib as _toml
+                _toml.loads(code)
+            except ModuleNotFoundError:
+                try:
+                    import tomli as _toml
+                    _toml.loads(code)
+                except Exception as e:
+                    return {
+                        'language': language, 'reliable': True, 'syntax_ok': False,
+                        'issues': [mk(0, 0, 'syntax', str(e)[:200])],
+                        'note': 'TOML 解析失败（tomli 未安装）。',
+                    }
+            except Exception as e:
+                line = col = 0
+                # tomllib 的异常在 3.11+ 带 lineno/colno
+                line = getattr(e, 'lineno', 0) or 0
+                col = getattr(e, 'colno', 0) or 0
+                return {
+                    'language': language, 'reliable': True, 'syntax_ok': False,
+                    'issues': [mk(line, col, 'syntax', str(e)[:200])],
+                    'note': 'TOML 语法错误，无法解析。',
+                }
+            return {
+                'language': language, 'reliable': True, 'syntax_ok': True,
+                'issues': [], 'note': '语法正确。',
+            }
+
+        if language == 'xml':
+            # XML 用 lxml 精确解析，同样能给出行列号
+            try:
+                from lxml import etree
+            except ImportError:
+                return None
+            try:
+                etree.fromstring(code.encode('utf-8') if isinstance(code, str) else code)
+            except etree.XMLSyntaxError as e:
+                line = getattr(e, 'lineno', 0) or 0
+                col = getattr(e, 'offset', 0) or 0
+                # lxml 的 message 很长，取第一行
+                msg = str(e).split('\n')[0][:200]
+                return {
+                    'language': language, 'reliable': True, 'syntax_ok': False,
+                    'issues': [mk(line, col, 'syntax', msg)],
+                    'note': 'XML 语法错误，无法解析。',
+                }
+            return {
+                'language': language, 'reliable': True, 'syntax_ok': True,
+                'issues': [], 'note': '语法正确。',
+            }
+
+    except Exception:
+        # 任何意外都退回通用路径，绝不让检查本身崩掉
+        return None
+
+    return None
+
+
 def check_generic(code, language, filename='<code>'):
     """非 Python 语言的浅层检查：括号配对 + 常见可疑写法。"""
     issues = []
@@ -484,7 +605,10 @@ def check(code, filename=None, language=None):
         if lang == 'python':
             result = check_python(code, filename or '<code>')
         else:
-            result = check_generic(code, lang, filename or '<code>')
+            # JSON/YAML/TOML/XML 有现成的解析器，能做精确判定，
+            # 不该跟 C 一样退回启发式散漫检查。
+            result = check_structured(code, lang, filename or '<code>') \
+                or check_generic(code, lang, filename or '<code>')
     except Exception as e:
         return _err(f'检查过程出错: {type(e).__name__}: {e}')
 

@@ -34,12 +34,12 @@ import java.util.concurrent.TimeUnit
 private const val CODE_CHECK_TIMEOUT_SEC = 60
 
 private const val CHECK_TOOL_DESCRIPTION =
-    "Statically check code before running it. Catches bugs that reading misses.\n" +
-        "Python: real analysis — syntax errors, undefined names, unused imports/vars\n" +
-        "(reliable). Other languages: bracket matching plus common-pitfall hints only\n" +
-        "(C/Java/Go/Rust/JS/TS/shell...); no compiler is available, so results are\n" +
-        "heuristic and flagged as such in the response. Also reports detected language.\n" +
-        "Use it when writing or reviewing non-trivial code."
+    "Statically check code. Reliable findings: Python (syntax, undefined names,\n" +
+        "unused imports/vars) and JSON/YAML/TOML/XML, which are really parsed and\n" +
+        "give exact line/column. Other languages: bracket matching + pitfall hints\n" +
+        "only (no compiler on device), flagged as heuristic. Also detects language.\n" +
+        "execute_python already checks Python automatically; use this tool for\n" +
+        "other languages or data files."
 
 internal fun buildCodeCheckTool(context: Context): Tool = Tool(
     name = "check_code",

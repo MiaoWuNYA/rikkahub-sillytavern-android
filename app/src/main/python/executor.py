@@ -178,6 +178,62 @@ def update_setting(key, value):
 # Main executor
 # ============================================================
 
+def _preflight_check(code):
+    """
+    执行前的自动静态检查。
+
+    只有「可靠」的结论才会被报出来：Python 的 pyflakes 结果、以及
+    JSON/YAML 这类能精确解析的格式。启发式提示（C 的无边界检查函数、
+    Java 的字符串 == 比较之类）一律不带进来——它们在正常代码里也会
+    大量命中，混进来只会让输出变成噪音，模型反而会忽略真正的问题。
+
+    返回一段可读的文本，没有问题时返回空字符串。
+    """
+    try:
+        import json as _json
+
+        # codecheck 与 executor 同在 app.imy 顶层，正常情况直接 import 即可。
+        # 但 execute() 内部会 os.chdir(workdir)，而 '' 在 sys.path 里代表
+        # 当前目录——chdir 之后它就指向 workdir，codecheck 可能因此找不到
+        # （实测在宿主机上必然复现，Chaquopy 环境里取决于加载顺序）。
+        # 这里显式把本文件所在目录补进 sys.path，避免依赖 cwd。
+        try:
+            import codecheck
+        except ImportError:
+            import os as _os
+            import sys as _sys
+            _here = _os.path.dirname(_os.path.abspath(__file__))
+            if _here not in _sys.path:
+                _sys.path.insert(0, _here)
+            import codecheck
+
+        report = _json.loads(codecheck.check(code, filename='<executed code>'))
+        if report.get('error'):
+            return ''
+        if not report.get('reliable'):
+            return ''
+
+        issues = report.get('issues') or []
+        if not issues:
+            return ''
+
+        lines = ['[静态检查] 执行前发现 {} 个问题：'.format(len(issues))]
+        for it in issues[:20]:
+            kind = it.get('kind', '')
+            line = it.get('line') or 0
+            msg = it.get('message', '')
+            if line:
+                lines.append('  第 {} 行 [{}] {}'.format(line, kind, msg))
+            else:
+                lines.append('  [{}] {}'.format(kind, msg))
+        if len(issues) > 20:
+            lines.append('  …… 另有 {} 个'.format(len(issues) - 20))
+        lines.append('  （仅供参考，代码仍会继续执行。）')
+        return '\n'.join(lines)
+    except Exception:
+        # 检查本身绝不能影响执行
+        return ''
+
 def execute(code: str, workdir: str, bridge=None) -> str:
     """Execute Python code, return JSON with results.
 
@@ -242,6 +298,22 @@ def _execute_locked(code: str, workdir: str, bridge=None) -> str:
         # 看到顶层变量（若传两份，def 的 __globals__ 指向另一份字典会 NameError）。
         _scope = dict(globals())
         _scope["__name__"] = "__main__"
+
+        # 执行前先自动静态检查。
+        #
+        # 之前 codecheck 只是个「可选的独立工具」——模型想起来了才调，
+        # 想不起来就直接执行，然后拿一个运行时异常，还不知道自己哪里
+        # 写错了。检查能力造出来却没人用，等于没有。
+        #
+        # 这里的行为刻意保守：
+        #   - 只报「可靠」的问题（pyflakes / 语法错误），不报启发式提示，
+        #     否则 C 那类提示会把正常代码说成有问题；
+        #   - 只附带信息，不拦截执行。用户写的就是想跑，不让跑比不检查
+        #     更糟；模型看到清单可以自己决定要不要改。
+        _issues = _preflight_check(code)
+        if _issues:
+            print(_issues)
+
         result = _run_user_code(code, _scope)
 
     except Exception as e:
@@ -256,13 +328,27 @@ def _execute_locked(code: str, workdir: str, bridge=None) -> str:
         sys.stderr = old_stderr
 
         # Find new files
+        #
+        # 必须与上面的 before 对称（都用 walk、都存相对路径）。之前这里是
+        # os.listdir 只扫顶层，而 before 是递归的——模型把结果写进子目录
+        # （out/chart.png、reports/2024.xlsx）时，文件完全不被回传，
+        # 表现就是「明明生成了却看不到」。
         try:
-            after = set(os.listdir(workdir))
-            for f in after - before:
-                if not f.startswith('.'):
-                    fpath = os.path.join(workdir, f)
-                    if os.path.isfile(fpath) and os.path.getsize(fpath) > 0:
+            after = set()
+            for _dp, _dns, _fns in os.walk(workdir):
+                _dns[:] = [d for d in _dns if not d.startswith('.') and d != '__pycache__']
+                for _fn in _fns:
+                    if not _fn.startswith('.'):
+                        after.add(os.path.relpath(os.path.join(_dp, _fn), workdir))
+
+            for f in sorted(after - before):
+                fpath = os.path.join(workdir, f)
+                try:
+                    # 上限保护：超大文件不回传，避免把聊天记录撑爆
+                    if os.path.isfile(fpath) and 0 < os.path.getsize(fpath) <= MAX_OUTPUT_FILE_BYTES:
                         output_files.append(f)
+                except OSError:
+                    continue
         except Exception:
             pass
 
