@@ -1,6 +1,7 @@
 [versions]
 agp = "9.4.0"
 barcodeScanning = "17.3.0"
+textRecognition = "16.0.1"
 cameraCore = "1.6.2"
 jlatexmath = "1.5"
 kotlin = "2.4.20"
@@ -76,6 +77,9 @@ androidx-media3-common = { module = "androidx.media3:media3-common", version.ref
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }
 androidx-media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
 barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "barcodeScanning" }
+# 离线 OCR：模型内置在 APK 里，不联网、不上传图片。
+# 中文包同时覆盖拉丁字母与数字，日常截图/菜单/公式足够。
+text-recognition-chinese = { module = "com.google.mlkit:text-recognition-chinese", version.ref = "textRecognition" }
 jlatexmath = { module = "com.github.rikkahub.jlatexmath-android:jlatexmath", version.ref = "jlatexmath" }
 jlatexmath-font-greek = { module = "com.github.rikkahub.jlatexmath-android:jlatexmath-font-greek", version.ref = "jlatexmath" }
 jlatexmath-font-cyrillic = { module = "com.github.rikkahub.jlatexmath-android:jlatexmath-font-cyrillic", version.ref = "jlatexmath" }

@@ -42,16 +42,41 @@ chaquopy {
     defaultConfig {
         version = "3.12"
         pip {
-            // 只保留实际被引用的包。
-            // 移除 numpy/geocoder/geopy/timezonefinder/python-dateutil/pyyaml/markupsafe
-            // 后 requirements-common.imy 从 58.9MB 降到 ~1MB。
+            // ── 基础 IO 与网络 ──────────────────────────────────
             install("requests")
             install("beautifulsoup4")
-            install("markdown")
+            install("lxml")            // bs4 的解析后端，比纯 Python 快数倍且容错更好
+            install("chardet")         // 编码探测：中文乱码/GBK 文本的救星
+
+            // ── 文档读写 ────────────────────────────────────────
+            // convert.py 一直在用 docx / pptx / fpdf，但这三个包从未安装过——
+            // docx 双向转换、pptx→txt、txt/md→PDF 三条路径运行时必然 ImportError。
+            // 注释里写的「只保留实际被引用的包」删过头了。
+            install("python-docx")
+            install("python-pptx")
+            install("fpdf2")           // 文本/图片 → PDF，带 Chaquopy 预编译 freetype
             install("pypdf")
+            install("pdfminer.six")    // 补 pypdf 的版式与文本流提取短板
             install("openpyxl")
+            install("xlsxwriter")      // 写出带格式的 xlsx（openpyxl 写样式更啰嗦）
+            install("markdown")
             install("markdownify")
             install("tabulate")
+
+            // ── 数值与表格：日常最高频的通用能力 ────────────────
+            install("numpy")           // 数值计算地基
+            install("pandas")          // CSV/Excel 统计分析
+
+            // ── 图片处理 ────────────────────────────────────────
+            install("pillow")          // 缩放/裁剪/旋转/格式转换/加水印
+
+            // ── 中文处理 ────────────────────────────────────────
+            install("pypinyin")        // 拼音、注音、按拼音排序
+            install("opencc-python-reimplemented")   // 繁简转换
+
+            // ── 文本与时间 ──────────────────────────────────────
+            install("regex")           // 变长后顾/反向引用，标准 re 做不到
+            install("dateparser")      // 自然语言日期："下周三下午三点"
             install("pytz")
         }
     }
@@ -318,6 +343,7 @@ dependencies {
     // quickie (qrcode scanner)
     implementation(libs.quickie.bundled)
     implementation(libs.barcode.scanning)
+    implementation(libs.text.recognition.chinese)
     implementation(libs.androidx.camera.core)
     // Room
     implementation(libs.androidx.room.runtime)
