@@ -1,5 +1,7 @@
 package me.rerere.rikkahub.ui.components.ui
 
+import androidx.core.net.toUri
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
+import me.rerere.rikkahub.utils.RELEASE_PAGE_URL
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Download01
@@ -39,7 +42,6 @@ import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.hooks.useThrottle
 import me.rerere.rikkahub.ui.pages.chat.ChatVM
-import me.rerere.rikkahub.utils.UpdateDownload
 import me.rerere.rikkahub.utils.Version
 import me.rerere.rikkahub.utils.onError
 import me.rerere.rikkahub.utils.onSuccess
@@ -120,11 +122,6 @@ fun UpdateCard(vm: ChatVM) {
             }
         }
         if (showDetail) {
-            val downloadHandler = useThrottle<UpdateDownload>(500) { item ->
-                vm.updateChecker.downloadUpdate(context, item)
-                showDetail = false
-                toaster.show(context.getString(R.string.update_card_downloading), type = ToastType.Info)
-            }
             ModalBottomSheet(
                 onDismissRequest = { showDetail = false },
             ) {
@@ -159,31 +156,36 @@ fun UpdateCard(vm: ChatVM) {
                             .verticalScroll(rememberScrollState()),
                         style = MaterialTheme.typography.bodyMedium
                     )
-                    info.downloads.fastForEach { downloadItem ->
-                        OutlinedCard(
-                            onClick = {
-                                downloadHandler(downloadItem)
+                    // 不内置下载：下载通道一向不稳（GitHub 直连被墙、公共代理
+                    // 时好时坏），交给浏览器取包反而可靠，用户也能自己核对来源。
+                    OutlinedCard(
+                        onClick = {
+                            runCatching {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, RELEASE_PAGE_URL.toUri())
+                                )
+                            }.onFailure {
+                                toaster.show(
+                                    context.getString(R.string.update_card_open_failed),
+                                    type = ToastType.Error,
+                                )
+                            }
+                        },
+                    ) {
+                        ListItem(
+                            headlineContent = {
+                                Text(text = stringResource(R.string.update_card_go_github))
                             },
-                        ) {
-                            ListItem(
-                                headlineContent = {
-                                    Text(
-                                        text = downloadItem.name,
-                                    )
-                                },
-                                supportingContent = {
-                                    Text(
-                                        text = downloadItem.size
-                                    )
-                                },
-                                leadingContent = {
-                                    Icon(
-                                        imageVector = HugeIcons.Download01,
-                                        contentDescription = null
-                                    )
-                                }
-                            )
-                        }
+                            supportingContent = {
+                                Text(text = stringResource(R.string.update_card_go_github_desc))
+                            },
+                            leadingContent = {
+                                Icon(
+                                    imageVector = HugeIcons.Download01,
+                                    contentDescription = null
+                                )
+                            }
+                        )
                     }
                 }
             }

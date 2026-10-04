@@ -77,6 +77,8 @@ data class Assistant(
         LocalToolOption.ChartDisplay,
         // 让模型能把本地图片直接显示在聊天里，而不是只能描述「我生成了一张图」。
         LocalToolOption.ShowImage,
+        // 写代码后先静态检查一遍，比写完直接跑更容易发现低级错误。
+        LocalToolOption.CodeCheck,
     ),
     val enableWebSearch: Boolean = false, // 网络搜索开关(每个助手独立)
     val workspaceId: Uuid? = null,
@@ -1009,6 +1011,7 @@ val DEFAULT_NEW_LOCAL_TOOLS: List<LocalToolOption> = listOf(
     LocalToolOption.DiffText,
     LocalToolOption.ChartDisplay,
     LocalToolOption.ShowImage,
+    LocalToolOption.CodeCheck,
 )
 
 /**

@@ -423,6 +423,70 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            // 代码静态检查
+            item(
+                headlineContent = {
+                    Text(stringResource(R.string.local_tool_code_check_title))
+                },
+                supportingContent = {
+                    Text(stringResource(R.string.local_tool_code_check_desc))
+                },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.CodeCheck),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.CodeCheck, it) }
+                    )
+                }
+            )
+            // 计算器（数值）
+            item(
+                headlineContent = {
+                    Text(stringResource(R.string.local_tool_calculator_title))
+                },
+                supportingContent = {
+                    Text(stringResource(R.string.local_tool_calculator_desc))
+                },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.Calculator),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.Calculator, it) }
+                    )
+                }
+            )
+            // 分享文件
+            item(
+                headlineContent = {
+                    Text(stringResource(R.string.local_tool_present_file_title))
+                },
+                supportingContent = {
+                    Text(stringResource(R.string.local_tool_present_file_desc))
+                },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.PresentFile),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.PresentFile, it) }
+                    )
+                }
+            )
+            // 任务清单
+            item(
+                headlineContent = {
+                    Text(stringResource(R.string.local_tool_task_title))
+                },
+                supportingContent = {
+                    Text(stringResource(R.string.local_tool_task_desc))
+                },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.TaskTools),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.TaskTools, it) }
+                    )
+                }
+            )
+            // WorkerTools / TeammateTools / SendMessage 不在这里出开关：
+            // 这三个枚举没有任何地方消费它们去注册工具，开关拨了不会有
+            // 任何效果。给用户一个假的开关比不给更糟。
+            // 枚举本身保留，以免破坏已存配置的反序列化。
             // 在聊天里显示本地图片
             item(
                 headlineContent = {

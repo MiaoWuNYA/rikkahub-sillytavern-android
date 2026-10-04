@@ -111,6 +111,11 @@ chaquopy {
 
             // ── Word 模板渲染 ───────────────────────────────────
             install("docxtpl")         // Jinja2 语法填充 docx 模板
+            // ── 代码检查（纯 Python，无原生依赖）──────────────
+            install("pyflakes")        // Python 静态检查：未定义名、未用 import、可疑写法
+            install("qrcode")          // 生成二维码（纯 Python）
+            install("networkx")        // 图算法：最短路、连通分量、拓扑排序
+            install("python-barcode")  // 条形码
         }
 
         // ── 让 docx / pptx 的模板文件落到磁盘 ──

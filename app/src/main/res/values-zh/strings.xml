@@ -2894,4 +2894,15 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="assistant_page_clone_with_memories">同时复制记忆</string>
     <string name="local_tool_show_image_title">在聊天里显示图片</string>
     <string name="local_tool_show_image_desc">让助手把本地图片直接显示在对话中，而不是只在文字里描述它。</string>
+    <string name="local_tool_calculator_title">计算器</string>
+    <string name="local_tool_calculator_desc">700+ 数值函数：统计、矩阵（行列式/逆/特征值）、数值导数与积分、数论、金融、物理、单位换算。需要符号解（比如得到 3x² 这样的表达式）时用 Python 引擎配 sympy。</string>
+    <string name="local_tool_present_file_title">分享文件</string>
+    <string name="local_tool_present_file_desc">通过系统分享面板打开文件，方便保存、发送或用其它应用打开。</string>
+    <string name="local_tool_task_title">任务清单</string>
+    <string name="local_tool_task_desc">让助手在长流程里维护任务清单：创建、更新、跟踪条目。</string>
+    <string name="update_card_go_github">前往 GitHub 下载</string>
+    <string name="update_card_go_github_desc">用浏览器打开发布页。应用不再内置下载更新。</string>
+    <string name="update_card_open_failed">无法打开浏览器</string>
+    <string name="local_tool_code_check_title">代码检查</string>
+    <string name="local_tool_code_check_desc">运行前静态检查代码。Python 是真分析（语法错误、未定义名、未使用 import）；其他语言因为设备上没有编译器，只做括号配对和常见写法提示。</string>
 </resources>

@@ -46,7 +46,8 @@ private const val PYTHON_LIBRARY_HINTS =
     "Preinstalled: numpy, pandas, PIL(Pillow), docx, pptx, fpdf, pypdf, pdfminer,\n" +
         "openpyxl, xlsxwriter, bs4, lxml, requests, markdown, markdownify, regex,\n" +
         "chardet, dateparser, pypinyin, opencc, tabulate, pytz.\n" +
-        "Also: sympy (symbolic math), pygments (code lexing), xlrd/xlwt (legacy\n" +
+        "Also: sympy (SYMBOLIC math — expressions, not values: diff/integrate/solve/\n" +
+        "simplify; use calculator for numeric results), pygments (code lexing), xlrd/xlwt (legacy\n" +
         ".xls), docxtpl (docx templates), ebooklib (epub), cn2an (Chinese\n" +
         "numerals), zhon (Chinese punctuation), jsonschema, python-frontmatter,\n" +
         "pyyaml, pypdfium2 (PDF render).\n" +

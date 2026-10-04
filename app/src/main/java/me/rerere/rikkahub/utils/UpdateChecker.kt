@@ -33,6 +33,26 @@ private const val BRANCH = "huadeng"
 
 private const val TAG = "UpdateChecker"
 
+/**
+ * 发布页地址。本版不再内置下载，引导用户自己去 GitHub 取包。
+ *
+ * 这么改是因为下载通道一直不稳：GitHub 直连被墙，公共代理时好时坏，
+ * 而且 app 内下载拿到的包没法校验来源。交给浏览器反而更可靠。
+ */
+const val RELEASE_PAGE_URL = "https://github.com/$REPO/releases/latest"
+
+/**
+ * 版本号比较用的解析：把 "2.5.6.1003" 拆成可比较的数字段。
+ *
+ * 每日构建的第四段（.1003）是构建序号，会一路往上涨。判断「有没有新主版本」
+ * 时必须忽略它，否则本地 2.5.6 会永远认为 2.5.6.1003 更新。
+ */
+private fun parseVersion(version: String): List<Int> =
+    version.trim()
+        .removePrefix("v")
+        .split('.', '-', '+')
+        .mapNotNull { seg -> seg.takeWhile { it.isDigit() }.toIntOrNull() }
+
 private const val API_URL = "https://api.github.com/repos/$REPO/releases/latest"
 private const val JSON_URL = "https://raw.githubusercontent.com/$REPO/$BRANCH/update.json"
 
@@ -86,18 +106,70 @@ class UpdateChecker(
         emit(UiState.Error(it))
     }.flowOn(Dispatchers.IO)
 
+    /**
+     * 判断一个版本是否比当前安装的更新（只看主版本段）。
+     *
+     * 例：本地 2.5.6，远端 2.5.6.1003 → 第四段是每日构建序号，忽略 → 不算更新。
+     *     本地 2.5.6，远端 2.6.0        → 算更新。
+     */
+    private fun isNewerMainVersion(remote: String): Boolean {
+        val a = parseVersion(BuildConfig.VERSION_NAME)
+        val b = parseVersion(remote)
+        for (i in a.indices) {
+            val x = a.getOrElse(i) { 0 }
+            val y = b.getOrElse(i) { 0 }
+            if (y != x) return y > x
+        }
+        // 主版本完全相同，多出的尾段是每日构建序号，不算新主版本
+        return false
+    }
+
+    /**
+     * 过滤掉每日构建，只保留真正的主版本发布。
+     *
+     * 识别方式三种并用：tag 里带 nightly 字样、下载链接指向 /nightly/ 目录、
+     * 版本号比本地多出一段（2.5.6.1003 相对 2.5.6 多一段）。
+     */
+    private fun isNightly(info: UpdateInfo): Boolean {
+        val v = info.version.lowercase(Locale.ROOT)
+        if (v.contains("nightly") || v.contains("daily")) return true
+        if (info.changelog.contains("Nightly", ignoreCase = true) ||
+            info.changelog.contains("每日自动构建")
+        ) return true
+        if (info.downloads.any { it.url.contains("/nightly/") }) return true
+        // 版本段比本地多 → 每日构建
+        val local = parseVersion(BuildConfig.VERSION_NAME)
+        val remote = parseVersion(info.version)
+        return remote.size > local.size && remote.take(local.size) == local
+    }
+
     /** 依次尝试所有源，第一个成功的就用；全都失败时抛出最后一个错误。 */
     private suspend fun fetchLatest(): UpdateInfo {
         var lastError: Throwable? = null
+        val candidates = mutableListOf<UpdateInfo>()
+
         runCatching { fetchFromGitHubApi() }
-            .onSuccess { return it }
+            .onSuccess { candidates.add(it) }
             .onFailure { lastError = it }
         for (mirror in JSON_MIRRORS) {
             runCatching { fetchFromJson(mirror) }
-                .onSuccess { return it }
+                .onSuccess { candidates.add(it) }
                 .onFailure { lastError = it }
         }
-        throw lastError ?: IllegalStateException("Failed to fetch update info")
+
+        if (candidates.isEmpty()) {
+            throw lastError ?: IllegalStateException("Failed to fetch update info")
+        }
+
+        // 优先挑主版本发布；都只有每日构建时，用最新的那条但不提示更新。
+        val mainRelease = candidates.firstOrNull { !isNightly(it) }
+        val chosen = mainRelease ?: candidates.first()
+
+        if (mainRelease != null && !isNewerMainVersion(chosen.version)) {
+            // 主版本号没涨：把版本置为当前版本，上层就不会弹更新卡片。
+            return chosen.copy(version = BuildConfig.VERSION_NAME, downloads = emptyList())
+        }
+        return chosen.copy(downloads = emptyList())
     }
 
     /**
