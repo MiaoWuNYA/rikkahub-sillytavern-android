@@ -138,6 +138,11 @@ sealed class LocalToolOption {
     @Serializable
     @SerialName("chart_display")
     data object ChartDisplay : LocalToolOption()
+
+    // 通用文本差异对比（替换原先的二进制对比）
+    @Serializable
+    @SerialName("diff_text")
+    data object DiffText : LocalToolOption()
 }
 
 class LocalTools(
@@ -450,6 +455,9 @@ class LocalTools(
     // 上游 2.5.6：图表展示工具
     val chartDisplayTool by lazy { buildChartDisplayTool() }
 
+    // 通用文本差异对比（替换原先的二进制对比）
+    val diffTextTool by lazy { buildDiffTextTool(context) }
+
     fun getTools(options: List<LocalToolOption>): List<Tool> {
         val tools = mutableListOf<Tool>()
         if (options.contains(LocalToolOption.JavascriptEngine)) {
@@ -482,6 +490,9 @@ class LocalTools(
         }
         if (options.contains(LocalToolOption.ChartDisplay)) {
             tools.add(chartDisplayTool)
+        }
+        if (options.contains(LocalToolOption.DiffText)) {
+            tools.add(diffTextTool)
         }
         return tools
     }

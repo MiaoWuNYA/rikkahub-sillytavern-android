@@ -423,6 +423,21 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            // 通用文本差异对比
+            item(
+                headlineContent = {
+                    Text(stringResource(R.string.local_tool_diff_text_title))
+                },
+                supportingContent = {
+                    Text(stringResource(R.string.local_tool_diff_text_desc))
+                },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.DiffText),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.DiffText, it) }
+                    )
+                }
+            )
         }
     }
 }
