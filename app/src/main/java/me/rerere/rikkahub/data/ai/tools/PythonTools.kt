@@ -20,7 +20,9 @@ import me.rerere.rikkahub.data.ai.python.PythonBridge
 import me.rerere.rikkahub.data.db.AppDatabase
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.repository.ConversationRepository
+import me.rerere.rikkahub.data.files.FilesManager
 import org.koin.java.KoinJavaComponent
+import org.koin.java.KoinJavaComponent.getKoin
 import java.io.File
 
 /**
@@ -32,6 +34,9 @@ import java.io.File
  * 功能纯属浪费 token（早先版本每个库带一句说明，约 270 token，
  * 压到现在这个规模）。
  */
+// 超过这个大小的图片不走内嵌渲染，降级成文件卡片
+private const val MAX_INLINE_IMAGE_BYTES = 20L * 1024 * 1024
+
 private const val PYTHON_TOOL_HEAD =
     "Run Python 3.12 on-device (isolated). For computation, data handling, file and\n" +
         "document generation. (simple math -> calculator; shell -> execute_command)\n"
@@ -41,13 +46,15 @@ private const val PYTHON_LIBRARY_HINTS =
     "Preinstalled: numpy, pandas, PIL(Pillow), docx, pptx, fpdf, pypdf, pdfminer,\n" +
         "openpyxl, xlsxwriter, bs4, lxml, requests, markdown, markdownify, regex,\n" +
         "chardet, dateparser, pypinyin, opencc, tabulate, pytz.\n" +
-        "Also: sympy (symbolic math), matplotlib (plots), pygments (code lexing),\n" +
-        "xlrd/xlwt (legacy .xls), docxtpl (docx templates), ebooklib (epub),\n" +
-        "cn2an (Chinese numerals), zhon (Chinese punctuation), jsonschema,\n" +
-        "python-frontmatter, pyyaml, pypdfium2 (PDF render).\n" +
-        // 中文画图是个真实的坑：设备上没有含汉字字形的字体，图里的中文
-        // 会渲染成方块。事先说一句，比让模型画完发现看不懂要省事。
-        "(matplotlib has no CJK glyphs — use English labels in plots.)\n"
+        "Also: sympy (symbolic math), pygments (code lexing), xlrd/xlwt (legacy\n" +
+        ".xls), docxtpl (docx templates), ebooklib (epub), cn2an (Chinese\n" +
+        "numerals), zhon (Chinese punctuation), jsonschema, python-frontmatter,\n" +
+        "pyyaml, pypdfium2 (PDF render).\n" +
+        // 引导走 chart_display：那是原生渲染、直接显示在聊天里，
+        // 比让 Python 画一张静态图更好，也省掉 matplotlib 8 MB。
+        "For charts prefer the chart_display tool (renders in chat). Images you\n" +
+        "produce here are shown automatically; use show_image to display one\n" +
+        "that already exists.\n"
 
 /**
  * convert 模块的入口说明。
@@ -148,6 +155,12 @@ fun createPythonTool(
             resultJson["error"]?.jsonPrimitiveOrNull?.content?.let {
                 appendLine("Error: $it")
             }
+            // stderr 之前被整个丢掉。Python 的警告、库的提示、以及
+            // traceback 之外的手写 print(..., file=sys.stderr) 全都
+            // 无声消失——模型看不到这些，就不知道自己的代码其实有问题。
+            resultJson["stderr"]?.jsonPrimitiveOrNull?.content?.let {
+                if (it.isNotBlank()) appendLine("Stderr:\n$it")
+            }
         }.truncateForToolResult()
         if (output.isNotBlank()) {
             parts.add(UIMessagePart.Text(output.trimEnd()))
@@ -164,13 +177,39 @@ fun createPythonTool(
 
         for (fname in files) {
             val file = File(workdir, fname)
-            if (file.exists()) {
-                parts.add(UIMessagePart.Document(
+            if (!file.exists()) continue
+            val mime = fname.mimeType()
+            if (mime.startsWith("image/")) {
+                // 图片走 Image：聊天界面会直接把它渲染出来。
+                // 用 Document 只会变成一个要点击的文件卡片——模型说
+                // 「图我画好了」而用户什么都看不见，就是这里丢了。
+                //
+                // 大图限制在 20 MB 以内，避免把会话撑爆；超出的仍降级成
+                // 文件卡片，用户至少还能自己点开。
+                if (file.length() <= MAX_INLINE_IMAGE_BYTES) {
+                    runCatching {
+                        val uri = getKoin().get<FilesManager>()
+                            .createChatFilesByByteArrays(listOf(file.readBytes()))
+                        parts.add(UIMessagePart.Image(url = uri.first().toString()))
+                    }.getOrElse {
+                        parts.add(
+                            UIMessagePart.Document(
+                                url = "file://" + file.absolutePath,
+                                fileName = fname,
+                                mime = mime,
+                            )
+                        )
+                    }
+                    continue
+                }
+            }
+            parts.add(
+                UIMessagePart.Document(
                     url = "file://" + file.absolutePath,
                     fileName = fname,
-                    mime = fname.mimeType(),
-                ))
-            }
+                    mime = mime,
+                )
+            )
         }
 
         if (parts.isEmpty()) {

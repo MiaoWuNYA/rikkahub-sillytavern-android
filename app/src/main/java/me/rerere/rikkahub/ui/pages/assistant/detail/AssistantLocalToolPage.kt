@@ -423,6 +423,21 @@ private fun AssistantLocalToolContent(
                     )
                 }
             )
+            // 在聊天里显示本地图片
+            item(
+                headlineContent = {
+                    Text(stringResource(R.string.local_tool_show_image_title))
+                },
+                supportingContent = {
+                    Text(stringResource(R.string.local_tool_show_image_desc))
+                },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.localTools.contains(LocalToolOption.ShowImage),
+                        onCheckedChange = { toggleLocalTool(LocalToolOption.ShowImage, it) }
+                    )
+                }
+            )
             // 通用文本差异对比
             item(
                 headlineContent = {

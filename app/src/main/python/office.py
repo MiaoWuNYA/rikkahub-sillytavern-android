@@ -21,11 +21,82 @@ Word / PowerPoint / Excel 的解析与修改引擎。
 import json
 import os
 import re
+import sys
 import zipfile
 
 MAX_CELLS = 200_000        # 单次读取的单元格上限，防超大表把内存吃光
 MAX_PARAGRAPHS = 20_000    # 单次读取的段落上限
 MAX_TEXT_CHARS = 200_000   # 返回文本总量上限
+
+
+def _ensure_package_dirs():
+    """
+    兜底：确保 docx / pptx 的代码目录在磁盘上真实存在。
+
+    正解是 build.gradle.kts 里的 `extractPackages("docx", "pptx")`——
+    Chaquopy 会在首次 import 时把整包解压成真实文件，__file__ 于是指向
+    磁盘，模板路径（os.path.join(dirname(__file__), "..", "templates", ...)）
+    自然能解析。
+
+    这里保留一层兜底，理由是这个失效模式很难察觉：一旦 extractPackages
+    因为 Chaquopy 版本变化或配置被误删而不再生效，表现是「加页眉报
+    FileNotFoundError，但文件明明在」——排查成本很高。补几个空目录几乎
+    不花钱，却能在那种情况下自愈。
+
+    判据刻意不依赖 import 成功：真需要补目录时，往往正是导入链路还没
+    走通的时候。改为按「根目录下有没有 templates/ 数据」来认包。
+    """
+    created = []
+    for pkg in ('docx', 'pptx'):
+        for root in _candidate_package_roots(pkg):
+            if not os.path.isdir(os.path.join(root, 'templates')):
+                continue
+            for sub in ('parts', 'oxml', 'oxml/text', 'oxml/shapes', 'shapes',
+                        'text', 'image', 'dml', 'enum', 'opc', 'section',
+                        'table', 'styles', 'chart', 'util', 'drawing'):
+                target = os.path.join(root, sub)
+                if os.path.exists(target):
+                    continue
+                if not os.path.isdir(os.path.dirname(target)):
+                    continue
+                try:
+                    os.makedirs(target, exist_ok=True)
+                    created.append(target)
+                except OSError:
+                    pass
+    return created
+
+
+def _candidate_package_roots(pkg):
+    """列出包可能的安装根目录：优先已导入模块的 __file__，退回 sys.path 扫描。"""
+    roots = []
+    try:
+        mod = __import__(pkg)
+        f = getattr(mod, '__file__', None)
+        if f:
+            roots.append(os.path.dirname(os.path.abspath(f)))
+    except Exception:
+        pass
+
+    for entry in sys.path:
+        if not entry or not os.path.isdir(entry):
+            continue
+        candidate = os.path.join(entry, pkg)
+        if os.path.isdir(candidate):
+            roots.append(candidate)
+
+    seen = set()
+    out = []
+    for r in roots:
+        r = os.path.abspath(r)
+        if r not in seen:
+            seen.add(r)
+            out.append(r)
+    return out
+
+
+# 模块导入即修一次，后续 docx/pptx 的模板访问就不会踩到
+_ensure_package_dirs()
 
 
 def _result(stdout='', files=None, error=None, data=None):
@@ -38,8 +109,25 @@ def _result(stdout='', files=None, error=None, data=None):
 
 
 def _outpath(input_path, suffix, output_dir, fallback='output'):
+    """
+    计算输出路径。
+
+    output_dir 不传时写到「输入文件所在目录」；连输入都没有（纯文本
+    场景）才退回临时目录。早先版本直接把 None 交给 os.path.join，
+    三个 *_edit 函数在默认参数下都会 TypeError 崩掉。
+
+    刻意不默认写 cwd：executor 会把 workdir 当工作目录，cwd 通常是它，
+    但直接调用时 cwd 可能是源码目录，一跑测试就往包里落垃圾文件。
+    """
     base = os.path.basename(input_path).rsplit('.', 1)[0] if input_path else fallback
-    return os.path.join(output_dir, f'{base}{suffix}')
+    if output_dir:
+        target_dir = output_dir
+    elif input_path:
+        target_dir = os.path.dirname(os.path.abspath(input_path)) or os.getcwd()
+    else:
+        import tempfile
+        target_dir = tempfile.gettempdir()
+    return os.path.join(target_dir, f'{base}{suffix}')
 
 
 # ══════════════════════════════════════════════════════════════

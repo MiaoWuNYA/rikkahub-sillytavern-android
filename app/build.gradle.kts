@@ -80,11 +80,14 @@ chaquopy {
             install("pytz")
 
             // ── 补齐：代码在用但从未安装的包 ────────────────────
-            // convert.py 的 epub 分支 import ebooklib，executor.py 的绘图分支
-            // import matplotlib ——两个包都不在清单里，运行到那条路径必然
-            // ImportError，而工具描述还向模型宣传支持 epub。属于宣传与能力脱节。
+            // convert.py 的 epub 分支 import ebooklib，但清单里没有，
+            // 运行到那条路径必然 ImportError，而工具描述还向模型宣传
+            // 支持 epub。属于宣传与能力脱节。
+            //
+            // 图表不再用 matplotlib：上游的 chart_display 是原生 Compose
+            // 渲染，直接显示在聊天里、可交互、还省 token；matplotlib 只能
+            // 出一张静态 PNG，8.1 MB 换来的能力与它高度重叠。
             install("ebooklib")
-            install("matplotlib")
             install("pyyaml")          // convert.py 的 yaml 分支用它做严格解析
             install("pypdfium2")       // 自带 android wheel 的 PDFium，PDF 页面渲染
 
@@ -109,6 +112,26 @@ chaquopy {
             // ── Word 模板渲染 ───────────────────────────────────
             install("docxtpl")         // Jinja2 语法填充 docx 模板
         }
+
+        // ── 让 docx / pptx 的模板文件落到磁盘 ──
+        //
+        // Chaquopy 默认把 Python 模块直接从 APK 加载，源码不会以独立文件
+        // 存在。这对纯代码包没问题，但 python-docx / python-pptx 需要
+        // **读自己包内的模板 XML**，用的是这种拼法：
+        //
+        //     os.path.join(os.path.split(__file__)[0], "..", "templates", "x.xml")
+        //
+        // 模块从 APK 加载时，__file__ 指向 imy 内部，而 templates/*.xml
+        // 在那种布局下取不到，于是：
+        //   - 加页眉/页脚 → PackageNotFoundError / FileNotFoundError
+        //   - 写 PPT 备注、形状树 → 同样失败
+        //
+        // extractPackages 是官方给出的正解：被点名的包会在首次 import 时
+        // 解压成真实文件，__file__ 于是指向磁盘，模板路径便能正常解析。
+        //
+        // 只点这两个包。它们体量小（docx+pptx 约 3 MB），解压开销可忽略；
+        // numpy/pandas 那类大包不能开，否则首次导入要等好几秒。
+        extractPackages("docx", "pptx")
     }
 }
 android {
