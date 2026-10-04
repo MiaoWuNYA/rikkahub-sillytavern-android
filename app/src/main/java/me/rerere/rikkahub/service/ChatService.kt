@@ -88,14 +88,7 @@ import me.rerere.rikkahub.data.ai.tools.createWorkspaceTools
 import me.rerere.rikkahub.data.ai.tools.createSkillTools
 import me.rerere.rikkahub.data.ai.tools.createFileTools
 import me.rerere.rikkahub.data.ai.tools.createShellTools
-import me.rerere.rikkahub.data.ai.tools.createAnalyzeBinaryTool
-import me.rerere.rikkahub.data.ai.tools.createDecompileTool
-import me.rerere.rikkahub.data.ai.tools.createDiffBinaryTool
-import me.rerere.rikkahub.data.ai.tools.createDisassembleTool
-import me.rerere.rikkahub.data.ai.tools.createEmulateCodeTool
 import me.rerere.rikkahub.data.ai.tools.createPythonTool
-import me.rerere.rikkahub.data.ai.tools.createBinaryCommandTool
-import me.rerere.rikkahub.data.ai.tools.createScanBinaryTool
 import me.rerere.rikkahub.data.ai.tools.createDatabaseQueryTool
 import me.rerere.rikkahub.data.ai.tools.createCalculatorTool
 import me.rerere.rikkahub.data.ai.tools.createWebFetchTool
@@ -1591,28 +1584,6 @@ class ChatService(
                     }
                     if (assistant.localTools.contains(LocalToolOption.PythonEngine)) {
                         add(createPythonTool(context, assistant.toolExecTimeout))
-                    }
-                    // 二进制分析工具：各自独立开关，按需启用
-                    if (assistant.localTools.contains(LocalToolOption.Disassemble)) {
-                        add(createDisassembleTool(context))
-                    }
-                    if (assistant.localTools.contains(LocalToolOption.AnalyzeBinary)) {
-                        add(createAnalyzeBinaryTool(context))
-                    }
-                    if (assistant.localTools.contains(LocalToolOption.Decompile)) {
-                        add(createDecompileTool(context))
-                    }
-                    if (assistant.localTools.contains(LocalToolOption.ScanBinary)) {
-                        add(createScanBinaryTool(context))
-                    }
-                    if (assistant.localTools.contains(LocalToolOption.EmulateCode)) {
-                        add(createEmulateCodeTool(context))
-                    }
-                    if (assistant.localTools.contains(LocalToolOption.DiffBinary)) {
-                        add(createDiffBinaryTool(context))
-                    }
-                    if (assistant.localTools.contains(LocalToolOption.BinaryCommand)) {
-                        add(createBinaryCommandTool(context))
                     }
                     if (assistant.localTools.contains(LocalToolOption.DatabaseQuery)) {
                         add(createDatabaseQueryTool(database))

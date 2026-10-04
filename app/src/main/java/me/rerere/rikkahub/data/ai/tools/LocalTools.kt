@@ -81,35 +81,6 @@ sealed class LocalToolOption {
     @SerialName("python_engine")
     data object PythonEngine : LocalToolOption()
 
-    // ── 二进制分析工具（各自独立开关）──────────────────────────
-    @Serializable
-    @SerialName("disassemble")
-    data object Disassemble : LocalToolOption()
-
-    @Serializable
-    @SerialName("analyze_binary")
-    data object AnalyzeBinary : LocalToolOption()
-
-    @Serializable
-    @SerialName("decompile")
-    data object Decompile : LocalToolOption()
-
-    @Serializable
-    @SerialName("scan_binary")
-    data object ScanBinary : LocalToolOption()
-
-    @Serializable
-    @SerialName("emulate_code")
-    data object EmulateCode : LocalToolOption()
-
-    @Serializable
-    @SerialName("diff_binary")
-    data object DiffBinary : LocalToolOption()
-
-    @Serializable
-    @SerialName("binary_command")
-    data object BinaryCommand : LocalToolOption()
-
     @Serializable
     @SerialName("file_tools")
     data object FileTools : LocalToolOption()

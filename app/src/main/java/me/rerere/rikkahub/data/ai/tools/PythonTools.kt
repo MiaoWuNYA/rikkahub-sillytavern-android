@@ -29,53 +29,29 @@ fun createPythonTool(context: Context, timeoutSec: Int = 30): Tool = Tool(
         "file generation, or programmatic logic beyond simple math (simple math → calculator;\n" +
         "shell ops → execute_command; file ops → file tools).\n" +
         "\n" +
-        "REVERSE ENGINEERING — a full Rizin + Ghidra engine is built in.\n" +
-        "The rev_* functions below are ALREADY available as plain globals in the Python sandbox.\n" +
-        "Call them directly — no import statement, there is no 'rizin' module to import.\n" +
-        "  rev_status()                      engine availability\n" +
-        "  rev_prepare()                     warm up Ghidra (call once before rev_decompile)\n" +
-        "  rev_disasm(target, arch, addr, thumb, limit)   disassemble, returns '0xADDR: BB BB  mnemonic op'\n" +
-        "  rev_asm(asm, arch, addr, thumb)   assemble to hex bytes\n" +
-        "  rev_analyze(target, arch)         auto-analysis (functions/symbols/strings)\n" +
-        "  rev_functions(target, arch)       list recovered functions (returns a list)\n" +
-        "  rev_xrefs(target, va, arch, direction)   cross refs, returns a list ('to' or 'from')\n" +
-        "  rev_cfg(target, func_va, arch)    control-flow graph\n" +
-        "  rev_search(target, pattern, arch, range_start, range_end)  byte pattern search,\n" +
-        "                                   '??' wildcards allowed; range_* narrow the scan window\n" +
-        "  rev_crypto(target, arch)          scan AES S-box / CRC / magic, returns a list\n" +
-        "  rev_esil(target, start_va, steps, arch)  instruction-level emulation\n" +
-        "  rev_diff(file_a, file_b)          binary diff\n" +
-        "  rev_decompile(target, func_va, arch)     decompile to pseudo-C\n" +
-        "  rev_cmd(target, command, arch)    raw rizin command, e.g. 'aaa; afl', 'iS', 'iz'\n" +
+        "AVAILABLE LIBRARIES (import normally, they are pre-installed):\n" +
+        "  numpy             numerical arrays, statistics, linear algebra\n" +
+        "  pandas            DataFrame: CSV/Excel analysis, groupby, merge, pivot\n" +
+        "  PIL (Pillow)      image open/resize/crop/rotate/convert/watermark\n" +
+        "  docx              read & write Word .docx (python-docx)\n" +
+        "  pptx              read PowerPoint .pptx (python-pptx)\n" +
+        "  fpdf              build PDF from scratch (fpdf2)\n" +
+        "  pypdf, pdfminer   read/split/merge PDF; pdfminer for layout & text flow\n" +
+        "  openpyxl, xlsxwriter   read/write Excel .xlsx\n" +
+        "  bs4, lxml         HTML/XML parsing (lxml is several times faster than html.parser)\n" +
+        "  requests          HTTP calls\n" +
+        "  markdown, markdownify   markdown <-> HTML\n" +
+        "  regex             advanced regular expressions (variable-length lookbehind)\n" +
+        "  chardet           detect text encoding — use before reading unknown/GBK files\n" +
+        "  dateparser        parse natural-language dates (\"下周三下午三点\")\n" +
+        "  pypinyin          Chinese -> pinyin (sorting, ruby annotation)\n" +
+        "  opencc            Simplified <-> Traditional Chinese\n" +
+        "  tabulate, pytz\n" +
         "\n" +
-        "  target: absolute file path OR a hex string without separators, e.g. '1f2003d5'.\n" +
-        "          Common locations on this device:\n" +
-        "            /storage/emulated/0/Download/   <- file tools default here; user-dropped files\n" +
-        "            /storage/emulated/0/Android/data/<pkg>/files/\n" +
-        "            <filesDir> (this executor's workdir — where generated artifacts land)\n" +
-        "          Files under /storage/emulated/0 are readable thanks to MANAGE_EXTERNAL_STORAGE.\n" +
-        "          To analyse a Java/Kotlin app: take the APK, unzip it, then load lib/arm64-v8a/*.so here;\n" +
-        "          dex/classes are not native and belong to the dex tools instead.\n" +
-        "  arch: one of arm64 / arm32 / x86_64 / x86 / mips. Default arm64.\n" +
-        "        Any other value is rejected (the native layer would silently fall back to x86/32).\n" +
-        "  Use rev_analyze first to enumerate functions, then rev_decompile on a function VA.\n" +
-        "  Before the FIRST rev_decompile, call rev_prepare() once: it unpacks 13MB of Ghidra\n" +
-        "  sleigh data (392 files) and would otherwise eat into the 120s tool timeout.\n" +
+        "A convert module ships with the app for format conversion:\n" +
+        "  import convert; convert.convert(path, None, 'pdf', 'md', workdir)\n" +
+        "  supports txt/md/html/docx/pdf/xlsx/pptx/epub/csv <-> each other\n" +
         "\n" +
-        "  RETURN SHAPES:\n" +
-        "    rev_disasm      plain text, one line per insn: '0xADDR: BB BB  mnemonic op'\n" +
-        "    rev_asm         hex string, e.g. '1f2003d5'\n" +
-        "    rev_functions   list of {name, addr, size, ninstr, complexity, loops, isPure}\n" +
-        "                    -> iterate/filter directly: [f for f in rev_functions(p) if f['size']>64]\n" +
-        "    rev_xrefs       list of {from, to, type, direction}\n" +
-        "    rev_crypto      list of {type, addr, size}\n" +
-        "    rev_decompile   dict {addr, engine, backend, command, diagnostic, evidence}\n" +
-        "    Others return dicts. Every *_raw variant returns the undecoded JSON text,\n" +
-        "    e.g. rev_functions_raw / rev_xrefs_raw / rev_crypto_raw.\n" +
-        "    Parsing failures yield an empty list rather than raising, so always check length.\n" +
-        "    any failure     {'error':'...'}  or '' for rev_disasm\n" +
-        "  Output over 32K chars may be truncated — narrow the request (limit / address range) instead\n" +
-        "  of dumping everything at once.\n" +
         "code: Python code to execute. Last expression value returned. Use print() for debugging.",
     needsApproval = { false },
     parameters = {

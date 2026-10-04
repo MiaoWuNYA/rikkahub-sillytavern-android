@@ -17,8 +17,8 @@ import android.util.Log
  * 边界说明：这挡得住 grep / strings 这类一击命中，
  * 挡不住耐心读反汇编的人。它抬高成本，不提供不可破解性。
  *
- * 与 RizinBridge 分离是刻意的：逆向引擎加载失败不应连带
- * 让插件解密失败，反之亦然。
+ * 独立成库是刻意的：它与任何其它 native 组件的加载状态完全解耦，
+ * 插件解密不会被无关组件的加载失败牵连。
  */
 object HdGuard {
 
@@ -40,7 +40,6 @@ object HdGuard {
      * 必须保持 public：JNI 按「类的全限定名 + 方法名」解析符号，
      * 声明为 private 会被 R8 改名，而改名后 native 侧就找不到这个符号，
      * 表现为 UnsatisfiedLinkError，进而使整个插件解密失败。
-     * 同包的 RizinBridge 正是因为 external 方法都是 public 才没有中招。
      */
     external fun hdKdfFactor(certDigest: ByteArray): String?
 
