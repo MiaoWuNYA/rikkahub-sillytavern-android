@@ -56,6 +56,12 @@ data class Assistant(
     val customHeaders: List<CustomHeader> = emptyList(),
     val customBodies: List<CustomBody> = emptyList(),
     val mcpServers: Set<Uuid> = emptySet(),
+    // 新建助手的默认工具集。
+    //
+    // 判断标准是「日常对话里会不会真的用到」：读文件、算数、跑脚本、
+    // 对比两版文本，这些在普通聊天和角色扮演里都常出现。
+    // 逆向分析、图像生成、设备控制这类要么已移除，要么属于特定场景，
+    // 不放进默认集——装了却默认关闭，等于模型永远不知道有这个东西。
     val localTools: List<LocalToolOption> = listOf(
         LocalToolOption.TimeInfo,
         LocalToolOption.FileTools,
@@ -64,6 +70,8 @@ data class Assistant(
         LocalToolOption.Calculator,
         LocalToolOption.AskUser,
         LocalToolOption.Clipboard,
+        LocalToolOption.PythonEngine,
+        LocalToolOption.DiffText,
     ),
     val enableWebSearch: Boolean = false, // 网络搜索开关(每个助手独立)
     val workspaceId: Uuid? = null,
@@ -982,4 +990,44 @@ private fun parseExampleBlock(block: String, charName: String, userName: String)
     }
     flush()
     return result
+}
+
+/**
+ * 新版本引入的工具，需要为已有助手补齐的那部分。
+ *
+ * 背景：Assistant.localTools 是持久化字段，老用户的配置里早就存了旧列表，
+ * 反序列化时不会走默认值。结果是新工具装了、注册好了，但模型永远看不到它——
+ * 「引入了资源却实际没被使用」的典型形态。
+ */
+val DEFAULT_NEW_LOCAL_TOOLS: List<LocalToolOption> = listOf(
+    LocalToolOption.PythonEngine,
+    LocalToolOption.DiffText,
+)
+
+/**
+ * 「这个版本之前就存在」的工具全集，用于判断哪些是新增的。
+ *
+ * 补齐规则刻意收窄：只有当助手启用的工具「全部」落在这个集合里，
+ * 才认为用户没有主动调整过工具集，于是把新工具补上。
+ * 一旦用户自己动过（关掉了某个老工具，或开过新工具外的选项），就完全不碰——
+ * 避免把用户明确关掉的东西偷偷打开，那比「工具没生效」糟糕得多。
+ */
+val LEGACY_LOCAL_TOOLS: Set<LocalToolOption> = setOf(
+    LocalToolOption.TimeInfo,
+    LocalToolOption.FileTools,
+    LocalToolOption.ShellTools,
+    LocalToolOption.TaskTools,
+    LocalToolOption.Calculator,
+    LocalToolOption.AskUser,
+    LocalToolOption.Clipboard,
+)
+
+/**
+ * 把新工具补进已有助手的配置。见 LEGACY_LOCAL_TOOLS 的说明。
+ */
+fun Assistant.withNewLocalTools(): Assistant {
+    if (localTools.isNotEmpty() && !LEGACY_LOCAL_TOOLS.containsAll(localTools)) return this
+    val missing = DEFAULT_NEW_LOCAL_TOOLS.filterNot { it in localTools }
+    if (missing.isEmpty()) return this
+    return copy(localTools = localTools + missing)
 }
