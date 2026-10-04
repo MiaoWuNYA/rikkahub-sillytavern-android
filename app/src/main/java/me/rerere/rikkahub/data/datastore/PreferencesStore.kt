@@ -876,6 +876,14 @@ data class HuaDengSettings(
     val enableRollingContextCompression: Boolean = true,
     // 工具结果截断：关闭后工具输出不再截断（默认截断超过 32KB 的输出）
     val enableToolResultTruncation: Boolean = true,
+    // 本地 OCR 兜底：未配置 OCR 模型（或远程识别失败）时，用内置的 ML Kit
+    // 离线识别图片文字。不联网、不上传图片。关掉则回到旧行为——直接给模型
+    // 一个 "[Image]" 占位符，图片内容等于不可见。
+    val enableLocalOcrFallback: Boolean = true,
+    // Python 能力说明：在 execute_python 的工具描述里列出可用的第三方库
+    // （numpy/pandas/pillow/docx/pdf 等）。关掉可以省几百 token 的工具描述，
+    // 代价是模型不知道有哪些库可用、倾向于不用它们。
+    val enablePythonLibraryHints: Boolean = true,
     // 系统提示词转义：将系统消息中的 < > 转为 HTML 实体，绕过中转站 WAF 安全策略拦截
     val enableSystemPromptEscape: Boolean = false,
 
