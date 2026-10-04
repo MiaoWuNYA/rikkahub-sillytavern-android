@@ -2,7 +2,7 @@
 
 <img src="docs/huadeng-icon.png" width="96" alt="华灯图标"/>
 
-# RikkaHub Plus · 华灯版
+# RikkaHub Plus · 华灯
 
 ### 安卓上的 **AI 聊天客户端**
 ### 兼为 **SillyTavern（酒馆）兼容端**
