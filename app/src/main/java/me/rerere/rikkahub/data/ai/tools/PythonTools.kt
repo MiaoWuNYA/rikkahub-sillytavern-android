@@ -53,7 +53,11 @@ private const val PYTHON_LIBRARY_HINTS =
         "pyyaml, pypdfium2 (PDF render).\n" +
         // 小体积高频工具。名字本身说明了用途，就不逐条解释了——
         // 这一段约 45 token，换来模型知道二十来个库可以直接用。
-        "Small utils: slugify, unidecode, inflect, humanize, ftfy,\n" +
+        // 名字本身说明用途的就不解释了；这里只对有「什么时候该想起来用」
+        // 价值的少数几个加一句场景——实测发现光列名字，模型看到了也
+        // 不会主动联想到该用。
+        "Small utils: humanize(1024->1.0KB), slugify(text->url-id),\n" +
+        "ftfy(fix mojibake), unidecode, inflect,\n" +
         "croniter, isodate, semver, parse, xmltodict, deepdiff, jsonpath-ng,\n" +
         "emoji, pyotp, qrcode, barcode, base58, shortuuid, nanoid, ulid,\n" +
         "dotenv, tomli, networkx.\n" +

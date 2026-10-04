@@ -158,7 +158,15 @@ chaquopy {
         //
         // 只点这两个包。它们体量小（docx+pptx 约 3 MB），解压开销可忽略；
         // numpy/pandas 那类大包不能开，否则首次导入要等好几秒。
-        extractPackages("docx", "pptx")
+        // inflect 必须在这里：它依赖 typeguard，而 typeguard 走
+        // inspect.getsource(sys.modules[f.__module__]) 读被装饰函数所在
+        // 模块的**源码文本**做插桩。Chaquopy 默认把纯 Python 编译成 .pyc
+        // 装进 APK 内的 zip，源码读不到，import inflect 直接
+        //   OSError: could not get source code
+        //
+        // 实测对照：只留 .pyc → OSError；源码可见 → plural("box") 返回
+        // "boxes"、number_to_words(1234) 正常。加进来即可。
+        extractPackages("docx", "pptx", "inflect")
     }
 }
 android {
