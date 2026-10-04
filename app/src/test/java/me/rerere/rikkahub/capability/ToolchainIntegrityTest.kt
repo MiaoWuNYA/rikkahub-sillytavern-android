@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.build
+package me.rerere.rikkahub.capability
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
