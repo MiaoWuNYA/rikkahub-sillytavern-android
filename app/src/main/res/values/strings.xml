@@ -2309,6 +2309,8 @@
   <string name="local_tool_exec_timeout_desc">Maximum execution time per tool call, default 60</string>
   <string name="local_tool_exec_timeout_title">Single Tool Timeout (s)</string>
   <string name="local_tool_file_desc">Let AI read, write and search device files</string>
+  <string name="local_tool_diff_text_title">Text Diff</string>
+  <string name="local_tool_diff_text_desc">Compare two texts or two files and report exactly what changed (unified diff)</string>
   <string name="local_tool_file_title">File Tools</string>
   <string name="local_tool_js_timeout_desc">JavaScript execution timeout, default 15</string>
   <string name="local_tool_js_timeout_title">JS Engine Timeout (s)</string>

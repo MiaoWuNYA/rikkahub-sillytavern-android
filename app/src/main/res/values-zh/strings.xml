@@ -2310,6 +2310,8 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="local_tool_exec_timeout_desc">每个工具调用最长执行时间，默认60</string>
   <string name="local_tool_exec_timeout_title">单工具执行超时(秒)</string>
   <string name="local_tool_file_desc">允许 AI 读取、写入、搜索设备文件</string>
+  <string name="local_tool_diff_text_title">文本差异对比</string>
+  <string name="local_tool_diff_text_desc">对比两段文本或两个文件，给出精确的改动位置（unified diff 格式）</string>
   <string name="local_tool_file_title">文件工具</string>
   <string name="local_tool_js_timeout_desc">JavaScript代码执行超时，默认15</string>
   <string name="local_tool_js_timeout_title">JS引擎超时(秒)</string>
