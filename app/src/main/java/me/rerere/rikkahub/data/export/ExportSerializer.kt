@@ -251,7 +251,11 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
     }
 
     /** 新版预设（prompts + prompt_order）解析 */
-    private fun tryImportPresetOrdered(json: String): List<PromptInjection.RegexInjection>? {
+    /**
+     * 新版预设（prompts + prompt_order）解析。
+     * internal 供单测直接跑真实解析流程（issue #5 的回归覆盖：未启用条目要保留）。
+     */
+    internal fun tryImportPresetOrdered(json: String): List<PromptInjection.RegexInjection>? {
         val obj = runCatching { ExportSerializer.DefaultJson.parseToJsonElement(json) }.getOrNull() as? JsonObject
         val promptsArray = obj?.get("prompts") as? kotlinx.serialization.json.JsonArray ?: return null
         if (promptsArray.isEmpty()) return null
@@ -268,7 +272,12 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
         return order.mapIndexedNotNull { index, entry ->
             val prompt = promptsById[entry.identifier] ?: return@mapIndexedNotNull null
             if (prompt.marker) return@mapIndexedNotNull null
-            if (!entry.enabled) return@mapIndexedNotNull null
+            // 未启用条目要保留，只是导入为禁用状态。此前这里直接 return null，
+            // 结果是「多选一」的备选项（备用越狱词、临时关掉的条目）整个消失，
+            // 用户再也找不回来——只能回去翻原始预设。酒馆自己的行为是把条目
+            // 留在列表里、保持关闭，本地注入逻辑同样尊重 enabled
+            // （PromptInjectionTransformer 有 `if (!entry.enabled) continue`），
+            // 所以保留是安全的：关着就不会被注入。
             if (prompt.content.isBlank()) return@mapIndexedNotNull null
             val role = when (prompt.role?.lowercase()) {
                 "user", "1" -> me.rerere.ai.core.MessageRole.USER
@@ -288,7 +297,8 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
             PromptInjection.RegexInjection(
                 id = Uuid.random(),
                 name = prompt.name.ifBlank { prompt.identifier },
-                enabled = true,
+                // 透传原状态：写死 true 会让预设里明确关掉的条目直接开始注入
+                enabled = entry.enabled,
                 position = position,
                 injectDepth = prompt.injectionDepth ?: 4,
                 content = prompt.content,
@@ -423,7 +433,9 @@ private data class StPromptOrder(
 @Serializable
 private data class StOrderEntry(
     val identifier: String = "",
-    val enabled: Boolean = false,
+    // 酒馆语义：prompt_order 项缺 enabled 字段视为启用。
+    // 默认 false 会把没写该字段的正常预设整条判为禁用。
+    val enabled: Boolean = true,
 )
 
 /** 酒馆旧版 Chat Completion 预设（main_prompt 平铺字段） */
