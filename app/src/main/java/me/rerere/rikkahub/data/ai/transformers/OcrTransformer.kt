@@ -111,7 +111,7 @@ object OcrTransformer : InputMessageTransformer, KoinComponent {
         val settings = get<SettingsStore>().settingsFlow.value
         val content = runCatching { recognizeRemotely(settings, part) }.getOrNull()
             ?.takeIf { it.isNotBlank() }
-            ?: recognizeLocally(part)
+            ?: if (settings.huadengSettings.enableLocalOcrFallback) recognizeLocally(part) else null
             ?: "[Image]" 
         Log.i(TAG, "performOcr: $content")
         val ocrResult = """

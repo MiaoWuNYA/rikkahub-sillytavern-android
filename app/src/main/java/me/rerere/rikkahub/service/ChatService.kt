@@ -1583,7 +1583,13 @@ class ChatService(
                         addAll(createShellTools())
                     }
                     if (assistant.localTools.contains(LocalToolOption.PythonEngine)) {
-                        add(createPythonTool(context, assistant.toolExecTimeout))
+                        add(
+                            createPythonTool(
+                                context = context,
+                                timeoutSec = assistant.toolExecTimeout,
+                                includeLibraryHints = settings.huadengSettings.enablePythonLibraryHints,
+                            )
+                        )
                     }
                     if (assistant.localTools.contains(LocalToolOption.DatabaseQuery)) {
                         add(createDatabaseQueryTool(database))

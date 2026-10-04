@@ -2077,6 +2077,10 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="huadeng_tavern_mode_desc">开启后请求只发送：角色卡（含世界书/示例消息/系统提示）、聊天历史、工具的最小可用定义。插件提示词、记忆检索、跨窗口生活流、模板宏以外的全部注入、工作空间提醒、时间提醒、作者注释、技能自动触发、文档转 Prompt、OCR、Recent Chats、滚动压缩摘要、工具路由与工作伦理区、工具系统提示词——全部不再发送。适合角色扮演与创作，避免工作流噪声干扰生成质量</string>
   <string name="huadeng_tavern_keep_tools">酒馆模式·保留工具</string>
   <string name="huadeng_tavern_keep_tools_desc">开启时保留文件/搜索/网页抓取/计算器等基础工具（仅保留 JSON 定义，不发送工具提示词）。关闭后退化为纯文本模型，请求中不含任何工具</string>
+  <string name="huadeng_local_ocr_title">离线 OCR 兜底</string>
+  <string name="huadeng_local_ocr_desc">未配置 OCR 模型（或远程识别失败）时，用内置引擎读取图片里的文字。全程在本机、不联网、不上传图片。关掉则退回旧行为——只发一个 [Image] 占位符</string>
+  <string name="huadeng_python_hints_title">提示可用的 Python 库</string>
+  <string name="huadeng_python_hints_desc">在 execute_python 的工具描述里列出已内置的库（numpy/pandas/pillow/docx/pdf/yaml 等）。不写的话模型倾向于用标准库手搓，装了 pandas 也不用。关掉可省每次请求几百 token</string>
   <string name="tavern_quick_toggle">酒馆模式</string>
   <string name="tavern_quick_toggle_on">酒馆模式已开启</string>
   <string name="tavern_quick_toggle_off">酒馆模式已关闭</string>

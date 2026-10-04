@@ -23,13 +23,14 @@ import me.rerere.rikkahub.data.repository.ConversationRepository
 import org.koin.java.KoinJavaComponent
 import java.io.File
 
-fun createPythonTool(context: Context, timeoutSec: Int = 30): Tool = Tool(
-    name = "execute_python",
-    description = "Execute Python code on-device (isolated environment) for data processing, API calls,\n" +
-        "file generation, or programmatic logic beyond simple math (simple math → calculator;\n" +
-        "shell ops → execute_command; file ops → file tools).\n" +
-        "\n" +
-        "AVAILABLE LIBRARIES (import normally, they are pre-installed):\n" +
+/**
+ * 工具描述的可选部分。
+ *
+ * 列出可用的第三方库，模型才知道该往哪个方向写代码——不写这段，它往往只用
+ * 标准库手搓，明明装了 pandas 却去手写 CSV 解析。代价是几百 token，
+ * 所以在华灯设置里给了开关：长对话token紧张时可以关掉。
+ */
+private const val PYTHON_LIBRARY_HINTS = "AVAILABLE LIBRARIES (import normally, they are pre-installed):\n" +
         "  numpy             numerical arrays, statistics, linear algebra\n" +
         "  pandas            DataFrame: CSV/Excel analysis, groupby, merge, pivot\n" +
         "  PIL (Pillow)      image open/resize/crop/rotate/convert/watermark\n" +
@@ -47,12 +48,31 @@ fun createPythonTool(context: Context, timeoutSec: Int = 30): Tool = Tool(
         "  pypinyin          Chinese -> pinyin (sorting, ruby annotation)\n" +
         "  opencc            Simplified <-> Traditional Chinese\n" +
         "  tabulate, pytz\n" +
-        "\n" +
-        "A convert module ships with the app for format conversion:\n" +
-        "  import convert; convert.convert(path, None, 'pdf', 'md', workdir)\n" +
-        "  supports txt/md/html/docx/pdf/xlsx/pptx/epub/csv <-> each other\n" +
-        "\n" +
-        "code: Python code to execute. Last expression value returned. Use print() for debugging.",
+        "\n"
+
+private const val PYTHON_TOOL_INTRO =
+    "Execute Python code on-device (isolated environment) for data processing, API calls,\n" +
+        "file generation, or programmatic logic beyond simple math (simple math → calculator;\n" +
+        "shell ops → execute_command; file ops → file tools).\n" +
+        "\n"
+
+private const val PYTHON_CONVERT_HINTS = "A convert module ships with the app for format conversion:\n" +
+    "  import convert; convert.convert(path, None, 'pdf', 'md', workdir)\n" +
+    "  supports txt/md/html/docx/pdf/xlsx/pptx/epub/csv/json/yaml/toml, and csv/json/yaml <-> table\n" +
+    "\n" +
+    "code: Python code to execute. Last expression value returned. Use print() for debugging."
+
+fun createPythonTool(
+    context: Context,
+    timeoutSec: Int = 30,
+    includeLibraryHints: Boolean = true,
+): Tool = Tool(
+    name = "execute_python",
+    description = buildString {
+        append(PYTHON_TOOL_INTRO)
+        if (includeLibraryHints) append(PYTHON_LIBRARY_HINTS)
+        append(PYTHON_CONVERT_HINTS)
+    },
     needsApproval = { false },
     parameters = {
         InputSchema.Obj(
