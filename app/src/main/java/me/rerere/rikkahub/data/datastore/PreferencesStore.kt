@@ -881,7 +881,11 @@ data class HuaDengSettings(
     // 本地 OCR 兜底：未配置 OCR 模型（或远程识别失败）时，用内置的 ML Kit
     // 离线识别图片文字。不联网、不上传图片。关掉则回到旧行为——直接给模型
     // 一个 "[Image]" 占位符，图片内容等于不可见。
-    val enableLocalOcrFallback: Boolean = true,
+    // 已废弃：本地离线 OCR（ML Kit 中文包）占用 11 MB 的
+    // libmlkit_google_ocr_pipeline.so，为「偶尔看图」付这个体积不划算，
+    // 已改为完全依赖用户配置的视觉模型。
+    // 字段保留是为了让老配置还能正常反序列化，不再读写。
+    val enableLocalOcrFallback: Boolean = false,
     // Python 能力说明：在 execute_python 的工具描述里列出可用的第三方库
     // （numpy/pandas/pillow/docx/pdf 等）。关掉可以省几百 token 的工具描述，
     // 代价是模型不知道有哪些库可用、倾向于不用它们。

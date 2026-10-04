@@ -116,6 +116,28 @@ chaquopy {
             install("qrcode")          // 生成二维码（纯 Python）
             install("networkx")        // 图算法：最短路、连通分量、拓扑排序
             install("python-barcode")  // 条形码
+
+            // ── 小体积高频工具（合计约 1.7 MB，全部是纯 Python）──────
+            install("python-slugify")  // 中文/任意文本 → URL 友好的 slug
+            install("unidecode")       // Unicode → ASCII 转写（去音标、统一形近字符）
+            install("inflect")         // 英文单复数、序数词、a/an 选择
+            install("humanize")        // 人类可读的量与时间（1024 → 1.0 KB）
+            install("croniter")        // cron 表达式解析：下次触发时间
+            install("isodate")         // ISO 8601 时间解析（含时长）
+            install("semver")          // 语义化版本比较
+            install("xmltodict")       // XML ↔ dict 互转
+            install("deepdiff")        // 结构化数据差异（嵌套 dict/list 递归比对）
+            install("jsonpath-ng")     // JSONPath 查询
+            install("emoji")           // 表情符号的识别与转换
+            install("ftfy")            // 修复乱码文本（mojibake、错误编码）
+            install("parse")           // 自然语言时间解析（"下周三下午三点"）
+            install("pyotp")           // TOTP/HOTP 两步验证码
+            install("python-dotenv")   // 读取 .env 配置
+            install("tomli")           // TOML 解析（读 pyproject.toml 等）
+            install("base58")          // Base58 编解码（加密货币地址格式）
+            install("shortuuid")       // 短随机 ID 生成
+            install("nanoid")          // 短唯一 ID（URL 友好）
+            install("ulid-py")         // 可排序的唯一 ID
         }
 
         // ── 让 docx / pptx 的模板文件落到磁盘 ──
@@ -401,8 +423,7 @@ dependencies {
     // quickie (qrcode scanner)
     implementation(libs.quickie.bundled)
     implementation(libs.barcode.scanning)
-    implementation(libs.text.recognition.chinese)
-    implementation(libs.androidx.camera.core)
+        implementation(libs.androidx.camera.core)
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

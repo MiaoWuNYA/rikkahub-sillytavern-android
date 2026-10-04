@@ -145,10 +145,12 @@ sealed class LocalToolOption {
     data object DiffText : LocalToolOption()
 
     /** 把本地图片直接显示在聊天里（区别于 present_file 的系统分享面板）。 */
+    @Serializable
     @SerialName("show_image")
     data object ShowImage : LocalToolOption()
 
     /** 静态检查代码（Python 真分析，其余语言浅层提示）。 */
+    @Serializable
     @SerialName("check_code")
     data object CodeCheck : LocalToolOption()
 }

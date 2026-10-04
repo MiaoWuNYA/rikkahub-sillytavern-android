@@ -51,6 +51,12 @@ private const val PYTHON_LIBRARY_HINTS =
         ".xls), docxtpl (docx templates), ebooklib (epub), cn2an (Chinese\n" +
         "numerals), zhon (Chinese punctuation), jsonschema, python-frontmatter,\n" +
         "pyyaml, pypdfium2 (PDF render).\n" +
+        // 小体积高频工具。名字本身说明了用途，就不逐条解释了——
+        // 这一段约 45 token，换来模型知道二十来个库可以直接用。
+        "Small utils: slugify, unidecode, inflect, humanize, ftfy,\n" +
+        "croniter, isodate, semver, parse, xmltodict, deepdiff, jsonpath-ng,\n" +
+        "emoji, pyotp, qrcode, barcode, base58, shortuuid, nanoid, ulid,\n" +
+        "dotenv, tomli, networkx.\n" +
         // 引导走 chart_display：那是原生渲染、直接显示在聊天里，
         // 比让 Python 画一张静态图更好，也省掉 matplotlib 8 MB。
         "For charts prefer the chart_display tool (renders in chat). Images you\n" +
