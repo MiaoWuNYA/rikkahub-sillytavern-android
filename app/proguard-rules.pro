@@ -76,3 +76,61 @@
 
 # 插件解密入口：被插件加载器经反射/间接路径调用，R8 看不到调用方
 -keep class me.rerere.rikkahub.plugin.crypto.PluginCrypto { *; }
+
+
+# ---- kotlinx.serialization 多态 ----
+#
+# 背景：LocalToolOption 是 @Serializable 的 sealed class，每个子类用
+# @SerialName("show_image") 之类挂进序列化模块。
+#
+# 这套注册对 R8 是「不可见」的：它发生在编译器生成的多态序列化器里，
+# 按 Class 对象查表，没有任何直接的 Kotlin 代码引用。于是 R8 认定
+# 新增的子类不可达并删掉它们，运行时序列化立刻抛
+#   Serializer for subclass 'LocalToolOption$ShowImage' is not found
+#
+# 表现：debug 包正常，release 包一打开助手设置页就闪退——因为只有
+# release 才跑 R8。和本文件上面的 CardHostBridge 是同一类问题：
+# 反射/生成代码构成的数据通路，R8 看不见。
+#
+# 实测确认（R8 的 usage.txt 里明确列出被删的两个）：
+#   me.rerere.rikkahub.data.ai.tools.LocalToolOption$CodeCheck:
+#   me.rerere.rikkahub.data.ai.tools.LocalToolOption$ShowImage:
+#
+# 之前的写法 -keepclassmembers 只保住成员，保不住类本身。
+# 必须用 -keep 并让规则作用于「sealed 类的所有子类」。
+
+# 保留序列化注解（@SerialName 的值是运行时查表用的键）
+-keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations, InnerClasses, Signature, *Annotation*
+
+# 只保住「类不被删」和「序列化入口」，不保成员体——保成员名会让 APK
+# 从 107 MB 涨到 114 MB，没必要。
+#
+# 注意不能写 allowshrinking：那等于告诉 R8「没被引用就删掉」，而
+# sealed 子类恰恰是「看起来没被引用」的那种（只出现在多态序列化器的
+# 查表里）。加了它之后 ShowImage / CodeCheck 立刻又被删了。
+-if @kotlinx.serialization.Serializable class me.rerere.**
+-keep class <1>
+-keepclassmembers class <1> {
+    *** Companion;
+    *** INSTANCE;
+    static **$* *;
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
+# 编译器为每个 @Serializable 类型生成的 $serializer
+-keep class me.rerere.**$$serializer { *; }
+
+# sealed 继承体系：子类只被多态序列化器按 Class 查表引用，
+# R8 看不到这层通路，会判定不可达。显式保住整条继承链。
+-keep class me.rerere.rikkahub.data.ai.tools.LocalToolOption { *; }
+-keep class me.rerere.rikkahub.data.ai.tools.LocalToolOption$* { *; }
+
+# kotlinx.serialization 自身的 Companion 与 serializer 工厂
+-keepclasseswithmembers class kotlinx.serialization.** {
+    *** Companion;
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-keepclassmembers class kotlinx.serialization.** {
+    *** Companion;
+}
+-dontwarn kotlinx.serialization.**
