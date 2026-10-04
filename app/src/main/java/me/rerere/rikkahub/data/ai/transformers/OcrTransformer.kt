@@ -18,7 +18,6 @@ import me.rerere.common.cache.SingleFileCacheStore
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.findModelById
 import me.rerere.rikkahub.data.datastore.findProvider
-import me.rerere.rikkahub.utils.LocalOcr
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import java.io.File
@@ -109,10 +108,16 @@ object OcrTransformer : InputMessageTransformer, KoinComponent {
         }
 
         val settings = get<SettingsStore>().settingsFlow.value
+        // 本地离线 OCR 已移除（ML Kit 中文包内嵌 11 MB 的
+        // libmlkit_google_ocr_pipeline.so，为「偶尔看图」付这个体积不划算）。
+        // 现在只有一条路：用用户自己配的视觉模型识别，质量本来就更好。
+        //
+        // 没配模型时不再返回 "[Image]" —— 那对模型等于白纸一张。改成一句
+        // 可操作的说明，让模型知道自己缺什么，也让它有机会把这件事告诉用户。
         val content = runCatching { recognizeRemotely(settings, part) }.getOrNull()
             ?.takeIf { it.isNotBlank() }
-            ?: if (settings.huadengSettings.enableLocalOcrFallback) recognizeLocally(part) else null
-            ?: "[Image]" 
+            ?: "[An image was sent, but no vision model is configured. " +
+                "Set one in Settings -> Model -> OCR model to let the assistant read images.]" 
         Log.i(TAG, "performOcr: $content")
         val ocrResult = """
             <image_file_ocr>
@@ -156,20 +161,5 @@ object OcrTransformer : InputMessageTransformer, KoinComponent {
             ),
         )
         return result.message.toText().takeIf { it.isNotBlank() }
-    }
-
-    /**
-     * 本地兜底：ML Kit 离线识别（模型内置在 APK 里，不联网、不上传图片）。
-     *
-     * 加这一层之前，没配 ocrModelId 的用户发图就是一片空白——模型只看到 "[Image]"，
-     * 截图里的报错、菜单、公式、书页全部读不到。这正是「日常十次对话遇到五次」
-     * 的场景，所以兜底必须存在，不能只提示用户去配置远程模型。
-     */
-    private suspend fun recognizeLocally(part: UIMessagePart.Image): String? {
-        if (!LocalOcr.isSupported(part.url)) return null
-        val context = get<Context>()
-        return runCatching { LocalOcr.recognize(context, part.url) }
-            .onFailure { Log.w(TAG, "local ocr failed: ${it.message}") }
-            .getOrNull()
     }
 }

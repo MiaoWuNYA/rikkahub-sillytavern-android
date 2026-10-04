@@ -276,26 +276,6 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                     // 这两项控制的是「模型能不能用好已内置的能力」：
                     // 关掉不会卸载任何库，只是不再主动告诉模型它们存在。
                     item(
-                        headlineContent = { Text(stringResource(R.string.huadeng_local_ocr_title)) },
-                        supportingContent = {
-                            Text(stringResource(R.string.huadeng_local_ocr_desc))
-                        },
-                        trailingContent = {
-                            Switch(
-                                checked = settings.huadengSettings.enableLocalOcrFallback,
-                                onCheckedChange = { enabled ->
-                                    vm.updateSettings(
-                                        settings.copy(
-                                            huadengSettings = settings.huadengSettings.copy(
-                                                enableLocalOcrFallback = enabled,
-                                            ),
-                                        )
-                                    )
-                                },
-                            )
-                        },
-                    )
-                    item(
                         headlineContent = { Text(stringResource(R.string.huadeng_python_hints_title)) },
                         supportingContent = {
                             Text(stringResource(R.string.huadeng_python_hints_desc))
