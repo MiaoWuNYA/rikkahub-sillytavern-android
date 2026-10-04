@@ -143,6 +143,10 @@ sealed class LocalToolOption {
     @Serializable
     @SerialName("diff_text")
     data object DiffText : LocalToolOption()
+
+    /** 把本地图片直接显示在聊天里（区别于 present_file 的系统分享面板）。 */
+    @SerialName("show_image")
+    data object ShowImage : LocalToolOption()
 }
 
 class LocalTools(
@@ -457,6 +461,7 @@ class LocalTools(
 
     // 通用文本差异对比（替换原先的二进制对比）
     val diffTextTool by lazy { buildDiffTextTool(context) }
+    val showImageTool by lazy { buildShowImageTool(context) }
 
     fun getTools(options: List<LocalToolOption>): List<Tool> {
         val tools = mutableListOf<Tool>()
@@ -491,6 +496,10 @@ class LocalTools(
         if (options.contains(LocalToolOption.ChartDisplay)) {
             tools.add(chartDisplayTool)
         }
+        if (options.contains(LocalToolOption.ShowImage)) {
+            tools.add(showImageTool)
+        }
+
         if (options.contains(LocalToolOption.DiffText)) {
             tools.add(diffTextTool)
         }

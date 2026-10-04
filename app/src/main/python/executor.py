@@ -1,6 +1,6 @@
 """
 Python executor for Rikkahub.
-Executes Python code with stdout capture, matplotlib auto-save,
+Executes Python code with stdout capture,
 and result file detection.
 
 Available built-in functions (call these from your code):
@@ -37,6 +37,9 @@ if not hasattr(_random, '_traced_calls'):
 # 用一个可重入锁把「替换流 → 执行 → 取回输出 → 还原」整段串起来。
 import threading as _threading
 _exec_lock = _threading.RLock()
+
+# 单个回传文件的大小上限（20 MB）。超过的不进聊天，避免把会话撑爆。
+MAX_OUTPUT_FILE_BYTES = 20 * 1024 * 1024
 
 # 并发上限：锁保证了正确性，但一堆调用排队等待时仍会占满线程与内存。
 # 这里限制同时在跑的执行数，超出的调用会阻塞等待而不是失败——
@@ -196,9 +199,17 @@ def _execute_locked(code: str, workdir: str, bridge=None) -> str:
     sys.stderr = StringIO()
 
     # List files before execution
+    #
+    # 必须与执行后的扫描方式对称（都用 walk、都用相对路径），
+    # 否则差集算出来是错的：一边给文件名一边给相对路径，
+    # 或者一边递归一边只看顶层，都会让新文件被漏掉或误判。
     before = set()
     try:
-        before = set(os.listdir(workdir))
+        for _dp, _dns, _fns in os.walk(workdir):
+            _dns[:] = [d for d in _dns if not d.startswith('.') and d != '__pycache__']
+            for _fn in _fns:
+                if not _fn.startswith('.'):
+                    before.add(os.path.relpath(os.path.join(_dp, _fn), workdir))
     except Exception:
         pass
 
@@ -211,39 +222,10 @@ def _execute_locked(code: str, workdir: str, bridge=None) -> str:
     except Exception:
         pass
 
-    # Pre-configure matplotlib
-    _has_cjk = True
-    try:
-        import matplotlib
-        matplotlib.use('Agg')
-        import matplotlib.pyplot as plt
-        plt.rcParams['figure.facecolor'] = 'white'
-        plt.rcParams['axes.facecolor'] = 'white'
-        plt.rcParams['savefig.facecolor'] = 'white'
-
-        # 中文字体：设备上没有任何含汉字字形的字体，matplotlib 又只带
-        # DejaVu（纯拉丁）。画中文标签时每个字都会渲染成方块并刷一屏
-        # "Glyph missing from font" 警告。
-        #
-        # 这里不去塞一个几 MB 的中文字体——只为了图表标题不值得。
-        # 改为显式关掉「缺字形」警告并标记一个开关，出图后由下面统一提示，
-        # 让模型知道该换英文标注。比让用户拿到一张全是方块的图好。
-        try:
-            from matplotlib import font_manager
-            _has_cjk = any(
-                'CJK' in f.name or 'Noto Sans SC' in f.name or 'Heiti' in f.name
-                or 'SimHei' in f.name or 'WenQuanYi' in f.name
-                for f in font_manager.fontManager.ttflist
-            )
-        except Exception:
-            _has_cjk = False
-
-        if not _has_cjk:
-            import warnings as _w
-            _w.filterwarnings('ignore', message='Glyph .* missing from font')
-            plt.rcParams['axes.unicode_minus'] = False
-    except ImportError:
-        pass
+    # matplotlib 已移除：图表交给上游的 chart_display 工具（原生渲染、
+    # 直接显示在聊天里、可交互），静态图那条路不再需要 8 MB 的依赖。
+    # 用户代码若真的 import matplotlib 会拿到清晰的 ImportError，
+    # 由下面的错误回传机制原样报给模型。
 
     try:
         # 用户代码的命名空间。
@@ -261,24 +243,6 @@ def _execute_locked(code: str, workdir: str, bridge=None) -> str:
         _scope = dict(globals())
         _scope["__name__"] = "__main__"
         result = _run_user_code(code, _scope)
-
-        # Auto-save matplotlib figures
-        try:
-            import matplotlib.pyplot as plt
-            for i, fig_num in enumerate(plt.get_fignums()):
-                fig = plt.figure(fig_num)
-                fname = "figure_{}.png".format(i+1) if plt.get_fignums() else "figure.png"
-                fig.savefig(os.path.join(workdir, fname), dpi=150,
-                           bbox_inches='tight', facecolor='white', edgecolor='none')
-                output_files.append(fname)
-                plt.close(fig)
-            # 设备上没有中文字形，图里的汉字会渲染成方块。与其让用户
-            # 拿到一张看不懂的图，不如明确告诉调用方换英文标注。
-            if not locals().get('_has_cjk', False) and output_files:
-                print('[提示] 图中若含中文会显示为方块：设备无可用的中文字形。'
-                      '请改用英文标注，或把中文说明写在正文里而非图内。')
-        except ImportError:
-            pass
 
     except Exception as e:
         error = "{}\n{}".format(e, traceback.format_exc())

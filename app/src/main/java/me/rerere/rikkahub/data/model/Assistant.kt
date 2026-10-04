@@ -72,6 +72,11 @@ data class Assistant(
         LocalToolOption.Clipboard,
         LocalToolOption.PythonEngine,
         LocalToolOption.DiffText,
+        // 上游自带的图表渲染（原生 Compose，直接显示在聊天里）。
+        // 之前只在 UI 里有开关、默认不开，等于装了模型也看不到。
+        LocalToolOption.ChartDisplay,
+        // 让模型能把本地图片直接显示在聊天里，而不是只能描述「我生成了一张图」。
+        LocalToolOption.ShowImage,
     ),
     val enableWebSearch: Boolean = false, // 网络搜索开关(每个助手独立)
     val workspaceId: Uuid? = null,
@@ -1002,6 +1007,8 @@ private fun parseExampleBlock(block: String, charName: String, userName: String)
 val DEFAULT_NEW_LOCAL_TOOLS: List<LocalToolOption> = listOf(
     LocalToolOption.PythonEngine,
     LocalToolOption.DiffText,
+    LocalToolOption.ChartDisplay,
+    LocalToolOption.ShowImage,
 )
 
 /**
