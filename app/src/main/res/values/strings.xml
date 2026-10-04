@@ -2892,4 +2892,15 @@
   <string name="assistant_page_clone_with_memories">Also copy memories</string>
     <string name="local_tool_show_image_title">Show images in chat</string>
     <string name="local_tool_show_image_desc">Lets the assistant display a local image directly in the conversation, instead of only describing it.</string>
+    <string name="local_tool_calculator_title">Calculator</string>
+    <string name="local_tool_calculator_desc">700+ numeric functions: statistics, matrices (det/inv/eigen), numerical derivatives and integrals, number theory, finance, physics, unit conversion. For symbolic results (an expression like 3x²) use the Python engine with sympy.</string>
+    <string name="local_tool_present_file_title">Share files</string>
+    <string name="local_tool_present_file_desc">Opens a file through the system share sheet so the user can save it, send it, or open it in another app.</string>
+    <string name="local_tool_task_title">Task list</string>
+    <string name="local_tool_task_desc">Lets the assistant keep a task list across a long, multi-step request — create, update, and track items.</string>
+    <string name="update_card_go_github">Download from GitHub</string>
+    <string name="update_card_go_github_desc">Opens the releases page in your browser. The app no longer downloads updates directly.</string>
+    <string name="update_card_open_failed">No browser available</string>
+    <string name="local_tool_code_check_title">Code check</string>
+    <string name="local_tool_code_check_desc">Statically checks code before it runs. Python gets real analysis (syntax errors, undefined names, unused imports). Other languages get bracket matching and common-pitfall hints only, since no compiler is available on device.</string>
 </resources>

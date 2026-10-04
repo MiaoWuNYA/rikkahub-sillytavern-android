@@ -147,6 +147,10 @@ sealed class LocalToolOption {
     /** 把本地图片直接显示在聊天里（区别于 present_file 的系统分享面板）。 */
     @SerialName("show_image")
     data object ShowImage : LocalToolOption()
+
+    /** 静态检查代码（Python 真分析，其余语言浅层提示）。 */
+    @SerialName("check_code")
+    data object CodeCheck : LocalToolOption()
 }
 
 class LocalTools(
@@ -462,6 +466,7 @@ class LocalTools(
     // 通用文本差异对比（替换原先的二进制对比）
     val diffTextTool by lazy { buildDiffTextTool(context) }
     val showImageTool by lazy { buildShowImageTool(context) }
+    val codeCheckTool by lazy { buildCodeCheckTool(context) }
 
     fun getTools(options: List<LocalToolOption>): List<Tool> {
         val tools = mutableListOf<Tool>()
@@ -498,6 +503,10 @@ class LocalTools(
         }
         if (options.contains(LocalToolOption.ShowImage)) {
             tools.add(showImageTool)
+        }
+
+        if (options.contains(LocalToolOption.CodeCheck)) {
+            tools.add(codeCheckTool)
         }
 
         if (options.contains(LocalToolOption.DiffText)) {

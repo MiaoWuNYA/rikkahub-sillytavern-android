@@ -13,10 +13,16 @@ import java.util.concurrent.TimeUnit
 fun createCalculatorTool(context: Context): Tool = Tool(
     name = "calculator",
     description = "" +
-        "Calculator with 700+ functions for complex or multi-step computations (simple arithmetic — answer directly).\n" +
-        "Covers: statistics, finance, matrices (det/inv/eigen), calculus (derivative/integral/ODE), number theory,\n" +
-        "astronomy, physics (relativity/quantum/orbital), geometry, unit conversion, combinatorics.\n\n" +
-        "expression: Math expression to evaluate. Supports multi-statement: a=1+2; a*3",
+        "Calculator with 700+ NUMERIC functions (simple arithmetic — answer directly).\n" +
+        "Covers: statistics, finance, matrices (det/inv/eigen), number theory, astronomy,\n" +
+        "physics (relativity/quantum/orbital), geometry, unit conversion, combinatorics,\n" +
+        "and numerical calculus — derivative/integral at given points or over intervals.\n" +
+        "Returns NUMBERS only.\n\n" +
+        "For SYMBOLIC results — an expression rather than a value, e.g. the derivative\n" +
+        "3*x**2, an indefinite integral, exact roots, simplification, solving equations\n" +
+        "for unknowns — use execute_python with sympy instead.\n\n" +
+        "expression: Math expression to evaluate, or a numeric operation call like\n" +
+        "derivative('x**3', 2) / integral('x**2', 0, 3). Supports multi-statement: a=1+2; a*3",
     parameters = {
         InputSchema.Obj(
             properties = buildJsonObject {
