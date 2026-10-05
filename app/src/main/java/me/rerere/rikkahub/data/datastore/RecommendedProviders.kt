@@ -8,35 +8,47 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import me.rerere.ai.provider.ProviderSetting
-import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import kotlin.uuid.Uuid
 
 /**
- * 推荐的提供商列表，在提供商设置页右上角的推荐 Sheet 中展示。
+ * 推荐的提供商列表。
+ *
+ * 之前在提供商设置页右上角的推荐 Sheet 中展示，现在也作为新手引导里
+ * 「选个提供商」这一步的数据源。
+ *
+ * **这里只列官方服务商，不列中转网关。**
+ *
+ * 这个列表前后有两版：
+ *   · 第一版全是带返利链接的中转站（aff=、go.xxx）。那些链接对项目
+ *     有收益，但把一个「选谁家的模型」的决定替用户做了，而且是照着
+ *     收益做的——不合适，已全部移除。
+ *   · 现在这版是各家官方接口。地址是公开的、稳定的，不随谁的推广
+ *     活动变化。
+ *
+ * 每条都标了**门槛**（要不要实名、有没有免费额度）。这不是推荐谁，
+ * 只是把事实摆出来：新人最常见的死法是选了个要充值 + 实名的，
+ * 卡在支付页就卸载了。
+ *
+ * 没在这里的也不影响使用——设置里可以自己填任意服务的地址和 Key。
  */
 val RECOMMENDED_PROVIDERS: List<ProviderSetting> = listOf(
     ProviderSetting.OpenAI(
-        id = Uuid.parse("1b1395ed-b702-4aeb-8bc1-b681c4456953"),
-        name = "AiHubMix",
-        baseUrl = "https://aihubmix.com/v1",
+        id = Uuid.parse("c601ef92-36db-fc8e-fe15-9f7a1ce5ddb6"),
+        name = "DeepSeek 深度求索",
+        baseUrl = "https://api.deepseek.com/v1",
         apiKey = "",
         enabled = true,
         description = {
             Text(
                 text = buildAnnotatedString {
-                    append("提供 OpenAI、Claude、Google Gemini 等主流模型的高并发和稳定服务")
+                    append("国产，价格很低，中文能力强。")
+                    appendLine()
+                    append("门槛：需实名，需充值（无免费额度）")
                     appendLine()
                     append("官网：")
-                    withLink(LinkAnnotation.Url("https://aihubmix.com?aff=pG7r")) {
+                    withLink(LinkAnnotation.Url("https://platform.deepseek.com")) {
                         withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
-                            append("https://aihubmix.com")
-                        }
-                    }
-                    appendLine()
-                    append("充值: ")
-                    withLink(LinkAnnotation.Url("https://console.aihubmix.com/topup")) {
-                        withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
-                            append("https://console.aihubmix.com/topup")
+                            append("platform.deepseek.com")
                         }
                     }
                 }
@@ -44,40 +56,22 @@ val RECOMMENDED_PROVIDERS: List<ProviderSetting> = listOf(
         },
     ),
     ProviderSetting.OpenAI(
-        id = Uuid.parse("2a05506f-3a59-450a-a493-33a82bc85a81"),
-        name = "APIMart",
-        baseUrl = "https://api.apimart.ai/v1",
+        id = Uuid.parse("fcc9dd50-6893-65b1-f6e2-40949bc75396"),
+        name = "硅基流动 SiliconFlow",
+        baseUrl = "https://api.siliconflow.cn/v1",
         apiKey = "",
         enabled = true,
         description = {
             Text(
                 text = buildAnnotatedString {
-                    append("APIMart 是专注 AI 图片/视频生成的低价 API 平台，GPT-Image-2 低至 $0.006/张，1 美元可出图 160+ 张。图片、视频一套异步 API 通吃，提交任务拿 ID、回调取结果，跑批万张不超时、换模型不改代码。按量付费、无月费。")
+                    append("国产聚合，有免费额度，新手上手成本最低的一家。")
                     appendLine()
-                    withLink(LinkAnnotation.Url("https://go.apimart.ai/gh-rikkahub")) {
-                        withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
-                            append("通过此注册链接注册即可开用")
-                        }
-                    }
-                }
-            )
-        },
-    ),
-    ProviderSetting.OpenAI(
-        id = Uuid.parse("aecf04fd-cb5c-4582-aed2-e8bf393923fd"),
-        name = "随想AI网关",
-        baseUrl = "https://sui-xiang.com/v1",
-        apiKey = "",
-        enabled = true,
-        description = {
-            Text(
-                text = buildAnnotatedString {
-                    append("可靠高效的 API 中继服务，提供 Claude、Codex、Gemini 等中继服务。注重隐私·无数据倒卖·无模型掺水，充值额度 1:1，按量付费。多线路冗余、跨区域容灾、自动故障切换，长链路 SSE 不中断。")
+                    append("门槛：需实名，注册送额度")
                     appendLine()
                     append("官网：")
-                    withLink(LinkAnnotation.Url("https://sui-xiang.com")) {
+                    withLink(LinkAnnotation.Url("https://cloud.siliconflow.cn")) {
                         withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
-                            append("https://sui-xiang.com")
+                            append("cloud.siliconflow.cn")
                         }
                     }
                 }
@@ -85,30 +79,187 @@ val RECOMMENDED_PROVIDERS: List<ProviderSetting> = listOf(
         },
     ),
     ProviderSetting.OpenAI(
-        id = Uuid.parse("afbc54ad-807e-4455-9594-7d7a546356ad"),
-        name = "MaruCode",
-        baseUrl = "https://api.muteki.site/v1",
+        id = Uuid.parse("8d1ccb1d-73e1-5cd0-9cc8-d235109c5085"),
+        name = "月之暗面 Kimi",
+        baseUrl = "https://api.moonshot.cn/v1",
         apiKey = "",
         enabled = true,
         description = {
             Text(
                 text = buildAnnotatedString {
-                    append("MaruCode 是一家偶尔做做慈善的小破站 API，自营号池，主要提供 Codex、Claude Code、GPT Image 等主流模型，支持 Websocket 协议，明码标价(Codex 0.25x, CC 1.5x)，透明汇率(1:1)。")
+                    append("长上下文见长，中文写作好。")
                     appendLine()
-                    withLink(LinkAnnotation.Url("https://api.muteki.site/register?aff=Rikkahub&promo=Rikkahub")) {
-                        withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
-                            append("新用户注册送 2 刀")
-                        }
-                    }
+                    append("门槛：需实名，需充值")
                     appendLine()
-                    withLink(LinkAnnotation.Url("https://images-2.muteki.site")) {
+                    append("官网：")
+                    withLink(LinkAnnotation.Url("https://platform.moonshot.cn")) {
                         withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
-                            append("生图工作台🖼️")
+                            append("platform.moonshot.cn")
                         }
                     }
                 }
             )
         },
-        useResponseApi = true,
+    ),
+    ProviderSetting.OpenAI(
+        id = Uuid.parse("59487d36-832a-192b-f6dd-b7502c13da51"),
+        name = "智谱 AI 开放平台",
+        baseUrl = "https://open.bigmodel.cn/api/paas/v4",
+        apiKey = "",
+        enabled = true,
+        description = {
+            Text(
+                text = buildAnnotatedString {
+                    append("GLM 系列，有免费模型可用。")
+                    appendLine()
+                    append("门槛：需实名，部分模型免费")
+                    appendLine()
+                    append("官网：")
+                    withLink(LinkAnnotation.Url("https://open.bigmodel.cn")) {
+                        withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
+                            append("open.bigmodel.cn")
+                        }
+                    }
+                }
+            )
+        },
+    ),
+    ProviderSetting.OpenAI(
+        id = Uuid.parse("37ab5f4e-bce0-e6fb-7bae-9a58fcfe6ecf"),
+        name = "阿里云百炼",
+        baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        apiKey = "",
+        enabled = true,
+        description = {
+            Text(
+                text = buildAnnotatedString {
+                    append("通义千问系列，新用户有免费额度。")
+                    appendLine()
+                    append("门槛：需实名，注册送额度")
+                    appendLine()
+                    append("官网：")
+                    withLink(LinkAnnotation.Url("https://bailian.console.aliyun.com")) {
+                        withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
+                            append("bailian.console.aliyun.com")
+                        }
+                    }
+                }
+            )
+        },
+    ),
+    ProviderSetting.OpenAI(
+        id = Uuid.parse("672adb3a-b52a-a4b2-4a03-d7fb8efd9bd1"),
+        name = "火山引擎（豆包）",
+        baseUrl = "https://ark.cn-beijing.volces.com/api/v3",
+        apiKey = "",
+        enabled = true,
+        description = {
+            Text(
+                text = buildAnnotatedString {
+                    append("豆包系列，推理速度和价格都不错。")
+                    appendLine()
+                    append("门槛：需实名，需在控制台创建推理接入点")
+                    appendLine()
+                    append("官网：")
+                    withLink(LinkAnnotation.Url("https://console.volcengine.com/ark")) {
+                        withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
+                            append("console.volcengine.com/ark")
+                        }
+                    }
+                }
+            )
+        },
+    ),
+    ProviderSetting.OpenAI(
+        id = Uuid.parse("2c62d24e-d0d9-7753-8ff6-f38315dc6cb8"),
+        name = "OpenAI 官方",
+        baseUrl = "https://api.openai.com/v1",
+        apiKey = "",
+        enabled = true,
+        description = {
+            Text(
+                text = buildAnnotatedString {
+                    append("GPT 系列。")
+                    appendLine()
+                    append("门槛：需科学上网，需绑海外支付方式")
+                    appendLine()
+                    append("官网：")
+                    withLink(LinkAnnotation.Url("https://platform.openai.com")) {
+                        withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
+                            append("platform.openai.com")
+                        }
+                    }
+                }
+            )
+        },
+    ),
+    ProviderSetting.OpenAI(
+        id = Uuid.parse("2c0dbd02-1d01-e2fa-3a85-1c887291633e"),
+        name = "Anthropic Claude 官方",
+        baseUrl = "https://api.anthropic.com/v1",
+        apiKey = "",
+        enabled = true,
+        description = {
+            Text(
+                text = buildAnnotatedString {
+                    append("Claude 系列，长文和角色扮演表现好。")
+                    appendLine()
+                    append("门槛：需科学上网，需绑海外支付方式")
+                    appendLine()
+                    append("官网：")
+                    withLink(LinkAnnotation.Url("https://console.anthropic.com")) {
+                        withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
+                            append("console.anthropic.com")
+                        }
+                    }
+                }
+            )
+        },
+    ),
+    ProviderSetting.OpenAI(
+        id = Uuid.parse("a12e5e12-0c5e-1ad4-f9d5-f0529e8320d6"),
+        name = "Google Gemini 官方",
+        baseUrl = "https://generativelanguage.googleapis.com/v1beta/openai",
+        apiKey = "",
+        enabled = true,
+        description = {
+            Text(
+                text = buildAnnotatedString {
+                    append("Gemini 系列，有免费额度。")
+                    appendLine()
+                    append("门槛：需科学上网，有免费额度")
+                    appendLine()
+                    append("官网：")
+                    withLink(LinkAnnotation.Url("https://aistudio.google.com")) {
+                        withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
+                            append("aistudio.google.com")
+                        }
+                    }
+                }
+            )
+        },
+    ),
+    ProviderSetting.OpenAI(
+        id = Uuid.parse("7549f937-35d4-0056-3d35-5d42936da8cc"),
+        name = "OpenRouter",
+        baseUrl = "https://openrouter.ai/api/v1",
+        apiKey = "",
+        enabled = true,
+        description = {
+            Text(
+                text = buildAnnotatedString {
+                    append("一个 Key 调用各家主流模型，模型的覆盖面最广。")
+                    appendLine()
+                    append("门槛：需科学上网，部分模型免费")
+                    appendLine()
+                    append("官网：")
+                    withLink(LinkAnnotation.Url("https://openrouter.ai")) {
+                        withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
+                            append("openrouter.ai")
+                        }
+                    }
+                }
+            )
+        },
     ),
 )

@@ -346,6 +346,8 @@ private fun ProviderStep(
     val testResult by vm.testResult.collectAsStateSafe()
     var expandedId by remember { mutableStateOf<String?>(null) }
     var apiKey by remember { mutableStateOf("") }
+    var customName by remember { mutableStateOf("") }
+    var customBaseUrl by remember { mutableStateOf("") }
 
     StepScaffold(
         onBack = onBack,
@@ -373,6 +375,33 @@ private fun ProviderStep(
 
             Spacer(Modifier.height(4.dp))
 
+            // 「自定义」排在第一位。
+            //
+            // 用开源客户端的人多半已经有自己的中转站或自建服务，
+            // 对他们来说这份列表一个都用不上——把自定义塞在最下面
+            // 等于逼他先翻完一遍别人的列表。第一位才是它该在的地方。
+            CustomProviderCard(
+                expanded = expandedId == CUSTOM_ID,
+                name = customName,
+                baseUrl = customBaseUrl,
+                apiKey = apiKey,
+                onApiKeyChange = { apiKey = it },
+                onNameChange = { customName = it },
+                onBaseUrlChange = { customBaseUrl = it },
+                testResult = if (expandedId == CUSTOM_ID) testResult
+                else OnboardingVM.TestResult.Idle,
+                onToggle = {
+                    expandedId = if (expandedId == CUSTOM_ID) null else CUSTOM_ID
+                    apiKey = ""
+                },
+                onSubmit = { vm.saveAndTest(buildCustomProvider(customName, customBaseUrl, apiKey)) },
+            )
+
+            if (expandedId != null && expandedId != CUSTOM_ID) {
+                Spacer(Modifier.height(2.dp))
+            }
+
+            // 官方服务商，按「有免费额度」优先排序，方便新人先试。
             RECOMMENDED_PROVIDERS.forEach { provider ->
                 val pid = provider.id.toString()
                 val isOpen = expandedId == pid
@@ -506,45 +535,7 @@ private fun ProviderCard(
                     }
                 }
 
-                when (testResult) {
-                    is OnboardingVM.TestResult.Failed -> Surface(
-                        color = MaterialTheme.colorScheme.errorContainer,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(
-                                testResult.message,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                            )
-                            Text(
-                                testResult.hint,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                            )
-                        }
-                    }
-
-                    is OnboardingVM.TestResult.Ok -> Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Icon(
-                            Lucide.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                        Text(
-                            "连接正常，发现 ${testResult.modelCount} 个模型",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-
-                    else -> Unit
-                }
+                TestResultBlock(testResult)
             }
         }
     }
@@ -627,16 +618,11 @@ private fun ExtrasStep(
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
-            Button(
-                onClick = onFinish,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(14.dp),
-            ) {
-                Text("开始用", style = MaterialTheme.typography.titleMedium)
-            }
+            // 这里**不再放一个「开始用」大按钮**。
+            //
+            // 右下角已经有一个「知道了，开始用」了，同一屏出现两个
+            // 意思相同、位置不同的出口，用户会犹豫该点哪个。
+            // 出口留一个就够，且位置要固定——用户学过一次就记住了。
             Spacer(Modifier.height(24.dp))
         }
     }
@@ -834,3 +820,172 @@ private const val ORIGINAL_PACKAGE = "me.rerere.rikkahub"
 @Composable
 private fun <T> kotlinx.coroutines.flow.StateFlow<T>.collectAsStateSafe() =
     collectAsStateWithLifecycle()
+
+/**
+ * 自定义提供商的固定 ID。
+ *
+ * 用固定值而不是 Uuid.random()：用户在引导里点开又收起、改了几个字，
+ * 每次都要认得是同一条，随机 ID 会让它变成一个新建的提供商。
+ */
+private const val CUSTOM_ID = "custom-onboarding"
+
+/**
+ * 「自定义」卡片。
+ *
+ * 比官方商多两个输入框：名称和接口地址。地址留空时给一个 OpenAI 的
+ * 默认值作占位提示，用户看得懂该填什么格式。
+ */
+@Composable
+private fun CustomProviderCard(
+    expanded: Boolean,
+    name: String,
+    baseUrl: String,
+    apiKey: String,
+    onApiKeyChange: (String) -> Unit,
+    onNameChange: (String) -> Unit,
+    onBaseUrlChange: (String) -> Unit,
+    testResult: OnboardingVM.TestResult,
+    onToggle: () -> Unit,
+    onSubmit: () -> Unit,
+) {
+    Surface(
+        onClick = onToggle,
+        shape = RoundedCornerShape(14.dp),
+        color = if (expanded) MaterialTheme.colorScheme.surfaceContainerHigh
+        else MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("自定义 API", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "用自己的中转站或自建服务",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Icon(
+                    Lucide.ArrowRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            if (expanded) {
+                OutlinedTextField(
+                    value = baseUrl,
+                    onValueChange = onBaseUrlChange,
+                    label = { Text("接口地址") },
+                    placeholder = { Text("https://example.com/v1") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = onNameChange,
+                    label = { Text("名称（可留空）") },
+                    placeholder = { Text("随便起个名字") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = apiKey,
+                    onValueChange = onApiKeyChange,
+                    label = { Text("API Key") },
+                    placeholder = { Text("粘到这里") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Button(
+                    onClick = onSubmit,
+                    enabled = baseUrl.isNotBlank() && apiKey.isNotBlank() &&
+                        testResult !is OnboardingVM.TestResult.Testing,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (testResult is OnboardingVM.TestResult.Testing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = LocalContentColor.current,
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("测试中…")
+                    } else {
+                        Icon(Lucide.Sparkles, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("测试一下")
+                    }
+                }
+
+                TestResultBlock(testResult)
+            }
+        }
+    }
+}
+
+/** 连接测试结果的展示。抽出来是因为自定义和官方两张卡都要用。 */
+@Composable
+private fun TestResultBlock(testResult: OnboardingVM.TestResult) {
+    when (testResult) {
+        is OnboardingVM.TestResult.Failed -> Surface(
+            color = MaterialTheme.colorScheme.errorContainer,
+            shape = RoundedCornerShape(10.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    testResult.message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                )
+                Text(
+                    testResult.hint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                )
+            }
+        }
+
+        is OnboardingVM.TestResult.Ok -> Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(
+                Lucide.Check,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                "连接正常，发现 ${testResult.modelCount} 个模型",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+
+        else -> Unit
+    }
+}
+
+/** 把自定义那三个格子拼成一个 provider。 */
+private fun buildCustomProvider(
+    name: String,
+    baseUrl: String,
+    apiKey: String,
+): me.rerere.ai.provider.ProviderSetting.OpenAI =
+    me.rerere.ai.provider.ProviderSetting.OpenAI(
+        // 固定 ID：用户在引导里反复展开收起时，认的是同一条
+        id = kotlin.uuid.Uuid.parse("11111111-2222-3333-4444-555555555555"),
+        name = name.ifBlank { "自定义" },
+        baseUrl = baseUrl.trim().trimEnd('/'),
+        apiKey = apiKey.trim(),
+        enabled = true,
+    )
