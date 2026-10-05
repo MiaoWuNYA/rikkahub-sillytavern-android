@@ -1,6 +1,6 @@
 {
   "version": "2.5.7",
-  "publishedAt": "2026-10-05T16:00:00Z",
+  "publishedAt": "2026-10-05T18:17:47Z",
   "changelog": "本次版本修了亿个 Bug，完善了主动消息，并且添加了许多智慧功能，让 AI 更加智能，且兼容了各种文档的修改。\n\n增添：\n1. 二维码生成与图片处理\n2. Word / PPT / Excel 读写与格式互转\n3. 代码静态检查与文本对比\n4. 酒馆模式快捷开关\n5. 聊天内显示图片\n6. 插件加密增强\n\n修复了：\n1. 卡片正则缺陷导致前端卡不渲染\n2. 世界书裁剪角色卡条目、记忆关联丢失\n3. 酒馆工具遗漏与提示词开销过大\n4. 插件解密失效\n5. 多处闪退与主题样式无法重置\n6. 主动消息清空数据、定时失效、发错对话\n7. 聊天记录被截断、附件被误删\n8. 圆角过大影响观感\n\n────────────\n\nThis release fixes a huge number of bugs, improves proactive messaging, and adds many smart features that make the AI far more capable.\n\nAdded:\n1. QR code generation and image processing\n2. Word / PPT / Excel read-write and format conversion\n3. Code static analysis and text diff\n4. Tavern mode quick toggle\n5. Inline images in chat\n6. Stronger plugin encryption\n\nFixed:\n1. Card regex defects broke front-end cards\n2. World book trimmed card entries; memory links lost\n3. Tavern tool gaps and excessive prompt overhead\n4. Plugin decryption failed\n5. Several crashes and theme reset issues\n6. Proactive messaging erased data, failed to schedule, or hit the wrong conversation\n7. History truncated and attachments deleted by mistake\n8. Oversized corner radii",
   "downloads": [
     {
