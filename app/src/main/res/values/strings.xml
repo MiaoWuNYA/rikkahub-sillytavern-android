@@ -2901,4 +2901,10 @@
     <string name="update_card_open_failed">No browser available</string>
     <string name="local_tool_code_check_title">Code check</string>
     <string name="local_tool_code_check_desc">Statically checks code before it runs. Python gets real analysis (syntax errors, undefined names, unused imports). Other languages get bracket matching and common-pitfall hints only, since no compiler is available on device.</string>
+    <string name="proactive_interval_unit">Minutes</string>
+    <string name="proactive_interval_invalid">Must be a whole number >= %1$d</string>
+    <string name="proactive_use_current_assistant">Follow current assistant</string>
+    <string name="proactive_conversation">Target conversation</string>
+    <string name="proactive_conversation_auto">Most recent conversation of the assistant</string>
+    <string name="proactive_untitled_conversation">Untitled</string>
 </resources>

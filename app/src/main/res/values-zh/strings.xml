@@ -2903,4 +2903,10 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
     <string name="update_card_open_failed">无法打开浏览器</string>
     <string name="local_tool_code_check_title">代码检查</string>
     <string name="local_tool_code_check_desc">运行前静态检查代码。Python 是真分析（语法错误、未定义名、未使用 import）；其他语言因为设备上没有编译器，只做括号配对和常见写法提示。</string>
+    <string name="proactive_interval_unit">分钟</string>
+    <string name="proactive_interval_invalid">必须是 ≥ %1$d 的整数</string>
+    <string name="proactive_use_current_assistant">跟随当前助手</string>
+    <string name="proactive_conversation">发送到的对话</string>
+    <string name="proactive_conversation_auto">该助手最近的对话</string>
+    <string name="proactive_untitled_conversation">未命名对话</string>
 </resources>

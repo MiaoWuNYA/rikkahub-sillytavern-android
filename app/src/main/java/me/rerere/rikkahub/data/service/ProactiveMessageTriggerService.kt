@@ -181,7 +181,8 @@ class ProactiveMessageTriggerService : Service(), KoinComponent {
             var conversationId: Uuid? = null
             try {
                 val settings = settingsStore.settingsFlow.first()
-                val proactiveSetting = settings.proactiveMessageSetting
+                // 归一化：设置里可能存着非法值，直接拿去算间隔会得到过去的时间点
+                val proactiveSetting = settings.proactiveMessageSetting.normalized()
                 if (!proactiveSetting.enabled) {
                     stopSelf()
                     return@launch
@@ -192,13 +193,13 @@ class ProactiveMessageTriggerService : Service(), KoinComponent {
                 // 去重判断：防止 AlarmManager 和 WorkManager 在同一窗口内重复触发。
                 // 把"读取 last_triggered_time -> 判断 -> 写入"整段放在同步块里，避免 check-then-act 竞态。
                 val skipDueToInterval = synchronized(prefsLock) {
-                    val lastTriggeredTime = prefs.getLong("last_triggered_time", 0L)
+                    val lastTriggeredTime = prefs.getLong(ProactiveMessageService.KEY_LAST_TRIGGERED_TIME, 0L)
                     val minIntervalMs = proactiveSetting.minIntervalMinutes.coerceAtLeast(1) * 60 * 1000L
                     if (System.currentTimeMillis() - lastTriggeredTime < minIntervalMs) {
                         true
                     } else {
                         // 立即写入触发时间，防止并发重复
-                        prefs.edit().putLong("last_triggered_time", System.currentTimeMillis()).apply()
+                        prefs.edit().putLong(ProactiveMessageService.KEY_LAST_TRIGGERED_TIME, System.currentTimeMillis()).apply()
                         false
                     }
                 }
@@ -221,13 +222,15 @@ class ProactiveMessageTriggerService : Service(), KoinComponent {
                     return@launch
                 }
 
-                // 找到最近的对话（没有就不新建，空会话没有主动发消息的意义）
-                val recentConversations = conversationRepository.getRecentConversations(assistantUuid, limit = 1)
-                val conversation = if (recentConversations.isNotEmpty()) {
-                    conversationRepository.getConversationById(recentConversations.first().id)
-                } else null
+                // 找到目标对话：优先设置里指定的固定对话，没有就退回该助手最近的对话。
+                // 主动消息会写进这个对话的历史，指定错误等于污染别处，所以由用户决定。
+                val conversation = ProactiveMessageService.resolveTargetConversation(
+                    repository = conversationRepository,
+                    assistantId = assistantUuid,
+                    configuredConversationId = proactiveSetting.conversationId,
+                )
                 if (conversation == null) {
-                    Log.d(TAG, "No recent conversation for assistant, skipping proactive message")
+                    Log.d(TAG, "No target conversation for assistant, skipping proactive message")
                     ProactiveMessageService.scheduleNext(this@ProactiveMessageTriggerService, proactiveSetting)
                     stopSelf()
                     return@launch

@@ -52,13 +52,12 @@ class ProactiveMessageWorker(
                     workRequest
                 )
 
-            // Also save trigger time to SharedPreferences for UI display
-            // (AlarmManager 通道是权威来源，这里只在 Alarm 未排程时兜底写一次展示时间)
-            val prefs = context.getSharedPreferences(ProactiveMessageService.PREFS_NAME, Context.MODE_PRIVATE)
-            if (prefs.getLong("next_trigger_time", 0L) == 0L) {
-                val triggerTime = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(delayMinutes.toLong())
-                prefs.edit().putLong("next_trigger_time", triggerTime).apply()
-            }
+            // 这里不再写展示用的 next_trigger_time。
+            //
+            // 之前是「值为 0 时才写一次」，结果 Alarm 通道先写过之后，worker
+            // 算出的时间永远显示不出来，两条通道各自排程、界面却只反映其中
+            // 一条，用户看到的时间对不上实际触发。现在统一由
+            // ProactiveMessageService.scheduleNext 负责写，worker 只排程。
 
             Log.d(TAG, "Scheduled WorkManager proactive message in $delayMinutes minutes")
         }
@@ -93,7 +92,7 @@ class ProactiveMessageWorker(
 
         val settingsStore = GlobalContext.get().get<SettingsStore>()
         val settings = settingsStore.settingsFlow.first()
-        val proactiveSetting = settings.proactiveMessageSetting
+        val proactiveSetting = settings.proactiveMessageSetting.normalized()
 
         if (!proactiveSetting.enabled) {
             Log.d(TAG, "Proactive message disabled, skipping")
@@ -119,13 +118,16 @@ class ProactiveMessageWorker(
                 applicationContext.startService(serviceIntent)
             }
 
-            // Schedule the next trigger via WorkManager
-            scheduleNext(applicationContext, proactiveSetting)
-
+            // 不在这里排下一次。
+            //
+            // ProactiveMessageTriggerService 的 finally 已经用 NonCancellable
+            // 排过了，这里再排一次会让 work 与 alarm 的时间点错开，并且
+            // ExistingWorkPolicy.REPLACE 会把刚生效的排程又替换一遍。
             return Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "ProactiveMessageWorker failed", e)
-            // Schedule next even on failure
+            // 启动前台服务失败时兜底排下一次（此时 TriggerService 没跑起来，
+            // 它的 finally 不会执行，不排就永久断了）
             scheduleNext(applicationContext, proactiveSetting)
             return Result.retry()
         } finally {
