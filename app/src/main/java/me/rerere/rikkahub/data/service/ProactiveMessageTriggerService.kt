@@ -186,6 +186,10 @@ class ProactiveMessageRunner(
                 // 归一化：设置里可能存着非法值，直接拿去算间隔会得到过去的时间点
                 val proactiveSetting = settings.proactiveMessageSetting.normalized()
                 if (!proactiveSetting.enabled) {
+                    ProactiveMessageLog.log(
+                        appContext, ProactiveMessageLog.Outcome.SKIPPED, "主动消息",
+                        "总开关处于关闭状态，本次触发直接结束。",
+                    )
                     return false
                 }
 
@@ -206,6 +210,13 @@ class ProactiveMessageRunner(
                 val lastTriggeredTime = prefs.getLong(ProactiveMessageService.KEY_LAST_TRIGGERED_TIME, 0L)
                 if (System.currentTimeMillis() - lastTriggeredTime < minIntervalMs) {
                     Log.d(TAG, "Duplicate trigger within min interval, skipping")
+                    val waited = (System.currentTimeMillis() - lastTriggeredTime) / 60_000
+                    ProactiveMessageLog.log(
+                        appContext, ProactiveMessageLog.Outcome.SKIPPED, "去重检查",
+                        "距离上次成功发送只过了 ${waited} 分钟，小于设定的最小间隔 " +
+                            "${proactiveSetting.minIntervalMinutes} 分钟，本次跳过。" +
+                            "（闹钟与 WorkManager 可能各触发一次，这是正常的去重。）",
+                    )
                     ProactiveMessageService.scheduleNext(appContext, proactiveSetting)
                     return false
                 }
@@ -217,6 +228,10 @@ class ProactiveMessageRunner(
                 val model = settings.findModelById(assistant.chatModelId ?: settings.chatModelId)
                 if (model == null) {
                     Log.e(TAG, "No model found for proactive message")
+                    ProactiveMessageLog.log(
+                        appContext, ProactiveMessageLog.Outcome.FAILED, "模型检查",
+                        "该助手没有可用的模型。请到助手设置里选择模型，或检查模型列表是否为空。",
+                    )
                     ProactiveMessageService.scheduleNext(appContext, proactiveSetting)
                     return false
                 }
@@ -230,6 +245,14 @@ class ProactiveMessageRunner(
                 )
                 if (conversation == null) {
                     Log.d(TAG, "No target conversation for assistant, skipping proactive message")
+                    ProactiveMessageLog.log(
+                        appContext, ProactiveMessageLog.Outcome.SKIPPED, "查找对话",
+                        "该助手还没有任何对话。" +
+                            if (proactiveSetting.conversationId.isNotBlank())
+                                "设置里指定的对话（${proactiveSetting.conversationId}）已不存在，" +
+                                    "且没有可退回的最近对话。请重新选择发送到的对话。"
+                            else "请先在设置里选择发送到的对话，或先与该助手聊一次。",
+                    )
                     ProactiveMessageService.scheduleNext(appContext, proactiveSetting)
                     return false
                 }
@@ -249,6 +272,11 @@ class ProactiveMessageRunner(
                         TAG,
                         "Skip proactive trigger: session $conversationId already generating " +
                             "(normal chat or another proactive trigger in progress)"
+                    )
+                    ProactiveMessageLog.log(
+                        appContext, ProactiveMessageLog.Outcome.SKIPPED, "并发保护",
+                        "该对话正在进行生成（你正在聊天，或另一路主动消息还没跑完），" +
+                            "本次触发放弃，不排队等待。",
                     )
                     return false
                 }
@@ -313,6 +341,11 @@ class ProactiveMessageRunner(
                 val providerSetting = model.findProvider(settings.providers)
                 if (providerSetting == null) {
                     Log.e(TAG, "No provider found for proactive message")
+                    ProactiveMessageLog.log(
+                        appContext, ProactiveMessageLog.Outcome.FAILED, "供应商检查",
+                        "模型「${model.modelId}」找不到对应的供应商配置，" +
+                            "可能是该供应商已被删除或改名。",
+                    )
                     return false
                 }
                 val providerImpl = providerManager.getProviderByType(providerSetting)
@@ -413,10 +446,21 @@ class ProactiveMessageRunner(
                     // 到这里说明整轮生成真的跑完了（AI 主动选择沉默也算成功），
                     // 现在才提交触发时间戳。失败路径一律不写，见上面的去重注释。
                     commitTriggerStamp(prefs)
+                    ProactiveMessageLog.log(
+                        appContext, ProactiveMessageLog.Outcome.PASSED, "生成完成",
+                        "模型判断当前没有合适的话可说（回复了 [PASS]），本轮不发消息。" +
+                            "这是正常行为，不是故障。",
+                    )
                 } else {
                     // 有效回复：session 里已有 aiMessage（流式过程已追加），持久化并发通知
                     saveProactiveMessage(conversationId)
                     commitTriggerStamp(prefs)
+                    ProactiveMessageLog.log(
+                        appContext, ProactiveMessageLog.Outcome.SENT, "生成完成",
+                        "已向「${conversation.title.ifBlank { "未命名对话" }}」发送：" +
+                            replyText.take(80).replace("\n", " ") +
+                            if (replyText.length > 80) "…" else "",
+                    )
                     showProactiveNotification(conversationId, assistant.name.ifBlank { "AI" }, replyText)
                     // 拉起聊天界面（AI 通过 [JUMP] 标记自行判断，且需满足开关与闲置阈值）
                     if (shouldJump) {
@@ -440,12 +484,21 @@ class ProactiveMessageRunner(
                 // 协程被取消（通常是用户发了新消息，打断本次主动生成），属正常情况。
                 // 重新抛出后 finally 块仍会正常执行（scheduleNext 已用 NonCancellable 保护）。
                 Log.d(TAG, "Proactive generation cancelled (likely user started a new message), conversationId=$conversationId")
+                ProactiveMessageLog.log(
+                    appContext, ProactiveMessageLog.Outcome.SKIPPED, "用户打断",
+                    "生成过程中你开始发新消息，主动消息被取消（这是设计行为）。",
+                )
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to trigger proactive message", e)
                 e.cause?.let { cause ->
                     Log.e(TAG, "Underlying cause: ${cause::class.simpleName}: ${cause.message}", cause)
                 }
+                ProactiveMessageLog.log(
+                    appContext, ProactiveMessageLog.Outcome.FAILED, "生成异常",
+                    "${e::class.simpleName}: ${e.message ?: "无详情"}" +
+                        (e.cause?.let { "  ←  ${it::class.simpleName}: ${it.message}" } ?: ""),
+                )
                 // 出错后不要碰数据库。
                 //
                 // 这里原本做的是「把当前会话状态存一次」。看着无害，实际是

@@ -2909,4 +2909,10 @@
     <string name="proactive_untitled_conversation">Untitled</string>
     <string name="proactive_conversation_load_failed">Failed to load conversations. Switch assistant and come back to retry.</string>
     <string name="proactive_conversation_empty">This assistant has no conversations yet</string>
+    <string name="proactive_log_title">Execution log</string>
+    <string name="proactive_log_desc">See why the last trigger did or did not send</string>
+    <string name="proactive_log_empty">No records yet</string>
+    <string name="proactive_log_copy">Copy all</string>
+    <string name="proactive_log_clear">Clear</string>
+    <string name="proactive_log_copied">Copied</string>
 </resources>

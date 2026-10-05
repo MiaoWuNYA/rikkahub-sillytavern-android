@@ -7,6 +7,7 @@ import android.provider.Settings
 import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -45,6 +46,13 @@ import me.rerere.rikkahub.data.service.ProactiveMessageWorker
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import kotlin.uuid.Uuid
+import android.widget.Toast
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Row
+import me.rerere.rikkahub.data.service.ProactiveMessageLog
+import me.rerere.rikkahub.utils.writeClipboardText
 
 /**
  * AI 主动发消息设置页.
@@ -68,7 +76,20 @@ fun SettingProactiveMessagePage(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     var showProactiveRiskDialog by remember { mutableStateOf(false) }
+    var showLogDialog by remember { mutableStateOf(false) }
     val proactive = settings.proactiveMessageSetting
+
+    // 日志内容随对话框打开时重新取，避免看到打开那一刻的旧快照
+    val logText = remember(showLogDialog) {
+        if (showLogDialog) ProactiveMessageLog.exportAsText(context) else ""
+    }
+
+    if (showLogDialog) {
+        ProactiveMessageLogDialog(
+            text = logText,
+            onDismiss = { showLogDialog = false },
+        )
+    }
 
     /**
      * 写入设置并**立即重新排程**。
@@ -345,6 +366,15 @@ fun SettingProactiveMessagePage(
             item {
                 CardGroup {
                     item(
+                        headlineContent = { Text(stringResource(R.string.proactive_log_title)) },
+                        supportingContent = { Text(stringResource(R.string.proactive_log_desc)) },
+                        onClick = { showLogDialog = true },
+                    )
+                }
+            }
+            item {
+                CardGroup {
+                    item(
                         headlineContent = { Text(stringResource(R.string.proactive_section_about)) },
                         supportingContent = { Text(stringResource(R.string.proactive_about_desc)) },
                     )
@@ -539,4 +569,64 @@ private fun ConversationPicker(
             },
         )
     }
+}
+
+/**
+ * 主动消息的诊断日志对话框。
+ *
+ * 内容可全选复制——用户贴到别处排查，比让他去翻 logcat 现实得多。
+ */
+@Composable
+private fun ProactiveMessageLogDialog(
+    text: String,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.proactive_log_title)) },
+        text = {
+            if (text.isBlank()) {
+                Text(stringResource(R.string.proactive_log_empty))
+            } else {
+                SelectionContainer {
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 400.dp)
+                            .verticalScroll(rememberScrollState()),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                // 用项目的剪贴板写入（内部已做 ClipData 包装）
+                context.writeClipboardText(text)
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.proactive_log_copied),
+                    Toast.LENGTH_SHORT,
+                ).show()
+            }) {
+                Text(stringResource(R.string.proactive_log_copy))
+            }
+        },
+        dismissButton = {
+            Row {
+                TextButton(onClick = {
+                    ProactiveMessageLog.clear(context)
+                    onDismiss()
+                }) {
+                    Text(stringResource(R.string.proactive_log_clear))
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            }
+        },
+    )
 }
