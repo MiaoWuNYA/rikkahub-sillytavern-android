@@ -50,6 +50,32 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 import kotlin.time.toJavaInstant
 
+/**
+ * 远端版本是否真的比本地新——**只看主版本段**。
+ *
+ * 每日构建的版本号形如 2.5.6.1004（在主版本后追加一段自增序号）。
+ * Version 类会把它当成「第四个数字段更大」从而判为新版本，所以这里
+ * 显式按本地段数截断比较：本地 2.5.6 只拿远端前三段 [2,5,6] 比，
+ * 多出来的序号段一律忽略。
+ */
+private fun isNewerMainVersion(remote: String): Boolean {
+    val local = parseMainVersion(BuildConfig.VERSION_NAME)
+    val target = parseMainVersion(remote)
+    for (i in local.indices) {
+        val x = local.getOrElse(i) { 0 }
+        val y = target.getOrElse(i) { 0 }
+        if (y != x) return y > x
+    }
+    // 主版本完全相同：后面多出的段是每日构建序号，不算新版本
+    return false
+}
+
+private fun parseMainVersion(version: String): List<Int> =
+    version.trim()
+        .removePrefix("v")
+        .split('.', '-', '+')
+        .mapNotNull { seg -> seg.takeWhile { it.isDigit() }.toIntOrNull() }
+
 @OptIn(ExperimentalTime::class)
 @Composable
 fun UpdateCard(vm: ChatVM) {
@@ -80,9 +106,16 @@ fun UpdateCard(vm: ChatVM) {
     state.onSuccess { info ->
         var showDetail by remember { mutableStateOf(false) }
         var dismissed by remember { mutableStateOf(false) }
+        // 只比主版本段。
+        //
+        // 这里原本用 Version(...) > Version(...)，而它逐位比较全部数字段，
+        // 于是 2.5.6.1004（每日构建序号）会被判成比 2.5.6 新。虽然
+        // UpdateChecker 已经过滤掉每日构建，但那是唯一的防线——源里若
+        // 混进一条带 nightly 样式版本号的记录，这里就会直接弹出「更新到
+        // 每日构建」。两道防线各管一段：上游负责筛，这里负责不认第四段。
         val current = remember { Version(BuildConfig.VERSION_NAME) }
         val latest = remember(info) { Version(info.version) }
-        if (latest > current && !dismissed) {
+        if (isNewerMainVersion(info.version) && !dismissed) {
             Card(
                 onClick = {
                     showDetail = true

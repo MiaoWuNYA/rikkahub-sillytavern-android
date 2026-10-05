@@ -2907,4 +2907,6 @@
     <string name="proactive_conversation">Target conversation</string>
     <string name="proactive_conversation_auto">Most recent conversation of the assistant</string>
     <string name="proactive_untitled_conversation">Untitled</string>
+    <string name="proactive_conversation_load_failed">Failed to load conversations. Switch assistant and come back to retry.</string>
+    <string name="proactive_conversation_empty">This assistant has no conversations yet</string>
 </resources>

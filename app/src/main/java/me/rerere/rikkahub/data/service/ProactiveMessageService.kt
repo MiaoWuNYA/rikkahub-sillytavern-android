@@ -25,8 +25,8 @@ import kotlin.random.Random
  * AI 主动发消息：AlarmManager 精确闹钟 + WorkManager 兜底双通道调度.
  *
  * 本类只负责"调度"（scheduleNext/cancel/triggerNow）与上下文构建；
- * 真正的生成逻辑在 [ProactiveMessageTriggerService]（前台服务）。
- * 触发链路：闹钟/WorkManager → ProactiveMessageReceiver → ProactiveMessageTriggerService。
+ * 真正的生成逻辑在 [ProactiveMessageRunner]。
+ * 触发链路：闹钟 → ProactiveMessageReceiver → WorkManager → ProactiveMessageRunner。
  */
 class ProactiveMessageService : KoinComponent {
     private val settingsStore: SettingsStore by inject()
@@ -195,14 +195,13 @@ class ProactiveMessageService : KoinComponent {
          * 用户看到的下次时间会莫名跳变。
          */
         fun triggerNow(context: Context, setting: ProactiveMessageSetting) {
-            val serviceIntent = Intent(context, ProactiveMessageTriggerService::class.java)
-            try {
-                context.startForegroundService(serviceIntent)
-            } catch (e: Exception) {
-                Log.e(TAG, "triggerNow: failed to start trigger service", e)
-                // 服务没起来，它的 finally 不会执行，这里兜底排一次
-                scheduleNext(context, setting)
-            }
+            // 走 WorkManager 而不是前台服务。
+            //
+            // 原来这里是 startForegroundService，在 targetSdk 31+ 的
+            // 后台场景下系统会抛 ForegroundServiceStartNotAllowedException
+            // ——被 catch(Exception) 吞掉后用户看到的就是「毫无反应」。
+            // WorkManager 没有这个限制，它本身就有独立的前台服务豁免。
+            ProactiveMessageWorker.runOnce(context)
         }
     }
 
@@ -274,23 +273,30 @@ class ProactiveMessageService : KoinComponent {
 
 /**
  * 闹钟/开机广播接收器：
- *  - 主动消息闹钟触发 → 启动 ProactiveMessageTriggerService
+ *  - 主动消息闹钟触发 → 派发 WorkManager 执行生成
  *  - 开机完成 → 主动消息开启时重新排程
  */
 class ProactiveMessageReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
             ProactiveMessageService.ACTION_PROACTIVE_MESSAGE -> {
-                Log.d(ProactiveMessageService.TAG, "Alarm fired, starting ProactiveMessageTriggerService...")
-                try {
-                    context.startForegroundService(Intent(context, ProactiveMessageTriggerService::class.java))
-                } catch (e: Exception) {
-                    Log.e(ProactiveMessageService.TAG, "Failed to start trigger service", e)
-                }
+                // 交棒给 WorkManager，不直接起前台服务。
+                //
+                // 闹钟回调本身是「后台启动前台服务」的豁免场景，但一旦
+                // 降级成不精确闹钟（Android 14 起 SCHEDULE_EXACT_ALARM
+                // 默认被拒）就失去豁免，startForegroundService 直接抛
+                // ForegroundServiceStartNotAllowedException。用 WorkManager
+                // 就没有这个不确定性，而且它跑不完会自动重试。
+                Log.d(ProactiveMessageService.TAG, "Alarm fired, dispatching proactive work...")
+                ProactiveMessageWorker.runOnce(context)
             }
 
             Intent.ACTION_BOOT_COMPLETED -> {
                 Log.d(ProactiveMessageService.TAG, "Boot completed, rescheduling proactive message")
+                // goAsync：onReceive 返回后进程可能被立刻回收，裸协程
+                // 跑到一半被掐断的话开机重排就静默失败了。持有
+                // PendingResult 直到协程结束，系统会等我们。
+                val pendingResult = goAsync()
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
                         val settingsStore = org.koin.core.context.GlobalContext.get().get<SettingsStore>()
@@ -301,6 +307,8 @@ class ProactiveMessageReceiver : BroadcastReceiver() {
                         }
                     } catch (e: Exception) {
                         Log.e(ProactiveMessageService.TAG, "Failed to reschedule after boot", e)
+                    } finally {
+                        pendingResult.finish()
                     }
                 }
             }

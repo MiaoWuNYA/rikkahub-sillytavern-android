@@ -79,6 +79,23 @@ private val ASSET_MIRRORS = listOf(
     "https://ghfast.top/",
 )
 
+/**
+ * 按版本段数字比较两个版本号（空段当 0）。
+ *
+ * 用 List<Int> 而不是 Version 类：这里要的是「谁的主版本更高」，
+ * 而 Version 会把每日构建的第 4 段算进去，不适合用来在多条候选里挑。
+ */
+private fun compareVersions(a: String, b: String): Int {
+    val x = parseVersion(a)
+    val y = parseVersion(b)
+    val n = maxOf(x.size, y.size)
+    for (i in 0 until n) {
+        val d = x.getOrElse(i) { 0 }.compareTo(y.getOrElse(i) { 0 })
+        if (d != 0) return d
+    }
+    return 0
+}
+
 class UpdateChecker(
     private val client: OkHttpClient,
     private val appScope: AppScope,
@@ -161,15 +178,30 @@ class UpdateChecker(
             throw lastError ?: IllegalStateException("Failed to fetch update info")
         }
 
-        // 优先挑主版本发布；都只有每日构建时，用最新的那条但不提示更新。
-        val mainRelease = candidates.firstOrNull { !isNightly(it) }
-        val chosen = mainRelease ?: candidates.first()
+        // 只认主版本发布。
+        //
+        // 这里踩过一个坑：原来写成 `val chosen = mainRelease ?: candidates.first()`，
+        // 本意是「只有每日构建时也别让界面空着」。但 update.json 这个兜底源
+        // 里**只有 nightly**（主版本走 GitHub Releases，不在这个文件里），
+        // 于是 GitHub API 一被限流（共享出口 IP 的常态），候选里就一条
+        // nightly，mainRelease 为 null → chosen 直接取 nightly → 版本号
+        // 2.5.6.1004 > 本地 2.5.6 → 弹出「更新到每日构建」。
+        //
+        // 正确语义是：过滤掉每日构建之后什么都不剩，就等于「没有更新」。
+        // 宁可什么都不显示，也不能提示用户装一个 nightly。
+        val mainRelease = candidates
+            .filterNot { isNightly(it) }
+            .maxWithOrNull { a, b -> compareVersions(a.version, b.version) }
+            ?: return candidates.first().copy(
+                version = BuildConfig.VERSION_NAME,
+                downloads = emptyList(),
+            )
 
-        if (mainRelease != null && !isNewerMainVersion(chosen.version)) {
+        if (!isNewerMainVersion(mainRelease.version)) {
             // 主版本号没涨：把版本置为当前版本，上层就不会弹更新卡片。
-            return chosen.copy(version = BuildConfig.VERSION_NAME, downloads = emptyList())
+            return mainRelease.copy(version = BuildConfig.VERSION_NAME, downloads = emptyList())
         }
-        return chosen.copy(downloads = emptyList())
+        return mainRelease.copy(downloads = emptyList())
     }
 
     /**

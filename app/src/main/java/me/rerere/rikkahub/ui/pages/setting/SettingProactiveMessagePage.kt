@@ -4,12 +4,16 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -208,26 +212,48 @@ fun SettingProactiveMessagePage(
                 )
             }
 
-            if (proactive.enabled) {
-                item {
-                    val assistantIdForList = proactive.assistantId
-                        .takeIf { it.isNotBlank() }
-                        ?.let { runCatching { Uuid.parse(it) }.getOrNull() }
-                        ?: settings.getCurrentAssistant().id
-                    var conversations by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
-                    val untitled = stringResource(R.string.proactive_untitled_conversation)
-                    LaunchedEffect(assistantIdForList, untitled) {
-                        conversations = runCatching {
-                            conversationRepository.getRecentConversations(assistantIdForList, limit = 50)
-                                .map { it.id.toString() to it.title.ifBlank { untitled } }
-                        }.getOrDefault(emptyList())
-                    }
-                    ConversationPicker(
-                        conversations = conversations,
-                        selectedId = proactive.conversationId,
-                        onSelect = { applySetting(proactive.copy(conversationId = it)) },
-                    )
+            // 对话选择器**不放在 if (proactive.enabled) 里**。
+            //
+            // 它是配置项，不是运行状态——和上面的助手选择器同级。之前把它
+            // 塞在开关判断里，而开关默认是关的，于是用户一进设置页只看得到
+            // 「使用助手」，看不到「发送到的对话」，表现就是「能选助手、
+            // 选不了对话」。真正依赖开关键运行时状态的只有「下次触发时间」。
+            item {
+                val assistantIdForList = proactive.assistantId
+                    .takeIf { it.isNotBlank() }
+                    ?.let { runCatching { Uuid.parse(it) }.getOrNull() }
+                    ?: settings.getCurrentAssistant().id
+                val untitled = stringResource(R.string.proactive_untitled_conversation)
+
+                // key 带上助手：切换助手时要重置成空列表，否则会短暂显示
+                // 上一个助手的对话。记住加载失败的异常而不是吞成空列表，
+                // 不然「列表为空」和「加载失败」在界面上完全一样。
+                var conversations by remember(assistantIdForList) {
+                    mutableStateOf<List<Triple<String, String, Long>>>(emptyList())
                 }
+                var loadFailed by remember(assistantIdForList) { mutableStateOf(false) }
+                LaunchedEffect(assistantIdForList) {
+                    try {
+                        // 用轻量投影：只取 id/title/updateAt。
+                        // getRecentConversations 会为每个会话全量反序列化所有
+                        // 消息节点，而这里只用得到标题和时间，50 条会白读很多。
+                        conversations = conversationRepository
+                            .getRecentConversationTitles(assistantIdForList, limit = 50)
+                            .map { Triple(it.id, it.title.ifBlank { untitled }, it.updateAt) }
+                        loadFailed = false
+                    } catch (e: Exception) {
+                        Log.e("ProactiveSetting", "Failed to load conversations", e)
+                        conversations = emptyList()
+                        loadFailed = true
+                    }
+                }
+
+                ConversationPicker(
+                    conversations = conversations,
+                    selectedId = proactive.conversationId,
+                    loadFailed = loadFailed,
+                    onSelect = { applySetting(proactive.copy(conversationId = it)) },
+                )
             }
 
             item {
@@ -431,8 +457,9 @@ private fun AssistantPicker(
 
 @Composable
 private fun ConversationPicker(
-    conversations: List<Pair<String, String>>,
+    conversations: List<Triple<String, String, Long>>,
     selectedId: String,
+    loadFailed: Boolean,
     onSelect: (String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -442,7 +469,24 @@ private fun ConversationPicker(
     CardGroup {
         item(
             headlineContent = { Text(stringResource(R.string.proactive_conversation)) },
-            supportingContent = { Text(selectedName) },
+            supportingContent = {
+                Column {
+                    Text(selectedName)
+                    // 加载失败必须说出来。之前异常被 getOrDefault 吞成空列表，
+                    // 弹窗里只剩一个「自动」选项，看起来就是个坏掉的功能。
+                    if (loadFailed) {
+                        Text(
+                            text = stringResource(R.string.proactive_conversation_load_failed),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    } else if (conversations.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.proactive_conversation_empty),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            },
             onClick = { expanded = true },
         )
     }
@@ -452,7 +496,10 @@ private fun ConversationPicker(
             onDismissRequest = { expanded = false },
             title = { Text(stringResource(R.string.proactive_conversation)) },
             text = {
-                LazyColumn {
+                // 固定高度上限：LazyColumn 在 AlertDialog 的 text 槽里没有
+                // 高度约束时会撑满可用空间，50 条对话把弹窗顶到屏幕最大高度，
+                // 而且和 dialog 自身的滚动嵌套，滑动手感发涩。
+                LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
                     item {
                         TextButton(onClick = {
                             onSelect("")
@@ -462,12 +509,25 @@ private fun ConversationPicker(
                         }
                     }
                     items(conversations.size) { i ->
-                        val (id, title) = conversations[i]
+                        val (id, title, updateAt) = conversations[i]
                         TextButton(onClick = {
                             onSelect(id)
                             expanded = false
                         }) {
-                            Text(title)
+                            Column {
+                                // 标题为空时补上时间：多个未命名对话在列表里
+                                // 长得一模一样，不加时间根本没法区分该选哪个
+                                Text(title)
+                                if (updateAt > 0) {
+                                    Text(
+                                        text = java.text.SimpleDateFormat(
+                                            "yyyy-MM-dd HH:mm", java.util.Locale.getDefault()
+                                        ).format(java.util.Date(updateAt)),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
                         }
                     }
                 }

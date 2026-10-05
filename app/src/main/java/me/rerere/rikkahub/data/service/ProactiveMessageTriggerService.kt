@@ -1,19 +1,15 @@
 package me.rerere.rikkahub.data.service
 
 import android.app.PendingIntent
-import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.Handler
-import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.core.app.ServiceCompat
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -47,6 +43,7 @@ import me.rerere.rikkahub.data.ai.transformers.ThinkTagTransformer
 import me.rerere.rikkahub.data.ai.transformers.transforms
 import me.rerere.rikkahub.data.ai.mcp.McpManager
 import me.rerere.rikkahub.data.ai.tools.LocalTools
+import me.rerere.rikkahub.data.datastore.ProactiveMessageSetting
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.findModelById
@@ -61,6 +58,7 @@ import me.rerere.rikkahub.utils.sendNotification
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.coroutines.coroutineContext
 import kotlin.uuid.Uuid
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -75,7 +73,20 @@ import java.util.concurrent.TimeUnit
  * 并发保护: 通过 chatService.tryClaimGeneration 礼貌性抢占会话生成权；
  * 若正在生成（正常聊天或另一路主动消息），直接放弃本次触发，不排队等待、不打断。
  */
-class ProactiveMessageTriggerService : Service(), KoinComponent {
+class ProactiveMessageRunner(
+    /**
+     * 只依赖 Context，不依赖 Service。
+     *
+     * 原来这是个 Service，靠 startForegroundService 从后台拉起。但
+     * targetSdk 31+ 禁止后台启动前台服务，闹钟/WorkManager 触发时
+     * 系统会抛 ForegroundServiceStartNotAllowedException，而调用方
+     * 的 catch(Exception) 把它吞了——表现就是「定时到了但毫无反应」。
+     *
+     * 生成逻辑本身只用到 Context 能力（读配置、起协程、发通知），
+     * 根本不需要前台服务，所以改成普通类由 WorkManager 直接驱动。
+     */
+    private val appContext: Context,
+) : KoinComponent {
     private val settingsStore: SettingsStore by inject()
     private val conversationRepository: ConversationRepository by inject()
     private val memoryRepository: MemoryRepository by inject()
@@ -128,8 +139,6 @@ class ProactiveMessageTriggerService : Service(), KoinComponent {
 
     private val proactiveMessageService = ProactiveMessageService()
 
-    private val scope = CoroutineScope(Dispatchers.IO)
-
     companion object {
         private const val TAG = "ProactiveMessageTrigger"
         private const val NOTIFICATION_ID = 20001
@@ -159,55 +168,46 @@ class ProactiveMessageTriggerService : Service(), KoinComponent {
         )
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val notification = NotificationCompat.Builder(this, CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("正在思考...")
-            .setSmallIcon(R.drawable.small_icon)
-            .setPriority(NotificationCompat.PRIORITY_MIN)
-            .build()
+    /**
+     * 跑一次主动消息生成。
+     *
+     * 由 WorkManager 直接调用（见 ProactiveMessageWorker），不经过前台服务，
+     * 因此不受「后台启动前台服务」限制。挂起直到全部完成，调用方据此
+     * 决定 Result.success/retry。
+     *
+     * 返回是否真正跑到了生成阶段（false 表示被跳过：未启用、无对话、
+     * 有并发生成、无模型等）。跳过也要算成功——不是错误。
+     */
+    suspend fun run(): Boolean {
+        var conversationId: Uuid? = null
+        var reachedGeneration = false
         try {
-            ServiceCompat.startForeground(
-                this,
-                NOTIFICATION_ID,
-                notification,
-                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
-            )
-        } catch (e: Exception) {
-            @Suppress("DEPRECATION")
-            startForeground(NOTIFICATION_ID, notification)
-        }
-
-        scope.launch {
-            var conversationId: Uuid? = null
-            try {
                 val settings = settingsStore.settingsFlow.first()
                 // 归一化：设置里可能存着非法值，直接拿去算间隔会得到过去的时间点
                 val proactiveSetting = settings.proactiveMessageSetting.normalized()
                 if (!proactiveSetting.enabled) {
-                    stopSelf()
-                    return@launch
+                    return false
                 }
 
-                val prefs = getSharedPreferences(ProactiveMessageService.PREFS_NAME, MODE_PRIVATE)
+                val prefs = appContext.getSharedPreferences(ProactiveMessageService.PREFS_NAME, Context.MODE_PRIVATE)
 
                 // 去重判断：防止 AlarmManager 和 WorkManager 在同一窗口内重复触发。
-                // 把"读取 last_triggered_time -> 判断 -> 写入"整段放在同步块里，避免 check-then-act 竞态。
-                val skipDueToInterval = synchronized(prefsLock) {
-                    val lastTriggeredTime = prefs.getLong(ProactiveMessageService.KEY_LAST_TRIGGERED_TIME, 0L)
-                    val minIntervalMs = proactiveSetting.minIntervalMinutes.coerceAtLeast(1) * 60 * 1000L
-                    if (System.currentTimeMillis() - lastTriggeredTime < minIntervalMs) {
-                        true
-                    } else {
-                        // 立即写入触发时间，防止并发重复
-                        prefs.edit().putLong(ProactiveMessageService.KEY_LAST_TRIGGERED_TIME, System.currentTimeMillis()).apply()
-                        false
-                    }
-                }
-                if (skipDueToInterval) {
+                //
+                // 这里**只读不写**。原先是在检查通过时就立刻写入 last_triggered_time，
+                // 但那个时刻还没法确定这次能不能真的生成出来——后面任何一步失败
+                // （没有可用对话、没有模型、provider 缺失、网络报错）都会直接
+                // return，而时间戳已经钉死了。后果是：一次失败会让之后 minInterval
+                // 窗口内的所有真实触发全被判成 duplicate 跳过，失败被自我强化成
+                // 永久静默，用户只能靠关掉再打开开关来恢复。
+                //
+                // 正确做法是「成功才提交」，写入点放在真正生成出结果之后。
+                val minIntervalMs = proactiveSetting.minIntervalMinutes
+                    .coerceAtLeast(ProactiveMessageSetting.MIN_INTERVAL_MINUTES) * 60 * 1000L
+                val lastTriggeredTime = prefs.getLong(ProactiveMessageService.KEY_LAST_TRIGGERED_TIME, 0L)
+                if (System.currentTimeMillis() - lastTriggeredTime < minIntervalMs) {
                     Log.d(TAG, "Duplicate trigger within min interval, skipping")
-                    ProactiveMessageService.scheduleNext(this@ProactiveMessageTriggerService, proactiveSetting)
-                    stopSelf()
-                    return@launch
+                    ProactiveMessageService.scheduleNext(appContext, proactiveSetting)
+                    return false
                 }
 
                 // 获取助手（设置里指定或当前助手）
@@ -217,9 +217,8 @@ class ProactiveMessageTriggerService : Service(), KoinComponent {
                 val model = settings.findModelById(assistant.chatModelId ?: settings.chatModelId)
                 if (model == null) {
                     Log.e(TAG, "No model found for proactive message")
-                    ProactiveMessageService.scheduleNext(this@ProactiveMessageTriggerService, proactiveSetting)
-                    stopSelf()
-                    return@launch
+                    ProactiveMessageService.scheduleNext(appContext, proactiveSetting)
+                    return false
                 }
 
                 // 找到目标对话：优先设置里指定的固定对话，没有就退回该助手最近的对话。
@@ -231,9 +230,8 @@ class ProactiveMessageTriggerService : Service(), KoinComponent {
                 )
                 if (conversation == null) {
                     Log.d(TAG, "No target conversation for assistant, skipping proactive message")
-                    ProactiveMessageService.scheduleNext(this@ProactiveMessageTriggerService, proactiveSetting)
-                    stopSelf()
-                    return@launch
+                    ProactiveMessageService.scheduleNext(appContext, proactiveSetting)
+                    return false
                 }
                 conversationId = conversation.id
 
@@ -252,8 +250,7 @@ class ProactiveMessageTriggerService : Service(), KoinComponent {
                         "Skip proactive trigger: session $conversationId already generating " +
                             "(normal chat or another proactive trigger in progress)"
                     )
-                    stopSelf()
-                    return@launch
+                    return false
                 }
 
                 // 构建上下文与历史
@@ -263,7 +260,7 @@ class ProactiveMessageTriggerService : Service(), KoinComponent {
                 }.getOrDefault(Int.MAX_VALUE)
 
                 val contextStr = proactiveMessageService.buildProactiveContext(
-                    this@ProactiveMessageTriggerService,
+                    appContext,
                     assistantUuid,
                 )
 
@@ -295,7 +292,7 @@ class ProactiveMessageTriggerService : Service(), KoinComponent {
                 // 应用输入转换器
                 val processedUserMessage = listOf(userMessage).transforms(
                     transformers = inputTransformers + templateTransformer,
-                    context = this@ProactiveMessageTriggerService,
+                    context = appContext,
                     model = model,
                     assistant = assistant,
                     settings = settings,
@@ -316,8 +313,7 @@ class ProactiveMessageTriggerService : Service(), KoinComponent {
                 val providerSetting = model.findProvider(settings.providers)
                 if (providerSetting == null) {
                     Log.e(TAG, "No provider found for proactive message")
-                    stopSelf()
-                    return@launch
+                    return false
                 }
                 val providerImpl = providerManager.getProviderByType(providerSetting)
 
@@ -397,14 +393,18 @@ class ProactiveMessageTriggerService : Service(), KoinComponent {
                         }
                         chatService.saveConversation(conversationId, chatService.getConversationFlow(conversationId).value)
                     }
+                    // 到这里说明整轮生成真的跑完了（AI 主动选择沉默也算成功），
+                    // 现在才提交触发时间戳。失败路径一律不写，见上面的去重注释。
+                    commitTriggerStamp(prefs)
                 } else {
                     // 有效回复：session 里已有 aiMessage（流式过程已追加），持久化并发通知
                     saveProactiveMessage(conversationId)
+                    commitTriggerStamp(prefs)
                     showProactiveNotification(conversationId, assistant.name.ifBlank { "AI" }, replyText)
                     // 拉起聊天界面（AI 通过 [JUMP] 标记自行判断，且需满足开关与闲置阈值）
                     if (shouldJump) {
                         try {
-                            val jumpIntent = Intent(this@ProactiveMessageTriggerService, RouteActivity::class.java).apply {
+                            val jumpIntent = Intent(appContext, RouteActivity::class.java).apply {
                                 addFlags(
                                     Intent.FLAG_ACTIVITY_NEW_TASK or
                                         Intent.FLAG_ACTIVITY_CLEAR_TOP or
@@ -412,7 +412,7 @@ class ProactiveMessageTriggerService : Service(), KoinComponent {
                                 )
                                 putExtra("conversationId", conversationId.toString())
                             }
-                            startActivity(jumpIntent)
+                            appContext.startActivity(jumpIntent)
                             Log.d(TAG, "Force jump to conversation $conversationId")
                         } catch (e: Exception) {
                             Log.e(TAG, "Force jump failed", e)
@@ -449,7 +449,7 @@ class ProactiveMessageTriggerService : Service(), KoinComponent {
                     try {
                         val currentSettings = settingsStore.settingsFlow.first()
                         ProactiveMessageService.scheduleNext(
-                            this@ProactiveMessageTriggerService,
+                            appContext,
                             currentSettings.proactiveMessageSetting
                         )
                     } catch (e: Exception) {
@@ -457,11 +457,22 @@ class ProactiveMessageTriggerService : Service(), KoinComponent {
                     }
                 }
                 conversationId?.let { chatService.removeConversationReference(it) }
-                stopSelf()
-            }
         }
+        return reachedGeneration
+    }
 
-        return START_NOT_STICKY
+    /**
+     * 提交本次触发时间戳。
+     *
+     * 只在整轮生成真正跑完后调用；任何失败分支都不调，这样一次失败
+     * 不会把后续 minInterval 窗口内的真实触发全判掉。
+     */
+    private fun commitTriggerStamp(prefs: android.content.SharedPreferences) {
+        runCatching {
+            prefs.edit()
+                .putLong(ProactiveMessageService.KEY_LAST_TRIGGERED_TIME, System.currentTimeMillis())
+                .apply()
+        }.onFailure { Log.w(TAG, "Failed to commit trigger stamp", it) }
     }
 
     /**
@@ -524,18 +535,18 @@ class ProactiveMessageTriggerService : Service(), KoinComponent {
         senderName: String,
         message: String
     ) {
-        val intent = Intent(this, RouteActivity::class.java).apply {
+        val intent = Intent(appContext, RouteActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             putExtra("conversationId", conversationId.toString())
         }
         val pendingIntent = PendingIntent.getActivity(
-            this,
+            appContext,
             conversationId.hashCode(),
             intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        sendNotification(
+        appContext.sendNotification(
             channelId = CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID,
             notificationId = PROACTIVE_NOTIFICATION_ID
         ) {
@@ -701,7 +712,7 @@ class ProactiveMessageTriggerService : Service(), KoinComponent {
             // 应用输出转换器
             val processedMessage = listOf(aiMessage).transforms(
                 transformers = outputTransformers,
-                context = this@ProactiveMessageTriggerService,
+                context = appContext,
                 model = model,
                 assistant = assistant,
                 settings = settings,
@@ -789,10 +800,4 @@ class ProactiveMessageTriggerService : Service(), KoinComponent {
         return messages to hasJumpFlag
     }
 
-    override fun onBind(intent: Intent?): IBinder? = null
-
-    override fun onDestroy() {
-        super.onDestroy()
-        scope.cancel()
-    }
 }

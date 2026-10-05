@@ -184,15 +184,10 @@
         android:value="qq bot websocket message polling" />
     </service>
 
-    <!-- AI 主动发消息: 前台服务生成主动消息 -->
-    <service
-      android:name=".data.service.ProactiveMessageTriggerService"
-      android:exported="false"
-      android:foregroundServiceType="specialUse">
-      <property
-        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-        android:value="proactive AI message generation" />
-    </service>
+    <!-- AI 主动发消息已改为 WorkManager 直接执行（见 ProactiveMessageWorker），
+         不再需要前台服务。原来的 ProactiveMessageTriggerService 走
+         startForegroundService，在 targetSdk 31+ 的后台场景会抛
+         ForegroundServiceStartNotAllowedException 并被静默吞掉。 -->
 
     <!-- AI 主动发消息: 闹钟触发 / 开机重新排程 -->
     <receiver
