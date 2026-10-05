@@ -384,14 +384,31 @@ class ProactiveMessageRunner(
                     val aiId = aiMessage.id
                     val session = chatService.acquireSessionForBackground(conversationId)
                     session.saveMutex.withLock {
-                        chatService.updateConversationState(conversationId) { conv ->
+                        // 先算出「删掉本次这条 AI 消息之后」的内容，再落库。
+                        //
+                        // 原来是分两步：updateConversationState 改 session，
+                        // 紧接着把 getConversationFlow(...).value 原样写回。
+                        // 后者有一条致命路径——若 session 是刚由
+                        // getOrCreateSession 建起来的空会话，过滤后仍是空，
+                        // 写回就把整个对话清空了。这里改成一次性计算，
+                        // 并在写之前确认结果非空。
+                        val cleaned = chatService.getConversationFlow(conversationId).value.let { conv ->
                             conv.copy(
                                 messageNodes = conv.messageNodes.filterNot { node ->
                                     node.messages.any { it.id == aiId }
                                 }
                             )
                         }
-                        chatService.saveConversation(conversationId, chatService.getConversationFlow(conversationId).value)
+                        if (cleaned.messageNodes.isEmpty()) {
+                            Log.e(
+                                TAG,
+                                "Refusing to save after [PASS]: cleaned state for $conversationId " +
+                                    "is empty (session was probably freshly created). Leaving DB untouched.",
+                            )
+                        } else {
+                            chatService.updateConversationState(conversationId) { cleaned }
+                            chatService.saveConversation(conversationId, cleaned)
+                        }
                     }
                     // 到这里说明整轮生成真的跑完了（AI 主动选择沉默也算成功），
                     // 现在才提交触发时间戳。失败路径一律不写，见上面的去重注释。
@@ -429,18 +446,31 @@ class ProactiveMessageRunner(
                 e.cause?.let { cause ->
                     Log.e(TAG, "Underlying cause: ${cause::class.simpleName}: ${cause.message}", cause)
                 }
-                // 清理本次触发中流式写入的不完整 AI 消息，防止污染历史导致下一轮请求失败
-                conversationId?.let { cid ->
-                    try {
-                        val session = chatService.acquireSessionForBackground(cid)
-                        session.saveMutex.withLock {
-                            val conv = chatService.getConversationFlow(cid).value
-                            chatService.saveConversation(cid, conv)
-                        }
-                    } catch (cleanupErr: Exception) {
-                        Log.w(TAG, "Failed to cleanup conversation after error", cleanupErr)
-                    }
-                }
+                // 出错后不要碰数据库。
+                //
+                // 这里原本做的是「把当前会话状态存一次」。看着无害，实际是
+                // **清空聊天记录的元凶**：
+                //
+                //   acquireSessionForBackground -> getOrCreateSession
+                //   在内存里没有该会话的 session 时会用一个
+                //   Conversation.ofId(id, ...) 的**空会话**去初始化它
+                //   （ChatService.kt:349-357，零条 messageNodes）。
+                //
+                //   紧接着 getConversationFlow(cid).value 拿到的就是这个空会话，
+                //   saveConversation 又因为「会话已存在」而不走那条
+                //   「新会话且为空就跳过」的保护（ChatService.kt:2582），
+                //   于是直接把空内容 update 回数据库——整个对话的历史没
+                //   了。记忆清空是同一路径的连带后果。
+                //
+                // 触发条件在真机上很容易满足：进程被系统回收后内存里本就没有
+                // session，此时定时触发失败就走了这条路。
+                //
+                // 正确做法：出错时**什么都不写**。流式过程中已经通过
+                // updateOrAppendAiMessage 就地更新过 session，那些更新要么
+                // 已落库、要么会在下次正常保存时带上；不完整的半截 AI 消息
+                // 由各处的 filterInvalidToolMessages / checkInvalidMessages
+                // 处理，不需要靠这次写来「清理」。
+                Log.d(TAG, "Skipping post-error conversation save (never overwrite from a possibly-empty session)")
             } finally {
                 // 确保无论成功/失败/取消都安排下一次，避免一次 API 错误或用户打断永久中断定时链。
                 // 用 NonCancellable 包裹：协程被取消后挂起点会立刻抛 CancellationException，
@@ -525,7 +555,25 @@ class ProactiveMessageRunner(
     private suspend fun saveProactiveMessage(conversationId: Uuid) {
         val session = chatService.acquireSessionForBackground(conversationId)
         session.saveMutex.withLock {
-            chatService.saveConversation(conversationId, chatService.getConversationFlow(conversationId).value)
+            val current = chatService.getConversationFlow(conversationId).value
+            // 空内容绝不落库。
+            //
+            // getOrCreateSession 现在是「优先从数据库加载」了，但仍然存在
+            // 退化成空会话的可能（数据库读失败、会话确实不存在）。这里再
+            // 卡一道：当前状态是零条 messageNodes 就什么都不写。
+            //
+            // 主动消息在调用本方法前必然已经流过 aiMessage（updateOrAppend
+            // AiMessage 至少追加过一条），所以走到这里还是空，说明状态不
+            // 正常，此时保存只会造成破坏。
+            if (current.messageNodes.isEmpty()) {
+                Log.e(
+                    TAG,
+                    "Refusing to save proactive message for $conversationId: " +
+                        "current session state has no nodes (would wipe history)",
+                )
+                return@withLock
+            }
+            chatService.saveConversation(conversationId, current)
         }
         Log.d(TAG, "Saved proactive message to conversation $conversationId")
     }

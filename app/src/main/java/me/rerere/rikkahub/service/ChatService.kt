@@ -346,15 +346,41 @@ class ChatService(
 
     // ---- Session 管理 ----
 
+    /**
+     * 新建 session 时的初始内容。
+     *
+     * **必须优先从数据库读**，不能凭空造一个空会话。
+     *
+     * 原来的写法是 `Conversation.ofId(id, assistantId)`——零条 messageNodes。
+     * 内存里没有该会话的 session 时（进程被系统回收后是常态），任何
+     * 「取 session 当前状态 -> 再写回数据库」的调用都会拿这个空会话
+     * 覆盖掉真实历史。这不是假想：主动消息的异常清理路径就这么干过，
+     * 把用户的几千条记录连同记忆一起清零了。
+     *
+     * 这里改成同步读一次数据库。用 runBlocking 是因为调用方
+     * （getConversationFlow / updateConversationState）大量出现在
+     * 非挂起上下文里，改成 suspend 会波及几十处调用点；而这一步只在
+     * **首次创建 session** 时发生一次，之后都命中 sessions 缓存。
+     *
+     * 读不到才退回空会话（真·新会话场景）。
+     */
+    private fun loadInitialConversation(id: Uuid, fallbackAssistantId: Uuid): Conversation {
+        return try {
+            kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                conversationRepo.getConversationById(id)
+            } ?: Conversation.ofId(id = id, assistantId = fallbackAssistantId)
+        } catch (e: Exception) {
+            Log.e(TAG, "loadInitialConversation failed for $id, falling back to empty", e)
+            Conversation.ofId(id = id, assistantId = fallbackAssistantId)
+        }
+    }
+
     private fun getOrCreateSession(conversationId: Uuid): ConversationSession {
         return sessions.computeIfAbsent(conversationId) { id ->
             val settings = settingsStore.settingsFlow.value
             ConversationSession(
                 id = id,
-                initial = Conversation.ofId(
-                    id = id,
-                    assistantId = settings.getCurrentAssistant().id
-                ),
+                initial = loadInitialConversation(id, settings.getCurrentAssistant().id),
                 scope = appScope,
                 onIdle = { removeSession(it) },
                 onGenerationFinished = { id, cause ->
@@ -2581,6 +2607,31 @@ class ChatService(
         val exists = conversationRepo.existsConversationById(conversation.id)
         if (!exists && conversation.title.isBlank() && conversation.messageNodes.isEmpty()) {
             return // 新会话且为空时不保存
+        }
+
+        // 防「用空内容覆盖已有历史」。
+        //
+        // 这不是假想的风险：主动消息的异常清理路径曾经拿到一个由
+        // getOrCreateSession 创建的空会话（Conversation.ofId，零条
+        // messageNodes），再经 saveConversation 写回，把整个对话的历史
+        // 清空了（记忆也被连带清掉）。上面那条保护只挡「新会话」，
+        // 已存在的会话正好不满足条件，于是直接 update。
+        //
+        // 判据刻意保守：只拦「已有历史 -> 突然变成零条」这一种跳变。
+        // 正常的整表重写（比如用户自己清空会话）不会经过这里——那条路
+        // 用的是 deleteConversation。误拦的代价是一次保存没生效，
+        // 远小于历史被抹掉。
+        if (exists && conversation.messageNodes.isEmpty()) {
+            val existingNodes = conversationRepo.getConversationById(conversation.id)?.messageNodes
+            if (!existingNodes.isNullOrEmpty()) {
+                Log.e(
+                    TAG,
+                    "Refusing to save conversation $conversationId: it would wipe " +
+                        "${existingNodes.size} nodes with an empty list. " +
+                        "This usually means the caller wrote from a freshly-created empty session.",
+                )
+                return
+            }
         }
 
         val updatedConversation = conversation.copy()
