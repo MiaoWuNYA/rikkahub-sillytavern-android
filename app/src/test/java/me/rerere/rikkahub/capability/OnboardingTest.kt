@@ -184,6 +184,44 @@ class OnboardingTest {
     }
 
     @Test
+    fun `guide waits for settings to load before deciding`() {
+        // settingsFlow 的初值是 Settings.dummy()，providers 为空；
+        // DataStore 读完才换成真实值。若在首帧就下结论，
+        // hasUsableModel 会算出 false——刚导入完备份的用户重启后会被
+        // 再弹一次引导，而他明明什么都配好了。
+        //
+        // 而 startScreen 只算一次（rememberNavBackStack 持有它），
+        // 算错就定死了，之后再怎么重算都没用。
+        assertTrue("要等设置加载完", route.contains("settingsLoaded"))
+        assertTrue(
+            "要等的是 raw flow（StateFlow 会立刻给初值，等不到加载完成）",
+            route.contains("settingsFlowRaw.first()"),
+        )
+        // 等待必须发生在判定之前
+        val waitIdx = route.indexOf("settingsFlowRaw.first()")
+        val decideIdx = route.indexOf("val hasUsableModel")
+        assertTrue("等待要在判定之前", waitIdx in 1 until decideIdx)
+        // 未加载完时不得下结论
+        assertTrue("加载完之前要提前返回", route.contains("if (!settingsLoaded)"))
+    }
+
+    @Test
+    fun `restoring a backup marks onboarding as done`() {
+        // 恢复成功后必须落标记，不能只弹重启框。
+        //
+        // 备份走 PendingRestore，文件在下次启动、数据库和设置初始化
+        // **之前**才原子替换。光靠 hasUsableModel 不稳妥——只要那一刻
+        // 设置还没读出来，用户就会被再弹一次引导。
+        // 而「用户从备份来」是确定的事实：他不需要引导。
+        val restoreBlock = page.substringAfter("vm.restoreBackup(context, temp)")
+            .take(600)
+        assertTrue(
+            "恢复成功要落标记",
+            restoreBlock.contains("OnboardingState.markCompleted"),
+        )
+    }
+
+    @Test
     fun `guide can be replayed from settings`() {
         // 「我自己配，别烦我」是必要的出口，但手滑点了之后得能找回来。
         assertTrue("设置里要有入口", setting.contains("Screen.Onboarding"))

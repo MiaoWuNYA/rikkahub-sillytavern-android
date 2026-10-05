@@ -159,6 +159,10 @@ import org.koin.compose.koinInject
 import kotlin.uuid.Uuid
 import me.rerere.rikkahub.ui.pages.onboarding.OnboardingPage
 import me.rerere.rikkahub.ui.pages.onboarding.OnboardingState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.flow.first
 
 private const val TAG = "RouteActivity"
 private const val ACTION_TRANSLATE = "me.rerere.rikkahub.action.TRANSLATE"
@@ -299,6 +303,35 @@ class RouteActivity : ComponentActivity() {
         // 判断依据是「真的有可用的 provider + 至少一个模型」，
         // 而不是某个标记位——标记位只记录「引导走过没有」，
         // 表达不了「他已经能用了」。
+        //
+        // ⚠️ 必须等设置真正加载完再判。
+        //
+        // settingsFlow 的初值是 Settings.dummy()（providers 为空），
+        // DataStore 读完才换成真实值。若在首帧就下结论，hasUsableModel
+        // 会算出 false —— 刚导入完备份的用户重启后会被再弹一次引导，
+        // 而他明明什么都配好了。
+        //
+        // 而 startScreen 只算一次（rememberNavBackStack 持有它），
+        // 算错就定死了。所以这里先等一次「已加载」信号。
+        var settingsLoaded by remember { mutableStateOf(settings.init) }
+        LaunchedEffect(Unit) {
+            // 用 settingsFlowRaw 等第一次真实数据到达。
+            // settingsFlow 是 StateFlow，它会立刻给出初值，等不到加载完成。
+            settingsStore.settingsFlowRaw.first()
+            settingsLoaded = true
+        }
+
+        if (!settingsLoaded) {
+            // 加载中：先什么都不决定。这一屏通常只闪一下。
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+            return
+        }
+
         val hasUsableModel = settings.providers.any { provider ->
             provider.enabled && provider.models.isNotEmpty()
         }

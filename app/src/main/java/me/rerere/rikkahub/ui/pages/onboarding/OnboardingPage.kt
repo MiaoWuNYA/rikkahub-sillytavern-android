@@ -216,6 +216,16 @@ private fun RestoreStep(
         }.onSuccess {
             vm.restoreBackup(context, temp) {
                 temp.delete()
+                // **恢复成功就等于引导完成。**
+                //
+                // 这里必须落标记，不能只弹重启框：备份恢复走 PendingRestore，
+                // 文件在下次启动、数据库和设置初始化**之前**才原子替换。
+                // 也就是说重启那一刻，settings 里还没有 provider，
+                // `hasUsableModel` 判不出来——只靠它的话用户会被再弹一次
+                // 引导，而他明明刚导入了完整备份。
+                //
+                // 用户从备份来 = 他不需要引导，这是确定的，直接记下来。
+                OnboardingState.markCompleted(context)
                 showRestartDialog = true
             }
         }
