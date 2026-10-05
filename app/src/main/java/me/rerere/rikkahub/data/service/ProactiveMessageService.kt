@@ -216,7 +216,16 @@ class ProactiveMessageService : KoinComponent {
                     }
                     return pinned
                 }
-                Log.w(TAG, "Configured conversation $pinnedId not found, falling back to most recent")
+                // 用户明确指定了对话，但那个对话不存在了。
+                //
+                // **不要退回「最近的对话」。** 主动消息会把指定助手的人设、
+                // 记忆、上下文一起写进目标对话，落到一个用户没选过的对话里
+                // 就是污染。之前这里是静默 fallback，表现成「无论选哪个对话
+                // 都发到最近那个」，用户根本看不出设置没生效。
+                //
+                // 返回 null 会让调用方写一条带原因的日志，用户能自己修。
+                Log.w(TAG, "Configured conversation $pinnedId not found; refusing to guess")
+                return null
             }
 
             // 2) 该助手最近的对话

@@ -51,8 +51,8 @@ object ProactiveMessageLog {
         val detail: String,
     ) {
         fun format(): String {
-            val sdf = SimpleDateFormat("MM-dd HH:mm:ss", Locale.getDefault())
-            return "${sdf.format(Date(timestamp))}  [${outcome.label}] $source\n    $detail"
+            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+            return "${sdf.format(Date(timestamp))}  [${outcome.label}] $source\n$detail"
         }
     }
 
@@ -75,7 +75,8 @@ object ProactiveMessageLog {
                 System.currentTimeMillis().toString(),
                 outcome.name,
                 source.replace(SEPARATOR, " "),
-                detail.replace(SEPARATOR, " ").replace("\n", " "),
+                // 只挡掉分隔符本身；换行要留着——详细日志靠它保持可读
+                detail.replace(SEPARATOR, " ").trim(),
             ).joinToString("|")
 
             val updated = (old + entry).takeLast(MAX_ENTRIES)

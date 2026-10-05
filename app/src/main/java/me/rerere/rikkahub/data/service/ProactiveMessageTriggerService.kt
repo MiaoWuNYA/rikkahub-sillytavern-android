@@ -259,7 +259,13 @@ class ProactiveMessageRunner(
                     Log.e(TAG, "No model found for proactive message")
                     ProactiveMessageLog.log(
                         appContext, ProactiveMessageLog.Outcome.FAILED, "模型检查",
-                        "该助手没有可用的模型。请到助手设置里选择模型，或检查模型列表是否为空。",
+                        buildString {
+                            appendLine("助手：${assistant.name.ifBlank { assistantUuid.toString() }}")
+                            appendLine("助手配置的模型 ID：" + (assistant.chatModelId ?: "（未设置）"))
+                            appendLine("全局默认模型 ID：" + settings.chatModelId)
+                            append("原因：找不到对应的模型定义。去助手设置里选一个模型，" +
+                                "或检查该模型是否已被删除。")
+                        },
                     )
                     markAttempt(appContext)
                     ProactiveMessageService.scheduleNext(appContext, proactiveSetting)
@@ -479,8 +485,14 @@ class ProactiveMessageRunner(
                     commitTriggerStamp(prefs)
                     ProactiveMessageLog.log(
                         appContext, ProactiveMessageLog.Outcome.PASSED, "生成完成",
-                        "模型判断当前没有合适的话可说（回复了 [PASS]），本轮不发消息。" +
-                            "这是正常行为，不是故障。",
+                        buildString {
+                            appendLine("目标对话：${conversation.title.ifBlank { "未命名对话" }}")
+                            appendLine("对话 ID：$conversationId")
+                            appendLine("使用助手：${assistant.name.ifBlank { assistantUuid.toString() }}")
+                            appendLine("使用模型：${model.displayName.ifBlank { model.modelId }}")
+                            appendLine("模型原始回复：" + rawText.take(200).trim())
+                            append("结论：模型判断当前没有合适的话可说，本轮不发消息。这是正常行为，不是故障。")
+                        },
                     )
                 } else {
                     // 有效回复：把本轮内存里累积的节点一次性写回数据库。
@@ -493,9 +505,16 @@ class ProactiveMessageRunner(
                     commitTriggerStamp(prefs)
                     ProactiveMessageLog.log(
                         appContext, ProactiveMessageLog.Outcome.SENT, "生成完成",
-                        "已向「${conversation.title.ifBlank { "未命名对话" }}」发送：" +
-                            replyText.take(80).replace("\n", " ") +
-                            if (replyText.length > 80) "…" else "",
+                        buildString {
+                            appendLine("目标对话：${conversation.title.ifBlank { "未命名对话" }}")
+                            appendLine("对话 ID：$conversationId")
+                            appendLine("使用助手：${assistant.name.ifBlank { assistantUuid.toString() }}")
+                            appendLine("使用模型：${model.displayName.ifBlank { model.modelId }}")
+                            appendLine("消息长度：${replyText.length} 字")
+                            append("消息内容：")
+                            appendLine()
+                            append(replyText.trim())
+                        },
                     )
                     showProactiveNotification(conversationId, assistant.name.ifBlank { "AI" }, replyText)
                     // 拉起聊天界面（AI 通过 [JUMP] 标记自行判断，且需满足开关与闲置阈值）
@@ -542,8 +561,14 @@ class ProactiveMessageRunner(
                 markAttempt(appContext)
                 ProactiveMessageLog.log(
                     appContext, ProactiveMessageLog.Outcome.FAILED, "生成异常",
-                    "${e::class.simpleName}: ${e.message ?: "无详情"}" +
-                        (e.cause?.let { "  ←  ${it::class.simpleName}: ${it.message}" } ?: ""),
+                    buildString {
+                        val conv = loadedConversation
+                        appendLine("目标对话：${conv?.title?.ifBlank { "未命名对话" } ?: "（未确定，异常发生在选对话之前）"}")
+                        appendLine("对话 ID：${conversationId ?: "（未确定）"}")
+                        appendLine("异常类型：${e::class.simpleName}")
+                        appendLine("异常信息：${e.message ?: "无详情"}")
+                        e.cause?.let { append("底层原因：${it::class.simpleName}: ${it.message}") }
+                    },
                 )
                 // 出错后不要碰数据库。
                 //

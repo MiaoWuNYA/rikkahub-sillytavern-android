@@ -1,11 +1,11 @@
 {
-  "version": "2.5.6.1004",
-  "publishedAt": "2026-10-04T21:13:12Z",
-  "changelog": "Nightly auto-build (2026-10-04) / 每日自动构建（2026-10-04）",
+  "version": "2.5.7",
+  "publishedAt": "2026-10-05T16:00:00Z",
+  "changelog": "本次版本修了亿个 Bug，完善了主动消息，并且添加了许多智慧功能，让 AI 更加智能，且兼容了各种文档的修改。\n\n增添：\n1. 二维码生成、图片处理与批量文件处理\n2. Word / PPT / Excel 结构化读写与文档格式互转\n3. 表格数据处理与符号数学计算\n4. 代码静态检查功能\n5. 离线 OCR 兜底，无网络也能识别\n6. 数据格式互通与通用文本对比\n7. 酒馆模式快捷开关，模仿酒馆请求模式减少角色卡拦截\n8. 精简每轮固定开销，APK 体积再降 9MB（109MB → 100MB）\n\n修复：\n1. 主动消息错误导致清空聊天记录与记忆的 Bug\n2. 主动消息不生效、发送到错误对话、间隔设置无效的 Bug\n3. 聊天记录被静默截断、消息附件被误删除的 Bug\n4. 删除消息静默失效的 Bug\n5. 对话归属被错误改写的 Bug\n6. 主动消息执行日志不显示原因、被误判为「用户打断」的 Bug\n7. release 包打开助手设置页闪退的 Bug\n8. 全局圆角过大、弹窗选项渲染成一排独立大圆钮的 Bug\n\n────────────\n\nThis release fixes a huge number of bugs, improves proactive messaging, and adds many smart features that make the AI far more capable. It also improves compatibility with editing of various document formats.\n\nAdded:\n1. QR code generation, image processing, and batch file handling\n2. Structured Word / PPT / Excel read-write and document format conversion\n3. Spreadsheet data handling and symbolic math\n4. Code static analysis\n5. Offline OCR fallback, works without a network\n6. Cross-format data interoperability and general-purpose text diff\n7. Tavern mode quick toggle, mimicking tavern request patterns to reduce card filtering\n8. Trimmed per-turn fixed overhead; APK size down another 9MB (109MB to 100MB)\n\nFixed:\n1. Proactive messaging could erase chat history and memories\n2. Proactive settings had no effect, messages went to the wrong conversation, intervals were ignored\n3. Chat history could be silently truncated and attachments deleted by mistake\n4. Deleting a message silently failed\n5. A conversation could be reassigned to the wrong assistant\n6. The proactive log hid its reason and runs were wrongly reported as interrupted by the user\n7. A crash when opening assistant settings in the release build\n8. Oversized corner radii; dialog options rendered as a row of separate large pills",
   "downloads": [
     {
-      "name": "rikkahub-plus-nightly-arm64-v8a.apk",
-      "url": "https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/download/nightly/rikkahub-plus-nightly-arm64-v8a.apk",
+      "name": "rikkahub-plus-arm64-v8a.apk",
+      "url": "https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/download/v2.5.7/rikkahub-plus-arm64-v8a.apk",
       "size": "约 104 MB"
     }
   ]

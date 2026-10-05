@@ -64,7 +64,7 @@ class ProactiveMessageWiringTest {
         assertTrue("min 间隔改动要重排", page.contains("minIntervalMinutes = it"))
         assertTrue("max 间隔改动要重排", page.contains("maxIntervalMinutes = it"))
         assertTrue("助手改动要重排", page.contains("assistantId = it"))
-        assertTrue("对话改动要重排", page.contains("conversationId = it"))
+        assertTrue("对话改动要重排", page.contains("conversationId = picked"))
     }
 
     @Test
