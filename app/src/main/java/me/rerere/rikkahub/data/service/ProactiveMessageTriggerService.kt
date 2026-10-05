@@ -236,6 +236,20 @@ class ProactiveMessageRunner(
                     return false
                 }
 
+                // 失败冷静期：上一次尝试失败后的几分钟内不再重试。
+                //
+                // 没有这道闸，一个持续复现的失败场景（助手没配模型、
+                // 没选对话、key 失效）会变成死循环：失败 -> finally 重排
+                // -> 立刻又触发 -> 又失败。日志里会看到每隔固定时间刷一条
+                // 同样的失败，耗电、刷屏，而且掩盖了真正的问题。
+                val lastAttempt = prefs.getLong(ProactiveMessageService.KEY_LAST_ATTEMPT_TIME, 0L)
+                val sinceLastAttemptMin = (System.currentTimeMillis() - lastAttempt) / 60_000L
+                if (lastAttempt > 0 && sinceLastAttemptMin < ProactiveMessageService.FAILURE_BACKOFF_MINUTES) {
+                    Log.d(TAG, "Within failure backoff (${sinceLastAttemptMin}m), skipping")
+                    ProactiveMessageService.scheduleNext(appContext, proactiveSetting)
+                    return false
+                }
+
                 // 获取助手（设置里指定或当前助手）
                 val assistant = settings.assistants.find { it.id.toString() == proactiveSetting.assistantId }
                     ?: settings.getCurrentAssistant()
@@ -247,6 +261,7 @@ class ProactiveMessageRunner(
                         appContext, ProactiveMessageLog.Outcome.FAILED, "模型检查",
                         "该助手没有可用的模型。请到助手设置里选择模型，或检查模型列表是否为空。",
                     )
+                    markAttempt(appContext)
                     ProactiveMessageService.scheduleNext(appContext, proactiveSetting)
                     return false
                 }
@@ -276,6 +291,7 @@ class ProactiveMessageRunner(
                         },
 
                     )
+                    markAttempt(appContext)
                     ProactiveMessageService.scheduleNext(appContext, proactiveSetting)
                     return false
                 }
@@ -501,12 +517,21 @@ class ProactiveMessageRunner(
                     }
                 }
             } catch (e: CancellationException) {
-                // 协程被取消（通常是用户发了新消息，打断本次主动生成），属正常情况。
-                // 重新抛出后 finally 块仍会正常执行（scheduleNext 已用 NonCancellable 保护）。
-                Log.d(TAG, "Proactive generation cancelled (likely user started a new message), conversationId=$conversationId")
+                // 协程被取消。**原因不一定是用户操作。**
+                //
+                // 原来的文案写死成「生成过程中你开始发新消息」，把一次
+                // 取消断言成用户行为。但 CancellationException 的来源很多：
+                // WorkManager 到达执行上限、进程被系统回收、协程作用域被
+                // 取消……用户看到「你开始发新消息」却明明没发，只会更困惑。
+                //
+                // 说不出准确原因时就不要编一个。这里改成如实陈述，
+                // 并把是否真有用户介入留给用户自己判断。
+                Log.d(TAG, "Proactive generation cancelled (cause unknown), conversationId=$conversationId")
                 ProactiveMessageLog.log(
-                    appContext, ProactiveMessageLog.Outcome.SKIPPED, "用户打断",
-                    "生成过程中你开始发新消息，主动消息被取消（这是设计行为）。",
+                    appContext, ProactiveMessageLog.Outcome.SKIPPED, "生成被打断",
+                    "生成过程中协程被取消，本轮未完成。常见原因是你发新消息" +
+                        "抢占了本次生成；但也可能是系统回收了后台任务。" +
+                        "如果反复出现而你并没有在聊天，请检查电池优化设置。",
                 )
                 throw e
             } catch (e: Exception) {
@@ -514,6 +539,7 @@ class ProactiveMessageRunner(
                 e.cause?.let { cause ->
                     Log.e(TAG, "Underlying cause: ${cause::class.simpleName}: ${cause.message}", cause)
                 }
+                markAttempt(appContext)
                 ProactiveMessageLog.log(
                     appContext, ProactiveMessageLog.Outcome.FAILED, "生成异常",
                     "${e::class.simpleName}: ${e.message ?: "无详情"}" +
@@ -586,8 +612,20 @@ class ProactiveMessageRunner(
         runCatching {
             prefs.edit()
                 .putLong(ProactiveMessageService.KEY_LAST_TRIGGERED_TIME, System.currentTimeMillis())
+                // 成功一次就把失败冷静期清掉，下一轮该跑就跑。
+                .remove(ProactiveMessageService.KEY_LAST_ATTEMPT_TIME)
                 .apply()
         }.onFailure { Log.w(TAG, "Failed to commit trigger stamp", it) }
+    }
+
+    /** 记一次「跑过一轮但没成功」，用于失败冷静期。 */
+    private fun markAttempt(context: Context) {
+        runCatching {
+            context.getSharedPreferences(ProactiveMessageService.PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putLong(ProactiveMessageService.KEY_LAST_ATTEMPT_TIME, System.currentTimeMillis())
+                .apply()
+        }.onFailure { Log.w(TAG, "Failed to mark attempt", it) }
     }
 
     /**
