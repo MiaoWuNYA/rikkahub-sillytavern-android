@@ -2909,4 +2909,6 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
     <string name="proactive_conversation">发送到的对话</string>
     <string name="proactive_conversation_auto">该助手最近的对话</string>
     <string name="proactive_untitled_conversation">未命名对话</string>
+    <string name="proactive_conversation_load_failed">读取对话列表失败——先切一下助手再回来重试</string>
+    <string name="proactive_conversation_empty">该助手还没有任何对话</string>
 </resources>

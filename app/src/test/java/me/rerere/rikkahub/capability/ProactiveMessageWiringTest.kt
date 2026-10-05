@@ -33,6 +33,20 @@ class ProactiveMessageWiringTest {
         return ""
     }
 
+    /**
+     * 去掉行注释与块注释。
+     *
+     * 断言「源码里不存在某个危险调用」时必须先剔注释——否则解释
+     * 「为什么不用它」的注释本身会把断言判红，反过来逼着人删掉有价值的说明。
+     */
+    private fun stripComments(src: String): String =
+        src.replace(Regex("/\\*[\\s\\S]*?\\*/"), "")
+            .lines()
+            .joinToString("\n") { line ->
+                val i = line.indexOf("//")
+                if (i >= 0) line.take(i) else line
+            }
+
     private val page get() =
         read("src/main/java/me/rerere/rikkahub/ui/pages/setting/SettingProactiveMessagePage.kt")
     private val service get() = read("src/main/java/me/rerere/rikkahub/data/service/ProactiveMessageService.kt")
@@ -95,9 +109,9 @@ class ProactiveMessageWiringTest {
         // worker 排的时间永远不显示，界面与实际触发对不上
         assertFalse("worker 不应再自己写展示时间",
             worker.contains("""getLong("next_trigger_time", 0L) == 0L"""))
-        // worker 成功后不该再排一次，TriggerService 的 finally 已经排过
-        val successBlock = worker.substringAfter("return Result.success()").take(0)
-        assertTrue("worker 成功路径应说明不重复排程", worker.contains("不在这里排下一次"))
+        // worker 自己不再写展示时间，统一由 scheduleNext 负责
+        assertTrue("worker 成功路径应说明不重复排程",
+            worker.contains("Result.success()") && !worker.contains("next_trigger_time"))
     }
 
     @Test
@@ -117,13 +131,107 @@ class ProactiveMessageWiringTest {
     @Test
     fun `triggerNow does not schedule a competing alarm`() {
         val body = service.substringAfter("fun triggerNow(").substringBefore("\n        }")
-        // 前台服务的 finally 是唯一权威排程点；这里再排一次会让两次
-        // scheduleNext 各随机一个时间，界面上的下次时间莫名跳变
-        val schedules = Regex("scheduleNext\\(").findAll(body).count()
-        assertTrue(
-            "triggerNow 只应在启动失败时兜底排程，实际直接调用 $schedules 次",
-            schedules <= 1,
+        // runOnce 是独立的 work name，不会顶掉已排好的延迟任务；
+        // 这里再调 scheduleNext 会让两次随机各产生一个时间，界面跳变
+        assertFalse(
+            "triggerNow 不应再直接排程（交给 Worker 的一次性任务）",
+            body.contains("scheduleNext("),
         )
-        assertTrue("失败时仍要兜底排程", body.contains("catch") && schedules == 1)
+        assertTrue("应立即派发一次性任务", body.contains("runOnce("))
+    }
+
+    @Test
+    fun `background trigger never starts a foreground service`() {
+        // 这是「定时到了但毫无反应」的根因所在。
+        //
+        // targetSdk 31+ 禁止后台启动前台服务，闹钟/Worker 触发时系统抛
+        // ForegroundServiceStartNotAllowedException，而调用方的
+        // catch(Exception) 把它吞成一行日志，UI 上完全看不出来。
+        // 现在整条链路改走 WorkManager，任何一处回退到 FGS 都会让这个
+        // 问题重现，所以直接断言源码里不存在该调用。
+        for ((name, src) in listOf(
+            "ProactiveMessageService" to service,
+            "ProactiveMessageWorker" to worker,
+        )) {
+            assertFalse(
+                "$name 不应调用 startForegroundService（后台会抛 ForegroundServiceStartNotAllowedException）",
+                stripComments(src).contains("startForegroundService"),
+            )
+        }
+        // 触发链路里也不该再引用那个前台服务类
+        assertFalse(
+            "不应再引用 ProactiveMessageTriggerService 类",
+            stripComments(service).contains("ProactiveMessageTriggerService"),
+        )
+    }
+
+    @Test
+    fun `worker runs generation directly instead of delegating to a service`() {
+        assertTrue("Worker 应直接构造执行器",
+            worker.contains("ProactiveMessageRunner("))
+        assertTrue("应调用 run()", worker.contains("runner.run()"))
+        // Worker 不该再在失败时排程——Runner 的 finally 已经排过，
+        // 两边都排会抢同一个 unique work name
+        val catchBlock = worker.substringAfter("} catch (e: Exception) {").substringBefore("} finally")
+        assertFalse("失败分支不应重复排程", catchBlock.contains("scheduleNext("))
+        assertTrue("应返回 failure 让 WorkManager 记账", catchBlock.contains("Result.failure()"))
+    }
+
+    @Test
+    fun `trigger stamp is committed only after a successful run`() {
+        // 原先在「检查是否重复」时就无条件写时间戳，于是任何失败
+        // （无对话/无模型/网络错误）都会把之后 minInterval 窗口内的
+        // 真实触发全判成 duplicate，失败被固化成永久静默。
+        val dedup = trigger.substringAfter("val lastTriggeredTime =").substringBefore("if (System.currentTimeMillis()")
+        assertFalse("去重检查不应写入时间戳", dedup.contains("putLong"))
+        assertTrue("应有成功后才提交的入口", trigger.contains("commitTriggerStamp"))
+        assertTrue("成功分支应调用它", trigger.contains("commitTriggerStamp(prefs)"))
+    }
+
+    @Test
+    fun `conversation picker is not hidden behind the enable switch`() {
+        // 用户报「能选助手、选不了对话」：选择器当时被包在
+        // if (proactive.enabled) 里，而开关默认是关的，于是它根本不
+        // 进 composition。这是配置项，不该依赖运行状态。
+        val idx = page.indexOf("ConversationPicker(")
+        assertTrue("页面应有对话选择器", idx > 0)
+        // 从每个 if (proactive.enabled) 起，用括号配对找出它真正的作用域，
+        // 看 ConversationPicker 是否落在其中。只数括号而不配对会在嵌套
+        // 结构里算错，所以这里逐字符扫到配平为止。
+        // 用缩进判断作用域：该文件里 LazyColumn 的直接子项统一缩进 12 空格，
+        // if (proactive.enabled) { 也是 12 空格。若 ConversationPicker 的
+        // 12 空格缩进行出现在某个 if 块闭合之前，说明它被包住了。
+        //
+        // 不用括号配对：这一段的字符串里含有 '{' 和 '}'（注释与文案），
+        // 盲数括号会算错作用域，反而给出假的通过/失败。
+        val lines = page.lines()
+        val pickerLine = lines.indexOfFirst { it.trimStart().startsWith("ConversationPicker(") }
+        assertTrue("页面应有对话选择器", pickerLine > 0)
+
+        var depth = 0
+        for (i in 0 until pickerLine) {
+            val t = lines[i].trim()
+            if (t.startsWith("if (proactive.enabled)")) depth++
+            // item { ... } 与会话块结束都算一层收束
+            if (depth > 0 && t == "}" && lines[i].length - lines[i].trimStart().length <= 12) depth--
+        }
+        assertTrue(
+            "ConversationPicker 位于第 $pickerLine 行，前面还有 $depth 个未闭合的 " +
+                "if (proactive.enabled)——开关默认关闭时它就不可见，" +
+                "这正是用户报的「能选助手、选不了对话」",
+            depth == 0,
+        )
+    }
+
+    @Test
+    fun `conversation list uses the light projection and surfaces failures`() {
+        assertTrue("应使用轻量查询",
+            page.contains("getRecentConversationTitles"))
+        assertFalse("不应为了拿标题而全量加载消息节点",
+            page.contains("getRecentConversations(assistantIdForList"))
+        // 加载失败必须可见，不能吞成空列表——否则「坏掉」和「真的没有」长得一样
+        assertTrue("应记录加载失败", page.contains("loadFailed"))
+        assertTrue("应给 LazyColumn 高度约束", page.contains("heightIn(max = 320.dp)"))
+        assertTrue("remember 应带 key 避免切助手时残留", page.contains("remember(assistantIdForList)"))
     }
 }
