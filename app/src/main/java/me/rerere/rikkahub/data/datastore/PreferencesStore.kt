@@ -1165,10 +1165,13 @@ private val DEFAULT_TTS_PROVIDERS = listOf(
         id = DEFAULT_SYSTEM_TTS_ID,
         name = "",
     ),
+    // 默认 TTS 提供商原来指向一家带返利链接的中转站。那不是给用户
+    // 用的默认值，而是一处推广——已改为官方 OpenAI 接口。
+    // 用户没填 Key 时它本来也用不了，所以这个改动不影响任何人。
     TTSProviderSetting.OpenAI(
         id = Uuid.parse("e36b22ef-ca82-40ab-9e70-60cad861911c"),
-        name = "AiHubMix",
-        baseUrl = "https://aihubmix.com/v1",
+        name = "OpenAI",
+        baseUrl = "https://api.openai.com/v1",
         model = "gpt-4o-mini-tts",
         voice = "alloy",
     )

@@ -119,6 +119,71 @@ class OnboardingTest {
     }
 
     @Test
+    fun `no referrer links anywhere in the provider lists`() {
+        // 提供商列表前后有两版。第一版全是带返利链接的中转站——那些链接
+        // 对项目有收益，但把一个「选谁家的模型」的决定替用户做了，而且是
+        // 照着收益做的。已全部移除，这条测试防止它再被加回来。
+        val recommended = read("src/main/java/me/rerere/rikkahub/data/datastore/RecommendedProviders.kt")
+        val defaults = read("src/main/java/me/rerere/rikkahub/data/datastore/DefaultProviders.kt")
+        val prefs = read("src/main/java/me/rerere/rikkahub/data/datastore/PreferencesStore.kt")
+
+        listOf("recommended" to recommended, "defaults" to defaults, "prefs" to prefs)
+            .forEach { (label, src) ->
+                // 去掉注释再查：解释「为什么删掉它们」的注释里当然会提到旧链接。
+                // 块注释用 /* */ 和 kdoc 的 * 开头，行注释用 // —— 三种都要剔，
+                // 只剔 // 会把 kdoc 里引用的旧域名判成违规。
+                val code = src
+                    .replace(Regex("/\\*[\\s\\S]*?\\*/"), "")
+                    .lines()
+                    .filterNot { it.trimStart().startsWith("*") }
+                    .joinToString("\n") { line ->
+                        val i = line.indexOf("//")
+                        if (i >= 0) line.take(i) else line
+                    }
+                assertFalse("$label 里不应有返利参数", code.contains("aff="))
+                assertFalse("$label 里不应有推广跳转", code.contains("go.apimart"))
+                assertFalse("$label 里不应有推广中转站", code.contains("aihubmix.com/v1"))
+                assertFalse("$label 里不应有推广中转站", code.contains("sui-xiang.com/v1"))
+                assertFalse("$label 里不应有推广中转站", code.contains("api.muteki.site"))
+            }
+    }
+
+    @Test
+    fun `custom provider comes first`() {
+        // 用开源客户端的人多半已有自己的中转站或自建服务，对这些人
+        // 整份推荐列表一个都用不上。把自定义塞在最下面等于逼他先翻完
+        // 一遍别人的列表。
+        val customIdx = page.indexOf("CustomProviderCard(")
+        val listIdx = page.indexOf("RECOMMENDED_PROVIDERS.forEach")
+        assertTrue("应有自定义卡片", customIdx > 0)
+        assertTrue("应有官方列表", listIdx > 0)
+        assertTrue("自定义必须排在官方列表之前", customIdx < listIdx)
+        // 自定义要能填地址，否则「自定义」名不副实
+        assertTrue("自定义要能改地址", page.contains("onBaseUrlChange"))
+    }
+
+    @Test
+    fun `providers are labelled with their barrier to entry`() {
+        // 只标事实、不推荐谁。新人最常见的死法是选了个要充值 + 实名的，
+        // 卡在支付页就卸载了。
+        val recommended = read("src/main/java/me/rerere/rikkahub/data/datastore/RecommendedProviders.kt")
+        assertTrue("要标注门槛", recommended.contains("门槛："))
+        assertTrue("要说明是否需实名", recommended.contains("实名"))
+    }
+
+    @Test
+    fun `guide is skipped when a model is already configured`() {
+        // 从旧版本升级上来的用户本地早有配好的模型，给他看一遍
+        // 「请选择提供商」纯属打扰。判断依据是「真的有可用的
+        // provider + 至少一个模型」，而不是某个标记位。
+        assertTrue("要检查是否已有可用模型", route.contains("hasUsableModel"))
+        assertTrue(
+            "判定要同时看标记和模型",
+            route.contains("!OnboardingState.isCompleted(this) && !hasUsableModel"),
+        )
+    }
+
+    @Test
     fun `guide can be replayed from settings`() {
         // 「我自己配，别烦我」是必要的出口，但手滑点了之后得能找回来。
         assertTrue("设置里要有入口", setting.contains("Screen.Onboarding"))

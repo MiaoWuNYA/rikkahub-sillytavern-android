@@ -291,7 +291,18 @@ class RouteActivity : ComponentActivity() {
         // 一个 Context 读偏好，而这里刚好有；同时它又必须早于任何
         // 对话数据的加载——用户连模型都还没配，给他一个空对话列表
         // 只会让人以为 App 坏了。
-        val needsOnboarding = !OnboardingState.isCompleted(this)
+        //
+        // **已经有模型就不弹。** 这一条比「看过没有」更准确：
+        //   · 从旧版本升级上来的用户，本地早有配好的模型，
+        //     给他看一遍「请选择提供商」纯属打扰
+        //   · 用户自己已经配过，说明他不需要引导
+        // 判断依据是「真的有可用的 provider + 至少一个模型」，
+        // 而不是某个标记位——标记位只记录「引导走过没有」，
+        // 表达不了「他已经能用了」。
+        val hasUsableModel = settings.providers.any { provider ->
+            provider.enabled && provider.models.isNotEmpty()
+        }
+        val needsOnboarding = !OnboardingState.isCompleted(this) && !hasUsableModel
 
         val startScreen: Screen = if (needsOnboarding) {
             Screen.Onboarding
