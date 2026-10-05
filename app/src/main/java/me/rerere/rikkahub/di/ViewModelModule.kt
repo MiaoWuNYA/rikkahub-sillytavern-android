@@ -9,6 +9,7 @@ import android.content.Context
 import me.rerere.rikkahub.ui.pages.couple.CoupleVM
 import me.rerere.rikkahub.ui.pages.debug.DebugVM
 import me.rerere.rikkahub.ui.pages.favorite.FavoriteVM
+import me.rerere.rikkahub.ui.pages.onboarding.OnboardingVM
 import me.rerere.rikkahub.ui.pages.search.SearchVM
 import me.rerere.rikkahub.ui.pages.history.HistoryVM
 import me.rerere.rikkahub.ui.pages.stats.StatsVM
@@ -65,6 +66,7 @@ val viewModelModule = module {
         )
     }
     viewModelOf(::BackupVM)
+    viewModelOf(::OnboardingVM)
     viewModelOf(::ImgGenVM)
     viewModelOf(::PromptVM)
     viewModelOf(::QuickMessagesVM)
