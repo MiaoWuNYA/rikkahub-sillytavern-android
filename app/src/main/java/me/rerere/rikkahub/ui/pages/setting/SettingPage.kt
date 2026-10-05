@@ -335,6 +335,17 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                     modifier = Modifier.padding(horizontal = 8.dp),
                     title = { Text(stringResource(R.string.setting_page_about)) },
                 ) {
+                    // 允许重看引导。
+                    //
+                    // 首次引导里那个「我自己配，别烦我」是必要的出口，
+                    // 但用户手滑点了、或者当时没看懂，之后得能找回来。
+                    // 没有这个入口的话，跳过就等于永久失去引导。
+                    item(
+                        onClick = { navController.navigate(Screen.Onboarding) },
+                        leadingContent = { Icon(HugeIcons.Clapping01, null) },
+                        supportingContent = { Text("重新看一遍新手引导") },
+                        headlineContent = { Text("新手引导") },
+                    )
                     item(
                         onClick = { navController.navigate(Screen.SettingAbout) },
                         leadingContent = { Icon(HugeIcons.Clapping01, null) },

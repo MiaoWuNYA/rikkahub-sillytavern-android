@@ -157,6 +157,8 @@ import okhttp3.OkHttpClient
 import org.koin.android.ext.android.inject
 import org.koin.compose.koinInject
 import kotlin.uuid.Uuid
+import me.rerere.rikkahub.ui.pages.onboarding.OnboardingPage
+import me.rerere.rikkahub.ui.pages.onboarding.OnboardingState
 
 private const val TAG = "RouteActivity"
 private const val ACTION_TRANSLATE = "me.rerere.rikkahub.action.TRANSLATE"
@@ -283,16 +285,28 @@ class RouteActivity : ComponentActivity() {
         }
         val migrationState by DatabaseMigrationTracker.state.collectAsStateWithLifecycle()
 
-        val startScreen = Screen.Chat(
-            id = if (readBooleanPreference("create_new_conversation_on_start", true)) {
-                Uuid.random().toString()
-            } else {
-                readStringPreference(
-                    "lastConversationId",
+        // 首次启动先走引导。
+        //
+        // 判定放在这里而不是更早的 Activity 生命周期里，是因为它需要
+        // 一个 Context 读偏好，而这里刚好有；同时它又必须早于任何
+        // 对话数据的加载——用户连模型都还没配，给他一个空对话列表
+        // 只会让人以为 App 坏了。
+        val needsOnboarding = !OnboardingState.isCompleted(this)
+
+        val startScreen: Screen = if (needsOnboarding) {
+            Screen.Onboarding
+        } else {
+            Screen.Chat(
+                id = if (readBooleanPreference("create_new_conversation_on_start", true)) {
                     Uuid.random().toString()
-                ) ?: Uuid.random().toString()
-            }
-        )
+                } else {
+                    readStringPreference(
+                        "lastConversationId",
+                        Uuid.random().toString()
+                    ) ?: Uuid.random().toString()
+                }
+            )
+        }
 
         val backStack = rememberNavBackStack(startScreen)
         SideEffect {
@@ -424,6 +438,18 @@ class RouteActivity : ComponentActivity() {
 
                             entry<Screen.Translator> {
                                 TranslatorPage()
+                            }
+
+                            entry<Screen.Onboarding> {
+                                OnboardingPage(
+                                    onFinish = {
+                                        // 先把引导从回退栈里摘掉，再进主界面。
+                                        // 顺序反过来的话，用户按返回键会退回引导，
+                                        // 而他明明已经配好了。
+                                        backStack.removeLastOrNull()
+                                        backStack.add(Screen.Chat(Uuid.random().toString()))
+                                    },
+                                )
                             }
 
                             entry<Screen.Setting> {
@@ -773,6 +799,15 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object Translator : Screen
+
+    /**
+     * 首次引导。
+     *
+     * 它是一个真正的路由页而不是弹层：引导要占满整屏，而且要能排到
+     * 数据加载之前——用户连 Key 都还没配，谈什么对话列表。
+     */
+    @Serializable
+    data object Onboarding : Screen
 
     @Serializable
     data object Setting : Screen
