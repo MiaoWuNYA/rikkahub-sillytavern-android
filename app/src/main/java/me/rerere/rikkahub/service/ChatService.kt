@@ -617,7 +617,7 @@ class ChatService(
                 if (settings.proactiveMessageSetting.enabled) {
                     appScope.launch {
                         runCatching {
-                            ProactiveMessageService.resetTimer(context, settings.proactiveMessageSetting)
+                            ProactiveMessageService.resetTimer(context, settings.proactiveMessageSetting.normalized())
                         }
                     }
                 }

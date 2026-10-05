@@ -39,12 +39,13 @@ class ProactiveMessageService : KoinComponent {
 
         internal const val PREFS_NAME = "proactive_message_prefs"
         private const val KEY_NEXT_TRIGGER_TIME = "next_trigger_time"
+        internal const val KEY_LAST_TRIGGERED_TIME = "last_triggered_time"
 
         /**
          * 在 [minMinutes, maxMinutes] 之间随机取下次触发的延迟分钟数（纯函数，便于单测）。
          */
         fun computeDelayMinutes(minMinutes: Int, maxMinutes: Int, random: Random = Random): Int {
-            val min = minMinutes.coerceAtLeast(1)
+            val min = minMinutes.coerceAtLeast(ProactiveMessageSetting.MIN_INTERVAL_MINUTES)
             val max = maxMinutes.coerceAtLeast(min)
             return random.nextInt(min, max + 1)
         }
@@ -55,10 +56,15 @@ class ProactiveMessageService : KoinComponent {
                 return
             }
 
-            val delayMinutes = computeDelayMinutes(setting.minIntervalMinutes, setting.maxIntervalMinutes)
+            // 归一化后再算延迟：设置里可能存着 0 或负数（老版本写入、
+            // 手工改配置），直接拿去算会得到过去的时间点，闹钟会连环触发。
+            val safe = setting.normalized()
+            val delayMinutes = computeDelayMinutes(safe.minIntervalMinutes, safe.maxIntervalMinutes)
             val triggerTime = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(delayMinutes.toLong())
 
-            // 保存下次触发时间到 SharedPreferences（供设置页展示）
+            // 保存下次触发时间到 SharedPreferences（供设置页展示）。
+            // 这里必须同时覆盖 Alarm 与 WorkManager 两条通道——之前 worker
+            // 只在值为 0 时才写入，导致它排的时间永远不会显示出来。
             context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 .edit()
                 .putLong(KEY_NEXT_TRIGGER_TIME, triggerTime)
@@ -101,8 +107,9 @@ class ProactiveMessageService : KoinComponent {
 
             Log.d(TAG, "Scheduled proactive message in $delayMinutes minutes")
 
-            // WorkManager 兜底：电池优化激进机型上 AlarmManager 更可靠的后备
-            ProactiveMessageWorker.scheduleNext(context, setting)
+            // WorkManager 兜底：电池优化激进机型上 AlarmManager 更可靠的后备。
+            // 传归一化后的值，保证两条通道算出的量级一致。
+            ProactiveMessageWorker.scheduleNext(context, safe)
         }
 
         fun getNextTriggerTime(context: Context): Long? {
@@ -112,10 +119,14 @@ class ProactiveMessageService : KoinComponent {
         }
 
         fun cancel(context: Context) {
-            // 清除保存的触发时间
+            // 清除保存的触发时间。
+            // last_triggered_time 也要清：它是「上一次实际触发」的痕迹，
+            // 关掉再开时若留着，首条消息会被 min interval 误挡掉一次，
+            // 表现是「刚开就等很久」。
             context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 .edit()
                 .remove(KEY_NEXT_TRIGGER_TIME)
+                .remove(KEY_LAST_TRIGGERED_TIME)
                 .apply()
 
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -137,19 +148,60 @@ class ProactiveMessageService : KoinComponent {
             ProactiveMessageWorker.cancel(context)
         }
 
+        /**
+         * 解析本次主动消息要发到哪个对话。
+         *
+         * 优先用设置里指定的固定对话；指定的对话被删掉时退回「该助手最近
+         * 的一个对话」，而不是直接失败——用户删了对话却忘了改设置的话，
+         * 功能不该就此静默停摆。
+         *
+         * 找不到任何对话时返回 null，调用方应跳过本次触发。
+         */
+        suspend fun resolveTargetConversation(
+            repository: me.rerere.rikkahub.data.repository.ConversationRepository,
+            assistantId: kotlin.uuid.Uuid,
+            configuredConversationId: String,
+        ): me.rerere.rikkahub.data.model.Conversation? {
+            // 1) 指定的固定对话
+            val pinnedId = configuredConversationId
+                .takeIf { it.isNotBlank() }
+                ?.let { runCatching { kotlin.uuid.Uuid.parse(it) }.getOrNull() }
+            if (pinnedId != null) {
+                val pinned = runCatching { repository.getConversationById(pinnedId) }.getOrNull()
+                // 只校验「存在」；不比对 assistantId，这样把对话改属主后仍然能用
+                if (pinned != null) return pinned
+                Log.w(TAG, "Configured conversation $pinnedId not found, falling back to most recent")
+            }
+
+            // 2) 该助手最近的对话
+            return runCatching {
+                repository.getRecentConversations(assistantId, limit = 1)
+                    .firstOrNull()
+                    ?.let { repository.getConversationById(it.id) }
+            }.getOrNull()
+        }
+
         /** 用户回复后重置计时器：重新随机一个下次触发时间。 */
         fun resetTimer(context: Context, setting: ProactiveMessageSetting) {
             scheduleNext(context, setting)
         }
 
-        /** 立即触发一次（先安排下一次，再启动前台服务生成）。 */
+        /**
+         * 立即触发一次。
+         *
+         * 这里**不排下一次**。前台服务跑完（或失败/被取消）时 finally 块会
+         * 用 NonCancellable 排程，那才是唯一权威的排程点。之前这里也排一次，
+         * 结果是两次 scheduleNext 各随机一个时间，后写的覆盖先写的——
+         * 用户看到的下次时间会莫名跳变。
+         */
         fun triggerNow(context: Context, setting: ProactiveMessageSetting) {
-            scheduleNext(context, setting)
             val serviceIntent = Intent(context, ProactiveMessageTriggerService::class.java)
             try {
                 context.startForegroundService(serviceIntent)
             } catch (e: Exception) {
                 Log.e(TAG, "triggerNow: failed to start trigger service", e)
+                // 服务没起来，它的 finally 不会执行，这里兜底排一次
+                scheduleNext(context, setting)
             }
         }
     }
