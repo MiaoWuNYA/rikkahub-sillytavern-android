@@ -539,7 +539,20 @@ class ProactiveMessageRunner(
                         Log.e(TAG, "Failed to reschedule after completion/error/cancellation", e)
                     }
                 }
-                conversationId?.let { chatService.removeConversationReference(it) }
+
+                // 释放生成权与会话引用，必须和 tryClaimGeneration /
+                // addConversationReference 成对，且放在 finally 里确保
+                // 成功、失败、取消三条路径都会执行。
+                //
+                // 漏掉的后果见 ChatService.releaseGenerationClaim 的注释：
+                // session 会永远处于「正在生成」，之后每次触发都被跳过，
+                // 表现就是「定时到了但永远没反应」。
+                val cid = conversationId
+                if (cid != null) {
+                    val job = coroutineContext[Job]
+                    if (job != null) chatService.releaseGenerationClaim(cid, job)
+                    chatService.removeConversationReference(cid)
+                }
         }
         return reachedGeneration
     }
