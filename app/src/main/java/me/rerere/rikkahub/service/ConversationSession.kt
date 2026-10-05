@@ -25,9 +25,32 @@ class ConversationSession(
     private val scope: CoroutineScope,
     private val onIdle: (Uuid) -> Unit,
     private val onGenerationFinished: (Uuid, Throwable?) -> Unit = { _, _ -> },
+    /**
+     * 初始内容是否可信。
+     *
+     * 为 false 时表示：这个 session 是在**数据库读取失败**的情况下用
+     * 一个空 Conversation 兜底建起来的，它的 state **不代表数据库里的
+     * 真实内容**。
+     *
+     * 为什么必须有这个标记：光靠「当前内容为空」判断不了危险。
+     * 一个刚建起来的空会话，在主动消息往里面 append 了一条 AI 消息之后
+     * 就不再是空的——此时任何「取 state 再写回」的调用都会用这 1 条
+     * 覆盖掉数据库里的几千条历史，而且 content 非空、assistantId 也
+     * 可能恰好相同，两道基于内容的防护全都拦不住。
+     *
+     * 所以危险与否要问「状态从哪来」，而不是「状态长什么样」。
+     */
+    @Volatile
+    var contentTrusted: Boolean = true,
 ) {
     // 会话状态
     val state = MutableStateFlow(initial)
+
+    /** 用数据库里的真实内容重新填充，并恢复可信标记。 */
+    fun rehydrate(conversation: Conversation) {
+        state.value = conversation
+        contentTrusted = true
+    }
     val messageQueue = MessageQueue()
 
     // 从队列取出到写入会话历史之间，附件仍需作为有效引用保留。

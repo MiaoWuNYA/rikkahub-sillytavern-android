@@ -181,6 +181,21 @@ class ProactiveMessageRunner(
     suspend fun run(): Boolean {
         var conversationId: Uuid? = null
         var reachedGeneration = false
+        localNodes = emptyList()
+        loadedConversation = null
+
+        // 本轮生成所操作的对话内容，**全程只存在内存里**。
+        //
+        // 这是重构的核心数据结构。原实现把生成过程写进 ChatService 的
+        // session，再靠 saveConversation 落库，于是「session 从哪来」
+        // 变成了安全问题。现在改成：开工时读一次数据库，之后所有增删改
+        // 都作用在这份本地副本上，成功且校验通过才写回一次。
+        //
+        // 由此得到的结构保证：
+        //   · 不存在「空会话」—— 它只能来自一次成功的数据库读取
+        //   · 写回时的节点数一定 >= 读到的节点数（只追加、或删掉自己刚加的）
+        //   · 用户在这期间的改动会被 update_at 校验发现并放弃保存
+
         try {
                 val settings = settingsStore.settingsFlow.first()
                 // 归一化：设置里可能存着非法值，直接拿去算间隔会得到过去的时间点
@@ -247,36 +262,57 @@ class ProactiveMessageRunner(
                     Log.d(TAG, "No target conversation for assistant, skipping proactive message")
                     ProactiveMessageLog.log(
                         appContext, ProactiveMessageLog.Outcome.SKIPPED, "查找对话",
-                        "该助手还没有任何对话。" +
-                            if (proactiveSetting.conversationId.isNotBlank())
-                                "设置里指定的对话（${proactiveSetting.conversationId}）已不存在，" +
-                                    "且没有可退回的最近对话。请重新选择发送到的对话。"
-                            else "请先在设置里选择发送到的对话，或先与该助手聊一次。",
+                        buildString {
+                            append("找不到可用的目标对话。")
+                            if (proactiveSetting.conversationId.isNotBlank()) {
+                                append(
+                                    "设置里指定的对话要么已不存在，要么不属于当前选中的助手。" +
+                                        "主动消息会把该助手的人设和记忆写进目标对话，" +
+                                        "归属不符会造成污染，所以这里直接拒绝。请重新选择发送到的对话。"
+                                )
+                            } else {
+                                append("该助手还没有任何对话，请先与它聊一次。")
+                            }
+                        },
+
                     )
                     ProactiveMessageService.scheduleNext(appContext, proactiveSetting)
                     return false
                 }
                 conversationId = conversation.id
+                loadedConversation = conversation
+                localNodes = conversation.messageNodes
 
-                // 持有会话引用，防止生成期间 session 被 idle 清除（finally 块会对应 release）。
-                // 同时把数据库里的完整对话同步到 session，防止流式更新覆盖历史。
-                chatService.addConversationReference(conversationId)
-                chatService.updateConversationState(conversationId) { conversation }
-
-                // 抢占生成权：如果当前已有生成在跑（正常聊天或另一路主动消息），
-                // 直接放弃本次触发，不排队等待、不重试。理由：等对方生成结束后，
-                // 上下文（用户可能已在聊别的话题）大概率已过时，硬等没有意义。
-                val myJob = coroutineContext[Job]
-                if (myJob == null || !chatService.tryClaimGeneration(conversationId, myJob)) {
-                    Log.d(
-                        TAG,
-                        "Skip proactive trigger: session $conversationId already generating " +
-                            "(normal chat or another proactive trigger in progress)"
-                    )
+                // 不借用 ChatService 的会话机制。
+                //
+                // 这是整个重构的核心。原先这里做两件事：
+                //   chatService.addConversationReference(conversationId)
+                //   chatService.updateConversationState(conversationId) { conversation }
+                //
+                // 借用那套机制的代价是致命的：session 是给**前台交互式聊天**
+                // 设计的有状态对象（引用计数、idle 回收、生成权抢占、保存锁），
+                // 后台定时任务去借它，就必然踩到「内存里没有 session 时凭空造
+                // 空会话」这条路径，而空会话一旦经 saveConversation 落库，就是
+                // 整段历史被覆盖。
+                //
+                // 本功能其实只需要三件事：读对话、生成、写回。那就直接做这三件，
+                // 不引入任何中间状态：
+                //   · 读：resolveTargetConversation 已经给了完整内容
+                //   · 生成：在本地内存里追加，不碰数据库
+                //   · 写：成功后才更新一次，且必须基于刚读到的版本
+                //
+                // 这样结构上就不存在「空会话」这个概念——本方法永远只会在
+                // 读到的 conversation 上追加，写回的节点数只会变多。
+                //
+                // 与用户正在聊天时的并发：不再抢占，直接跳过。理由和原来一致
+                // （等对方结束再发，上下文已过时），但判断方式简单得多——看
+                // 数据库里的 update_at 有没有在生成期间被改过，以及目标对话
+                // 是否正被前台生成（通过 ChatService 只读查询）。
+                if (chatService.isGenerating(conversationId)) {
+                    Log.d(TAG, "Skip proactive trigger: $conversationId is generating in foreground")
                     ProactiveMessageLog.log(
                         appContext, ProactiveMessageLog.Outcome.SKIPPED, "并发保护",
-                        "该对话正在进行生成（你正在聊天，或另一路主动消息还没跑完），" +
-                            "本次触发放弃，不排队等待。",
+                        "该对话正在进行生成（你正在聊天），本次触发放弃，不排队等待。",
                     )
                     return false
                 }
@@ -406,7 +442,7 @@ class ProactiveMessageRunner(
                             }
                         }
                     )
-                    updateOrAppendAiMessage(conversationId, cleanedAiMessage)
+                    updateOrAppendAiMessage(cleanedAiMessage)
                 }
 
                 Log.d(TAG, "Proactive message generated: '${replyText.take(100)}' (${replyText.length} chars), shouldJump=$shouldJump")
@@ -415,34 +451,13 @@ class ProactiveMessageRunner(
                     // AI 选择跳过，移除本次生成的 aiMessage node（基于 id 匹配，不误删历史）
                     Log.d(TAG, "AI chose to skip proactive message")
                     val aiId = aiMessage.id
-                    val session = chatService.acquireSessionForBackground(conversationId)
-                    session.saveMutex.withLock {
-                        // 先算出「删掉本次这条 AI 消息之后」的内容，再落库。
-                        //
-                        // 原来是分两步：updateConversationState 改 session，
-                        // 紧接着把 getConversationFlow(...).value 原样写回。
-                        // 后者有一条致命路径——若 session 是刚由
-                        // getOrCreateSession 建起来的空会话，过滤后仍是空，
-                        // 写回就把整个对话清空了。这里改成一次性计算，
-                        // 并在写之前确认结果非空。
-                        val cleaned = chatService.getConversationFlow(conversationId).value.let { conv ->
-                            conv.copy(
-                                messageNodes = conv.messageNodes.filterNot { node ->
-                                    node.messages.any { it.id == aiId }
-                                }
-                            )
-                        }
-                        if (cleaned.messageNodes.isEmpty()) {
-                            Log.e(
-                                TAG,
-                                "Refusing to save after [PASS]: cleaned state for $conversationId " +
-                                    "is empty (session was probably freshly created). Leaving DB untouched.",
-                            )
-                        } else {
-                            chatService.updateConversationState(conversationId) { cleaned }
-                            chatService.saveConversation(conversationId, cleaned)
-                        }
+                    // AI 选择沉默：把本次追加的 AI 节点从**本地维护的列表**里去掉。
+                    // 因为整个生成过程都在内存里进行（见 generateWithTools 的注释），
+                    // 这里连数据库都不用碰——直接把节点从本轮的 messageNodes 里删掉即可。
+                    localNodes = localNodes.filterNot { node ->
+                        node.messages.any { it.id == aiId }
                     }
+                    Log.d(TAG, "AI chose to skip; node removed from in-memory list only")
                     // 到这里说明整轮生成真的跑完了（AI 主动选择沉默也算成功），
                     // 现在才提交触发时间戳。失败路径一律不写，见上面的去重注释。
                     commitTriggerStamp(prefs)
@@ -452,8 +467,13 @@ class ProactiveMessageRunner(
                             "这是正常行为，不是故障。",
                     )
                 } else {
-                    // 有效回复：session 里已有 aiMessage（流式过程已追加），持久化并发通知
-                    saveProactiveMessage(conversationId)
+                    // 有效回复：把本轮内存里累积的节点一次性写回数据库。
+                    // 只有写回成功后（并且校验通过）才算真正发送，也才提交时间戳。
+                    val saved = saveProactiveMessage(conversationId)
+                    if (!saved) {
+                        Log.w(TAG, "Proactive message generated but not persisted; not stamping trigger")
+                        return false
+                    }
                     commitTriggerStamp(prefs)
                     ProactiveMessageLog.log(
                         appContext, ProactiveMessageLog.Outcome.SENT, "生成完成",
@@ -540,19 +560,18 @@ class ProactiveMessageRunner(
                     }
                 }
 
-                // 释放生成权与会话引用，必须和 tryClaimGeneration /
-                // addConversationReference 成对，且放在 finally 里确保
-                // 成功、失败、取消三条路径都会执行。
+                // 这里不再需要「释放生成权 / 释放会话引用」。
                 //
-                // 漏掉的后果见 ChatService.releaseGenerationClaim 的注释：
-                // session 会永远处于「正在生成」，之后每次触发都被跳过，
-                // 表现就是「定时到了但永远没反应」。
-                val cid = conversationId
-                if (cid != null) {
-                    val job = coroutineContext[Job]
-                    if (job != null) chatService.releaseGenerationClaim(cid, job)
-                    chatService.removeConversationReference(cid)
-                }
+                // 那两件事存在的唯一理由是：原实现借用了 ChatService 的
+                // session 机制（tryClaimGeneration 注册 job、
+                // addConversationReference 持有引用计数），而 session 的
+                // isInUse 包含 _generationJob != null，不显式释放就会让
+                // session 永远「正在生成」，导致之后每次触发都被跳过。
+                //
+                // 重构后本功能完全不碰 session，也就没有东西需要释放。
+                // 这比「记得成对释放」可靠得多——它不会因为漏写一行而失效。
+                loadedConversation = null
+                synchronized(localNodesLock) { localNodes = emptyList() }
         }
         return reachedGeneration
     }
@@ -618,30 +637,69 @@ class ProactiveMessageRunner(
      * 保存主动消息：流式过程中已实时追加 aiMessage 到 session，这里直接持久化当前 session 状态。
      * synchronized(session) 防止与用户发送消息等并发操作互相覆盖。
      */
-    private suspend fun saveProactiveMessage(conversationId: Uuid) {
-        val session = chatService.acquireSessionForBackground(conversationId)
-        session.saveMutex.withLock {
-            val current = chatService.getConversationFlow(conversationId).value
-            // 空内容绝不落库。
-            //
-            // getOrCreateSession 现在是「优先从数据库加载」了，但仍然存在
-            // 退化成空会话的可能（数据库读失败、会话确实不存在）。这里再
-            // 卡一道：当前状态是零条 messageNodes 就什么都不写。
-            //
-            // 主动消息在调用本方法前必然已经流过 aiMessage（updateOrAppend
-            // AiMessage 至少追加过一条），所以走到这里还是空，说明状态不
-            // 正常，此时保存只会造成破坏。
-            if (current.messageNodes.isEmpty()) {
-                Log.e(
-                    TAG,
-                    "Refusing to save proactive message for $conversationId: " +
-                        "current session state has no nodes (would wipe history)",
-                )
-                return@withLock
-            }
-            chatService.saveConversation(conversationId, current)
+    /**
+     * 把本轮生成的结果写回数据库。
+     *
+     * **这是本功能唯一一次写数据库。** 所以安全性集中在这一个函数里，
+     * 可以被完整地检查和测试。
+     *
+     * 写回前做三项校验，任何一项不过就放弃保存：
+     *
+     *   1. 加载过基线 —— loadedConversation 不为 null，说明内容来自一次
+     *      成功的数据库读取，不是凭空造的空壳
+     *   2. 节点只增不减 —— 结果不得少于读到的节点数。本功能只会追加、
+     *      或在 AI 选择沉默时删掉自己刚追加的那一条，永远不会让对话变小
+     *   3. 期间没被别人改过 —— update_at 与读入时一致。否则说明用户正在
+     *      这个对话里聊天，我们手里的内容已经过时，写回会覆盖他的新消息
+     *
+     * 放弃保存的代价只是这一轮主动消息没出现；写错一次的代价是整段历史。
+     * 这个取舍方向必须是明确的。
+     */
+    private suspend fun saveProactiveMessage(conversationId: Uuid): Boolean {
+        val base = loadedConversation ?: run {
+            Log.e(TAG, "Refusing to save: no loaded baseline for $conversationId")
+            return false
         }
-        Log.d(TAG, "Saved proactive message to conversation $conversationId")
+        val nodes = synchronized(localNodesLock) { localNodes }
+
+        // 校验 1 + 2：只能基于读到的内容做增量
+        if (nodes.size < base.messageNodes.size) {
+            Log.e(
+                TAG,
+                "Refusing to save proactive message for $conversationId: " +
+                    "node count would shrink ${base.messageNodes.size} -> ${nodes.size}",
+            )
+            return false
+        }
+
+        // 校验 3：期间数据库没被改过（用户没在聊天）
+        val latest = runCatching { conversationRepository.getConversationById(conversationId) }
+            .getOrNull()
+        if (latest == null) {
+            Log.e(TAG, "Refusing to save: conversation $conversationId vanished")
+            return false
+        }
+        if (latest.updateAt != base.updateAt) {
+            Log.w(
+                TAG,
+                "Skipping proactive save for $conversationId: conversation changed underneath " +
+                    "(updateAt ${base.updateAt} -> ${latest.updateAt}); user is probably chatting.",
+            )
+            ProactiveMessageLog.log(
+                appContext, ProactiveMessageLog.Outcome.SKIPPED, "保存校验",
+                "生成期间该对话有了新消息（你可能正在聊天），为避免覆盖你的内容，" +
+                    "本轮主动消息没有写入。",
+            )
+            return false
+        }
+
+        val updated = latest.copy(
+            messageNodes = nodes,
+            updateAt = java.time.Instant.now(),
+        )
+        conversationRepository.updateConversation(updated)
+        Log.d(TAG, "Saved proactive message to $conversationId (${nodes.size} nodes)")
+        return true
     }
 
     private fun showProactiveNotification(
@@ -704,37 +762,58 @@ class ProactiveMessageRunner(
      * 基于 AI 消息 id 在对话里就地更新（保留 MessageNode.id，避免 Compose 重建/状态丢失）
      * 或追加新 node。synchronized(session) 保护 read-modify-write，防止并发覆盖。
      */
-    private suspend fun updateOrAppendAiMessage(
-        conversationId: Uuid,
-        aiMessage: UIMessage
-    ) {
-        val session = chatService.acquireSessionForBackground(conversationId)
-        session.saveMutex.withLock {
-            val conv = chatService.getConversationFlow(conversationId).value
-            val existingNodeIndex = conv.messageNodes.indexOfFirst { node ->
+    /**
+     * 把流式产出的 AI 消息合并进本轮的本地节点列表。
+     *
+     * **只改内存，不碰数据库。** 原实现每收到一个 chunk 就
+     * updateConversationState + saveConversation 落库一次，这不只是慢，
+     * 更要命的是它把「session 从哪来」变成了安全问题——session 若是
+     * 凭空造的空壳，第一次落库就把历史覆盖了。
+     *
+     * 现在流式过程完全不落库，落库只在整轮结束后做一次（见 persistResult），
+     * 而那时手里握着的是「读到的内容 + 本次新增」，结构上不可能变少。
+     */
+    private fun updateOrAppendAiMessage(aiMessage: UIMessage) {
+        synchronized(localNodesLock) {
+            val existingNodeIndex = localNodes.indexOfFirst { node ->
                 node.messages.any { it.id == aiMessage.id }
             }
-            val updated = if (existingNodeIndex >= 0) {
-                // 已存在该 id 的 node：保留 node id，只更新其 messages
-                val oldNode = conv.messageNodes[existingNodeIndex]
+            localNodes = if (existingNodeIndex >= 0) {
+                val oldNode = localNodes[existingNodeIndex]
                 val updatedNode = oldNode.copy(
                     messages = oldNode.messages.map {
                         if (it.id == aiMessage.id) aiMessage else it
                     }
                 )
-                conv.copy(
-                    messageNodes = conv.messageNodes.toMutableList().apply {
-                        this[existingNodeIndex] = updatedNode
-                    }
-                )
+                localNodes.toMutableList().apply { this[existingNodeIndex] = updatedNode }
             } else {
-                // 本次生成的 node 还没有：追加（首次调用时才创建新 node）
-                conv.copy(messageNodes = conv.messageNodes + aiMessage.toMessageNode())
+                localNodes + aiMessage.toMessageNode()
             }
-            chatService.updateConversationState(conversationId) { updated }
-            chatService.saveConversation(conversationId, updated)
         }
     }
+
+    private val localNodesLock = Any()
+
+    /**
+     * 本轮生成所操作的对话内容，**全程只存在内存里**。
+     *
+     * 这是重构的核心。原实现把生成过程写进 ChatService 的 session，再靠
+     * saveConversation 落库，于是「session 从哪来」变成了安全问题——空壳
+     * session 一落库就是整段历史被覆盖。
+     *
+     * 现在：开工时读一次数据库存进 [loadedConversation]，之后所有增删改
+     * 都作用在 [loadedConversation] 的节点列表上，成功且校验通过才写回一次。
+     *
+     * 由此得到的结构保证：
+     *   · 不存在「空会话」——内容只能来自一次成功的数据库读取
+     *   · 写回时节点数一定 >= 读到的节点数（只追加，或删掉自己刚加的）
+     *   · 期间用户改了对话会被 updateAt 校验发现并放弃保存
+     */
+    @Volatile
+    private var loadedConversation: me.rerere.rikkahub.data.model.Conversation? = null
+
+    @Volatile
+    private var localNodes: List<me.rerere.rikkahub.data.model.MessageNode> = emptyList()
 
     /**
      * 过滤历史消息中"悬空"的工具调用：
@@ -806,7 +885,7 @@ class ProactiveMessageRunner(
                 val currentAiMessage = streamMessages.lastOrNull { it.role == MessageRole.ASSISTANT }
                 if (currentAiMessage != null) {
                     // 用 id 匹配就地更新（保留 node id，避免覆盖上一条 assistant）
-                    updateOrAppendAiMessage(conversationId, currentAiMessage)
+                    updateOrAppendAiMessage(currentAiMessage)
                 }
             }
 
@@ -851,7 +930,7 @@ class ProactiveMessageRunner(
                 )
                 messages[messages.lastIndex] = finalMessage
                 // 最终更新 session 状态（用 id 匹配就地更新）
-                updateOrAppendAiMessage(conversationId, finalMessage)
+                updateOrAppendAiMessage(finalMessage)
                 break
             }
 
@@ -908,7 +987,7 @@ class ProactiveMessageRunner(
             val updatedMessage = processedMessage.copy(parts = updatedParts)
             messages[messages.lastIndex] = updatedMessage
             // 更新 session 状态（带工具结果的消息，用 id 匹配就地更新）
-            updateOrAppendAiMessage(conversationId, updatedMessage)
+            updateOrAppendAiMessage(updatedMessage)
         }
 
         return messages to hasJumpFlag

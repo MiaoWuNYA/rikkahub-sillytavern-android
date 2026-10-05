@@ -364,7 +364,13 @@ class ChatService(
      *
      * 读不到才退回空会话（真·新会话场景）。
      */
-    private fun loadInitialConversation(id: Uuid, fallbackAssistantId: Uuid): Conversation {
+    /**
+     * 加载会话初始内容，同时告知调用方「这份内容可不可信」。
+     *
+     * 返回的 Boolean 是**安全关键**，不是可选信息：false 表示数据库读取
+     * 失败、当前内容只是兜底空壳，绝不能写回数据库。
+     */
+    private fun loadInitialConversationTrusted(id: Uuid, fallbackAssistantId: Uuid): Pair<Conversation, Boolean> {
         // 重试而不是立刻退空。
         //
         // 退空会话的代价极高：任何「取 session 状态再写回」的调用都会
@@ -375,11 +381,10 @@ class ChatService(
                 val loaded = kotlinx.coroutines.runBlocking(Dispatchers.IO) {
                     conversationRepo.getConversationById(id)
                 }
-                if (loaded != null) return loaded
-                // 读到了 null：要么这个 id 真的不存在（新会话），
-                // 要么刚好撞上并发删除。区分不开就按「不存在」处理，
-                // 但至少说明查过一次了。
-                return Conversation.ofId(id = id, assistantId = fallbackAssistantId)
+                if (loaded != null) return loaded to true
+                // 读到了 null。这是一次**成功的查询**，只是没有这行记录，
+                // 所以按「确实是新会话」处理，内容可信。
+                return Conversation.ofId(id = id, assistantId = fallbackAssistantId) to true
             } catch (e: Exception) {
                 Log.e(TAG, "loadInitialConversation attempt ${attempt + 1} failed for $id", e)
                 if (attempt < 2) {
@@ -387,20 +392,26 @@ class ChatService(
                 }
             }
         }
+        // 三次都读失败 = 数据库出问题了。此时给一个空壳**并标记为不可信**，
+        // 让后续所有写回都被拒绝。宁可这一轮什么都不保存，也不能拿空壳
+        // 去覆盖真实历史。
         Log.e(
             TAG,
-            "loadInitialConversation gave up for $id; returning an EMPTY session. " +
-                "Callers must not persist this state — saveConversation guards against it.",
+            "loadInitialConversation failed 3x for $id; session content marked UNTRUSTED. " +
+                "All saves for this session will be refused until it reloads.",
         )
-        return Conversation.ofId(id = id, assistantId = fallbackAssistantId)
+        return Conversation.ofId(id = id, assistantId = fallbackAssistantId) to false
     }
 
     private fun getOrCreateSession(conversationId: Uuid): ConversationSession {
         return sessions.computeIfAbsent(conversationId) { id ->
             val settings = settingsStore.settingsFlow.value
+            val (initial, trusted) =
+                loadInitialConversationTrusted(id, settings.getCurrentAssistant().id)
             ConversationSession(
                 id = id,
-                initial = loadInitialConversation(id, settings.getCurrentAssistant().id),
+                initial = initial,
+                contentTrusted = trusted,
                 scope = appScope,
                 onIdle = { removeSession(it) },
                 onGenerationFinished = { id, cause ->
@@ -458,7 +469,37 @@ class ChatService(
     // ---- 对话状态访问 ----
 
     fun getConversationFlow(conversationId: Uuid): StateFlow<Conversation> {
-        return getOrCreateSession(conversationId).state
+        val session = getOrCreateSession(conversationId)
+        // 上次建 session 时数据库读失败过，内容不可信。这里顺手重试一次，
+        // 成功后把真实内容填回去并恢复可信标记。
+        //
+        // 没有这段，一次瞬时读失败会让这个会话**永久拒绝保存**——不会
+        // 丢数据，但用户会发现改动存不上，那是另一种坏体验。
+        if (!session.contentTrusted) {
+            appScope.launch(Dispatchers.IO) {
+                runCatching {
+                    conversationRepo.getConversationById(conversationId)
+                }.getOrNull()?.let { fresh ->
+                    // 期间可能已经有别的写入，别把更新的状态盖掉
+                    if (!session.contentTrusted) {
+                        Log.i(TAG, "rehydrate session $conversationId after recovery")
+                        session.rehydrate(fresh)
+                    }
+                }
+            }
+        }
+        return session.state
+    }
+
+    /**
+     * 该对话当前是否有前台生成在跑。
+     *
+     * 给后台任务（主动消息）用的**只读**查询。它不创建 session、不注册
+     * job、不改任何状态——后台任务要的只是「现在能不能安全地写这个对话」，
+     * 借用 session 那套机制反而会引入空会话、job 泄漏、idle 回收等一堆问题。
+     */
+    fun isGenerating(conversationId: Uuid): Boolean {
+        return sessions[conversationId]?.isGenerating == true
     }
 
     fun getGenerationJobStateFlow(conversationId: Uuid): Flow<Job?> {
@@ -515,7 +556,10 @@ class ChatService(
         getOrCreateSession(conversationId) // 确保 session 存在
         val conversation = conversationRepo.getConversationById(conversationId)
         if (conversation != null) {
-            updateConversation(conversationId, conversation)
+            // 这是从数据库读出的**完整内容**，可信。
+            // 不传 trusted 会让 session 停在「不可信」状态，之后所有
+            // 保存都被拒绝——消息看着在，重启就没了。
+            updateConversation(conversationId, conversation, trusted = true)
             settingsStore.updateAssistant(conversation.assistantId)
         } else {
             // 新建对话, 并添加预设消息
@@ -2565,11 +2609,34 @@ class ChatService(
 
     // ---- 对话状态更新 ----
 
-    private fun updateConversation(conversationId: Uuid, conversation: Conversation) {
+    private fun updateConversation(
+        conversationId: Uuid,
+        conversation: Conversation,
+        /**
+         * 这份内容是否可信（可安全落库）。
+         *
+         * 默认 false——**保守方向**。绝大多数调用方（流式更新、UI 编辑）
+         * 传的是「基于内存状态的增量修改」，本身不该用来立信。
+         *
+         * 只有明确从数据库读出完整内容、或用户主动操作的入口才传 true。
+         * 这个参数不是可有可无的元数据：一个会话若被错误地标记为不可信，
+         * 它会**永久拒绝保存**，用户看到消息在界面上、重启后全没了——
+         * 那和清空数据是同一种伤害，只是方向相反。
+         */
+        trusted: Boolean = false,
+    ) {
         if (conversation.id != conversationId) return
         val session = getOrCreateSession(conversationId)
-        checkFilesDelete(conversation, session.state.value)
+        // 附件清理只应在「可信的完整内容」上做。
+        // 拿一份过时/残缺的列表去比差集，差集里全是用户真实还在用的附件，
+        // 而 checkFilesDelete 会**物理删除**它们。这是附件丢失的唯一上游。
+        if (trusted) {
+            checkFilesDelete(conversation, session.state.value)
+        }
         session.state.value = conversation
+        if (trusted) {
+            session.contentTrusted = true
+        }
     }
 
     /**
@@ -2616,6 +2683,28 @@ class ChatService(
             .forEach { updateConversationState(it.id) { c -> c.copy(folderId = null) } }
     }
 
+    /**
+     * 清理「已从会话中移除」的附件文件。
+     *
+     * **这会物理删除磁盘文件，且不可恢复。** 所以判据必须保守到近乎偏执：
+     * 宁可留着几个已经没人引用的文件（占点空间而已），也不能因为一次
+     * 不完整的保存就把用户还在用的附件删掉。
+     *
+     * 原来的实现只做「旧有新无」的差集就算删除。问题是调用方传进来的
+     * 列表未必完整——列表视图用的轻量对象（messageNodes 恒为空）、
+     * 分页中间态、以及任何只改了 title/pin 的保存，都会让差集里塞满
+     * 用户其实还在用的文件，然后被 file.delete() 真删掉
+     * （FilesManager.kt:211-213）。这是附件丢失的唯一上游。
+     *
+     * 现在加两道闸：
+     *   1. 新列表为空 -> 直接不做任何判断。空列表说明这份数据不完整，
+     *      不构成「用户删掉了所有附件」的证据。
+     *   2. 差集过大（超过旧文件数的一半）-> 大概率是数据不完整而非真删除，
+     *      放弃本次清理。
+     *
+     * 代价是某些真实删除会留下一两个孤儿文件，由后续的存储清理任务回收。
+     * 这个方向的保守是刻意的。
+     */
     private fun checkFilesDelete(newConversation: Conversation, oldConversation: Conversation) {
         val session = sessions[newConversation.id]
         val queuedFiles = (session?.messageQueue?.state?.value?.messages.orEmpty() +
@@ -2623,16 +2712,74 @@ class ChatService(
             .flatMap { it.parts }.localFileUrls().map { it.toUri() }
         val newFiles = newConversation.files + queuedFiles
         val oldFiles = oldConversation.files
-        val deletedFiles = oldFiles.filter { file ->
-            newFiles.none { it == file }
+
+        if (oldFiles.isEmpty()) return
+
+        // 闸门 1：新列表完全为空，不足以判定「附件都被删了」
+        if (newFiles.isEmpty()) {
+            Log.w(
+                TAG,
+                "checkFilesDelete: skipped — new file list is empty while old has " +
+                    "${oldFiles.size}; refusing to treat that as a deletion.",
+            )
+            return
         }
+
+        val deletedFiles = oldFiles.filter { file -> newFiles.none { it == file } }
+
+        // 闸门 2：差集过大，更像是数据不完整
+        if (deletedFiles.size * 2 > oldFiles.size) {
+            Log.w(
+                TAG,
+                "checkFilesDelete: skipped — would delete ${deletedFiles.size}/${oldFiles.size} " +
+                    "files, which looks like an incomplete conversation object rather than " +
+                    "an intentional removal.",
+            )
+            return
+        }
+
         if (deletedFiles.isNotEmpty()) {
             filesManager.deleteChatFiles(deletedFiles)
             Log.w(TAG, "checkFilesDelete: $deletedFiles")
         }
     }
 
-    suspend fun saveConversation(conversationId: Uuid, conversation: Conversation) {
+    suspend fun saveConversation(
+        conversationId: Uuid,
+        conversation: Conversation,
+        /**
+         * 明确表示「这次保存会让消息变少是故意的」。
+         *
+         * 只有用户主动删消息 / 切分支这类操作才该传 true。默认 false 会让
+         * 任何「节点数变少」的保存被拒绝——包括那种因为拿了轻量对象
+         * （messageNodes 为空）而导致的静默截断。
+         */
+        allowShrink: Boolean = false,
+    ) {
+        // 防线 0（最强）：session 内容不可信就一律不写。
+        //
+        // 上面两道基于内容的检查有个共同盲区——它们只比对「有没有内容」
+        // 和「归属变没变」。而真实的故障路径是这样的：
+        //
+        //   1. DB 读取失败，session 用空壳建起来
+        //   2. 主动消息往这个空壳 append 了一条 AI 消息（必须 append 才能发）
+        //   3. 此时 messageNodes 有 1 条、assistantId 也可能恰好相同
+        //   4. 两道检查全部通过 -> 用这 1 条覆盖掉库里的几千条历史
+        //
+        // 所以判据必须是「这份状态从哪来」，而不是「它长什么样」。
+        // contentTrusted 为 false 等于「我不敢确定这就是数据库里的内容」，
+        // 那就什么都不写。拒绝保存的代价是这一轮消息可能没落库（下次
+        // 正常聊天会带上），远小于整段历史被抹掉。
+        val session = sessions[conversationId]
+        if (session != null && !session.contentTrusted) {
+            Log.e(
+                TAG,
+                "Refusing to save conversation $conversationId: session content is UNTRUSTED " +
+                    "(it was created from a failed database read). Writing it could wipe history.",
+            )
+            return
+        }
+
         val exists = conversationRepo.existsConversationById(conversation.id)
         if (!exists && conversation.title.isBlank() && conversation.messageNodes.isEmpty()) {
             return // 新会话且为空时不保存
@@ -2681,14 +2828,26 @@ class ChatService(
         // 正常的整表重写（比如用户自己清空会话）不会经过这里——那条路
         // 用的是 deleteConversation。误拦的代价是一次保存没生效，
         // 远小于历史被抹掉。
-        if (exists && conversation.messageNodes.isEmpty()) {
+        // 防「节点数倒退」——不只是归零。
+        //
+        // 原来的判据只拦「库里有 N 条、要写成 0 条」。但真正的故障不止归零：
+        // conversationSummaryToConversation（ConversationRepository.kt:441）
+        // 是列表视图用的轻量对象，messageNodes **恒为 emptyList()**。UI 在
+        // 分页加载完成前调一次 saveConversation（例如只改个标题，见
+        // ChatVM.updateTitle），就会把这份空节点对象整行写回——历史被静默
+        // 截断。而且因为过程中没人报错，这种丢法比「清空」更不易察觉。
+        //
+        // 所以判据放宽到「节点数不得变少」。真正的删除（用户删消息、切分支）
+        // 走 allowShrink = true 显式声明，不靠猜。
+        if (exists && !allowShrink) {
             val existingNodes = conversationRepo.getConversationById(conversation.id)?.messageNodes
-            if (!existingNodes.isNullOrEmpty()) {
+            if (!existingNodes.isNullOrEmpty() && conversation.messageNodes.size < existingNodes.size) {
                 Log.e(
                     TAG,
-                    "Refusing to save conversation $conversationId: it would wipe " +
-                        "${existingNodes.size} nodes with an empty list. " +
-                        "This usually means the caller wrote from a freshly-created empty session.",
+                    "Refusing to save conversation $conversationId: node count would shrink " +
+                        "${existingNodes.size} -> ${conversation.messageNodes.size}. " +
+                        "This usually means an incomplete (summary/paged) conversation object " +
+                        "was written back. Pass allowShrink=true if this deletion is intentional.",
                 )
                 return
             }
@@ -2805,7 +2964,14 @@ class ChatService(
 
         if (!edited) return
 
-        saveConversation(conversationId, currentConversation.copy(messageNodes = updatedNodes))
+        // 用户主动删除消息：节点变少是预期行为，显式放行。
+        // 不传 allowShrink 会被「节点数不得变少」的防线拦下，表现是
+        // 界面上消息消失了、重启后又回来——那是另一种 bug。
+        saveConversation(
+            conversationId,
+            currentConversation.copy(messageNodes = updatedNodes),
+            allowShrink = true,
+        )
     }
 
     suspend fun forkConversationAtMessage(
@@ -2871,7 +3037,14 @@ class ChatService(
             }
         }
 
-        saveConversation(conversationId, currentConversation.copy(messageNodes = updatedNodes))
+        // 用户主动删除消息：节点变少是预期行为，显式放行。
+        // 不传 allowShrink 会被「节点数不得变少」的防线拦下，表现是
+        // 界面上消息消失了、重启后又回来——那是另一种 bug。
+        saveConversation(
+            conversationId,
+            currentConversation.copy(messageNodes = updatedNodes),
+            allowShrink = true,
+        )
     }
 
     suspend fun deleteMessage(
@@ -2889,7 +3062,8 @@ class ChatService(
             return
         }
 
-        saveConversation(conversationId, updatedConversation)
+        // 用户主动删消息：节点变少是预期行为，显式放行。
+        saveConversation(conversationId, updatedConversation, allowShrink = true)
     }
 
     suspend fun deleteMessage(

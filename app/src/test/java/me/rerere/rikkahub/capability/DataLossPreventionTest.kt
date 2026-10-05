@@ -50,17 +50,17 @@ class DataLossPreventionTest {
             .substringBefore("private fun removeSession(")
         assertTrue(
             "getOrCreateSession 应通过 loadInitialConversation 从数据库初始化",
-            body.contains("loadInitialConversation("),
+            body.contains("loadInitialConversationTrusted("),
         )
         assertFalse(
             "不应再直接 Conversation.ofId(...) 当作初始内容——那是空会话，" +
                 "任何「取状态再写回」的调用都会拿它覆盖真实历史",
             body.contains("initial = Conversation.ofId("),
         )
-        assertTrue("应有 loadInitialConversation 实现",
-            chatService.contains("private fun loadInitialConversation("))
+        assertTrue("应有 loadInitialConversationTrusted 实现",
+            chatService.contains("private fun loadInitialConversationTrusted("))
         assertTrue("它应读数据库",
-            chatService.substringAfter("private fun loadInitialConversation(")
+            chatService.substringAfter("private fun loadInitialConversationTrusted(")
                 .substringBefore("private fun getOrCreateSession(")
                 .contains("conversationRepo.getConversationById"))
     }
@@ -93,12 +93,12 @@ class DataLossPreventionTest {
             "不应存在「取当前状态 -> 无条件 saveConversation」的写法",
             code.contains("saveConversation(conversationId, chatService.getConversationFlow(conversationId).value)"),
         )
-        // updateOrAppendAiMessage 里保留 saveConversation 是正确的：
-        // 它写的是「已存在 node 就地更新」或「追加新 node」后的内容，
-        // 永远带着至少一条消息，不存在写空的风险。要拦的只是那种
-        // 「直接把 getConversationFlow(...).value 原样写回」的惰性写法。
-        assertTrue("就地更新那条路径应保留",
-            code.contains("chatService.updateConversationState(conversationId) { updated }"))
+        // 重构后主动消息完全不碰 ChatService 的会话机制，
+        // 落库只经过 saveProactiveMessage 一次（带三重校验）。
+        assertTrue("写回应在 saveProactiveMessage 里完成",
+            code.contains("conversationRepository.updateConversation(updated)"))
+        assertFalse("不应再出现任何 chatService.saveConversation",
+            code.contains("chatService.saveConversation"))
         // 出错后的清理路径不得再碰数据库
         assertTrue(
             "异常分支不应再保存对话",

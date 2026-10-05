@@ -168,8 +168,26 @@ class ProactiveMessageService : KoinComponent {
                 ?.let { runCatching { kotlin.uuid.Uuid.parse(it) }.getOrNull() }
             if (pinnedId != null) {
                 val pinned = runCatching { repository.getConversationById(pinnedId) }.getOrNull()
-                // 只校验「存在」；不比对 assistantId，这样把对话改属主后仍然能用
-                if (pinned != null) return pinned
+                if (pinned != null) {
+                    // 必须比对归属。
+                    //
+                    // 原注释写的是「不比对 assistantId，这样把对话改属主后仍然能用」，
+                    // 但那是个陷阱：主动消息会把人设、记忆、上下文一起注入。
+                    // 如果指定的对话属于助手 X，而当前触发用的是助手 Y，
+                    // 结果是 **X 的对话里被灌进了 Y 的设定**——一条不可逆的
+                    // 语义污染，用户只会觉得「这对话怎么突然变了个人」。
+                    //
+                    // 归属不符时明确拒绝并告诉用户，而不是将错就错。
+                    if (pinned.assistantId != assistantId) {
+                        Log.w(
+                            TAG,
+                            "Configured conversation $pinnedId belongs to assistant " +
+                                "${pinned.assistantId}, but the proactive setting uses $assistantId",
+                        )
+                        return null
+                    }
+                    return pinned
+                }
                 Log.w(TAG, "Configured conversation $pinnedId not found, falling back to most recent")
             }
 
