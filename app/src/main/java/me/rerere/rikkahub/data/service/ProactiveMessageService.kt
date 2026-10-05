@@ -42,6 +42,33 @@ class ProactiveMessageService : KoinComponent {
         internal const val KEY_LAST_TRIGGERED_TIME = "last_triggered_time"
 
         /**
+         * 上一次**尝试**的时刻（无论成功失败）。
+         *
+         * 和 KEY_LAST_TRIGGERED_TIME 的区别很关键：
+         *   · KEY_LAST_TRIGGERED_TIME —— 上次**成功发出**的时间，
+         *     用于 minInterval 去重，只在真正生成出结果后提交
+         *   · KEY_LAST_ATTEMPT_TIME   —— 上次**跑过一轮**的时间，
+         *     成功失败都记
+         *
+         * 为什么必须分开记：失败路径刻意不提交 KEY_LAST_TRIGGERED_TIME
+         * （否则一次失败会把之后整个 minInterval 窗口里的真实触发全判掉）。
+         * 但如果一个失败场景会持续复现（例如助手没配模型），
+         * 「失败 -> 重排 -> 立刻再触发 -> 又失败」就成了一个每秒级死循环，
+         * 日志会被刷屏、耗电、还可能反复调 API。
+         *
+         * 所以失败也要留痕，只是留在另一个键上，用于给重试设一个最小间隔。
+         */
+        internal const val KEY_LAST_ATTEMPT_TIME = "last_attempt_time"
+
+        /**
+         * 失败后的最小重试间隔（分钟）。
+         *
+         * 失败往往不是瞬时的（没配模型、没选对话、key 失效），
+         * 一分钟一次纯粹是浪费。给个几分钟的冷静期。
+         */
+        internal const val FAILURE_BACKOFF_MINUTES = 5L
+
+        /**
          * 在 [minMinutes, maxMinutes] 之间随机取下次触发的延迟分钟数（纯函数，便于单测）。
          */
         fun computeDelayMinutes(minMinutes: Int, maxMinutes: Int, random: Random = Random): Int {
@@ -127,6 +154,7 @@ class ProactiveMessageService : KoinComponent {
                 .edit()
                 .remove(KEY_NEXT_TRIGGER_TIME)
                 .remove(KEY_LAST_TRIGGERED_TIME)
+                .remove(KEY_LAST_ATTEMPT_TIME)
                 .apply()
 
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager

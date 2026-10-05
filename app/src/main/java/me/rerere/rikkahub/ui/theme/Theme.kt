@@ -25,6 +25,9 @@ import me.rerere.rikkahub.ui.hooks.rememberAmoledDarkMode
 import me.rerere.rikkahub.ui.hooks.rememberCurrentColorMode
 import me.rerere.rikkahub.ui.hooks.rememberUserSettingsState
 import me.rerere.rikkahub.utils.getActivity
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Shapes
+import androidx.compose.ui.unit.dp
 
 private val ExtendLightColors = lightExtendColors()
 private val ExtendDarkColors = darkExtendColors()
@@ -144,6 +147,23 @@ fun RikkahubTheme(
         MaterialExpressiveTheme(
             colorScheme = finalColorScheme,
             typography = Typography,
+            // 必须显式给一套 Shapes。
+            //
+            // MaterialExpressiveTheme 的默认形状是给「表达性」场景设计的：
+            // 按钮是全圆角胶囊、卡片 28dp。放在这个以信息密度为主的聊天
+            // 界面里，观感是「每个按钮都鼓成了药丸」，暗色下尤其明显——
+            // 深色背景把圆角的边缘衬得更突出，视觉上像是画错了。
+            //
+            // 这里换成一组克制的值：按钮保留 8dp 的中等圆角（既有可点按
+            // 的暗示，又不至于糊成一团），卡片 12dp，大容器 16dp。
+            // 层级关系（小 < 中 < 大）保持不变，Material 的语义才成立。
+            shapes = Shapes(
+                extraSmall = RoundedCornerShape(4.dp),
+                small = RoundedCornerShape(6.dp),
+                medium = RoundedCornerShape(8.dp),
+                large = RoundedCornerShape(12.dp),
+                extraLarge = RoundedCornerShape(16.dp),
+            ),
             content = content,
             motionScheme = MotionScheme.expressive()
         )
