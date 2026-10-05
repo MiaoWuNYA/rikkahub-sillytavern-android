@@ -110,7 +110,6 @@ jobs:
           #
           # 注意 downloads 必须一起重写：这个文件是 GitHub API 拉不通时的兜底源
           # （国内网络很常见），链接写死就会把用户导向过期安装包。
-          export REL_VERSION="2.5.6.$(date -u +%m%d)"
           export REL_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           export REL_REPO="MiaoWuNYA/rikkahub-sillytavern-android"
           python3 - <<'PY'
@@ -118,40 +117,22 @@ jobs:
           p = pathlib.Path("update.json")
           data = json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
 
-          version = os.environ["REL_VERSION"]
-          repo = os.environ["REL_REPO"]
-          # nightly 用固定 tag 覆盖同一个预发布，链接因此长期稳定，
-          # 不会随版本号变化而失效。
-          tag = "nightly"
-          asset = "rikkahub-plus-nightly-arm64-v8a.apk"
-          url = "https://github.com/%s/releases/download/%s/%s" % (repo, tag, asset)
-
-          data["version"] = version
+          # 这里**不再改动 version / changelog / downloads**，只刷新构建时间。
+          #
+          # 之前每次构建都会把 version 改成 "2.5.6.MMDD" 并把 changelog 覆写成
+          # "Nightly auto-build (日期) / 每日自动构建（日期）"，带来三个问题：
+          #
+          #   1. 用户看不到这次到底改了什么
+          #   2. 那段文案含「每日自动构建」，会被 App 的 UpdateChecker.isNightly
+          #      整条过滤掉，更新提示永远不出现
+          #   3. 版本号多出一段，同样会被 isNightly 的「版本段比本地多」规则命中
+          #
+          # 现在 update.json 恒定描述**正式版**：同一份发布说明、同一个下载链接。
+          # 于是装了自动构建包的用户看到的是正式版的介绍，点进去就是正式版
+          # 安装包，直接被引导到稳定渠道。
+          #
+          # 注意：这个文件不再由本工作流产生改动，下面的提交步骤会自然跳过。
           data["publishedAt"] = os.environ["REL_DATE"]
-
-          # 介绍文案不再每次覆写。
-          #
-          # 之前这里写死成 "Nightly auto-build (日期) / 每日自动构建（日期）"，
-          # 有两个后果：一是用户看不到这次到底改了什么；二是那段文案包含
-          # 「每日自动构建」，会被 App 的 UpdateChecker.isNightly 判定为
-          # 每夜版而直接过滤掉，用户永远看不到更新提示。
-          #
-          # 现在改为沿用 update.json 里已有的 changelog（正式版的发布说明），
-          # 只更新版本号、时间与下载链接。这样每夜版和正式版展示的是同一份
-          # 介绍，装了每夜版的用户也会被引导去下正式版。
-          #
-          # 仅在 changelog 为空时兜底写一句，避免首次运行出现空介绍。
-          if not data.get("changelog"):
-              day = os.environ["REL_DATE"][:10]
-              data["changelog"] = "自动构建 (%s)" % day
-
-          data["downloads"] = [
-              {
-                  "name": asset,
-                  "url": url,
-                  "size": "约 104 MB",
-              }
-          ]
           p.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
           PY
 
