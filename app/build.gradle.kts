@@ -176,10 +176,16 @@ android {
         applicationId = "me.rerere.rikkahub.huadeng"
         minSdk = 26
         targetSdk = 37
-        // 版本号对齐上游 2.5.6；versionCode 保持本地递增（高于历史 231，
-        // 避免已装 2.5.5.1 的用户覆盖安装时被系统判定为降级）。
-        versionCode = 232
-        versionName = "2.5.6"
+        // 版本号 2.5.6 -> 2.5.7。本轮修掉了会清空用户聊天记录与记忆的严重
+        // 缺陷，值得进一位。
+        //
+        // 提版本号还有一个必需的理由：版本比较只看主版本段
+        // （UpdateChecker.isNewerMainVersion），若继续停在 2.5.6，第四段的
+        // 每日构建序号会被忽略，装了 nightly 的用户永远看不到这次的更新提示。
+        //
+        // versionCode 保持本地递增（高于历史 232，避免被系统判定为降级）。
+        versionCode = 233
+        versionName = "2.5.7"
 
         // 插件解密密钥的派生因子之一：由签名口令做 HMAC，口令只存在于
         // local.properties / CI secrets，不写入 APK 明文。APK 内只保留 HMAC 结果，

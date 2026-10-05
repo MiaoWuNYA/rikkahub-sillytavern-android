@@ -53,6 +53,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Row
 import me.rerere.rikkahub.data.service.ProactiveMessageLog
 import me.rerere.rikkahub.utils.writeClipboardText
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.clickable
+import com.composables.icons.lucide.Check
+import com.composables.icons.lucide.Lucide
 
 /**
  * AI 主动发消息设置页.
@@ -240,10 +245,18 @@ fun SettingProactiveMessagePage(
             // 「使用助手」，看不到「发送到的对话」，表现就是「能选助手、
             // 选不了对话」。真正依赖开关键运行时状态的只有「下次触发时间」。
             item {
-                val assistantIdForList = proactive.assistantId
+                // 这里的助手既要用来**列对话**，也要在选中对话时**一起写回设置**。
+                //
+                // 之前只用来列表，而 proactive.assistantId 一直是空串，于是
+                // 触发时（ProactiveMessageTriggerService 里）会 fallback 到
+                // 「当时的当前助手」。如果那和你选对话时看到的助手不是同一个，
+                // 归属校验就会判定不符而拒绝，然后退回「最近的对话」——
+                // 表现就是「无论选哪个对话，都发到最近那个」。
+                val assistantIdForEffective = proactive.assistantId
                     .takeIf { it.isNotBlank() }
                     ?.let { runCatching { Uuid.parse(it) }.getOrNull() }
                     ?: settings.getCurrentAssistant().id
+                val assistantIdForList = assistantIdForEffective
                 val untitled = stringResource(R.string.proactive_untitled_conversation)
 
                 // key 带上助手：切换助手时要重置成空列表，否则会短暂显示
@@ -273,7 +286,16 @@ fun SettingProactiveMessagePage(
                     conversations = conversations,
                     selectedId = proactive.conversationId,
                     loadFailed = loadFailed,
-                    onSelect = { applySetting(proactive.copy(conversationId = it)) },
+                    onSelect = { picked ->
+                        // 一并把助手写回。只写 conversationId 的话，触发时
+                        // 仍会去猜助手，猜错就退回最近对话——选项等于没生效。
+                        applySetting(
+                            proactive.copy(
+                                conversationId = picked,
+                                assistantId = assistantIdForEffective.toString(),
+                            )
+                        )
+                    },
                 )
             }
 
@@ -458,21 +480,25 @@ private fun AssistantPicker(
             text = {
                 LazyColumn {
                     item {
-                        TextButton(onClick = {
-                            onSelect("")
-                            expanded = false
-                        }) {
-                            Text(stringResource(R.string.proactive_use_current_assistant))
-                        }
+                        PickerRow(
+                            label = stringResource(R.string.proactive_use_current_assistant),
+                            selected = selectedId.isBlank(),
+                            onClick = {
+                                onSelect("")
+                                expanded = false
+                            },
+                        )
                     }
                     items(assistants.size) { i ->
                         val (id, name) = assistants[i]
-                        TextButton(onClick = {
-                            onSelect(id)
-                            expanded = false
-                        }) {
-                            Text(name.ifBlank { stringResource(R.string.proactive_unnamed) })
-                        }
+                        PickerRow(
+                            label = name.ifBlank { stringResource(R.string.proactive_unnamed) },
+                            selected = id == selectedId,
+                            onClick = {
+                                onSelect(id)
+                                expanded = false
+                            },
+                        )
                     }
                 }
             },
@@ -529,36 +555,41 @@ private fun ConversationPicker(
                 // 固定高度上限：LazyColumn 在 AlertDialog 的 text 槽里没有
                 // 高度约束时会撑满可用空间，50 条对话把弹窗顶到屏幕最大高度，
                 // 而且和 dialog 自身的滚动嵌套，滑动手感发涩。
+                // 用 ListItem 而不是 TextButton。
+                //
+                // TextButton 在 Material 3 Expressive 下默认是全圆角胶囊。
+                // 把每个候选项都做成 TextButton，视觉上就是「一列各自独立的
+                // 药丸按钮」——可它们本是同一组里的选项，应该是一列连续的
+                // 行，而不是十几个各带大圆角的按钮叠在一起。
+                //
+                // ListItem 是列表项的标准形态：整行可点、没有独立圆角，
+                // 选中态用尾部对勾表示，和设置页其它条目观感一致。
                 LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
                     item {
-                        TextButton(onClick = {
-                            onSelect("")
-                            expanded = false
-                        }) {
-                            Text(stringResource(R.string.proactive_conversation_auto))
-                        }
+                        PickerRow(
+                            label = stringResource(R.string.proactive_conversation_auto),
+                            selected = selectedId.isBlank(),
+                            onClick = {
+                                onSelect("")
+                                expanded = false
+                            },
+                        )
                     }
                     items(conversations.size) { i ->
                         val (id, title, updateAt) = conversations[i]
-                        TextButton(onClick = {
-                            onSelect(id)
-                            expanded = false
-                        }) {
-                            Column {
-                                // 标题为空时补上时间：多个未命名对话在列表里
-                                // 长得一模一样，不加时间根本没法区分该选哪个
-                                Text(title)
-                                if (updateAt > 0) {
-                                    Text(
-                                        text = java.text.SimpleDateFormat(
-                                            "yyyy-MM-dd HH:mm", java.util.Locale.getDefault()
-                                        ).format(java.util.Date(updateAt)),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                        }
+                        PickerRow(
+                            label = title,
+                            // 标题为空或重名时补上时间：多个未命名对话在列表里
+                            // 长得一模一样，不加时间根本没法区分该选哪个
+                            secondary = if (updateAt > 0) java.text.SimpleDateFormat(
+                                "yyyy-MM-dd HH:mm", java.util.Locale.getDefault()
+                            ).format(java.util.Date(updateAt)) else null,
+                            selected = id == selectedId,
+                            onClick = {
+                                onSelect(id)
+                                expanded = false
+                            },
+                        )
                     }
                 }
             },
@@ -628,5 +659,39 @@ private fun ProactiveMessageLogDialog(
                 }
             }
         },
+    )
+}
+
+/**
+ * 选择弹窗里的一行。
+ *
+ * 刻意不用 TextButton：那套按钮在 Material 3 Expressive 下默认是全圆角
+ * 胶囊，逐个套在候选项上就成了一列各自独立的药丸，而不是一组连续的选项。
+ *
+ * 这里用 ListItem —— 整行可点、没有独立圆角，选中态交给尾部对勾，
+ * 和其它设置项的观感一致。
+ */
+@Composable
+private fun PickerRow(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    secondary: String? = null,
+) {
+    ListItem(
+        headlineContent = { Text(label) },
+        supportingContent = secondary?.let { { Text(it) } },
+        trailingContent = if (selected) {
+            {
+                Icon(
+                    imageVector = Lucide.Check,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        } else null,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
     )
 }

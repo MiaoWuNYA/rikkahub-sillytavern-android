@@ -128,8 +128,23 @@ jobs:
 
           data["version"] = version
           data["publishedAt"] = os.environ["REL_DATE"]
-          day = os.environ["REL_DATE"][:10]
-          data["changelog"] = "Nightly auto-build (%s) / 每日自动构建（%s）" % (day, day)
+
+          # 介绍文案不再每次覆写。
+          #
+          # 之前这里写死成 "Nightly auto-build (日期) / 每日自动构建（日期）"，
+          # 有两个后果：一是用户看不到这次到底改了什么；二是那段文案包含
+          # 「每日自动构建」，会被 App 的 UpdateChecker.isNightly 判定为
+          # 每夜版而直接过滤掉，用户永远看不到更新提示。
+          #
+          # 现在改为沿用 update.json 里已有的 changelog（正式版的发布说明），
+          # 只更新版本号、时间与下载链接。这样每夜版和正式版展示的是同一份
+          # 介绍，装了每夜版的用户也会被引导去下正式版。
+          #
+          # 仅在 changelog 为空时兜底写一句，避免首次运行出现空介绍。
+          if not data.get("changelog"):
+              day = os.environ["REL_DATE"][:10]
+              data["changelog"] = "自动构建 (%s)" % day
+
           data["downloads"] = [
               {
                   "name": asset,

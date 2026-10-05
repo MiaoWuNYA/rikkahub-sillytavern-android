@@ -45,7 +45,7 @@ class ProactiveMessageLogTest {
             "小于设定的最小间隔",       // 去重
             "还没有任何对话",           // 找不到对话
             "正在进行生成",             // 并发保护
-            "没有可用的模型",           // 模型缺失
+            "找不到对应的模型定义",      // 模型缺失
             "找不到对应的供应商配置",   // provider 缺失
         )
         expected.forEach { marker ->
@@ -86,6 +86,44 @@ class ProactiveMessageLogTest {
         // 打开对话框时重新取内容；否则看到的是进入页面那一刻的旧快照
         assertTrue("日志内容应随对话框打开刷新",
             page.contains("remember(showLogDialog)"))
+    }
+
+    @Test
+    fun `log records what was sent, where, and when`() {
+        // 日志的用途是「不接电脑也能看出发生了什么」，所以成功的记录
+        // 必须写清楚四件事：几点、发到哪个对话、用什么模型、发了什么内容。
+        assertTrue("时间要精确到秒", log.contains("yyyy-MM-dd HH:mm:ss"))
+        listOf(
+            "目标对话：" to "目标对话",
+            "对话 ID：" to "对话 ID",
+            "使用助手：" to "使用助手",
+            "使用模型：" to "使用模型",
+            "消息内容：" to "完整消息内容",
+        ).forEach { (marker, what) ->
+            assertTrue("成功日志应包含$what", runner.contains(marker))
+        }
+        // 内容要完整，不能截断——截断的日志没法用于排查
+        assertTrue("应输出完整回复", runner.contains("append(replyText.trim())"))
+    }
+
+    @Test
+    fun `failure logs carry enough context to diagnose`() {
+        listOf("异常类型：", "异常信息：", "底层原因：", "目标对话：", "对话 ID：")
+            .forEach { marker ->
+                assertTrue("异常日志应包含 $marker", runner.contains(marker))
+            }
+        // 模型缺失是最常见的失败，要把两个来源都打出来
+        assertTrue("模型失败要写明助手", runner.contains("助手配置的模型 ID"))
+        assertTrue("模型失败要写明全局默认", runner.contains("全局默认模型 ID"))
+    }
+
+    @Test
+    fun `multi-line details survive storage`() {
+        // detail 里的换行必须保留，否则详细日志会挤成一坨没法读
+        assertFalse(
+            "不应把换行压成空格",
+            log.contains(".replace(\"\\n\", \" \")"),
+        )
     }
 
     @Test
