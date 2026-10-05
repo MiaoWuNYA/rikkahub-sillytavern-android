@@ -365,14 +365,34 @@ class ChatService(
      * 读不到才退回空会话（真·新会话场景）。
      */
     private fun loadInitialConversation(id: Uuid, fallbackAssistantId: Uuid): Conversation {
-        return try {
-            kotlinx.coroutines.runBlocking(Dispatchers.IO) {
-                conversationRepo.getConversationById(id)
-            } ?: Conversation.ofId(id = id, assistantId = fallbackAssistantId)
-        } catch (e: Exception) {
-            Log.e(TAG, "loadInitialConversation failed for $id, falling back to empty", e)
-            Conversation.ofId(id = id, assistantId = fallbackAssistantId)
+        // 重试而不是立刻退空。
+        //
+        // 退空会话的代价极高：任何「取 session 状态再写回」的调用都会
+        // 把真实历史覆盖掉，并且把它改挂到 fallbackAssistantId 名下。
+        // 数据库读失败通常是瞬时竞争，重试一次基本就好。
+        repeat(3) { attempt ->
+            try {
+                val loaded = kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                    conversationRepo.getConversationById(id)
+                }
+                if (loaded != null) return loaded
+                // 读到了 null：要么这个 id 真的不存在（新会话），
+                // 要么刚好撞上并发删除。区分不开就按「不存在」处理，
+                // 但至少说明查过一次了。
+                return Conversation.ofId(id = id, assistantId = fallbackAssistantId)
+            } catch (e: Exception) {
+                Log.e(TAG, "loadInitialConversation attempt ${attempt + 1} failed for $id", e)
+                if (attempt < 2) {
+                    runCatching { Thread.sleep(60L * (attempt + 1)) }
+                }
+            }
         }
+        Log.e(
+            TAG,
+            "loadInitialConversation gave up for $id; returning an EMPTY session. " +
+                "Callers must not persist this state — saveConversation guards against it.",
+        )
+        return Conversation.ofId(id = id, assistantId = fallbackAssistantId)
     }
 
     private fun getOrCreateSession(conversationId: Uuid): ConversationSession {
@@ -2552,6 +2572,15 @@ class ChatService(
         session.state.value = conversation
     }
 
+    /**
+     * 就地更新会话状态。
+     *
+     * 注意 [getConversationFlow] 在内存里没有该会话时会**从数据库加载**
+     * （见 loadInitialConversation），所以这里拿到的不会是凭空造的空会话。
+     * 这一点对主动消息尤其关键：它全程在后台跑，session 常常是新建的，
+     * 如果这里拿到空会话，后续一次保存就会把整个对话清空、并把归属
+     * 改写成「当时的当前助手」。
+     */
     fun updateConversationState(conversationId: Uuid, update: (Conversation) -> Conversation) {
         val current = getConversationFlow(conversationId).value
         updateConversation(conversationId, update(current))
@@ -2607,6 +2636,37 @@ class ChatService(
         val exists = conversationRepo.existsConversationById(conversation.id)
         if (!exists && conversation.title.isBlank() && conversation.messageNodes.isEmpty()) {
             return // 新会话且为空时不保存
+        }
+
+        // 防「把对话改属主」。
+        //
+        // 这是 2026-10-05 那次「所有助手的所有聊天记录全没了」的根因。
+        //
+        // getOrCreateSession 在内存里没有该会话时，会用
+        // Conversation.ofId(id, settings.getCurrentAssistant().id) 造一个空会话。
+        // **后台触发时「当前助手」可能是任意一个**，于是这个空会话携带了
+        // 错误的 assistantId。之后任何 updateConversationState + saveConversation
+        // 都会把整个对话（包含 assistant_id 列）按这个空会话整行覆盖——
+        // conversationRepo.updateConversation 是全列 update，而且会
+        // deleteByConversation 再按空列表重插 message_node。
+        //
+        // 结果就是：对话跑到别的助手名下、消息全空。用户看到的是
+        // 「所有助手的聊天都没了」，实际是归属被打乱 + 消息被删。
+        //
+        // 已有会话的 assistantId 绝不该被一次保存改掉。真需要换助手
+        // 走的是专门的迁移入口，不会经过这里。
+        if (exists) {
+            val existing = conversationRepo.getConversationById(conversation.id)
+            if (existing != null && existing.assistantId != conversation.assistantId) {
+                Log.e(
+                    TAG,
+                    "Refusing to save conversation $conversationId: assistantId would change " +
+                        "${existing.assistantId} -> ${conversation.assistantId}. " +
+                        "This usually means the caller wrote from a freshly-created empty session " +
+                        "that was seeded with the current assistant.",
+                )
+                return
+            }
         }
 
         // 防「用空内容覆盖已有历史」。
@@ -2950,6 +3010,38 @@ class ChatService(
             } else {
                 session.setJob(job, cancelPrevious = false)
                 true
+            }
+        }
+    }
+
+    /**
+     * 释放 [tryClaimGeneration] 占用的生成权。
+     *
+     * 这个方法不是可有可无的收尾——少了它，主动消息会陷入**永久静默**：
+     *
+     *   ConversationSession.isInUse 的定义里包含 `_generationJob.value != null`
+     *   （ConversationSession.kt:54）。tryClaimGeneration 用 setJob(job) 把
+     *   主动消息的 job 注册进 session，如果从不显式清除，_generationJob
+     *   就一直非空，于是：
+     *
+     *     · session.isInUse 恒为 true -> removeSession 永远跳过
+     *       -> session 永久驻留内存，越积越多
+     *     · 下一次触发时 session.getJob()?.isActive 为 true
+     *       -> tryClaimGeneration 恒返回 false
+     *       -> 用户看到的日志是每 60 秒一条「该对话正在进行生成」
+     *
+     * 而且 setJob 的 invokeOnCompletion 只在 job 完成时清理，主动消息
+     * 若被后续操作取消（cancelPrevious），旧 job 会去 cancel 新 job，
+     * 日志上还会出现假的「用户打断」。
+     *
+     * 所以：谁 claim，谁就必须在 finally 里 release。
+     */
+    fun releaseGenerationClaim(conversationId: Uuid, job: Job) {
+        val session = sessions[conversationId] ?: return
+        synchronized(session) {
+            // 只清掉自己那一个，别误伤用户后来发起的生成
+            if (session.getJob() === job) {
+                session.setJob(null, cancelPrevious = false)
             }
         }
     }
