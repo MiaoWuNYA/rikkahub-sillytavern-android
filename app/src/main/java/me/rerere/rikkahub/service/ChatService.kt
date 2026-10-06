@@ -1032,13 +1032,24 @@ class ChatService(
                 val conversation = session.state.value
 
                 if (message.role == MessageRole.USER) {
-                    // 如果是用户消息，则截止到当前消息
+                    // 对历史用户消息重新生成 = 截断它之后的一切，再重新答一次。
+                    //
+                    // 这里**必须传 allowShrink**。截断后节点数必然变少，
+                    // 而 saveConversation 默认会拒绝「节点数变少」的写入
+                    // （那道防线是为了拦住列表视图的轻量对象把历史截断，
+                    // 见 saveConversation 的注释）。不传的话保存被静默拒绝：
+                    // 弹窗说了「下面的消息会被清除」，实际上一条没删，
+                    // 新的回复追加到会话末尾——用户看到的就是「重新生成
+                    // 没生效，还在最下面多了一条」。
+                    //
+                    // 这是用户明确点击、且弹窗已告知后果的操作，
+                    // 属于防线要放行的合法缩减。
                     val node = conversation.getMessageNodeByMessage(message)
                     val indexAt = conversation.messageNodes.indexOf(node)
                     val newConversation = conversation.copy(
                         messageNodes = conversation.messageNodes.subList(0, indexAt + 1)
                     )
-                    saveConversation(conversationId, newConversation)
+                    saveConversation(conversationId, newConversation, allowShrink = true)
                     handleMessageComplete(conversationId, generationType = GenerationType.REGENERATE)
                 } else {
                     if (regenerateAssistantMsg) {

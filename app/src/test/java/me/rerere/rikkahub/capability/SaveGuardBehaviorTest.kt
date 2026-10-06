@@ -154,6 +154,35 @@ class SaveGuardBehaviorTest {
             }
     }
 
+    @Test
+    fun `regenerating from a historical user message is allowed to shrink`() {
+        // issue #7：对历史用户消息点「重新生成」，弹窗说下面的消息会被清除，
+        // 实际一条没删，新回复还追加到了末尾。
+        //
+        // 原因是这条路径截断后没传 allowShrink，被「节点数不得变少」的
+        // 防线静默拒绝了。这是防线第二次咬到合法路径——上次是删消息，
+        // 这次是重新生成。所以单独钉一条测试。
+        val chat = findSource("src/main/java/me/rerere/rikkahub/service/ChatService.kt")
+
+        // 找到那条截断分支
+        val block = chat.substringAfter("if (message.role == MessageRole.USER) {")
+            .take(1600)
+        assertTrue("这条分支确实在截断", block.contains("subList(0, indexAt + 1)"))
+        assertTrue(
+            "截断后的保存必须显式放行，否则会被防线静默拒绝",
+            block.contains("allowShrink = true"),
+        )
+    }
+
+    @Test
+    fun `every deliberate shrink path passes allowShrink`() {
+        // 计数守门：已知的合法缩减路径有四处（重新生成截断、选分支、
+        // 删消息、fork）。少一处就是一个「操作点了没反应」的 bug。
+        val chat = findSource("src/main/java/me/rerere/rikkahub/service/ChatService.kt")
+        val passes = Regex("allowShrink\\s*=\\s*true").findAll(chat).count()
+        assertTrue("至少应有 4 处合法放行，实际 $passes", passes >= 4)
+    }
+
     private fun findSource(rel: String): String {
         val cwd = File(System.getProperty("user.dir") ?: ".")
         for (root in listOf(cwd, cwd.parentFile, cwd.parentFile?.parentFile).filterNotNull()) {
