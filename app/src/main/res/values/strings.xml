@@ -41,6 +41,9 @@
   <string name="assistant_importer_import_tavern_json">Import Tavern Character Card (JSON)</string>
   <string name="assistant_importer_import_tavern_png">Import Tavern Character Card (PNG)</string>
   <string name="assistant_importer_merge_greetings">Merge multiple greetings as consecutive messages in one chat</string>
+  <string name="assistant_importer_unnamed_character">Unnamed character</string>
+  <string name="assistant_importer_import_chunshui">Import Chunshui AI card (JSON)</string>
+  <string name="assistant_importer_chunshui_hint">Conversation JSON exported by Chunshui AI: the first user message becomes the character description, the first AI reply becomes the greeting</string>
   <string name="html_block_fullscreen">Open HTML card in full screen</string>
   <string name="html_card_expand">Web card — tap to view</string>
   <string name="html_card_collapse">Collapse web card</string>
