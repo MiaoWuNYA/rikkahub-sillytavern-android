@@ -25,7 +25,7 @@
   <string name="assistant_extensions_page_empty_skills">没有可用的 Skill，前往扩展管理安装</string>
   <string name="assistant_extensions_page_goto_extensions">前往扩展管理</string>
   <string name="assistant_extensions_page_goto_prompts">前往提示词管理</string>
-  <string name="assistant_extensions_page_tab_lorebooks">世界书</string>
+  <string name="assistant_extensions_page_tab_lorebooks">世界书与预设</string>
   <string name="assistant_extensions_page_tab_mode_injections">模式注入</string>
   <string name="assistant_extensions_page_tab_quick_messages">快捷消息</string>
   <string name="assistant_extensions_page_tab_skills">Skills</string>
@@ -438,7 +438,7 @@
   <string name="extension_selector_mode_injections_empty">无可用的模式注入</string>
   <string name="extension_selector_quick_messages_empty">暂无快捷消息</string>
   <string name="extension_selector_skills_empty">暂无 Skills</string>
-  <string name="extension_selector_tab_lorebooks">世界书</string>
+  <string name="extension_selector_tab_lorebooks">世界书与预设</string>
   <string name="extension_selector_tab_mode_injections">模式注入</string>
   <string name="extension_selector_tab_quick_messages">快捷消息</string>
   <string name="extension_selector_tab_skills">Skills</string>

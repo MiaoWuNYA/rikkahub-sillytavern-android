@@ -899,8 +899,16 @@ data class HuaDengSettings(
     // 作者注释、技能自动触发、文档转提示词、OCR、占位符替换、Recent Chats、滚动压缩摘要、
     // 用户上下文（记忆/日期）、工具路由与工作伦理区、工具系统提示词。
     val enableTavernMode: Boolean = false,
-    // 酒馆模式·保留工具：关掉后连工具都不注册，退化为纯文本模型（最干净）
-    val tavernModeKeepTools: Boolean = true,
+    // 酒馆模式·保留工具。
+    //
+    // 默认 **false**（不保留）：开启酒馆模式后连工具都不注册，退化为纯文本
+    // 模型，请求体最干净。这正是用户开酒馆模式想要的效果——精简提示词、
+    // 减少模型的安全策略拦截。
+    //
+    // 之前默认 true（保留工具），结果「开了酒馆模式但还是被拦」，
+    // 因为工具定义本身也占不少 token、也会触发某些模型的策略。
+    // 需要工具的人可以在设置里单独打开。
+    val tavernModeKeepTools: Boolean = false,
 
     // ---- Jev 智能决策（TypeSafe System One Model）----
     // 只做判断不生成文本的隐形决策层，永不进入用户可选模型列表。全部字段必须在请求失败时静默回退。
@@ -959,8 +967,14 @@ data class DisplaySetting(
     val userNickname: String = "",
     val useAppIconStyleLoadingIndicator: Boolean = true,
     val showUserAvatar: Boolean = true,
-    val showAssistantBubble: Boolean = false,
-    val bubbleOpacity: Float = 1.0f,
+    // 助手气泡默认开启。
+    //
+    // 关掉时助手消息是平铺的，和用户消息在视觉上区分度低；开着更像
+    // 常见的聊天软件，一眼能看出哪句是谁说的。对多数人是更好的默认。
+    val showAssistantBubble: Boolean = true,
+    // 气泡不透明度 90%：全不透明时大段文字贴在一起有点闷，
+    // 稍微透一点背景能在视觉上分层，同时完全不影响可读性。
+    val bubbleOpacity: Float = 0.9f,
     val showModelIcon: Boolean = true,
     val showModelName: Boolean = true,
     val showDateTimeInMessage: Boolean = false,

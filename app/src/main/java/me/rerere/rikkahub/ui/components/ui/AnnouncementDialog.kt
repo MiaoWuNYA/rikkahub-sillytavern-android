@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import me.rerere.rikkahub.data.model.Announcement
 import me.rerere.rikkahub.data.service.AnnouncementManager
+import coil3.compose.AsyncImage
 
 /**
  * 公告弹窗。
@@ -49,15 +50,24 @@ fun AnnouncementDialog(
     val context = LocalContext.current
     var dontShowAgain by remember { mutableStateOf(false) }
 
-    // 配图：从 assets 解成 Bitmap。
-    // 缺图或解码失败时返回 null，界面自动跳过这块，不留空白。
-    val imageBitmap = remember(announcement.image) {
-        val path = AnnouncementManager.imageAssetPath(announcement) ?: return@remember null
-        runCatching {
-            context.assets.open(path).use { stream ->
-                BitmapFactory.decodeStream(stream)?.asImageBitmap()
-            }
-        }.getOrNull()
+    // 配图分两种来源：
+    //   · 内置公告的图放在 assets 里
+    //   · 云端公告的图是一个 http 地址
+    //
+    // 网络图交给 Coil，不自己 openStream。
+    //
+    // 这里踩过一个坑：原来用 `java.net.URL(url).openStream()` 手写下载，
+    // 它**没有任何超时**——图床本身 36KB / 0.2 秒就返回了，但连接一卡
+    // 就是无限等，用户看到的是弹窗里一块空白晾五六秒。
+    // 而且没有任何缓存，同一条公告每次点进设置都重新下一遍。
+    //
+    // Coil 自带磁盘与内存缓存、连接超时、以及请求取消，
+    // 项目本来就在用它，没有理由为一张公告图另造一套。
+    val assetPath = remember(announcement.image) {
+        AnnouncementManager.imageAssetPath(announcement)
+    }
+    val remoteUrl = remember(announcement.image) {
+        AnnouncementManager.remoteImageUrl(announcement)
     }
 
     AlertDialog(
@@ -79,15 +89,39 @@ fun AnnouncementDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                if (imageBitmap != null) {
-                    Image(
-                        bitmap = imageBitmap,
+                when {
+                    // 内置图：直接从 assets 解，本来就是本地文件，秒出
+                    assetPath != null -> {
+                        val bmp = remember(assetPath) {
+                            runCatching {
+                                context.assets.open(assetPath).use { stream ->
+                                    BitmapFactory.decodeStream(stream)?.asImageBitmap()
+                                }
+                            }.getOrNull()
+                        }
+                        if (bmp != null) {
+                            Image(
+                                bitmap = bmp,
+                                contentDescription = null,
+                                contentScale = ContentScale.FillWidth,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp)),
+                            )
+                        }
+                    }
+
+                    // 云端图：交给 Coil，走它自己的缓存与超时
+                    remoteUrl != null -> AsyncImage(
+                        model = remoteUrl,
                         contentDescription = null,
                         contentScale = ContentScale.FillWidth,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp)),
                     )
+
+                    else -> Unit
                 }
                 if (announcement.body.isNotBlank()) {
                     Text(
@@ -100,7 +134,17 @@ fun AnnouncementDialog(
             }
         },
         confirmButton = {
-            Button(onClick = { onDismiss(dontShowAgain) }) { Text("知道了") }
+            // 只有一个按钮：知道了。勾了「不再提示」就永久关掉，没勾就下次还弹。
+            //
+            // 这里前后改过两版：先是「不再提示按钮 + 勾选框」并存，
+            // 两者做同一件事、用户不知道该点哪个；然后是「勾选框 + 稍后」，
+            // 但「知道了」和「稍后」并列时语义是重叠的——都是关闭，
+            // 区别只在下次弹不弹，而那个区别已经由勾选框表达清楚了。
+            //
+            // 一个弹窗只需要一个决定性的按钮。
+            Button(onClick = { onDismiss(dontShowAgain) }) {
+                Text("知道了")
+            }
         },
         dismissButton = {
             if (announcement.dismissible) {
@@ -109,12 +153,10 @@ fun AnnouncementDialog(
                         checked = dontShowAgain,
                         onCheckedChange = { dontShowAgain = it },
                     )
-                    TextButton(onClick = { onDismiss(true) }) {
-                        Text(
-                            "不再提示",
-                            modifier = Modifier.padding(start = 2.dp),
-                        )
-                    }
+                    Text(
+                        "不再提示",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
             }
         },

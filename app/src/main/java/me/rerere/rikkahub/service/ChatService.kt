@@ -2021,10 +2021,30 @@ class ChatService(
 
         runCatching {
             val settings = settingsStore.settingsFlow.first()
-            // 标题模型未设置时跟随快速模型；两者都拿不到时按上游语义显式报错，
-            // 避免静默跳过导致用户无法察觉标题生成失效。
+            // 标题用哪个模型，按这个顺序挑：
+            //   1. 用户明确指定的标题模型
+            //   2. 快速模型
+            //   3. **当前对话用的模型**
+            //
+            // 第 3 级是后加的，也是关键的一级。前两级在**刚配好模型的
+            // 新用户**那里大概率都为空——他们只在引导里选了一个对话模型，
+            // 标题模型和快速模型都还没设。原来的回退链到这里就抛
+            // 「快速模型未找到」，用户刚进门就撞上一个红字报错，
+            // 而他做的一切都是对的。
+            //
+            // 用户用哪个聊就用哪个生成标题，这是最合理的默认：
+            // 他既然选了那个模型，说明它可用；标题是个极短的任务，
+            // 用对话模型不会有什么代价。
+            // 对话所属助手的模型；助手被删掉时退回全局默认模型
+            val conversationModel = settings.assistants
+                .find { it.id == conversation.assistantId }
+                ?.chatModelId
+                ?.let { settings.findModelById(it) }
+                ?: settings.findModelById(settings.chatModelId)
+
             val model = settings.findModelById(settings.titleModelId)
                 ?: settings.findModelById(settings.fastModelId)
+                ?: conversationModel
                 ?: throw IllegalStateException(context.getString(R.string.error_fast_model_not_found))
             val provider = model.findProvider(settings.providers)
                 ?: throw IllegalStateException(context.getString(R.string.error_fast_model_provider_not_found))

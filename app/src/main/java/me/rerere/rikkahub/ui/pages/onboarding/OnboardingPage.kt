@@ -61,6 +61,8 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import me.rerere.rikkahub.Screen
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.Switch
 
 /**
  * 首次引导。
@@ -77,7 +79,31 @@ fun OnboardingPage(
 ) {
     val vm = koinViewModel<OnboardingVM>()
     val context = LocalContext.current
-    val session = remember { OnboardingState.Session() }
+    // 步骤状态要顶得住「跳出去再回来」。
+    //
+    // Navigation3 在切到别的页面时会销毁引导页的组合。原来用
+    // `remember { Session() }`，回来时它被重新构造，step 回到 WELCOME——
+    // 用户从「能聊了」那屏点进扩展页看了一眼，回来又从第一屏开始。
+    //
+    // 用 rememberSaveable 把 step 与 persona 存进 saved state：
+    // 页面被销毁后重建，这两个值会原样恢复，用户回到他离开的那一步。
+    // 只能在可序列化的值上做，所以存的是枚举的名字而不是枚举本身。
+    var stepName by rememberSaveable { mutableStateOf(OnboardingState.Step.WELCOME.name) }
+    var personaName by rememberSaveable { mutableStateOf<String?>(null) }
+    val session = remember {
+        object {
+            var step: OnboardingState.Step
+                get() = runCatching { OnboardingState.Step.valueOf(stepName) }
+                    .getOrDefault(OnboardingState.Step.WELCOME)
+                set(value) { stepName = value.name }
+
+            var persona: OnboardingState.Persona?
+                get() = personaName?.let {
+                    runCatching { OnboardingState.Persona.valueOf(it) }.getOrNull()
+                }
+                set(value) { personaName = value?.name }
+        }
+    }
 
     // 引导内部可以回退，但不允许退出——唯一的出口是右下角那个明确的按钮，
     // 免得用户误触返回键落到一个半配置的界面里。
@@ -124,6 +150,7 @@ fun OnboardingPage(
                     )
 
                     OnboardingState.Step.EXTRAS -> ExtrasStep(
+                        vm = vm,
                         persona = session.persona,
                         onBack = { session.step = OnboardingState.Step.PROVIDER },
                         onFinish = { finish() },
@@ -436,6 +463,43 @@ private fun ProviderStep(
 
             Spacer(Modifier.height(4.dp))
 
+            // 「配好了能用了」+ 下一步 放在**列表上面**。
+            //
+            // 原来放在整页最底部：测试成功之后，用户视线在配置卡片上，
+            // 而结论和下一步在几十行之外，得往下翻一屏才看得到。
+            // 成功信息必须在发生的地方出现。
+            if (testResult is OnboardingVM.TestResult.Ok) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            "配好了，能用了！",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                        Text(
+                            "我已经帮你把探测到的模型全部导入，并标好了各自的能力，" +
+                                "顺手选了一个当默认。进去直接就能聊。",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
+                }
+                Button(
+                    onClick = onDone,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                ) {
+                    Text("下一步", style = MaterialTheme.typography.titleMedium)
+                }
+                Spacer(Modifier.height(4.dp))
+            }
+
             // 「自定义」排在第一位。
             //
             // 用开源客户端的人多半已经有自己的中转站或自建服务，
@@ -484,38 +548,6 @@ private fun ProviderStep(
                         }
                     },
                 )
-            }
-
-            if (testResult is OnboardingVM.TestResult.Ok) {
-                Spacer(Modifier.height(4.dp))
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            "配好了，能用了！",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                        Text(
-                            "我已经帮你顺手选好一个默认模型，进去直接就能聊。",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                    }
-                }
-                Spacer(Modifier.height(4.dp))
-                Button(
-                    onClick = onDone,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(14.dp),
-                ) {
-                    Text("下一步", style = MaterialTheme.typography.titleMedium)
-                }
             }
 
             Spacer(Modifier.height(20.dp))
@@ -606,6 +638,7 @@ private fun ProviderCard(
 
 @Composable
 private fun ExtrasStep(
+    vm: OnboardingVM,
     persona: OnboardingState.Persona?,
     onBack: () -> Unit,
     onFinish: () -> Unit,
@@ -642,6 +675,52 @@ private fun ExtrasStep(
             )
 
             Spacer(Modifier.height(4.dp))
+
+            // 酒馆模式一键开关，放在最上面。
+            //
+            // 角色扮演用户几乎一定要开它（大幅简化提示词、减少被安全策略
+            // 拦下的概率），但多数人根本不知道设置里有这个选项。放在引导的
+            // 最后一步、一眼能看到的位置，省掉「用了一阵才发现」的过程。
+            var tavernMode by remember { mutableStateOf(false) }
+            LaunchedEffect(Unit) {
+                tavernMode = vm.isTavernModeEnabled()
+            }
+
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            "开启酒馆模式",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        )
+                        Text(
+                            "开启后助手的工具将被关闭，请求只保留角色卡与聊天历史。" +
+                                "这样能有效精简提示词、减少模型的安全拦截策略。" +
+                                "需要工具时可以随时在设置里单独打开。",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        )
+                    }
+                    Switch(
+                        checked = tavernMode,
+                        onCheckedChange = {
+                            tavernMode = it
+                            vm.setTavernMode(it)
+                        },
+                    )
+                }
+            }
 
             // 三项都**可以点进去**。
             //

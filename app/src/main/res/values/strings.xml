@@ -25,7 +25,7 @@
   <string name="assistant_extensions_page_empty_skills">No skills available, install one in Extensions</string>
   <string name="assistant_extensions_page_goto_extensions">Go to Extensions</string>
   <string name="assistant_extensions_page_goto_prompts">Go to Prompts</string>
-  <string name="assistant_extensions_page_tab_lorebooks">Lorebooks</string>
+  <string name="assistant_extensions_page_tab_lorebooks">Lorebooks &amp; Presets</string>
   <string name="assistant_extensions_page_tab_mode_injections">Mode Injections</string>
   <string name="assistant_extensions_page_tab_quick_messages">Quick Messages</string>
   <string name="assistant_extensions_page_tab_skills">Skills</string>
@@ -438,7 +438,7 @@
   <string name="extension_selector_mode_injections_empty">No mode injections available</string>
   <string name="extension_selector_quick_messages_empty">No quick messages available</string>
   <string name="extension_selector_skills_empty">No skills available</string>
-  <string name="extension_selector_tab_lorebooks">Lorebooks</string>
+  <string name="extension_selector_tab_lorebooks">Lorebooks &amp; Presets</string>
   <string name="extension_selector_tab_mode_injections">Mode Injections</string>
   <string name="extension_selector_tab_quick_messages">Quick Messages</string>
   <string name="extension_selector_tab_skills">Skills</string>

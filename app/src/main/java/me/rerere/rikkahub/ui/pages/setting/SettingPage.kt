@@ -98,6 +98,7 @@ import me.rerere.rikkahub.utils.plus
 import me.rerere.rikkahub.utils.writeClipboardText
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
+import androidx.compose.runtime.LaunchedEffect
 
 @Composable
 fun SettingPage(vm: SettingVM = koinViewModel()) {
@@ -106,6 +107,15 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val filesManager: FilesManager = koinInject()
     val context = LocalContext.current
+
+    // 公告在**进入设置主界面**时弹出。
+    //
+    // 不放启动：用户一打开软件就被一张二维码拦住，而他可能只是想让 AI
+    // 继续刚才那段话。公告是「有空时想了解的信息」，不是启动阻塞项。
+    //
+    // 设置页是个自然的落点：用户主动进来、心态是「我来看看有什么」，
+    // 这时候告诉他有反馈群正合适。启动流程因此完全不受公告影响。
+    AnnouncementHost()
 
     if (settings.launchCount > 100 && (settings.launchCount - settings.sponsorAlertDismissedAt) >= 50) {
         AlertDialog(
@@ -543,5 +553,43 @@ private fun QQGroupBottomSheet(onDismiss: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+
+/**
+ * 公告的加载与展示。
+ *
+ * 挂在设置页而不是启动流程：用户点进设置时心态是「来看看有什么」，
+ * 这时候弹公告正合适；而启动时弹会拦住只想继续聊天的人。
+ *
+ * 加载与展示都**不阻塞**：读不到、格式坏了、图片缺失，都只是不弹，
+ * 不会报错也不会有空白。
+ */
+@Composable
+private fun AnnouncementHost() {
+    val context = LocalContext.current
+    var announcement by remember { mutableStateOf<me.rerere.rikkahub.data.model.Announcement?>(null) }
+
+    LaunchedEffect(Unit) {
+        val loaded = me.rerere.rikkahub.data.service.AnnouncementManager.load(context)
+        if (loaded != null &&
+            !me.rerere.rikkahub.data.service.AnnouncementManager.isDismissed(context, loaded.id)
+        ) {
+            announcement = loaded
+        }
+    }
+
+    val current = announcement
+    if (current != null) {
+        me.rerere.rikkahub.ui.components.ui.AnnouncementDialog(
+            announcement = current,
+            onDismiss = { dontShowAgain ->
+                if (dontShowAgain && current.dismissible) {
+                    me.rerere.rikkahub.data.service.AnnouncementManager.dismiss(context, current.id)
+                }
+                announcement = null
+            },
+        )
     }
 }
