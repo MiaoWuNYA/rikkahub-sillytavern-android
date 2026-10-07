@@ -182,7 +182,10 @@ class SillyTavernThemeTest {
         // 未映射字段不受影响
         assertNull(patched.primaryColor)
         assertNull(patched.thinkingBubbleColor)
-        assertEquals(1.0f, patched.bubbleOpacity)
+        // 未映射字段保留调用方给的基底值。
+        // 这里断言的是「主题没碰它」，所以跟着 DisplaySetting 的默认值走——
+        // 默认值后来从 1.0 调成了 0.9（见 DisplaySetting.bubbleOpacity 的注释）。
+        assertEquals(0.9f, patched.bubbleOpacity)
         assertEquals(16f, patched.bubbleCornerRadius)
         assertEquals("", patched.userBubbleImagePath)
     }

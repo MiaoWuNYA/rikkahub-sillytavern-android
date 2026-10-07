@@ -95,8 +95,8 @@ class OnboardingTest {
     fun `a working model is selected automatically`() {
         // 不能让新人自己去「左下角选模型」——那一步经常找不到。
         // 先把他丢进对话里爽一下，手动选模型降级成可选。
-        assertTrue("要自动选模型", vm.contains("autoSelectModel"))
-        assertTrue("要设成默认", vm.contains("chatModelId = model.id"))
+        assertTrue("要自动选默认模型", vm.contains("importModels"))
+        assertTrue("要设成默认", vm.contains("chatModelId = preferred.id"))
     }
 
     @Test
@@ -218,6 +218,141 @@ class OnboardingTest {
         assertTrue(
             "恢复成功要落标记",
             restoreBlock.contains("OnboardingState.markCompleted"),
+        )
+    }
+
+    @Test
+    fun `the original-app row shows a conclusion instead of a check button`() {
+        // 检测在进入首屏时就做完了，用户看到的是结论。
+        // 把已经知道的答案再做成一个「检查一下」按钮让他点，是白费一次点击。
+        assertTrue("检测要前置", page.contains("getLaunchIntentForPackage"))
+        assertTrue("要传安装状态进去", page.contains("installed = originalLaunchIntent != null"))
+        // 说清为什么不能自动导入，并给出两步路径
+        assertTrue("要解释系统限制", page.contains("App 之间不能直接读对方的数据"))
+        assertTrue("要能跳去原版", page.contains("打开原版去导出"))
+    }
+
+    @Test
+    fun `no markdown asterisks leak into guide text`() {
+        // 引导页的 Text 不解析 Markdown。字符串里写 ** 只会原样显示成星号，
+        // 用户看到的是「**导入之后你什么都不用再配**」这种脏文本。
+        // 要加粗就用 SpanStyle 做真实加粗。
+        val literals = Regex("\"([^\"]*)\"")
+            .findAll(page)
+            .map { it.groupValues[1] }
+            .filterNot { it.startsWith("http") }
+            .toList()
+        val withStars = literals.filter { it.contains("**") }
+        assertTrue("字符串里不该有 Markdown 星号：$withStars", withStars.isEmpty())
+        assertTrue("改用真实加粗", page.contains("SpanStyle(fontWeight = FontWeight.SemiBold)"))
+    }
+
+    @Test
+    fun `extras are clickable and lead somewhere real`() {
+        // 原来只有文字说明，用户看完得自己去找入口——而「去哪儿找」
+        // 恰恰是新人最卡的地方。说到哪就要能点到哪。
+        listOf("Screen.Assistant", "Screen.Extensions", "Screen.SettingSearch", "Screen.SettingMemory")
+            .forEach { target ->
+                assertTrue("可选项应能跳到 $target", page.contains(target))
+            }
+        assertTrue("要有导航回调", page.contains("onNavigate"))
+    }
+
+    @Test
+    fun `the exit button sits at the top`() {
+        // 原来出口在底部：配好 Key、看到「测试成功」之后，还得往下翻
+        // 一屏才能找到「下一步」，而配置区展开后页面本身是长的。
+        val scaffold = page.substringAfter("private fun StepScaffold(")
+            .substringBefore("private fun BigChoiceButton(")
+        val skipIdx = scaffold.indexOf("onSkip")
+        val contentIdx = scaffold.indexOf("content()")
+        assertTrue("出口要在内容之前（即位于顶部）", skipIdx in 1 until contentIdx)
+    }
+
+    @Test
+    fun `all discovered models are imported with capabilities filled in`() {
+        // 之前只挑一个模型存进去：探测到 50 个也只留 1 个，
+        // 用户还得回设置里手动一个一个加。既然结果就在手里，没理由不全收。
+        assertTrue("要全部导入", vm.contains("enriched"))
+        assertTrue("要有导入方法", vm.contains("importModels"))
+
+        // 能力默认全开，注册表查询作为补充。
+        //
+        // 注册表里查到的值偏保守：很多第三方中转、微调模型、新发布的模型
+        // 压根不在表里，查出来是空，于是推理、工具、看图一个都用不了——
+        // 而用户看到的症状是「图片发不出去」「工具调不动」，很难归因。
+        //
+        // 只有上下文长度不能乱填（它影响历史裁剪，填大了会超限报错），
+        // 那个仍然查注册表。
+        assertTrue("上下文长度仍要查注册表", vm.contains("MODEL_CONTEXT_LENGTH"))
+        assertTrue("要查注册表做补充", vm.contains("ModelRegistry"))
+    }
+
+    @Test
+    fun `progress survives navigating away and back`() {
+        // Navigation3 切到别的页面时会销毁引导页的组合。用 remember 的话
+        // 回来时状态被重置，用户从「能聊了」点进扩展页看一眼，
+        // 回来又从第一屏开始。必须用 rememberSaveable 顶住销毁重建。
+        assertTrue("步骤要能保存", page.contains("rememberSaveable"))
+        assertTrue("存的是可序列化的名字", page.contains("OnboardingState.Step.WELCOME.name"))
+    }
+
+    @Test
+    fun `success feedback appears above the list not at the bottom`() {
+        // 测试成功之后用户视线就在配置卡片上，结论和下一步必须在那儿出现，
+        // 而不是放在几十行之外的页面底部等着他去翻。
+        val okIdx = page.indexOf("配好了，能用了！")
+        val listIdx = page.indexOf("RECOMMENDED_PROVIDERS.forEach")
+        assertTrue("要有成功提示", okIdx > 0)
+        assertTrue("成功提示要在列表之前", okIdx < listIdx)
+    }
+
+    @Test
+    fun `tavern mode can be toggled from the last step`() {
+        // 角色扮演用户几乎一定要开酒馆模式，但多数人不知道设置里有这个
+        // 选项。放在引导最后一步、一眼能看到的位置，省掉「用了一阵才发现」。
+        assertTrue("引导要有酒馆模式开关", page.contains("开启酒馆模式"))
+        assertTrue("要能真正写进设置", vm.contains("enableTavernMode"))
+        // 说明为什么该开
+        assertTrue("要说清作用", page.contains("减少模型的安全拦截策略"))
+    }
+
+    @Test
+    fun `imported models have capabilities enabled by default`() {
+        // 注册表里查到的值偏保守：很多第三方中转、微调模型、新模型压根
+        // 不在表里，查出来是空，于是推理/工具/看图一个都用不了。
+        // 用户看到的症状是「图片发不出去」「工具调不动」，很难归因。
+        // 所以反过来：默认全开，真不支持时服务端会报错，关掉即可。
+        assertTrue("工具默认开", vm.contains("ModelAbility.TOOL"))
+        assertTrue("推理默认开", vm.contains("ModelAbility.REASONING"))
+        assertTrue("图片默认开", vm.contains("Modality.IMAGE"))
+        assertTrue("要写清为什么默认全开", vm.contains("默认全开"))
+    }
+
+    @Test
+    fun `title generation falls back to the conversation model`() {
+        // 刚配好模型的新用户，标题模型和快速模型**都还是空的**——他只在
+        // 引导里选了一个对话模型。原来的回退链到这里就抛
+        // 「快速模型未找到」，用户刚进门就撞上一个红字报错，
+        // 而他做的一切都是对的。
+        //
+        // 现在多了第三级：用他正在聊的那个模型。他既然选了它，说明可用；
+        // 标题是个极短的任务，用对话模型没有代价。
+        val chat = read("src/main/java/me/rerere/rikkahub/service/ChatService.kt")
+        val block = chat.substringAfter("// 标题用哪个模型，按这个顺序挑：").take(1400)
+        assertTrue("要有三级回退", block.contains("titleModelId") && block.contains("fastModelId"))
+        assertTrue("第三级是对话模型", block.contains("conversationModel"))
+        assertTrue("助手被删要有兜底", block.contains("settings.chatModelId"))
+    }
+
+    @Test
+    fun `tavern mode defaults to dropping tools`() {
+        // 开酒馆模式默认不保留工具：工具定义本身占不少 token，
+        // 也会触发某些模型的策略。开酒馆模式的人要的就是最干净的请求。
+        val prefs = read("src/main/java/me/rerere/rikkahub/data/datastore/PreferencesStore.kt")
+        assertTrue(
+            "保留工具默认应为 false",
+            prefs.contains("val tavernModeKeepTools: Boolean = false"),
         )
     }
 
