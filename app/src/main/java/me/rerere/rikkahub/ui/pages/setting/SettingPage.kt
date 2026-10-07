@@ -118,7 +118,12 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
             confirmButton = {
                 Button(onClick = {
                     vm.updateSettings(settings.copy(sponsorAlertDismissedAt = settings.launchCount))
-                    navController.navigate(Screen.SettingDonate)
+                    // 直接开仓库，不走捐赠页。
+                    //
+                    // 「支持」这件事本来就不必花钱：点个 Star 对项目的帮助
+                    // 更实在，而且不打扰用户。捐赠页仍然保留在设置里，
+                    // 有需要的人自己找得到。
+                    context.openUrl("https://github.com/MiaoWuNYA/rikkahub-sillytavern-android")
                 }) {
                     Text(stringResource(R.string.setting_page_sponsor_alert_confirm))
                 }
@@ -335,6 +340,23 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                     modifier = Modifier.padding(horizontal = 8.dp),
                     title = { Text(stringResource(R.string.setting_page_about)) },
                 ) {
+                    // 允许重看公告。
+                    //
+                    // 「不再提示」是个一旦点上就再也回不来的开关，
+                    // 用户手滑点了之后得有地方能找回来。
+                    item(
+                        onClick = {
+                            me.rerere.rikkahub.data.service.AnnouncementManager.reset(context)
+                            Toast.makeText(
+                                context,
+                                "公告已重置，下次启动会重新显示",
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        },
+                        leadingContent = { Icon(HugeIcons.Clapping01, null) },
+                        headlineContent = { Text("公告") },
+                        supportingContent = { Text("重置「不再提示」，下次启动重新显示") },
+                    )
                     // 允许重看引导。
                     //
                     // 首次引导里那个「我自己配，别烦我」是必要的出口，
