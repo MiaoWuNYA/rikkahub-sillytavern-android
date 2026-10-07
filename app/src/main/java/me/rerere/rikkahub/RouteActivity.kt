@@ -163,6 +163,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.flow.first
+import androidx.compose.ui.platform.LocalContext
 
 private const val TAG = "RouteActivity"
 private const val ACTION_TRANSLATE = "me.rerere.rikkahub.action.TRANSLATE"
@@ -369,6 +370,12 @@ class RouteActivity : ComponentActivity() {
                 LocalTTSState provides tts,
                 LocalASRState provides asr,
             ) {
+                // 公告弹窗。
+                //
+                // 挂在这里而不是某个页面里：它是应用级的，切换页面不该
+                // 让它消失或重弹。内容全部来自安装包内的 assets，不联网。
+                AnnouncementHost()
+
                 Toaster(
                     state = toastState,
                     darkTheme = LocalDarkMode.current,
@@ -486,6 +493,9 @@ class RouteActivity : ComponentActivity() {
 
                             entry<Screen.Onboarding> {
                                 OnboardingPage(
+                                    // 可选项那几项要能跳进对应页面，
+                                    // 用户不用自己去找入口。
+                                    onNavigate = { destination -> backStack.add(destination) },
                                     onFinish = {
                                         // 先把引导从回退栈里摘掉，再进主界面。
                                         // 顺序反过来的话，用户按返回键会退回引导，
@@ -793,6 +803,41 @@ class RouteActivity : ComponentActivity() {
                 }
             }
         }
+    }
+}
+
+/**
+ * 公告的加载与展示。
+ *
+ * 读一次 assets 里的公告，若用户没点过「不再提示」就弹出来。
+ * 加载和展示都**不阻塞启动**：读文件失败、没有公告、图片缺失，
+ * 都只是不弹，不会报错也不会有空白。
+ */
+@Composable
+private fun AnnouncementHost() {
+    val context = LocalContext.current
+    var announcement by remember { mutableStateOf<me.rerere.rikkahub.data.model.Announcement?>(null) }
+
+    LaunchedEffect(Unit) {
+        val loaded = me.rerere.rikkahub.data.service.AnnouncementManager.load(context)
+        if (loaded != null &&
+            !me.rerere.rikkahub.data.service.AnnouncementManager.isDismissed(context, loaded.id)
+        ) {
+            announcement = loaded
+        }
+    }
+
+    val current = announcement
+    if (current != null) {
+        me.rerere.rikkahub.ui.components.ui.AnnouncementDialog(
+            announcement = current,
+            onDismiss = { dontShowAgain ->
+                if (dontShowAgain && current.dismissible) {
+                    me.rerere.rikkahub.data.service.AnnouncementManager.dismiss(context, current.id)
+                }
+                announcement = null
+            },
+        )
     }
 }
 

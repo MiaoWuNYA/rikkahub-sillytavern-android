@@ -166,23 +166,29 @@ fun SettingAboutPage() {
                             supportingContent = { Text("https://rikka-ai.com") },
                             headlineContent = { Text(stringResource(R.string.about_page_website)) },
                         )
-                        item(
-                            onClick = { context.openUrl("https://github.com/rikkahub/rikkahub") },
-                            leadingContent = { Icon(HugeIcons.Github, null) },
-                            supportingContent = { Text("https://github.com/rikkahub/rikkahub") },
-                            headlineContent = { Text(stringResource(R.string.about_page_github)) },
-                        )
-                        // 上游仓库在上面，这里是本定制版的仓库——两行都留着，方便用户对照。
+                        // 主仓库放本定制版。
+                        //
+                        // 用户点「项目地址」是想找**他现在用的这个版本**的
+                        // 源码、更新和 issue 入口，先给他上游只会让他跑到
+                        // 一个装不了这个包的地方。
                         item(
                             onClick = { context.openUrl(AUTHOR_REPO_URL) },
-                            leadingContent = { Icon(HugeIcons.Package, null) },
+                            leadingContent = { Icon(HugeIcons.Github, null) },
                             supportingContent = { Text(AUTHOR_REPO_URL) },
+                            headlineContent = { Text(stringResource(R.string.about_page_github)) },
+                        )
+                        // 上游留在下面：本版衍生自它，按许可该标明出处，
+                        // 想对照原版的用户也找得到。
+                        item(
+                            onClick = { context.openUrl("https://github.com/rikkahub/rikkahub") },
+                            leadingContent = { Icon(HugeIcons.Package, null) },
+                            supportingContent = { Text("https://github.com/rikkahub/rikkahub") },
                             headlineContent = { Text(stringResource(R.string.about_page_author_repo)) },
                         )
                         item(
-                            onClick = { context.openUrl("https://github.com/rikkahub/rikkahub/blob/master/LICENSE") },
+                            onClick = { context.openUrl("$AUTHOR_REPO_URL/blob/master/LICENSE") },
                             leadingContent = { Icon(HugeIcons.File02, null) },
-                            supportingContent = { Text("https://github.com/rikkahub/rikkahub/blob/master/LICENSE") },
+                            supportingContent = { Text("$AUTHOR_REPO_URL/blob/master/LICENSE") },
                             headlineContent = { Text(stringResource(R.string.about_page_license)) },
                         )
                     }

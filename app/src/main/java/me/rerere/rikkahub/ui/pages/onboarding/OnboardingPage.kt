@@ -56,6 +56,11 @@ import me.rerere.rikkahub.ui.components.ui.CardGroup
 import org.koin.androidx.compose.koinViewModel
 import kotlin.system.exitProcess
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.widget.Toast
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import me.rerere.rikkahub.Screen
 
 /**
  * 首次引导。
@@ -68,6 +73,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun OnboardingPage(
     onFinish: () -> Unit,
+    onNavigate: (Screen) -> Unit,
 ) {
     val vm = koinViewModel<OnboardingVM>()
     val context = LocalContext.current
@@ -121,6 +127,12 @@ fun OnboardingPage(
                         persona = session.persona,
                         onBack = { session.step = OnboardingState.Step.PROVIDER },
                         onFinish = { finish() },
+                        // 跳出去之前先落标记：用户是带着明确目的去看那一页的，
+                        // 回来时不该再被引导拦一次。想重看随时能从设置里进。
+                        onNavigate = { screen ->
+                            OnboardingState.markCompleted(context)
+                            onNavigate(screen)
+                        },
                     )
                 }
             }
@@ -136,6 +148,16 @@ private fun WelcomeStep(
     onRestore: () -> Unit,
     onSkipAll: () -> Unit,
 ) {
+    val context = LocalContext.current
+
+    // 检测放在进入这一步时一次做完，用户直接看到结论。
+    // 不在按钮回调里现查——那等于把已经知道的答案再问用户一次。
+    val originalLaunchIntent = remember {
+        runCatching {
+            context.packageManager.getLaunchIntentForPackage(ORIGINAL_PACKAGE)
+        }.getOrNull()
+    }
+
     StepScaffold(
         skipLabel = "我自己配，别烦我",
         onSkip = onSkipAll,
@@ -184,7 +206,23 @@ private fun WelcomeStep(
             //
             // 放在两个大按钮下面，因为它是「老用户」的一个更省事的分支：
             // 不用先导出备份再导入，装过原版的话直接搬过来就行。
-            OriginalImportRow(onImported = onSkipAll)
+            OriginalImportRow(
+                installed = originalLaunchIntent != null,
+                onLaunchOriginal = originalLaunchIntent?.let { intent ->
+                    {
+                        runCatching { context.startActivity(intent) }
+                            .onFailure {
+                                // 跳不过去就退回给用户一条能走的路，不要静默失败
+                                Toast.makeText(
+                                    context,
+                                    "打不开原版，请手动打开它导出备份",
+                                    Toast.LENGTH_LONG,
+                                ).show()
+                            }
+                    }
+                },
+                onUseBackup = onRestore,
+            )
 
             Spacer(Modifier.height(32.dp))
         }
@@ -248,7 +286,15 @@ private fun RestoreStep(
             )
             Text(
                 text = "选一个备份文件（.zip）。助手、对话、设置全都回来，" +
-                    "连模型配置一起——**导入之后你什么都不用再配**。",
+                    // 这里用 AnnotatedString 而不是 Markdown：
+                    // 引导页的 Text 不解析 Markdown，写 ** 只会原样显示成星号。
+                    buildAnnotatedString {
+                        append("连模型配置一起——")
+                        withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
+                            append("导入之后你什么都不用再配")
+                        }
+                        append("。")
+                    },
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -332,8 +378,13 @@ private fun RestartRequiredDialog(onRestart: () -> Unit) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("你的助手、对话、设置都已经就位。")
                 Text(
-                    "App 需要重启一次来完成切换。这样做是为了保证数据是**整体替换**的，" +
-                        "不会出现一半新的一半旧的情况。",
+                    buildAnnotatedString {
+                        append("App 需要重启一次来完成切换。这样做是为了保证数据是")
+                        withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
+                            append("整体替换")
+                        }
+                        append("的，不会出现一半新的一半旧的情况。")
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -558,6 +609,7 @@ private fun ExtrasStep(
     persona: OnboardingState.Persona?,
     onBack: () -> Unit,
     onFinish: () -> Unit,
+    onNavigate: (Screen) -> Unit,
 ) {
     StepScaffold(
         onBack = onBack,
@@ -578,27 +630,63 @@ private fun ExtrasStep(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "这些**都不是必须的**，随时可以回来弄。现在就进去聊也完全没问题。",
+                text = buildAnnotatedString {
+                    append("这些")
+                    withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
+                        append("都不是必须的")
+                    }
+                    append("，随时可以回来弄。现在就进去聊也完全没问题。")
+                },
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Spacer(Modifier.height(4.dp))
 
+            // 三项都**可以点进去**。
+            //
+            // 原来只有文字说明，用户看完得自己去找入口——而「去哪儿找」
+            // 恰恰是新人最卡的地方。这里直接把入口接上，说到哪就能点到哪。
             CardGroup {
                 item(
+                    onClick = { onNavigate(Screen.Assistant) },
                     headlineContent = { Text("导入角色卡") },
                     supportingContent = {
-                        Text("在助手页点导入，选一张 PNG 角色卡就行")
+                        Text(
+                            "角色卡是一个 .png 文件。去助手页点右上角的导入，" +
+                                "选中那个文件就会变成一个助手的设定。"
+                        )
                     },
                 )
                 item(
+                    onClick = { onNavigate(Screen.Extensions) },
                     headlineContent = { Text("导入世界书 / 预设 / 正则") },
-                    supportingContent = { Text("在设置里导入，会自动挂到会话上") },
+                    supportingContent = {
+                        Text(
+                            "这三样都在扩展页。导入后会自动挂到会话上，" +
+                                "不用再手动一个个开。"
+                        )
+                    },
                 )
                 item(
+                    onClick = { onNavigate(Screen.SettingSearch) },
                     headlineContent = { Text("开启联网搜索") },
-                    supportingContent = { Text("让 AI 能查实时信息") },
+                    supportingContent = {
+                        Text(
+                            "在搜索设置里选一个搜索服务并填 Key，" +
+                                "之后 AI 就能查实时信息了。"
+                        )
+                    },
+                )
+                item(
+                    onClick = { onNavigate(Screen.SettingMemory) },
+                    headlineContent = { Text("设置记忆与提示词") },
+                    supportingContent = {
+                        Text(
+                            "想让 AI 记住你、或者改它的行为方式，" +
+                                "在记忆和提示词设置里调。"
+                        )
+                    },
                 )
             }
 
@@ -655,33 +743,25 @@ private fun StepScaffold(
     content: @Composable () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        if (onBack != null) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-            ) {
-                TextButton(onClick = onBack) {
-                    Text("← 返回")
-                }
-            }
-        }
-
-        Box(
+        // 出口固定在**顶部**。
+        //
+        // 原来放在底部：用户配好 Key、点了「测试一下」看到成功，
+        // 还得往下翻一屏才能找到那个「下一步」——而配置区展开后
+        // 页面本身就是长的，那个按钮经常正好在屏幕外。
+        //
+        // 顶部是视线自然停留的位置，且配置过程中会一直可见，
+        // 不需要滚动就能点。
+        Row(
             modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 24.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            content()
-        }
-
-        if (onSkip != null) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                horizontalArrangement = Arrangement.End,
-            ) {
+            if (onBack != null) {
+                TextButton(onClick = onBack) { Text("← 返回") }
+            }
+            Spacer(Modifier.weight(1f))
+            if (onSkip != null) {
                 if (skipHighlighted) {
                     Button(onClick = onSkip) { Text(skipLabel) }
                 } else {
@@ -693,6 +773,14 @@ private fun StepScaffold(
                     }
                 }
             }
+        }
+
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 24.dp)
+        ) {
+            content()
         }
     }
 }
@@ -748,20 +836,30 @@ private fun BigChoiceButton(
 }
 
 /**
- * 「从原版 RikkaHub 导入」。
+ * 「装过原版 RikkaHub？」这一行。
  *
- * 这是老用户更省事的一条路：装过原版的话，不用先导出再导入，
- * 直接搬过来就行。
+ * **检测在进入引导时就已经做完了**，用户看到的是结论，不是一个让他
+ * 自己点的「检查一下」按钮——把已经知道的答案再问一遍用户，是纯粹的
+ * 浪费他一次点击。
+ *
+ * 关于「能不能直接读原版的数据库」：做不到。Android 的沙箱不允许一个
+ * 应用访问另一个应用的私有目录（/data/data/<其他包名>/），除非设备
+ * 已 root。所以我们能给的最短路径是：**直接把用户送到原版的备份页**，
+ * 他在那儿导出一次，回来选文件即可——全程只需点三下，而引导这边
+ * 已经备好了「我是老用户」那条路。
+ *
+ * 不假装能自动导入：说「已自动导入」而实际没有，比不做更糟。
  */
 @Composable
-private fun OriginalImportRow(onImported: () -> Unit) {
-    val context = LocalContext.current
-    var busy by remember { mutableStateOf(false) }
-    var message by remember { mutableStateOf<String?>(null) }
-
+private fun OriginalImportRow(
+    installed: Boolean,
+    onLaunchOriginal: (() -> Unit)?,
+    onUseBackup: () -> Unit,
+) {
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = if (installed) MaterialTheme.colorScheme.secondaryContainer
+        else MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -770,60 +868,45 @@ private fun OriginalImportRow(onImported: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Icon(
-                    Lucide.Upload,
+                    if (installed) Lucide.Check else Lucide.Upload,
                     contentDescription = null,
                     modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = if (installed) MaterialTheme.colorScheme.onSecondaryContainer
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Text("装过原版 RikkaHub？", style = MaterialTheme.typography.titleSmall)
-            }
-            Text(
-                "直接从原版把助手和对话搬过来，不用先导出备份。",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            if (message != null) {
                 Text(
-                    message ?: "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
+                    if (installed) "检测到已安装原版 RikkaHub" else "没检测到原版 RikkaHub",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = if (installed) MaterialTheme.colorScheme.onSecondaryContainer
+                    else MaterialTheme.colorScheme.onSurface,
                 )
             }
 
-            TextButton(
-                enabled = !busy,
-                onClick = {
-                    busy = true
-                    message = null
-                    // 检测原版是否装着；装着才提示可以导入，免得给没装的人
-                    // 一个点了必然失败的按钮。
-                    val installed = runCatching {
-                        context.packageManager.getPackageInfo(ORIGINAL_PACKAGE, 0)
-                        true
-                    }.getOrDefault(false)
-
-                    message = if (installed) {
-                        "检测到已安装原版。进去以后在「设置 → 数据备份」里，" +
-                            "可以先从原版导出再导入进来。"
-                    } else {
-                        "没有检测到原版 App。如果你有备份文件，用上面的「我是老用户」。"
+            if (installed) {
+                Text(
+                    // 说清两步，别让用户在两个 App 之间来回猜
+                    "App 之间不能直接读对方的数据（系统限制），所以请这样搬：" +
+                        "① 在原版里导出一次备份 → ② 回到这里选「我是老用户」，选中那个文件。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (onLaunchOriginal != null) {
+                        Button(onClick = onLaunchOriginal) { Text("打开原版去导出") }
                     }
-                    busy = false
-                },
-            ) {
-                Text(if (busy) "检查中…" else "检查一下")
+                    TextButton(onClick = onUseBackup) { Text("我已经有备份了") }
+                }
+            } else {
+                Text(
+                    "如果你有备份文件（不管来自哪个版本），选上面的「我是老用户」就能导入。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
 }
 
-/**
- * 原版 RikkaHub 的包名。
- *
- * 官方版与本 fork 用不同 applicationId（本项目是 me.rerere.rikkahub.huadeng），
- * 所以可以共存，也就能直接把原版的数据搬过来。
- */
 private const val ORIGINAL_PACKAGE = "me.rerere.rikkahub"
 
 /* 小工具：把 StateFlow 收成 Compose 状态，省掉每个调用点重复写扩展 import */
