@@ -165,7 +165,10 @@ private fun SillyTavernImporter(
         }
         // 春水 AI 的导出是「一段对话」而不是角色卡，字段结构完全不同，
         // 混在「导入酒馆角色卡 (JSON)」里会走到 V1 分支去读顶层 name 而报错。
-        // 单独给一个入口，既说清了它是什么，也让报错信息能对症。
+        // 单独给一个入口，让报错信息能对症。
+        //
+        // 不给额外的说明文字：这一行按钮旁边挂一段介绍会显得啰嗦，
+        // 而「导入角色卡」这个动作本身用户已经会了，不需要教。
         OutlinedButton(
             onClick = { chunshuiPickerLauncher.launch(arrayOf("application/json")) },
             enabled = !isLoading
@@ -178,12 +181,6 @@ private fun SillyTavernImporter(
             Text(if (isLoading) stringResource(R.string.assistant_importer_importing)
                  else stringResource(R.string.assistant_importer_import_chunshui))
         }
-        Text(
-            text = stringResource(R.string.assistant_importer_chunshui_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
-        )
         OutlinedButton(
             onClick = { showUrlDialog = true },
             enabled = !isLoading
@@ -562,13 +559,20 @@ private fun parseConversationExport(
     // 首条 user = 人物设定。若首条不是 user（有的导出直接以 assistant 开场），
     // 那就不当设定，避免把开场白误当成人设。
     val firstIsUser = messages.firstOrNull()?.let { roleOf(it) == "user" } == true
-    val setting = if (firstIsUser) cleanImportedText(textOf(messages.first())) else ""
+    // 同样保留原文：设定里也可能带样式标记，而且它是要给模型读的，
+    // 擅自删改用户写好的内容没有道理。
+    val setting = if (firstIsUser) textOf(messages.first()) else ""
 
     // 第一条 assistant = 开场白。首条是 user 时取第二条，否则取第一条。
+    //
+    // **原文保留，不做任何清理。** 这类导出常常是「前端卡」——
+    // 开场白本身就是一段 HTML，由应用内的卡片渲染器（HtmlCardDocument
+    // + CardHostBridge）画成界面。把标签剥掉等于把卡片毁了，只剩一堆
+    // 散落的文字。
     val greetingIndex = if (firstIsUser) 1 else 0
     val greeting = messages.getOrNull(greetingIndex)
         ?.takeIf { roleOf(it) == "assistant" }
-        ?.let { cleanImportedText(textOf(it)) }
+        ?.let { textOf(it) }
         .orEmpty()
 
     val name = json["character_name"]?.jsonPrimitiveOrNull?.contentOrNull
@@ -596,41 +600,6 @@ private fun parseConversationExport(
         presetMessages = presetMessages,
     )
     return assistant to emptyList()
-}
-
-/**
- * 清理导入文本里的富文本标记。
- *
- * 春水 AI 的导出内容是 HTML 片段：<span style="...">、<details>/<summary>
- * 这类。原样塞进角色卡的话，提示词里会混进一大堆标签，既浪费 token
- * 又干扰模型理解。
- *
- * 这里做的是「提取可见文字」：把 <br> 换成换行、块级标签之间保留分段，
- * 其余标签剥掉，最后解码常见的 HTML 实体。
- *
- * 不做完整的 HTML 解析——导入的是提示词文本，不是要渲染的网页，
- * 简单替换足够且不会因为畸形标签抛异常。
- */
-internal fun cleanImportedText(raw: String): String {
-    if (raw.isBlank()) return ""
-    var text = raw
-    // 先在标签还是标签的时候处理换行与分段，顺序反了会先被剥掉
-    text = text.replace(Regex("(?i)<br\\s*/?>"), "\n")
-    text = text.replace(Regex("(?i)</(p|div|details|summary|li|h[1-6])>"), "\n")
-    text = text.replace(Regex("(?i)<(p|div|details|summary|li|h[1-6])\\b[^>]*>"), "")
-    // 其余标签一律剥掉
-    text = text.replace(Regex("<[^>]+>"), "")
-    // 常见实体
-    text = text
-        .replace("&nbsp;", " ")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&quot;", "\"")
-        .replace("&#39;", "'")
-        .replace("&amp;", "&")
-    // 压掉连续空行，但保留段落间隔
-    text = text.replace(Regex("\\n{3,}"), "\n\n")
-    return text.trim()
 }
 
 // ==================== V2 Parser ====================

@@ -44,22 +44,6 @@ class ChunshuiImportTest {
         return ""
     }
 
-    /**
-     * 直接调被测的 cleanImportedText。
-     *
-     * 它是 internal 的顶层函数，编译后的类名是 AssistantImporterKt。
-     * 用反射而不是把它改成 public：那是为了测试而放宽可见性，
-     * 会让这个函数在别处被误用的机会变大。
-     */
-    private fun invokeCleanImportedText(input: String): String {
-        val cls = Class.forName(
-            "me.rerere.rikkahub.ui.pages.assistant.detail.AssistantImporterKt"
-        )
-        val method = cls.getDeclaredMethod("cleanImportedText", String::class.java)
-        method.isAccessible = true
-        return method.invoke(null, input) as String
-    }
-
     private val importer get() =
         read("src/main/java/me/rerere/rikkahub/ui/pages/assistant/detail/AssistantImporter.kt")
 
@@ -110,20 +94,27 @@ class ChunshuiImportTest {
     }
 
     @Test
-    fun `rich text markup is stripped`() {
-        // 春水的导出内容是 HTML 片段：<span style>、<details>/<summary>。
-        // 原样塞进角色卡，提示词里会混进一堆标签，既费 token 又干扰模型。
-        assertTrue("要有清理函数", importer.contains("fun cleanImportedText"))
-        assertTrue("要处理 br", importer.contains("<br"))
-        assertTrue("要剥掉其余标签", importer.contains("Regex(\"<[^>]+>\")"))
-        assertTrue("要解码实体", importer.contains("&nbsp;"))
-        // 直接用一段内联样例验证清理效果，不依赖外部文件是否存在
-        val sample = "<span style=\"color:#fff\">银发</span><br>换行<details><summary>X</summary>内容</details>&nbsp;&amp;"
-        val cleaned = invokeCleanImportedText(sample)
-        assertFalse("标签应被剥掉", cleaned.contains("<"))
-        assertTrue("文字要保留", cleaned.contains("银发"))
-        assertTrue("br 要变成换行", cleaned.contains("\n"))
-        assertTrue("实体要解码", cleaned.contains("&"))
+    fun `html markup is preserved not stripped`() {
+        // 这类导出常常是「前端卡」——开场白本身就是一段 HTML，
+        // 由应用内的卡片渲染器画成界面。
+        //
+        // 我第一版写了个 cleanImportedText 把标签全剥掉，那是错的：
+        // 等于把卡片毁了，只剩一堆散落的文字。原文必须原样保留。
+        assertFalse(
+            "不该有剥离 HTML 的清理函数",
+            importer.contains("fun cleanImportedText"),
+        )
+        assertFalse(
+            "不该用正则删标签",
+            importer.contains("Regex(\"<[^>]+>\")"),
+        )
+        // 开场白直接取原文
+        val block = importer.substringAfter("private fun parseConversationExport(")
+            .substringBefore("// ==================== V2 Parser")
+        assertTrue(
+            "开场白要原文保留",
+            block.contains("?.let { textOf(it) }"),
+        )
     }
 
     @Test
