@@ -36,6 +36,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.composables.icons.lucide.Link2
+import com.composables.icons.lucide.MessageSquare
 import com.composables.icons.lucide.Lucide
 import com.dokar.sonner.ToastType
 import com.dokar.sonner.ToasterState
@@ -136,6 +137,15 @@ private fun SillyTavernImporter(
         uri?.let { importFile(context, uri, onImport, filesManager, toaster, scope, mergeGreetings) { isLoading = it } }
     }
 
+    // 春水 AI 的对话导出走同一套 importFile——格式判定放在
+    // importFromJson 里（靠 looksLikeConversationExport 自动识别），
+    // 这样 URL 导入和拖文件两条路也能吃到它，不用各写一遍。
+    val chunshuiPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { importFile(context, uri, onImport, filesManager, toaster, scope, mergeGreetings) { isLoading = it } }
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedButton(
             onClick = { pngPickerLauncher.launch(arrayOf("image/png")) },
@@ -153,6 +163,27 @@ private fun SillyTavernImporter(
             Text(if (isLoading) stringResource(R.string.assistant_importer_importing)
                  else stringResource(R.string.assistant_importer_import_tavern_json))
         }
+        // 春水 AI 的导出是「一段对话」而不是角色卡，字段结构完全不同，
+        // 混在「导入酒馆角色卡 (JSON)」里会走到 V1 分支去读顶层 name 而报错。
+        // 单独给一个入口，既说清了它是什么，也让报错信息能对症。
+        OutlinedButton(
+            onClick = { chunshuiPickerLauncher.launch(arrayOf("application/json")) },
+            enabled = !isLoading
+        ) {
+            Icon(
+                imageVector = Lucide.MessageSquare,
+                contentDescription = null,
+                modifier = Modifier.padding(end = 8.dp),
+            )
+            Text(if (isLoading) stringResource(R.string.assistant_importer_importing)
+                 else stringResource(R.string.assistant_importer_import_chunshui))
+        }
+        Text(
+            text = stringResource(R.string.assistant_importer_chunshui_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
+        )
         OutlinedButton(
             onClick = { showUrlDialog = true },
             enabled = !isLoading
@@ -438,6 +469,28 @@ private suspend fun importFromString(
     mergeGreetings: Boolean = false,
 ) {
     val json = Json.parseToJsonElement(jsonString).jsonObject
+
+    // 先认「对话导出」格式。
+    //
+    // 这种 JSON 没有 spec、也没有 data，特征是有 messages 数组加
+    // character_name / conversation_id（春水 AI 等应用的导出）。它其实
+    // 是「一段已经聊过的对话」而不是角色卡：人物设定写在 messages[0]
+    // 那条 user 消息里，首条 assistant 是开场白。
+    //
+    // 不先认的话它会掉进 V1 分支，被当成平铺卡去读顶层 name 字段，
+    // 读不到就报错——用户手上明明有一份完好的设定，却导不进来。
+    if (looksLikeConversationExport(json)) {
+        val (assistant, lorebooks) = parseConversationExport(
+            context = context,
+            json = json,
+            avatarUri = avatarUri,
+            mergeGreetings = mergeGreetings,
+        )
+        toaster.show(context.getString(R.string.assistant_importer_import_success))
+        onImport(TavernImportResult(assistant = assistant, newLorebooks = lorebooks))
+        return
+    }
+
     // spec 缺失时按数据结构推断（V1 卡及部分社区导出没有 spec 字段）：
     // 有 data 对象视为 V2 结构，否则视为 V1 平铺结构
     val spec = json["spec"]?.jsonPrimitive?.contentOrNull
@@ -458,6 +511,126 @@ private suspend fun importFromString(
             newLorebooks = lorebooks,
         )
     )
+}
+
+// ==================== 春水 AI 对话导出 ====================
+
+/**
+ * 判断是不是「对话导出」格式。
+ *
+ * 特征：没有 spec、没有 data，但有 messages 数组，且带 character_name
+ * 或 conversation_id 里至少一个。春水 AI 等应用的导出都长这样。
+ *
+ * 之所以要和角色卡区分开：它其实是「一段已经聊过的对话」。人物设定
+ * 写在第一条 user 消息里（用户自己贴进去的），首条 assistant 是开场白。
+ * 直接当 V1 平铺卡解析会读不到顶层的 name 字段而报错——用户手上
+ * 明明有一份完好的设定，却导不进来。
+ */
+private fun looksLikeConversationExport(json: JsonObject): Boolean {
+    if (json["spec"] != null || json["data"] != null) return false
+    val messages = json["messages"] as? JsonArray ?: return false
+    if (messages.isEmpty()) return false
+    return json["character_name"] != null || json["conversation_id"] != null
+}
+
+/**
+ * 把对话导出转成助手。
+ *
+ * 映射关系：
+ *   · 第一条 user 消息        -> 角色设定（systemPrompt 的一部分）
+ *   · 第一条 assistant 消息   -> 开场白（presetMessage）
+ *   · title / character_name  -> 助手名
+ *
+ * 之所以把首条 user 当设定而不是当普通对话：那是这类导出的固定用法，
+ * 用户把人物卡内容贴在开场之前，让模型先读到。当成历史消息塞进
+ * presetMessages 反而会让每次新对话都重复一遍这段设定。
+ */
+private fun parseConversationExport(
+    context: Context,
+    json: JsonObject,
+    avatarUri: String?,
+    mergeGreetings: Boolean = false,
+): Pair<Assistant, List<Lorebook>> {
+    val messages = json["messages"] as? JsonArray ?: JsonArray(emptyList())
+
+    fun textOf(element: JsonElement?): String =
+        element?.jsonObjectOrNull?.get("content")?.jsonPrimitiveOrNull?.contentOrNull.orEmpty()
+
+    fun roleOf(element: JsonElement?): String =
+        element?.jsonObjectOrNull?.get("role")?.jsonPrimitiveOrNull?.contentOrNull.orEmpty()
+
+    // 首条 user = 人物设定。若首条不是 user（有的导出直接以 assistant 开场），
+    // 那就不当设定，避免把开场白误当成人设。
+    val firstIsUser = messages.firstOrNull()?.let { roleOf(it) == "user" } == true
+    val setting = if (firstIsUser) cleanImportedText(textOf(messages.first())) else ""
+
+    // 第一条 assistant = 开场白。首条是 user 时取第二条，否则取第一条。
+    val greetingIndex = if (firstIsUser) 1 else 0
+    val greeting = messages.getOrNull(greetingIndex)
+        ?.takeIf { roleOf(it) == "assistant" }
+        ?.let { cleanImportedText(textOf(it)) }
+        .orEmpty()
+
+    val name = json["character_name"]?.jsonPrimitiveOrNull?.contentOrNull
+        ?.takeIf { it.isNotBlank() }
+        ?: json["title"]?.jsonPrimitiveOrNull?.contentOrNull
+            ?.takeIf { it.isNotBlank() }
+        ?: context.getString(R.string.assistant_importer_unnamed_character)
+
+    // 设定整段作为系统提示词。
+    //
+    // 不额外拼模板：这种导出里的设定往往已经是完整的角色描述，
+    // 外面再套一层「你是……」的壳只会干扰原文的语气。
+    val systemPrompt = setting.ifBlank { "" }
+
+    val presetMessages = if (greeting.isBlank()) {
+        emptyList()
+    } else {
+        listOf(UIMessage.assistant(prompt = greeting))
+    }
+
+    val assistant = Assistant(
+        name = name,
+        avatar = if (avatarUri != null) Avatar.Image(avatarUri) else Avatar.Dummy,
+        systemPrompt = systemPrompt,
+        presetMessages = presetMessages,
+    )
+    return assistant to emptyList()
+}
+
+/**
+ * 清理导入文本里的富文本标记。
+ *
+ * 春水 AI 的导出内容是 HTML 片段：<span style="...">、<details>/<summary>
+ * 这类。原样塞进角色卡的话，提示词里会混进一大堆标签，既浪费 token
+ * 又干扰模型理解。
+ *
+ * 这里做的是「提取可见文字」：把 <br> 换成换行、块级标签之间保留分段，
+ * 其余标签剥掉，最后解码常见的 HTML 实体。
+ *
+ * 不做完整的 HTML 解析——导入的是提示词文本，不是要渲染的网页，
+ * 简单替换足够且不会因为畸形标签抛异常。
+ */
+internal fun cleanImportedText(raw: String): String {
+    if (raw.isBlank()) return ""
+    var text = raw
+    // 先在标签还是标签的时候处理换行与分段，顺序反了会先被剥掉
+    text = text.replace(Regex("(?i)<br\\s*/?>"), "\n")
+    text = text.replace(Regex("(?i)</(p|div|details|summary|li|h[1-6])>"), "\n")
+    text = text.replace(Regex("(?i)<(p|div|details|summary|li|h[1-6])\\b[^>]*>"), "")
+    // 其余标签一律剥掉
+    text = text.replace(Regex("<[^>]+>"), "")
+    // 常见实体
+    text = text
+        .replace("&nbsp;", " ")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&#39;", "'")
+        .replace("&amp;", "&")
+    // 压掉连续空行，但保留段落间隔
+    text = text.replace(Regex("\\n{3,}"), "\n\n")
+    return text.trim()
 }
 
 // ==================== V2 Parser ====================
