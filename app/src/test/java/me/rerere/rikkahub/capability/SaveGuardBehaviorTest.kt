@@ -166,12 +166,15 @@ class SaveGuardBehaviorTest {
 
         // 找到那条截断分支
         val block = chat.substringAfter("if (message.role == MessageRole.USER) {")
-            .take(1600)
+            .take(3000)
         assertTrue("这条分支确实在截断", block.contains("subList(0, indexAt + 1)"))
         assertTrue(
             "截断后的保存必须显式放行，否则会被防线静默拒绝",
             block.contains("allowShrink = true"),
         )
+        // 放行的前提是「确实找到了目标消息」。找不到时 indexOf(null) = -1，
+        // subList(0, 0) 会把整个对话清空——allowShrink 一放行这条路就通了。
+        assertTrue("必须先判空", block.contains("indexAt == -1"))
     }
 
     @Test
