@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.composables.icons.lucide.Link2
 import com.composables.icons.lucide.MessageSquare
+import com.composables.icons.lucide.Sparkles
 import com.composables.icons.lucide.Lucide
 import com.dokar.sonner.ToastType
 import com.dokar.sonner.ToasterState
@@ -146,6 +147,12 @@ private fun SillyTavernImporter(
         uri?.let { importFile(context, uri, onImport, filesManager, toaster, scope, mergeGreetings) { isLoading = it } }
     }
 
+    val fengyuePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { importFile(context, uri, onImport, filesManager, toaster, scope, mergeGreetings) { isLoading = it } }
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedButton(
             onClick = { pngPickerLauncher.launch(arrayOf("image/png")) },
@@ -180,6 +187,18 @@ private fun SillyTavernImporter(
             )
             Text(if (isLoading) stringResource(R.string.assistant_importer_importing)
                  else stringResource(R.string.assistant_importer_import_chunshui))
+        }
+        OutlinedButton(
+            onClick = { fengyuePickerLauncher.launch(arrayOf("application/json")) },
+            enabled = !isLoading
+        ) {
+            Icon(
+                imageVector = Lucide.Sparkles,
+                contentDescription = null,
+                modifier = Modifier.padding(end = 8.dp),
+            )
+            Text(if (isLoading) stringResource(R.string.assistant_importer_importing)
+                 else stringResource(R.string.assistant_importer_import_fengyue))
         }
         OutlinedButton(
             onClick = { showUrlDialog = true },
@@ -467,6 +486,22 @@ private suspend fun importFromString(
 ) {
     val json = Json.parseToJsonElement(jsonString).jsonObject
 
+    // 先认风月 AI 的角色卡。
+    //
+    // 它有自己一整套字段（ttl / desc / pre_pt / world_book），既没有
+    // spec、也没有 data，掉到 V1 分支会被当平铺卡读 name 而报错。
+    // 判定放在最前面：它的 messages 字段不存在，不会被上一条误判。
+    if (looksLikeFengyueCard(json)) {
+        val (assistant, lorebooks) = parseFengyueCard(
+            context = context,
+            json = json,
+            avatarUri = avatarUri,
+        )
+        toaster.show(context.getString(R.string.assistant_importer_import_success))
+        onImport(TavernImportResult(assistant = assistant, newLorebooks = lorebooks))
+        return
+    }
+
     // 先认「对话导出」格式。
     //
     // 这种 JSON 没有 spec、也没有 data，特征是有 messages 数组加
@@ -506,6 +541,136 @@ private suspend fun importFromString(
         TavernImportResult(
             assistant = assistant,
             newLorebooks = lorebooks,
+        )
+    )
+}
+
+// ==================== 风月 AI 角色卡 ====================
+
+/**
+ * 判断是不是风月 AI 的角色卡。
+ *
+ * 特征字段（同时具备才算）：ttl（名称）+ desc（HTML 界面）+
+ * pre_pt（前置提示词）。这三个是它的核心结构，普通酒馆卡不会有。
+ *
+ * 不靠 type 字段：那个值是 1，含义不明确，拿它当判据太脆。
+ */
+private fun looksLikeFengyueCard(json: JsonObject): Boolean {
+    if (json["spec"] != null || json["data"] != null) return false
+    val hasTtl = json["ttl"]?.jsonPrimitiveOrNull?.contentOrNull?.isNotBlank() == true
+    val hasDesc = json["desc"]?.jsonPrimitiveOrNull?.contentOrNull?.isNotBlank() == true
+    return hasTtl && hasDesc && json["pre_pt"] != null
+}
+
+/**
+ * 把风月 AI 角色卡转成助手。
+ *
+ * 字段映射：
+ *   · ttl       -> 助手名
+ *   · pre_pt    -> 系统提示词（它的「前置提示词」，即角色设定与规则）
+ *   · desc      -> 前端界面（HTML），作为开场白保留
+ *   · world_book-> 世界书条目
+ *
+ * **desc 是完整 HTML 网页，原样保留。** 这是前端卡，界面由应用内的
+ * 卡片渲染器（HtmlCardDocument + CardHostBridge）绘制；把标签剥掉
+ * 等于把卡片毁了。
+ *
+ * 该卡没有独立的开场白字段（greet_st 只是 UI 上的提示文字），
+ * 所以开场白取 desc —— 它本身就是一整个可交互界面。
+ */
+private fun parseFengyueCard(
+    context: Context,
+    json: JsonObject,
+    avatarUri: String?,
+): Pair<Assistant, List<Lorebook>> {
+    fun str(key: String): String =
+        json[key]?.jsonPrimitiveOrNull?.contentOrNull.orEmpty()
+
+    val name = str("ttl").takeIf { it.isNotBlank() }
+        ?: context.getString(R.string.assistant_importer_unnamed_character)
+
+    // pre_pt 是角色设定与规则，整段进系统提示词。
+    // desc 是界面（HTML），进开场白 —— 两者职责不同，不能混。
+    val systemPrompt = str("pre_pt")
+    val greetingHtml = str("desc")
+
+    val presetMessages = if (greetingHtml.isBlank()) {
+        emptyList()
+    } else {
+        listOf(UIMessage.assistant(prompt = greetingHtml))
+    }
+
+    val lorebooks = parseFengyueWorldBook(json)
+
+    val assistant = Assistant(
+        name = name,
+        avatar = if (avatarUri != null) Avatar.Image(avatarUri) else Avatar.Dummy,
+        systemPrompt = systemPrompt,
+        presetMessages = presetMessages,
+    )
+    // 世界书不经 Assistant 携带，随 TavernImportResult 一起交给调用方——
+    // 和其它解析器保持一致（V2/V3 卡也走这条路）。
+    return assistant to lorebooks
+}
+
+/**
+ * 风月的世界书 -> Lorebook。
+ *
+ * 条目结构（实测）：
+ *   key            触发关键词，多个用 @wb@ 分隔，前缀 _or_ 表示任一命中
+ *   value          注入内容
+ *   enable         是否启用
+ *   probability    触发概率
+ *   depth          扫描深度
+ *   match_type     匹配方式（2 = 关键词）
+ *   value_region   注入位置
+ *
+ * 解析失败一律跳过该条而不是整个导入失败：世界书条目是补充内容，
+ * 少一条不影响角色能用，但整个导入失败会让用户什么都拿不到。
+ */
+private fun parseFengyueWorldBook(json: JsonObject): List<Lorebook> {
+    val raw = json["world_book"] as? JsonArray ?: return emptyList()
+    if (raw.isEmpty()) return emptyList()
+
+    val entries = raw.mapNotNull { element ->
+        val obj = element.jsonObjectOrNull ?: return@mapNotNull null
+        val content = obj["value"]?.jsonPrimitiveOrNull?.contentOrNull.orEmpty()
+        if (content.isBlank()) return@mapNotNull null
+
+        val rawKey = obj["key"]?.jsonPrimitiveOrNull?.contentOrNull.orEmpty()
+        // _or_ 前缀表示「任一命中」；@wb@ 是它自己的分隔符
+        val keywords = rawKey
+            .removePrefix("_or_")
+            .split("@wb@")
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+
+        val enabled = obj["enable"]?.jsonPrimitiveOrNull?.contentOrNull != "false"
+        val probability = obj["probability"]?.jsonPrimitiveOrNull?.contentOrNull
+            ?.toIntOrNull()?.coerceIn(0, 100) ?: 100
+        val depth = obj["depth"]?.jsonPrimitiveOrNull?.contentOrNull?.toIntOrNull()
+        // 没有关键词的条目当作常驻，否则它永远不会被触发
+        val constant = keywords.isEmpty()
+
+        PromptInjection.RegexInjection(
+            name = keywords.firstOrNull().orEmpty(),
+            enabled = enabled,
+            content = content,
+            keywords = keywords,
+            scanDepth = depth,
+            constantActive = constant,
+            probability = probability,
+            position = InjectionPosition.AFTER_SYSTEM_PROMPT,
+        )
+    }
+
+    if (entries.isEmpty()) return emptyList()
+    return listOf(
+        Lorebook(
+            name = "风月世界书",
+            enabled = true,
+            entries = entries,
+            isCharacterBook = true,
         )
     )
 }

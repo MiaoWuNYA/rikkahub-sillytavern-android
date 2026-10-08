@@ -44,6 +44,7 @@
   <string name="assistant_importer_merge_greetings">多个开场白合并为同一对话的多条消息</string>
   <string name="assistant_importer_unnamed_character">未命名角色</string>
   <string name="assistant_importer_import_chunshui">导入春水 AI 角色卡 (JSON)</string>
+  <string name="assistant_importer_import_fengyue">导入风月 AI 角色卡 (JSON)</string>
   <string name="html_block_fullscreen">查看完整网页</string>
   <string name="html_card_expand">网页卡片 · 点击查看</string>
   <string name="html_card_collapse">收起网页卡片</string>
