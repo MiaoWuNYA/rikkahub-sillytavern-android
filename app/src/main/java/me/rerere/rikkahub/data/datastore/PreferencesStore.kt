@@ -47,6 +47,8 @@ import me.rerere.rikkahub.data.datastore.migration.PreferenceStoreV5Migration
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.withNewLocalTools
 import me.rerere.rikkahub.data.model.AuthorNotePosition
+import me.rerere.rikkahub.data.model.AuthorNoteEntry
+import me.rerere.rikkahub.data.model.LEGACY_AUTHOR_NOTE_ENTRY_ID
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.GroupChat
 import me.rerere.rikkahub.data.model.InjectionPosition
@@ -236,6 +238,7 @@ class SettingsStore(
         val AUTHOR_NOTE_DEPTH = intPreferencesKey("author_note_depth")
         val AUTHOR_NOTE_ROLE = stringPreferencesKey("author_note_role")
         val AUTHOR_NOTE_INTERVAL = intPreferencesKey("author_note_interval")
+        val AUTHOR_NOTE_ENTRIES = stringPreferencesKey("author_note_entries")
         val GROUP_CHATS = stringPreferencesKey("group_chats")
 
         // Uses the same DataStore singleton without starting settings flows or requiring Koin.
@@ -338,6 +341,9 @@ class SettingsStore(
                 preferences[AUTHOR_NOTE_DEPTH] = settings.authorNoteDepth
                 preferences[AUTHOR_NOTE_ROLE] = settings.authorNoteRole.name
                 preferences[AUTHOR_NOTE_INTERVAL] = settings.authorNoteInterval
+                settings.authorNoteEntries?.let {
+                    preferences[AUTHOR_NOTE_ENTRIES] = JsonInstant.encodeToString(it)
+                } ?: preferences.remove(AUTHOR_NOTE_ENTRIES)
                 preferences[GROUP_CHATS] = JsonInstant.encodeToString(settings.groupChats)
                 preferences[MACRO_GLOBAL_VARIABLES] = JsonInstant.encodeToString(settings.macroGlobalVariables)
                 preferences[MACRO_CHAT_VARIABLES] = JsonInstant.encodeToString(settings.macroChatVariables)
@@ -495,6 +501,9 @@ class SettingsStore(
                 authorNoteDepth = preferences[AUTHOR_NOTE_DEPTH] ?: 4,
                 authorNoteRole = preferences[AUTHOR_NOTE_ROLE]?.let { MessageRole.valueOf(it) } ?: MessageRole.SYSTEM,
                 authorNoteInterval = preferences[AUTHOR_NOTE_INTERVAL] ?: 1,
+                authorNoteEntries = preferences[AUTHOR_NOTE_ENTRIES]?.let {
+                    JsonInstant.decodeFromString(it)
+                },
                 groupChats = preferences[GROUP_CHATS]?.let { JsonInstant.decodeFromString(it) } ?: emptyList(),
                 macroGlobalVariables = preferences[MACRO_GLOBAL_VARIABLES]?.let {
                     JsonInstant.decodeFromString(it)
@@ -796,6 +805,8 @@ data class Settings(
     val authorNoteDepth: Int = 4,                   // Author's Note 插入深度
     val authorNoteRole: MessageRole = MessageRole.SYSTEM, // 注入角色（官方默认 SYSTEM）
     val authorNoteInterval: Int = 1,                // 官方语义：1=每次注入，0=关闭，N=每N条用户消息注入一次
+    // null = 尚未物化的新格式，继续兼容旧 authorNote + 全局参数；emptyList = 用户明确清空。
+    val authorNoteEntries: List<AuthorNoteEntry>? = null,
     val groupChats: List<GroupChat> = emptyList(),   // 群聊列表
     val macroGlobalVariables: Map<String, String> = emptyMap(),        // 宏引擎全局变量（跨对话持久）
     val macroChatVariables: Map<String, Map<String, String>> = emptyMap(), // 宏引擎会话变量（conversationId → 变量）
@@ -848,6 +859,29 @@ data class Settings(
             """.trimIndent(),
         )
     }
+}
+
+/**
+ * 旧设置/旧备份兼容层。
+ *
+ * null 与空列表刻意区分：null 才回退旧字段；用户在新 UI 中删光条目后会保存 emptyList，
+ * 因而旧 authorNote 不会被重复迁移或再次出现。
+ */
+fun Settings.authorNoteEntriesOrLegacy(): List<AuthorNoteEntry> {
+    authorNoteEntries?.let { return it }
+    if (authorNote.isBlank()) return emptyList()
+    return listOf(
+        AuthorNoteEntry(
+            id = LEGACY_AUTHOR_NOTE_ENTRY_ID,
+            name = "旧版自定义导演备注",
+            content = authorNote,
+            enabled = true,
+            position = authorNotePosition,
+            depth = authorNoteDepth,
+            role = authorNoteRole,
+            interval = authorNoteInterval,
+        ),
+    )
 }
 
 @Serializable

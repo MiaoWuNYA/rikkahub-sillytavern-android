@@ -2,117 +2,229 @@ package me.rerere.rikkahub.data.ai.transformers
 
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.ui.UIMessage
+import me.rerere.rikkahub.data.datastore.Settings
+import me.rerere.rikkahub.data.datastore.authorNoteEntriesOrLegacy
+import me.rerere.rikkahub.data.model.Assistant
+import me.rerere.rikkahub.data.model.AuthorNoteEntry
 import me.rerere.rikkahub.data.model.AuthorNotePosition
+import me.rerere.rikkahub.data.model.LEGACY_AUTHOR_NOTE_ENTRY_ID
 import me.rerere.rikkahub.data.model.PersonaInjectionPosition
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.uuid.Uuid
 
 object AuthorsNoteTransformer : InputMessageTransformer {
     /**
-     * 按用户轮冻结的 In-chat @ Depth 注入锚点：
-     * key = assistantId:conversationId，value = (lastUserMsgId, "before:<消息id>")。
-     * agentic 工具循环每步在列表末尾追加消息，若每步按 messages.size 重算深度位置，
-     * 备注每步后移一格、脱离步骤 1 已缓存的前缀。首步记下锚点消息 id，后续步骤按 id 复位。
+     * 每条 In-chat 备注按自己的 entry/depth 冻结锚点。
+     *
+     * key = assistantId:conversationId:entryId:depth，value = (lastUserMsgId, "before:<消息id>")。
+     * 这样 agentic 工具循环继续复用首步前缀，同时不同 depth 不会挤到同一个旧锚点。
      */
     private val frozenInChatAnchors =
-        java.util.concurrent.ConcurrentHashMap<String, Pair<String, String>>()
+        ConcurrentHashMap<String, Pair<String, String>>()
 
     override suspend fun transform(
         ctx: TransformerContext,
         messages: List<UIMessage>,
-    ): List<UIMessage> {
-        val settings = ctx.settings
+    ): List<UIMessage> = transformAuthorNotes(
+        settings = ctx.settings,
+        assistant = ctx.assistant,
+        conversationId = ctx.conversationId,
+        chatUserMessageCount = ctx.chatUserMessageCount,
+        chatMessageCount = ctx.chatMessageCount,
+        messages = messages,
+        frozenAnchors = frozenInChatAnchors,
+    )
+}
 
-        val persona = settings.personas.find { it.id == settings.activePersonaId }
-        val personaActive = persona != null && persona.enabled && persona.description.isNotBlank() &&
-            (persona.lockedCharacterIds.isEmpty() || ctx.assistant.id in persona.lockedCharacterIds)
-        val personaDesc = persona?.takeIf { personaActive }?.description.orEmpty()
-        val personaTop = personaActive && persona?.position == PersonaInjectionPosition.TOP_OF_CHAT
-        val personaBottom = personaActive && persona?.position == PersonaInjectionPosition.BOTTOM_OF_CHAT
+private data class AuthorNoteCandidate(
+    val anchorId: String,
+    val content: String,
+    val position: AuthorNotePosition,
+    val depth: Int,
+    val role: MessageRole,
+)
 
-        // 官方：人设 TOP/BOTTOM 合并进导演备注并跟随其节奏；即使备注文本为空也会单独注入人设
-        if (!settings.authorNoteEnabled || (settings.authorNote.isBlank() && !personaTop && !personaBottom)) {
-            return messages
-        }
+private data class PlannedAuthorNote(
+    val index: Int,
+    val order: Int,
+    val message: UIMessage,
+)
 
-        // 官方间隔语义（authors-note.js）：1=每次注入，0=关闭，N=当前对话用户消息数为 N 的整数倍时注入
-        val interval = settings.authorNoteInterval
-        val userCount = ctx.chatUserMessageCount ?: messages.count {
-            it.role == MessageRole.USER && !it.isInjectedBlock()
-        }
-        val shouldInject = when {
-            interval == 1 -> true
-            interval <= 0 -> false
-            else -> userCount >= interval && userCount % interval == 0
-        }
-        if (!shouldInject) return messages
+internal fun transformAuthorNotes(
+    settings: Settings,
+    assistant: Assistant,
+    conversationId: Uuid?,
+    chatUserMessageCount: Int?,
+    chatMessageCount: Int?,
+    messages: List<UIMessage>,
+    frozenAnchors: MutableMap<String, Pair<String, String>> = mutableMapOf(),
+): List<UIMessage> {
+    if (!settings.authorNoteEnabled) return messages
 
-        val noteText = when {
-            personaTop -> "$personaDesc\n${settings.authorNote}"
-            personaBottom -> "${settings.authorNote}\n$personaDesc"
-            else -> settings.authorNote
-        }
+    val userCount = chatUserMessageCount ?: messages.count {
+        it.role == MessageRole.USER && !it.isInjectedBlock()
+    }
+    val entries = settings.authorNoteEntriesOrLegacy()
+    val persona = settings.personas.find { it.id == settings.activePersonaId }
+    val personaActive = persona != null && persona.enabled && persona.description.isNotBlank() &&
+        (persona.lockedCharacterIds.isEmpty() || assistant.id in persona.lockedCharacterIds)
+    val personaAtTop = personaActive && persona?.position == PersonaInjectionPosition.TOP_OF_CHAT
+    val personaAtBottom = personaActive && persona?.position == PersonaInjectionPosition.BOTTOM_OF_CHAT
 
-        // 内部标记：PlaceholderTransformer 发送前会剥离，避免注入块被当成真实消息
-        val body = "[Author's Note]\n$noteText"
-        // 官方（st_openai.js getPromptRole）：三个位置都使用用户选择的注入角色
-        val noteMsg = when (settings.authorNoteRole) {
-            MessageRole.ASSISTANT -> UIMessage.assistant(body)
-            MessageRole.USER -> UIMessage.user(body)
-            else -> UIMessage.system(body)
-        }
-
-        return when (settings.authorNotePosition) {
-            // Before Main Prompt / Story String：整个提示词最前面
-            AuthorNotePosition.BEFORE_PROMPT -> listOf(noteMsg) + messages
-
-            // After Main Prompt / Story String：紧跟主提示词（官方插入到 main 集合末尾）
-            AuthorNotePosition.IN_PROMPT -> {
-                val idx = (messages.indexOfFirst { it.role == MessageRole.SYSTEM } + 1).coerceAtLeast(0)
-                messages.take(idx) + noteMsg + messages.drop(idx)
-            }
-
-            // In-chat @ Depth：从对话最末尾往前数 depth 条；depth 0 = 对话最末尾
-            AuthorNotePosition.IN_CHAT -> {
-                val chatSize = ctx.chatMessageCount ?: messages.size
-                val depth = settings.authorNoteDepth.coerceAtLeast(0)
-                // 按用户轮冻结锚点：首步按深度计算插入点并记下锚点消息 id，
-                // 后续 agentic 步骤按 id 复位插入点（锚点消息被裁剪才退回动态计算）
-                val turnKey = "${ctx.assistant.id}:${ctx.conversationId ?: "no-conversation"}"
-                val lastUserMsgId = messages.lastOrNull { it.role == MessageRole.USER }?.id?.toString()
-                val cached = frozenInChatAnchors[turnKey]?.takeIf { it.first == lastUserMsgId }?.second
-                val insertIdx = when {
-                    cached != null -> {
-                        val mode = cached.substringBefore(':')
-                        val anchorId = cached.substringAfter(':')
-                        val anchorIdx = messages.indexOfFirst { it.id.toString() == anchorId }
-                        when {
-                            anchorIdx < 0 ->
-                                (messages.size - minOf(depth, chatSize))
-                                    .coerceIn(messages.size - chatSize, messages.size)
-                            mode == "after" -> anchorIdx + 1
-                            else -> anchorIdx
-                        }
-                    }
-                    else -> {
-                        val computed = (messages.size - minOf(depth, chatSize))
-                            .coerceIn(messages.size - chatSize, messages.size)
-                        if (lastUserMsgId != null && messages.isNotEmpty()) {
-                            // depth 0（对话最末尾）记 after 锚点，其余记 before 锚点
-                            val mode = if (computed >= messages.size) "after" else "before"
-                            val anchorIdx = if (mode == "after") messages.size - 1 else computed
-                            val anchor = messages.getOrNull(anchorIdx)?.id?.toString()
-                            if (anchor != null) {
-                                if (frozenInChatAnchors.size >= 64) frozenInChatAnchors.clear()
-                                frozenInChatAnchors[turnKey] = lastUserMsgId to "$mode:$anchor"
-                            }
-                        }
-                        computed
-                    }
+    // TOP/BOTTOM 在旧实现里与单条导演备注共用参数和 interval。多条模式下仍只生成一个
+    // Persona 候选：优先沿用物化后的 legacy entry，否则沿用保留的旧全局参数。
+    val personaCarrier = entries.firstOrNull { it.id == LEGACY_AUTHOR_NOTE_ENTRY_ID }
+        ?: AuthorNoteEntry(
+            id = LEGACY_AUTHOR_NOTE_ENTRY_ID,
+            position = settings.authorNotePosition,
+            depth = settings.authorNoteDepth,
+            role = settings.authorNoteRole,
+            interval = settings.authorNoteInterval,
+        )
+    val personaShouldInject = (personaAtTop || personaAtBottom) &&
+        shouldInjectAuthorNote(personaCarrier.interval, userCount)
+    val activeEntries = entries.filter {
+        it.enabled && it.content.isNotBlank() && shouldInjectAuthorNote(it.interval, userCount)
+    }
+    // 旧单条数据继续保持“Persona 与 Author's Note 合并成同一条消息”的结构。
+    // 纯新模型没有 legacy 载体时，才退化为一条独立候选，且全程只创建一次。
+    val mergePersonaIntoLegacy = personaShouldInject &&
+        activeEntries.any { it.id == LEGACY_AUTHOR_NOTE_ENTRY_ID }
+    val noteCandidates = activeEntries.map { entry ->
+        val candidate = entry.toCandidate()
+        if (entry.id != LEGACY_AUTHOR_NOTE_ENTRY_ID || !mergePersonaIntoLegacy) {
+            candidate
+        } else {
+            candidate.copy(
+                content = if (personaAtTop) {
+                    "${persona?.description.orEmpty()}\n${candidate.content}"
+                } else {
+                    "${candidate.content}\n${persona?.description.orEmpty()}"
                 }
-                val safeIdx = findSafeInsertIndex(messages, insertIdx)
-                messages.take(safeIdx) + noteMsg + messages.drop(safeIdx)
-            }
+            )
         }
     }
+    val personaCandidate = persona?.takeIf {
+        personaShouldInject && !mergePersonaIntoLegacy
+    }?.let {
+        AuthorNoteCandidate(
+            anchorId = "persona:${it.id}",
+            content = it.description,
+            position = personaCarrier.position,
+            depth = personaCarrier.depth,
+            role = personaCarrier.role,
+        )
+    }
+
+    val candidates = buildList {
+        if (personaAtTop && personaCandidate != null) add(personaCandidate)
+        addAll(noteCandidates)
+        if (personaAtBottom && personaCandidate != null) add(personaCandidate)
+    }
+    if (candidates.isEmpty()) return messages
+
+    val chatSize = (chatMessageCount ?: messages.size).coerceIn(0, messages.size)
+    val turnKey = "${assistant.id}:${conversationId ?: "no-conversation"}"
+    val lastUserMsgId = messages.lastOrNull {
+        it.role == MessageRole.USER && !it.isInjectedBlock()
+    }?.id?.toString()
+
+    val planned = candidates.mapIndexed { order, candidate ->
+        val targetIndex = when (candidate.position) {
+            AuthorNotePosition.BEFORE_PROMPT -> 0
+            AuthorNotePosition.IN_PROMPT ->
+                (messages.indexOfFirst { it.role == MessageRole.SYSTEM } + 1).coerceAtLeast(0)
+            AuthorNotePosition.IN_CHAT -> resolveInChatIndex(
+                messages = messages,
+                chatSize = chatSize,
+                depth = candidate.depth.coerceAtLeast(0),
+                cacheKey = "$turnKey:${candidate.anchorId}:${candidate.depth}",
+                lastUserMsgId = lastUserMsgId,
+                frozenAnchors = frozenAnchors,
+            )
+        }
+        PlannedAuthorNote(
+            index = if (candidate.position == AuthorNotePosition.IN_CHAT) {
+                findSafeInsertIndex(messages, targetIndex)
+            } else {
+                targetIndex
+            },
+            order = order,
+            message = authorNoteMessage(candidate),
+        )
+    }
+
+    // 所有位置都先基于原始 messages 计算，再一次性插入；前一条备注不会改变后一条的 depth。
+    val byIndex = planned
+        .sortedWith(compareBy<PlannedAuthorNote> { it.index }.thenBy { it.order })
+        .groupBy { it.index }
+    return buildList(messages.size + planned.size) {
+        for (index in 0..messages.size) {
+            byIndex[index].orEmpty().forEach { add(it.message) }
+            if (index < messages.size) add(messages[index])
+        }
+    }
+}
+
+internal fun shouldInjectAuthorNote(interval: Int, userCount: Int): Boolean = when {
+    interval == 1 -> true
+    interval <= 0 -> false
+    else -> userCount >= interval && userCount % interval == 0
+}
+
+private fun AuthorNoteEntry.toCandidate() = AuthorNoteCandidate(
+    anchorId = id,
+    content = content,
+    position = position,
+    depth = depth,
+    role = role,
+)
+
+private fun authorNoteMessage(candidate: AuthorNoteCandidate): UIMessage {
+    val body = "[Author's Note]\n${candidate.content}"
+    return when (candidate.role) {
+        MessageRole.ASSISTANT -> UIMessage.assistant(body)
+        MessageRole.USER -> UIMessage.user(body)
+        else -> UIMessage.system(body)
+    }
+}
+
+private fun resolveInChatIndex(
+    messages: List<UIMessage>,
+    chatSize: Int,
+    depth: Int,
+    cacheKey: String,
+    lastUserMsgId: String?,
+    frozenAnchors: MutableMap<String, Pair<String, String>>,
+): Int {
+    val lowerBound = messages.size - chatSize
+    val fallback = {
+        (messages.size - minOf(depth, chatSize)).coerceIn(lowerBound, messages.size)
+    }
+    val cached = frozenAnchors[cacheKey]
+        ?.takeIf { it.first == lastUserMsgId }
+        ?.second
+    if (cached != null) {
+        val mode = cached.substringBefore(':')
+        val anchorId = cached.substringAfter(':')
+        val anchorIdx = messages.indexOfFirst { it.id.toString() == anchorId }
+        return when {
+            anchorIdx < 0 -> fallback()
+            mode == "after" -> anchorIdx + 1
+            else -> anchorIdx
+        }
+    }
+
+    val computed = fallback()
+    if (lastUserMsgId != null && messages.isNotEmpty()) {
+        val mode = if (computed >= messages.size) "after" else "before"
+        val anchorIdx = if (mode == "after") messages.lastIndex else computed
+        messages.getOrNull(anchorIdx)?.id?.toString()?.let { anchor ->
+            if (frozenAnchors.size >= 256) frozenAnchors.clear()
+            frozenAnchors[cacheKey] = lastUserMsgId to "$mode:$anchor"
+        }
+    }
+    return computed
 }
 
 /** 注入块内部标记识别（与 PlaceholderTransformer 的剥离逻辑保持一致） */
