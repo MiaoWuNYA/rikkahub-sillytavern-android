@@ -98,6 +98,9 @@ internal val QUOTE_REGEX = Regex(
 )
 
 private fun preProcess(content: String): String {
+    // 状态栏表格化：emoji 字段行 → GFM 表格（见 StatusTable.kt）
+    val content = convertStatusBlocksToTables(content)
+
     val codeBlocks = mutableListOf<IntRange>()
     CODE_BLOCK_REGEX.findAll(content).forEach { codeBlocks.add(it.range) }
     fun isInCodeBlock(pos: Int) = codeBlocks.any { pos in it }
@@ -684,7 +687,17 @@ private fun HtmlDetails(element: Element, onClickCitation: (String) -> Unit) {
     val summaryElement = element.children().find { it.tagName().lowercase() == "summary" }
     val summaryText = summaryElement?.text() ?: "Details"
 
-    var expanded by remember { mutableStateOf(element.hasAttr("open")) }
+    // 默认展开。
+    //
+    // 原来按 HTML 规范走 `hasAttr("open")`——不写这个属性就是收起的。
+    // 但角色卡常把 <details> 当作「工作记忆」「历史档案」「状态栏」的容器，
+    // 那些内容本来就要一眼看到，默认收起意味着用户每次都要逐个点开，
+    // 而且不看就不知道里面有没有新内容。
+    //
+    // 显式写了 open 的仍然展开（本来就是展开），没写的也当展开，
+    // 用户想收起随时点一下即可——这里只是把初始状态改成展开，
+    // 没有改点击切换的行为，交互上没有损失。
+    var expanded by remember { mutableStateOf(true) }
 
     Column(modifier = Modifier.padding(vertical = 4.dp)) {
         Row(
