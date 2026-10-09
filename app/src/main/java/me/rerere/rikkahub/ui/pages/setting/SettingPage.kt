@@ -585,8 +585,12 @@ private fun AnnouncementHost() {
         me.rerere.rikkahub.ui.components.ui.AnnouncementDialog(
             announcement = current,
             onDismiss = { dontShowAgain ->
+                // 「知道了」也要记 1 小时静默，否则下次进来立刻又弹
+                val mgr = me.rerere.rikkahub.data.service.AnnouncementManager
                 if (dontShowAgain && current.dismissible) {
-                    me.rerere.rikkahub.data.service.AnnouncementManager.dismiss(context, current.id)
+                    mgr.dismissForever(context, current.id)
+                } else {
+                    mgr.dismiss(context, current.id)
                 }
                 announcement = null
             },

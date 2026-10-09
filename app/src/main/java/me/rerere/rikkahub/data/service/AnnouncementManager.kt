@@ -39,19 +39,7 @@ object AnnouncementManager {
 
     private const val PREFS = "rikkahub.announcement"
 
-    /**
-     * 已关闭的公告 id 集合。
-     *
-     * **必须是一组，不是一个。**
-     *
-     * 之前只存单个 id：用户关掉任何一条公告，就把那个值覆盖成它的 id，
-     * 结果是「关掉这条 = 以后所有公告都不再显示」。用户看到的下一条
-     * 公告（可能是数据安全相关的提醒）会被静默吞掉，而他并不知道
-     * 自己什么时候同意过这件事。
-     *
-     * 用 Set<String> 的序列化形式存，读的时候容错：格式不对就当成空集合，
-     * 大不了让用户多看一次公告——这个方向的错误远好过静默丢公告。
-     */
+    // 必须是集合：存单个值会让「关掉一条」变成「以后全部不显示」
     private const val KEY_DISMISSED_IDS = "dismissed_ids"
 
     private const val ASSET_DIR = "announcement"
@@ -199,24 +187,10 @@ object AnnouncementManager {
     private fun Announcement.isUsable(): Boolean =
         id.isNotBlank() && (title.isNotBlank() || body.isNotBlank())
 
-    /**
-     * 「知道了」后的静默时长。
-     *
-     * 不是永久关闭：用户点掉公告只是说「我现在看过了」，同一条公告
-     * 一小时后再进来还是应该再见到（比如群号公告，用户第一次没扫码）。
-     */
+    // 知道了后静默 1 小时，过后再弹
     private const val REAPPEAR_AFTER_MS = 60L * 60 * 1000
 
-    /**
-     * 读取已关闭的公告及其关闭时间。
-     *
-     * 存储格式：每行 `id@关闭时间戳`（毫秒）。用换行分隔而不是 JSON：
-     * 内容只是若干条记录，用不着引入解析开销，而且格式坏掉时的
-     * 降级行为很直观（读不出就是空集合）。
-     *
-     * 旧版本存的是纯 id（没有 @），那些行视为**永久关闭**——
-     * 用户当时明确点过「知道了」，新逻辑只对之后新点的生效。
-     */
+    // 每行 id@时间戳（毫秒）；旧格式纯 id 视为永久关闭
     private fun dismissedRecords(context: Context): Map<String, Long?> =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getString(KEY_DISMISSED_IDS, null)
@@ -229,22 +203,13 @@ object AnnouncementManager {
             }
             ?: emptyMap()
 
-    /**
-     * 该公告当前是否处于「不再提示」状态。
-     *
-     * **只看这一条**，不影响别的公告。关闭时间在一小时内才算还在静默期；
-     * 超过一小时视为过期，公告会再次弹出。
-     *
-     * 时间基准是墙钟（[System.currentTimeMillis]），与手机系统时间一致：
-     * 用户手动把手机时间往后调过一小时，公告同样会回来——
-     * 不用开机流逝时长（elapsedRealtime），那会随重启清零且不受调时间影响，
-     * 语义和「手机时间为准」的要求不符。
-     */
+    // 关过且未过 1 小时静默期才算已关闭；时间以手机墙钟为准
     fun isDismissed(context: Context, id: String): Boolean {
         if (id.isBlank()) return false
-        val dismissedAt = dismissedRecords(context)[id]
-        // 旧格式（无时间戳）= 永久关闭
-        if (dismissedAt == null) return true
+        val records = dismissedRecords(context)
+        // 没关过的公告必须弹；只有关过且未过静默期才不弹
+        if (!records.containsKey(id)) return false
+        val dismissedAt = records[id] ?: return true // 旧格式无时间戳 = 永久关闭
         return System.currentTimeMillis() - dismissedAt < REAPPEAR_AFTER_MS
     }
 
@@ -252,7 +217,6 @@ object AnnouncementManager {
         if (id.isBlank()) return
         val records = dismissedRecords(context).toMutableMap()
         records[id] = System.currentTimeMillis()
-        // 旧格式记录（无时间戳）保持原样写回，仍是永久关闭
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit {
                 putString(KEY_DISMISSED_IDS, records.entries.joinToString("\n") { (k, v) ->
@@ -261,12 +225,20 @@ object AnnouncementManager {
             }
     }
 
-    /**
-     * 清空所有「不再提示」记录。
-     *
-     * 供设置页用。顺带把旧版本留下的单值键一起清掉，免得升级上来的
-     * 用户还留着一条历史记录。
-     */
+    // 永久关闭：写旧格式纯 id，isDismissed 对无时间戳记录恒为 true
+    fun dismissForever(context: Context, id: String) {
+        if (id.isBlank()) return
+        val records = dismissedRecords(context).toMutableMap()
+        records[id] = null
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit {
+                putString(KEY_DISMISSED_IDS, records.entries.joinToString("\n") { (k, v) ->
+                    if (v == null) k else "$k@$v"
+                })
+            }
+    }
+
+    // 清空所有不再提示记录
     fun reset(context: Context) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit {
