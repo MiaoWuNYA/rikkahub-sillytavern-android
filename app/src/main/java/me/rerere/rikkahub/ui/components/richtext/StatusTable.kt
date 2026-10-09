@@ -1,28 +1,6 @@
 package me.rerere.rikkahub.ui.components.richtext
 
-/**
- * 状态栏文本 → GFM 表格。
- *
- * 大量卡片的输出状态栏是「emoji 开头的字段行」堆出来的：
- *
- *     🎭身份: 转移事件幸存者
- *     📜冒险者等级: 未注册
- *     💪🏼身体状况: 55%｜40%｜左臂有未愈合的撕裂伤
- *     🌀玩家能力:
- *     ┣ 剑术: 初级 exp:0/100
- *     ┗ 特殊能力: 【无】
- *
- * 这在酒馆里也是普通文本，视觉上靠 emoji 撑排版。放进窄屏聊天列表
- * 就是一坨挤在一起的行，长值还会和下一行混在一起读。
- *
- * 把连续的状态行转成两列 GFM 表格（字段 | 值），两个渲染器
- * （自研 AST 路径与 MarkdownNew 的 HTML 路径）都能正确渲染表格。
- *
- * **触发条件刻意苛刻**，避免把普通聊天文本误转成表格：
- *   · 每行行首必须是「装饰字符」——emoji / 变体选择符 / 制表符号（┣┃┗）
- *   · 必须有 `字段: 值` 结构（全半角冒号都认）
- *   · **连续 ≥3 行**才成块；不满足则原样保留
- */
+// 状态栏 emoji 字段行（连续 3 行以上）转 GFM 两列表格；条件苛刻防误伤
 private fun statusDecor(ch: Char, next: Char?): Boolean {
     val code = ch.code
     if (code in 0x2500..0x257F) return true   // ┣ ┃ ┗ 等制表符号
@@ -37,7 +15,6 @@ private fun statusDecor(ch: Char, next: Char?): Boolean {
     return false
 }
 
-/** 一行状态字段：(字段（含 emoji），值)；不是状态行返回 null。 */
 private fun parseStatusLine(line: String): Pair<String, String>? {
     val t = line.trimStart().trimEnd('\r')
     if (t.isEmpty()) return null
@@ -69,7 +46,8 @@ internal fun convertStatusBlocksToTables(content: String): String {
 
     fun flush() {
         if (block.size >= 3) {
-            out.append("| 字段 | 值 |\n| --- | --- |\n")
+            // GFM 表格前面必须是空行，否则整段不会被解析成表格
+            out.append("\n| 字段 | 值 |\n| --- | --- |\n")
             block.forEach { (f, v) ->
                 out.append("| ").append(f).append(" | ").append(v.ifEmpty { " " }).append(" |\n")
             }
@@ -95,4 +73,18 @@ internal fun convertStatusBlocksToTables(content: String): String {
     // 原文末尾有没有换行保持一致
     val result = out.toString()
     return if (content.endsWith("\n")) result else result.trimEnd('\n')
+}
+
+// 行首 >>>（3 个以上）是卡的引导序列，转义防止被 markdown 吃成嵌套引用
+internal fun escapeGuideSequence(content: String): String {
+    if (">>>" !in content) return content
+    return content.lines().joinToString("\n") { line ->
+        val trimmed = line.trimStart()
+        if (!trimmed.startsWith(">>>")) {
+            line
+        } else {
+            val lead = line.take(line.length - trimmed.length)
+            lead + "\\>>> " + trimmed.drop(3).removePrefix(" ")
+        }
+    }
 }
