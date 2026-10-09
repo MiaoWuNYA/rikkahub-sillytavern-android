@@ -93,6 +93,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
@@ -375,7 +376,9 @@ private fun ModeInjectionCard(
         Card(
             colors = CardDefaults.cardColors(
                 containerColor = CustomColors.listItemColors.containerColor
-            )
+            ),
+            // 禁用的条目整条淡化：不用点进详情就知道它不生效
+            modifier = if (!injection.enabled) Modifier.alpha(0.5f) else Modifier,
         ) {
             Row(
                 modifier = Modifier
@@ -403,7 +406,11 @@ private fun ModeInjectionCard(
                         Tag(type = TagType.DEFAULT) {
                             Text(stringResource(R.string.prompt_page_priority_format, injection.priority))
                         }
-                        if (!injection.enabled) {
+                        if (injection.enabled) {
+                            Tag(type = TagType.SUCCESS) {
+                                Text(stringResource(R.string.prompt_page_enabled))
+                            }
+                        } else {
                             Tag(type = TagType.WARNING) {
                                 Text(stringResource(R.string.prompt_page_disabled))
                             }
@@ -1196,7 +1203,11 @@ private fun LorebookCard(
                                 )
                             )
                         }
-                        if (!book.enabled) {
+                        if (book.enabled) {
+                            Tag(type = TagType.SUCCESS) {
+                                Text(stringResource(R.string.prompt_page_enabled))
+                            }
+                        } else {
                             Tag(type = TagType.WARNING) {
                                 Text(stringResource(R.string.prompt_page_disabled))
                             }
