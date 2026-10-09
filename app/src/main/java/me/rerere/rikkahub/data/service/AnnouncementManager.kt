@@ -200,28 +200,65 @@ object AnnouncementManager {
         id.isNotBlank() && (title.isNotBlank() || body.isNotBlank())
 
     /**
-     * 读取已关闭的公告集合。
+     * 「知道了」后的静默时长。
      *
-     * 用换行分隔而不是 JSON：内容只是若干个 id，用不着引入解析开销，
-     * 而且格式坏掉时的降级行为很直观（读不出就是空集合）。
+     * 不是永久关闭：用户点掉公告只是说「我现在看过了」，同一条公告
+     * 一小时后再进来还是应该再见到（比如群号公告，用户第一次没扫码）。
      */
-    private fun dismissedIds(context: Context): Set<String> =
+    private const val REAPPEAR_AFTER_MS = 60L * 60 * 1000
+
+    /**
+     * 读取已关闭的公告及其关闭时间。
+     *
+     * 存储格式：每行 `id@关闭时间戳`（毫秒）。用换行分隔而不是 JSON：
+     * 内容只是若干条记录，用不着引入解析开销，而且格式坏掉时的
+     * 降级行为很直观（读不出就是空集合）。
+     *
+     * 旧版本存的是纯 id（没有 @），那些行视为**永久关闭**——
+     * 用户当时明确点过「知道了」，新逻辑只对之后新点的生效。
+     */
+    private fun dismissedRecords(context: Context): Map<String, Long?> =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getString(KEY_DISMISSED_IDS, null)
             ?.split('\n')
             ?.filter { it.isNotBlank() }
-            ?.toSet()
-            ?: emptySet()
+            ?.associate { line ->
+                val at = line.lastIndexOf('@')
+                if (at <= 0 || at == line.length - 1) line to null
+                else line.substring(0, at) to line.substring(at + 1).toLongOrNull()
+            }
+            ?: emptyMap()
 
-    /** 该公告是否已被用户「不再提示」。**只看这一条**，不影响别的公告。 */
-    fun isDismissed(context: Context, id: String): Boolean =
-        id.isNotBlank() && id in dismissedIds(context)
+    /**
+     * 该公告当前是否处于「不再提示」状态。
+     *
+     * **只看这一条**，不影响别的公告。关闭时间在一小时内才算还在静默期；
+     * 超过一小时视为过期，公告会再次弹出。
+     *
+     * 时间基准是墙钟（[System.currentTimeMillis]），与手机系统时间一致：
+     * 用户手动把手机时间往后调过一小时，公告同样会回来——
+     * 不用开机流逝时长（elapsedRealtime），那会随重启清零且不受调时间影响，
+     * 语义和「手机时间为准」的要求不符。
+     */
+    fun isDismissed(context: Context, id: String): Boolean {
+        if (id.isBlank()) return false
+        val dismissedAt = dismissedRecords(context)[id]
+        // 旧格式（无时间戳）= 永久关闭
+        if (dismissedAt == null) return true
+        return System.currentTimeMillis() - dismissedAt < REAPPEAR_AFTER_MS
+    }
 
     fun dismiss(context: Context, id: String) {
         if (id.isBlank()) return
-        val updated = dismissedIds(context) + id
+        val records = dismissedRecords(context).toMutableMap()
+        records[id] = System.currentTimeMillis()
+        // 旧格式记录（无时间戳）保持原样写回，仍是永久关闭
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit { putString(KEY_DISMISSED_IDS, updated.joinToString("\n")) }
+            .edit {
+                putString(KEY_DISMISSED_IDS, records.entries.joinToString("\n") { (k, v) ->
+                    if (v == null) k else "$k@$v"
+                })
+            }
     }
 
     /**
@@ -239,7 +276,7 @@ object AnnouncementManager {
     }
 
     /** 已关闭的数量，供设置页显示状态。 */
-    fun dismissedCount(context: Context): Int = dismissedIds(context).size
+    fun dismissedCount(context: Context): Int = dismissedRecords(context).size
 
     /**
      * 配图对应的 assets 路径；没有配图时返回 null。
