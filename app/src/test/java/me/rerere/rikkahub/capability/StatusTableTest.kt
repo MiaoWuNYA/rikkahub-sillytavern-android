@@ -1,6 +1,7 @@
 package me.rerere.rikkahub.capability
 
 import me.rerere.rikkahub.ui.components.richtext.convertStatusBlocksToTables
+import me.rerere.rikkahub.ui.components.richtext.escapeGuideSequence
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -83,5 +84,21 @@ class StatusTableTest {
         assertTrue("前面的段落要保留", out.contains("介绍段落。"))
         assertTrue("结尾段要保留", out.contains("结尾段。"))
         assertTrue("中间要成表", out.contains("| 字段 | 值 |"))
+    }
+}
+
+class GuideSequenceTest {
+    @Test
+    fun `the 666 card guide lines are escaped`() {
+        val raw = ">>> [PARADISE_PROTOCOL::SESSION_INIT]\n>>> [WORLD_DATA::LOADING...]\n>>> 欢迎来到《综漫东京2050》。"
+        val out = escapeGuideSequence(raw)
+        assertTrue(out.contains("\\>>> [PARADISE_PROTOCOL::SESSION_INIT]"))
+        assertTrue(out.contains("\\>>> 欢迎来到"))
+    }
+
+    @Test
+    fun `normal blockquote is untouched`() {
+        val raw = "> 一层引用\n>> 两层引用"
+        assertEquals(raw, escapeGuideSequence(raw))
     }
 }

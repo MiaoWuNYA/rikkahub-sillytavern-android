@@ -131,29 +131,13 @@ private val BREAK_LINE_REGEX = Regex("(?i)<br\\s*/?>")
 private val LATEX_BLOCK_LINE_BREAK_REGEX = Regex("""[ \t]*\r?\n[ \t]*""")
 
 // 预处理markdown内容
-/**
- * 中文语气波浪线 → 全角 ～，避免被 GFM 当成删除线。
- *
- * 中文里 `~` 是语气/拖长音记号（`啊~嗯❤~`、`好舒服~`），不是删除线语法；
- * 但 GFM 的删除线既支持 `~~文字~~` 也支持单个 `~文字~`，于是
- *     "啊~嗯❤~"是这个...啊~嗯❤~
- * 这种两段语气词之间的内容会被整段吞成删除线，表现为「莫名其妙出现一条
- * 划线」。这是中文角色扮演文本的高频写法，实测复现率很高。
- *
- * 处理策略刻意保守：**只改单个 ~**，且它与 CJK 字符相邻时才改。
- * - 连续的 `~~` 一律不动——那是用户明确写出的删除线语法，必须保留原义；
- * - 与 ASCII 相邻的 `~` 也不动（路径、正则、数学式里常见）。
- * 转成全角 ～（U+FF5E）而不是删除：视觉几乎一致，但 GFM 不认它是标记，
- * 因此既不触发删除线，也不改变用户看到的字符形状。
- */
+// 中文语气波浪线转全角 ～，避免被 GFM 当成删除线；连续 ~~ 与 ASCII 相邻不动
 internal fun String.normalizeCjkTildes(): String {
     if ('~' !in this) return this
     fun isCjk(ch: Char): Boolean =
-        ch.code in 0x4E00..0x9FFF ||   // CJK 统一表意文字
-        ch.code in 0x3000..0x303F ||   // CJK 标点
-        ch.code in 0xFF00..0xFFEF ||   // 全角字符
-        ch.code in 0x2600..0x27BF ||   // 各类符号 / emoji 装饰（❤ 等）
-        ch.code in 0x1F300..0x1FAFF
+        ch.code in 0x4E00..0x9FFF || ch.code in 0x3000..0x303F ||
+            ch.code in 0xFF00..0xFFEF || ch.code in 0x2600..0x27BF ||
+            ch.code in 0x1F300..0x1FAFF
 
     val out = StringBuilder(length)
     var i = 0
@@ -165,7 +149,7 @@ internal fun String.normalizeCjkTildes(): String {
         val prev = if (i > 0) this[i - 1] else ' '
         val next = if (j < length) this[j] else ' '
         if (runLength == 1 && (isCjk(prev) || isCjk(next))) {
-            out.append('\uFF5E')
+            out.append(0xFF5E.toChar())
         } else {
             repeat(runLength) { out.append('~') }
         }
@@ -179,8 +163,7 @@ internal fun String.normalizeCjkTildes(): String {
 // 命名加 Mk 前缀是因为同包的 MarkdownNew.kt 也有一个 preProcess，
 // 两者预处理规则不同，不能混用。
 internal fun preProcessMarkdown(content: String): String {
-    // 状态栏表格化：emoji 字段行 → GFM 表格（见 StatusTable.kt）
-    val content = convertStatusBlocksToTables(content)
+    val content = escapeGuideSequence(convertStatusBlocksToTables(content))
 
     // 先找出所有代码块的位置
     val codeBlocks = mutableListOf<IntRange>()
@@ -321,19 +304,7 @@ fun MarkdownBlock(
     cardHost: CardHostContext? = null,
     /** 当前对话消息快照（官方 swipes 结构），供卡内 `getChatMessages` 读取。 */
     cardMessagesJson: String = "[]",
-    /**
-     * 这条消息是否**正在流式生成中**。
-     *
-     * 生成期间必须**禁用卡片渲染**，只用 Markdown 显示文本。
-     *
-     * 原因是实测遇到的一个严重问题：模型流式输出的正文里常含
-     * `<article>`、`<hd>`、`<dc>` 这类标签（提示词要求的结构化输出），
-     * 它们会被 [looksLikeCardMarkup] 判成「卡片区域」，于是交给 WebView。
-     * 而此刻 HTML 只写了一半、标签没闭合，WebView 渲染出来是一个残缺
-     * 的网页：高度上报不全、内容错乱，看起来就像**卡死**。
-     *
-     * 生成结束后标签闭合、内容稳定，这时再交给 WebView 才是对的。
-     */
+    // 生成中禁用卡片渲染：半截 HTML 交给 WebView 会渲染出残缺网页
     isStreaming: Boolean = false,
 ) {
     val settings = LocalSettings.current.displaySetting
@@ -346,8 +317,6 @@ fun MarkdownBlock(
     // DOCTYPE/head 会被当成散文渲染出一堆源码。
     // 卡片默认内联展开、高度自适应——对齐官方把卡片内联进消息 DOM 的行为，
     // 用户不需要额外点击就能看到完整卡片（issue：网页卡滑动/显示异常）。
-    // 生成中一律不走卡片路径。见 isStreaming 的说明：
-    // 半截 HTML 交给 WebView 会渲染出残缺网页，观感像卡死。
     val fencedCard = if (isStreaming) null else findFencedHtmlDocument(content)
     // 裸 HTML 路径要按「散文 / 卡片」交替拆段。
     // 酒馆卡开场白常是「<normal_status> + 大段正文 + <UI> + <special_status>」，

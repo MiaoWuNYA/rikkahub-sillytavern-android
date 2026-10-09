@@ -464,19 +464,7 @@ private class CardWebView(context: Context) : WebView(context) {
         isFocusable = true
     }
 
-    /**
-     * 阻断「被移除时的焦点转移」。
-     *
-     * 这是 ComposeRuntimeError（pending composition has not been applied）
-     * 崩溃的触发链：卡片滑出屏幕时 AndroidViewHolder 走 removeViewInLayout，
-     * ViewGroup 在这个时机调 rootViewRequestFocus() 把焦点转交给别的 View，
-     * 于是 AndroidComposeView.requestFocus → focusSearch → forceRemeasure
-     * ——在 LazyColumn 正在测量的过程中要求重新组合，Compose 直接抛内部错误。
-     *
-     * 卡片越高越容易滑出屏幕被回收，所以长前端卡的用户高频撞上。
-     * 这里在被移除的窗口内拒绝参与焦点竞争：卡片消失后焦点本就无处可去，
-     * 交给 Compose 自行挑下一个可聚焦项，比让系统在测量中途强行搜索安全。
-     */
+    // 移除窗口内拒绝焦点请求：该时机的焦点搜索会打断 LazyColumn 测量导致崩溃
     private var detaching = false
 
     override fun requestFocus(direction: Int, previouslyFocusedRect: android.graphics.Rect?): Boolean {
@@ -839,9 +827,7 @@ $baseCss
     activateScripts(frag);
     root.appendChild(frag);
 
-    // 折叠面板默认展开（与片段页一致）。
-    // <details> 不写 open 就是收起的，而卡常把它当「工作记忆 / 历史档案 /
-    // 状态栏」的容器——那些内容本来就要一眼看到。展开后仍可手动收起。
+    // 折叠面板默认展开
     try {
       root.querySelectorAll('details').forEach(function(d) {
         if (!d.hasAttribute('open')) d.setAttribute('open', '');
@@ -925,6 +911,8 @@ $markedTag
     src = src.replace(/^[ \t]+(<\/?[a-zA-Z]|<!--)/gm, '${'$'}1');
     // 修复 "< img" 这类被塞进空格的标签（酒馆卡常见）
     src = src.replace(/<\s+(img|br|hr|div|span|p|table|thead|tbody|tr|td|th|ul|ol|li|h[1-6]|details|summary|section|article|center|font|blockquote|em|strong|small|sub|sup|button|label)\b/gi, '<${'$'}1');
+    // 引导序列行原样显示，别被 markdown 吃成嵌套引用
+    src = src.replace(/^(\s*)>{3,}\s?/gm, '$1\\>>> ');
     // 先把 ``` 围栏转成 <pre>：位于自定义标签内部时 marked 会吞掉围栏，
     // 导致 yaml 面板显示成带 ``` 的字面文本
     src = src.replace(/```[^\n`]*\n([\s\S]*?)```/g, function(m, code) {
@@ -936,14 +924,7 @@ $markedTag
     } else {
       root.innerHTML = src;
     }
-    // 折叠面板默认展开。
-    //
-    // <details> 不写 open 属性时浏览器默认是收起的，而角色卡常把它当作
-    // 「工作记忆」「历史档案」「状态栏」这类信息的容器——默认收起意味着
-    // 用户每次都要逐个点开才能看到内容，而这些本来就是要一眼看到的东西。
-    //
-    // 展开后用户仍可手动收起：这里只是把初始状态改成展开，
-    // 不改 <summary> 的点击行为，所以交互没有损失。
+    // 折叠面板默认展开
     root.querySelectorAll('details').forEach(function(d) {
       if (!d.hasAttribute('open')) d.setAttribute('open', '');
     });
