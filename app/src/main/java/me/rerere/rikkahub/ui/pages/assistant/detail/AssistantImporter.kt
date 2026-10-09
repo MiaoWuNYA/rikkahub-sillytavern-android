@@ -767,6 +767,47 @@ private fun parseConversationExport(
     return assistant to emptyList()
 }
 
+/**
+ * 决定导入后的头像。
+ *
+ * 优先级：
+ *   1. 本地 PNG 卡解析出的 avatarUri —— 那是从卡里抽出来的真实图片文件
+ *   2. `data.avatar` 里的远程 URL —— chub 等平台导出时带的是 CDN 地址
+ *   3. 默认头像
+ *
+ * 第 2 条是后加的。chub（charhub.io）的卡在 data.avatar 放的是
+ * `https://avatars.charhub.io/.../chara_card_v2.png`，原来这个字段
+ * 完全没被读，导入后头像是灰的——功能上不报错，但用户会以为卡没导全。
+ *
+ * 只在看起来像 URL 时才用：本地卡里偶尔有相对路径或空串，
+ * 那些塞进 Avatar.Image 会得到一个加载不出来的头像，比默认头像更糟。
+ */
+private fun resolveCardAvatar(avatarUri: String?, remoteAvatar: String?): Avatar = when {
+    !avatarUri.isNullOrBlank() -> Avatar.Image(avatarUri)
+    !remoteAvatar.isNullOrBlank() &&
+        (remoteAvatar.startsWith("http://") || remoteAvatar.startsWith("https://")) ->
+        Avatar.Image(remoteAvatar)
+    else -> Avatar.Dummy
+}
+
+/**
+ * 安全的对象取值。
+ *
+ * Kotlin 里 `element?.jsonObject` 只挡住了「字段不存在」，
+ * **挡不住「字段存在但值是 JSON null」**——后者会执行
+ * `JsonNull.jsonObject`，抛：
+ *
+ *     Element class kotlinx.serialization.json.JsonNull is not a JsonObject
+ *
+ * 这在角色卡里是常态而非例外：chub 导出的卡 `character_book` 就是
+ * 一个显式的 JSON null（不是缺字段）。因此整份卡导入失败，
+ * 用户看到的是一句莫名其妙的序列化报错，而卡本身完全正常。
+ *
+ * 下面这个扩展把两种情况都收敛成 null。
+ */
+private fun JsonElement?.jsonObjectSafe(): JsonObject? =
+    (this as? JsonObject)
+
 // ==================== V2 Parser ====================
 
 /**
@@ -790,7 +831,7 @@ private fun flattenV1Card(json: JsonObject): JsonObject {
 }
 
 private fun parseV2Card(context: Context, json: JsonObject, background: String?, avatarUri: String?, mergeGreetings: Boolean = false): Pair<Assistant, List<Lorebook>> {
-    val data = json["data"]?.jsonObject ?: error(context.getString(R.string.assistant_importer_missing_data_field))
+    val data = json["data"]?.jsonObjectSafe() ?: error(context.getString(R.string.assistant_importer_missing_data_field))
     val name = data["name"]?.jsonPrimitiveOrNull?.contentOrNull
         ?: error(context.getString(R.string.assistant_importer_missing_name_field))
 
@@ -821,10 +862,10 @@ private fun parseV2Card(context: Context, json: JsonObject, background: String?,
         postHistoryInstructions = data["post_history_instructions"]?.jsonPrimitiveOrNull?.contentOrNull ?: "",
         extensions = parseExtensions(if (mergedExtensions.isEmpty()) null else JsonObject(mergedExtensions)),
         extensionsRaw = mergedExtensionsRaw,
-        depthPrompt = parseDepthPromptText(data["extensions"]?.jsonObject),
-        depthPromptDepth = parseDepthPromptDepth(data["extensions"]?.jsonObject),
-        depthPromptRole = parseDepthPromptRole(data["extensions"]?.jsonObject),
-        embeddedBook = parseEmbeddedBook(data["character_book"]?.jsonObject),
+        depthPrompt = parseDepthPromptText(data["extensions"]?.jsonObjectSafe()),
+        depthPromptDepth = parseDepthPromptDepth(data["extensions"]?.jsonObjectSafe()),
+        depthPromptRole = parseDepthPromptRole(data["extensions"]?.jsonObjectSafe()),
+        embeddedBook = parseEmbeddedBook(data["character_book"]?.jsonObjectSafe()),
     )
 
     val systemPrompt = buildTavernSystemPrompt(tavData)
@@ -832,7 +873,8 @@ private fun parseV2Card(context: Context, json: JsonObject, background: String?,
 
     val assistant = Assistant(
         name = name,
-        avatar = if (avatarUri != null) Avatar.Image(avatarUri) else Avatar.Dummy,
+        // data.avatar 可能是 chub 这类平台的远程地址，本地卡则是 null
+        avatar = resolveCardAvatar(avatarUri, data["avatar"]?.jsonPrimitiveOrNull?.contentOrNull),
         systemPrompt = systemPrompt,
         presetMessages = presetMessages,
         background = background,
@@ -852,7 +894,7 @@ private fun parseV2Card(context: Context, json: JsonObject, background: String?,
 // ==================== V3 Parser ====================
 
 private fun parseV3Card(context: Context, json: JsonObject, background: String?, avatarUri: String?, mergeGreetings: Boolean = false): Pair<Assistant, List<Lorebook>> {
-    val data = json["data"]?.jsonObject ?: error(context.getString(R.string.assistant_importer_missing_data_field))
+    val data = json["data"]?.jsonObjectSafe() ?: error(context.getString(R.string.assistant_importer_missing_data_field))
     val name = data["name"]?.jsonPrimitiveOrNull?.contentOrNull
         ?: error(context.getString(R.string.assistant_importer_missing_name_field))
 
@@ -872,7 +914,7 @@ private fun parseV3Card(context: Context, json: JsonObject, background: String?,
         characterVersion = data["character_version"]?.jsonPrimitiveOrNull?.contentOrNull ?: "",
         tags = parseStringArray(data["tags"]),
         postHistoryInstructions = data["post_history_instructions"]?.jsonPrimitiveOrNull?.contentOrNull ?: "",
-        extensions = parseExtensions(data["extensions"]?.jsonObject),
+        extensions = parseExtensions(data["extensions"]?.jsonObjectSafe()),
         extensionsRaw = data["extensions"]?.toString() ?: "",
         assets = parseAssets(data["assets"]?.jsonArray),
         groupOnlyGreetings = parseStringArray(data["group_only_greetings"]),
@@ -881,10 +923,10 @@ private fun parseV3Card(context: Context, json: JsonObject, background: String?,
         source = parseStringArray(data["source"]),
         creationDate = data["creation_date"]?.toString() ?: "",
         modificationDate = data["modification_date"]?.toString() ?: "",
-        depthPrompt = parseDepthPromptText(data["extensions"]?.jsonObject),
-        depthPromptDepth = parseDepthPromptDepth(data["extensions"]?.jsonObject),
-        depthPromptRole = parseDepthPromptRole(data["extensions"]?.jsonObject),
-        embeddedBook = parseEmbeddedBook(data["character_book"]?.jsonObject),
+        depthPrompt = parseDepthPromptText(data["extensions"]?.jsonObjectSafe()),
+        depthPromptDepth = parseDepthPromptDepth(data["extensions"]?.jsonObjectSafe()),
+        depthPromptRole = parseDepthPromptRole(data["extensions"]?.jsonObjectSafe()),
+        embeddedBook = parseEmbeddedBook(data["character_book"]?.jsonObjectSafe()),
     )
 
     val systemPrompt = buildTavernSystemPrompt(tavData)
@@ -892,7 +934,8 @@ private fun parseV3Card(context: Context, json: JsonObject, background: String?,
 
     val assistant = Assistant(
         name = name,
-        avatar = if (avatarUri != null) Avatar.Image(avatarUri) else Avatar.Dummy,
+        // data.avatar 可能是 chub 这类平台的远程地址，本地卡则是 null
+        avatar = resolveCardAvatar(avatarUri, data["avatar"]?.jsonPrimitiveOrNull?.contentOrNull),
         systemPrompt = systemPrompt,
         presetMessages = presetMessages,
         background = background,
@@ -975,7 +1018,7 @@ private fun parseEmbeddedBook(obj: JsonObject?): TavernEmbeddedBook? {
     return TavernEmbeddedBook(
         name = obj["name"]?.jsonPrimitive?.contentOrNull ?: "",
         description = obj["description"]?.jsonPrimitive?.contentOrNull ?: "",
-        extensions = parseExtensions(obj["extensions"]?.jsonObject),
+        extensions = parseExtensions(obj["extensions"]?.jsonObjectSafe()),
         extensionsRaw = obj["extensions"]?.toString() ?: "",
         entries = entries,
     )
