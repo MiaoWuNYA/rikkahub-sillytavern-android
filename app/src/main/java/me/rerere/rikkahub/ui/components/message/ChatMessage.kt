@@ -191,6 +191,7 @@ fun ChatMessage(
                 parts = message.parts,
                 annotations = message.annotations,
                 loading = loading,
+                isStreamingMessage = loading && message.finishedAt == null,
                 model = model,
                 onToolApproval = onToolApproval,
                 onToolAnswer = onToolAnswer,
@@ -310,6 +311,8 @@ private fun MessagePartsBlock(
     parts: List<UIMessagePart>,
     annotations: List<UIMessageAnnotation>,
     loading: Boolean,
+    // 仅当这条消息本身还在生成时为 true，历史消息恒为 false
+    isStreamingMessage: Boolean = false,
     onToolApproval: ((toolCallId: String, approved: Boolean, reason: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onUserMessageClick: (() -> Unit)? = null,
@@ -487,7 +490,7 @@ private fun MessagePartsBlock(
                                                 cardMessagesJson = cardMessagesJson,
                                                 // 生成中的半截 HTML 不交给 WebView，
                                                 // 否则会渲染出残缺网页、观感像卡死
-                                                isStreaming = loading,
+                                                                                                isStreaming = isStreamingMessage,
                                             )
                                         }
                                     }
@@ -531,7 +534,7 @@ private fun MessagePartsBlock(
                                                     content = applyVisualRegexes(part.text, AssistantAffectScope.ASSISTANT),
                                                     onClickCitation = handleClickCitation,
                                                     cardHost = cardHost,
-                                                    isStreaming = loading,
+                                                                                                    isStreaming = isStreamingMessage,
                                                 cardMessagesJson = cardMessagesJson,
                                                 )
                                             }
@@ -545,7 +548,7 @@ private fun MessagePartsBlock(
                                                 cardMessagesJson = cardMessagesJson,
                                         // 生成中不渲染卡片：正文里的 <article> 之类
                                         // 会被判成卡片，而它是半截的
-                                        isStreaming = loading,
+                                                                                        isStreaming = isStreamingMessage,
                                         modifier = Modifier
                                             .animateContentSize()
                                     )
