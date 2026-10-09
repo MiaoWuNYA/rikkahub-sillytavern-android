@@ -287,6 +287,10 @@ fun HtmlWebViewBlock(
                         )
                     }
                 },
+                // onReset 非空即启用 item 复用：卡片滑出视口不再销毁 WebView，
+                // 回到视口时同一条消息 inlinePage 相同、不会重载——
+                // 否则每次发送/删除消息列表一变，历史卡片全部白闪重载
+                onReset = { it.stopLoading() },
                 onRelease = {
                     it.stopLoading()
                     it.removeAllViews()
@@ -911,8 +915,11 @@ $markedTag
     src = src.replace(/^[ \t]+(<\/?[a-zA-Z]|<!--)/gm, '${'$'}1');
     // 修复 "< img" 这类被塞进空格的标签（酒馆卡常见）
     src = src.replace(/<\s+(img|br|hr|div|span|p|table|thead|tbody|tr|td|th|ul|ol|li|h[1-6]|details|summary|section|article|center|font|blockquote|em|strong|small|sub|sup|button|label)\b/gi, '<${'$'}1');
-    // 引导序列行原样显示，别被 markdown 吃成嵌套引用
-    src = src.replace(/^(\s*)>{3,}\s?/gm, '$1\\>>> ');
+    // 引导序列行包成 HTML 块透传，别被 markdown 吃成嵌套引用
+    src = src.replace(/^>{3,}\s?([^\n]*)$/gm, function(m, rest) {
+      return '<div style="font-family:monospace;opacity:0.85">&gt;&gt;&gt; ' +
+        rest.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
+    });
     // 先把 ``` 围栏转成 <pre>：位于自定义标签内部时 marked 会吞掉围栏，
     // 导致 yaml 面板显示成带 ``` 的字面文本
     src = src.replace(/```[^\n`]*\n([\s\S]*?)```/g, function(m, code) {
