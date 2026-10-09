@@ -464,6 +464,36 @@ private class CardWebView(context: Context) : WebView(context) {
         isFocusable = true
     }
 
+    /**
+     * 阻断「被移除时的焦点转移」。
+     *
+     * 这是 ComposeRuntimeError（pending composition has not been applied）
+     * 崩溃的触发链：卡片滑出屏幕时 AndroidViewHolder 走 removeViewInLayout，
+     * ViewGroup 在这个时机调 rootViewRequestFocus() 把焦点转交给别的 View，
+     * 于是 AndroidComposeView.requestFocus → focusSearch → forceRemeasure
+     * ——在 LazyColumn 正在测量的过程中要求重新组合，Compose 直接抛内部错误。
+     *
+     * 卡片越高越容易滑出屏幕被回收，所以长前端卡的用户高频撞上。
+     * 这里在被移除的窗口内拒绝参与焦点竞争：卡片消失后焦点本就无处可去，
+     * 交给 Compose 自行挑下一个可聚焦项，比让系统在测量中途强行搜索安全。
+     */
+    private var detaching = false
+
+    override fun requestFocus(direction: Int, previouslyFocusedRect: android.graphics.Rect?): Boolean {
+        if (detaching) return false
+        return super.requestFocus(direction, previouslyFocusedRect)
+    }
+
+    override fun onDetachedFromWindow() {
+        detaching = true
+        runCatching { super.onDetachedFromWindow() }
+    }
+
+    override fun onAttachedToWindow() {
+        detaching = false
+        super.onAttachedToWindow()
+    }
+
     // 手势仲裁必须在原生层做，而不是 Compose 层的 nestedScroll。
     //
     // 消息列表是 LazyColumn，它和 WebView 都是原生 View，两者的滑动竞争
@@ -808,6 +838,15 @@ $baseCss
     var frag = tpl2.content;
     activateScripts(frag);
     root.appendChild(frag);
+
+    // 折叠面板默认展开（与片段页一致）。
+    // <details> 不写 open 就是收起的，而卡常把它当「工作记忆 / 历史档案 /
+    // 状态栏」的容器——那些内容本来就要一眼看到。展开后仍可手动收起。
+    try {
+      root.querySelectorAll('details').forEach(function(d) {
+        if (!d.hasAttribute('open')) d.setAttribute('open', '');
+      });
+    } catch (e) {}
   } catch (e) {
     root.innerHTML = '<pre></pre>';
   }
@@ -897,6 +936,17 @@ $markedTag
     } else {
       root.innerHTML = src;
     }
+    // 折叠面板默认展开。
+    //
+    // <details> 不写 open 属性时浏览器默认是收起的，而角色卡常把它当作
+    // 「工作记忆」「历史档案」「状态栏」这类信息的容器——默认收起意味着
+    // 用户每次都要逐个点开才能看到内容，而这些本来就是要一眼看到的东西。
+    //
+    // 展开后用户仍可手动收起：这里只是把初始状态改成展开，
+    // 不改 <summary> 的点击行为，所以交互没有损失。
+    root.querySelectorAll('details').forEach(function(d) {
+      if (!d.hasAttribute('open')) d.setAttribute('open', '');
+    });
   } catch (e) {
     root.innerHTML = '<pre>' + esc(src) + '</pre>';
   }
