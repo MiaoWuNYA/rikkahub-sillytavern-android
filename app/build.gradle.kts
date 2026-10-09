@@ -189,8 +189,8 @@ android {
         //
         // versionCode 保持递增：235 -> 236。系统按它判断能否覆盖安装，
         // 只升版本名而版本码不动的话，装了 2.5.7.1 的用户会装不上。
-        versionCode = 236
-        versionName = "2.5.8"
+        versionCode = 237
+        versionName = "2.5.9"
 
         // 插件解密密钥的派生因子之一：由签名口令做 HMAC，口令只存在于
         // local.properties / CI secrets，不写入 APK 明文。APK 内只保留 HMAC 结果，
