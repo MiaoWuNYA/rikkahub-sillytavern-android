@@ -228,9 +228,7 @@ private fun RenderDetails(
     detailsElement: Element,
     onLinkClick: (String) -> Unit
 ) {
-    // 默认展开：角色卡把 <details> 当「工作记忆 / 历史档案 / 状态栏」的容器，
-    // 那些内容本来就要一眼看到，默认收起会逼用户逐个点开。
-    // 想收起随时点一下即可，点击切换的行为没有变。
+    // 默认展开：卡常拿 details 装工作记忆/状态栏
     var isExpanded by remember { mutableStateOf(true) }
 
     val summaryElement = detailsElement.children().find {
