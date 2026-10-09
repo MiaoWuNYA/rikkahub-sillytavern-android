@@ -997,7 +997,9 @@ class GenerationLoop(
             // 酒馆模式：强制关闭深度思考。注意不是传 reasoning_effort="none"——
             // 实测部分中转站只要收到该字段就会开启思考链（服务端真实推理，但流式
             // 通道不回传 reasoning_content，因而界面上看不到），故必须整个字段都不写。
-            disableReasoning = settings.huadengSettings.enableTavernMode,
+            // 思考档位 OFF 与酒馆模式等效：部分上游忽略档位参数，必须显式关闭
+            disableReasoning = settings.huadengSettings.enableTavernMode ||
+                assistant.reasoningLevel == me.rerere.ai.core.ReasoningLevel.OFF,
         )
         try {
             if (stream) {
