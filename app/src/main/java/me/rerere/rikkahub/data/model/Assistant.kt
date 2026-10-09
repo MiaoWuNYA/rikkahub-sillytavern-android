@@ -42,7 +42,11 @@ data class Assistant(
     // 允许 episodic（情节）记忆：模型可记录具体事件，检索时按时间衰减加权
     val enableEpisodicMemory: Boolean = true,
     // 上下文滚动压缩：达到阈值后自动把早期对话压缩为摘要（保留原文，仅请求时替换前缀）
-    val enableRollingContextCompression: Boolean = false,
+    // 默认开启：滚动压缩是「全局开关 + 助手级开关」双重控制，
+    // 助手级默认 false 意味着用户在华灯设置里开了总开关也什么都不发生
+    //（旧助手实例已把 false 存进数据，不受此默认值影响，需手动打开）。
+    // 新助手/新导入的卡随全局开关即时生效；想单独关某个助手再去关它。
+    val enableRollingContextCompression: Boolean = true,
     // 触发压缩的 token 阈值；0 表示按模型上下文窗口自动计算
     val rollingContextCompressionThresholdTokens: Int = 0,
     val enableRecentChatsReference: Boolean = false,

@@ -116,6 +116,7 @@ import me.rerere.rikkahub.data.ai.transformers.PlaceholderTransformer
 import me.rerere.rikkahub.data.ai.transformers.PromptInjectionTransformer
 import me.rerere.rikkahub.data.ai.transformers.RegexOutputTransformer
 import me.rerere.rikkahub.data.ai.transformers.TemplateTransformer
+import me.rerere.rikkahub.data.ai.transformers.OutputTagCleanupTransformer
 import me.rerere.rikkahub.data.ai.transformers.ThinkTagTransformer
 import me.rerere.rikkahub.data.ai.transformers.TimeReminderTransformer
 import me.rerere.rikkahub.data.ai.transformers.WorkspaceReminderTransformer
@@ -231,6 +232,10 @@ private val inputTransformers by lazy {
 private val outputTransformers by lazy {
     listOf(
         ThinkTagTransformer,
+        // 预设标记清理：<正文> 这类包裹标签去掉标签留内容，
+        // {{setvar:…}} 这类写入型宏直接删掉（它们本该是给机器看的，
+        // 但项目只在输入侧实现了宏，模型吐回来的没人处理，会原样显示）
+        OutputTagCleanupTransformer,
         Base64ImageToLocalFileTransformer,
         RegexOutputTransformer,
     )
@@ -1654,13 +1659,38 @@ class ChatService(
                     //   ② 世界书 / 对话模式注入（PromptInjectionTransformer：关键词触发条目、
                     //      角色内嵌 character_book、before/after_char 锚点、sticky/cooldown）
                     //   ③ 作者注释（Authors Note）与人设的 TOP/BOTTOM 位置注入
-                    // 原版酒馆没有、属于本 App 工作流的注入，一律不发：
-                    //   记忆检索、跨窗口生活流、工作空间提醒、时间提醒、技能自动触发、
-                    //   文档转 Prompt、OCR、占位符替换。
+                    //
+                    // ⚠️ 必须先用 addAll(inputTransformers) 打底，再按酒馆模式的取舍删减。
+                    //
+                    // 这里曾经逐个 add() 手写列表，**漏掉了文件级那份 inputTransformers**，
+                    // 于是它包含的转换器全部失效——最严重的是文档：
+                    // DocumentAsPromptTransformer 不在列表里，上传的文档永远不会被
+                    // 读成提示词，AI 只看得到用户打的字、看不到文件内容，
+                    // 而且一句报错都没有（transformer 压根没跑，不会留下任何痕迹）。
+                    //
+                    // 逐个列举还意味着：以后往那份基础列表里加任何转换器，
+                    // 都会在这里被静默丢掉。addAll 打底可以从结构上避免这类遗漏。
+                    addAll(inputTransformers)
+
                     add(templateTransformer)
                     add(PromptInjectionTransformer)
                     add(AuthorsNoteTransformer)
-                    if (!settings.huadengSettings.enableTavernMode) {
+
+                    if (settings.huadengSettings.enableTavernMode) {
+                        // 酒馆模式：去掉属于本 App 工作流、原版酒馆没有的注入。
+                        //
+                        // **但文档转换不在此列。** 原版酒馆确实不发文档内容，
+                        // 可这里的取舍标准不该是「官方发不发」，而是「用户的动作
+                        // 有没有表达这个意图」——用户手动选了一个文件传上来，
+                        // 那就是要发。把它静默丢掉，表现是「AI 完全无视我给的文档」，
+                        // 而且一句提示都没有，用户只会以为功能坏了。
+                        //
+                        // 同理保留 PlaceholderTransformer：占位符替换是用户
+                        // 在提示词里主动写的。
+                        removeAll { it === OcrTransformer }
+                        removeAll { it === SkillAutoTriggerTransformer }
+                        removeAll { it === TimeReminderTransformer }
+                    } else {
                         add(workspaceReminderTransformer)
                         add(memoryRetrievalTransformer)
                         // 跨窗口生活流：注入到最新 user 消息之前（不进 system，保前缀缓存）
@@ -2304,11 +2334,21 @@ class ChatService(
                 }
             },
             inputTransformers = buildList {
+                // 同上一处：先打底再删减，避免漏掉基础列表里的转换器。
+                // 原来把 addAll(inputTransformers) 放在「非酒馆模式」分支里，
+                // 导致酒馆模式下同样丢掉文档、OCR、占位符等转换器。
+                addAll(inputTransformers)
+
                 add(templateTransformer)
                 add(PromptInjectionTransformer)
                 add(AuthorsNoteTransformer)
-                if (!settings.huadengSettings.enableTavernMode) {
-                    addAll(inputTransformers)
+
+                if (settings.huadengSettings.enableTavernMode) {
+                    // 同上：文档转换不做排除，理由见发送路径那处的注释
+                    removeAll { it === OcrTransformer }
+                    removeAll { it === SkillAutoTriggerTransformer }
+                    removeAll { it === TimeReminderTransformer }
+                } else {
                     add(memoryRetrievalTransformer)
                 }
             },
@@ -2412,7 +2452,14 @@ class ChatService(
             chatSuggestions = emptyList(),
         )
 
-        saveConversation(conversationId, newConversation)
+        // allowShrink = true：压缩**本来就会**让节点变少（旧消息换成摘要）。
+        //
+        // 「防节点数倒退」防线（3b282d23d 加的）引入时漏掉了这个合法场景：
+        // 摘要生成完了（压缩模型的调用已经花掉 token），保存却被当成
+        // 「意外的历史截断」静默拒绝——旧消息原样留在库里，下次请求
+        // 还是发全部历史。用户看到的正是「压缩完成后内容不变化，
+        // 浪费了 token 但没压缩」。
+        saveConversation(conversationId, newConversation, allowShrink = true)
     }
 
     // ---- 上下文滚动压缩（移植自 Rikkahub-Revised） ----
