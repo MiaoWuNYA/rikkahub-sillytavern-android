@@ -179,6 +179,9 @@ internal fun String.normalizeCjkTildes(): String {
 // 命名加 Mk 前缀是因为同包的 MarkdownNew.kt 也有一个 preProcess，
 // 两者预处理规则不同，不能混用。
 internal fun preProcessMarkdown(content: String): String {
+    // 状态栏表格化：emoji 字段行 → GFM 表格（见 StatusTable.kt）
+    val content = convertStatusBlocksToTables(content)
+
     // 先找出所有代码块的位置
     val codeBlocks = mutableListOf<IntRange>()
     CODE_BLOCK_REGEX.findAll(content).forEach { match ->
@@ -318,6 +321,20 @@ fun MarkdownBlock(
     cardHost: CardHostContext? = null,
     /** 当前对话消息快照（官方 swipes 结构），供卡内 `getChatMessages` 读取。 */
     cardMessagesJson: String = "[]",
+    /**
+     * 这条消息是否**正在流式生成中**。
+     *
+     * 生成期间必须**禁用卡片渲染**，只用 Markdown 显示文本。
+     *
+     * 原因是实测遇到的一个严重问题：模型流式输出的正文里常含
+     * `<article>`、`<hd>`、`<dc>` 这类标签（提示词要求的结构化输出），
+     * 它们会被 [looksLikeCardMarkup] 判成「卡片区域」，于是交给 WebView。
+     * 而此刻 HTML 只写了一半、标签没闭合，WebView 渲染出来是一个残缺
+     * 的网页：高度上报不全、内容错乱，看起来就像**卡死**。
+     *
+     * 生成结束后标签闭合、内容稳定，这时再交给 WebView 才是对的。
+     */
+    isStreaming: Boolean = false,
 ) {
     val settings = LocalSettings.current.displaySetting
     val darkMode = LocalDarkMode.current
@@ -329,11 +346,17 @@ fun MarkdownBlock(
     // DOCTYPE/head 会被当成散文渲染出一堆源码。
     // 卡片默认内联展开、高度自适应——对齐官方把卡片内联进消息 DOM 的行为，
     // 用户不需要额外点击就能看到完整卡片（issue：网页卡滑动/显示异常）。
-    val fencedCard = findFencedHtmlDocument(content)
+    // 生成中一律不走卡片路径。见 isStreaming 的说明：
+    // 半截 HTML 交给 WebView 会渲染出残缺网页，观感像卡死。
+    val fencedCard = if (isStreaming) null else findFencedHtmlDocument(content)
     // 裸 HTML 路径要按「散文 / 卡片」交替拆段。
     // 酒馆卡开场白常是「<normal_status> + 大段正文 + <UI> + <special_status>」，
     // 卡片块被正文隔开；只取一个起点会把中间正文吞进 WebView 显示成源码。
-    val segments = if (fencedCard == null) splitCardSegments(content) else emptyList()
+    val segments = if (fencedCard == null && !isStreaming) {
+        splitCardSegments(content)
+    } else {
+        emptyList()
+    }
     val hasCard = fencedCard != null || segments.any { it.first }
     if (hasCard) {
         Column(modifier) {
