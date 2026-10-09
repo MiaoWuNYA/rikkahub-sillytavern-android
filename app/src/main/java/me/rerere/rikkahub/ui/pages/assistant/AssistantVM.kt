@@ -43,20 +43,7 @@ class AssistantVM(
         }
     }
 
-    /**
-     * 新增助手，并同时登记随它一起导入的世界书。
-     *
-     * 世界书是**独立的实体**，存在 Settings.lorebooks 全局列表里，
-     * 助手通过 lorebookIds 引用它——这样用户能在扩展页里单独看到、
-     * 单独开关每一条，也能把同一本书挂到多个助手上。
-     *
-     * 之前导入时只保存 assistant、把 newLorebooks 丢掉，等于世界书
-     * 白导入了：条目既不在全局列表里，也没有 id 被引用。用户看到的是
-     * 「世界书没生效」，而真正的问题是它根本没被存下来。
-     *
-     * 挂 id 的动作放在这里而不是让调用方自己拼：两件事必须同时发生，
-     * 分开写迟早会出现「书存了但没挂上」或「挂了不存在的 id」。
-     */
+    // 助手与世界书同一次落库；曾只存助手导致世界书全部丢失
     fun addAssistantWithLorebooks(assistant: Assistant, lorebooks: List<Lorebook>) {
         viewModelScope.launch {
             val settings = settings.value
@@ -68,7 +55,6 @@ class AssistantVM(
             settingsStore.update(
                 settings.copy(
                     assistants = settings.assistants.plus(linked),
-                    // 按 id 去重：重复导入同一张卡不该产生两份同名世界书
                     lorebooks = (settings.lorebooks + lorebooks).distinctBy { it.id },
                 )
             )

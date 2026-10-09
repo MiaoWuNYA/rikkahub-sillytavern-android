@@ -391,12 +391,7 @@ private fun AssistantCreationSheet(
                             // 现在走 addAssistantWithLorebooks：存书 + 挂 id 一起做，
                             // 用户在扩展页能单独看到这本书、逐条开关。
                             vm.addAssistantWithLorebooks(result.assistant, result.newLorebooks)
-                            // 导入已经落库，对话框直接关掉。
-                            //
-                            // 这里原来是 state.confirm()：把对话框预填的那个
-                            // 默认 Assistant 又 save 了一遍——于是每导入一张卡，
-                            // 列表里就多出一个没名字的默认助手。
-                            // dismiss 只关对话框，不再触发保存。
+                            // 已落库，直接关对话框，避免 confirm 把预填的默认助手再存一遍
                             state.dismiss()
                         },
                         modifier = Modifier.fillMaxWidth(),
