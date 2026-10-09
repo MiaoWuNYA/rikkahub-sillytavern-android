@@ -8,7 +8,23 @@ import me.rerere.ai.ui.UIMessagePart
 import kotlin.time.Clock
 import kotlin.time.Instant
 
-private val THINKING_REGEX = Regex("\\A\\s*<think>([\\s\\S]*?)(</think>|$)")
+/**
+ * 思考块标签。
+ *
+ * **必须同时认 `<think>` 和 `<thinking>`。**
+ *
+ * `<think>` 是 DeepSeek 等模型的原生格式，而大量社区预设习惯写
+ * `<thinking>`（多一个 ing）。只认前者的后果是：预设的输出整段——
+ * 包括标签本身和里面的思考内容——被当成正文显示出来，用户看到的是
+ * 「思考过程混在回复里」，很难看出是标签没被识别。
+ *
+ * 开头锚定 \A 是刻意的：思考块只应该在回复的最开头。中间的
+ * `<think>` 更可能是用户在讨论标签本身，不该被吞掉。
+ */
+private val THINKING_REGEX = Regex(
+    "\\A\\s*<(think|thinking)>([\\s\\S]*?)(</(?:think|thinking)>|$)",
+    RegexOption.IGNORE_CASE,
+)
 
 // 部分供应商不会返回reasoning parts, 所以需要这个transformer
 object ThinkTagTransformer : OutputMessageTransformer {
@@ -62,9 +78,9 @@ internal fun List<UIMessage>.transformThinkTags(
     val textPart = message.parts.getOrNull(textPartIndex) as? UIMessagePart.Text
         ?: return@map message
     val match = THINKING_REGEX.find(textPart.text) ?: return@map message
-    val hasClosingTag = match.groups[2]?.value == "</think>"
+    val hasClosingTag = match.groups[3]?.value?.isNotEmpty() == true
     val reasoning = UIMessagePart.Reasoning(
-        reasoning = match.groupValues[1].trim(),
+        reasoning = match.groupValues[2].trim(),
         createdAt = message.createdAt.toInstant(timeZone = TimeZone.currentSystemDefault()),
         finishedAt = if (generationFinished || hasClosingTag) now else null,
     )
