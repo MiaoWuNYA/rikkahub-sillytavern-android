@@ -1203,15 +1203,7 @@ private fun LorebookCard(
                                 )
                             )
                         }
-                        if (book.enabled) {
-                            Tag(type = TagType.SUCCESS) {
-                                Text(stringResource(R.string.prompt_page_enabled))
-                            }
-                        } else {
-                            Tag(type = TagType.WARNING) {
-                                Text(stringResource(R.string.prompt_page_disabled))
-                            }
-                        }
+
                     }
                 }
                 IconButton(onClick = { showExportDialog = true }) {
@@ -1515,7 +1507,7 @@ private fun RegexInjectionEntryCard(
     var newKeyword by remember { mutableStateOf("") }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = if (!entry.enabled) Modifier.fillMaxWidth().alpha(0.5f) else Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = CustomColors.listItemColors.containerColor
@@ -1570,6 +1562,11 @@ private fun RegexInjectionEntryCard(
                     )
                 }
 
+                Switch(
+                    checked = entry.enabled,
+                    onCheckedChange = { onUpdate(entry.copy(enabled = it)) },
+                    modifier = Modifier.size(32.dp),
+                )
                 IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
                     Icon(HugeIcons.Tools, stringResource(R.string.prompt_page_edit), modifier = Modifier.size(18.dp))
                 }

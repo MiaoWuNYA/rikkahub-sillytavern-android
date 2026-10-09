@@ -589,8 +589,6 @@ private fun parseFengyueCard(
     val name = str("ttl").takeIf { it.isNotBlank() }
         ?: context.getString(R.string.assistant_importer_unnamed_character)
 
-    // pre_pt 是角色设定与规则，整段进系统提示词。
-    // desc 是界面（HTML），进开场白 —— 两者职责不同，不能混。
     val systemPrompt = str("pre_pt")
     val greetingHtml = str("desc")
 
@@ -608,8 +606,6 @@ private fun parseFengyueCard(
         systemPrompt = systemPrompt,
         presetMessages = presetMessages,
     )
-    // 世界书不经 Assistant 携带，随 TavernImportResult 一起交给调用方——
-    // 和其它解析器保持一致（V2/V3 卡也走这条路）。
     return assistant to lorebooks
 }
 
@@ -645,7 +641,8 @@ private fun parseFengyueWorldBook(json: JsonObject): List<Lorebook> {
             .map { it.trim() }
             .filter { it.isNotBlank() }
 
-        val enabled = obj["enable"]?.jsonPrimitiveOrNull?.contentOrNull != "false"
+        // 导入的世界书条目一律默认关闭，由用户按需逐条启用
+        val enabled = false
         val probability = obj["probability"]?.jsonPrimitiveOrNull?.contentOrNull
             ?.toIntOrNull()?.coerceIn(0, 100) ?: 100
         val depth = obj["depth"]?.jsonPrimitiveOrNull?.contentOrNull?.toIntOrNull()
@@ -767,21 +764,7 @@ private fun parseConversationExport(
     return assistant to emptyList()
 }
 
-/**
- * 决定导入后的头像。
- *
- * 优先级：
- *   1. 本地 PNG 卡解析出的 avatarUri —— 那是从卡里抽出来的真实图片文件
- *   2. `data.avatar` 里的远程 URL —— chub 等平台导出时带的是 CDN 地址
- *   3. 默认头像
- *
- * 第 2 条是后加的。chub（charhub.io）的卡在 data.avatar 放的是
- * `https://avatars.charhub.io/.../chara_card_v2.png`，原来这个字段
- * 完全没被读，导入后头像是灰的——功能上不报错，但用户会以为卡没导全。
- *
- * 只在看起来像 URL 时才用：本地卡里偶尔有相对路径或空串，
- * 那些塞进 Avatar.Image 会得到一个加载不出来的头像，比默认头像更糟。
- */
+// 本地 PNG 抽出的图优先，其次远程 URL（仅认 http/https），否则默认头像
 private fun resolveCardAvatar(avatarUri: String?, remoteAvatar: String?): Avatar = when {
     !avatarUri.isNullOrBlank() -> Avatar.Image(avatarUri)
     !remoteAvatar.isNullOrBlank() &&
@@ -790,21 +773,7 @@ private fun resolveCardAvatar(avatarUri: String?, remoteAvatar: String?): Avatar
     else -> Avatar.Dummy
 }
 
-/**
- * 安全的对象取值。
- *
- * Kotlin 里 `element?.jsonObject` 只挡住了「字段不存在」，
- * **挡不住「字段存在但值是 JSON null」**——后者会执行
- * `JsonNull.jsonObject`，抛：
- *
- *     Element class kotlinx.serialization.json.JsonNull is not a JsonObject
- *
- * 这在角色卡里是常态而非例外：chub 导出的卡 `character_book` 就是
- * 一个显式的 JSON null（不是缺字段）。因此整份卡导入失败，
- * 用户看到的是一句莫名其妙的序列化报错，而卡本身完全正常。
- *
- * 下面这个扩展把两种情况都收敛成 null。
- */
+// ?.jsonObject 挡不住「字段存在但值是 JSON null」，这里两种情况都收敛成 null
 private fun JsonElement?.jsonObjectSafe(): JsonObject? =
     (this as? JsonObject)
 
@@ -1042,7 +1011,8 @@ private fun parseEntriesArray(arr: kotlinx.serialization.json.JsonArray): List<T
                 priority = e["order"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
                     ?: e["insertion_order"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
                     ?: e["priority"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 100,
-                disable = e["disable"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
+                // 导入的世界书条目一律默认关闭，由用户按需逐条启用
+                disable = true,
                 caseSensitive = e["caseSensitive"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
                 useRegex = e["useRegex"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
                     ?: e["use_regex"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
@@ -1082,7 +1052,8 @@ private fun parseEntriesMap(obj: JsonObject): List<TavernBookEntry> {
                 priority = e["order"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
                     ?: e["insertion_order"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
                     ?: e["priority"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 100,
-                disable = e["disable"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
+                // 导入的世界书条目一律默认关闭，由用户按需逐条启用
+                disable = true,
                 caseSensitive = e["caseSensitive"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,
                 useRegex = e["useRegex"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
                     ?: e["use_regex"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false,

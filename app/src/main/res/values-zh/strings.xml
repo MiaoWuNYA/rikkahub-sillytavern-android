@@ -600,7 +600,7 @@
   <string name="prompt_page_edit_lorebook">编辑世界书</string>
   <string name="prompt_page_edit_mode_injection">编辑模式注入</string>
   <string name="prompt_page_empty_hint">点击下方按钮添加</string>
-  <string name="prompt_page_enabled">已启用(Enabled)</string>
+  <string name="prompt_page_enabled">已启用</string>
   <string name="prompt_page_entries_count_format">%d 条目</string>
   <string name="prompt_page_entries_format">条目（%d）</string>
   <string name="prompt_page_inject_depth">深度(Depth)</string>

@@ -102,7 +102,8 @@ class FengyueImportTest {
         val block = importer.substringAfter("private fun parseFengyueWorldBook(")
         assertTrue("要拆 _or_ 前缀", block.contains("removePrefix(\"_or_\")"))
         assertTrue("要拆 @wb@ 分隔符", block.contains("@wb@"))
-        assertTrue("要读 enable", block.contains("\"enable\""))
+        // 导入的世界书条目一律默认关闭，由用户按需逐条启用
+        assertTrue("条目要默认关闭", block.contains("val enabled = false"))
         assertTrue("要读 probability", block.contains("\"probability\""))
         // 单条解析失败不该让整个导入失败
         assertTrue("用 mapNotNull 跳过坏条目", block.contains("mapNotNull"))
