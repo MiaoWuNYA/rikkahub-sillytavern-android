@@ -75,7 +75,7 @@ internal fun convertStatusBlocksToTables(content: String): String {
     return if (content.endsWith("\n")) result else result.trimEnd('\n')
 }
 
-// 行首 >>>（3 个以上）是卡的引导序列，转义防止被 markdown 吃成嵌套引用
+// 行首 >>>（3 个以上）是卡的引导序列，包成 HTML 块透传，不被 markdown 吃成引用
 internal fun escapeGuideSequence(content: String): String {
     if (">>>" !in content) return content
     return content.lines().joinToString("\n") { line ->
@@ -84,7 +84,9 @@ internal fun escapeGuideSequence(content: String): String {
             line
         } else {
             val lead = line.take(line.length - trimmed.length)
-            lead + "\\>>> " + trimmed.drop(3).removePrefix(" ")
+            val rest = trimmed.drop(3).removePrefix(" ")
+                .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            lead + "<div>&gt;&gt;&gt; $rest</div>"
         }
     }
 }

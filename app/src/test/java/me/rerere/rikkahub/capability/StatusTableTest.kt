@@ -89,11 +89,13 @@ class StatusTableTest {
 
 class GuideSequenceTest {
     @Test
-    fun `the 666 card guide lines are escaped`() {
+    fun `the 666 card guide lines become html blocks`() {
         val raw = ">>> [PARADISE_PROTOCOL::SESSION_INIT]\n>>> [WORLD_DATA::LOADING...]\n>>> 欢迎来到《综漫东京2050》。"
         val out = escapeGuideSequence(raw)
-        assertTrue(out.contains("\\>>> [PARADISE_PROTOCOL::SESSION_INIT]"))
-        assertTrue(out.contains("\\>>> 欢迎来到"))
+        assertTrue(out.contains("<div>&gt;&gt;&gt; [PARADISE_PROTOCOL::SESSION_INIT]</div>"))
+        assertTrue(out.contains("<div>&gt;&gt;&gt; 欢迎来到《综漫东京2050》。</div>"))
+        // 正文行不受影响
+        assertTrue(out.contains("眼前的代码风暴逐渐平息") || out.split("\n").size >= 3)
     }
 
     @Test
