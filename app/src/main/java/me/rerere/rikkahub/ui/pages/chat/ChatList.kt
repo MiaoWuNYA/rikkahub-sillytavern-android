@@ -441,10 +441,30 @@ private fun ChatListNormal(
     ) {
         // 自动滚动到底部
         if (settings.displaySetting.enableAutoScroll) {
+            // 生成结束后的跟随窗口。
+            //
+            // 前端卡在生成中是流式文本，结束那一刻切成 WebView 卡片：
+            // 那一帧 item 高度骤降（完整高度要等 WebView 加载 + 高度上报，
+            // 上报窗口最长到 4 秒后还有复查），视口会被这个变化顶离底部，
+            // 用户看到的就是「卡片闪一下、然后弹回前一条消息」。
+            //
+            // 所以结束后不能立刻停掉跟随：先立即重新锚定一次，
+            // 再在 8 秒窗口内继续允许自动滚动（isAtBottom 守卫仍然生效——
+            // 用户主动上滑离开底部后不会被他强拉回来）。
+            var followAfterGeneration by remember { mutableStateOf(false) }
+            LaunchedEffect(loadingState) {
+                if (loadingState) {
+                    followAfterGeneration = true
+                } else if (followAfterGeneration) {
+                    state.requestScrollToItem(conversationUpdated.messageNodes.lastIndex + 10)
+                    delay(8000)
+                    followAfterGeneration = false
+                }
+            }
             LaunchedEffect(state) {
                 snapshotFlow { state.layoutInfo.visibleItemsInfo }.collect { visibleItemsInfo ->
                     // println("is bottom = ${visibleItemsInfo.isAtBottom()}, scroll = ${state.isScrollInProgress}, can_scroll = ${state.canScrollForward}, loading = $loading")
-                    if (!state.isScrollInProgress && loadingState) {
+                    if (!state.isScrollInProgress && (loadingState || followAfterGeneration)) {
                         if (visibleItemsInfo.isAtBottom()) {
                             state.requestScrollToItem(conversationUpdated.messageNodes.lastIndex + 10)
                             // Log.i(TAG, "ChatList: scroll to ${conversationUpdated.messageNodes.lastIndex}")
