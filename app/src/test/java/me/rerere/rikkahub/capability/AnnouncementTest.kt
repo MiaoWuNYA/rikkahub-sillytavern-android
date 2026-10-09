@@ -99,8 +99,13 @@ class AnnouncementTest {
             "不该再有单值键",
             mgr.contains("putString(KEY_DISMISSED_ID,"),
         )
-        assertTrue("读取要返回集合", mgr.contains("fun dismissedIds(context: Context): Set<String>"))
-        assertTrue("写入要取并集", mgr.contains("dismissedIds(context) + id"))
+        // 关闭记录现在是 id@时间戳：知道了只静默 1 小时，过后再弹
+        assertTrue("读取要返回记录表", mgr.contains("fun dismissedRecords(context: Context)"))
+        assertTrue("要有时长常量", mgr.contains("REAPPEAR_AFTER_MS"))
+        assertTrue(
+            "判断要按墙钟时间（手机时间为准）",
+            mgr.contains("System.currentTimeMillis()"),
+        )
         assertTrue("能重置", mgr.contains("fun reset"))
     }
 
