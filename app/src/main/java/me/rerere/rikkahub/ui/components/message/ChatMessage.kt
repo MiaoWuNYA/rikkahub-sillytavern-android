@@ -485,6 +485,9 @@ private fun MessagePartsBlock(
                                                 onClickCitation = handleClickCitation,
                                                 cardHost = cardHost,
                                                 cardMessagesJson = cardMessagesJson,
+                                                // 生成中的半截 HTML 不交给 WebView，
+                                                // 否则会渲染出残缺网页、观感像卡死
+                                                isStreaming = loading,
                                             )
                                         }
                                     }
@@ -528,6 +531,7 @@ private fun MessagePartsBlock(
                                                     content = applyVisualRegexes(part.text, AssistantAffectScope.ASSISTANT),
                                                     onClickCitation = handleClickCitation,
                                                     cardHost = cardHost,
+                                                    isStreaming = loading,
                                                 cardMessagesJson = cardMessagesJson,
                                                 )
                                             }
@@ -539,6 +543,9 @@ private fun MessagePartsBlock(
                                         onClickCitation = handleClickCitation,
                                         cardHost = cardHost,
                                                 cardMessagesJson = cardMessagesJson,
+                                        // 生成中不渲染卡片：正文里的 <article> 之类
+                                        // 会被判成卡片，而它是半截的
+                                        isStreaming = loading,
                                         modifier = Modifier
                                             .animateContentSize()
                                     )
