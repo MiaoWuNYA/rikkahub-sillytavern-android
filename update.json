@@ -1,6 +1,6 @@
 {
   "version": "2.5.9",
-  "publishedAt": "2026-10-09T22:32:55Z",
+  "publishedAt": "2026-10-10T15:13:20Z",
   "changelog": "本次更新修了亿个Bug，兼容了许多角色卡，增加了前端兼容性\n\n欢迎加入软件反馈/RP欢乐QQ交流群1129035651，新群欢迎来聊天，反馈问题可以更快回复\n\n修复了：\n1. 软件公告烦人频率的问题\n2. 每次导入角色卡多导入一个默认助手的bug\n3. 打开输入法后屏幕尺寸发生变化导致的前端卡乱跳\n4. 世界书启用/未启用显示失灵\n5. 部分卡片表格无法显示的问题\n6. 部分卡片转码失败的问题\n7. 软件无法压缩的问题\n8. 无法关闭深度思考的问题\n9. 上下文滚动压缩失效的问题\n\n增添了：\n1. 世界书内部显示，更方便的看到世界书条目\n2. 导演备注多选（感谢 shark12bee 的 PR#8）\n3. 兼容风月AI酒馆卡格式\n4. 兼容春水AI酒馆卡格式\n5. 兼容一些不知名AI站点的酒馆卡格式\n\n────────────\n\nThis release fixes a huge number of bugs, adds compatibility with many character cards, and improves frontend card support.\n\nWelcome to the feedback / RP QQ group 1129035651 — new members are always welcome, and bug reports get faster replies there.\n\nFixed:\n1. Announcement appearing too often\n2. An extra default assistant being created on every card import\n3. Frontend cards jumping around when the keyboard changed the screen size\n4. World book enable/disable toggles not showing correctly\n\nAdded:\n1. World book entry list view, so entries are easier to see\n2. Multiple Author's Notes (thanks to shark12bee's PR#8)\n3. Compatibility with Fengyue AI tavern cards\n4. Compatibility with Chunshui AI tavern cards\n5. Compatibility with tavern cards from various lesser-known AI sites\n\nAlso fixed: tables in some cards not rendering, encoding failures on some cards, context compression failing, the reasoning toggle not turning off deep thinking, and rolling context compression not working.",
   "downloads": [
     {
