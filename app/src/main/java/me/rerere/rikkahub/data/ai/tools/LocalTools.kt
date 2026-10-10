@@ -262,6 +262,8 @@ class LocalTools(
                         put("args", buildJsonObject {
                             put("type", "array")
                             put("description", "JSON array of arguments for function call")
+                            // Gemini 要求 array 必须带 items，否则 400 INVALID_ARGUMENT
+                            put("items", buildJsonObject {})
                         })
                         put("code", buildJsonObject {
                             put("type", "string")
