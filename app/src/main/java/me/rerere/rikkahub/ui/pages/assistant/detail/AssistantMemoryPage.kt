@@ -167,6 +167,9 @@ private fun AssistantMemoryContent(
                 Text(stringResource(R.string.assistant_page_manage_memory_title))
             },
             text = {
+                // 显式包 Column：AlertDialog 的 text 槽各版本布局不保证，
+                // 不包的话输入框和类型按钮会叠在一起
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 TextField(
                     value = memory.content,
                     onValueChange = {
@@ -180,8 +183,7 @@ private fun AssistantMemoryContent(
                 )
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
+                        .fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     FilterChip(
@@ -194,6 +196,7 @@ private fun AssistantMemoryContent(
                         onClick = { update(memory.copy(type = MemoryType.EPISODIC)) },
                         label = { Text(stringResource(R.string.memory_type_episodic)) },
                     )
+                }
                 }
             },
             confirmButton = {
