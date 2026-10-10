@@ -672,6 +672,85 @@ private fun parseFengyueWorldBook(json: JsonObject): List<Lorebook> {
     )
 }
 
+/**
+ * 卡内嵌世界书物化成外置书，让扩展管理能看到、能逐条开关。
+ * 卡自带的预设类内容（历史后指令、深度提示）也一并物化进来。
+ */
+private fun materializeEmbeddedBook(assistantName: String, tavData: TavernCharacterData): List<Lorebook> {
+    val book = tavData.embeddedBook ?: return emptyList()
+    if (book.entries.isEmpty()) return emptyList()
+    val bookEntries = buildList {
+        addAll(book.entries.map { entry ->
+            val keywords = entry.keys + entry.secondaryKeys
+            PromptInjection.RegexInjection(
+                name = entry.comment.ifEmpty { entry.keys.firstOrNull() ?: "Entry ${entry.id}" },
+                // 导入的世界书条目一律默认关闭，由用户按需逐条启用
+                enabled = false,
+                content = entry.content,
+                keywords = keywords,
+                constantActive = entry.constant,
+                probability = if (entry.useProbability) entry.probability else 100,
+                scanDepth = entry.scanDepth,
+                position = when (entry.position) {
+                    0 -> InjectionPosition.BEFORE_CHARACTER
+                    2 -> InjectionPosition.AUTHOR_NOTE
+                    3 -> InjectionPosition.AUTHOR_NOTE
+                    4 -> InjectionPosition.AT_DEPTH
+                    5 -> InjectionPosition.EM_TOP
+                    6 -> InjectionPosition.EM_BOTTOM
+                    else -> InjectionPosition.AFTER_SYSTEM_PROMPT
+                },
+                injectDepth = entry.depth,
+                role = mapEntryRole(entry.role),
+                group = entry.group,
+                priority = entry.priority,
+                sticky = entry.sticky,
+                cooldown = entry.cooldown,
+                delay = entry.delay,
+            )
+        })
+        // 预设类内容也物化进来，扩展管理里可见可开关
+        if (tavData.postHistoryInstructions.isNotBlank()) {
+            add(
+                PromptInjection.RegexInjection(
+                    name = "历史后续指令",
+                    enabled = false,
+                    content = tavData.postHistoryInstructions,
+                    constantActive = true,
+                    position = InjectionPosition.AFTER_DIALOG,
+                )
+            )
+        }
+        if (tavData.depthPrompt.isNotBlank()) {
+            add(
+                PromptInjection.RegexInjection(
+                    name = "深度提示",
+                    enabled = false,
+                    content = tavData.depthPrompt,
+                    constantActive = true,
+                    position = InjectionPosition.AT_DEPTH,
+                    injectDepth = tavData.depthPromptDepth,
+                )
+            )
+        }
+    }
+    return listOf(
+        Lorebook(
+            name = book.name.ifBlank { assistantName + "世界书" },
+            description = book.description,
+            enabled = true,
+            entries = bookEntries,
+            isCharacterBook = true,
+        )
+    )
+}
+
+private fun mapEntryRole(role: String): MessageRole = when (role.lowercase()) {
+    "user" -> MessageRole.USER
+    "assistant" -> MessageRole.ASSISTANT
+    else -> MessageRole.SYSTEM
+}
+
 // ==================== 春水 AI 对话导出 ====================
 
 /**
@@ -855,9 +934,8 @@ private fun parseV2Card(context: Context, json: JsonObject, background: String?,
         regexes = extractCardRegexScripts(tavData),
     )
 
-    // 内嵌世界书不再物化成独立外置书：官方模型里它就是卡的一部分，
-    // 由 PromptInjectionTransformer 在注入时直接从卡片构建，避免与全局书互相覆盖
-    return assistant to emptyList()
+    // 内嵌世界书物化成独立外置书，让用户在扩展管理里能看到、能开关
+    return assistant to materializeEmbeddedBook(assistant.name, tavData)
 }
 
 // ==================== V3 Parser ====================
@@ -916,9 +994,8 @@ private fun parseV3Card(context: Context, json: JsonObject, background: String?,
         regexes = extractCardRegexScripts(tavData),
     )
 
-    // 内嵌世界书不再物化成独立外置书：官方模型里它就是卡的一部分，
-    // 由 PromptInjectionTransformer 在注入时直接从卡片构建，避免与全局书互相覆盖
-    return assistant to emptyList()
+    // 内嵌世界书物化成独立外置书，让用户在扩展管理里能看到、能开关
+    return assistant to materializeEmbeddedBook(assistant.name, tavData)
 }
 
 // ==================== Helpers ====================
