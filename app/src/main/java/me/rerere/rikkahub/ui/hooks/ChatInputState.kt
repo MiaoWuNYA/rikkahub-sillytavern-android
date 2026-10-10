@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.TextRange
 import me.rerere.ai.ui.UIMessagePart
 import kotlin.uuid.Uuid
 
@@ -32,6 +33,18 @@ class ChatInputState {
 
     fun appendText(content: String) {
         textContent.setTextAndPlaceCursorAtEnd(textContent.text.toString() + content)
+    }
+
+    // 在光标处插入符号；双字符符号（如引号/括号）插入后光标落在中间
+    fun insertSymbol(symbol: String) {
+        if (symbol.isEmpty()) return
+        val textLength = textContent.text.length
+        textContent.edit {
+            val start = selection.min.coerceIn(0, textLength)
+            val end = selection.max.coerceIn(start, textLength)
+            replace(start, end, symbol)
+            selection = TextRange(start + if (symbol.length == 1) 1 else symbol.length / 2)
+        }
     }
 
     fun setContents(contents: List<UIMessagePart>) {

@@ -1079,6 +1079,16 @@ data class DisplaySetting(
     // 气泡阴影：对齐官方 --SmartThemeShadowColor + --shadowWidth
     val bubbleShadowColor: Long? = null,
     val bubbleShadowWidth: Float = 0f,
+    // 聊天界面按钮隐藏开关（true = 隐藏，默认全部显示）
+    val hideTopBarListButton: Boolean = false,
+    val hideTopBarNewChatButton: Boolean = false,
+    val hideModelPicker: Boolean = false,
+    val hideSearchPicker: Boolean = false,
+    val hideReasoningPicker: Boolean = false,
+    val hideMoreButton: Boolean = false,
+    // 一键添加符号：开启后输入框下方显示插入按钮
+    val enableBracketButton: Boolean = false,
+    val bracketButtonSymbol: String = "()",
     // 引用块背景色（官方 --SmartThemeQuoteColor 常同时用于引用框）
     val quoteBackgroundColor: Long? = null,
     // 下划线颜色（官方 --SmartThemeUnderlineColor）

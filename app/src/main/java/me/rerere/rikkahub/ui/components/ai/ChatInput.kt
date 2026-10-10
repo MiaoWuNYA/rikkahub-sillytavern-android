@@ -421,41 +421,62 @@ fun ChatInput(
                                 .horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
+                            // Bracket insert button
+                            val bracketSymbol = settings.displaySetting.bracketButtonSymbol
+                            if (settings.displaySetting.enableBracketButton && bracketSymbol.isNotBlank()) {
+                                ActionIconButton(
+                                    onClick = { state.insertSymbol(bracketSymbol) }
+                                ) {
+                                    Text(
+                                        text = bracketSymbol,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        maxLines = 1,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+
                             // Model Picker
-                            ModelSelectorButton(
-                                state = modelListState,
-                                onlyIcon = true,
-                                modifier = Modifier,
-                            )
+                            if (!settings.displaySetting.hideModelPicker) {
+                                ModelSelectorButton(
+                                    state = modelListState,
+                                    onlyIcon = true,
+                                    modifier = Modifier,
+                                )
+                            }
 
                             // Search
                             val enableSearchMsg = stringResource(R.string.web_search_enabled)
                             val disableSearchMsg = stringResource(R.string.web_search_disabled)
                             val chatModel = settings.getCurrentChatModel()
-                            SearchPickerButton(
-                                enableSearch = enableSearch,
-                                settings = settings,
-                                themeIcons = settings.displaySetting.themeIcons,
-                                onUpdateSearchMode = { mode ->
-                                    onUpdateSearchMode(mode)
-                                    val enabled = mode != SearchMode.OFF
-                                    toaster.show(
-                                        message = if (enabled) enableSearchMsg else disableSearchMsg,
-                                        duration = 1.seconds,
-                                        type = if (enabled) {
-                                            ToastType.Success
-                                        } else {
-                                            ToastType.Normal
-                                        }
-                                    )
-                                },
-                                onUpdateSearchService = onUpdateSearchService,
-                                model = chatModel,
-                            )
+                            if (!settings.displaySetting.hideSearchPicker) {
+                                SearchPickerButton(
+                                    enableSearch = enableSearch,
+                                    settings = settings,
+                                    themeIcons = settings.displaySetting.themeIcons,
+                                    onUpdateSearchMode = { mode ->
+                                        onUpdateSearchMode(mode)
+                                        val enabled = mode != SearchMode.OFF
+                                        toaster.show(
+                                            message = if (enabled) enableSearchMsg else disableSearchMsg,
+                                            duration = 1.seconds,
+                                            type = if (enabled) {
+                                                ToastType.Success
+                                            } else {
+                                                ToastType.Normal
+                                            }
+                                        )
+                                    },
+                                    onUpdateSearchService = onUpdateSearchService,
+                                    model = chatModel,
+                                )
+                            }
 
                             // Reasoning
                             val model = settings.getCurrentChatModel()
-                            if (model?.abilities?.contains(ModelAbility.REASONING) == true) {
+                            if (!settings.displaySetting.hideReasoningPicker &&
+                                model?.abilities?.contains(ModelAbility.REASONING) == true
+                            ) {
                                 ReasoningButton(
                                     reasoningLevel = assistant.reasoningLevel,
                                     themeIcons = settings.displaySetting.themeIcons,
@@ -468,18 +489,20 @@ fun ChatInput(
 
                         }
 
-                        ActionIconButton(
-                            onClick = onMoreClick
-                        ) {
-                            // 主题可换「更多」图标（官方对应 #extensionsMenuButton）
-                            val moreIcons = settings.displaySetting.themeIcons
-                            ThemedIcon(
-                                imageVector = HugeIcons.Add01,
-                                contentDescription = stringResource(R.string.more_options),
-                                imageUrl = moreIcons.extensionsImageUrl,
-                                tint = moreIcons.extensionsTint?.let { Color(it) },
-                                scale = moreIcons.extensionsScale,
-                            )
+                        if (!settings.displaySetting.hideMoreButton) {
+                            ActionIconButton(
+                                onClick = onMoreClick
+                            ) {
+                                // 主题可换「更多」图标（官方对应 #extensionsMenuButton）
+                                val moreIcons = settings.displaySetting.themeIcons
+                                ThemedIcon(
+                                    imageVector = HugeIcons.Add01,
+                                    contentDescription = stringResource(R.string.more_options),
+                                    imageUrl = moreIcons.extensionsImageUrl,
+                                    tint = moreIcons.extensionsTint?.let { Color(it) },
+                                    scale = moreIcons.extensionsScale,
+                                )
+                            }
                         }
 
                         if (!voiceState.isActive && (asrState.isAvailable || asrState.isRecording)) {
