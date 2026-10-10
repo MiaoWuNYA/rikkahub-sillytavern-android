@@ -952,14 +952,18 @@ private fun TopBar(
                     Icon(HugeIcons.Telephone, contentDescription = "语音通话")
                 }
             }
-            IconButton(onClick = onClickMenu) {
-                Icon(
-                    if (previewMode) HugeIcons.Cancel01 else HugeIcons.LeftToRightListBullet,
-                    contentDescription = null,
-                )
+            if (!settings.displaySetting.hideTopBarListButton) {
+                IconButton(onClick = onClickMenu) {
+                    Icon(
+                        if (previewMode) HugeIcons.Cancel01 else HugeIcons.LeftToRightListBullet,
+                        contentDescription = null,
+                    )
+                }
             }
-            IconButton(onClick = onNewChat) {
-                Icon(HugeIcons.MessageAdd01, contentDescription = null)
+            if (!settings.displaySetting.hideTopBarNewChatButton) {
+                IconButton(onClick = onNewChat) {
+                    Icon(HugeIcons.MessageAdd01, contentDescription = null)
+                }
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(

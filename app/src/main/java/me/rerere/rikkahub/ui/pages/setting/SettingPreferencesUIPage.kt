@@ -485,6 +485,116 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                     )
                 }
             }
+
+            item {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.setting_page_chat_button_settings)) },
+                ) {
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_hide_top_bar_list_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_hide_top_bar_list_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.hideTopBarListButton,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(hideTopBarListButton = it))
+                                }
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_hide_new_chat_button_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_hide_new_chat_button_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.hideTopBarNewChatButton,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(hideTopBarNewChatButton = it))
+                                }
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_hide_model_picker_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_hide_model_picker_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.hideModelPicker,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(hideModelPicker = it))
+                                }
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_hide_search_picker_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_hide_search_picker_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.hideSearchPicker,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(hideSearchPicker = it))
+                                }
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_hide_reasoning_picker_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_hide_reasoning_picker_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.hideReasoningPicker,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(hideReasoningPicker = it))
+                                }
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_hide_more_button_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_hide_more_button_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.hideMoreButton,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(hideMoreButton = it))
+                                }
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_bracket_button_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_bracket_button_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.enableBracketButton,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(enableBracketButton = it))
+                                }
+                            )
+                        },
+                    )
+                    if (displaySetting.enableBracketButton) {
+                        item(
+                            headlineContent = { Text(stringResource(R.string.setting_display_page_bracket_symbol_title)) },
+                            supportingContent = {
+                                Column {
+                                    Spacer(Modifier.height(4.dp))
+                                    OutlinedTextField(
+                                        value = displaySetting.bracketButtonSymbol,
+                                        onValueChange = { value ->
+                                            updateDisplaySetting(displaySetting.copy(bracketButtonSymbol = value.take(16)))
+                                        },
+                                        singleLine = true,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                }
+                            },
+                        )
+                    }
+                }
+            }
         }
     }
 }
