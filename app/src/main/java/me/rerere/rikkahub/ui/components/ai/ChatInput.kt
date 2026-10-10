@@ -104,6 +104,7 @@ import com.composables.icons.lucide.Lucide
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.ArrowUp02
+import me.rerere.hugeicons.stroke.Brackets
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Fullscreen
 import me.rerere.hugeicons.stroke.Package01
@@ -427,11 +428,9 @@ fun ChatInput(
                                 ActionIconButton(
                                     onClick = { state.insertSymbol(bracketSymbol) }
                                 ) {
-                                    Text(
-                                        text = bracketSymbol,
-                                        style = MaterialTheme.typography.labelLarge,
-                                        maxLines = 1,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    ThemedIcon(
+                                        imageVector = HugeIcons.Brackets,
+                                        contentDescription = stringResource(R.string.setting_display_page_bracket_button_title),
                                     )
                                 }
                             }
