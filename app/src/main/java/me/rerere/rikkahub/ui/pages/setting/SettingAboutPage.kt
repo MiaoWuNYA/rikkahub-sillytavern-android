@@ -58,6 +58,12 @@ import androidx.compose.ui.util.fastForEach
 import androidx.core.content.ContextCompat
 import androidx.graphics.shapes.Morph
 import kotlin.math.roundToInt
+import me.rerere.hugeicons.stroke.Book01
+import me.rerere.hugeicons.stroke.InLove
+import android.content.Intent
+import android.content.ActivityNotFoundException
+import android.widget.Toast
+import me.rerere.hugeicons.stroke.Share04
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Code
 import me.rerere.hugeicons.stroke.Earth
@@ -265,6 +271,34 @@ fun SettingAboutPage() {
                             leadingContent = { CardGroupIcon(HugeIcons.File02, containerColor = containerColor, contentColor = contentColor) },
                             supportingContent = { Text("$UPSTREAM_REPO_URL/blob/master/LICENSE") },
                             headlineContent = { Text(stringResource(R.string.about_page_license)) },
+                        )
+                        item(
+                            onClick = { context.openUrl("https://rikkahub.luoca.cn/docs/") },
+                            leadingContent = { CardGroupIcon(HugeIcons.Book01, containerColor = containerColor, contentColor = contentColor) },
+                            supportingContent = { Text(stringResource(R.string.setting_page_documentation_desc)) },
+                            headlineContent = { Text(stringResource(R.string.setting_page_documentation)) },
+                        )
+                        item(
+                            onClick = { navController.navigate(Screen.SettingDonate) },
+                            leadingContent = { CardGroupIcon(HugeIcons.InLove, containerColor = containerColor, contentColor = contentColor) },
+                            supportingContent = { Text(stringResource(R.string.setting_page_donate_desc)) },
+                            headlineContent = { Text(stringResource(R.string.setting_page_donate)) },
+                        )
+                        item(
+                            onClick = {
+                                val shareText = context.getString(R.string.setting_page_share_text)
+                                val intent = Intent(Intent.ACTION_SEND)
+                                intent.type = "text/plain"
+                                intent.putExtra(Intent.EXTRA_TEXT, shareText)
+                                try {
+                                    context.startActivity(Intent.createChooser(intent, context.getString(R.string.setting_page_share)))
+                                } catch (e: ActivityNotFoundException) {
+                                    Toast.makeText(context, context.getString(R.string.setting_page_no_share_app), Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            leadingContent = { CardGroupIcon(HugeIcons.Share04, containerColor = containerColor, contentColor = contentColor) },
+                            supportingContent = { Text(stringResource(R.string.setting_page_share_desc)) },
+                            headlineContent = { Text(stringResource(R.string.setting_page_share)) },
                         )
                     }
                 }
