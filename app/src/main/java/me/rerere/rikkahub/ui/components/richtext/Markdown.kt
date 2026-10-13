@@ -115,8 +115,31 @@ internal fun String.normalizeCjkTildes(): String {
 
 // internal 而非 private：波浪线消歧是中文场景的高频修正，
 // 规则需要可单测（见 CjkTildeTest），否则以后改动无法验证。
+// 模型常把颜色标签转义后再输出（&lt;span style="color:#7EAFC4"&gt;文字&lt;/span&gt;），
+// 解析器把它当纯文本，聊天里就出现「看得见颜色代码但不上色」。
+// 这里把转义还原成真实标签交给渲染器，代码块内的转义保持原样。
+private val ESCAPED_INLINE_TAG_REGEX = Regex(
+    "&lt;(/?)(span|font|u|b|i|em|strong|br|sub|sup|small)\\b((?:(?!&gt;).)*?)&gt;",
+    RegexOption.IGNORE_CASE,
+)
+
+internal fun restoreEscapedInlineTags(content: String): String {
+    if ("&lt;" !in content) return content
+    val codeBlocks = CODE_BLOCK_REGEX.findAll(content).map { it.range }.toList()
+    return ESCAPED_INLINE_TAG_REGEX.replace(content) { match ->
+        if (codeBlocks.any { match.range.first in it }) {
+            match.value
+        } else {
+            val attrs = match.groupValues[3]
+                .replace("&quot;", "\"")
+                .replace("&#39;", "'")
+            "<${match.groupValues[1]}${match.groupValues[2]}$attrs>"
+        }
+    }
+}
+
 internal fun preProcessMarkdown(content: String): String {
-    val escaped = escapeGuideSequence(convertStatusBlocksToTables(content))
+    val escaped = restoreEscapedInlineTags(escapeGuideSequence(convertStatusBlocksToTables(content)))
     // 酒馆卡常拿 <details> 装工作记忆/状态栏，没有 open 属性时默认展开
     val withOpenDetails = DETAILS_OPEN_REGEX.replace(escaped) { "<details open${it.value.removePrefix("<details")}" }
 

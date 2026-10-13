@@ -693,6 +693,9 @@
   <string name="huadeng_tool_result_truncation_desc">Tool output over 32 KB is truncated and saved to a file. Turn off to keep full tool results in message history (try this if tool calls misbehave through a proxy)</string>
   <string name="huadeng_sub_agent">Sub-Agent</string>
   <string name="huadeng_sub_agent_desc">Let the AI delegate subtasks to an independent sub-agent (no conversation history) and take back the result</string>
+  <string name="huadeng_frontend_card_mode">Frontend-Card Only Mode</string>
+  <string name="huadeng_frontend_card_mode_desc">Force frontend mode on for every conversation (normally switched on automatically when importing a card with HTML frontend)</string>
+  <string name="huadeng_frontend_card_auto_switched">Frontend mode switched on automatically</string>
   <string name="huadeng_transient_prune">Transient Content Pruning</string>
   <string name="huadeng_transient_prune_desc">Web search results, images, audio and video from more than two turns ago are no longer sent with every request (a placeholder with the message ID is attached instead; the AI can fetch the original via the read_history_message tool). Greatly reduces token usage in long image/search-heavy conversations; message storage and chat display are unaffected</string>
   <string name="imggen_page_aspect_ratio">Image Aspect Ratio</string>
@@ -1906,6 +1909,7 @@
   <string name="setting_page_huadeng">HuaDeng Settings</string>
   <string name="setting_page_huadeng_desc">Global proxy fix, anti-empty reply, and context &amp; tool tuning</string>
   <string name="setting_page_huadeng_title">Compatibility</string>
+  <string name="setting_page_huadeng_title_desc">Connection fixes, empty-response fallback, content pruning, context compression</string>
   <string name="setting_page_jev">Jev Decisions</string>
   <string name="setting_page_jev_about">About</string>
   <string name="setting_page_jev_active_desc">Enabled takeovers run through Jev. Anything it fails or is unsure about silently falls back to the original logic.</string>
@@ -2843,6 +2847,8 @@
   <string name="setting_display_page_background_effect_title">Input bar background effect</string>
   <string name="setting_display_page_background_effect_desc">Enable a blur or glass effect on the chat input bar</string>
   <string name="setting_display_page_background_effect_type">Background effect type</string>
+  <string name="setting_display_page_background_effect_alpha">Opacity</string>
+  <string name="setting_display_page_background_effect_alpha_desc">Input field background opacity</string>
   <string name="setting_display_page_background_effect_blur">Blur</string>
   <string name="setting_display_page_background_effect_glass">Glass</string>
   <string name="skills_page_search_placeholder">Search skills...</string>

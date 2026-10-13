@@ -678,6 +678,9 @@
   <string name="huadeng_tool_result_truncation_desc">32 KBを超えるツール出力は切り詰めてファイルに保存します。オフにするとツール結果全文がメッセージ履歴に残ります（プロキシ経由でツール呼び出しがおかしい場合は試してください）</string>
   <string name="huadeng_sub_agent">サブエージェント</string>
   <string name="huadeng_sub_agent_desc">AI がサブタスクを独立したサブエージェントに委譲し（会話履歴なし）、結果を取得できるようにします</string>
+  <string name="huadeng_frontend_card_mode">フロントカード専用モード</string>
+  <string name="huadeng_frontend_card_mode_desc">すべての会話でフロントモードを強制有効にします（通常は HTML フロント付きカードの取り込み時に自動で有効）</string>
+  <string name="huadeng_frontend_card_auto_switched">フロントモードを自動で有効にしました</string>
   <string name="huadeng_transient_prune">一時コンテンツの間引き</string>
   <string name="huadeng_transient_prune_desc">2ターンより前のウェブ検索結果・画像・音声・動画はリクエストごとに送信されなくなります（代わりにメッセージID付きのプレースホルダーを添付。AIは read_history_message ツールで元データを取得できます）。画像や検索の多い長い会話でトークン消費を大幅に削減します。メッセージの保存やチャット表示には影響しません</string>
   <string name="imggen_page_aspect_ratio">画像のアスペクト比</string>
@@ -1790,6 +1793,7 @@
   <string name="setting_page_huadeng">花灯（HuaDeng）設定</string>
   <string name="setting_page_huadeng_desc">グローバルプロキシ修正、空返答対策、コンテキスト&amp;ツールの調整</string>
   <string name="setting_page_huadeng_title">互換性</string>
+  <string name="setting_page_huadeng_title_desc">接続修正・空応答フォールバック・コンテンツ整理・コンテキスト圧縮などの全体設定</string>
   <string name="setting_page_interaction_notification_settings">インタラクションと通知</string>
   <string name="setting_page_jev">Jev判定</string>
   <string name="setting_page_jev_about">概要</string>
@@ -2740,6 +2744,8 @@
   <string name="setting_display_page_background_effect_title">入力バーの背景エフェクト</string>
   <string name="setting_display_page_background_effect_desc">チャット入力バーのぼかしまたはガラス効果を有効にします</string>
   <string name="setting_display_page_background_effect_type">背景効果の種類</string>
+  <string name="setting_display_page_background_effect_alpha">不透明度</string>
+  <string name="setting_display_page_background_effect_alpha_desc">入力欄背景の不透明度（低すぎると本文が読みにくくなります）</string>
   <string name="setting_display_page_background_effect_blur">ぼかし</string>
   <string name="setting_display_page_background_effect_glass">ガラス</string>
   <string name="safe_mode_enter_app">アプリを起動</string>

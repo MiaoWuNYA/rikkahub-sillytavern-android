@@ -247,16 +247,6 @@ fun ChatMessage(
             assistant = assistant,
         )
 
-        if (settings.showDateTimeInMessage && !message.parts.isEmptyUIMessage()) {
-            Text(
-                text = message.createdAt.toJavaLocalDateTime().toMessageTimeString(),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
-                maxLines = 1,
-                modifier = Modifier.padding(horizontal = 4.dp),
-            )
-        }
-
         ProvideTextStyle(textStyle) {
             ChatMessageNerdLine(message = message)
         }

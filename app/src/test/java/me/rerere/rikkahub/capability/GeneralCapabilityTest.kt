@@ -164,7 +164,8 @@ class GeneralCapabilityTest {
 
     @Test
     fun `settings page exposes both switches`() {
-        val page = read("src/main/java/me/rerere/rikkahub/ui/pages/setting/SettingHuaDengPage.kt")
+        // 兼容与辅助已拆成独立页，开关随之搬过去
+        val page = read("src/main/java/me/rerere/rikkahub/ui/pages/setting/SettingHuaDengCompatPage.kt")
         assertFalse("设置页不应再有已废弃的 OCR 开关",
             page.contains("enableLocalOcrFallback = enabled"))
         assertTrue("设置页应有库提示开关", page.contains("enablePythonLibraryHints = enabled"))

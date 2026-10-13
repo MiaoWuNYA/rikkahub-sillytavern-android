@@ -146,8 +146,10 @@ import me.rerere.rikkahub.ui.pages.setting.SettingSearchPage
 import me.rerere.rikkahub.ui.pages.setting.SettingQqBotPage
 import me.rerere.rikkahub.ui.pages.setting.SettingMediaPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSpeechPage
+import me.rerere.rikkahub.ui.pages.setting.SettingTtsPlaybackPage
 import me.rerere.rikkahub.ui.pages.setting.SettingWebPage
 import me.rerere.rikkahub.ui.pages.setting.SettingWeixinBotPage
+import me.rerere.rikkahub.ui.pages.setting.SettingHuaDengCompatPage
 import me.rerere.rikkahub.ui.pages.setting.SettingHuaDengPage
 import me.rerere.rikkahub.ui.pages.setting.SettingJevPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSecurityPage
@@ -618,6 +620,10 @@ class RouteActivity : ComponentActivity() {
                                 SettingSpeechPage()
                             }
 
+                            entry<Screen.SettingTtsPlayback> {
+                                SettingTtsPlaybackPage()
+                            }
+
                             entry<Screen.SettingMedia> {
                                 SettingMediaPage()
                             }
@@ -640,6 +646,10 @@ class RouteActivity : ComponentActivity() {
 
                             entry<Screen.SettingHuaDeng> {
                                 SettingHuaDengPage()
+                            }
+
+                            entry<Screen.SettingHuaDengCompat> {
+                                SettingHuaDengCompatPage()
                             }
 
                             entry<Screen.SettingJev> {
@@ -965,6 +975,9 @@ sealed interface Screen : NavKey {
     data object SettingSpeech : Screen
 
     @Serializable
+    data object SettingTtsPlayback : Screen
+
+    @Serializable
     data object SettingMedia : Screen
 
     @Serializable
@@ -981,6 +994,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingHuaDeng : Screen
+
+    @Serializable
+    data object SettingHuaDengCompat : Screen
 
     @Serializable
     data object SettingJev : Screen

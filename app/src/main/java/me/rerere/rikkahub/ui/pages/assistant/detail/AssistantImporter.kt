@@ -58,6 +58,8 @@ import me.rerere.common.http.jsonObjectOrNull
 import me.rerere.ai.ui.UIMessage
 import me.rerere.rikkahub.BuildConfig
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.ui.components.richtext.findFencedHtmlDocument
+import me.rerere.rikkahub.ui.components.richtext.splitCardSegments
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.model.PromptInjection
@@ -498,7 +500,8 @@ private suspend fun importFromString(
             avatarUri = avatarUri,
         )
         toaster.show(context.getString(R.string.assistant_importer_import_success))
-        onImport(TavernImportResult(assistant = assistant, newLorebooks = lorebooks))
+        val cardAssistant = applyFrontendCardPreference(context, assistant, lorebooks, toaster)
+        onImport(TavernImportResult(assistant = cardAssistant, newLorebooks = lorebooks))
         return
     }
 
@@ -539,7 +542,7 @@ private suspend fun importFromString(
     toaster.show(context.getString(R.string.assistant_importer_import_success))
     onImport(
         TavernImportResult(
-            assistant = assistant,
+            assistant = applyFrontendCardPreference(context, assistant, lorebooks, toaster),
             newLorebooks = lorebooks,
         )
     )
@@ -1510,4 +1513,31 @@ private fun extractCardRegexScripts(tavData: TavernCharacterData): List<Assistan
     val scripts = extensions["regex_scripts"] as? JsonArray ?: return emptyList()
     if (scripts.isEmpty()) return emptyList()
     return SillyTavernRegexImporter.parse(scripts.toString())
+}
+
+/**
+ * 导入的角色卡若带前端（HTML 卡片），自动为该助手打开前端模式并提示用户。
+ *
+ * 只在导入这一刻判断并落在助手配置上：会话中途新出现的卡片不改变渲染方式，
+ * 避免聊天途中界面突然换掉。用户也可以在华灯设置里手动开关。
+ */
+private fun applyFrontendCardPreference(
+    context: Context,
+    assistant: Assistant,
+    lorebooks: List<Lorebook>,
+    toaster: ToasterState,
+): Assistant {
+    val hasFrontend = buildList {
+        add(assistant.systemPrompt)
+        assistant.presetMessages.forEach { message ->
+            message.parts.filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>().forEach { add(it.text) }
+        }
+        lorebooks.forEach { book -> book.entries.forEach { add(it.content) } }
+    }.any { text ->
+        text.isNotBlank() &&
+            (findFencedHtmlDocument(text) != null || splitCardSegments(text).any { it.first })
+    }
+    if (!hasFrontend) return assistant
+    toaster.show(context.getString(R.string.huadeng_frontend_card_auto_switched), type = ToastType.Success)
+    return assistant.copy(frontendCardPreferred = true)
 }

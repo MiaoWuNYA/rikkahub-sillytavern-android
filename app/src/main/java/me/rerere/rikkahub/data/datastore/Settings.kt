@@ -209,6 +209,9 @@ data class HuaDengSettings(
     val enableToolResultTruncation: Boolean = true,
     // 子 agent：主模型可把子任务派给独立 agent 完成后取回结果（不产生会话历史）
     val enableSubAgent: Boolean = false,
+    // 前端卡专属模式：会话含前端卡时整块消息区改由单个 WebView 渲染，
+    // 规避多 WebView 同时存活导致的闪退与采样崩溃
+    val enableFrontendCardMode: Boolean = true,
     // 本地 OCR 兜底：未配置 OCR 模型（或远程识别失败）时，用内置的 ML Kit
     // 离线识别图片文字。不联网、不上传图片。关掉则回到旧行为——直接给模型
     // 一个 "[Image]" 占位符，图片内容等于不可见。
@@ -342,6 +345,8 @@ data class DisplaySetting(
     val enableLatexRendering: Boolean = true,
     val enableBlurEffect: Boolean = false,
     val backgroundEffectType: BackgroundEffectType = BackgroundEffectType.BLUR,
+    // 输入框模糊/玻璃的不透明度（0.1~1.0），太低会影响正文可读性
+    val inputEffectAlpha: Float = 0.3f,
     val chatFontFamily: ChatFontFamily = ChatFontFamily.DEFAULT,
     val chatCustomFontPath: String = "",
     val chatCustomFontName: String = "",
