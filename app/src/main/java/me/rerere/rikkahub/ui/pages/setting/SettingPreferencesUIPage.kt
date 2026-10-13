@@ -158,6 +158,59 @@ internal fun SettingPreferencesUIContent(vm: SettingVM, contentPadding: PaddingV
         ) {
             item {
                 CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.setting_display_page_bracket_button_title)) },
+                ) {
+                item(
+                    headlineContent = { Text(stringResource(R.string.setting_display_page_bracket_button_title)) },
+                    supportingContent = { Text(stringResource(R.string.setting_display_page_bracket_button_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = displaySetting.enableBracketButton,
+                            onCheckedChange = {
+                                updateDisplaySetting(displaySetting.copy(enableBracketButton = it))
+                            }
+                        )
+                    },
+                )
+                if (displaySetting.enableBracketButton) {
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_bracket_symbol_title)) },
+                        supportingContent = {
+                            Column {
+                                Spacer(Modifier.height(4.dp))
+                                OutlinedTextField(
+                                    value = displaySetting.bracketButtonSymbol,
+                                    onValueChange = { value ->
+                                        updateDisplaySetting(displaySetting.copy(bracketButtonSymbol = value.take(16)))
+                                    },
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_bracket_color_title)) },
+                        supportingContent = {
+                            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                ColorPicker(
+                                    presets = BRACKET_COLOR_PRESETS,
+                                    currentColor = displaySetting.bracketButtonColor,
+                                    onColorSelected = { color ->
+                                        updateDisplaySetting(displaySetting.copy(bracketButtonColor = color))
+                                    },
+                                    defaultDark = "#E18A24",
+                                    defaultLight = "#C7731E",
+                                )
+                            }
+                        },
+                    )
+                }
+                }
+            }
+            item {
+                CardGroup(
                     title = { Text(stringResource(R.string.setting_page_message_display_settings)) },
                 ) {
                     switchItem(
@@ -524,52 +577,6 @@ internal fun SettingPreferencesUIContent(vm: SettingVM, contentPadding: PaddingV
                             )
                         },
                     )
-                    item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_bracket_button_title)) },
-                        supportingContent = { Text(stringResource(R.string.setting_display_page_bracket_button_desc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = displaySetting.enableBracketButton,
-                                onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(enableBracketButton = it))
-                                }
-                            )
-                        },
-                    )
-                    if (displaySetting.enableBracketButton) {
-                        item(
-                            headlineContent = { Text(stringResource(R.string.setting_display_page_bracket_symbol_title)) },
-                            supportingContent = {
-                                Column {
-                                    Spacer(Modifier.height(4.dp))
-                                    OutlinedTextField(
-                                        value = displaySetting.bracketButtonSymbol,
-                                        onValueChange = { value ->
-                                            updateDisplaySetting(displaySetting.copy(bracketButtonSymbol = value.take(16)))
-                                        },
-                                        singleLine = true,
-                                        modifier = Modifier.fillMaxWidth(),
-                                    )
-                                }
-                            },
-                        )
-                        item(
-                            headlineContent = { Text(stringResource(R.string.setting_display_page_bracket_color_title)) },
-                            supportingContent = {
-                                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                                    ColorPicker(
-                                        presets = BRACKET_COLOR_PRESETS,
-                                        currentColor = displaySetting.bracketButtonColor,
-                                        onColorSelected = { color ->
-                                            updateDisplaySetting(displaySetting.copy(bracketButtonColor = color))
-                                        },
-                                        defaultDark = "#E18A24",
-                                        defaultLight = "#C7731E",
-                                    )
-                                }
-                            },
-                        )
-                    }
                 }
             }
         }
