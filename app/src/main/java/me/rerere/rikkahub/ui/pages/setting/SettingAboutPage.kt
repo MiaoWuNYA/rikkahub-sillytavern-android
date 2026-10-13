@@ -51,7 +51,7 @@ import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.openUrl
 import me.rerere.rikkahub.utils.plus
 
-// 本定制版的源码仓库。上面那条 Github 指向上游原版，用户容易混淆，这条才是本仓库。
+// 自制官网；上游原版仓库按许可标明出处
 private const val AUTHOR_REPO_URL = "https://rikkahub.luoca.cn"
 private const val UPSTREAM_REPO_URL = "https://github.com/rikkahub/rikkahub"
 
@@ -167,11 +167,7 @@ fun SettingAboutPage() {
                             supportingContent = { Text("https://rikka-ai.com") },
                             headlineContent = { Text(stringResource(R.string.about_page_website)) },
                         )
-                        // 主仓库放本定制版。
-                        //
-                        // 用户点「项目地址」是想找**他现在用的这个版本**的
-                        // 源码、更新和 issue 入口，先给他上游只会让他跑到
-                        // 一个装不了这个包的地方。
+                        // Github 条目指向自制官网
                         item(
                             onClick = { context.openUrl(AUTHOR_REPO_URL) },
                             leadingContent = { Icon(HugeIcons.Github, null) },
