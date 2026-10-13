@@ -78,6 +78,25 @@ import java.util.concurrent.TimeUnit
 
 @Composable
 fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    Scaffold(
+        topBar = {
+            LargeFlexibleTopAppBar(
+                title = { Text(stringResource(R.string.setting_display_title)) },
+                navigationIcon = { BackButton() },
+                scrollBehavior = scrollBehavior,
+                colors = CustomColors.topBarColors
+            )
+        },
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = CustomColors.topBarColors.containerColor
+    ) { contentPadding ->
+            SettingDisplayColorContent(vm = vm, contentPadding = contentPadding)
+        }
+    }
+
+@Composable
+internal fun SettingDisplayColorContent(vm: SettingVM, contentPadding: PaddingValues) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     var displaySetting by remember(settings) { mutableStateOf(settings.displaySetting) }
     val context = LocalContext.current
@@ -348,18 +367,6 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
         )
     }
 
-    Scaffold(
-        topBar = {
-            LargeFlexibleTopAppBar(
-                title = { Text(stringResource(R.string.setting_display_title)) },
-                navigationIcon = { BackButton() },
-                scrollBehavior = scrollBehavior,
-                colors = CustomColors.topBarColors
-            )
-        },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = CustomColors.topBarColors.containerColor
-    ) { contentPadding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding + PaddingValues(8.dp),
@@ -736,8 +743,8 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
                 }
             }
         }
-    }
 }
+
 
 /** 计算酒馆主题将覆盖的设置项名称（用于导入前预览），返回字符串资源 ID */
 private fun themeChangeLabels(theme: SillyTavernTheme, base: DisplaySetting): List<Int> {

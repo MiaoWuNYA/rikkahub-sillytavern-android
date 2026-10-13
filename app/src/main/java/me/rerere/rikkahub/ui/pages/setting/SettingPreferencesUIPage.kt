@@ -88,6 +88,29 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    Scaffold(
+        topBar = {
+            LargeFlexibleTopAppBar(
+                title = {
+                    Text(stringResource(R.string.setting_page_preferences_ui))
+                },
+                navigationIcon = {
+                    BackButton()
+                },
+                scrollBehavior = scrollBehavior,
+                colors = CustomColors.topBarColors
+            )
+        },
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = CustomColors.topBarColors.containerColor
+    ) { contentPadding ->
+            SettingPreferencesUIContent(vm = vm, contentPadding = contentPadding)
+        }
+}
+
+@Composable
+internal fun SettingPreferencesUIContent(vm: SettingVM, contentPadding: PaddingValues) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     var displaySetting by remember(settings) { mutableStateOf(settings.displaySetting) }
     val context = LocalContext.current
@@ -128,22 +151,6 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-    Scaffold(
-        topBar = {
-            LargeFlexibleTopAppBar(
-                title = {
-                    Text(stringResource(R.string.setting_page_preferences_ui))
-                },
-                navigationIcon = {
-                    BackButton()
-                },
-                scrollBehavior = scrollBehavior,
-                colors = CustomColors.topBarColors
-            )
-        },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = CustomColors.topBarColors.containerColor
-    ) { contentPadding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding + PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -548,8 +555,8 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                 }
             }
         }
-    }
 }
+
 
 // Quote color presets (hex, labelResId)
 private val BRACKET_COLOR_PRESETS = listOf(
