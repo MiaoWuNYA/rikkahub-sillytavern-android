@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.ui.components.ai
 
+import android.os.Build
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -34,15 +35,18 @@ internal fun Modifier.chatInputHaze(
     shape: RoundedCornerShape,
 ): Modifier {
     if (!displaySetting.enableBlurEffect) return this
+    // 版本门禁：haze-glass 内部走 RuntimeShader（API 33+），haze-blur 走 RenderEffect（API 31+）；
+    // 低版本硬跑会直接 NoSuchMethodError——而且选型会落盘，崩在启动环节表现为无限闪退。
+    // 不满足版本就静默回退到可用档位，保证设置可以进得去、改得回来。
     return when (displaySetting.backgroundEffectType) {
-        BackgroundEffectType.BLUR -> hazeBlur(
+        BackgroundEffectType.BLUR -> if (Build.VERSION.SDK_INT >= 31) hazeBlur(
             input = HazeInput.Sources(hazeState),
             style = HazeBlurStyle.Material3 {
                 blurRadius(12.dp)
             },
-        )
+        ) else this
 
-        BackgroundEffectType.GLASS -> {
+        BackgroundEffectType.GLASS -> if (Build.VERSION.SDK_INT >= 33) {
             val darkMode = LocalDarkMode.current
             hazeGlass(
                 input = HazeInput.Sources(hazeState),
@@ -61,6 +65,15 @@ internal fun Modifier.chatInputHaze(
                     shape(shape)
                 },
             )
+        } else if (Build.VERSION.SDK_INT >= 31) {
+            hazeBlur(
+                input = HazeInput.Sources(hazeState),
+                style = HazeBlurStyle.Material3 {
+                    blurRadius(12.dp)
+                },
+            )
+        } else {
+            this
         }
     }
 }

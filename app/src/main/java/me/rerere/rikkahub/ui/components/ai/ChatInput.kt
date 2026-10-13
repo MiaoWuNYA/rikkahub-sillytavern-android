@@ -95,10 +95,10 @@ import me.rerere.asr.ASRStatus
 import com.composables.icons.lucide.ChevronDown
 import com.composables.icons.lucide.ChevronUp
 import com.composables.icons.lucide.Lucide
+import me.rerere.hugeicons.stroke.Quote
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.ArrowUp02
-import me.rerere.hugeicons.stroke.Brackets
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Fullscreen
 import me.rerere.hugeicons.stroke.Package01
@@ -460,7 +460,7 @@ fun ChatInput(
                                     onClick = { state.insertSymbol(bracketSymbol) }
                                 ) {
                                     Icon(
-                                        imageVector = HugeIcons.Brackets,
+                                        imageVector = HugeIcons.Quote,
                                         contentDescription = stringResource(R.string.setting_display_page_bracket_button_title),
                                     )
                                 }
