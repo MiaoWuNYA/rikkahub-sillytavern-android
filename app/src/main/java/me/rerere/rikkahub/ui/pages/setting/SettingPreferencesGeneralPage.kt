@@ -38,19 +38,7 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
-    val settings by vm.settings.collectAsStateWithLifecycle()
-    var displaySetting by remember(settings) { mutableStateOf(settings.displaySetting) }
-    var ttsPlaybackSpeed by remember(settings.defaultTTSPlaybackSpeed) {
-        mutableFloatStateOf(settings.defaultTTSPlaybackSpeed)
-    }
-
-    fun updateDisplaySetting(setting: DisplaySetting) {
-        displaySetting = setting
-        vm.updateSettings { it.copy(displaySetting = setting) }
-    }
-
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-
     Scaffold(
         topBar = {
             LargeFlexibleTopAppBar(
@@ -67,6 +55,25 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor
     ) { contentPadding ->
+            SettingPreferencesGeneralContent(vm = vm, contentPadding = contentPadding)
+        }
+}
+
+@Composable
+internal fun SettingPreferencesGeneralContent(vm: SettingVM, contentPadding: PaddingValues) {
+    val settings by vm.settings.collectAsStateWithLifecycle()
+    var displaySetting by remember(settings) { mutableStateOf(settings.displaySetting) }
+    var ttsPlaybackSpeed by remember(settings.defaultTTSPlaybackSpeed) {
+        mutableFloatStateOf(settings.defaultTTSPlaybackSpeed)
+    }
+
+    fun updateDisplaySetting(setting: DisplaySetting) {
+        displaySetting = setting
+        vm.updateSettings { it.copy(displaySetting = setting) }
+    }
+
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding + PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -270,5 +277,5 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                 }
             }
         }
-    }
 }
+
