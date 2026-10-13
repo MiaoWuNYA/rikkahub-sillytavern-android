@@ -137,7 +137,25 @@
   border-color: color-mix(in srgb, var(--hd-primary) 45%, var(--hd-outline-var)) !important;
   box-shadow: 0 22px 44px -30px rgba(0, 0, 0, 0.4);
 }
-.VPFeature .icon { background: var(--hd-primary-container); color: var(--hd-on-primary-container); border-radius: 14px 14px 14px 5px; }
+/* 首页 feature 图标：收小容器，等比约束 SVG，对齐首页 feat-card 的图标语言 */
+.VPFeature .icon {
+  width: 38px !important;
+  height: 38px !important;
+  display: grid;
+  place-items: center;
+  background: var(--hd-primary-container);
+  color: var(--hd-on-primary-container);
+  border-radius: 11px 11px 11px 4px;
+  margin-bottom: 4px;
+}
+.VPFeature .icon svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.7;
+}
+.VPFeature .title {
+  font-size: 16px !important;
+}
 
 .vp-doc div[class*='language-'] { border-radius: 16px 16px 16px 6px; border: 1px solid var(--hd-outline-var); }
 .vp-doc .custom-block { border-radius: 18px 18px 18px 6px; }
