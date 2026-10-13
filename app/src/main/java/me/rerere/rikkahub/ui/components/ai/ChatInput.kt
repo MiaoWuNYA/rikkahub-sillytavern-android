@@ -404,22 +404,6 @@ fun ChatInput(
                                 .horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
-                            // Bracket insert button
-                            val bracketSymbol = settings.displaySetting.bracketButtonSymbol
-                            if (settings.displaySetting.enableBracketButton && bracketSymbol.isNotBlank()) {
-                                ActionIconButton(
-                                    onClick = { state.insertSymbol(bracketSymbol) }
-                                ) {
-                                    ThemedIcon(
-                                        imageVector = HugeIcons.Brackets,
-                                        contentDescription = stringResource(R.string.setting_display_page_bracket_button_title),
-                                        tint = settings.displaySetting.bracketButtonColor
-                                            .takeIf { it.isNotBlank() }
-                                            ?.let { runCatching { Color(android.graphics.Color.parseColor(it)) }.getOrNull() },
-                                    )
-                                }
-                            }
-
                             // Model Picker
                             if (!settings.displaySetting.hideModelPicker) {
                                 ModelSelectorButton(
@@ -467,6 +451,19 @@ fun ChatInput(
                                     },
                                     onlyIcon = true,
                                 )
+                            }
+
+                            // Bracket insert button：放在深度思考右侧、加号左侧
+                            val bracketSymbol = settings.displaySetting.bracketButtonSymbol
+                            if (settings.displaySetting.enableBracketButton && bracketSymbol.isNotBlank()) {
+                                ActionIconButton(
+                                    onClick = { state.insertSymbol(bracketSymbol) }
+                                ) {
+                                    Icon(
+                                        imageVector = HugeIcons.Brackets,
+                                        contentDescription = stringResource(R.string.setting_display_page_bracket_button_title),
+                                    )
+                                }
                             }
 
                         }

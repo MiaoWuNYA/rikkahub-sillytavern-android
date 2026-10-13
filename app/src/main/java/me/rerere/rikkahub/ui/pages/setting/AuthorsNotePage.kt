@@ -19,6 +19,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -309,6 +310,7 @@ private fun AuthorNoteEntryDialog(
                     label = { Text("名称") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
                 )
                 OutlinedTextField(
                     value = content,
@@ -318,6 +320,7 @@ private fun AuthorNoteEntryDialog(
                     minLines = if (builtin) 3 else 5,
                     maxLines = 10,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
                 )
                 Text("注入位置（Position）", style = MaterialTheme.typography.titleSmall)
                 AuthorNotePosition.entries.forEach { option ->
@@ -347,6 +350,7 @@ private fun AuthorNoteEntryDialog(
                         singleLine = true,
                         isError = depth == null || depth !in 0..9999,
                         modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
                     )
                 }
                 Text("注入角色（Role）", style = MaterialTheme.typography.titleSmall)
@@ -391,6 +395,7 @@ private fun AuthorNoteEntryDialog(
                     singleLine = true,
                     isError = interval == null || interval !in 0..9999,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
                 )
                 if (onDelete != null) {
                     Spacer(Modifier.height(4.dp))
