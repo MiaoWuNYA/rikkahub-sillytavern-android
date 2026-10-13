@@ -63,6 +63,7 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ChartColumn
 import me.rerere.hugeicons.stroke.Code
 import me.rerere.hugeicons.stroke.Image02
+import me.rerere.hugeicons.stroke.ImageToVideo
 import me.rerere.hugeicons.stroke.InLove
 import me.rerere.hugeicons.stroke.LanguageCircle
 import me.rerere.hugeicons.stroke.LookTop
@@ -71,7 +72,9 @@ import me.rerere.hugeicons.stroke.PencilEdit01
 import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.Search01
 import me.rerere.hugeicons.stroke.Settings03
+import me.rerere.hugeicons.stroke.Sorting01
 import me.rerere.hugeicons.stroke.Sparkles
+import me.rerere.hugeicons.stroke.Tick01
 import me.rerere.hugeicons.stroke.TransactionHistory
 import me.rerere.hugeicons.stroke.Folder01
 import me.rerere.hugeicons.stroke.FolderAdd
@@ -79,6 +82,7 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import me.rerere.hugeicons.stroke.Rocket01
 import me.rerere.rikkahub.data.ai.PromptDebugCache
+import me.rerere.rikkahub.data.datastore.ConversationSortOrder
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Conversation
@@ -87,10 +91,10 @@ import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.ui.components.ai.AssistantPicker
 import me.rerere.rikkahub.ui.components.ui.BackupReminderCard
 import me.rerere.rikkahub.ui.components.ui.Greeting
-import me.rerere.rikkahub.ui.components.ui.Tooltip
+import me.rerere.rikkahub.ui.components.ui.RabbitLoadingIndicator
 import me.rerere.rikkahub.ui.components.ui.UIAvatar
 import me.rerere.rikkahub.ui.components.ui.UpdateCard
-import me.rerere.rikkahub.ui.components.webview.WebViewContentCache
+import me.rerere.ui.webview.WebViewContentCache
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.context.Navigator
 import com.dokar.sonner.ToastType
@@ -100,6 +104,7 @@ import me.rerere.rikkahub.ui.hooks.useEditState
 import me.rerere.rikkahub.ui.modifier.onClick
 import me.rerere.rikkahub.utils.navigateToChatPage
 import me.rerere.rikkahub.utils.toDp
+import me.rerere.ui.components.Tooltip
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import kotlin.uuid.Uuid
@@ -121,6 +126,7 @@ fun ChatDrawerContent(
     val drawerVm: ChatDrawerVM = koinViewModel(viewModelStoreOwner = activity)
 
     val conversations = drawerVm.conversations.collectAsLazyPagingItems()
+    val memoryDreaming by drawerVm.memoryDreaming.collectAsStateWithLifecycle()
     val conversationListState = rememberLazyListState(
         initialFirstVisibleItemIndex = drawerVm.scrollIndex,
         initialFirstVisibleItemScrollOffset = drawerVm.scrollOffset,
@@ -143,13 +149,13 @@ fun ChatDrawerContent(
 
     // 昵称编辑状态
     val nicknameEditState = useEditState<String> { newNickname ->
-        vm.updateSettings(
-            settings.copy(
-                displaySetting = settings.displaySetting.copy(
+        vm.updateSettings {
+            it.copy(
+                displaySetting = it.displaySetting.copy(
                     userNickname = newNickname
                 )
             )
-        )
+        }
     }
 
     // 移动对话状态
@@ -224,13 +230,13 @@ fun ChatDrawerContent(
                     name = settings.displaySetting.userNickname.ifBlank { stringResource(R.string.user_default_name) },
                     value = settings.displaySetting.userAvatar,
                     onUpdate = { newAvatar ->
-                        vm.updateSettings(
-                            settings.copy(
-                                displaySetting = settings.displaySetting.copy(
+                        vm.updateSettings {
+                            it.copy(
+                                displaySetting = it.displaySetting.copy(
                                     userAvatar = newAvatar
                                 )
                             )
-                        )
+                        }
                     },
                     modifier = Modifier.size(50.dp),
                 )
@@ -271,14 +277,38 @@ fun ChatDrawerContent(
 
             DrawerActions(navController = navController, settings = settings)
 
-            FolderBar(
-                folders = folders,
-                selectedFolderId = selectedFolderId,
-                onSelect = drawerVm::selectFolder,
-                onCreate = { showCreateFolderDialog = true },
-                onRename = { folderToRename = it },
-                onDelete = { folderToDelete = it },
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FolderBar(
+                    folders = folders,
+                    selectedFolderId = selectedFolderId,
+                    onSelect = { drawerVm.selectFolder(it) },
+                    onCreate = { showCreateFolderDialog = true },
+                    onRename = { folderToRename = it },
+                    onDelete = { folderToDelete = it },
+                    modifier = Modifier.weight(1f),
+                )
+
+                ConversationSortButton(
+                    sortOrder = settings.displaySetting.conversationSortOrder,
+                    onSortOrderChange = { sortOrder ->
+                        vm.updateSettings {
+                            it.copy(
+                                displaySetting = it.displaySetting.copy(
+                                    conversationSortOrder = sortOrder
+                                )
+                            )
+                        }
+                        // 换排序后回到顶部，否则会停留在原来滚动到的位置
+                        scope.launch { conversationListState.scrollToItem(0) }
+                    },
+                )
+            }
 
             ConversationList(
                 current = current,
@@ -321,17 +351,23 @@ fun ChatDrawerContent(
                 }
             )
 
+            if (memoryDreaming) {
+                MemoryDreamingEntry(
+                    onClick = { navController.navigate(Screen.AssistantMemory(settings.assistantId.toString())) },
+                )
+            }
+
             // 助手选择器
             AssistantPicker(
                 settings = settings,
-                onUpdateSettings = {
-                    val updateJob = vm.updateSettings(it)
+                onSelectAssistant = { assistant ->
+                    val updateJob = vm.updateSettings { it.copy(assistantId = assistant.id) }
                     scope.launch {
                         updateJob.join()
                         val id = if (context.readBooleanPreference("create_new_conversation_on_start", true)) {
                             Uuid.random()
                         } else {
-                            repo.getConversationsOfAssistant(it.assistantId)
+                            repo.getConversationsOfAssistant(assistant.id)
                                 .first()
                                 .firstOrNull()
                                 ?.id ?: Uuid.random()
@@ -734,63 +770,88 @@ private fun DrawerActions(
 ) {
     Column {
         // 搜索入口
-        Surface(
+        DrawerEntry(
+            icon = HugeIcons.Search01,
+            text = stringResource(R.string.chat_page_search_chats),
             onClick = { navController.navigate(Screen.MessageSearch) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp),
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Icon(
-                    imageVector = HugeIcons.Search01,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = stringResource(R.string.chat_page_search_chats),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-        }
+        )
 
         // 历史记录入口
-        Surface(
+        DrawerEntry(
+            icon = HugeIcons.TransactionHistory,
+            text = stringResource(R.string.chat_page_history),
             onClick = { navController.navigate(Screen.History) },
+        )
+
+        // 媒体创作入口
+        DrawerEntry(
+            icon = HugeIcons.ImageToVideo,
+            text = stringResource(R.string.media_creation_title),
+            onClick = { navController.navigate(Screen.MediaCreationSessions) },
+        )
+    }
+}
+
+@Composable
+private fun DrawerEntry(
+    icon: ImageVector,
+    text: String,
+    onClick: () -> Unit,
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 4.dp),
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
+                .padding(horizontal = 8.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Icon(
-                    imageVector = HugeIcons.TransactionHistory,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = stringResource(R.string.chat_page_history),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+}
+
+// 后台正在整理当前助手的记忆，点开是记忆页
+@Composable
+private fun MemoryDreamingEntry(onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            RabbitLoadingIndicator(modifier = Modifier.size(18.dp))
+            Text(
+                text = stringResource(R.string.memory_dreaming),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
         }
 
         // 清爽简洁模式：隐藏情侣空间/生活空间等娱乐功能入口
@@ -947,11 +1008,10 @@ private fun FolderBar(
     onCreate: () -> Unit,
     onRename: (Folder) -> Unit,
     onDelete: (Folder) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp),
+        modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -1004,6 +1064,61 @@ private fun FolderBar(
                 onClick = onCreate,
                 onLongClick = {},
             )
+        }
+    }
+}
+
+@Composable
+private fun ConversationSortButton(
+    sortOrder: ConversationSortOrder,
+    onSortOrderChange: (ConversationSortOrder) -> Unit,
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    Box {
+        Surface(
+            onClick = { menuExpanded = true },
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+        ) {
+            Tooltip(
+                tooltip = { Text(stringResource(R.string.chat_page_sort_conversations)) }
+            ) {
+                Icon(
+                    imageVector = HugeIcons.Sorting01,
+                    contentDescription = stringResource(R.string.chat_page_sort_conversations),
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .size(16.dp),
+                )
+            }
+        }
+        DropdownMenu(
+            expanded = menuExpanded,
+            onDismissRequest = { menuExpanded = false },
+        ) {
+            ConversationSortOrder.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            stringResource(
+                                when (option) {
+                                    ConversationSortOrder.UPDATE_TIME -> R.string.chat_page_sort_by_update_time
+                                    ConversationSortOrder.CREATE_TIME -> R.string.chat_page_sort_by_create_time
+                                }
+                            )
+                        )
+                    },
+                    trailingIcon = {
+                        if (option == sortOrder) {
+                            Icon(HugeIcons.Tick01, null, modifier = Modifier.size(18.dp))
+                        }
+                    },
+                    onClick = {
+                        menuExpanded = false
+                        if (option != sortOrder) onSortOrderChange(option)
+                    }
+                )
+            }
         }
     }
 }

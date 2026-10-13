@@ -1,9 +1,9 @@
 package me.rerere.rikkahub.data.ai
 
+import me.rerere.rikkahub.data.ai.tools.MemoryToolNames
 import me.rerere.rikkahub.data.ai.tools.buildMemoryTools
-import me.rerere.rikkahub.data.datastore.HuaDengSettings
-import me.rerere.rikkahub.data.datastore.Settings
-import kotlinx.serialization.json.Json
+import me.rerere.rikkahub.data.repository.FakeMemoryDAO
+import me.rerere.rikkahub.data.repository.MemoryRepository
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -22,36 +22,28 @@ import org.junit.Test
  */
 class ToolDescriptionStabilityTest {
 
-    private fun memoryToolDescription(tavern: Boolean): String {
-        val settings = Settings(huadengSettings = HuaDengSettings(enableTavernMode = tavern))
-        return buildMemoryTools(
-            json = Json,
-            onCreation = { _, _ -> error("unused") },
-            onUpdate = { _, _, _ -> error("unused") },
-            onDelete = { error("unused") },
-            onList = { emptyList() },
-        ).first { it.name == "memory_tool" }.description
-    }
+    private fun memoryToolDescription(): String =
+        buildMemoryTools(MemoryRepository(FakeMemoryDAO()), "assistant")
+            .first { it.name == MemoryToolNames.READ }.description
 
     @Test
     fun `memory tool description has no volatile date`() {
         assertFalse(
             "工具描述不得含每天变化的内容，否则跨天会打断前缀缓存",
-            memoryToolDescription(tavern = false).contains("Today is"),
+            memoryToolDescription().contains("Today is"),
         )
     }
 
     @Test
     fun `memory tool description keeps its core semantics`() {
-        val desc = memoryToolDescription(tavern = false)
-        assertTrue("仍要说明四个 action", desc.contains("create") && desc.contains("delete"))
-        assertTrue("仍要说明必填参数", desc.contains("create needs"))
+        val desc = memoryToolDescription()
+        assertTrue("仍要说明读写语义", desc.contains("read") && desc.contains("write"))
     }
 
     @Test
     fun `description is stable across calls`() {
-        val a = memoryToolDescription(tavern = false)
-        val b = memoryToolDescription(tavern = false)
+        val a = memoryToolDescription()
+        val b = memoryToolDescription()
         assertTrue("同一输入必须产出同一描述，否则前缀缓存无法命中", a == b)
     }
 }

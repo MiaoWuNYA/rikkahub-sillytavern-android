@@ -44,6 +44,7 @@ internal class McpOAuthDiscoveryClient(
         @SerialName("registration_endpoint") val registrationEndpoint: String? = null,
         @SerialName("scopes_supported") val scopesSupported: List<String>? = null,
         @SerialName("code_challenge_methods_supported") val codeChallengeMethodsSupported: List<String>? = null,
+        @SerialName("client_id_metadata_document_supported") val clientIdMetadataDocumentSupported: Boolean = false,
     )
 
     /**
@@ -164,10 +165,20 @@ internal class McpOAuthDiscoveryClient(
     companion object {
         private val RESOURCE_METADATA_REGEX = Regex("resource_metadata=\"([^\"]+)\"")
 
+        /** 服务器 origin，用于未提供受保护资源元数据时作为授权服务器 issuer。 */
+        fun serverOrigin(serverUrl: String): String? {
+            val url = serverUrl.toHttpUrlOrNull() ?: return null
+            val defaultPort = HttpUrl.defaultPort(url.scheme)
+            val port = if (url.port == defaultPort) "" else ":${url.port}"
+            return "${url.scheme}://${url.host}$port"
+        }
+
         /** RFC 8707 与 MCP 规范使用的 canonical resource URI。 */
         fun canonicalResource(serverUrl: String): String {
             val url = serverUrl.toHttpUrlOrNull() ?: return serverUrl
-            return url.newBuilder().fragment(null).build().toString()
+            val canonical = url.newBuilder().fragment(null).build().toString()
+            // 根路径不带尾部斜杠（如 https://mcp.mongodb.com），与资源服务器声明的 resource 保持一致
+            return if (url.encodedPath == "/" && url.query == null) canonical.removeSuffix("/") else canonical
         }
     }
 }

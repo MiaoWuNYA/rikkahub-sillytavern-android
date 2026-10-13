@@ -28,8 +28,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Job
 import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.ui.OutlinedNumberInput
 import me.rerere.rikkahub.ui.components.ui.RabbitLoadingIndicator
+import me.rerere.ui.components.OutlinedNumberInput
 
 @Composable
 fun CompressContextDialog(
@@ -123,13 +123,6 @@ fun CompressContextDialog(
                         },
                         modifier = Modifier.fillMaxWidth(),
                         maxLines = 4,
-                    )
-
-                    // Warning text
-                    Text(
-                        text = stringResource(R.string.chat_page_compress_warning),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
                     )
                 }
             }

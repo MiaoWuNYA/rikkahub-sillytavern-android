@@ -10,20 +10,29 @@ import androidx.paging.insertSeparators
 import androidx.paging.map
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.ai.MemoryConsolidationScheduler
+import me.rerere.rikkahub.data.datastore.ConversationSortOrder
 import me.rerere.rikkahub.data.datastore.SettingsStore
+import me.rerere.rikkahub.data.datastore.getCurrentAssistant
+import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.model.Folder
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.data.repository.FolderRepository
+import me.rerere.rikkahub.data.repository.memoryId
+import me.rerere.rikkahub.service.ChatService
 import me.rerere.rikkahub.utils.toLocalString
 import java.time.LocalDate
 import java.time.ZoneId
@@ -34,6 +43,8 @@ class ChatDrawerVM(
     private val settingsStore: SettingsStore,
     conversationRepo: ConversationRepository,
     private val folderRepo: FolderRepository,
+    private val chatService: ChatService,
+    private val memoryConsolidationScheduler: MemoryConsolidationScheduler,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -44,79 +55,78 @@ class ChatDrawerVM(
         .map { it.assistantId }
         .distinctUntilChanged()
 
+    private val sortOrderFlow = settingsStore.settingsFlow
+        .map { it.displaySetting.conversationSortOrder }
+        .distinctUntilChanged()
+
+    // 当前助手的文件夹列表（Room Flow，增删改自动刷新）
     val folders: StateFlow<List<Folder>> = assistantIdFlow
         .flatMapLatest { folderRepo.getFoldersOfAssistant(it) }
-        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Lazily, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // 当前助手的记忆库是否正在后台整理；没开记忆的助手即使共用的全局记忆库在整理也不显示
+    val memoryDreaming: StateFlow<Boolean> = settingsStore.settingsFlow
+        .map { settings -> settings.getCurrentAssistant().takeIf { it.enableMemory }?.memoryId }
+        .distinctUntilChanged()
+        .flatMapLatest { memoryId ->
+            if (memoryId == null) flowOf(false) else memoryConsolidationScheduler.statusOf(memoryId).map { it.running }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     val conversations: Flow<PagingData<ConversationListItem>> =
-        combine(assistantIdFlow, _selectedFolderId) { assistantId, folderId ->
-            assistantId to folderId
+        combine(assistantIdFlow, _selectedFolderId, sortOrderFlow) { assistantId, folderId, sortOrder ->
+            Triple(assistantId, folderId, sortOrder)
         }
-            .distinctUntilChanged()
-            .flatMapLatest { (assistantId, folderId) ->
-                if (folderId == null) {
-                    conversationRepo.getConversationsOfAssistantPaging(assistantId)
+            .flatMapLatest { (assistantId, folderId, sortOrder) ->
+                val paging = if (folderId == null) {
+                    conversationRepo.getUnfiledConversationsOfAssistantPaging(assistantId, sortOrder)
                 } else {
-                    conversationRepo.getConversationsOfFolderPaging(folderId)
+                    conversationRepo.getConversationsOfFolderPaging(folderId, sortOrder)
                 }
-            }
-            .map { pagingData ->
-                pagingData
-                    .map { ConversationListItem.Item(it) }
-                    .insertSeparators { before, after ->
-                        when {
-                            before == null && after is ConversationListItem.Item -> {
-                                if (after.conversation.isPinned) {
-                                    ConversationListItem.PinnedHeader
-                                } else {
-                                    val afterDate = after.conversation.updateAt
-                                        .atZone(ZoneId.systemDefault())
-                                        .toLocalDate()
-                                    ConversationListItem.DateHeader(
-                                        date = afterDate,
-                                        label = getDateLabel(afterDate)
-                                    )
+                paging.map { pagingData ->
+                    pagingData
+                        .map { ConversationListItem.Item(it) }
+                        .insertSeparators<ConversationListItem.Item, ConversationListItem> { before, after ->
+                            when {
+                                after == null -> null
+                                after.conversation.isPinned -> {
+                                    if (before == null) ConversationListItem.PinnedHeader else null
                                 }
-                            }
 
-                            before is ConversationListItem.Item && after is ConversationListItem.Item -> {
-                                if (before.conversation.isPinned && !after.conversation.isPinned) {
-                                    val afterDate = after.conversation.updateAt
-                                        .atZone(ZoneId.systemDefault())
-                                        .toLocalDate()
-                                    ConversationListItem.DateHeader(
-                                        date = afterDate,
-                                        label = getDateLabel(afterDate)
-                                    )
-                                } else if (!after.conversation.isPinned) {
-                                    val beforeDate = before.conversation.updateAt
-                                        .atZone(ZoneId.systemDefault())
-                                        .toLocalDate()
-                                    val afterDate = after.conversation.updateAt
-                                        .atZone(ZoneId.systemDefault())
-                                        .toLocalDate()
-
-                                    if (beforeDate != afterDate) {
+                                else -> {
+                                    // 日期分组跟随排序依据：按创建时间排序时以创建日期分组
+                                    val afterDate = after.conversation.sortDate(sortOrder)
+                                    val sameGroup = before != null &&
+                                        !before.conversation.isPinned &&
+                                        before.conversation.sortDate(sortOrder) == afterDate
+                                    if (sameGroup) {
+                                        null
+                                    } else {
                                         ConversationListItem.DateHeader(
                                             date = afterDate,
-                                            label = getDateLabel(afterDate)
+                                            label = getDateLabel(afterDate),
+                                            sortOrder = sortOrder,
                                         )
-                                    } else {
-                                        null
                                     }
-                                } else {
-                                    null
                                 }
                             }
-
-                            else -> null
                         }
-                    }
+                }
             }
             .cachedIn(viewModelScope)
 
     val scrollIndex: Int get() = savedStateHandle["scrollIndex"] ?: 0
     val scrollOffset: Int get() = savedStateHandle["scrollOffset"] ?: 0
+
+    init {
+        // 助手切换时重置文件夹筛选，回到「聊天」视图，
+        // 避免继续显示上一个助手文件夹内的会话（文件夹是助手内分组）
+        viewModelScope.launch {
+            assistantIdFlow.collect {
+                _selectedFolderId.value = null
+            }
+        }
+    }
 
     fun saveScrollPosition(index: Int, offset: Int) {
         savedStateHandle["scrollIndex"] = index
@@ -144,8 +154,16 @@ class ChatDrawerVM(
         }
     }
 
+    /**
+     * 删除文件夹。若文件夹内有正在生成回复的会话，拒绝删除并返回 false（UI 层据此提示用户）。
+     */
     fun deleteFolder(folderId: Uuid): Boolean {
+        if (chatService.hasGeneratingConversationInFolder(folderId)) {
+            return false
+        }
         viewModelScope.launch {
+            // 经 ChatService 清理活跃 session 内存态的 folderId，避免整对象保存写回已删文件夹
+            chatService.clearFolderFromSessions(folderId)
             folderRepo.deleteFolder(folderId)
             if (_selectedFolderId.value == folderId) {
                 _selectedFolderId.value = null
@@ -156,8 +174,17 @@ class ChatDrawerVM(
 
     fun moveConversationToFolder(conversationId: Uuid, folderId: Uuid?) {
         viewModelScope.launch {
-            folderRepo.moveConversationToFolder(conversationId, folderId)
+            // 经 ChatService 移动：活跃会话会先同步内存态，避免后续整对象保存覆盖 folder_id
+            chatService.moveConversationToFolder(conversationId, folderId)
         }
+    }
+
+    private fun Conversation.sortDate(sortOrder: ConversationSortOrder): LocalDate {
+        val instant = when (sortOrder) {
+            ConversationSortOrder.UPDATE_TIME -> updateAt
+            ConversationSortOrder.CREATE_TIME -> createAt
+        }
+        return instant.atZone(ZoneId.systemDefault()).toLocalDate()
     }
 
     private fun getDateLabel(date: LocalDate): String {

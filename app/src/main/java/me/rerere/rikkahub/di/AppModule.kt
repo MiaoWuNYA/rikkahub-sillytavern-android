@@ -12,6 +12,7 @@ import me.rerere.rikkahub.data.qq.QqBotClient
 import me.rerere.rikkahub.data.weixin.WeixinBotClient
 import me.rerere.rikkahub.service.ChatNotificationManager
 import me.rerere.rikkahub.service.ChatService
+import me.rerere.rikkahub.service.MediaCreationService
 import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspaceTerminalSessionManager
 import me.rerere.rikkahub.utils.EmojiData
 import me.rerere.rikkahub.utils.EmojiUtils
@@ -94,14 +95,12 @@ val appModule = module {
 
     single {
         ChatToolFactory(
-            json = get(),
             memoryRepository = get(),
             conversationRepository = get(),
             localTools = get(),
             mcpManager = get(),
             skillManager = get(),
             workspaceRepository = get(),
-            memoryEmbeddingService = get(),
         )
     }
 
@@ -113,7 +112,8 @@ val appModule = module {
             settingsStore = get(),
             conversationRepo = get(),
             memoryRepository = get(),
-            generationHandler = get(),
+            generationLoop = get(),
+            memoryConsolidationScheduler = get(),
             translationHandler = get(),
             templateTransformer = get(),
             providerManager = get(),
@@ -124,12 +124,23 @@ val appModule = module {
             workspaceRepository = get(),
             skillManager = get(),
             folderRepository = get(),
-            memoryRetrievalTransformer = get(),
             crossWindowMemoryTransformer = get(),
             crossWindowMemoryStore = get(),
             coupleRepository = get(),
             pluginToolProvider = get(),
             jevClient = get(),
+        )
+    }
+
+    single {
+        MediaCreationService(
+            context = get(),
+            appScope = get(),
+            settingsStore = get(),
+            repository = get(),
+            manager = get(),
+            remoteFileStore = get(),
+            okHttpClient = get(),
         )
     }
 

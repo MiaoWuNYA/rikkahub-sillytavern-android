@@ -73,7 +73,7 @@ fun SettingWeixinBotPage(vm: SettingVM = koinViewModel()) {
 
     fun update(newSetting: WechatBotSetting) {
         botSetting = newSetting
-        vm.updateSettings(settings.copy(wechatBotSetting = newSetting))
+        vm.updateSettings { it.copy(wechatBotSetting = newSetting) }
     }
 
     // 扫码登录状态

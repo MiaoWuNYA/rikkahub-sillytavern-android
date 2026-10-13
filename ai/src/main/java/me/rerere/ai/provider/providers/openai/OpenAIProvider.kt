@@ -38,6 +38,7 @@ import me.rerere.ai.util.mergeCustomHeaders
 import me.rerere.ai.util.toHeaders
 import me.rerere.common.http.await
 import me.rerere.common.http.getByKey
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MultipartBody
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -222,10 +223,12 @@ class OpenAIProvider(
                 put("prompt", params.prompt)
                 put("n", params.numOfImages)
                 
-                val isGrok = providerSetting.baseUrl.contains("x.ai", ignoreCase = true) || 
+                // 只匹配 x.ai 本身及其子域名，避免 "xxx-max.ai" 之类的中转域名被误判
+                val host = providerSetting.baseUrl.toHttpUrlOrNull()?.host?.lowercase()
+                val isGrok = host == "x.ai" || host?.endsWith(".x.ai") == true ||
                     params.model.modelId.contains("grok", ignoreCase = true)
-                
-                if (params.size.isNotBlank() && !isGrok) {
+
+                if (params.size.isNotBlank() && !params.size.equals("auto", ignoreCase = true) && !isGrok) {
                     put("size", params.size)
                 }
 
@@ -280,6 +283,13 @@ class OpenAIProvider(
         }
 
         val key = keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString())
+
+        // OpenRouter 没有 /images/edits，参考图通过图像生成接口的 input_references 传入
+        if (providerSetting.baseUrl.toHttpUrlOrNull()?.host?.lowercase() == "openrouter.ai") {
+            editImageWithInputReferences(providerSetting, params, key).forEach { emit(it) }
+            return@flow
+        }
+
         val bodyBuilder = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart("model", params.model.modelId)
@@ -452,6 +462,59 @@ class OpenAIProvider(
             error("No image found in chat response: ${ChatImageResponse.extractText(body)?.take(200)}")
         }
         return urls.map { downloadImageAsBase64(it) }
+    }
+
+
+
+    @OptIn(ExperimentalEncodingApi::class)
+    private suspend fun editImageWithInputReferences(
+        providerSetting: ProviderSetting.OpenAI,
+        params: ImageEditParams,
+        key: String,
+    ): List<ImageGenerationItem> = withContext(Dispatchers.IO) {
+        val requestBody = json.encodeToString(
+            buildJsonObject {
+                put("model", params.model.modelId)
+                put("prompt", params.prompt)
+                put("n", params.numOfImages)
+                if (params.size.isNotBlank() && !params.size.equals("auto", ignoreCase = true)) {
+                    put("size", params.size)
+                }
+                putJsonArray("input_references") {
+                    params.images.forEach { path ->
+                        val imageFile = File(path)
+                        require(imageFile.exists()) {
+                            "Image file does not exist: $path"
+                        }
+                        addJsonObject {
+                            put("type", "image_url")
+                            putJsonObject("image_url") {
+                                put(
+                                    "url",
+                                    "data:${imageFile.imageMediaType()};base64,${Base64.encode(imageFile.readBytes())}"
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+                .mergeCustomBody(params.customBody)
+        )
+
+        val request = Request.Builder()
+            .url("${providerSetting.baseUrl}/images/generations")
+            .headers(providerSetting.mergeCustomHeaders(params.customHeaders))
+            .addHeader("Authorization", "Bearer $key")
+            .addHeader("Content-Type", "application/json")
+            .post(requestBody.toRequestBody("application/json".toMediaType()))
+            .configureReferHeaders(providerSetting.baseUrl)
+            .build()
+
+        val response = client.newCall(request).await()
+        if (!response.isSuccessful) {
+            error("Failed to edit image: ${response.code} ${response.body?.string()}")
+        }
+        parseImageResponse(response.body.string())
     }
 
     private suspend fun parseImageResponse(bodyStr: String): List<ImageGenerationItem> {

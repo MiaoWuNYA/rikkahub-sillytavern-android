@@ -96,12 +96,8 @@ import me.rerere.rikkahub.data.ai.mcp.McpServerConfig
 import me.rerere.rikkahub.data.ai.mcp.McpStatus
 import me.rerere.rikkahub.data.ai.mcp.McpTool
 import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.FormItem
 import me.rerere.rikkahub.ui.components.ui.ItemAction
 import me.rerere.rikkahub.ui.components.ui.ItemActionMenu
-import me.rerere.rikkahub.ui.components.ui.RikkaConfirmDialog
-import me.rerere.rikkahub.ui.components.ui.Switch
-import me.rerere.rikkahub.ui.components.ui.SwitchSize
 import me.rerere.rikkahub.ui.components.ui.Tag
 import me.rerere.rikkahub.ui.components.ui.TagType
 import me.rerere.rikkahub.ui.hooks.EditState
@@ -110,6 +106,10 @@ import me.rerere.rikkahub.ui.hooks.useEditState
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.ui.theme.extendColors
 import me.rerere.rikkahub.utils.writeClipboardText
+import me.rerere.ui.components.FormItem
+import me.rerere.ui.components.RikkaConfirmDialog
+import me.rerere.ui.components.Switch
+import me.rerere.ui.components.SwitchSize
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
@@ -118,23 +118,24 @@ fun SettingMcpPage(vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val mcpConfigs = settings.mcpServers
     val creationState = useEditState<McpServerConfig> {
-        vm.updateSettings(
-            settings.copy(
-                mcpServers = mcpConfigs + it
+        vm.updateSettings { latest ->
+            latest.copy(
+                mcpServers = latest.mcpServers + it
             )
-        )
+        }
     }
     val editState = useEditState<McpServerConfig> { newConfig ->
-        vm.updateSettings(
-            settings.copy(
-                mcpServers = mcpConfigs.map {
+        vm.updateSettings { latest ->
+            latest.copy(
+                mcpServers = latest.mcpServers.map {
                     if (it.id == newConfig.id) {
                         newConfig
                     } else {
                         it
                     }
                 }
-            ))
+            )
+        }
     }
     var showImportDialog by remember { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -204,11 +205,11 @@ fun SettingMcpPage(vm: SettingVM = koinViewModel()) {
                             editState.open(mcpConfig)
                         },
                         onDelete = {
-                            vm.updateSettings(
-                                settings.copy(
-                                    mcpServers = mcpConfigs.filter { it.id != mcpConfig.id }
+                            vm.updateSettings { latest ->
+                                latest.copy(
+                                    mcpServers = latest.mcpServers.filter { it.id != mcpConfig.id }
                                 )
-                            )
+                            }
                         },
                         modifier = Modifier.animateItem()
                     )
@@ -238,7 +239,7 @@ fun SettingMcpPage(vm: SettingVM = koinViewModel()) {
             onImport = { newConfigs ->
                 val existingIds = mcpConfigs.map { it.commonOptions.name }.toSet()
                 val toAdd = newConfigs.filter { it.commonOptions.name.isNotBlank() && it.commonOptions.name !in existingIds }
-                vm.updateSettings(settings.copy(mcpServers = mcpConfigs + toAdd))
+                vm.updateSettings { it.copy(mcpServers = it.mcpServers + toAdd) }
                 showImportDialog = false
             }
         )

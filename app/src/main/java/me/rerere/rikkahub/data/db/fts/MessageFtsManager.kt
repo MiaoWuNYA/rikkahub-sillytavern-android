@@ -64,9 +64,10 @@ class MessageFtsManager(private val database: AppDatabase) {
     suspend fun search(
         keyword: String,
         sort: MessageSearchSort = MessageSearchSort.RELEVANCE,
-        assistantId: String? = null,
+        // 只搜这些助手的对话，null 表示不限
+        assistantIds: Collection<String>? = null,
     ): List<MessageSearchResult> = withContext(Dispatchers.IO) {
-        val results = queryOnce(keyword, sort, assistantId)
+        val results = queryOnce(keyword, sort, assistantIds)
         if (results.isNotEmpty() || keyword.isBlank()) return@withContext results
 
         // FTS5 隐式 AND：整句多关键词（如"最近 天气 情况"）会 0 命中。
@@ -77,7 +78,7 @@ class MessageFtsManager(private val database: AppDatabase) {
             .filter { it.isNotBlank() && it != keyword && hasWordCharacter(it) }
         if (tokens.size <= 1) return@withContext results
         return@withContext runCatching {
-            tokens.flatMap { token -> queryOnce(token, sort, assistantId) }
+            tokens.flatMap { token -> queryOnce(token, sort, assistantIds) }
                 .distinctBy { it.messageId }
                 .take(50)
         }.getOrElse { error ->
@@ -92,15 +93,16 @@ class MessageFtsManager(private val database: AppDatabase) {
     private fun queryOnce(
         keyword: String,
         sort: MessageSearchSort,
-        assistantId: String?,
+        assistantIds: Collection<String>?,
     ): List<MessageSearchResult> {
         val results = mutableListOf<MessageSearchResult>()
-        val assistantFilter = if (assistantId != null) {
+        if (assistantIds != null && assistantIds.isEmpty()) return results
+        val assistantFilter = if (assistantIds != null) {
             """
             AND EXISTS (
                 SELECT 1 FROM conversationentity AS conversation
                 WHERE conversation.id = message_fts.conversation_id
-                  AND conversation.assistant_id = ?
+                  AND conversation.assistant_id IN (${assistantIds.joinToString { "?" }})
             )
             """.trimIndent()
         } else {
@@ -116,7 +118,7 @@ class MessageFtsManager(private val database: AppDatabase) {
             ORDER BY ${sort.orderBy}
             LIMIT 50
             """.trimIndent(),
-            if (assistantId != null) arrayOf(keyword, assistantId) else arrayOf(keyword)
+            arrayOf(keyword, *assistantIds.orEmpty().toTypedArray())
         )
         Log.i(TAG, "search: $keyword")
         cursor.use {

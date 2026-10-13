@@ -64,7 +64,6 @@ import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
 import me.rerere.rikkahub.ui.components.ui.ItemAction
 import me.rerere.rikkahub.ui.components.ui.ItemActionMenu
-import me.rerere.rikkahub.ui.components.ui.RikkaConfirmDialog
 import me.rerere.rikkahub.ui.components.ui.Tag
 import me.rerere.rikkahub.ui.components.ui.TagType
 import me.rerere.rikkahub.ui.components.ui.longPressReorder
@@ -74,6 +73,7 @@ import me.rerere.rikkahub.ui.pages.setting.components.TTSProviderConfigure
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.plus
 import me.rerere.tts.provider.TTSProviderSetting
+import me.rerere.ui.components.RikkaConfirmDialog
 import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -98,20 +98,20 @@ fun SettingSpeechPage(vm: SettingVM = koinViewModel()) {
                 actions = {
                     if (selectedPage == 0) {
                         AddTTSProviderButton {
-                            vm.updateSettings(
-                                settings.copy(
-                                    ttsProviders = listOf(it) + settings.ttsProviders
+                            vm.updateSettings { latest ->
+                                latest.copy(
+                                    ttsProviders = listOf(it) + latest.ttsProviders
                                 )
-                            )
+                            }
                         }
                     } else {
                         AddASRProviderButton {
-                            vm.updateSettings(
-                                settings.copy(
-                                    asrProviders = listOf(it) + settings.asrProviders,
-                                    selectedASRProviderId = settings.selectedASRProviderId ?: it.id
+                            vm.updateSettings { latest ->
+                                latest.copy(
+                                    asrProviders = listOf(it) + latest.asrProviders,
+                                    selectedASRProviderId = latest.selectedASRProviderId ?: it.id
                                 )
-                            )
+                            }
                         }
                     }
                 },
@@ -211,7 +211,7 @@ fun SettingSpeechPage(vm: SettingVM = koinViewModel()) {
                             val newProviders = settings.ttsProviders.map {
                                 if (it.id == provider.id) currentProvider else it
                             }
-                            vm.updateSettings(settings.copy(ttsProviders = newProviders))
+                            vm.updateSettings { it.copy(ttsProviders = newProviders) }
                             editingTTSProvider = null
                         },
                         modifier = Modifier.weight(1f)
@@ -274,7 +274,7 @@ fun SettingSpeechPage(vm: SettingVM = koinViewModel()) {
                             val newProviders = settings.asrProviders.map {
                                 if (it.id == provider.id) currentProvider else it
                             }
-                            vm.updateSettings(settings.copy(asrProviders = newProviders))
+                            vm.updateSettings { it.copy(asrProviders = newProviders) }
                             editingASRProvider = null
                         },
                         modifier = Modifier.weight(1f)
@@ -290,7 +290,7 @@ fun SettingSpeechPage(vm: SettingVM = koinViewModel()) {
 @Composable
 private fun TTSProviderList(
     settings: Settings,
-    onUpdateSettings: (Settings) -> Unit,
+    onUpdateSettings: ((Settings) -> Settings) -> Unit,
     onEdit: (TTSProviderSetting) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -302,7 +302,7 @@ private fun TTSProviderList(
             val newProviders = providers.toMutableList().apply {
                 add(to.index, removeAt(from.index))
             }
-            onUpdateSettings(settings.copy(ttsProviders = newProviders))
+            onUpdateSettings { it.copy(ttsProviders = newProviders) }
         }
     }
     var deleteTarget by remember { mutableStateOf<TTSProviderSetting?>(null) }
@@ -327,7 +327,7 @@ private fun TTSProviderList(
                     provider = provider,
                     isSelected = settings.selectedTTSProviderId == provider.id,
                     onSelect = {
-                        onUpdateSettings(settings.copy(selectedTTSProviderId = provider.id))
+                        onUpdateSettings { it.copy(selectedTTSProviderId = provider.id) }
                     },
                     onEdit = {
                         onEdit(provider)
@@ -350,12 +350,12 @@ private fun TTSProviderList(
                 val newProviders = settings.ttsProviders.filter { it.id != target.id }
                 val newSelectedId =
                     if (settings.selectedTTSProviderId == target.id) DEFAULT_SYSTEM_TTS_ID else settings.selectedTTSProviderId
-                onUpdateSettings(
-                    settings.copy(
+                onUpdateSettings {
+                    it.copy(
                         ttsProviders = newProviders,
                         selectedTTSProviderId = newSelectedId
                     )
-                )
+                }
             }
             deleteTarget = null
         },
@@ -368,7 +368,7 @@ private fun TTSProviderList(
 @Composable
 private fun ASRProviderList(
     settings: Settings,
-    onUpdateSettings: (Settings) -> Unit,
+    onUpdateSettings: ((Settings) -> Settings) -> Unit,
     onEdit: (ASRProviderSetting) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -380,7 +380,7 @@ private fun ASRProviderList(
             val newProviders = providers.toMutableList().apply {
                 add(to.index, removeAt(from.index))
             }
-            onUpdateSettings(settings.copy(asrProviders = newProviders))
+            onUpdateSettings { it.copy(asrProviders = newProviders) }
         }
     }
     var deleteTarget by remember { mutableStateOf<ASRProviderSetting?>(null) }
@@ -405,7 +405,7 @@ private fun ASRProviderList(
                     provider = provider,
                     isSelected = settings.selectedASRProviderId == provider.id,
                     onSelect = {
-                        onUpdateSettings(settings.copy(selectedASRProviderId = provider.id))
+                        onUpdateSettings { it.copy(selectedASRProviderId = provider.id) }
                     },
                     onEdit = {
                         onEdit(provider)
@@ -432,12 +432,12 @@ private fun ASRProviderList(
                     } else {
                         settings.selectedASRProviderId
                     }
-                onUpdateSettings(
-                    settings.copy(
+                onUpdateSettings {
+                    it.copy(
                         asrProviders = newProviders,
                         selectedASRProviderId = newSelectedId
                     )
-                )
+                }
             }
             deleteTarget = null
         },

@@ -32,7 +32,7 @@ import me.rerere.rikkahub.data.model.PersonaInjectionPosition
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.components.ui.FormItem
+import me.rerere.ui.components.FormItem
 import me.rerere.rikkahub.ui.theme.CustomColors
 import org.koin.compose.koinInject
 import kotlin.uuid.Uuid

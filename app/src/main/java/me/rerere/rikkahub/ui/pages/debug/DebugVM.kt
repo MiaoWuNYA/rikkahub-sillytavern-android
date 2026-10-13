@@ -34,6 +34,13 @@ class DebugVM(
     val settings: StateFlow<Settings> = settingsStore.settingsFlow
         .stateIn(viewModelScope, SharingStarted.Lazily, Settings.dummy())
 
+    val launchCount: StateFlow<Int> = settingsStore.launchCountFlow
+        .stateIn(viewModelScope, SharingStarted.Lazily, 0)
+
+    fun setLaunchCount(count: Int) {
+        viewModelScope.launch { settingsStore.setLaunchCount(count) }
+    }
+
     private val _conversationCount = MutableStateFlow<Int?>(null)
     val conversationCount: StateFlow<Int?> = _conversationCount.asStateFlow()
 
@@ -76,13 +83,13 @@ class DebugVM(
         val recovered = missing.mapIndexed { index, (id, _) ->
             Assistant(id = id, name = "恢复的助手 ${index + 1}")
         }
-        settingsStore.update(settings.copy(assistants = settings.assistants + recovered))
+        settingsStore.update { it.copy(assistants = it.assistants + recovered) }
         return recovered.size
     }
 
-    fun updateSettings(settings: Settings) {
+    fun updateSettings(fn: (Settings) -> Settings) {
         viewModelScope.launch {
-            settingsStore.update(settings)
+            settingsStore.update(fn)
         }
     }
 

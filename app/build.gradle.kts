@@ -452,6 +452,11 @@ dependencies {
     // Paging3
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)
+
+    // media3 (video playback)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+
     // Apache Commons Text
     implementation(libs.commons.text)
     // Jsoup (HTML 渲染，richtext 组件用)
@@ -486,9 +491,10 @@ dependencies {
     implementation(project(":highlight"))
     implementation(project(":search"))
     implementation(project(":speech"))
-    implementation(project(":videogen"))
+    implementation(project(":mediagen"))
     implementation(project(":common"))
     implementation(project(":material3"))
+    implementation(project(":ui"))
     implementation(project(":workspace"))
     implementation(project(":oauth"))
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar", "*.aar"))))
@@ -497,6 +503,7 @@ dependencies {
     // debugImplementation(libs.leakcanary.android)
     // tests
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

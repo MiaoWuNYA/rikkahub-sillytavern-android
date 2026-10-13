@@ -102,15 +102,16 @@ import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.getAssistantById
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.model.MessageNode
+import me.rerere.rikkahub.data.model.withConversation
 import me.rerere.rikkahub.service.ChatError
 import me.rerere.rikkahub.ui.components.message.ChatMessage
 import me.rerere.rikkahub.ui.components.ui.ErrorCardsDisplay
-import me.rerere.rikkahub.ui.components.ui.ListSelectableItem
 import me.rerere.rikkahub.ui.components.ui.RabbitLoadingIndicator
-import me.rerere.rikkahub.ui.components.ui.Tooltip
 import me.rerere.rikkahub.ui.hooks.ImeLazyListAutoScroller
 import me.rerere.rikkahub.ui.theme.ChatFontProvider
 import me.rerere.rikkahub.utils.plus
+import me.rerere.ui.components.ListSelectableItem
+import me.rerere.ui.components.Tooltip
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 import me.rerere.rikkahub.ui.components.richtext.CardHostContext
@@ -385,10 +386,11 @@ private fun ChatListNormal(
     DisposableEffect(Unit) {
         val listener: (Boolean) -> Boolean = { isVolumeUp ->
             if (settings.displaySetting.enableVolumeKeyScroll) {
-                val bottomPaddingPx = with(density) {
-                    (32.dp + innerPadding.calculateBottomPadding()).toPx()
+                // 列表视口包含标题栏和输入区遮住的部分，翻页时只按可见区域计算
+                val coveredPx = with(density) {
+                    (innerPadding.calculateTopPadding() + 32.dp + innerPadding.calculateBottomPadding()).toPx()
                 }
-                val scrollAmount = (state.layoutInfo.viewportSize.height - bottomPaddingPx) *
+                val scrollAmount = (state.layoutInfo.viewportSize.height - coveredPx) *
                     settings.displaySetting.volumeKeyScrollRatio
                 scope.launch { state.scrollBy(if (isVolumeUp) -scrollAmount else scrollAmount) }
                 true
@@ -427,8 +429,15 @@ private fun ChatListNormal(
         )
     }
 
-    val assistant = remember(settings.assistants, conversation.assistantId) {
-        settings.getAssistantById(conversation.assistantId)
+    val assistant = remember(
+        settings.assistants,
+        conversation.assistantId,
+        conversation.config,
+        conversation.modeInjectionIds,
+        conversation.lorebookIds,
+    ) {
+        // 工作区等配置在会话开始后以会话上固定的为准
+        settings.getAssistantById(conversation.assistantId)?.withConversation(conversation)
     }
     val modelById = remember(settings.providers) {
         settings.providers
@@ -474,13 +483,16 @@ private fun ChatListNormal(
         ChatFontProvider(displaySetting = settings.displaySetting) {
             LazyColumn(
                 state = state,
-                contentPadding = PaddingValues(16.dp) + PaddingValues(bottom = 32.dp + innerPadding.calculateBottomPadding()),
+                // 顶部留白放进 contentPadding，让消息可以滚动到透明标题栏下面
+                contentPadding = PaddingValues(16.dp) + PaddingValues(
+                    top = innerPadding.calculateTopPadding(),
+                    bottom = 32.dp + innerPadding.calculateBottomPadding(),
+                ),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
                     .fillMaxSize()
-                    .hazeSource(state = hazeState)
-                    .padding(top = innerPadding.calculateTopPadding()),
+                    .hazeSource(state = hazeState),
             ) {
             itemsIndexed(
                 items = conversation.messageNodes,
@@ -501,7 +513,8 @@ private fun ChatListNormal(
                     ) {
                         ChatMessage(
                             node = node,
-                            model = node.currentMessage.modelId?.let(modelById::get),
+                            model = node.currentMessage.modelId?.let(modelById::get)
+                                ?: node.currentMessage.snapshotModel(),
                             assistant = assistant,
                             loading = loading && index == lastMessageIndex,
                             // 官方深度语义：最新一条为 0，向前递增

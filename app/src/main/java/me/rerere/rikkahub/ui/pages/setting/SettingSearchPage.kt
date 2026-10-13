@@ -46,11 +46,8 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
-import me.rerere.rikkahub.ui.components.ui.FormItem
 import me.rerere.rikkahub.ui.components.ui.ItemAction
 import me.rerere.rikkahub.ui.components.ui.ItemActionMenu
-import me.rerere.rikkahub.ui.components.ui.OutlinedNumberInput
-import me.rerere.rikkahub.ui.components.ui.RikkaConfirmDialog
 import me.rerere.rikkahub.ui.components.ui.Tag
 import me.rerere.rikkahub.ui.components.ui.TagType
 import me.rerere.rikkahub.ui.components.ui.longPressReorder
@@ -60,6 +57,9 @@ import me.rerere.rikkahub.utils.plus
 import me.rerere.search.SearchCommonOptions
 import me.rerere.search.SearchService
 import me.rerere.search.SearchServiceOptions
+import me.rerere.ui.components.FormItem
+import me.rerere.ui.components.OutlinedNumberInput
+import me.rerere.ui.components.RikkaConfirmDialog
 import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -108,9 +108,9 @@ fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
                 val newServices = services.toMutableList().apply {
                     add(to.index, removeAt(from.index))
                 }
-                vm.updateSettings(
-                    settings.copy(searchServices = newServices)
-                )
+                vm.updateSettings {
+                    it.copy(searchServices = newServices)
+                }
             }
         }
 
@@ -147,9 +147,9 @@ fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
                 CommonOptions(
                     settings = settings,
                     onUpdate = { options ->
-                        vm.updateSettings(
-                            settings.copy(searchCommonOptions = options)
-                        )
+                        vm.updateSettings {
+                            it.copy(searchCommonOptions = options)
+                        }
                     }
                 )
             }
@@ -161,11 +161,11 @@ fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
             onDismiss = { showAddDialog = false },
             onConfirm = { options ->
                 showAddDialog = false
-                vm.updateSettings(
-                    settings.copy(
-                        searchServices = listOf(options) + settings.searchServices
+                vm.updateSettings {
+                    it.copy(
+                        searchServices = listOf(options) + it.searchServices
                     )
-                )
+                }
                 scope.launch {
                     lazyListState.animateScrollToItem(0)
                 }
@@ -180,9 +180,9 @@ fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
         dismissText = stringResource(R.string.cancel),
         onConfirm = {
             deleteTarget?.let { target ->
-                vm.updateSettings(
-                    settings.copy(searchServices = settings.searchServices.filter { it.id != target.id })
-                )
+                vm.updateSettings { latest ->
+                    latest.copy(searchServices = latest.searchServices.filter { it.id != target.id })
+                }
             }
             deleteTarget = null
         },

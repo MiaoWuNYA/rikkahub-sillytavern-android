@@ -14,6 +14,9 @@ import me.rerere.rikkahub.ui.pages.search.SearchVM
 import me.rerere.rikkahub.ui.pages.history.HistoryVM
 import me.rerere.rikkahub.ui.pages.stats.StatsVM
 import me.rerere.rikkahub.ui.pages.imggen.ImgGenVM
+import me.rerere.rikkahub.ui.pages.mediacreation.MediaCreationSessionsVM
+import me.rerere.rikkahub.ui.pages.mediacreation.MediaCreationVM
+import me.rerere.rikkahub.ui.pages.memory.MemoryFileVM
 import me.rerere.rikkahub.ui.pages.extensions.PromptVM
 import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspaceDetailVM
 import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspaceVM
@@ -52,10 +55,17 @@ val viewModelModule = module {
             id = it.get(),
             settingsStore = get(),
             memoryRepository = get(),
-            memoryEmbeddingService = get(),
+            memoryConsolidationScheduler = get(),
             filesManager = get(),
             skillManager = get(),
             workspaceRepository = get(),
+        )
+    }
+    viewModel<MemoryFileVM> {
+        MemoryFileVM(
+            memoryId = it[0],
+            path = it[1],
+            memoryRepository = get(),
         )
     }
     viewModelOf(::TranslatorVM)
@@ -68,6 +78,18 @@ val viewModelModule = module {
     viewModelOf(::BackupVM)
     viewModelOf(::OnboardingVM)
     viewModelOf(::ImgGenVM)
+    viewModelOf(::MediaCreationSessionsVM)
+    viewModel<MediaCreationVM> {
+        MediaCreationVM(
+            id = it.get(),
+            context = get(),
+            settingsStore = get(),
+            repository = get(),
+            service = get(),
+            remoteFileStore = get(),
+            appScope = get(),
+        )
+    }
     viewModelOf(::PromptVM)
     viewModelOf(::QuickMessagesVM)
     viewModelOf(::SkillsVM)

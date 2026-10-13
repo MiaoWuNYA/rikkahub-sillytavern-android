@@ -114,7 +114,7 @@
       </intent-filter>
 
       <intent-filter>
-        <action android:name="me.rerere.rikkahub.action.IMAGE_GEN" />
+        <action android:name="me.rerere.rikkahub.action.MEDIA_CREATION" />
         <category android:name="android.intent.category.DEFAULT" />
       </intent-filter>
 
@@ -142,6 +142,14 @@
 
     <service
       android:name=".service.ChatGenerationForegroundService"
+      android:exported="false"
+      android:foregroundServiceType="dataSync" />
+    <service
+      android:name=".service.MediaCreationForegroundService"
+      android:exported="false"
+      android:foregroundServiceType="dataSync" />
+    <service
+      android:name=".service.MemoryDreamForegroundService"
       android:exported="false"
       android:foregroundServiceType="dataSync" />
     <service

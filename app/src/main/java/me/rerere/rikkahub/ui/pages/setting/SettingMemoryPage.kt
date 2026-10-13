@@ -127,12 +127,6 @@ fun SettingMemoryPage(vm: SettingVM = koinViewModel()) {
         var tailDraft by remember(assistant.id, assistant.crossWindowMemoryTailEntries) {
             mutableStateOf(assistant.crossWindowMemoryTailEntries.toString())
         }
-        var recallDraft by remember(assistant.id, assistant.longTermMemoryRecallCount) {
-            mutableStateOf(assistant.longTermMemoryRecallCount.toString())
-        }
-        var recallCharsDraft by remember(assistant.id, assistant.longTermMemoryMaxChars) {
-            mutableStateOf(assistant.longTermMemoryMaxChars.toString())
-        }
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -333,16 +327,6 @@ fun SettingMemoryPage(vm: SettingVM = koinViewModel()) {
                 if (advancedExpanded) {
                     CardGroup(title = { Text(stringResource(R.string.setting_memory_how_it_works)) }) {
                         item(
-                            headlineContent = { Text(stringResource(R.string.setting_memory_three_layer)) },
-                            supportingContent = { Text(stringResource(R.string.setting_memory_three_layer_desc)) },
-                            trailingContent = {
-                                Switch(
-                                    checked = assistant.enableThreeLayerMemory,
-                                    onCheckedChange = { enabled -> updateAssistant { it.copy(enableThreeLayerMemory = enabled) } },
-                                )
-                            },
-                        )
-                        item(
                             headlineContent = { Text(stringResource(R.string.setting_memory_background_compress)) },
                             supportingContent = { Text(stringResource(R.string.setting_memory_background_compress_desc)) },
                             trailingContent = {
@@ -357,21 +341,14 @@ fun SettingMemoryPage(vm: SettingVM = koinViewModel()) {
                     Text(stringResource(R.string.setting_memory_custom_params), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 10.dp))
                     MemoryNumericField(stringResource(R.string.setting_memory_param_threshold), thresholdDraft) { thresholdDraft = digitsOnly(it) }
                     MemoryNumericField(stringResource(R.string.setting_memory_param_tail), tailDraft) { tailDraft = digitsOnly(it) }
-                    MemoryNumericField(stringResource(R.string.setting_memory_param_recall), recallDraft) { recallDraft = digitsOnly(it) }
-                    MemoryNumericField(stringResource(R.string.setting_memory_param_recall_chars), recallCharsDraft) { recallCharsDraft = digitsOnly(it) }
                     Button(
                         onClick = {
                             val threshold = thresholdDraft.toIntOrNull()?.coerceIn(1000, 100000) ?: return@Button
                             val tail = tailDraft.toIntOrNull()?.coerceIn(2, 100) ?: return@Button
-                            val recall = recallDraft.toIntOrNull()?.coerceIn(1, 50) ?: return@Button
-                            val recallChars = recallCharsDraft.toIntOrNull()?.coerceIn(500, 20000) ?: return@Button
                             updateAssistant {
                                 it.copy(
-                                    enableThreeLayerMemory = true,
                                     crossWindowMemoryCompressionThresholdChars = threshold,
                                     crossWindowMemoryTailEntries = tail,
-                                    longTermMemoryRecallCount = recall,
-                                    longTermMemoryMaxChars = recallChars,
                                 )
                             }
                         },
@@ -417,38 +394,29 @@ private fun formatMemoryTime(timestamp: Long): String =
     DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(timestamp))
 
 private fun detectMemoryStrategy(a: Assistant): MemoryStrategy? = when {
-    a.crossWindowMemoryCompressionThresholdChars == 8000 && a.crossWindowMemoryTailEntries == 10 && a.longTermMemoryRecallCount == 4 && a.longTermMemoryMaxChars == 1800 -> MemoryStrategy.SAVER
-    a.crossWindowMemoryCompressionThresholdChars == 20000 && a.crossWindowMemoryTailEntries == 24 && a.longTermMemoryRecallCount == 10 && a.longTermMemoryMaxChars == 5000 -> MemoryStrategy.STRONG
-    a.crossWindowMemoryCompressionThresholdChars == 12000 && a.crossWindowMemoryTailEntries == 16 && a.longTermMemoryRecallCount == 6 && a.longTermMemoryMaxChars == 3000 -> MemoryStrategy.NATURAL
+    a.crossWindowMemoryCompressionThresholdChars == 8000 && a.crossWindowMemoryTailEntries == 10 -> MemoryStrategy.SAVER
+    a.crossWindowMemoryCompressionThresholdChars == 20000 && a.crossWindowMemoryTailEntries == 24 -> MemoryStrategy.STRONG
+    a.crossWindowMemoryCompressionThresholdChars == 12000 && a.crossWindowMemoryTailEntries == 16 -> MemoryStrategy.NATURAL
     else -> null
 }
 
 private fun applyMemoryStrategy(a: Assistant, strategy: MemoryStrategy): Assistant = when (strategy) {
     MemoryStrategy.NATURAL -> a.copy(
-        enableThreeLayerMemory = true,
         enableCrossWindowMemory = true,
         enableCrossWindowMemoryCompression = true,
         crossWindowMemoryCompressionThresholdChars = 12000,
         crossWindowMemoryTailEntries = 16,
-        longTermMemoryRecallCount = 6,
-        longTermMemoryMaxChars = 3000,
     )
     MemoryStrategy.SAVER -> a.copy(
-        enableThreeLayerMemory = true,
         enableCrossWindowMemory = true,
         enableCrossWindowMemoryCompression = true,
         crossWindowMemoryCompressionThresholdChars = 8000,
         crossWindowMemoryTailEntries = 10,
-        longTermMemoryRecallCount = 4,
-        longTermMemoryMaxChars = 1800,
     )
     MemoryStrategy.STRONG -> a.copy(
-        enableThreeLayerMemory = true,
         enableCrossWindowMemory = true,
         enableCrossWindowMemoryCompression = true,
         crossWindowMemoryCompressionThresholdChars = 20000,
         crossWindowMemoryTailEntries = 24,
-        longTermMemoryRecallCount = 10,
-        longTermMemoryMaxChars = 5000,
     )
 }

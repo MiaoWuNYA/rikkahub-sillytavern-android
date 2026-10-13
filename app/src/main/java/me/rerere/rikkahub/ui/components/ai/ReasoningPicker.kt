@@ -1,23 +1,23 @@
 package me.rerere.rikkahub.ui.components.ai
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,14 +25,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.graphics.shapes.RoundedPolygon
+import kotlinx.coroutines.flow.drop
 import me.rerere.ai.core.ReasoningLevel
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.rikkahub.data.model.ThemeIconSet
@@ -40,14 +45,15 @@ import me.rerere.rikkahub.ui.components.ui.ThemedIcon
 import me.rerere.hugeicons.stroke.Idea
 import me.rerere.hugeicons.stroke.Idea01
 import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.ui.ToggleSurface
-import me.rerere.rikkahub.ui.components.ui.icons.ReasoningHigh
-import me.rerere.rikkahub.ui.components.ui.icons.ReasoningLow
-import me.rerere.rikkahub.ui.components.ui.icons.ReasoningMedium
+import me.rerere.ui.components.ToggleSurface
+import me.rerere.ui.icons.ReasoningHigh
+import me.rerere.ui.icons.ReasoningLow
+import me.rerere.ui.icons.ReasoningMedium
 import kotlin.math.roundToInt
 
 private val levels = ReasoningLevel.entries
 private val levelCount = levels.size
+private val levelShapes = levels.map { it.shape() }
 
 @Composable
 fun ReasoningButton(
@@ -102,9 +108,19 @@ fun ReasoningPicker(
             steps = levelCount - 2,
         )
     }
+    val interactionSource = remember { MutableInteractionSource() }
+    val hapticFeedback = LocalHapticFeedback.current
+    // 拖动过程中就跟随滑块预览，松手后才真正提交
+    val previewLevel = levels[sliderState.value.roundToInt().coerceIn(0, levelCount - 1)]
 
     LaunchedEffect(currentIndex) {
         sliderState.value = currentIndex.toFloat()
+    }
+
+    LaunchedEffect(sliderState) {
+        snapshotFlow { sliderState.value.roundToInt() }
+            .drop(1)
+            .collect { hapticFeedback.performHapticFeedback(HapticFeedbackType.SegmentTick) }
     }
 
     ModalBottomSheet(
@@ -115,53 +131,30 @@ fun ReasoningPicker(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
-                .padding(bottom = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .padding(bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // 标题
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+            PickerValueHeader(
+                title = stringResource(R.string.reasoning_picker_title),
+                value = previewLevel,
+                hint = stringResource(R.string.reasoning_picker_hint),
+                label = { it.label() },
             ) {
-                Text(
-                    text = stringResource(R.string.reasoning_picker_title),
-                    style = MaterialTheme.typography.titleLarge,
-                )
-                Text(
-                    text = stringResource(R.string.reasoning_picker_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-            }
-
-            // 当前等级展示
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                val iconColor by animateColorAsState(
-                    if (reasoningLevel.isEnabled) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface
-                )
-                Icon(
-                    imageVector = when (reasoningLevel) {
-                        ReasoningLevel.OFF -> HugeIcons.Idea
-                        ReasoningLevel.AUTO -> HugeIcons.Idea01
-                        ReasoningLevel.LOW -> ReasoningLow
-                        ReasoningLevel.MEDIUM -> ReasoningMedium
-                        ReasoningLevel.HIGH -> ReasoningHigh
-                        ReasoningLevel.XHIGH -> ReasoningHigh
-                        ReasoningLevel.MAX -> ReasoningHigh
+                // 等级越高形状越「激烈」
+                PickerHero(
+                    shapes = levelShapes,
+                    index = levels.indexOf(previewLevel),
+                    icon = previewLevel.icon(),
+                    containerColor = when {
+                        !previewLevel.isEnabled -> MaterialTheme.colorScheme.surfaceContainerHighest
+                        previewLevel >= ReasoningLevel.HIGH -> MaterialTheme.colorScheme.primary
+                        else -> MaterialTheme.colorScheme.primaryContainer
                     },
-                    contentDescription = null,
-                    modifier = Modifier.size(32.dp),
-                    tint = iconColor,
-                )
-                Text(
-                    text = reasoningLevel.label(),
-                    style = MaterialTheme.typography.titleMedium,
+                    contentColor = when {
+                        !previewLevel.isEnabled -> MaterialTheme.colorScheme.onSurfaceVariant
+                        previewLevel >= ReasoningLevel.HIGH -> MaterialTheme.colorScheme.onPrimary
+                        else -> MaterialTheme.colorScheme.onPrimaryContainer
+                    },
                 )
             }
 
@@ -174,27 +167,19 @@ fun ReasoningPicker(
                     onUpdateReasoningLevel(levels[snappedIndex])
                 },
                 modifier = Modifier.fillMaxWidth(),
+                interactionSource = interactionSource,
                 thumb = {
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(10.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.onPrimary)
-                        )
-                    }
+                    SliderDefaults.Thumb(
+                        interactionSource = interactionSource,
+                        isVertical = false,
+                        thumbSize = DpSize(4.dp, 52.dp),
+                    )
                 },
                 track = { sliderState ->
                     SliderDefaults.Track(
                         sliderState = sliderState,
-                        drawStopIndicator = null,
-                        thumbTrackGapSize = 0.dp,
+                        trackCornerSize = 12.dp,
+                        modifier = Modifier.height(40.dp),
                     )
                 }
             )
@@ -221,6 +206,26 @@ private fun ReasoningIcon(level: ReasoningLevel, themeIcons: ThemeIconSet = Them
         tint = themeIcons.effectiveReasoningTint?.let { Color(it) },
         scale = themeIcons.effectiveReasoningScale,
     )
+}
+
+private fun ReasoningLevel.icon(): ImageVector = when (this) {
+    ReasoningLevel.OFF -> HugeIcons.Idea
+    ReasoningLevel.AUTO -> HugeIcons.Idea01
+    ReasoningLevel.LOW -> ReasoningLow
+    ReasoningLevel.MEDIUM -> ReasoningMedium
+    ReasoningLevel.HIGH -> ReasoningHigh
+    ReasoningLevel.XHIGH -> ReasoningHigh
+    ReasoningLevel.MAX -> ReasoningHigh
+}
+
+private fun ReasoningLevel.shape(): RoundedPolygon = when (this) {
+    ReasoningLevel.OFF -> MaterialShapes.Circle
+    ReasoningLevel.AUTO -> MaterialShapes.Cookie4Sided
+    ReasoningLevel.LOW -> MaterialShapes.Cookie6Sided
+    ReasoningLevel.MEDIUM -> MaterialShapes.Cookie7Sided
+    ReasoningLevel.HIGH -> MaterialShapes.Cookie9Sided
+    ReasoningLevel.XHIGH -> MaterialShapes.Cookie12Sided
+    ReasoningLevel.MAX -> MaterialShapes.SoftBurst
 }
 
 @Composable
