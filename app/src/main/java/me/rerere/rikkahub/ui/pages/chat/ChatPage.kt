@@ -289,7 +289,6 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
                         current = conversation,
                         vm = vm,
                         settings = setting,
-                        drawerState = drawerState,
                     )
                 }
             ) {
@@ -323,7 +322,6 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
                         current = conversation,
                         vm = vm,
                         settings = setting,
-                        drawerState = drawerState,
                     )
                 }
             ) {
@@ -472,8 +470,6 @@ private fun ChatPageContent(
                             builtInSearch = mode == SearchMode.BUILT_IN,
                         )
                     },
-
-                    onCancelClick = { vm.stopGeneration() },
                     onSendClick = {
                         if (currentChatModel == null) {
                             toaster.show(context.getString(R.string.slash_toast_no_model), type = ToastType.Error)
@@ -505,9 +501,7 @@ private fun ChatPageContent(
                             id = kotlin.uuid.Uuid.random(),
                             name = src.name.ifBlank { context.getString(R.string.slash_ui_unnamed) } + context.getString(R.string.slash_ui_copy_suffix),
                         )
-                        vm.updateSettings(
-                            setting.copy(assistants = setting.assistants + dup)
-                        )
+                        vm.updateSettings { it.copy(assistants = setting.assistants + dup) }
                         toaster.show(context.getString(R.string.slash_toast_char_duplicated, dup.name))
                     },
                     onSlashInsert = { role, text, name, at ->
@@ -529,7 +523,7 @@ private fun ChatPageContent(
 
                             query.equals("off", ignoreCase = true) || query.equals("none", ignoreCase = true) -> {
                                 if (setting.activePersonaId != null) {
-                                    vm.updateSettings(setting.copy(activePersonaId = null))
+                                    vm.updateSettings { it.copy(activePersonaId = null) }
                                     toaster.show(context.getString(R.string.slash_toast_persona_off))
                                 } else {
                                     toaster.show(context.getString(R.string.slash_toast_persona_already_off))
@@ -548,18 +542,18 @@ private fun ChatPageContent(
 
                                     // 官方 /persona-set mode=temp：只设置临时用户名，不找/不选人设
                                     target != null && mode == "temp" -> {
-                                        vm.updateSettings(setting.copy(displaySetting = setting.displaySetting.copy(userNickname = query)))
+                                        vm.updateSettings { it.copy(displaySetting = it.displaySetting.copy(userNickname = query)) }
                                         toaster.show(context.getString(R.string.slash_toast_persona_temp_set, query))
                                     }
 
                                     // 官方 /persona-set mode=all（默认）：先找已有，找不到则设置临时用户名
                                     target != null -> {
-                                        vm.updateSettings(setting.copy(activePersonaId = target.id))
+                                        vm.updateSettings { it.copy(activePersonaId = target.id) }
                                         toaster.show(context.getString(R.string.slash_toast_persona_switched, target.name))
                                     }
 
                                     else -> {
-                                        vm.updateSettings(setting.copy(displaySetting = setting.displaySetting.copy(userNickname = query)))
+                                        vm.updateSettings { it.copy(displaySetting = it.displaySetting.copy(userNickname = query)) }
                                         toaster.show(context.getString(R.string.slash_toast_persona_fallback, query, query))
                                     }
                                 }
@@ -610,7 +604,7 @@ private fun ChatPageContent(
                             chatKey = chatKey,
                         )
                         if (newSettings !== setting) {
-                            vm.updateSettings(newSettings)
+                            vm.updateSettings { newSettings }
                         }
                         toaster.show(context.getString(R.string.slash_toast_reroll_done, next))
                     },
@@ -638,7 +632,7 @@ private fun ChatPageContent(
                             chatKey = conversation.id.toString(),
                         )
                         if (newSettings !== setting) {
-                            vm.updateSettings(newSettings)
+                            vm.updateSettings { newSettings }
                         }
                         result
                     },
@@ -815,11 +809,11 @@ private fun ChatFilesPickerSheet(
             } else null,
             // 酒馆模式快捷开关：就地写入华灯设置，保持面板不关闭，方便连点确认状态
             onToggleTavernMode = { enabled ->
-                vm.updateSettings(
-                    setting.copy(
-                        huadengSettings = setting.huadengSettings.copy(enableTavernMode = enabled),
+                vm.updateSettings {
+                    it.copy(
+                        huadengSettings = it.huadengSettings.copy(enableTavernMode = enabled),
                     )
-                )
+                }
             },
         )
     }
@@ -862,18 +856,6 @@ private fun TopBar(
                 endY = scrimHeight,
             )
             onDrawBehind { drawRect(brush, size = Size(size.width, scrimHeight)) }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-        navigationIcon = {
-            if (!bigScreen) {
-                IconButton(
-                    onClick = {
-                        scope.launch { drawerState.open() }
-                    }
-                ) {
-                    Icon(HugeIcons.Menu03, "Messages")
-                }
-            }
         },
         title = {
             val editTitleWarning = stringResource(R.string.chat_page_edit_title_warning)

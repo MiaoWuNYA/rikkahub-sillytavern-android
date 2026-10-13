@@ -142,6 +142,40 @@ class ConversationRepository(
         val pagingSource = conversationDAO.getConversationsOfAssistantPaging(assistantId.toString())
         return loadConversationPage(pagingSource, offset, limit)
     }
+    suspend fun searchConversationsOfAssistantPage(
+        assistantId: Uuid,
+        titleKeyword: String,
+        offset: Int,
+        limit: Int,
+    ): ConversationPageResult {
+        val pagingSource = conversationDAO.searchConversationsOfAssistantPaging(
+            assistantId = assistantId.toString(),
+            searchText = titleKeyword
+        )
+        return try {
+            when (
+                val result = pagingSource.load(
+                    PagingSource.LoadParams.Refresh(
+                        key = if (offset == 0) null else offset,
+                        loadSize = limit,
+                        placeholdersEnabled = false
+                    )
+                )
+            ) {
+                is PagingSource.LoadResult.Page -> ConversationPageResult(
+                    items = result.data.map { entity ->
+                        conversationSummaryToConversation(entity)
+                    },
+                    nextOffset = result.nextKey
+                )
+
+                is PagingSource.LoadResult.Error -> throw result.throwable
+                is PagingSource.LoadResult.Invalid -> ConversationPageResult(emptyList(), null)
+            }
+        } finally {
+            pagingSource.invalidate()
+        }
+    }
 
     suspend fun getUnfiledConversationsOfAssistantPage(
         assistantId: Uuid,
