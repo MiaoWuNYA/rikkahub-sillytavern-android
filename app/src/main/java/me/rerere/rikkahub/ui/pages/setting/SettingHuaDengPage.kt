@@ -53,7 +53,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.components.ui.Switch
+import me.rerere.ui.components.Switch
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.plus
@@ -99,13 +99,13 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                             Switch(
                                 checked = settings.huadengSettings.enableProxyFix,
                                 onCheckedChange = { enabled ->
-                                    vm.updateSettings(
-                                        settings.copy(
-                                            huadengSettings = settings.huadengSettings.copy(
+                                    vm.updateSettings {
+                                        it.copy(
+                                            huadengSettings = it.huadengSettings.copy(
                                                 enableProxyFix = enabled,
                                             ),
                                         )
-                                    )
+                                    }
                                 },
                             )
                         },
@@ -119,13 +119,13 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                             Switch(
                                 checked = settings.huadengSettings.enableAntiEmptyResponse,
                                 onCheckedChange = { enabled ->
-                                    vm.updateSettings(
-                                        settings.copy(
-                                            huadengSettings = settings.huadengSettings.copy(
+                                    vm.updateSettings {
+                                        it.copy(
+                                            huadengSettings = it.huadengSettings.copy(
                                                 enableAntiEmptyResponse = enabled,
                                             ),
                                         )
-                                    )
+                                    }
                                 },
                             )
                         },
@@ -139,13 +139,13 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                             Switch(
                                 checked = settings.huadengSettings.enableTransientContentPrune,
                                 onCheckedChange = { enabled ->
-                                    vm.updateSettings(
-                                        settings.copy(
-                                            huadengSettings = settings.huadengSettings.copy(
+                                    vm.updateSettings {
+                                        it.copy(
+                                            huadengSettings = it.huadengSettings.copy(
                                                 enableTransientContentPrune = enabled,
                                             ),
                                         )
-                                    )
+                                    }
                                 },
                             )
                         },
@@ -159,13 +159,13 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                             Switch(
                                 checked = settings.huadengSettings.enableCleanMode,
                                 onCheckedChange = { enabled ->
-                                    vm.updateSettings(
-                                        settings.copy(
-                                            huadengSettings = settings.huadengSettings.copy(
+                                    vm.updateSettings {
+                                        it.copy(
+                                            huadengSettings = it.huadengSettings.copy(
                                                 enableCleanMode = enabled,
                                             ),
                                         )
-                                    )
+                                    }
                                 },
                             )
                         },
@@ -179,13 +179,13 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                             Switch(
                                 checked = settings.huadengSettings.enableRollingContextCompression,
                                 onCheckedChange = { enabled ->
-                                    vm.updateSettings(
-                                        settings.copy(
-                                            huadengSettings = settings.huadengSettings.copy(
+                                    vm.updateSettings {
+                                        it.copy(
+                                            huadengSettings = it.huadengSettings.copy(
                                                 enableRollingContextCompression = enabled,
                                             ),
                                         )
-                                    )
+                                    }
                                 },
                             )
                         },
@@ -199,13 +199,13 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                             Switch(
                                 checked = settings.huadengSettings.enableToolResultTruncation,
                                 onCheckedChange = { enabled ->
-                                    vm.updateSettings(
-                                        settings.copy(
-                                            huadengSettings = settings.huadengSettings.copy(
+                                    vm.updateSettings {
+                                        it.copy(
+                                            huadengSettings = it.huadengSettings.copy(
                                                 enableToolResultTruncation = enabled,
                                             ),
                                         )
-                                    )
+                                    }
                                 },
                             )
                         },
@@ -219,13 +219,13 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                             Switch(
                                 checked = settings.huadengSettings.enableTavernMode,
                                 onCheckedChange = { enabled ->
-                                    vm.updateSettings(
-                                        settings.copy(
-                                            huadengSettings = settings.huadengSettings.copy(
+                                    vm.updateSettings {
+                                        it.copy(
+                                            huadengSettings = it.huadengSettings.copy(
                                                 enableTavernMode = enabled,
                                             ),
                                         )
-                                    )
+                                    }
                                 },
                             )
                         },
@@ -241,13 +241,13 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                                 // 仅在酒馆模式开启时可用，避免误认为独立功能
                                 enabled = settings.huadengSettings.enableTavernMode,
                                 onCheckedChange = { enabled ->
-                                    vm.updateSettings(
-                                        settings.copy(
-                                            huadengSettings = settings.huadengSettings.copy(
+                                    vm.updateSettings {
+                                        it.copy(
+                                            huadengSettings = it.huadengSettings.copy(
                                                 tavernModeKeepTools = enabled,
                                             ),
                                         )
-                                    )
+                                    }
                                 },
                             )
                         },
@@ -261,13 +261,13 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                             Switch(
                                 checked = settings.huadengSettings.enableSystemPromptEscape,
                                 onCheckedChange = { enabled ->
-                                    vm.updateSettings(
-                                        settings.copy(
-                                            huadengSettings = settings.huadengSettings.copy(
+                                    vm.updateSettings {
+                                        it.copy(
+                                            huadengSettings = it.huadengSettings.copy(
                                                 enableSystemPromptEscape = enabled,
                                             ),
                                         )
-                                    )
+                                    }
                                 },
                             )
                         },
@@ -284,13 +284,13 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                             Switch(
                                 checked = settings.huadengSettings.enablePythonLibraryHints,
                                 onCheckedChange = { enabled ->
-                                    vm.updateSettings(
-                                        settings.copy(
-                                            huadengSettings = settings.huadengSettings.copy(
+                                    vm.updateSettings {
+                                        it.copy(
+                                            huadengSettings = it.huadengSettings.copy(
                                                 enablePythonLibraryHints = enabled,
                                             ),
                                         )
-                                    )
+                                    }
                                 },
                             )
                         },

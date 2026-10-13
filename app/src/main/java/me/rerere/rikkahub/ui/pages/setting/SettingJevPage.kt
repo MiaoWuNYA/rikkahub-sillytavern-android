@@ -45,7 +45,7 @@ import me.rerere.rikkahub.data.ai.jev.JEV_DEFAULT_MODEL
 import me.rerere.rikkahub.data.datastore.HuaDengSettings
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.components.ui.Switch
+import me.rerere.ui.components.Switch
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.plus
 import org.koin.androidx.compose.koinViewModel
@@ -75,7 +75,7 @@ fun SettingJevPage(vm: SettingVM = koinViewModel()) {
     }
 
     fun updateHuaDeng(newValue: HuaDengSettings) {
-        vm.updateSettings(settings.copy(huadengSettings = newValue))
+        vm.updateSettings { it.copy(huadengSettings = newValue) }
     }
 
     fun commitBaseUrl() {

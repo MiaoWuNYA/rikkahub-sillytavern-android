@@ -85,7 +85,7 @@ fun SettingDisplayColorPage(vm: SettingVM = koinViewModel()) {
 
     fun updateDisplaySetting(setting: DisplaySetting) {
         displaySetting = setting
-        vm.updateSettings(settings.copy(displaySetting = setting))
+        vm.updateSettings { it.copy(displaySetting = setting) }
     }
 
     // 图片导入：拷贝到应用私有目录并存文件 URI，避免 content URI 权限失效

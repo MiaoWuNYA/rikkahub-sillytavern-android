@@ -105,7 +105,7 @@ fun SettingProactiveMessagePage(
      */
     fun applySetting(newValue: ProactiveMessageSetting) {
         val safe = newValue.normalized()
-        vm.updateSettings(settings.copy(proactiveMessageSetting = safe))
+        vm.updateSettings { it.copy(proactiveMessageSetting = safe) }
         if (safe.enabled) {
             ProactiveMessageService.scheduleNext(context, safe)
         }
@@ -118,7 +118,7 @@ fun SettingProactiveMessagePage(
             onConfirm = {
                 showProactiveRiskDialog = false
                 val newSetting = proactive.copy(enabled = true)
-                vm.updateSettings(settings.copy(proactiveMessageSetting = newSetting.normalized()))
+                vm.updateSettings { it.copy(proactiveMessageSetting = newSetting.normalized()) }
                 ProactiveMessageService.triggerNow(context, newSetting)
             },
             onDismiss = { showProactiveRiskDialog = false }
@@ -153,7 +153,7 @@ fun SettingProactiveMessagePage(
                                         showProactiveRiskDialog = true
                                     } else {
                                         val newSetting = proactive.copy(enabled = false)
-                                        vm.updateSettings(settings.copy(proactiveMessageSetting = newSetting))
+                                        vm.updateSettings { it.copy(proactiveMessageSetting = newSetting) }
                                         ProactiveMessageService.cancel(context)
                                     }
                                 }

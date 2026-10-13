@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlin.math.roundToInt
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.datastore.BackgroundEffectType
 import me.rerere.rikkahub.data.datastore.DisplaySetting
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup

@@ -75,7 +75,7 @@ fun SettingMemoryPage(vm: SettingVM = koinViewModel()) {
 
     fun updateAssistant(transform: (Assistant) -> Assistant) {
         val current = assistant ?: return
-        vm.updateSettings(settings.copy(assistants = assistants.map { if (it.id == current.id) transform(it) else it }))
+        vm.updateSettings { it.copy(assistants = assistants.map { if (it.id == current.id) transform(it) else it }) }
     }
 
     if (confirmClear && assistant != null) {

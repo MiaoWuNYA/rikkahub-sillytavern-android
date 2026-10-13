@@ -33,7 +33,10 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Pause
 import me.rerere.hugeicons.stroke.Play
 import me.rerere.hugeicons.stroke.Settings03
+import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.SettingsStore
+import me.rerere.rikkahub.data.datastore.findModelById
+import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.model.*
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.ai.transformers.PlaceholderTransformer
@@ -428,12 +431,14 @@ fun GroupChatPage(groupId: String) {
                             }
                         }
 
+                        val inputAssistant = members.firstOrNull { it.id == selectedSpeakerId } ?: settings.getCurrentAssistant()
                         ChatInput(
                             state = inputState,
                             loading = isGenerating,
                             settings = settings,
+                            assistant = inputAssistant,
+                            chatModel = settings.assistants.find { it.id == inputAssistant.id }?.chatModelId?.let { id -> settings.findModelById(id) } ?: settings.findModelById(settings.chatModelId),
                             hazeState = hazeState,
-                            enableSearch = false,
                             onUpdateSearchMode = {},
                             onUpdateChatModel = { model ->
                                 scope.launch {
@@ -443,8 +448,8 @@ fun GroupChatPage(groupId: String) {
                                 }
                             },
                             onUpdateAssistant = {},
-                            onUpdateConversation = {},
                             onUpdateSearchService = {},
+                            onUpdateConversation = {},
                             onCompressContext = { _, _, _ -> scope.launch { } },
                             onCancelClick = { generationJob?.cancel(); isGenerating = false; queueStatus = ""; queueMembers = emptyList() },
                             onSendClick = {
