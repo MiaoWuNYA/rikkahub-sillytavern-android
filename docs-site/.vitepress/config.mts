@@ -56,7 +56,6 @@ const sidebar = [
       { text: 'MCP', link: '/extensions/mcp' },
       { text: '手机增强', link: '/extensions/toolbox' },
       { text: '语音与通话', link: '/extensions/speech' },
-      { text: '图片生成', link: '/extensions/image-generation' },
       { text: '工作区', link: '/extensions/workspace' }
     ]
   },
