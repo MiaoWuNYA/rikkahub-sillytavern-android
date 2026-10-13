@@ -15,6 +15,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.AiCloud01
 import me.rerere.rikkahub.R
 import me.rerere.hugeicons.stroke.Book03
 import me.rerere.hugeicons.stroke.File02
@@ -80,6 +81,18 @@ fun ExtensionsPage() {
                         leadingContent = { CardGroupIcon(HugeIcons.Folder01, containerColor = containerColor, contentColor = contentColor) },
                         headlineContent = { Text(stringResource(R.string.extensions_page_workspace)) },
                         supportingContent = { Text(stringResource(R.string.extensions_page_workspace_desc)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.Plugins) },
+                        leadingContent = { CardGroupIcon(HugeIcons.Puzzle, containerColor = containerColor, contentColor = contentColor) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_plugins)) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_plugins_desc)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingMcp) },
+                        leadingContent = { CardGroupIcon(HugeIcons.AiCloud01, containerColor = containerColor, contentColor = contentColor) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_mcp)) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_mcp_desc)) },
                     )
                 }
             }

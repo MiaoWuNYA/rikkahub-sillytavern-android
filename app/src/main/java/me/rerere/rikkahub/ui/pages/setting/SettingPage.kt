@@ -242,33 +242,12 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         headlineContent = { Text(stringResource(R.string.setting_page_extensions)) },
                     )
                     item(
-                        onClick = { navController.navigate(Screen.Plugins) },
-                        leadingContent = { CardGroupIcon(HugeIcons.Puzzle, containerColor = containerColor, contentColor = contentColor) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_plugins_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_plugins)) },
-                    )
-                    if (!settings.huadengSettings.enableCleanMode) {
-                        item(
-                            onClick = { navController.navigate(Screen.Persona) },
-                            leadingContent = { CardGroupIcon(HugeIcons.Edit01, containerColor = containerColor, contentColor = contentColor) },
-                            supportingContent = { Text(stringResource(R.string.setting_page_persona_desc)) },
-                            headlineContent = { Text(stringResource(R.string.setting_page_persona)) },
-                        )
-                    }
-                    item(
                         onClick = { navController.navigate(Screen.SettingHuaDeng) },
                         leadingContent = { CardGroupIcon(HugeIcons.Settings03, containerColor = containerColor, contentColor = contentColor) },
                         supportingContent = { Text(stringResource(R.string.setting_page_huadeng_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_huadeng)) },
                     )
-                    if (!settings.huadengSettings.enableCleanMode) {
-                        item(
-                            onClick = { navController.navigate(Screen.GroupChatList) },
-                            leadingContent = { CardGroupIcon(HugeIcons.MessageMultiple01, containerColor = containerColor, contentColor = contentColor) },
-                            supportingContent = { Text(stringResource(R.string.setting_page_group_chat_desc)) },
-                            headlineContent = { Text(stringResource(R.string.setting_page_group_chat)) },
-                        )
-                    }
+                    
                 }
             }
 
@@ -307,12 +286,6 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         leadingContent = { CardGroupIcon(HugeIcons.Image02, containerColor = containerColor, contentColor = contentColor) },
                         supportingContent = { Text(stringResource(R.string.setting_page_media_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_media)) },
-                    )
-                    item(
-                        onClick = { navController.navigate(Screen.SettingMcp) },
-                        leadingContent = { CardGroupIcon(HugeIcons.McpServer, containerColor = containerColor, contentColor = contentColor) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_mcp_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_mcp)) },
                     )
                     item(
                         onClick = { navController.navigate(Screen.SettingWeb) },
