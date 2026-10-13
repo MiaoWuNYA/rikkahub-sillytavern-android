@@ -349,10 +349,10 @@ class OnboardingTest {
     fun `tavern mode defaults to dropping tools`() {
         // 开酒馆模式默认不保留工具：工具定义本身占不少 token，
         // 也会触发某些模型的策略。开酒馆模式的人要的就是最干净的请求。
-        val prefs = read("src/main/java/me/rerere/rikkahub/data/datastore/PreferencesStore.kt")
+        val settings = read("src/main/java/me/rerere/rikkahub/data/datastore/Settings.kt")
         assertTrue(
             "保留工具默认应为 false",
-            prefs.contains("val tavernModeKeepTools: Boolean = false"),
+            settings.contains("val tavernModeKeepTools: Boolean = false"),
         )
     }
 

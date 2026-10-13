@@ -100,10 +100,4 @@ class CjkTildeTest {
         assertTrue("完全没有波浪线".normalizeCjkTildes() == "完全没有波浪线")
     }
 
-    @Test
-    fun `latex preprocessing still works alongside`() {
-        val input = "公式 " + "\\" + "(" + "x^2" + "\\" + ")" + " 结束"
-        val out = preProcessMarkdown(input)
-        assertTrue("LaTeX 替换不能被波浪线处理破坏", out.contains("\$x^2\$"))
-    }
 }

@@ -208,6 +208,8 @@ class SettingsStore internal constructor(
 
         // 统计
         val LAUNCH_COUNT = intPreferencesKey("launch_count")
+        val FILE_RETENTION_DAYS = intPreferencesKey("file_retention_days")
+        val ENABLE_WEB_SEARCH = booleanPreferencesKey("enable_web_search")
 
         // 赞助提醒
         val SPONSOR_ALERT_DISMISSED_AT = intPreferencesKey("sponsor_alert_dismissed_at")

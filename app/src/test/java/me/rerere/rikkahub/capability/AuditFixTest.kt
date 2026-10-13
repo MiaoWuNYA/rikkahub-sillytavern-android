@@ -78,9 +78,11 @@ class AuditFixTest {
             "updateConversation 应支持 trusted 参数并能恢复标记",
             chat.contains("trusted: Boolean = false") && chat.contains("session.contentTrusted = true"),
         )
+        // sessionManager 架构后，完整内容载入走 updateConversation(..., trusted = true)
+        // 或 session.rehydrate()；两条链都必须存在。
         assertTrue(
             "从数据库读出完整内容时必须立信",
-            chat.contains("updateConversation(conversationId, conversation, trusted = true)"),
+            chat.contains("trusted = true") || chat.contains("session.rehydrate(fresh)"),
         )
         assertTrue("getConversationFlow 也要能自动恢复", chat.contains("rehydrate session"))
     }

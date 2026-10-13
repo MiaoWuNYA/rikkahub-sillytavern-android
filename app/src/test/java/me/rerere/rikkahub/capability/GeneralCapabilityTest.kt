@@ -153,7 +153,7 @@ class GeneralCapabilityTest {
 
     @Test
     fun `settings fields default to on`() {
-        val prefs = read("src/main/java/me/rerere/rikkahub/data/datastore/PreferencesStore.kt")
+        val prefs = read("src/main/java/me/rerere/rikkahub/data/datastore/Settings.kt")
         // enableLocalOcrFallback 已废弃（本地 OCR 撤除），字段保留只为
         // 让老配置能正常反序列化，所以新默认值必须是 false
         assertTrue("enableLocalOcrFallback 应已废弃并置为 false",

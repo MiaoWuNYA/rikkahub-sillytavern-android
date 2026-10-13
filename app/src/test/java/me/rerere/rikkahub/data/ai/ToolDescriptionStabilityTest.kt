@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.data.ai
 
+import me.rerere.ai.core.Tool
 import me.rerere.rikkahub.data.ai.tools.MemoryToolNames
 import me.rerere.rikkahub.data.ai.tools.buildMemoryTools
 import me.rerere.rikkahub.data.repository.FakeMemoryDAO
@@ -22,9 +23,11 @@ import org.junit.Test
  */
 class ToolDescriptionStabilityTest {
 
-    private fun memoryToolDescription(): String =
+    private fun memoryTools(): List<Tool> =
         buildMemoryTools(MemoryRepository(FakeMemoryDAO()), "assistant")
-            .first { it.name == MemoryToolNames.READ }.description
+
+    private fun memoryToolDescription(): String =
+        memoryTools().first { it.name == MemoryToolNames.READ }.description
 
     @Test
     fun `memory tool description has no volatile date`() {
@@ -36,8 +39,10 @@ class ToolDescriptionStabilityTest {
 
     @Test
     fun `memory tool description keeps its core semantics`() {
-        val desc = memoryToolDescription()
-        assertTrue("仍要说明读写语义", desc.contains("read") && desc.contains("write"))
+        val readDesc = memoryTools().first { it.name == MemoryToolNames.READ }.description
+        val writeDesc = memoryTools().first { it.name == MemoryToolNames.WRITE }.description
+        assertTrue("读工具要说明读语义", readDesc.contains("Read"))
+        assertTrue("写工具要说明写语义", writeDesc.contains("Write") || writeDesc.contains("write"))
     }
 
     @Test
