@@ -11,7 +11,7 @@
 
 [**简体中文**](README_CN.md) | [**English**](README.md) | [差异手册](DIVERGENCE.md)
 
-[![Release](https://img.shields.io/github/v/release/MiaoWuNYA/rikkahub-sillytavern-android?label=release&color=brightgreen)](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases)
+[![官网](https://img.shields.io/badge/官网-rikkahub.luoca.cn-8f4c00)](https://rikkahub.luoca.cn/) [![文档](https://img.shields.io/badge/使用文档-docs-8f4c00)](https://rikkahub.luoca.cn/docs/) [![Release](https://img.shields.io/github/v/release/MiaoWuNYA/rikkahub-sillytavern-android?label=release&color=brightgreen)](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases)
 [![Stars](https://img.shields.io/github/stars/MiaoWuNYA/rikkahub-sillytavern-android?color=yellow)](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/stargazers)
@@ -24,6 +24,8 @@
 > - **想找一个安卓酒馆 APP**：角色卡、世界书、预设、正则、美化主题按官方语义无损导入，无需 Termux 或 Node.js
 >
 > 两条路线共用同一个客户端，互不干扰。
+
+**官网与文档**：[rikkahub.luoca.cn](https://rikkahub.luoca.cn/) · [使用文档](https://rikkahub.luoca.cn/docs/)（安装、配置、酒馆导入、插件开发的完整说明）
 
 ---
 ### 交流反馈
