@@ -408,6 +408,7 @@
   <string name="donate_page_kofi_desc">For Global Users</string>
   <string name="donate_page_sponsor_list">Sponsor List</string>
   <string name="donate_page_title">Donate</string>
+  <string name="donate_page_upstream_notice">This donation goes to the upstream RikkaHub author, not the Huadeng author. Thanks to the upstream developer for the selfless open source, and sincere thanks for your support of open source projects!!!</string>
   <string name="edit">Edit</string>
   <string name="editing">Editing</string>
   <string name="emoji_picker_search_placeholder">Search emojis...</string>
@@ -861,6 +862,8 @@
   <string name="setting_display_page_bracket_button_title">One-Tap Symbol</string>
   <string name="setting_display_page_bracket_symbol_desc">Any text, e.g. a colon, quotes or brackets; with a two-char symbol the cursor lands in the middle</string>
   <string name="setting_display_page_bracket_symbol_title">Custom Symbol</string>
+  <string name="setting_display_page_bracket_color_title">Symbol Color</string>
+  <string name="setting_display_page_bracket_color_desc">Tint of the symbol button, follows the theme by default</string>
   <string name="setting_display_page_hide_model_picker_desc">Hide the model selector next to the input box</string>
   <string name="setting_display_page_hide_model_picker_title">Hide Model Picker</string>
   <string name="setting_display_page_hide_more_button_desc">Hide the plus button on the left of the send button</string>
@@ -1091,7 +1094,7 @@
   <string name="setting_page_search_title">Search Service</string>
   <string name="setting_page_share">Share</string>
   <string name="setting_page_share_desc">Share this app with friends</string>
-  <string name="setting_page_share_text">RikkaHub - Open Source Android AI Assistant\n\nWebsite: https://rikka-ai.com/</string>
+  <string name="setting_page_share_text">RikkaHub - Open Source Android AI Assistant\n\nWebsite: https://rikkahub.luoca.cn/</string>
   <string name="setting_page_sponsor_alert_confirm">Star the repo</string>
   <string name="setting_page_sponsor_alert_desc">You have launched this app over 100 times. If it has been useful, a Star on the repository is the best way to say thanks: it costs nothing and never bothers you again.</string>
   <string name="setting_page_sponsor_alert_dismiss">Not Now</string>
