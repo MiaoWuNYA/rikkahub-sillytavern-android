@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>华灯 · RikkaHub Plus — 安卓 AI 聊天客户端 / SillyTavern 兼容端</title>
-<meta name="description" content="纯原生的安卓 AI 聊天端，接上 API 就能聊。角色卡 / 世界书 / 预设按酒馆官方语义一键导入，前缀缓存优化、语义记忆、QuickJS 插件、语音通话与 30 个设备工具。">
+<meta name="description" content="纯原生的安卓 AI 聊天端，接上 API 就能聊。角色卡 / 世界书 / 预设按酒馆官方语义一键导入，前端卡渲染、记忆文件、前缀缓存优化、QuickJS 插件、语音通话与 30 个设备工具。">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="https://rikkahub.luoca.cn/">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fff8f5">
@@ -12,7 +12,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="华灯 · RikkaHub Plus">
 <meta property="og:title" content="华灯 · RikkaHub Plus — 安卓 AI 聊天客户端 / SillyTavern 兼容端">
-<meta property="og:description" content="纯原生的安卓 AI 聊天端，接上 API 就能聊。角色卡 / 世界书 / 预设按酒馆官方语义一键导入，前缀缓存优化、语义记忆、QuickJS 插件、语音通话与 30 个设备工具。">
+<meta property="og:description" content="纯原生的安卓 AI 聊天端，接上 API 就能聊。角色卡 / 世界书 / 预设按酒馆官方语义一键导入，前端卡渲染、记忆文件、前缀缓存优化、QuickJS 插件、语音通话与 30 个设备工具。">
 <meta property="og:url" content="https://rikkahub.luoca.cn/">
 <meta property="og:image" content="https://bu.dusays.com/2026/10/12/6acc74c118474.webp">
 <meta property="og:image:width" content="540">
@@ -21,7 +21,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="华灯 · RikkaHub Plus — 安卓 AI 聊天客户端 / SillyTavern 兼容端">
-<meta name="twitter:description" content="纯原生的安卓 AI 聊天端，接上 API 就能聊。酒馆资产一键导入，前缀缓存、语义记忆、插件与语音通话齐全。">
+<meta name="twitter:description" content="纯原生的安卓 AI 聊天端，接上 API 就能聊。酒馆资产一键导入，前端卡渲染、记忆文件、缓存优化与语音通话齐全。">
 <meta name="twitter:image" content="https://bu.dusays.com/2026/10/12/6acc74c118474.webp">
 <link rel="icon" type="image/webp" href="https://bu.dusays.com/2026/10/12/6acc74bdbe387.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -158,7 +158,7 @@
         <div class="blob blob-a"></div>
         <div class="blob blob-b"></div>
         <figure class="shot shot-back">
-          <img src="https://bu.dusays.com/2026/10/12/6acc74bf17810.webp" alt="宏变量与提示词页面" width="540" height="1137" loading="eager" fetchpriority="low" decoding="async">
+          <img src="img/tavern-cards.jpg" alt="酒馆前端卡与角色资产" width="540" height="1137" loading="eager" fetchpriority="low" decoding="async">
         </figure>
         <figure class="shot shot-main tilt">
           <img src="https://bu.dusays.com/2026/10/12/6acc74c118474.webp" alt="助手与角色列表" width="540" height="1096" loading="eager" fetchpriority="high" decoding="async">
@@ -203,8 +203,8 @@
         <div class="card-body">
           <svg class="card-icon"><use href="#i-layers"/></svg>
           <h3>记忆与长对话</h3>
-          <p>跨会话的记忆与召回：称呼、偏好与既有剧情在新对话中依然生效。长对话自动滚动摘要，人设与伏笔不因上下文压缩而丢失。</p>
-          <div class="tags"><span>跨会话记忆</span><span>上下文压缩</span></div>
+          <p>记忆以文件形式按助手隔离保存，AI 通过全套记忆工具主动读写，后台整理任务自动沉淀与合并；跨窗口生活流让多个会话之间剧情连续。长对话自动滚动摘要。</p>
+          <div class="tags"><span>记忆文件</span><span>后台整理</span><span>跨窗口生活流</span></div>
         </div>
       </article>
 
@@ -212,8 +212,8 @@
         <div class="card-body">
           <svg class="card-icon"><use href="#i-judge"/></svg>
           <h3>Jev 智能决策</h3>
-          <p>独立的判断模型：记忆筛选与是非判断由专用小模型完成，毫秒级响应，不占用主模型输出。不可用时自动回退原有逻辑，不阻塞对话。</p>
-          <div class="tags"><span>专用判断模型</span><span>静默回退</span></div>
+          <p>独立的判断小模型：主模型拿不准的是非题、选择题与打分直接交给 judge 工具，毫秒级响应不占用主模型输出。不可用时静默回退，不阻塞对话。</p>
+          <div class="tags"><span>judge 工具</span><span>静默回退</span></div>
         </div>
       </article>
 
@@ -229,9 +229,9 @@
       <article class="card slim reveal">
         <div class="card-body">
           <svg class="card-icon"><use href="#i-sliders"/></svg>
-          <h3>华灯设置</h3>
-          <p>中转站常见异常的自动修复、空回复重试、界面精简模式，均在本页集中管理。开关支持全局与助手级两级配置。</p>
-          <div class="tags"><span>中转站兼容</span><span>空回复重试</span><span>精简模式</span></div>
+          <h3>主题与个性化</h3>
+          <p>主题 / 颜色 / 界面 / 常规四标签一页直达：预设与 HCT 自定义主题、气泡与文字染色（引号、括号独立配色）、输入栏模糊与玻璃效果，全部实时生效。</p>
+          <div class="tags"><span>HCT 自定义主题</span><span>引号 / 括号染色</span><span>玻璃效果</span></div>
         </div>
       </article>
 
@@ -290,6 +290,14 @@
           <svg class="icon"><use href="#i-theme"/></svg>
           <div><h4>美化主题 · 537 个实测</h4><p>537 个真实主题验证通过，配色、背景、气泡样式与字体完整还原</p></div>
         </li>
+        <li>
+          <svg class="icon"><use href="#i-phone"/></svg>
+          <div><h4>前端卡 · HTML 渲染</h4><p>酒馆前端 HTML 卡原生 WebView 渲染，带宿主桥——卡片可直接读写变量与生成</p></div>
+        </li>
+        <li>
+          <svg class="icon"><use href="#i-sliders"/></svg>
+          <div><h4>引号 · 括号染色</h4><p>引号与括号包裹的内容按自定义颜色高亮，代码块不参与，颜色跟随主题或手动指定</p></div>
+        </li>
       </ul>
 
       <aside class="callout reveal">
@@ -314,7 +322,7 @@
         <a class="btn outlined lg" href="https://github.com/MiaoWuNYA/rikkahub-sillytavern-android" target="_blank" rel="noopener">GitHub</a>
       </div>
       <div class="chips-mini">
-        <span>arm64-v8a 单架构</span><i></i><span>Android 8.0+</span><i></i><span>约 104 MB</span><i></i><span>覆盖安装直接升级</span>
+        <span>arm64-v8a 单架构</span><i></i><span>Android 8.0+</span><i></i><span>约 106 MB</span><i></i><span>覆盖安装直接升级</span>
       </div>
     </div>
     </div>

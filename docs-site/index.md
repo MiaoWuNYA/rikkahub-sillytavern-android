@@ -22,7 +22,7 @@ features:
     link: /quickstart
   - icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 4.5A3 3 0 0 0 6.6 8 3 3 0 0 0 5 10.8a3 3 0 0 0 1.7 2.7A3 3 0 0 0 9.5 19c1 0 2-.5 2.5-1.3V4.5a2.6 2.6 0 0 0-2.5 0Z"/><path d="M14.5 4.5A3 3 0 0 1 17.4 8 3 3 0 0 1 19 10.8a3 3 0 0 1-1.7 2.7A3 3 0 0 1 14.5 19c-1 0-2-.5-2.5-1.3"/></svg>'
     title: 记忆与长对话
-    details: 语义记忆、三层记忆与滚动压缩，长对话不失忆、不爆上下文，AI 开局就认识你。
+    details: 记忆文件按助手隔离持久保存，AI 主动读写、后台自动整理；长对话滚动压缩，开局就认识你。
     link: /memory/memory
   - icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="4.6" rx="2.3"/><rect x="4" y="9.7" width="16" height="4.6" rx="2.3"/><rect x="5" y="15.4" width="14" height="4.6" rx="2.3"/></svg>'
     title: 提示词缓存优化
@@ -30,7 +30,7 @@ features:
     link: /memory/cache
   - icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.6"/><path d="m7.6 12.6 3.1 3.1 5.7-6.6"/></svg>'
     title: Jev 智能决策
-    details: 专用判断小模型替主模型做记忆筛选与是非判断，毫秒级响应，静默回退不阻塞对话。
+    details: 专用判断小模型替主模型做是非判断与打分（judge 工具），毫秒级响应，静默回退不阻塞对话。
     link: /memory/jev
   - icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8v4.5a4 4 0 0 1-8 0V3Z"/><path d="M12 11.5V18M8.5 21h7M9.8 21c1.4-.6 2.2-1.5 2.2-3M14.2 21c-1.4-.6-2.2-1.5-2.2-3"/></svg>'
     title: 酒馆深度兼容
