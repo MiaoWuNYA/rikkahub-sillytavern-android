@@ -52,7 +52,8 @@ internal fun Modifier.chatInputHaze(
                 input = HazeInput.Sources(hazeState),
                 style = GlassStyle.Material3(
                     containerColor = containerColor,
-                    tint = containerColor.copy(alpha = 0.3f),
+                    // 透明度由「输入框效果」里的滑块控制，下限保证文字可读
+                    tint = containerColor.copy(alpha = displaySetting.inputEffectAlpha.coerceIn(0.1f, 1f)),
                 ) {
                     appearanceResponse(dark = darkMode)
                     // Keep background text from competing with the input text.

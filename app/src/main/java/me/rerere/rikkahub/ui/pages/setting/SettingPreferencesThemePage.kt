@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.ui.pages.setting
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -44,6 +45,11 @@ import me.rerere.rikkahub.ui.hooks.rememberColorMode
 import me.rerere.rikkahub.ui.components.ui.CardGroupIcon
 import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.Alignment
+import androidx.compose.material3.Slider
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import kotlin.math.roundToInt
+import me.rerere.rikkahub.ui.components.ui.CardGroupValue
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.PagerTab
 import me.rerere.rikkahub.ui.components.ui.PagerTabs
@@ -88,9 +94,7 @@ fun SettingPreferencesThemePage(vm: SettingVM = koinViewModel()) {
             )
 
             val contentPadding = PaddingValues(
-                start = 16.dp,
                 top = 8.dp,
-                end = 16.dp,
                 bottom = innerPadding.calculateBottomPadding() + 16.dp,
             )
             HorizontalPager(
@@ -123,10 +127,11 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     var amoledDarkMode by rememberAmoledDarkMode()
     val navController = LocalNavController.current
+    val activity = LocalActivity.current
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = contentPadding,
+        contentPadding = contentPadding + PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
@@ -155,13 +160,12 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
                     ConnectedChoiceButtons(
                         options = ColorMode.entries,
                         selected = colorMode,
-                        onSelect = {
-                            colorMode = it
-                            navController.navigate(Screen.Setting) {
-                                popUpTo(Screen.Setting) {
-                                    inclusive = true
-                                }
-                            }
+                        onSelect = { mode ->
+                            colorMode = mode
+                            // 主题资源在 Activity 创建时解析，切换后重建才能整体生效。
+                            // 以前靠重新导航到设置主页来触发，会把当前页一起弹掉，
+                            // 看起来就是「刚选完就闪退回上一页」。
+                            activity?.recreate()
                         },
                     ) { mode, selected ->
                         ConnectedChoiceLabel(
@@ -203,6 +207,9 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
                     headlineContent = { Text(stringResource(R.string.setting_display_page_amoled_dark_mode_title)) },
                 )
                 item {
+                    var effectAlpha by remember(settings.displaySetting.inputEffectAlpha) {
+                        mutableStateOf(settings.displaySetting.inputEffectAlpha)
+                    }
                     CardGroup(
                         title = { Text(stringResource(R.string.setting_display_page_title)) },
                     ) {
@@ -247,6 +254,24 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
                                         selected = selected,
                                     )
                                 }
+                            }
+                            formItem(
+                                headlineContent = { Text(stringResource(R.string.setting_display_page_background_effect_alpha)) },
+                                supportingContent = { Text(stringResource(R.string.setting_display_page_background_effect_alpha_desc)) },
+                                trailingContent = { CardGroupValue("${(effectAlpha * 100).roundToInt()}%") },
+                            ) {
+                                Slider(
+                                    value = effectAlpha,
+                                    onValueChange = { effectAlpha = it },
+                                    onValueChangeFinished = {
+                                        vm.updateSettings {
+                                            it.copy(displaySetting = it.displaySetting.copy(inputEffectAlpha = effectAlpha))
+                                        }
+                                    },
+                                    valueRange = 0.1f..1f,
+                                    steps = 8,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
                             }
                         }
                         switchItem(

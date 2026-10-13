@@ -86,6 +86,7 @@ import com.dokar.sonner.ToastType
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
+import me.rerere.ui.components.ToggleSurface
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.ModelAbility
@@ -104,6 +105,7 @@ import me.rerere.hugeicons.stroke.Fullscreen
 import me.rerere.hugeicons.stroke.Package01
 import me.rerere.hugeicons.stroke.Zap
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.datastore.BackgroundEffectType
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.getQuickMessagesOfAssistant
 import me.rerere.rikkahub.data.files.FilesManager
@@ -352,7 +354,14 @@ fun ChatInput(
                 shape = containerShape,
                 tonalElevation = 0.dp,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-                color = if (settings.displaySetting.enableBlurEffect && !hasFrontendCard) Color.Transparent else containerColor,
+                color = when {
+                    // 前端模式整块消息区都是 WebView，采样其硬件层会崩，直接不给透明底
+                    hasFrontendCard -> containerColor
+                    !settings.displaySetting.enableBlurEffect -> containerColor
+                    settings.displaySetting.backgroundEffectType == BackgroundEffectType.BLUR ->
+                        containerColor.copy(alpha = settings.displaySetting.inputEffectAlpha.coerceIn(0.1f, 1f))
+                    else -> Color.Transparent
+                },
             ) {
                 Column(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -459,14 +468,26 @@ fun ChatInput(
                             // Bracket insert button：放在深度思考右侧、加号左侧
                             val bracketSymbol = settings.displaySetting.bracketButtonSymbol
                             if (settings.displaySetting.enableBracketButton && bracketSymbol.isNotBlank()) {
-                                ActionIconButton(
-                                    onClick = { state.insertSymbol(bracketSymbol) }
+                                // 与深度思考按钮同构（ToggleSurface + 24dp 图标位），保证并排时尺寸一致
+                                ToggleSurface(
+                                    checked = false,
+                                    onClick = { state.insertSymbol(bracketSymbol) },
                                 ) {
-                                    Icon(
-                                        imageVector = HugeIcons.Asterisk,
-                                        contentDescription = stringResource(R.string.setting_display_page_bracket_button_title),
-                                        modifier = Modifier.size(20.dp),
-                                    )
+                                    Row(
+                                        modifier = Modifier.padding(vertical = 8.dp, horizontal = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.size(24.dp),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            Icon(
+                                                imageVector = HugeIcons.Asterisk,
+                                                contentDescription = stringResource(R.string.setting_display_page_bracket_button_title),
+                                                modifier = Modifier.size(20.dp),
+                                            )
+                                        }
+                                    }
                                 }
                             }
 

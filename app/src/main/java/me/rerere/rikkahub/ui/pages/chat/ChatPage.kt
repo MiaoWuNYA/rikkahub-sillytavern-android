@@ -61,6 +61,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -89,6 +90,7 @@ import me.rerere.hugeicons.stroke.Video01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.getAssistantById
+import me.rerere.rikkahub.data.model.getAssistantOf
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.datastore.findProvider
@@ -450,12 +452,10 @@ private fun ChatPageContent(
                 // 前端卡（HTML 文档 WebView）在场时禁用输入栏模糊/玻璃：
                 // Haze 采样含 WebView 硬件层的 Compose layer 会崩溃（Android 15 实测），
                 // 只有开前端卡的会话受影响，其余会话效果不受影响。
-                val hasFrontendCard = conversation.currentMessages.any { msg ->
-                    msg.parts.filterIsInstance<UIMessagePart.Text>().any { part ->
-                        findFencedHtmlDocument(part.text) != null ||
-                            splitCardSegments(part.text).any { it.first }
-                    }
-                }
+                // 与消息区同一判据：前端模式下整块消息区是 WebView，
+                // 输入栏不能再走 Haze（采样 WebView 硬件层会崩）
+                val hasFrontendCard = setting.getAssistantOf(conversation).frontendCardPreferred ||
+                    setting.huadengSettings.enableFrontendCardMode
                 ChatInput(
                     hasFrontendCard = hasFrontendCard,
                     onStartVoiceMode = onStartVoiceMode,
@@ -659,6 +659,30 @@ private fun ChatPageContent(
                 )
             },
         ) { innerPadding ->
+            // 前端模式只在两种情况下启用：导入角色卡时检测到前端自动置位，
+            // 或用户在设置里手动打开。会话中途出现的卡片不改变渲染方式。
+            val chatAssistant = setting.getAssistantOf(conversation)
+            val frontendCardMode = chatAssistant.frontendCardPreferred ||
+                setting.huadengSettings.enableFrontendCardMode
+            if (frontendCardMode) {
+                // 前端卡专属模式：整块消息区交给单个 WebView，标题栏与输入栏保持原生
+                val uriHandler = LocalUriHandler.current
+                FrontendCardChatView(
+                    messages = conversation.currentMessages,
+                    assistant = chatAssistant,
+                    settings = setting,
+                    streaming = loadingJob != null,
+                    onSend = { text ->
+                        inputState.setMessageText(text)
+                        vm.handleMessageSend(inputState.getContents())
+                        inputState.clearInput()
+                    },
+                    onStop = { vm.stopGeneration() },
+                    onRegenerate = { conversation.currentMessages.lastOrNull()?.let { vm.regenerateAtMessage(it) } },
+                    onOpenLink = { url -> runCatching { uriHandler.openUri(url) } },
+                    modifier = Modifier.padding(innerPadding),
+                )
+            } else {
             ChatList(
                 innerPadding = innerPadding,
                 conversation = conversation,
@@ -737,6 +761,7 @@ private fun ChatPageContent(
                 },
 
             )
+            }
         }
 
         if (showFilesSheet) {

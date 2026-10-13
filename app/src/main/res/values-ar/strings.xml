@@ -772,6 +772,8 @@
   <string name="setting_display_page_background_effect_glass">زجاجي</string>
   <string name="setting_display_page_background_effect_title">تأثير خلفية شريط الإدخال</string>
   <string name="setting_display_page_background_effect_type">نوع تأثير الخلفية</string>
+  <string name="setting_display_page_background_effect_alpha">العتامة</string>
+  <string name="setting_display_page_background_effect_alpha_desc">عتامة خلفية حقل الإدخال (القيمة المنخفضة جدًا تؤثر على القراءة)</string>
   <string name="setting_display_page_bubble_opacity_title">عتامة الفقاعة</string>
   <string name="setting_display_page_chat_font_family_custom">مخصص</string>
   <string name="setting_display_page_chat_font_family_default">الافتراضي</string>
@@ -1599,4 +1601,8 @@
   <string name="setting_display_page_text_color_bracket_title">لون الأقواس</string>
   <string name="huadeng_sub_agent">الوكيل الفرعي</string>
   <string name="huadeng_sub_agent_desc">يسمح للذكاء الاصطناعي بتفويض المهام الفرعية إلى وكيل مستقل (بدون سجل المحادثة) واسترداد النتيجة</string>
+  <string name="huadeng_frontend_card_mode">وضع بطاقات الواجهة فقط</string>
+  <string name="huadeng_frontend_card_mode_desc">فرض تشغيل وضع الواجهة في كل المحادثات (يُشغَّل تلقائيًا عادةً عند استيراد بطاقة تحتوي واجهة HTML)</string>
+  <string name="huadeng_frontend_card_auto_switched">تم تشغيل وضع الواجهة تلقائيًا</string>
+  <string name="setting_page_huadeng_title_desc">إصلاحات الاتصال، احتياطي الردود الفارغة، تقليم المحتوى، ضغط السياق</string>
 </resources>

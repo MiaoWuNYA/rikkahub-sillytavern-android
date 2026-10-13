@@ -57,6 +57,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.Screen
 import me.rerere.asr.ASRProviderSetting
 import me.rerere.rikkahub.data.datastore.DEFAULT_SYSTEM_TTS_ID
 import me.rerere.rikkahub.data.datastore.Settings
@@ -65,6 +66,8 @@ import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.CardGroupValue
 import androidx.compose.material3.Slider
 import kotlin.math.roundToInt
+import me.rerere.hugeicons.stroke.SlidersHorizontal
+import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
 import me.rerere.rikkahub.ui.components.ui.switchItem
 import me.rerere.rikkahub.ui.components.ui.ItemAction
@@ -89,6 +92,7 @@ fun SettingSpeechPage(vm: SettingVM = koinViewModel()) {
     var editingTTSProvider by remember { mutableStateOf<TTSProviderSetting?>(null) }
     var editingASRProvider by remember { mutableStateOf<ASRProviderSetting?>(null) }
     var selectedPage by remember { mutableIntStateOf(0) }
+    val navController = LocalNavController.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
@@ -102,6 +106,12 @@ fun SettingSpeechPage(vm: SettingVM = koinViewModel()) {
                 },
                 actions = {
                     if (selectedPage == 0) {
+                        IconButton(onClick = { navController.navigate(Screen.SettingTtsPlayback) }) {
+                            Icon(
+                                imageVector = HugeIcons.SlidersHorizontal,
+                                contentDescription = stringResource(R.string.setting_page_tts_settings),
+                            )
+                        }
                         AddTTSProviderButton {
                             vm.updateSettings { latest ->
                                 latest.copy(

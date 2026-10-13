@@ -678,6 +678,9 @@
   <string name="huadeng_tool_result_truncation_desc">긴 도구 실행 결과를 잘라 컨텍스트를 아낍니다</string>
   <string name="huadeng_sub_agent">서브 에이전트</string>
   <string name="huadeng_sub_agent_desc">AI가 하위 작업을 독립적인 서브 에이전트에 위임하고(대화 기록 없음) 결과를 가져옵니다</string>
+  <string name="huadeng_frontend_card_mode">프론트 카드 전용 모드</string>
+  <string name="huadeng_frontend_card_mode_desc">모든 대화에서 프론트 모드를 강제로 켭니다(보통 HTML 프론트 카드 가져오기 시 자동 활성화)</string>
+  <string name="huadeng_frontend_card_auto_switched">프론트 모드가 자동으로 켜졌습니다</string>
   <string name="huadeng_transient_prune">임시 메시지 정리</string>
   <string name="huadeng_transient_prune_desc">일회성 프롬프트 주입 내용을 응답 후에 제거합니다</string>
   <string name="imggen_page_aspect_ratio">이미지 비율</string>
@@ -1790,6 +1793,7 @@
   <string name="setting_page_huadeng">HuaDeng 기능</string>
   <string name="setting_page_huadeng_desc">롤링 압축, 클린 모드 등 화보 &amp; 도구 세부 조정</string>
   <string name="setting_page_huadeng_title">HuaDeng</string>
+  <string name="setting_page_huadeng_title_desc">연결 수정, 빈 응답 대체, 콘텐츠 정리, 컨텍스트 압축 등 전역 설정</string>
   <string name="setting_page_interaction_notification_settings">상호작용 &amp;amp; 알림</string>
   <string name="setting_page_jev">Jev</string>
   <string name="setting_page_jev_about">Jev 정보</string>
@@ -2740,6 +2744,8 @@
   <string name="setting_display_page_background_effect_title">입력창 배경 효과</string>
   <string name="setting_display_page_background_effect_desc">채팅 입력창에 블러 또는 글래스 효과를 사용합니다</string>
   <string name="setting_display_page_background_effect_type">배경 효과 유형</string>
+  <string name="setting_display_page_background_effect_alpha">불투명도</string>
+  <string name="setting_display_page_background_effect_alpha_desc">입력창 배경 불투명도(너무 낮으면 본문 가독성이 떨어집니다)</string>
   <string name="setting_display_page_background_effect_blur">블러</string>
   <string name="setting_display_page_background_effect_glass">글래스</string>
   <string name="safe_mode_enter_app">안전 모드로 시작</string>

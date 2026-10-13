@@ -49,6 +49,9 @@ data class Assistant(
     val messageTemplate: String = "{{ message }}",
     val contextTemplate: String = DEFAULT_CONTEXT_TEMPLATE, // 上下文组装模板（ADF风格）
     val presetMessages: List<UIMessage> = emptyList(),
+    // 导入的角色卡自带前端（HTML 卡片）时置位：聊天页据此直接进前端模式。
+    // 只在导入那一刻判定，会话中途新出现的卡片不会改变渲染方式。
+    val frontendCardPreferred: Boolean = false,
     val quickMessageIds: Set<Uuid> = emptySet(),
     val regexes: List<AssistantRegex> = emptyList(),
     val reasoningLevel: ReasoningLevel = ReasoningLevel.AUTO,

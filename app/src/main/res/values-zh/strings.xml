@@ -692,6 +692,9 @@
   <string name="huadeng_tool_result_truncation_desc">工具输出超过 32KB 时自动截断并保存到文件。关闭后工具结果不截断，完整内容保留在消息历史中（若中转站导致工具调用异常，可尝试关闭)</string>
   <string name="huadeng_sub_agent">子 agent</string>
   <string name="huadeng_sub_agent_desc">允许 AI 把子任务派给独立的子 agent 执行（不产生会话历史），完成后取回结果</string>
+  <string name="huadeng_frontend_card_mode">前端卡专属模式</string>
+  <string name="huadeng_frontend_card_mode_desc">为所有会话强制开启前端模式（通常导入带 HTML 前端的角色卡时会自动开启）</string>
+  <string name="huadeng_frontend_card_auto_switched">已自动切换前端模式</string>
   <string name="huadeng_transient_prune">上下文瞬态内容裁剪</string>
   <string name="huadeng_transient_prune_desc">超过两轮对话之前的网页搜索结果、图片、音视频不再随每次请求发送（占位说明附带消息 ID，AI 可通过 read_history_message 工具按需取回原文），大幅减少图片与搜索类长对话的 token 消耗；消息存储与聊天记录显示不受影响</string>
   <string name="imggen_page_aspect_ratio">图片比例</string>
@@ -1905,6 +1908,7 @@
   <string name="setting_page_huadeng">华灯设置</string>
   <string name="setting_page_huadeng_desc">全局中转站兼容、防空回复、上下文与工具治理</string>
   <string name="setting_page_huadeng_title">兼容与辅助</string>
+  <string name="setting_page_huadeng_title_desc">连接修复、空响应兜底、内容裁剪、上下文压缩等全局开关</string>
   <string name="setting_page_interaction_notification_settings">互动与通知</string>
   <string name="setting_page_jev">Jev 智能决策</string>
   <string name="setting_page_jev_about">说明</string>
@@ -2803,6 +2807,8 @@
   <string name="setting_display_page_background_effect_title">输入栏背景效果</string>
   <string name="setting_display_page_background_effect_desc">为聊天输入栏启用模糊或玻璃效果</string>
   <string name="setting_display_page_background_effect_type">背景效果类型</string>
+  <string name="setting_display_page_background_effect_alpha">不透明度</string>
+  <string name="setting_display_page_background_effect_alpha_desc">输入框背景的不透明度，太低会影响正文可读性</string>
   <string name="setting_display_page_background_effect_blur">模糊</string>
   <string name="setting_display_page_background_effect_glass">玻璃</string>
   <string name="safe_mode_enter_app">进入应用</string>
