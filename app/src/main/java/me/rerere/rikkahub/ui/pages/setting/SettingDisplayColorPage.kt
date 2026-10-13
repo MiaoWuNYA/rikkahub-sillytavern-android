@@ -1,5 +1,10 @@
 package me.rerere.rikkahub.ui.pages.setting
 
+import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.Delete01
+import me.rerere.hugeicons.stroke.PaintBrush01
+import me.rerere.rikkahub.ui.components.ui.ItemAction
+import me.rerere.rikkahub.ui.components.ui.ItemActionMenu
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -378,34 +383,26 @@ internal fun SettingDisplayColorContent(vm: SettingVM, contentPadding: PaddingVa
                     title = { Text(stringResource(R.string.setting_display_import_section)) },
                 ) {
                     item(
+                        onClick = { themePickerLauncher.launch("application/json") },
                         headlineContent = { Text(stringResource(R.string.setting_display_import_st_theme)) },
                         supportingContent = {
                             Text(stringResource(R.string.setting_display_import_st_theme_desc))
-                        },
-                        trailingContent = {
-                            TextButton(onClick = { themePickerLauncher.launch("application/json") }) {
-                                Text(stringResource(R.string.setting_display_import_button))
-                            }
                         },
                     )
                     // 主题只导入不清除的话，主题里的引用块/代码块样式会跟随字段兜底逻辑
                     // 一直留着（applyTo 对缺失字段保留当前值），换主题也带不走。
                     // 这里给一个显式出口，把主题写入的外观字段整体清回默认。
                     item(
+                        onClick = {
+                            updateDisplaySetting(resetThemeAppearance(displaySetting))
+                            toaster.show(
+                                context.getString(R.string.setting_display_reset_theme_done),
+                                type = ToastType.Success,
+                            )
+                        },
                         headlineContent = { Text(stringResource(R.string.setting_display_reset_theme)) },
                         supportingContent = {
                             Text(stringResource(R.string.setting_display_reset_theme_desc))
-                        },
-                        trailingContent = {
-                            TextButton(onClick = {
-                                updateDisplaySetting(resetThemeAppearance(displaySetting))
-                                toaster.show(
-                                    context.getString(R.string.setting_display_reset_theme_done),
-                                    type = ToastType.Success,
-                                )
-                            }) {
-                                Text(stringResource(R.string.setting_display_reset_button))
-                            }
                         },
                     )
                 }
@@ -417,6 +414,7 @@ internal fun SettingDisplayColorContent(vm: SettingVM, contentPadding: PaddingVa
                     title = { Text(stringResource(R.string.setting_display_colors_section)) },
                 ) {
                     item(
+                        onClick = { showPrimaryColorPicker = true },
                         headlineContent = { Text(stringResource(R.string.setting_display_primary_color)) },
                         trailingContent = {
                             ColorItemTrailing(
@@ -429,6 +427,7 @@ internal fun SettingDisplayColorContent(vm: SettingVM, contentPadding: PaddingVa
                         },
                     )
                     item(
+                        onClick = { showGlobalTextColorPicker = true },
                         headlineContent = { Text(stringResource(R.string.setting_display_global_text_color)) },
                         trailingContent = {
                             ColorItemTrailing(
@@ -441,6 +440,7 @@ internal fun SettingDisplayColorContent(vm: SettingVM, contentPadding: PaddingVa
                         },
                     )
                     item(
+                        onClick = { showUserBubbleColorPicker = true },
                         headlineContent = { Text(stringResource(R.string.setting_display_user_bubble_color)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_user_bubble_color_desc)) },
                         trailingContent = {
@@ -454,6 +454,7 @@ internal fun SettingDisplayColorContent(vm: SettingVM, contentPadding: PaddingVa
                         },
                     )
                     item(
+                        onClick = { showAssistantBubbleColorPicker = true },
                         headlineContent = { Text(stringResource(R.string.setting_display_assistant_bubble_color)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_assistant_bubble_color_desc)) },
                         trailingContent = {
@@ -467,6 +468,7 @@ internal fun SettingDisplayColorContent(vm: SettingVM, contentPadding: PaddingVa
                         },
                     )
                     item(
+                        onClick = { showThinkingBubbleColorPicker = true },
                         headlineContent = { Text(stringResource(R.string.setting_display_thinking_bubble_color)) },
                         trailingContent = {
                             ColorItemTrailing(
@@ -479,6 +481,7 @@ internal fun SettingDisplayColorContent(vm: SettingVM, contentPadding: PaddingVa
                         },
                     )
                     item(
+                        onClick = { showChatBackgroundColorPicker = true },
                         headlineContent = { Text(stringResource(R.string.setting_display_chat_bg_color)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_chat_bg_color_desc)) },
                         trailingContent = {
@@ -492,6 +495,7 @@ internal fun SettingDisplayColorContent(vm: SettingVM, contentPadding: PaddingVa
                         },
                     )
                     item(
+                        onClick = { showInputFieldColorPicker = true },
                         headlineContent = { Text(stringResource(R.string.setting_display_input_bg_color)) },
                         trailingContent = {
                             ColorItemTrailing(
@@ -567,6 +571,7 @@ internal fun SettingDisplayColorContent(vm: SettingVM, contentPadding: PaddingVa
                         },
                     )
                     item(
+                        onClick = { showBubbleBorderColorPicker = true },
                         headlineContent = { Text(stringResource(R.string.setting_display_bubble_border_color)) },
                         trailingContent = {
                             ColorItemTrailing(
@@ -597,6 +602,7 @@ internal fun SettingDisplayColorContent(vm: SettingVM, contentPadding: PaddingVa
                         },
                     )
                     item(
+                        onClick = { showBubbleShadowColorPicker = true },
                         headlineContent = { Text(stringResource(R.string.setting_display_bubble_shadow_color)) },
                         trailingContent = {
                             ColorItemTrailing(
@@ -609,41 +615,33 @@ internal fun SettingDisplayColorContent(vm: SettingVM, contentPadding: PaddingVa
                         },
                     )
                     item(
+                        onClick = {
+                            updateDisplaySetting(
+                                displaySetting.copy(
+                                    bubbleBorderColor = null,
+                                    bubbleBorderWidth = 0f,
+                                    bubbleShadowColor = null,
+                                    bubbleShadowWidth = 0f,
+                                )
+                            )
+                        },
                         headlineContent = { Text(stringResource(R.string.setting_display_bubble_clear_style)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_bubble_clear_style_desc)) },
-                        trailingContent = {
-                            TextButton(
-                                onClick = {
-                                    updateDisplaySetting(
-                                        displaySetting.copy(
-                                            bubbleBorderColor = null,
-                                            bubbleBorderWidth = 0f,
-                                            bubbleShadowColor = null,
-                                            bubbleShadowWidth = 0f,
-                                        )
-                                    )
-                                },
-                            ) { Text(stringResource(R.string.setting_display_bubble_clear_style_action)) }
-                        },
                     )
                     // 主题会改写一批按钮的图标：background-image 换图、color 换色、
                     // font-size 改尺寸、display:none 直接隐藏。导入后若不满意，
                     // 用户此前只能重新导入别的主题或手动重装，缺少一键还原入口。
                     item(
+                        onClick = {
+                            updateDisplaySetting(
+                                displaySetting.copy(themeIcons = ThemeIconSet())
+                            )
+                        },
                         headlineContent = { Text(stringResource(R.string.setting_display_theme_icon_clear)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_theme_icon_clear_desc)) },
-                        trailingContent = {
-                            TextButton(
-                                enabled = !displaySetting.themeIcons.isEmpty,
-                                onClick = {
-                                    updateDisplaySetting(
-                                        displaySetting.copy(themeIcons = ThemeIconSet())
-                                    )
-                                },
-                            ) { Text(stringResource(R.string.setting_display_theme_icon_clear_action)) }
-                        },
                     )
                     item(
+                        onClick = { userBubbleImagePicker.launch("image/*") },
                         headlineContent = { Text(stringResource(R.string.setting_display_user_bubble_image)) },
                         supportingContent = {
                             Text(
@@ -652,17 +650,23 @@ internal fun SettingDisplayColorContent(vm: SettingVM, contentPadding: PaddingVa
                             )
                         },
                         trailingContent = {
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                TextButton(onClick = { userBubbleImagePicker.launch("image/*") }) { Text(stringResource(R.string.setting_display_choose)) }
-                                if (displaySetting.userBubbleImagePath.isNotBlank()) {
-                                    TextButton(onClick = {
-                                        updateDisplaySetting(displaySetting.copy(userBubbleImagePath = ""))
-                                    }) { Text(stringResource(R.string.setting_display_reset)) }
-                                }
-                            }
+                            ItemActionMenu(
+                                actions = listOf(
+                                    ItemAction(
+                                        text = stringResource(R.string.setting_display_reset),
+                                        icon = HugeIcons.Delete01,
+                                        destructive = true,
+                                        enabled = displaySetting.userBubbleImagePath.isNotBlank(),
+                                        onClick = {
+                                            updateDisplaySetting(displaySetting.copy(userBubbleImagePath = ""))
+                                        },
+                                    ),
+                                )
+                            )
                         },
                     )
                     item(
+                        onClick = { assistantBubbleImagePicker.launch("image/*") },
                         headlineContent = { Text(stringResource(R.string.setting_display_assistant_bubble_image)) },
                         supportingContent = {
                             Text(
@@ -671,14 +675,19 @@ internal fun SettingDisplayColorContent(vm: SettingVM, contentPadding: PaddingVa
                             )
                         },
                         trailingContent = {
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                TextButton(onClick = { assistantBubbleImagePicker.launch("image/*") }) { Text(stringResource(R.string.setting_display_choose)) }
-                                if (displaySetting.assistantBubbleImagePath.isNotBlank()) {
-                                    TextButton(onClick = {
-                                        updateDisplaySetting(displaySetting.copy(assistantBubbleImagePath = ""))
-                                    }) { Text(stringResource(R.string.setting_display_reset)) }
-                                }
-                            }
+                            ItemActionMenu(
+                                actions = listOf(
+                                    ItemAction(
+                                        text = stringResource(R.string.setting_display_reset),
+                                        icon = HugeIcons.Delete01,
+                                        destructive = true,
+                                        enabled = displaySetting.assistantBubbleImagePath.isNotBlank(),
+                                        onClick = {
+                                            updateDisplaySetting(displaySetting.copy(assistantBubbleImagePath = ""))
+                                        },
+                                    ),
+                                )
+                            )
                         },
                     )
                     item(
@@ -702,6 +711,7 @@ internal fun SettingDisplayColorContent(vm: SettingVM, contentPadding: PaddingVa
                     title = { Text(stringResource(R.string.setting_display_background_section)) },
                 ) {
                     item(
+                        onClick = { chatBackgroundImagePicker.launch("image/*") },
                         headlineContent = { Text(stringResource(R.string.setting_display_chat_bg_image)) },
                         supportingContent = {
                             Text(
@@ -710,18 +720,24 @@ internal fun SettingDisplayColorContent(vm: SettingVM, contentPadding: PaddingVa
                             )
                         },
                         trailingContent = {
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                TextButton(onClick = { chatBackgroundImagePicker.launch("image/*") }) { Text(stringResource(R.string.setting_display_choose)) }
-                                if (displaySetting.chatBackgroundImagePath.isNotBlank()) {
-                                    TextButton(onClick = {
-                                        deleteThemeFileIfOwned(context, displaySetting.chatBackgroundImagePath, null)
-                                        updateDisplaySetting(displaySetting.copy(chatBackgroundImagePath = ""))
-                                    }) { Text(stringResource(R.string.setting_display_reset)) }
-                                }
-                            }
+                            ItemActionMenu(
+                                actions = listOf(
+                                    ItemAction(
+                                        text = stringResource(R.string.setting_display_reset),
+                                        icon = HugeIcons.Delete01,
+                                        destructive = true,
+                                        enabled = displaySetting.chatBackgroundImagePath.isNotBlank(),
+                                        onClick = {
+                                            deleteThemeFileIfOwned(context, displaySetting.chatBackgroundImagePath, null)
+                                            updateDisplaySetting(displaySetting.copy(chatBackgroundImagePath = ""))
+                                        },
+                                    ),
+                                )
+                            )
                         },
                     )
                     item(
+                        onClick = { drawerImagePicker.launch("image/*") },
                         headlineContent = { Text(stringResource(R.string.setting_display_drawer_bg_image)) },
                         supportingContent = {
                             Text(
@@ -730,14 +746,19 @@ internal fun SettingDisplayColorContent(vm: SettingVM, contentPadding: PaddingVa
                             )
                         },
                         trailingContent = {
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                TextButton(onClick = { drawerImagePicker.launch("image/*") }) { Text(stringResource(R.string.setting_display_choose)) }
-                                if (displaySetting.drawerBackgroundPath.isNotBlank()) {
-                                    TextButton(onClick = {
-                                        updateDisplaySetting(displaySetting.copy(drawerBackgroundPath = ""))
-                                    }) { Text(stringResource(R.string.setting_display_reset)) }
-                                }
-                            }
+                            ItemActionMenu(
+                                actions = listOf(
+                                    ItemAction(
+                                        text = stringResource(R.string.setting_display_reset),
+                                        icon = HugeIcons.Delete01,
+                                        destructive = true,
+                                        enabled = displaySetting.drawerBackgroundPath.isNotBlank(),
+                                        onClick = {
+                                            updateDisplaySetting(displaySetting.copy(drawerBackgroundPath = ""))
+                                        },
+                                    ),
+                                )
+                            )
                         },
                     )
                 }
@@ -777,10 +798,22 @@ private fun ColorItemTrailing(
                 .size(16.dp)
                 .background(color, CircleShape)
         )
-        TextButton(onClick = onPick) { Text(stringResource(R.string.setting_display_custom)) }
-        if (resetEnabled) {
-            TextButton(onClick = onReset) { Text(stringResource(R.string.setting_display_reset)) }
-        }
+        ItemActionMenu(
+            actions = listOf(
+                ItemAction(
+                    text = stringResource(R.string.setting_display_custom),
+                    icon = HugeIcons.PaintBrush01,
+                    onClick = onPick,
+                ),
+                ItemAction(
+                    text = stringResource(R.string.setting_display_reset),
+                    icon = HugeIcons.Delete01,
+                    destructive = true,
+                    enabled = resetEnabled,
+                    onClick = onReset,
+                ),
+            )
+        )
     }
 }
 
