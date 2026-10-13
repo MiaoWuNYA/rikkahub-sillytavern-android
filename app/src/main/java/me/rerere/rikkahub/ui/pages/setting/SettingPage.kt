@@ -218,10 +218,16 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         }
                     }
                     item(
-                        onClick = { navController.navigate(Screen.SettingPreferences) },
+                        onClick = { navController.navigate(Screen.SettingPreferencesTheme) },
+                        leadingContent = { CardGroupIcon(HugeIcons.Sun01, containerColor = containerColor, contentColor = contentColor) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_preferences_theme_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_preferences_theme)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingPreferencesGeneral) },
                         leadingContent = { CardGroupIcon(HugeIcons.Settings03, containerColor = containerColor, contentColor = contentColor) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_preferences_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_preferences)) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_preferences_general_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_preferences_general)) },
                     )
                     item(
                         onClick = { navController.navigate(Screen.Assistant) },
