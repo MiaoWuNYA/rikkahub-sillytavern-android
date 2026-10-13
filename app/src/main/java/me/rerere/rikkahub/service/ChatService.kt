@@ -1583,6 +1583,7 @@ class ChatService(
             }.getOrDefault(emptyList())
 
             generationLoop.generateText(
+                conversationId = conversationId,
                 settings = settings,
                 model = model,
                 generationType = generationType,
