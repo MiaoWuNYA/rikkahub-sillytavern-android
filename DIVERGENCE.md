@@ -9,8 +9,8 @@
 |---|---|
 | 本地分支 | `huadeng` |
 | 上游 | `rikkahub/master`（github.com/rikkahub/rikkahub，最上游） |
-| 最近合入 | `rikkahub/master`（2026-09-03 合入，含 Settings 重构 / Provider 接口扩展 / 语音视频生成 / oauth / workspace） |
-| 本次冲突 | 17 处，全部人工解决（含 GenerationHandler 生成链 / ChatService / PreferencesStore / RouteActivity） |
+| 最近合入 | `rikkahub/master`（2026-10-13 合入 53 提交，含 MD3 Expressive UI 改版 / 记忆库 memory_file 重构 / 媒体创作 / ConversationSessionManager / 会话 config 快照） |
+| 本次冲突 | 79 处，全部人工解决（生成链/ChatService/设置页/UI 组件）；数据库 v30→v31 手写迁移（旧 MemoryEntity 迁 memory_file，couple 六表保留） |
 | 领先提交数 | 约 1920+ |
 | 上游文件被本地修改 | 约 100 个（含重命名） |
 | 本地独有文件 | 约 50 个 |
