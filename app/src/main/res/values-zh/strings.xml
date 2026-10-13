@@ -616,7 +616,7 @@
   <string name="extension_selector_tab_skills">Skills</string>
   <string name="extensions_page_agent_skills">Agent Skills</string>
   <string name="extensions_page_agent_skills_desc">管理可供 AI 按需加载的技能包</string>
-  <string name="extensions_page_prompts">提示词</string>
+  <string name="extensions_page_prompts">世界书和预设及注入</string>
   <string name="extensions_page_prompts_desc">管理和使用自定义提示词</string>
   <string name="extensions_page_quick_messages_desc">管理共享的快速消息模板</string>
   <string name="extensions_page_section_extensions">扩展</string>

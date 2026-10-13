@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.Edit01
 import me.rerere.hugeicons.stroke.AlarmClock
 import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.Brain01
@@ -53,6 +54,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
+import me.rerere.rikkahub.ui.components.ui.CardGroupIcon
 import me.rerere.ui.components.Switch
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.theme.CustomColors
@@ -306,43 +308,57 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                     title = { Text(stringResource(R.string.huadeng_section_integration)) },
                 ) {
                     item(
+                        onClick = { navController.navigate(Screen.Persona) },
+                        leadingContent = { CardGroupIcon(HugeIcons.Edit01) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_persona_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_persona)) },
+                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.GroupChatList) },
+                        leadingContent = { CardGroupIcon(HugeIcons.MessageMultiple01) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_group_chat_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_group_chat)) },
+                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
+                    )
+                    item(
                         onClick = { navController.navigate(Screen.SettingJev) },
-                        leadingContent = { Icon(HugeIcons.Brain01, null) },
+                        leadingContent = { CardGroupIcon(HugeIcons.Brain01) },
                         supportingContent = { Text(stringResource(R.string.setting_page_jev_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_jev)) },
                         trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
                     )
                     item(
                         onClick = { navController.navigate(Screen.SettingWeixinBot) },
-                        leadingContent = { Icon(HugeIcons.Message01, null) },
+                        leadingContent = { CardGroupIcon(HugeIcons.Message01) },
                         supportingContent = { Text(stringResource(R.string.setting_page_weixin_bot_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_weixin_bot)) },
                         trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
                     )
                     item(
                         onClick = { navController.navigate(Screen.SettingQqBot) },
-                        leadingContent = { Icon(HugeIcons.MessageMultiple01, null) },
+                        leadingContent = { CardGroupIcon(HugeIcons.MessageMultiple01) },
                         supportingContent = { Text(stringResource(R.string.setting_page_qq_bot_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_qq_bot)) },
                         trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
                     )
                     item(
                         onClick = { navController.navigate(Screen.SettingProactiveMessage) },
-                        leadingContent = { Icon(HugeIcons.AlarmClock, null) },
+                        leadingContent = { CardGroupIcon(HugeIcons.AlarmClock) },
                         supportingContent = { Text(stringResource(R.string.setting_page_proactive_message_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_proactive_message)) },
                         trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
                     )
                     item(
                         onClick = { navController.navigate(Screen.SettingSecurity) },
-                        leadingContent = { Icon(HugeIcons.Shield01, null) },
+                        leadingContent = { CardGroupIcon(HugeIcons.Shield01) },
                         supportingContent = { Text(stringResource(R.string.setting_page_security_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_security)) },
                         trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
                     )
                     item(
                         onClick = { navController.navigate(Screen.AuthorsNote) },
-                        leadingContent = { Icon(HugeIcons.Notebook, null) },
+                        leadingContent = { CardGroupIcon(HugeIcons.Notebook) },
                         supportingContent = { Text(stringResource(R.string.setting_page_authors_note_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_authors_note)) },
                         trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
