@@ -61,7 +61,12 @@ import me.rerere.asr.ASRProviderSetting
 import me.rerere.rikkahub.data.datastore.DEFAULT_SYSTEM_TTS_ID
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.ui.components.nav.BackButton
+import me.rerere.rikkahub.ui.components.ui.CardGroup
+import me.rerere.rikkahub.ui.components.ui.CardGroupValue
+import androidx.compose.material3.Slider
+import kotlin.math.roundToInt
 import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
+import me.rerere.rikkahub.ui.components.ui.switchItem
 import me.rerere.rikkahub.ui.components.ui.ItemAction
 import me.rerere.rikkahub.ui.components.ui.ItemActionMenu
 import me.rerere.rikkahub.ui.components.ui.Tag
@@ -147,6 +152,10 @@ fun SettingSpeechPage(vm: SettingVM = koinViewModel()) {
                     onUpdateSettings = vm::updateSettings,
                     onEdit = { editingTTSProvider = it },
                     modifier = Modifier.weight(1f),
+                )
+                TtsPlaybackSettingsCard(
+                    settings = settings,
+                    onUpdateSettings = vm::updateSettings,
                 )
             }
 
@@ -844,5 +853,66 @@ private fun ASRProviderItem(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun TtsPlaybackSettingsCard(
+    settings: Settings,
+    onUpdateSettings: ((Settings) -> Settings) -> Unit,
+) {
+    var playbackSpeed by remember(settings.defaultTTSPlaybackSpeed) {
+        mutableStateOf(settings.defaultTTSPlaybackSpeed)
+    }
+    CardGroup(
+        title = { Text(stringResource(R.string.setting_page_tts_settings)) },
+        modifier = Modifier.padding(horizontal = 16.dp),
+    ) {
+        formItem(
+            headlineContent = { Text(stringResource(R.string.setting_tts_page_default_playback_speed)) },
+            supportingContent = { Text(stringResource(R.string.setting_tts_page_default_playback_speed_description)) },
+            trailingContent = { CardGroupValue("x${"%.1f".format(playbackSpeed)}") },
+        ) {
+            Slider(
+                value = playbackSpeed,
+                onValueChange = { playbackSpeed = (it * 10).roundToInt() / 10f },
+                onValueChangeFinished = {
+                    onUpdateSettings { it.copy(defaultTTSPlaybackSpeed = playbackSpeed) }
+                },
+                valueRange = 0.5f..2.0f,
+                steps = 14,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        switchItem(
+            checked = settings.displaySetting.ttsOnlyReadQuoted,
+            onCheckedChange = { v ->
+                onUpdateSettings {
+                    it.copy(displaySetting = it.displaySetting.copy(ttsOnlyReadQuoted = v))
+                }
+            },
+            supportingContent = { Text(stringResource(R.string.setting_display_page_tts_only_read_quoted_desc)) },
+            headlineContent = { Text(stringResource(R.string.setting_display_page_tts_only_read_quoted_title)) },
+        )
+        switchItem(
+            checked = settings.displaySetting.ttsOnlyReadOutsideBrackets,
+            onCheckedChange = { v ->
+                onUpdateSettings {
+                    it.copy(displaySetting = it.displaySetting.copy(ttsOnlyReadOutsideBrackets = v))
+                }
+            },
+            supportingContent = { Text(stringResource(R.string.setting_display_page_tts_read_outside_brackets_desc)) },
+            headlineContent = { Text(stringResource(R.string.setting_display_page_tts_read_outside_brackets_title)) },
+        )
+        switchItem(
+            checked = settings.displaySetting.autoPlayTTSAfterGeneration,
+            onCheckedChange = { v ->
+                onUpdateSettings {
+                    it.copy(displaySetting = it.displaySetting.copy(autoPlayTTSAfterGeneration = v))
+                }
+            },
+            supportingContent = { Text(stringResource(R.string.setting_display_page_auto_play_tts_desc)) },
+            headlineContent = { Text(stringResource(R.string.setting_display_page_auto_play_tts_title)) },
+        )
     }
 }

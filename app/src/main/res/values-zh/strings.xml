@@ -1262,7 +1262,7 @@
   <string name="prompt_page_logic_not_any">副键均不匹配(NOT ANY)</string>
   <string name="prompt_page_logic_or_any">任一匹配(OR ANY)</string>
   <string name="prompt_page_lorebook_empty">暂无世界书</string>
-  <string name="prompt_page_lorebook_tab">世界书</string>
+  <string name="prompt_page_lorebook_tab">世界书及预设</string>
   <string name="prompt_page_match_char_depth_prompt">深度提示(Depth Prompt)</string>
   <string name="prompt_page_match_char_description">角色描述(Character Description)</string>
   <string name="prompt_page_match_char_personality">角色性格(Character Personality)</string>

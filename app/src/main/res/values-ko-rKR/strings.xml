@@ -1222,7 +1222,7 @@
   <string name="prompt_page_logic_not_any">하나라도 제외 (NOT ANY)</string>
   <string name="prompt_page_logic_or_any">하나 이상 일치 (OR ANY)</string>
   <string name="prompt_page_lorebook_empty">Lorebook 없음</string>
-  <string name="prompt_page_lorebook_tab">로어북</string>
+  <string name="prompt_page_lorebook_tab">월드북 및 프리셋</string>
   <string name="prompt_page_match_char_depth_prompt">캐릭터 심도 프롬프트</string>
   <string name="prompt_page_match_char_description">캐릭터 설명</string>
   <string name="prompt_page_match_char_personality">캐릭터 성격</string>

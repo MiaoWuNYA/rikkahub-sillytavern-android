@@ -33,6 +33,9 @@ import androidx.annotation.StringRes
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.ui.components.nav.BackButton
+import me.rerere.rikkahub.data.datastore.BackgroundEffectType
+import me.rerere.rikkahub.ui.components.ui.ConnectedChoiceButtons
+import me.rerere.rikkahub.ui.components.ui.ConnectedChoiceLabel
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.PagerTab
 import me.rerere.rikkahub.ui.components.ui.PagerTabs
@@ -92,7 +95,6 @@ fun SettingPreferencesThemePage(vm: SettingVM = koinViewModel()) {
                     ThemeTab.THEME -> ThemeContent(vm = vm, contentPadding = contentPadding)
                     ThemeTab.COLOR -> SettingDisplayColorContent(vm = vm, contentPadding = contentPadding)
                     ThemeTab.UI -> SettingPreferencesUIContent(vm = vm, contentPadding = contentPadding)
-                    ThemeTab.GENERAL -> SettingPreferencesGeneralContent(vm = vm, contentPadding = contentPadding)
                 }
             }
         }
@@ -106,7 +108,6 @@ private enum class ThemeTab(
     THEME(HugeIcons.Sun01, R.string.setting_page_preferences_theme),
     COLOR(HugeIcons.PaintBoard, R.string.setting_page_display_color),
     UI(HugeIcons.Edit01, R.string.setting_page_preferences_ui),
-    GENERAL(HugeIcons.Settings03, R.string.setting_page_preferences_general),
 }
 
 @Composable
@@ -140,6 +141,65 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
                     supportingContent = { Text(stringResource(R.string.setting_display_page_amoled_dark_mode_desc)) },
                     headlineContent = { Text(stringResource(R.string.setting_display_page_amoled_dark_mode_title)) },
                 )
+                item {
+                    CardGroup(
+                        title = { Text(stringResource(R.string.setting_display_page_title)) },
+                    ) {
+                        switchItem(
+                            checked = settings.displaySetting.useAppIconStyleLoadingIndicator,
+                            onCheckedChange = { v ->
+                                vm.updateSettings {
+                                    it.copy(displaySetting = it.displaySetting.copy(useAppIconStyleLoadingIndicator = v))
+                                }
+                            },
+                            supportingContent = { Text(stringResource(R.string.setting_display_page_use_app_icon_style_loading_indicator_desc)) },
+                            headlineContent = { Text(stringResource(R.string.setting_display_page_use_app_icon_style_loading_indicator_title)) },
+                        )
+                        switchItem(
+                            checked = settings.displaySetting.enableBlurEffect,
+                            onCheckedChange = { v ->
+                                vm.updateSettings {
+                                    it.copy(displaySetting = it.displaySetting.copy(enableBlurEffect = v))
+                                }
+                            },
+                            supportingContent = { Text(stringResource(R.string.setting_display_page_background_effect_desc)) },
+                            headlineContent = { Text(stringResource(R.string.setting_display_page_background_effect_title)) },
+                        )
+                        if (settings.displaySetting.enableBlurEffect) {
+                            formItem(
+                                headlineContent = { Text(stringResource(R.string.setting_display_page_background_effect_type)) },
+                            ) {
+                                ConnectedChoiceButtons(
+                                    options = BackgroundEffectType.entries,
+                                    selected = settings.displaySetting.backgroundEffectType,
+                                    onSelect = { type ->
+                                        vm.updateSettings {
+                                            it.copy(displaySetting = it.displaySetting.copy(backgroundEffectType = type))
+                                        }
+                                    },
+                                ) { type, selected ->
+                                    ConnectedChoiceLabel(
+                                        text = when (type) {
+                                            BackgroundEffectType.BLUR -> stringResource(R.string.setting_display_page_background_effect_blur)
+                                            BackgroundEffectType.GLASS -> stringResource(R.string.setting_display_page_background_effect_glass)
+                                        },
+                                        selected = selected,
+                                    )
+                                }
+                            }
+                        }
+                        switchItem(
+                            checked = settings.displaySetting.enableMessageGenerationHapticEffect,
+                            onCheckedChange = { v ->
+                                vm.updateSettings {
+                                    it.copy(displaySetting = it.displaySetting.copy(enableMessageGenerationHapticEffect = v))
+                                }
+                            },
+                            supportingContent = { Text(stringResource(R.string.setting_display_page_enable_message_generation_haptic_effect_desc)) },
+                            headlineContent = { Text(stringResource(R.string.setting_display_page_enable_message_generation_haptic_effect_title)) },
+                        )
+                    }
+                }
             }
         }
     }
