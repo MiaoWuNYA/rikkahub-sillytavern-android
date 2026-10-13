@@ -26,6 +26,11 @@ verification_report.*
 dsh-purge.zip
 nihe.zip
 
+# 文档站：构建依赖与产物（源工程在 docs-site/，产物输出到 site/docs/）
+docs-site/node_modules/
+docs-site/.vitepress/cache/
+site/docs/
+
 # AI agent 使用文档/本地配置，不推远程
 CLAUDE.md
 AGENTS.md

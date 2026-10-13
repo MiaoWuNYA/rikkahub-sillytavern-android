@@ -1,0 +1,156 @@
+/* 华灯文档主题：把首页 site/index.html 的 MD3 色板注入 VitePress 默认主题 */
+
+:root {
+  --serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", serif;
+
+  /* MD3 light palette（与首页一致） */
+  --hd-primary: #8f4c00;
+  --hd-on-primary-container: #2e1500;
+  --hd-primary-container: #ffdcc2;
+  --hd-tertiary: #8c494f;
+  --hd-tertiary-container: #ffd9dc;
+  --hd-surface: #fff8f5;
+  --hd-on-surface: #231917;
+  --hd-on-surface-var: #53433e;
+  --hd-sc-low: #fef1ea;
+  --hd-sc: #f8eae3;
+  --hd-sc-high: #f2e4dd;
+  --hd-outline: #85736d;
+  --hd-outline-var: #d8c2bb;
+
+  /* VitePress token 映射 */
+  --vp-c-brand-1: var(--hd-primary);
+  --vp-c-brand-2: #a35c08;
+  --vp-c-brand-3: #7a4200;
+  --vp-c-brand-soft: rgba(143, 76, 0, 0.14);
+  --vp-c-bg: var(--hd-surface);
+  --vp-c-bg-alt: var(--hd-sc-low);
+  --vp-c-bg-soft: var(--hd-sc-low);
+  --vp-c-bg-elv: #ffffff;
+  --vp-c-text-1: var(--hd-on-surface);
+  --vp-c-text-2: var(--hd-on-surface-var);
+  --vp-c-text-3: var(--hd-outline);
+  --vp-c-divider: var(--hd-outline-var);
+  --vp-c-border: var(--hd-outline-var);
+  --vp-c-gutter: var(--hd-outline-var);
+
+  --vp-custom-block-tip-bg: var(--hd-primary-container);
+  --vp-custom-block-tip-text: var(--hd-on-primary-container);
+  --vp-custom-block-tip-code-bg: rgba(46, 21, 0, 0.08);
+  --vp-custom-block-warning-bg: var(--hd-tertiary-container);
+  --vp-custom-block-warning-text: #3a0011;
+  --vp-custom-block-warning-code-bg: rgba(58, 0, 17, 0.08);
+  --vp-custom-block-danger-bg: var(--hd-tertiary-container);
+  --vp-custom-block-danger-text: #3a0011;
+  --vp-custom-block-info-bg: var(--hd-sc);
+  --vp-custom-block-info-text: var(--hd-on-surface);
+
+  --vp-code-color: var(--hd-primary);
+  --vp-code-bg: rgba(143, 76, 0, 0.09);
+  --vp-code-block-bg: var(--hd-sc);
+  --vp-code-line-highlight-color: rgba(143, 76, 0, 0.12);
+
+  --vp-nav-bg-color: var(--hd-surface);
+  --vp-sidebar-bg-color: var(--hd-surface);
+  --vp-button-brand-bg: var(--hd-primary);
+  --vp-button-brand-text: #ffffff;
+  --vp-button-brand-hover-bg: #a35c08;
+  --vp-button-brand-active-bg: #7a4200;
+  --vp-button-alt-bg: var(--hd-primary-container);
+  --vp-button-alt-text: var(--hd-on-primary-container);
+  --vp-button-alt-hover-bg: #ffd0a3;
+
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(120deg, var(--hd-primary), var(--hd-tertiary));
+
+  --vp-font-family-base: system-ui, -apple-system, "HarmonyOS Sans SC", "MiSans", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --vp-font-family-mono: ui-monospace, "JetBrains Mono", Consolas, monospace;
+}
+
+.dark {
+  --hd-primary: #ffb874;
+  --hd-on-primary-container: #ffdcc2;
+  --hd-primary-container: #7d4a00;
+  --hd-tertiary: #ffb2b6;
+  --hd-tertiary-container: #8c4950;
+  --hd-surface: #161211;
+  --hd-on-surface: #eeddd7;
+  --hd-on-surface-var: #d4c0ba;
+  --hd-sc-low: #1e1917;
+  --hd-sc: #26201d;
+  --hd-sc-high: #312925;
+  --hd-outline: #9f8d86;
+  --hd-outline-var: #52443f;
+
+  --vp-c-brand-1: var(--hd-primary);
+  --vp-c-brand-2: #ffcb96;
+  --vp-c-brand-3: #e6a05c;
+  --vp-c-brand-soft: rgba(255, 184, 116, 0.16);
+  --vp-c-bg: var(--hd-surface);
+  --vp-c-bg-alt: var(--hd-sc-low);
+  --vp-c-bg-soft: var(--hd-sc-low);
+  --vp-c-bg-elv: #1e1917;
+  --vp-c-text-1: var(--hd-on-surface);
+  --vp-c-text-2: var(--hd-on-surface-var);
+  --vp-c-text-3: var(--hd-outline);
+  --vp-c-divider: var(--hd-outline-var);
+  --vp-c-border: var(--hd-outline-var);
+  --vp-c-gutter: var(--hd-outline-var);
+
+  --vp-custom-block-warning-text: #ffd9dc;
+  --vp-custom-block-danger-text: #ffd9dc;
+
+  --vp-code-block-bg: #100d0b;
+  --vp-button-brand-bg: var(--hd-primary);
+  --vp-button-brand-text: #4d2800;
+  --vp-button-brand-hover-bg: #ffcb96;
+  --vp-button-brand-active-bg: #e6a05c;
+  --vp-button-alt-bg: var(--hd-sc-high);
+  --vp-button-alt-text: var(--hd-on-surface);
+  --vp-button-alt-hover-bg: #3d3430;
+}
+
+/* ---------- 字体与排版 ---------- */
+
+.vp-doc h1, .vp-doc h2, .vp-doc h3,
+.VPNavBarTitle .title, .VPFeature .title,
+.VPHomeHero .name, .VPHomeHero .text, .VPHero .name, .VPHero .text,
+.VPDocNotFound .title {
+  font-family: var(--serif);
+  letter-spacing: 0.02em;
+}
+.vp-doc h1 { font-weight: 900; }
+.vp-doc h2 { font-weight: 700; border-top: none; padding-top: 0; margin-top: 40px; }
+.vp-doc h2::before { content: none; }
+.vp-doc h1, .vp-doc h2, .vp-doc h3 { color: var(--vp-c-text-1); }
+
+/* ---------- MD3 圆角语言 ---------- */
+
+.VPFeature {
+  border-radius: 24px 24px 24px 9px !important;
+  border: 1px solid var(--hd-outline-var) !important;
+  background: var(--vp-c-bg-soft) !important;
+  transition: transform 0.45s cubic-bezier(0.2, 0, 0, 1), border-color 0.45s, box-shadow 0.45s;
+}
+.VPFeature:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--hd-primary) 45%, var(--hd-outline-var)) !important;
+  box-shadow: 0 22px 44px -30px rgba(0, 0, 0, 0.4);
+}
+.VPFeature .icon { background: var(--hd-primary-container); color: var(--hd-on-primary-container); border-radius: 14px 14px 14px 5px; }
+
+.vp-doc div[class*='language-'] { border-radius: 16px 16px 16px 6px; border: 1px solid var(--hd-outline-var); }
+.vp-doc .custom-block { border-radius: 18px 18px 18px 6px; }
+.vp-doc .custom-block.tip { border: 1px solid color-mix(in srgb, var(--hd-primary) 30%, transparent); }
+.vp-doc .custom-block.warning, .vp-doc .custom-block.danger { border: 1px solid color-mix(in srgb, var(--hd-tertiary) 35%, transparent); }
+.DocSearch-Button, .DocSearch-Modal { border-radius: 999px; }
+
+/* ---------- 细节：表格与侧栏 ---------- */
+
+.vp-doc th, .vp-doc td { border-bottom: 1px solid color-mix(in srgb, var(--hd-outline-var) 60%, transparent); }
+.vp-doc thead th { background: var(--hd-sc); }
+
+.VPSidebarItem.level-2.is-active > .item > .link > .text { font-weight: 600; }
+
+/* 首页 hero 图标底色 */
+.VPHero .VPImage { border-radius: 24px 24px 24px 9px; }

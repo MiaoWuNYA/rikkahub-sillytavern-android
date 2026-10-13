@@ -407,12 +407,8 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                     )
                     item(
                         onClick = {
-                            val docUrl = if (java.util.Locale.getDefault().language == "zh") {
-                                "https://docs.rikka-ai.com/zh/introduction"
-                            } else {
-                                "https://docs.rikka-ai.com/introduction"
-                            }
-                            context.openUrl(docUrl)
+                            // 本分支维护自己的文档站，不再指向上游 docs.rikka-ai.com
+                            context.openUrl("https://rikkahub.luoca.cn/docs/")
                         },
                         leadingContent = { Icon(HugeIcons.Book01, null) },
                         supportingContent = { Text(stringResource(R.string.setting_page_documentation_desc)) },

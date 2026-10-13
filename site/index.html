@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>华灯 · RikkaHub Plus — 安卓 AI 聊天客户端 / SillyTavern 兼容端</title>
+<meta name="description" content="纯原生的安卓 AI 聊天端，接上 API 就能聊。角色卡 / 世界书 / 预设按酒馆官方语义一键导入，前缀缓存优化、语义记忆、QuickJS 插件、语音通话与 30 个设备工具。">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="canonical" href="https://rikkahub.luoca.cn/">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#fff8f5">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#161211">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="华灯 · RikkaHub Plus">
+<meta property="og:title" content="华灯 · RikkaHub Plus — 安卓 AI 聊天客户端 / SillyTavern 兼容端">
+<meta property="og:description" content="纯原生的安卓 AI 聊天端，接上 API 就能聊。角色卡 / 世界书 / 预设按酒馆官方语义一键导入，前缀缓存优化、语义记忆、QuickJS 插件、语音通话与 30 个设备工具。">
+<meta property="og:url" content="https://rikkahub.luoca.cn/">
+<meta property="og:image" content="https://bu.dusays.com/2026/10/12/6acc74c118474.webp">
+<meta property="og:image:width" content="540">
+<meta property="og:image:height" content="1096">
+<meta property="og:image:alt" content="华灯 App 助手与角色列表界面">
+<meta property="og:locale" content="zh_CN">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="华灯 · RikkaHub Plus — 安卓 AI 聊天客户端 / SillyTavern 兼容端">
+<meta name="twitter:description" content="纯原生的安卓 AI 聊天端，接上 API 就能聊。酒馆资产一键导入，前缀缓存、语义记忆、插件与语音通话齐全。">
+<meta name="twitter:image" content="https://bu.dusays.com/2026/10/12/6acc74c118474.webp">
+<link rel="icon" type="image/webp" href="https://bu.dusays.com/2026/10/12/6acc74bdbe387.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://bu.dusays.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&display=swap" rel="stylesheet">
+<script>
+(function () {
+  var t = localStorage.getItem('hd-theme');
+  if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  document.documentElement.dataset.theme = t;
+})();
+</script>
+<link rel="stylesheet" href="styles.css">
+<script>document.documentElement.classList.add('js');</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://rikkahub.luoca.cn/#organization",
+      "name": "MiaoWuNYA",
+      "url": "https://rikkahub.luoca.cn/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://bu.dusays.com/2026/10/12/6acc74bdbe387.webp"
+      },
+      "sameAs": ["https://github.com/MiaoWuNYA/rikkahub-sillytavern-android"]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://rikkahub.luoca.cn/#website",
+      "url": "https://rikkahub.luoca.cn/",
+      "name": "华灯 · RikkaHub Plus",
+      "alternateName": "RikkaHub Plus",
+      "inLanguage": "zh-CN",
+      "publisher": { "@id": "https://rikkahub.luoca.cn/#organization" }
+    },
+    {
+      "@type": "MobileApplication",
+      "@id": "https://rikkahub.luoca.cn/#app",
+      "name": "华灯 · RikkaHub Plus",
+      "url": "https://rikkahub.luoca.cn/",
+      "description": "纯原生的安卓 AI 聊天端，接上 API 就能聊。角色卡 / 世界书 / 预设按酒馆官方语义一键导入，前缀缓存优化、语义记忆、QuickJS 插件、语音通话与 30 个设备工具。",
+      "image": "https://bu.dusays.com/2026/10/12/6acc74c118474.webp",
+      "screenshot": [
+        "https://bu.dusays.com/2026/10/12/6acc74c118474.webp",
+        "https://bu.dusays.com/2026/10/12/6acc74bf17810.webp"
+      ],
+      "operatingSystem": "Android 8.0+",
+      "applicationCategory": "SocialNetworkingApplication",
+      "softwareVersion": "2.5.9",
+      "license": "https://www.gnu.org/licenses/agpl-3.0.html",
+      "author": { "@id": "https://rikkahub.luoca.cn/#organization" },
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" },
+      "downloadUrl": "https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/latest",
+      "featureList": [
+        "提示词缓存优化：前缀分叉诊断、随机宏按消息固定、时间宏 5 分钟对齐",
+        "语义 RAG + 三层记忆 + 滚动压缩，长对话不失忆",
+        "SillyTavern 六类资产无损导入：角色卡、世界书、预设、正则、快速回复、美化主题",
+        "宏引擎支持 60+ 官方宏，20+ 斜杠命令与多角色群聊",
+        "QuickJS 沙箱插件系统，ZIP 导入即可注册工具",
+        "豆包 TTS 2.0 + 火山 ASR，语音与视频通话",
+        "30 个设备工具、微信 / QQ Bot、AI 主动发消息"
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3 6.5 13.5h4.8L10.5 21 17.5 10.5h-4.9L13 3Z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="4.6" rx="2.3"/><rect x="4" y="9.7" width="16" height="4.6" rx="2.3"/><rect x="5" y="15.4" width="14" height="4.6" rx="2.3"/></symbol>
+  <symbol id="i-judge" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"/><path d="m7.6 12.6 3.1 3.1 5.7-6.6"/></symbol>
+  <symbol id="i-puzzle" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><path d="M16.5 13.4v6.2M13.4 16.5h6.2"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M7 4v5.4M7 16.6V20M12 4v1.4M12 12.6V20M17 4v9.4M17 20.6V20"/><circle class="dot" cx="7" cy="13" r="2.6"/><circle class="dot" cx="12" cy="9" r="2.6"/><circle class="dot" cx="17" cy="17" r="2.6"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9.5" y="2.5" width="5" height="11" rx="2.5"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="3"/><path d="M10.5 18.5h3"/></symbol>
+  <symbol id="i-goblet" viewBox="0 0 24 24"><path d="M8 3h8v4.5a4 4 0 0 1-8 0V3Z"/><path d="M12 11.5V18M8.5 21h7M9.8 21c1.4-.6 2.2-1.5 2.2-3M14.2 21c-1.4-.6-2.2-1.5-2.2-3"/></symbol>
+  <symbol id="i-card" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="3"/><circle cx="12" cy="9.2" r="2.6"/><path d="M7.5 17c.7-2.4 2.4-3.6 4.5-3.6s3.8 1.2 4.5 3.6"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5V5.5Z"/><path d="M4 18.5A2.5 2.5 0 0 1 6.5 16H20"/></symbol>
+  <symbol id="i-tune" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle class="dot" cx="15" cy="7" r="2.4"/><circle class="dot" cx="9" cy="17" r="2.4"/></symbol>
+  <symbol id="i-theme" viewBox="0 0 24 24"><path d="M7 3h5.5a5 5 0 0 1 0 10H10v3a4 4 0 0 1-4 4V3Z"/><path d="M16 9h3"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3 7 7M17 17l1.7 1.7M18.7 5.3 17 7M7 17l-1.7 1.7"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 13A8.1 8.1 0 0 1 11 4 8 8 0 1 0 20 13Z"/></symbol>
+</svg>
+
+<header class="app-bar" id="appBar">
+  <div class="wrap bar-inner">
+    <a class="brand" href="#top">
+      <img src="https://bu.dusays.com/2026/10/12/6acc74bdbe387.webp" alt="" width="30" height="30">
+      <span>华灯 <em>RikkaHub Plus</em></span>
+    </a>
+    <nav class="bar-nav">
+      <a href="docs/">文档</a>
+      <a href="#features">日常聊天</a>
+      <a href="#tavern">酒馆兼容</a>
+      <a href="#download">下载</a>
+    </nav>
+    <div class="bar-actions">
+      <a class="bar-link" href="https://github.com/MiaoWuNYA/rikkahub-sillytavern-android" target="_blank" rel="noopener">GitHub</a>
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="切换主题">
+        <svg class="icon show-light"><use href="#i-moon"/></svg>
+        <svg class="icon show-dark"><use href="#i-sun"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero wrap">
+    <div class="hero-copy">
+      <p class="eyebrow rise" style="--d:0">RikkaHub · 开源分支</p>
+      <h1 class="rise" style="--d:1">华灯</h1>
+      <p class="lead rise" style="--d:2">纯原生的 AI 聊天端，接上 API 就能聊。</p>
+      <p class="desc rise" style="--d:3">角色卡、世界书、预设按酒馆官方语义一键导入，各种工具增强日常聊天体验——酒馆与日常聊天两条路线共用同一个客户端，互不干扰。</p>
+      <div class="hero-actions rise" style="--d:4">
+        <a class="btn filled" href="#download">
+          <svg class="icon"><use href="#i-bolt"/></svg>获取下载
+        </a>
+        <a class="btn tonal" href="docs/">
+          <svg class="icon"><use href="#i-book"/></svg>使用文档
+        </a>
+      </div>
+      <p class="meta rise" style="--d:5">arm64-v8a · Android 8.0+ · AGPL-3.0</p>
+    </div>
+
+    <div class="hero-visual rise" style="--d:3">
+      <div class="visual-stage">
+        <div class="blob blob-a"></div>
+        <div class="blob blob-b"></div>
+        <figure class="shot shot-back">
+          <img src="https://bu.dusays.com/2026/10/12/6acc74bf17810.webp" alt="宏变量与提示词页面" width="540" height="1137" loading="eager" fetchpriority="low" decoding="async">
+        </figure>
+        <figure class="shot shot-main tilt">
+          <img src="https://bu.dusays.com/2026/10/12/6acc74c118474.webp" alt="助手与角色列表" width="540" height="1096" loading="eager" fetchpriority="high" decoding="async">
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap chip-row reveal">
+    <span class="chip"><svg class="icon"><use href="#i-phone"/></svg>Kotlin 原生 · 无需 Termux</span>
+    <span class="chip"><svg class="icon"><use href="#i-sliders"/></svg>30 个设备工具</span>
+    <span class="chip"><svg class="icon"><use href="#i-puzzle"/></svg>插件 ZIP 导入</span>
+    <span class="chip"><svg class="icon"><use href="#i-goblet"/></svg>60+ 酒馆官方宏</span>
+  </div>
+
+  <section class="band band-sc" id="features">
+    <div class="wrap section">
+    <header class="section-head reveal">
+      <p class="label">01 · 日常聊天</p>
+      <h2>接上 API，即是一个完整的聊天端</h2>
+      <p class="section-sub">支持 OpenAI、Anthropic、Gemini 等主流协议与中转站，数据全部保存在本机。</p>
+    </header>
+
+    <div class="bento">
+      <article class="card wide reveal">
+        <div class="card-media media-diagram">
+          <div class="diag" aria-hidden="true">
+            <div class="diag-head"><span>本轮请求</span><span class="diag-badge">对比上一轮</span></div>
+            <div class="diag-row"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="fork"></i></div>
+            <div class="diag-foot">重复内容 · <b>命中 99%</b></div>
+          </div>
+        </div>
+        <div class="card-body">
+          <svg class="card-icon"><use href="#i-bolt"/></svg>
+          <h3>提示词缓存优化</h3>
+          <p>长对话场景下保持缓存稳定命中，token 开销显著降低。缓存未命中时，内置诊断可直接定位差异来源。</p>
+          <div class="tags"><span>缓存命中优化</span><span>分叉诊断</span></div>
+        </div>
+      </article>
+
+      <article class="card slim reveal">
+        <div class="card-body">
+          <svg class="card-icon"><use href="#i-layers"/></svg>
+          <h3>记忆与长对话</h3>
+          <p>跨会话的记忆与召回：称呼、偏好与既有剧情在新对话中依然生效。长对话自动滚动摘要，人设与伏笔不因上下文压缩而丢失。</p>
+          <div class="tags"><span>跨会话记忆</span><span>上下文压缩</span></div>
+        </div>
+      </article>
+
+      <article class="card slim reveal">
+        <div class="card-body">
+          <svg class="card-icon"><use href="#i-judge"/></svg>
+          <h3>Jev 智能决策</h3>
+          <p>独立的判断模型：记忆筛选与是非判断由专用小模型完成，毫秒级响应，不占用主模型输出。不可用时自动回退原有逻辑，不阻塞对话。</p>
+          <div class="tags"><span>专用判断模型</span><span>静默回退</span></div>
+        </div>
+      </article>
+
+      <article class="card slim reveal">
+        <div class="card-body">
+          <svg class="card-icon"><use href="#i-puzzle"/></svg>
+          <h3>插件系统</h3>
+          <p>以 ZIP 包扩展 AI 能力：记录饮食、查询教务、检索模型资料均可由插件实现。内置三个实用插件，导入后由 AI 自动调用。</p>
+          <div class="tags"><span>ZIP 导入</span><span>内置插件</span></div>
+        </div>
+      </article>
+
+      <article class="card slim reveal">
+        <div class="card-body">
+          <svg class="card-icon"><use href="#i-sliders"/></svg>
+          <h3>华灯设置</h3>
+          <p>中转站常见异常的自动修复、空回复重试、界面精简模式，均在本页集中管理。开关支持全局与助手级两级配置。</p>
+          <div class="tags"><span>中转站兼容</span><span>空回复重试</span><span>精简模式</span></div>
+        </div>
+      </article>
+
+      <article class="card slim reveal">
+        <div class="card-body">
+          <svg class="card-icon"><use href="#i-mic"/></svg>
+          <h3>语音与通话</h3>
+          <p>语音输入实时转写，回复流式朗读，可随时打断；通话结束后自动存档至会话，便于回看。</p>
+          <div class="tags"><span>豆包 TTS / 火山 ASR</span><span>随时打断</span><span>通话存档</span></div>
+        </div>
+      </article>
+
+      <article class="card slim reveal">
+        <div class="card-body">
+          <svg class="card-icon"><use href="#i-phone"/></svg>
+          <h3>手机增强</h3>
+          <p>提供 30 项设备能力（通知、定位、音量、应用控制等）供 AI 调用；微信、QQ 消息可接入指定助手，支持按计划主动发起对话。</p>
+          <div class="tags"><span>设备工具箱</span><span>微信 / QQ Bot</span><span>主动消息</span></div>
+        </div>
+      </article>
+    </div>
+    </div>
+  </section>
+
+  <section class="band" id="tavern">
+    <div class="wrap section">
+    <header class="section-head reveal">
+      <p class="label label-alt">02 · 酒馆兼容</p>
+      <h2>桌面酒馆的资产，原样搬进手机</h2>
+      <p class="section-sub">角色卡、世界书、预设、正则、快速回复与主题六类资产完整迁移，导入导出双向无损，无需 Termux 与 Node.js。</p>
+    </header>
+
+    <div class="tavern-grid">
+      <ul class="asset-list reveal">
+        <li>
+          <svg class="icon"><use href="#i-card"/></svg>
+          <div><h4>角色卡 · PNG / V2 / V3</h4><p>全格式支持，开场白、内嵌世界书与 HTML 展示卡完整保留，往返无损</p></div>
+        </li>
+        <li>
+          <svg class="icon"><use href="#i-book"/></svg>
+          <div><h4>世界书 · Lorebook</h4><p>触发逻辑、排序与预算控制对齐桌面端，附全字段编辑器</p></div>
+        </li>
+        <li>
+          <svg class="icon"><use href="#i-tune"/></svg>
+          <div><h4>预设 · 正则 · 快速回复</h4><p>按官方结构导入，展示层与提示词层行为一致</p></div>
+        </li>
+        <li>
+          <svg class="icon"><use href="#i-goblet"/></svg>
+          <div><h4>宏 · 60+ 官方宏</h4><p>变量持久化、条件分支与掷骰完整可用，未知宏原样保留，不影响提示词</p></div>
+        </li>
+        <li>
+          <svg class="icon"><use href="#i-bolt"/></svg>
+          <div><h4>斜杠命令 · 群聊</h4><p>20+ 内置命令；多角色群聊支持自定义发言策略与独立配置</p></div>
+        </li>
+        <li>
+          <svg class="icon"><use href="#i-theme"/></svg>
+          <div><h4>美化主题 · 537 个实测</h4><p>537 个真实主题验证通过，配色、背景、气泡样式与字体完整还原</p></div>
+        </li>
+      </ul>
+
+      <aside class="callout reveal">
+        <h3>不是容器，也不是启动器</h3>
+        <p>原生实现而非容器方案：无 Node 常驻进程，启动更快，资源占用更低。酒馆能力与客户端能力互通——角色卡可直接调用插件、记忆与语音。</p>
+        <a class="text-link" href="https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/blob/main/README_CN.md" target="_blank" rel="noopener">读完整差异手册 →</a>
+      </aside>
+    </div>
+    </div>
+  </section>
+
+  <section class="band band-high" id="download">
+    <div class="wrap section">
+    <div class="dl-inner reveal">
+      <p class="label">03 · 下载</p>
+      <h2 class="version">2.5.9</h2>
+      <p class="section-sub">最新版本，新版本发布后会在应用内聊天抽屉顶部收到「发现新版本」提示，点按即可升级。</p>
+      <div class="hero-actions center">
+        <a class="btn filled lg" href="https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/latest" target="_blank" rel="noopener">
+          <svg class="icon"><use href="#i-bolt"/></svg>最新版本
+        </a>
+        <a class="btn outlined lg" href="https://github.com/MiaoWuNYA/rikkahub-sillytavern-android" target="_blank" rel="noopener">GitHub</a>
+      </div>
+      <div class="chips-mini">
+        <span>arm64-v8a 单架构</span><i></i><span>Android 8.0+</span><i></i><span>约 104 MB</span><i></i><span>覆盖安装直接升级</span>
+      </div>
+    </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap foot-inner">
+    <div class="foot-brand">
+      <img src="https://bu.dusays.com/2026/10/12/6acc74bdbe387.webp" alt="" width="26" height="26">
+      <span>华灯 · RikkaHub Plus</span>
+    </div>
+    <p class="foot-note">站在前人的肩膀上——感谢 rikkahub、mingli2 与所有同源分支。</p>
+    <nav class="foot-nav">
+      <a href="docs/">文档</a>
+      <a href="https://github.com/MiaoWuNYA/rikkahub-sillytavern-android" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/issues" target="_blank" rel="noopener">Issues</a>
+      <a href="https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/blob/main/README_CN.md" target="_blank" rel="noopener">README</a>
+      <a href="https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0</a>
+    </nav>
+  </div>
+  <div class="wrap">
+    <p class="beian">
+      <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">冀ICP备2023041453号</a>
+      <a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=13028302000216" target="_blank" rel="noopener">
+        <img class="beian-icon" alt="公安备案图标" src="https://bu.dusays.com/2020/11/23/c231c1cc3d83e.png" width="20" height="20">冀公网安备13028302000216号
+      </a>
+    </p>
+  </div>
+</footer>
+
+<script src="main.js"></script>
+</body>
+</html>
