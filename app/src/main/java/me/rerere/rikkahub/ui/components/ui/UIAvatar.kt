@@ -151,13 +151,18 @@ fun UIAvatar(
     }
 
     Box(modifier = modifier.then(Modifier.size(32.dp))) {
+        // 无点击回调时不拦截点击，让外层容器（如助手卡片）响应
+        val avatarClick: (() -> Unit)? = if (onClick != null || onUpdate != null) {
+            {
+                onClick?.invoke()
+                if (onUpdate != null) showPickOption = true
+            }
+        } else null
         Surface(
             shape = shape,
             modifier = Modifier.fillMaxSize(),
-            onClick = {
-                onClick?.invoke()
-                if (onUpdate != null) showPickOption = true
-            },
+            onClick = avatarClick ?: {},
+            enabled = avatarClick != null,
             tonalElevation = 4.dp,
             color = MaterialTheme.colorScheme.secondaryContainer,
         ) {

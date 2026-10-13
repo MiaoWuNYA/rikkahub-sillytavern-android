@@ -56,6 +56,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Rocket01
+import me.rerere.hugeicons.stroke.Code
+import me.rerere.hugeicons.stroke.Note01
 import me.rerere.hugeicons.stroke.ChartColumn
 import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.Folder01
@@ -73,6 +75,8 @@ import me.rerere.hugeicons.stroke.Sparkles
 import me.rerere.hugeicons.stroke.Tick01
 import me.rerere.hugeicons.stroke.TransactionHistory
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.ai.PromptDebugCache
+import me.rerere.ui.webview.WebViewContentCache
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.datastore.ConversationSortOrder
 import me.rerere.rikkahub.data.datastore.Settings
@@ -257,8 +261,6 @@ fun ChatDrawerContent(
                     )
                 }
             }
-
-            DrawerActions(navController = navController)
 
             Row(
                 modifier = Modifier
@@ -477,6 +479,41 @@ fun ChatDrawerContent(
                             onClick = {
                                 showMenuPopup = false
                                 navController.navigate(Screen.ImageGen)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.chat_page_menu_prompt_viewer)) },
+                            leadingIcon = { Icon(HugeIcons.Code, null) },
+                            onClick = {
+                                showMenuPopup = false
+                                val html = PromptDebugCache.get(current.id)
+                                if (html == null) {
+                                    toaster.show(
+                                        context.getString(R.string.chat_page_menu_prompt_viewer_empty),
+                                        type = ToastType.Warning,
+                                    )
+                                } else {
+                                    val contentId = WebViewContentCache.store(context.cacheDir, html)
+                                    navController.navigate(Screen.WebView(contentId = contentId))
+                                }
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.setting_page_authors_note)) },
+                            leadingIcon = { Icon(HugeIcons.Note01, null) },
+                            onClick = {
+                                showMenuPopup = false
+                                navController.navigate(Screen.AuthorsNote)
+                            }
+                        )
+                        // 收藏原本是并列按钮之一，为给生图/设置腾地方撤了下来。整屏只有这一处
+                        // 能进 Screen.Favorite，直接删掉会让收藏变成死功能，所以收进菜单里。
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.favorite_page_title)) },
+                            leadingIcon = { Icon(HugeIcons.InLove, null) },
+                            onClick = {
+                                showMenuPopup = false
+                                navController.navigate(Screen.Favorite)
                             }
                         )
                     }
@@ -911,31 +948,7 @@ fun ChatDrawerContent(
     }
 }
 
-@Composable
-private fun DrawerActions(navController: Navigator) {
-    Column {
-        // 搜索入口
-        DrawerEntry(
-            icon = HugeIcons.Search01,
-            text = stringResource(R.string.chat_page_search_chats),
-            onClick = { navController.navigate(Screen.MessageSearch) },
-        )
 
-        // 历史记录入口
-        DrawerEntry(
-            icon = HugeIcons.TransactionHistory,
-            text = stringResource(R.string.chat_page_history),
-            onClick = { navController.navigate(Screen.History) },
-        )
-
-        // 媒体创作入口
-        DrawerEntry(
-            icon = HugeIcons.ImageToVideo,
-            text = stringResource(R.string.media_creation_title),
-            onClick = { navController.navigate(Screen.MediaCreationSessions) },
-        )
-    }
-}
 
 @Composable
 private fun DrawerEntry(

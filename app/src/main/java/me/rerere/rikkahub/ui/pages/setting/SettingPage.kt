@@ -237,7 +237,7 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                     )
                     item(
                         onClick = { navController.navigate(Screen.Plugins) },
-                        leadingContent = { Icon(HugeIcons.Puzzle, null) },
+                        leadingContent = { CardGroupIcon(HugeIcons.Puzzle, containerColor = containerColor, contentColor = contentColor) },
                         supportingContent = { Text(stringResource(R.string.setting_page_plugins_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_plugins)) },
                     )
