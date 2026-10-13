@@ -207,6 +207,8 @@ data class HuaDengSettings(
     val enableRollingContextCompression: Boolean = true,
     // 工具结果截断：关闭后工具输出不再截断（默认截断超过 32KB 的输出）
     val enableToolResultTruncation: Boolean = true,
+    // 子 agent：主模型可把子任务派给独立 agent 完成后取回结果（不产生会话历史）
+    val enableSubAgent: Boolean = false,
     // 本地 OCR 兜底：未配置 OCR 模型（或远程识别失败）时，用内置的 ML Kit
     // 离线识别图片文字。不联网、不上传图片。关掉则回到旧行为——直接给模型
     // 一个 "[Image]" 占位符，图片内容等于不可见。

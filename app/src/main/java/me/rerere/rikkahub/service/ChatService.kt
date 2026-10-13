@@ -83,6 +83,7 @@ import me.rerere.rikkahub.data.ai.tools.createJudgeTool
 import me.rerere.rikkahub.data.ai.prompts.TITLE_MAX_CHARS
 import me.rerere.rikkahub.plugin.provider.PluginToolProvider
 import me.rerere.rikkahub.data.ai.tools.LocalTools
+import me.rerere.rikkahub.data.ai.tools.createSubAgentTool
 import me.rerere.rikkahub.data.ai.tools.LocalToolOption
 import me.rerere.rikkahub.data.ai.tools.createSearchTools
 import me.rerere.rikkahub.data.ai.tools.createWorkspaceTools
@@ -1671,6 +1672,20 @@ class ChatService(
                     }
                     if (settings.huadengSettings.jevJudgeTool) {
                         add(createJudgeTool(jevClient))
+                    }
+                    if (settings.huadengSettings.enableSubAgent) {
+                        add(
+                            createSubAgentTool(
+                                generationLoop = generationLoop,
+                                settings = settings,
+                                assistant = assistant,
+                                model = model,
+                                memories = memoryRepository.getFiles(assistant.memoryId),
+                                inputTransformers = inputTransformers,
+                                outputTransformers = outputTransformers,
+                                localTools = localTools,
+                            )
+                        )
                     }
                     add(createWebFetchTool())
                     if (assistant.localTools.contains(LocalToolOption.TaskTools)) {
