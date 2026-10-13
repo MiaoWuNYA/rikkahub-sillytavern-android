@@ -132,7 +132,7 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                     // 「支持」这件事本来就不必花钱：点个 Star 对项目的帮助
                     // 更实在，而且不打扰用户。捐赠页仍然保留在设置里，
                     // 有需要的人自己找得到。
-                    context.openUrl("https://github.com/MiaoWuNYA/rikkahub-sillytavern-android")
+                    context.openUrl("https://rikkahub.luoca.cn")
                 }) {
                     Text(stringResource(R.string.setting_page_sponsor_alert_confirm))
                 }

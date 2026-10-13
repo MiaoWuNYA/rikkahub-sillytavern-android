@@ -52,7 +52,8 @@ import me.rerere.rikkahub.utils.openUrl
 import me.rerere.rikkahub.utils.plus
 
 // 本定制版的源码仓库。上面那条 Github 指向上游原版，用户容易混淆，这条才是本仓库。
-private const val AUTHOR_REPO_URL = "https://github.com/MiaoWuNYA/rikkahub-sillytavern-android"
+private const val AUTHOR_REPO_URL = "https://rikkahub.luoca.cn"
+private const val UPSTREAM_REPO_URL = "https://github.com/rikkahub/rikkahub"
 
 @Composable
 fun SettingAboutPage() {
@@ -180,15 +181,15 @@ fun SettingAboutPage() {
                         // 上游留在下面：本版衍生自它，按许可该标明出处，
                         // 想对照原版的用户也找得到。
                         item(
-                            onClick = { context.openUrl("https://github.com/rikkahub/rikkahub") },
+                            onClick = { context.openUrl(UPSTREAM_REPO_URL) },
                             leadingContent = { Icon(HugeIcons.Package, null) },
-                            supportingContent = { Text("https://github.com/rikkahub/rikkahub") },
+                            supportingContent = { Text(UPSTREAM_REPO_URL) },
                             headlineContent = { Text(stringResource(R.string.about_page_author_repo)) },
                         )
                         item(
-                            onClick = { context.openUrl("$AUTHOR_REPO_URL/blob/master/LICENSE") },
+                            onClick = { context.openUrl("$UPSTREAM_REPO_URL/blob/master/LICENSE") },
                             leadingContent = { Icon(HugeIcons.File02, null) },
-                            supportingContent = { Text("$AUTHOR_REPO_URL/blob/master/LICENSE") },
+                            supportingContent = { Text("$UPSTREAM_REPO_URL/blob/master/LICENSE") },
                             headlineContent = { Text(stringResource(R.string.about_page_license)) },
                         )
                     }

@@ -409,6 +409,7 @@
   <string name="donate_page_kofi_desc">面向全球用户</string>
   <string name="donate_page_sponsor_list">赞助用户列表</string>
   <string name="donate_page_title">赞助</string>
+  <string name="donate_page_upstream_notice">本赞助是赞助上游rikkahub作者，不是『华灯』作者，感谢上游开发者的无私开源，也衷心的感谢您对开源项目的支持!!!</string>
   <string name="edit">编辑</string>
   <string name="editing">编辑中</string>
   <string name="emoji_picker_search_placeholder">搜索表情符号...</string>
@@ -854,6 +855,8 @@
   <string name="setting_display_page_bracket_button_title">一键添加符号</string>
   <string name="setting_display_page_bracket_symbol_desc">支持任意文字，如冒号、引号或括号；两个字符的符号插入后光标自动落在中间</string>
   <string name="setting_display_page_bracket_symbol_title">自定义符号</string>
+  <string name="setting_display_page_bracket_color_title">符号颜色</string>
+  <string name="setting_display_page_bracket_color_desc">符号按钮的着色，默认跟随主题</string>
   <string name="setting_display_page_hide_model_picker_desc">隐藏输入框旁的模型选择按钮</string>
   <string name="setting_display_page_hide_model_picker_title">隐藏模型选择</string>
   <string name="setting_display_page_hide_more_button_desc">隐藏发送键左侧的加号按钮</string>
@@ -1063,7 +1066,7 @@
   <string name="setting_page_search_title">搜索服务</string>
   <string name="setting_page_share">分享</string>
   <string name="setting_page_share_desc">分享本APP给朋友</string>
-  <string name="setting_page_share_text">RikkaHub - 开源安卓AI助手\n\n官网: https://rikka-ai.com/</string>
+  <string name="setting_page_share_text">RikkaHub - 开源安卓AI助手\n\n官网: https://rikkahub.luoca.cn/</string>
   <string name="setting_page_sponsor_alert_confirm">去点 Star</string>
   <string name="setting_page_sponsor_alert_desc">你已经启动这个应用 100 多次了。如果它帮到过你，去仓库点个 Star 就是最好的支持——不用花钱，也不会打扰你。</string>
   <string name="setting_page_sponsor_alert_dismiss">暂不</string>

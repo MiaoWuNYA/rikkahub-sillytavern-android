@@ -431,6 +431,9 @@ fun ChatInput(
                                     ThemedIcon(
                                         imageVector = HugeIcons.Brackets,
                                         contentDescription = stringResource(R.string.setting_display_page_bracket_button_title),
+                                        tint = settings.displaySetting.bracketButtonColor
+                                            .takeIf { it.isNotBlank() }
+                                            ?.let { runCatching { Color(android.graphics.Color.parseColor(it)) }.getOrNull() },
                                     )
                                 }
                             }

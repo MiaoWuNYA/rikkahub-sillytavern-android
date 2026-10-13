@@ -592,6 +592,22 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                                 }
                             },
                         )
+                        item(
+                            headlineContent = { Text(stringResource(R.string.setting_display_page_bracket_color_title)) },
+                            supportingContent = {
+                                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    ColorPicker(
+                                        presets = BRACKET_COLOR_PRESETS,
+                                        currentColor = displaySetting.bracketButtonColor,
+                                        onColorSelected = { color ->
+                                            updateDisplaySetting(displaySetting.copy(bracketButtonColor = color))
+                                        },
+                                        defaultDark = "#E18A24",
+                                        defaultLight = "#C7731E",
+                                    )
+                                }
+                            },
+                        )
                     }
                 }
             }
@@ -600,6 +616,17 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
 }
 
 // Quote color presets (hex, labelResId)
+private val BRACKET_COLOR_PRESETS = listOf(
+    "" to R.string.setting_display_page_text_color_reset_default,
+    "#E18A24" to R.string.setting_display_page_quote_color_tavern_orange,
+    "#E8736A" to R.string.setting_display_page_quote_color_rose,
+    "#7EAFC4" to R.string.setting_display_page_quote_color_sky_blue,
+    "#81C784" to R.string.setting_display_page_quote_color_mint,
+    "#B39DDB" to R.string.setting_display_page_quote_color_lavender,
+    "#FFFFFF" to R.string.setting_display_page_text_color_white,
+    "__custom__" to R.string.setting_display_page_text_color_custom,
+)
+
 private val QUOTE_COLOR_PRESETS = listOf(
     "" to R.string.setting_display_page_quote_color_theme_follow,
     "#E18A24" to R.string.setting_display_page_quote_color_tavern_orange,

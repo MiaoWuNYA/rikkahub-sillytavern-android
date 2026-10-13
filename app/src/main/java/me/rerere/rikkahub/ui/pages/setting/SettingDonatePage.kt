@@ -71,6 +71,12 @@ fun SettingDonatePage() {
                 .fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            Text(
+                text = stringResource(R.string.donate_page_upstream_notice),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
             DonateMethodsCardGroup()
 
             Text(

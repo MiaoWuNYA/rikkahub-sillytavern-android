@@ -1035,32 +1035,9 @@ class ChatService(
                 val conversation = session.state.value
 
                 if (message.role == MessageRole.USER) {
-                    // 对历史用户消息重新生成 = 截断它之后的一切，再重新答一次。
-                    //
-                    // 这里**必须传 allowShrink**。截断后节点数必然变少，
-                    // 而 saveConversation 默认会拒绝「节点数变少」的写入
-                    // （那道防线是为了拦住列表视图的轻量对象把历史截断，
-                    // 见 saveConversation 的注释）。不传的话保存被静默拒绝：
-                    // 弹窗说了「下面的消息会被清除」，实际上一条没删，
-                    // 新的回复追加到会话末尾——用户看到的就是「重新生成
-                    // 没生效，还在最下面多了一条」。
-                    //
-                    // 这是用户明确点击、且弹窗已告知后果的操作，
-                    // 属于防线要放行的合法缩减。
-                    // 先定位。**找不到就必须放弃，不能继续往下算。**
-                    //
-                    // getMessageNodeByMessage 返回的是 MessageNode?，
-                    // 而 UIMessage 是 data class（equals 按内容比）。传进来的
-                    // 对象只要与节点里那份有任一字段不同（拷贝过、反序列化过、
-                    // 被流式更新改写过），这里就取不到节点，返回 null。
-                    //
-                    // 而 `indexOf(null)` 得到 **-1**，
-                    // `subList(0, -1 + 1)` = `subList(0, 0)` = **空列表** ——
-                    // 「找不到」被当成了「截断到第 0 条」，整个对话被清空。
-                    //
-                    // 这个隐患在 allowShrink=false 时期是掩盖着的（任何缩减
-                    // 都被拒），补上 allowShrink 之后才真正可达。修一个 bug
-                    // 露出另一个，正是这类防线最需要小心的地方。
+                    // 重发用户消息 = 截断它之后的一切再重新答一次。截断后节点数变少，
+                    // 必须传 allowShrink，否则保存被「节点数不得变少」防线静默拒绝。
+                    // 先定位，找不到必须放弃，不能当成截断到第 0 条清空对话（issue #7）。
                     val node = conversation.getMessageNodeByMessage(message)
                     val indexAt = if (node == null) -1 else conversation.messageNodes.indexOf(node)
                     if (indexAt == -1) {
@@ -1071,11 +1048,26 @@ class ChatService(
                         )
                         return@launchGenerationJob
                     }
-                    val newConversation = conversation.copy(
-                        messageNodes = conversation.messageNodes.subList(0, indexAt + 1)
-                    )
-                    saveConversation(conversationId, newConversation, allowShrink = true)
-                    handleMessageComplete(conversationId, generationType = GenerationType.REGENERATE)
+                    // 紧随的旧回复保留为可切换版本，新回复以分支追加而非覆盖
+                    val replyNode = conversation.messageNodes.getOrNull(indexAt + 1)
+                        ?.takeIf { it.messages.lastOrNull()?.role == MessageRole.ASSISTANT }
+                    if (replyNode != null) {
+                        val newConversation = conversation.copy(
+                            messageNodes = conversation.messageNodes.subList(0, indexAt + 2)
+                        )
+                        saveConversation(conversationId, newConversation, allowShrink = true)
+                        handleMessageComplete(
+                            conversationId,
+                            messageRange = 0..<(indexAt + 1),
+                            generationType = GenerationType.REGENERATE,
+                        )
+                    } else {
+                        val newConversation = conversation.copy(
+                            messageNodes = conversation.messageNodes.subList(0, indexAt + 1)
+                        )
+                        saveConversation(conversationId, newConversation, allowShrink = true)
+                        handleMessageComplete(conversationId, generationType = GenerationType.REGENERATE)
+                    }
                 } else {
                     if (regenerateAssistantMsg) {
                         val node = conversation.getMessageNodeByMessage(message)
