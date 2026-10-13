@@ -381,6 +381,24 @@ internal fun SettingPreferencesUIContent(vm: SettingVM, contentPadding: PaddingV
                                         )
                                     }
                                     HorizontalDivider()
+                                    // Bracket color
+                                    Column {
+                                        Text(
+                                            stringResource(R.string.setting_display_page_text_color_bracket_title),
+                                            style = MaterialTheme.typography.labelLarge,
+                                        )
+                                        Spacer(Modifier.height(4.dp))
+                                        ColorPicker(
+                                            presets = BRACKET_COLOR_PRESETS,
+                                            currentColor = displaySetting.bracketColor,
+                                            onColorSelected = { color ->
+                                                updateDisplaySetting(displaySetting.copy(bracketColor = color))
+                                            },
+                                            defaultDark = "#7EAFC4",
+                                            defaultLight = "#5B8DEF",
+                                        )
+                                    }
+                                    HorizontalDivider()
                                     // Italics color
                                     Column {
                                         Text(

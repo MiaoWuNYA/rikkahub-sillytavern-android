@@ -1568,6 +1568,7 @@
   <string name="setting_display_page_text_color_light_gray">ライトグレー</string>
   <string name="setting_display_page_text_color_pink">ピンク</string>
   <string name="setting_display_page_text_color_quote_title">引用色</string>
+  <string name="setting_display_page_text_color_bracket_title">括弧の色</string>
   <string name="setting_display_page_text_color_reset_default">デフォルト</string>
   <string name="setting_display_page_text_color_white">ホワイト</string>
   <string name="setting_display_page_title">表示設定</string>

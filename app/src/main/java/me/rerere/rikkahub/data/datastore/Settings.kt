@@ -349,6 +349,7 @@ data class DisplaySetting(
     val enableTextColor: Boolean = true,
     val quoteColor: String = "",  // empty = theme-follow, otherwise hex like "#E18A24"
     val italicsColor: String = "",  // empty = default (#919191), otherwise hex
+    val bracketColor: String = "",  // empty = theme-follow, otherwise hex like "#7EAFC4"
     // ---- 聊天外观自定义覆盖层（null/空串 = 跟随主题） ----
     // 主色调（按钮/链接等强调色），覆盖 colorScheme.primary
     val primaryColor: Long? = null,

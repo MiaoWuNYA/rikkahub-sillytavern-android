@@ -79,6 +79,11 @@ private val QUOTE_REGEX = Regex(
     "\"(.+?)\"|\u201C(.+?)\u201D|\u00AB(.+?)\u00BB|\u300C(.+?)\u300D|\u300E(.+?)\u300F|\uFF02(.+?)\uFF02"
 )
 
+// 括号染色：全角/中文系成对括号 + 半角花括号；半角 () 和 [] 是 Markdown 链接语法，不能碰
+private val BRACKET_REGEX = Regex(
+    "（(.+?)）|【(.+?)】|「(.+?)」|『(.+?)』|《(.+?)》|‹(.+?)›|〔(.+?)〕|｛(.+?)｝|\\{(.+?)\\}"
+)
+
 // 尚未带 open 属性的 <details> 标签
 private val DETAILS_OPEN_REGEX = Regex("<details\\b(?!\\s+open\\b)")
 
@@ -234,13 +239,20 @@ fun MarkdownBlock(
     val quoteColor = if (settings.enableTextColor) {
         settings.quoteColor.ifBlank { if (darkMode) "#E18A24" else "#C7731E" }
     } else null
+    val codeBlocks = CODE_BLOCK_REGEX.findAll(content).map { it.range }.toList()
+    val bracketColored = if (quoteColor != null) {
+        val bracketColor = settings.bracketColor.ifBlank { if (darkMode) "#7EAFC4" else "#5B8DEF" }
+        BRACKET_REGEX.replace(content) { match ->
+            if (codeBlocks.any { match.range.first in it }) match.value
+            else "<span style=\"color:$bracketColor\">${match.value}</span>"
+        }
+    } else content
     val coloredContent = if (quoteColor != null) {
-        val codeBlocks = CODE_BLOCK_REGEX.findAll(content).map { it.range }.toList()
-        QUOTE_REGEX.replace(content) { match ->
+        QUOTE_REGEX.replace(bracketColored) { match ->
             if (codeBlocks.any { match.range.first in it }) match.value
             else "<span style=\"color:$quoteColor\">${match.value}</span>"
         }
-    } else content
+    } else bracketColored
 
     val preprocessed = preProcessMarkdown(coloredContent)
 

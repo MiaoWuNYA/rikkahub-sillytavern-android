@@ -1676,6 +1676,7 @@
   <string name="setting_display_page_text_color_light_gray">Light Gray</string>
   <string name="setting_display_page_text_color_pink">Pink</string>
   <string name="setting_display_page_text_color_quote_title">Quote Color</string>
+  <string name="setting_display_page_text_color_bracket_title">Bracket Color</string>
   <string name="setting_display_page_text_color_reset_default">Default</string>
   <string name="setting_display_page_text_color_white">White</string>
   <string name="setting_display_page_title">Display Settings</string>
