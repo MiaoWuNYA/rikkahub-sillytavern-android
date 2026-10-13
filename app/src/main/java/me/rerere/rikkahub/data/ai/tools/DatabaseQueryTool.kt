@@ -205,7 +205,7 @@ fun createDatabaseQueryTool(database: AppDatabase): Tool = Tool(
                 // LIKE search on other tables（knowledge_* 表已在迁移 25→26 删除，世界书存
                 // DataStore 不在 Room；表名以 schema 为准，查不存在的表只会白跑一遍 try/catch）
                 val tablesToSearch = listOf(
-                    "MemoryEntity" to listOf("content"),
+                    "memory_file" to listOf("assistant_id", "path", "content", "updated_at"),
                     "ConversationEntity" to listOf("title"),
                 )
 

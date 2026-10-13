@@ -53,6 +53,7 @@ import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.toMessageNode
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.data.repository.MemoryRepository
+import me.rerere.rikkahub.data.repository.memoryId
 import me.rerere.rikkahub.service.ChatService
 import me.rerere.rikkahub.utils.sendNotification
 import org.koin.core.component.KoinComponent
@@ -669,11 +670,7 @@ class ProactiveMessageRunner(
 
             // 记忆
             if (assistant.enableMemory) {
-                val memories = if (assistant.useGlobalMemory) {
-                    memoryRepository.getGlobalMemories()
-                } else {
-                    memoryRepository.getMemoriesOfAssistant(assistant.id.toString())
-                }
+                val memories = memoryRepository.getFiles(assistant.memoryId)
                 if (memories.isNotEmpty()) {
                     appendLine()
                     appendLine()
@@ -805,7 +802,7 @@ class ProactiveMessageRunner(
             addAll(localTools.getTools(assistant.localTools))
 
             // MCP 工具：对齐 ChatService，工具名带服务器名前缀
-            mcpManager.getAllAvailableTools().forEach { (serverId, serverName, tool) ->
+            mcpManager.getAllAvailableTools(assistant).forEach { (serverId, serverName, tool) ->
                 add(
                     Tool(
                         name = "mcp__${serverName}__${tool.name}",

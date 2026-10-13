@@ -57,7 +57,7 @@ fun SettingQqBotPage(vm: SettingVM = koinViewModel()) {
 
     fun update(newSetting: QqBotSetting) {
         botSetting = newSetting
-        vm.updateSettings(settings.copy(qqBotSetting = newSetting))
+        vm.updateSettings { it.copy(qqBotSetting = newSetting) }
     }
 
     var showEnableRiskDialog by remember { mutableStateOf(false) }

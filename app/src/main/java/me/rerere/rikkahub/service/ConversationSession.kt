@@ -1,6 +1,5 @@
 package me.rerere.rikkahub.service
 
-import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -11,13 +10,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import me.rerere.ai.ui.finishReasoning
 import me.rerere.rikkahub.data.model.Conversation
+import java.time.Instant
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.uuid.Uuid
 
-private const val TAG = "ConversationSession"
 private const val IDLE_TIMEOUT_MS = 5_000L
+
+private const val TAG = "ConversationSession"
 
 class ConversationSession(
     val id: Uuid,
@@ -26,32 +29,76 @@ class ConversationSession(
     private val onIdle: (Uuid) -> Unit,
     private val onGenerationFinished: (Uuid, Throwable?) -> Unit = { _, _ -> },
     /**
-     * 初始内容是否可信。
-     *
-     * 为 false 时表示：这个 session 是在**数据库读取失败**的情况下用
-     * 一个空 Conversation 兜底建起来的，它的 state **不代表数据库里的
-     * 真实内容**。
-     *
-     * 为什么必须有这个标记：光靠「当前内容为空」判断不了危险。
-     * 一个刚建起来的空会话，在主动消息往里面 append 了一条 AI 消息之后
-     * 就不再是空的——此时任何「取 state 再写回」的调用都会用这 1 条
-     * 覆盖掉数据库里的几千条历史，而且 content 非空、assistantId 也
-     * 可能恰好相同，两道基于内容的防护全都拦不住。
-     *
-     * 所以危险与否要问「状态从哪来」，而不是「状态长什么样」。
+     * 初始内容是否可信：false 表示 session 由空 Conversation 兜底建起，
+     * state 不代表数据库真实内容，任何保存都被拒绝，直到 rehydrate 恢复。
      */
     @Volatile
     var contentTrusted: Boolean = true,
 ) {
     // 会话状态
-    val state = MutableStateFlow(initial)
+    private val _state = MutableStateFlow(initial)
+    val state: StateFlow<Conversation> = _state.asStateFlow()
+    private val initializationMutex = Mutex()
+    private val metadataMutex = Mutex()
+    @Volatile
+    private var initialized = false
+    val messageQueue = MessageQueue()
+
+    // 会话保存互斥锁：后台触发源与用户操作并发"读-改-存"同一会话时序列化保存动作。
+    val saveMutex = Mutex()
+
+    // 页面切换和 SSE 重连只加载一次；活跃 session 的内存状态始终优先。
+    suspend fun initialize(load: suspend () -> Conversation) {
+        initializationMutex.withLock {
+            if (initialized) return
+            val conversation = load()
+            synchronized(this) {
+                // 加载挂起期间可能已经通过保存或编辑写入了更新的状态。
+                if (!initialized) updateConversation(conversation)
+            }
+        }
+    }
 
     /** 用数据库里的真实内容重新填充，并恢复可信标记。 */
     fun rehydrate(conversation: Conversation) {
-        state.value = conversation
+        _state.value = conversation
         contentTrusted = true
     }
-    val messageQueue = MessageQueue()
+
+    @Synchronized
+    fun updateConversation(conversation: Conversation) {
+        require(conversation.id == id)
+        _state.value = conversation
+        initialized = true
+    }
+
+    // 元数据先应用到最新内存状态；落库只更新对应列，不能用旧消息快照覆盖流式输出。
+    internal suspend fun updateMetadata(
+        update: (Conversation) -> Conversation,
+        persist: suspend (Conversation) -> Unit,
+    ) {
+        metadataMutex.withLock {
+            val updated = synchronized(this) {
+                update(state.value).also(::updateConversation)
+            }
+            persist(updated)
+        }
+    }
+
+    // 失败和取消也必须保存已收到的内容，且保存完成前不能释放生成任务。
+    suspend fun finishGeneration(save: suspend (Conversation) -> Unit): Conversation =
+        withContext(NonCancellable) {
+            val current = state.value
+            val conversation = current.copy(
+                messageNodes = current.messageNodes.map { node ->
+                    node.copy(messages = node.messages.map { it.finishReasoning() })
+                },
+                updateAt = Instant.now(),
+            )
+            updateConversation(conversation)
+            save(conversation)
+            conversation
+        }
 
     // 从队列取出到写入会话历史之间，附件仍需作为有效引用保留。
     @Volatile
@@ -63,11 +110,6 @@ class ConversationSession(
 
     // 处理状态（如 OCR 识别中）
     val processingStatus = MutableStateFlow<String?>(null)
-
-    // 会话保存互斥锁：后台触发源（AI 主动消息）与用户操作并发"读-改-存"同一会话时，
-    // 用它序列化保存动作，防止后写入者覆盖先写入者的消息。
-    // 只包裹读-改-存本身，不包裹耗时的 AI 生成过程。
-    val saveMutex = Mutex()
 
     // 生成任务（内聚在 session 中）
     private val _generationJob = MutableStateFlow<Job?>(null)
@@ -83,32 +125,10 @@ class ConversationSession(
 
     fun acquire(): Int = refCount.incrementAndGet().also {
         cancelIdleCheck()
-        Log.d(TAG, "acquire $id (refs=$it)")
     }
 
     fun release(): Int = refCount.decrementAndGet().also {
-        Log.d(TAG, "release $id (refs=$it)")
         if (it <= 0) scheduleIdleCheck()
-    }
-
-    // 作用域 API - 短请求（REST）
-    inline fun <T> withRef(block: () -> T): T {
-        acquire()
-        try {
-            return block()
-        } finally {
-            release()
-        }
-    }
-
-    // 作用域 API - 长连接（SSE、挂起函数）
-    suspend inline fun <T> withRefSuspend(block: () -> T): T {
-        acquire()
-        try {
-            return block()
-        } finally {
-            release()
-        }
     }
 
     @Synchronized

@@ -19,7 +19,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.components.ui.Switch
+import me.rerere.ui.components.Switch
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.plus
 import org.koin.androidx.compose.koinViewModel
@@ -64,16 +64,16 @@ fun SettingSecurityPage(vm: SettingVM = koinViewModel()) {
                             Switch(
                                 checked = settings.securitySetting.forceConfirmToolCalls,
                                 onCheckedChange = { enabled ->
-                                    vm.updateSettings(
-                                        settings.copy(
-                                            securitySetting = settings.securitySetting.copy(
+                                    vm.updateSettings {
+                                        it.copy(
+                                            securitySetting = it.securitySetting.copy(
                                                 forceConfirmToolCalls = enabled,
                                                 // 两项互斥：强制确认开启时关闭自动批准
                                                 autoApproveAllTools =
-                                                    if (enabled) false else settings.securitySetting.autoApproveAllTools,
+                                                    if (enabled) false else it.securitySetting.autoApproveAllTools,
                                             ),
                                         )
-                                    )
+                                    }
                                 },
                             )
                         },
@@ -87,16 +87,16 @@ fun SettingSecurityPage(vm: SettingVM = koinViewModel()) {
                             Switch(
                                 checked = settings.securitySetting.autoApproveAllTools,
                                 onCheckedChange = { enabled ->
-                                    vm.updateSettings(
-                                        settings.copy(
-                                            securitySetting = settings.securitySetting.copy(
+                                    vm.updateSettings {
+                                        it.copy(
+                                            securitySetting = it.securitySetting.copy(
                                                 autoApproveAllTools = enabled,
                                                 // 两项互斥：自动批准开启时关闭强制确认
                                                 forceConfirmToolCalls =
-                                                    if (enabled) false else settings.securitySetting.forceConfirmToolCalls,
+                                                    if (enabled) false else it.securitySetting.forceConfirmToolCalls,
                                             ),
                                         )
-                                    )
+                                    }
                                 },
                             )
                         },

@@ -50,7 +50,8 @@ import me.rerere.rikkahub.data.ai.transformers.visualTransforms
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.model.AssistantMemory
+import me.rerere.rikkahub.data.ai.prompts.buildMemoryPrompt
+import me.rerere.rikkahub.data.model.MemoryFile
 import me.rerere.rikkahub.data.model.assembleContext
 import me.rerere.rikkahub.data.model.assembleCharacterCardMessages
 import me.rerere.rikkahub.data.model.assembleMainPrompt
@@ -85,11 +86,6 @@ import kotlin.uuid.Uuid
  * 抽成纯函数是为了让这条规则可单测——它此前是散在 buildList 里的内联条件，
  * 一旦被改动没有任何测试会发现。
  */
-internal fun shouldRegisterMemoryTool(
-    memoryEnabled: Boolean,
-    tavernMode: Boolean,
-): Boolean = memoryEnabled && !tavernMode
-
 private const val TAG = "GenerationHandler"
 private const val MAX_EMPTY_RESPONSE_RETRIES = 3
 private const val ROLLING_CONTEXT_SYSTEM_PROMPT =
@@ -97,6 +93,9 @@ private const val ROLLING_CONTEXT_SYSTEM_PROMPT =
         "but follow the latest messages when they differ:\n<rolling_context_summary>"
 private const val MAX_TOOL_OUTPUT_CHARS = 32 * 1024
 private const val TOOL_OUTPUT_PREVIEW_CHARS = 4 * 1024
+
+// 搜索结果的体积由用户设置的结果数决定，且结果列表 UI 与引用跳转都依赖完整的 JSON 结构，不参与截断
+private val TOOLS_WITHOUT_OUTPUT_TRUNCATION = setOf("search_web")
 private const val MAX_PROVIDER_NETWORK_RETRIES = 3
 private const val INITIAL_PROVIDER_RETRY_DELAY_MS = 1_000L
 
@@ -115,7 +114,6 @@ class GenerationLoop(
     private val json: Json,
     private val memoryRepo: MemoryRepository,
     private val conversationRepo: ConversationRepository,
-    private val memoryEmbeddingService: me.rerere.rikkahub.data.memory.MemoryEmbeddingService,
     private val pluginToolProvider: me.rerere.rikkahub.plugin.provider.PluginToolProvider,
 ) {
     fun generateText(
@@ -125,14 +123,14 @@ class GenerationLoop(
         inputTransformers: List<InputMessageTransformer> = emptyList(),
         outputTransformers: List<OutputMessageTransformer> = emptyList(),
         assistant: Assistant,
-        memories: List<AssistantMemory>? = null,
+        memories: List<MemoryFile>? = null,
         tools: List<Tool> = emptyList(),
+        conversationModeInjectionIds: Set<Uuid> = emptySet(),
+        conversationLorebookIds: Set<Uuid> = emptySet(),
         maxSteps: Int = 256,
         processingStatus: MutableStateFlow<String?> = MutableStateFlow(null),
         conversationSystemPrompt: String? = null,
         conversationId: Uuid? = null,
-        conversationModeInjectionIds: Set<Uuid> = emptySet(),
-        conversationLorebookIds: Set<Uuid> = emptySet(),
         workspaceCwd: String? = null,
         generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
         maxTokensOverride: Int? = null,
@@ -168,7 +166,7 @@ class GenerationLoop(
         assistant: Assistant,
         settings: Settings,
         messages: List<UIMessage>,
-        memories: List<AssistantMemory>,
+        memories: List<MemoryFile>,
         conversationSystemPrompt: String?,
         tools: List<Tool>,
         model: Model,
@@ -293,57 +291,12 @@ class GenerationLoop(
     // ── 预构建：tools + systemPrompt（循环不变，移到外面）──
     val toolsInternal = buildList {
         Log.i(TAG, "generateInternal: build tools($assistant)")
-        // 酒馆模式：不注册记忆工具。
-        //
-        // 记忆是 App 自带的工作流，不是原版酒馆的上下文构成——原版酒馆没有
-        // 让模型自行读写长期记忆的能力。开着它会让助手在本该纯角色扮演的
-        // 对话里主动 create/edit/delete 记忆记录，既污染上下文，
-        // 也和「酒馆模式 = 纯净请求」的定位冲突。
-        //
-        // 这里必须判断，而不是依赖调用方裁剪：tools 参数来自 ChatService
-        // 的两条不同路径，其中 generateForAssistant 完全没做酒馆裁剪，
-        // 而本层是所有路径的公共叠加点。
-        // 上层已排除记忆检索（memoryRetrievalTransformer），
-        // 本层再排除记忆写入工具，酒馆模式下记忆才算真正隔离。
-        if (shouldRegisterMemoryTool(
-                memoryEnabled = assistant?.enableMemory == true,
-                tavernMode = settings.huadengSettings.enableTavernMode,
-            )
-        ) {
-            val memoryAssistantId = if (assistant.useGlobalMemory) {
-                MemoryRepository.GLOBAL_MEMORY_ID
-            } else {
-                assistant.id.toString()
-            }
-            buildMemoryTools(
-                json = json,
-                allowEpisodicMemory = assistant.enableEpisodicMemory,
-                onCreation = { content, type ->
-                    memoryEmbeddingService.addMemory(
-                        assistantId = memoryAssistantId,
-                        content = content,
-                        settings = settings,
-                        type = type,
-                        sourceConversationId = conversationId?.toString(),
-                    )
-                },
-                onUpdate = { id, content, type ->
-                    memoryEmbeddingService.updateMemory(
-                        id = id,
-                        content = content,
-                        settings = settings,
-                        type = type,
-                    )
-                },
-                onDelete = { id ->
-                    memoryRepo.deleteMemory(id)
-                },
-                onList = {
-                    memoryRepo.getMemoriesOfAssistant(memoryAssistantId)
-                }
-            ).let(this::addAll)
-        }
+        // 酒馆模式：记忆工具整组剔除——记忆是 App 自带工作流，不属于酒馆的
+        // 纯净上下文构成；tools 参数来自多条路径，本层是公共叠加点，必须兜底。
         addAll(tools)
+        if (settings.huadengSettings.enableTavernMode) {
+            removeAll { it.name.startsWith("memory_") }
+        }
         // 便于核对酒馆模式的实际工具面：把最终注册的工具名列出来。
         // 排查「记忆工具为何还在」这类问题时，这一行直接给出答案。
         if (settings.huadengSettings.enableTavernMode) {
@@ -593,7 +546,7 @@ class GenerationLoop(
             val hasShellAccess = toolsInternal.any { it.name == "execute_command" }
             fun truncateToolResult(result: Result<UIMessagePart.Tool>): Result<UIMessagePart.Tool> =
                 if (settings.huadengSettings.enableToolResultTruncation) {
-                    result.map { it.copy(output = maybeTruncateToolOutput(it.toolCallId, it.output, hasShellAccess)) }
+                    result.map { it.copy(output = maybeTruncateToolOutput(it, it.output, hasShellAccess)) }
                 } else {
                     result
                 }
@@ -667,7 +620,7 @@ class GenerationLoop(
         providerImpl: Provider<ProviderSetting>,
         provider: ProviderSetting,
         tools: List<Tool>,
-        memories: List<AssistantMemory>,
+        memories: List<MemoryFile>,
         stream: Boolean,
         processingStatus: MutableStateFlow<String?> = MutableStateFlow(null),
         conversationSystemPrompt: String? = null,
@@ -773,6 +726,13 @@ class GenerationLoop(
                 add(UIMessage.system(prompt = fallbackSystem()))
             }
 
+            // 记忆（上游语义）：按文件组织的记忆库内容注入 system
+            if (assistant.enableMemory && !tavernMode && !memories.isNullOrEmpty()) {
+                add(
+                    UIMessage.system(prompt = buildMemoryPrompt(memories)).copy(isSynthetic = true)
+                )
+            }
+
             // ── 上下文滚动压缩摘要：作为 system 消息注入，替代被覆盖的早期前缀 ──
             // 酒馆模式：摘要属于"工作流产物"，不发，避免干扰纯净上下文
             if (!tavernMode && !rollingContextSummary.isNullOrBlank()) {
@@ -795,8 +755,8 @@ class GenerationLoop(
             // 内容不变时钉在首次出现的位置，历史纯追加；内容变化时旧块原位保留、新块追加尾部，
             // token 前缀仍然可命中。临时会话（无 conversationId）退化为尾部注入。
             val recentChats = prebuiltRecentChats
-            // 酒馆模式：记忆 / 日期 / Recent Chats 一律不发
-            val userContext = if (tavernMode) "" else buildUserContext(memories, assistant, settings, recentChats)
+            // 酒馆模式：日期 / Recent Chats 一律不发（记忆已由 buildMemoryPrompt 消息承担）
+            val userContext = if (tavernMode) "" else buildUserContext(recentChats)
             // 锚点缓存里可能残留上一个模式注入的块（记忆/日期/Recent Chats）。
             // userContext 置空只是不再新增，旧块仍会被下面的循环按 afterMessageId 命中并注入，
             // 表现为「关掉酒馆模式之外仍收到近期对话」。此处显式清空以保证语义一致。
@@ -1180,10 +1140,13 @@ class GenerationLoop(
     }
 
     private fun maybeTruncateToolOutput(
-        toolCallId: String,
+        tool: UIMessagePart.Tool,
         output: List<UIMessagePart>,
         hasShellAccess: Boolean,
     ): List<UIMessagePart> {
+        if (tool.toolName in TOOLS_WITHOUT_OUTPUT_TRUNCATION) return output
+
+        val toolCallId = tool.toolCallId
         val textParts = output.filterIsInstance<UIMessagePart.Text>()
         val nonTextParts = output.filter { it !is UIMessagePart.Text }
         val totalChars = textParts.sumOf { it.text.length }
@@ -1368,22 +1331,13 @@ private val personaDepthAnchors =
     java.util.concurrent.ConcurrentHashMap<String, Pair<String, String>>()
 
 private fun buildUserContext(
-    memories: List<AssistantMemory>,
-    assistant: Assistant,
-    settings: Settings,
     recentChats: String = "",
 ): String {
     val contextMap = linkedMapOf<String, String>()
 
     // 对标 CC getUserContext: currentDate
     // 提示词缓存：本函数整体注入上下文尾部（generateInternal 的 base buildList 末尾），
-    // 记忆（自动提取周期变化）与日期（每天变化）都不再进入前缀区
-    if (assistant.enableMemory && !assistant.enableMemoryRag && memories.isNotEmpty()) {
-        val memoryText = memories.joinToString("\n") { memory ->
-            "- ${memory.content.take(200)}"
-        }
-        contextMap["memories"] = memoryText
-    }
+    // 日期（每天变化）不进入前缀区；记忆已改由 buildMemoryPrompt 的 system 消息注入
     contextMap["currentDate"] = "Current date: ${java.time.LocalDate.now()}."
     if (recentChats.isNotBlank()) {
         contextMap["recentChats"] = recentChats.trim()

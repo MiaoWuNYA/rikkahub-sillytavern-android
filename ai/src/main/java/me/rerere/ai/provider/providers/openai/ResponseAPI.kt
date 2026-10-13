@@ -277,6 +277,9 @@ class ResponseAPI(
                                         tool.parameters()
                                     )
                                 )
+                                // Response API 不传 strict 时默认按严格模式处理, 会把 schema 里的可选字段全部变成必填,
+                                // 模型只能给本应省略的字段硬填默认值 (0 / "" / []), 导致工具参数校验失败
+                                put("strict", false)
                             })
                         }
                     }
@@ -294,7 +297,7 @@ class ResponseAPI(
                             BuiltInTools.ImageGeneration -> {
                                 add(buildJsonObject {
                                     put("type", "image_generation")
-                                    put("model", "gpt-image-2")
+                                    put("model", "gpt-image-2.5-sunburst")
                                 })
                             }
                         }

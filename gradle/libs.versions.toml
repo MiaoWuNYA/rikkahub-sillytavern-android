@@ -6,6 +6,7 @@ cameraCore = "1.6.2"
 jlatexmath = "1.5"
 kotlin = "2.4.20"
 coreKtx = "1.19.1"
+ink = "1.1.0-alpha09"
 junit = "4.13.2"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
@@ -46,14 +47,14 @@ sonner = "0.4.0"
 leakcanary = "2.14"
 workmanager = "2.11.2"
 reorderable = "3.1.0"
-mcp = "0.15.0-rikka.2"
+mcp = "0.15.0-rikka.4"
 pebble = "4.1.1"
 browser = "1.10.0"
 appcompat = "1.8.0"
 material = "1.14.0"
 ucrop = "2.2.11-native"
 floatingx = "3.0.0"
-haze = "2.0.0"
+haze = "2.0.1"
 uiautomator = "2.4.0"
 benchmarkMacroJunit4 = "1.5.0"
 baselineprofile = "1.5.0"
@@ -73,6 +74,12 @@ kotlin-compose-gradle-plugin = { module = "org.jetbrains.kotlin:compose-compiler
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "cameraCore" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version = "1.4.2" }
+androidx-ink-authoring-compose = { group = "androidx.ink", name = "ink-authoring-compose", version.ref = "ink" }
+androidx-ink-brush = { group = "androidx.ink", name = "ink-brush", version.ref = "ink" }
+androidx-ink-geometry = { group = "androidx.ink", name = "ink-geometry", version.ref = "ink" }
+androidx-ink-rendering = { group = "androidx.ink", name = "ink-rendering", version.ref = "ink" }
+androidx-ink-strokes = { group = "androidx.ink", name = "ink-strokes", version.ref = "ink" }
 androidx-media3-common = { module = "androidx.media3:media3-common", version.ref = "media3" }
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }
 androidx-media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
@@ -131,6 +138,7 @@ koin-compose = { group = "io.insert-koin", name = "koin-androidx-compose" }
 koin-androidx-workmanager = { group = "io.insert-koin", name = "koin-androidx-workmanager" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization-json" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlin-coroutines-core" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlin-coroutines-core" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 lucide-icons = { group = "com.composables", name = "icons-lucide", version.ref = "lucide-icons" }
 huge-icons = { group = "com.github.rikkahub", name = "hugeicons-compose", version.ref = "huge-icons" }

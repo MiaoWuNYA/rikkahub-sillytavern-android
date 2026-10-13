@@ -5,6 +5,10 @@ import android.content.ContextWrapper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.db.AppDatabase
 import me.rerere.rikkahub.data.db.AppDatabaseFactory
@@ -92,6 +96,60 @@ class BackupManagerTest {
         }
         manager.stageRestore(archive, includeDatabase = true, includeFiles = false)
         assertEquals("live", probe(liveDatabase))
+    }
+
+    @Test fun launchCountStaysInSettingsJsonThroughBackupAndStaging() = runBlocking {
+        val archive = manager.createBackup(includeDatabase = false, includeFiles = false)
+        val archived = ZipFile(archive).use { zip ->
+            launchCountOf(zip.getInputStream(zip.getEntry("settings.json")).readBytes().decodeToString())
+        }
+        assertTrue(archived != null)
+        manager.stageRestore(archive, includeDatabase = false, includeFiles = false)
+        val staged = File(context.noBackupFilesDir, "backup-restore/pending/settings.json").readText()
+        assertEquals(archived, launchCountOf(staged))
+    }
+
+    @Test fun archiveWithoutLaunchCountRestoresItAsZero() = runBlocking {
+        val current = manager.createBackup(includeDatabase = false, includeFiles = false)
+        val settingsJson = ZipFile(current).use { zip ->
+            zip.getInputStream(zip.getEntry("settings.json")).readBytes().decodeToString()
+        }
+        val archive = File(directory, "no-launch-count.zip")
+        ZipOutputStream(archive.outputStream()).use { zip ->
+            zip.putNextEntry(ZipEntry("settings.json"))
+            zip.write(JsonObject(JsonInstant.parseToJsonElement(settingsJson).jsonObject - "launchCount").toString().toByteArray())
+            zip.closeEntry()
+        }
+        manager.stageRestore(archive, includeDatabase = false, includeFiles = false)
+        val staged = File(context.noBackupFilesDir, "backup-restore/pending/settings.json").readText()
+        assertEquals(0, launchCountOf(staged))
+    }
+
+    private fun launchCountOf(settingsJson: String): Int? =
+        JsonInstant.parseToJsonElement(settingsJson).jsonObject["launchCount"]?.jsonPrimitive?.int
+
+    @Test fun mediaCreationFilesKeepTheirDirectoriesAndSkipUnfinishedDownloads() = runBlocking {
+        val session = File(context.filesDir, "media_creation/session")
+        File(session, "record").mkdirs()
+        File(session, "draft").mkdirs()
+        File(session, "record/out_0.png").writeText("image")
+        File(session, "record/out_1.mp4.part").writeText("half a video")
+        File(session, "draft/asset.jpg").writeText("asset")
+        val archive = manager.createBackup(includeDatabase = false, includeFiles = true)
+        ZipFile(archive).use { zip ->
+            assertTrue(zip.getEntry("media_creation/session/record/out_0.png") != null)
+            assertTrue(zip.getEntry("media_creation/session/draft/asset.jpg") != null)
+            assertEquals(null, zip.getEntry("media_creation/session/record/out_1.mp4.part"))
+        }
+        session.deleteRecursively()
+        manager.stageRestore(archive, includeDatabase = false, includeFiles = true)
+        assertFalse(session.exists())
+        // Applying the staged settings would write to the real settings store of the app under test.
+        assertTrue(File(context.noBackupFilesDir, "backup-restore/pending/settings.json").delete())
+        assertTrue(BackupManager.applyPendingRestore(context, JsonInstant))
+        assertEquals("image", File(session, "record/out_0.png").readText())
+        assertEquals("asset", File(session, "draft/asset.jpg").readText())
+        assertFalse(File(session, "record/out_1.mp4.part").exists())
     }
 
     @Test fun unsupportedSchemaIsRejectedBeforePublishing() = runBlocking {

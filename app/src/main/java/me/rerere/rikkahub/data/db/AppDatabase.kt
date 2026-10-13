@@ -11,6 +11,8 @@ import me.rerere.rikkahub.data.db.dao.CoupleDAO
 import me.rerere.rikkahub.data.db.dao.FavoriteDAO
 import me.rerere.rikkahub.data.db.dao.GenMediaDAO
 import me.rerere.rikkahub.data.db.dao.ManagedFileDAO
+import me.rerere.rikkahub.data.db.dao.MediaCreationDAO
+import me.rerere.rikkahub.data.db.dao.MemoryConsolidationDAO
 import me.rerere.rikkahub.data.db.dao.MemoryDAO
 import me.rerere.rikkahub.data.db.dao.WorkspaceDAO
 import me.rerere.rikkahub.data.db.dao.FolderDAO
@@ -25,19 +27,23 @@ import me.rerere.rikkahub.data.db.entity.CoupleRelationshipEntity
 import me.rerere.rikkahub.data.db.entity.FavoriteEntity
 import me.rerere.rikkahub.data.db.entity.GenMediaEntity
 import me.rerere.rikkahub.data.db.entity.ManagedFileEntity
-import me.rerere.rikkahub.data.db.entity.MemoryEntity
+import me.rerere.rikkahub.data.db.entity.MediaCreationNodeEntity
+import me.rerere.rikkahub.data.db.entity.MediaCreationRecordEntity
+import me.rerere.rikkahub.data.db.entity.MediaCreationSessionEntity
+import me.rerere.rikkahub.data.db.entity.MemoryConsolidationEntity
+import me.rerere.rikkahub.data.db.entity.MemoryFileEntity
 import me.rerere.rikkahub.data.db.entity.MessageNodeEntity
 import me.rerere.rikkahub.data.db.entity.WorkspaceEntity
 import me.rerere.rikkahub.data.db.entity.FolderEntity
 import me.rerere.rikkahub.data.db.migrations.Migration_16_17
-import me.rerere.rikkahub.data.db.migrations.Migration_29_30
 import me.rerere.rikkahub.data.db.migrations.Migration_8_9
 import me.rerere.rikkahub.utils.JsonInstant
 
 @Database(
     entities = [
         ConversationEntity::class,
-        MemoryEntity::class,
+        MemoryFileEntity::class,
+        MemoryConsolidationEntity::class,
         GenMediaEntity::class,
         MessageNodeEntity::class,
     WorkspaceEntity::class,
@@ -50,8 +56,11 @@ import me.rerere.rikkahub.utils.JsonInstant
         CoupleDiaryEntity::class,
         CoupleDiaryFolderEntity::class,
         CoupleAnniversaryEntity::class,
+        MediaCreationSessionEntity::class,
+        MediaCreationNodeEntity::class,
+        MediaCreationRecordEntity::class,
     ],
-    version = 30,
+    version = 31,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3),
@@ -75,6 +84,8 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun memoryDao(): MemoryDAO
 
+    abstract fun memoryConsolidationDao(): MemoryConsolidationDAO
+
     abstract fun genMediaDao(): GenMediaDAO
 
     abstract fun messageNodeDao(): MessageNodeDAO
@@ -89,6 +100,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun folderDao(): FolderDAO
 
     abstract fun coupleDao(): CoupleDAO
+
+    abstract fun mediaCreationDao(): MediaCreationDAO
 }
 
 object TokenUsageConverter {

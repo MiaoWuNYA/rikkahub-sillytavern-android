@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import me.rerere.rikkahub.data.ai.MemoryConsolidationScheduler
+import me.rerere.rikkahub.data.ai.MemoryConsolidationStatus
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.db.entity.WorkspaceEntity
@@ -20,10 +22,9 @@ import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.files.SkillManager
 import me.rerere.rikkahub.data.files.SkillMetadata
 import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.model.AssistantMemory
+import me.rerere.rikkahub.data.model.MemoryFile
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.Tag
-import me.rerere.rikkahub.data.memory.MemoryEmbeddingService
 import me.rerere.rikkahub.data.repository.MemoryRepository
 import me.rerere.rikkahub.data.repository.WorkspaceRepository
 import kotlin.uuid.Uuid
@@ -34,7 +35,7 @@ class AssistantDetailVM(
     private val id: String,
     private val settingsStore: SettingsStore,
     private val memoryRepository: MemoryRepository,
-    private val memoryEmbeddingService: MemoryEmbeddingService,
+    private val memoryConsolidationScheduler: MemoryConsolidationScheduler,
     private val filesManager: FilesManager,
     private val skillManager: SkillManager,
     private val workspaceRepository: WorkspaceRepository,
@@ -78,14 +79,18 @@ class AssistantDetailVM(
 
     val memories = assistant
         .flatMapLatest { currentAssistant ->
-            if (currentAssistant.useGlobalMemory) {
-                memoryRepository.getGlobalMemoriesFlow()
-            } else {
-                memoryRepository.getMemoriesOfAssistantFlow(assistantId.toString())
-            }
+            memoryRepository.getFilesFlow(memoryIdOf(currentAssistant))
         }
         .stateIn(
             scope = viewModelScope, started = SharingStarted.Eagerly, initialValue = emptyList()
+        )
+
+    val memoryConsolidation: StateFlow<MemoryConsolidationStatus> = assistant
+        .flatMapLatest { currentAssistant ->
+            memoryConsolidationScheduler.statusOf(memoryIdOf(currentAssistant))
+        }
+        .stateIn(
+            scope = viewModelScope, started = SharingStarted.Eagerly, initialValue = MemoryConsolidationStatus()
         )
 
     val providers = settingsStore
@@ -106,12 +111,7 @@ class AssistantDetailVM(
 
     fun updateTags(tagIds: List<Uuid>, tags: List<Tag>) {
         viewModelScope.launch {
-            val settings = settings.value
-            settingsStore.update(
-                settings = settings.copy(
-                    assistantTags = tags
-                )
-            )
+            settingsStore.update { it.copy(assistantTags = tags) }
             update(
                 assistant.value.copy(
                     tags = tagIds.toList()
@@ -124,102 +124,91 @@ class AssistantDetailVM(
 
     fun cleanupUnusedTags() {
         viewModelScope.launch {
-            val settings = settings.value
-            val validTagIds = settings.assistantTags.map { it.id }.toSet()
+            settingsStore.update { settings ->
+                val validTagIds = settings.assistantTags.map { it.id }.toSet()
 
-            // 清理 assistant 中的无效 tag id
-            val cleanedAssistants = settings.assistants.map { assistant ->
-                val validTags = assistant.tags.filter { tagId ->
-                    validTagIds.contains(tagId)
+                // 清理 assistant 中的无效 tag id
+                val cleanedAssistants = settings.assistants.map { assistant ->
+                    val validTags = assistant.tags.filter { tagId ->
+                        validTagIds.contains(tagId)
+                    }
+                    if (validTags.size != assistant.tags.size) {
+                        assistant.copy(tags = validTags)
+                    } else {
+                        assistant
+                    }
                 }
-                if (validTags.size != assistant.tags.size) {
-                    assistant.copy(tags = validTags)
-                } else {
-                    assistant
+
+                // 获取清理后的 assistant 中使用的 tag id
+                val usedTagIds = cleanedAssistants.flatMap { it.tags }.toSet()
+
+                // 清理未使用的 tags
+                val cleanedTags = settings.assistantTags.filter { tag ->
+                    usedTagIds.contains(tag.id)
                 }
-            }
 
-            // 获取清理后的 assistant 中使用的 tag id
-            val usedTagIds = cleanedAssistants.flatMap { it.tags }.toSet()
+                // 检查是否需要更新
+                val needUpdateAssistants = cleanedAssistants != settings.assistants
+                val needUpdateTags = cleanedTags.size != settings.assistantTags.size
 
-            // 清理未使用的 tags
-            val cleanedTags = settings.assistantTags.filter { tag ->
-                usedTagIds.contains(tag.id)
-            }
-
-            // 检查是否需要更新
-            val needUpdateAssistants = cleanedAssistants != settings.assistants
-            val needUpdateTags = cleanedTags.size != settings.assistantTags.size
-
-            if (needUpdateAssistants || needUpdateTags) {
-                settingsStore.update(
-                    settings = settings.copy(
+                if (needUpdateAssistants || needUpdateTags) {
+                    settings.copy(
                         assistants = cleanedAssistants,
                         assistantTags = cleanedTags
                     )
-                )
+                } else {
+                    settings
+                }
             }
         }
     }
 
     fun update(assistant: Assistant) {
         viewModelScope.launch {
-            val settings = settings.value
-            settingsStore.update(
-                settings = settings.copy(
+            var replaced: Assistant? = null
+            settingsStore.update { settings ->
+                settings.copy(
                     assistants = settings.assistants.map {
                         if (it.id == assistant.id) {
-                            checkAvatarDelete(old = it, new = assistant)
-                            checkBackgroundDelete(old = it, new = assistant)
+                            replaced = it
                             assistant
                         } else {
                             it
                         }
                     })
-            )
+            }
+            replaced?.let { old ->
+                checkAvatarDelete(old = old, new = assistant) // 删除旧头像
+                checkBackgroundDelete(old = old, new = assistant) // 删除旧背景
+            }
         }
     }
 
     /** 更新全局设置（内嵌世界书编辑器里的全局激活设置也走这里，与外置页同一份数据） */
     fun updateSettings(settings: Settings) {
         viewModelScope.launch {
-            settingsStore.update(settings)
+            settingsStore.update { settings }
         }
     }
 
-    fun addMemory(memory: AssistantMemory) {
-        viewModelScope.launch {
-            val memoryAssistantId = if (assistant.value.useGlobalMemory) {
-                MemoryRepository.GLOBAL_MEMORY_ID
-            } else {
-                assistantId.toString()
-            }
-            // 必须走 MemoryEmbeddingService：直接写 repository 不会生成向量，
-            // 这条记忆将永远无法被语义 RAG 召回（embeddingModelId 为 null 会被过滤）
-            memoryEmbeddingService.addMemory(
-                assistantId = memoryAssistantId,
-                content = memory.content,
-                settings = settings.value,
-                type = memory.type,
-                sourceConversationId = memory.sourceConversationId,
-            )
-        }
+    // 助手还没加载出来时 assistant 是个占位对象，记忆库要按页面拿到的 assistantId 来定位
+    private fun memoryIdOf(assistant: Assistant) = if (assistant.useGlobalMemory) {
+        MemoryRepository.GLOBAL_MEMORY_ID
+    } else {
+        assistantId.toString()
     }
 
-    fun updateMemory(memory: AssistantMemory) {
-        viewModelScope.launch {
-            memoryEmbeddingService.updateMemory(
-                id = memory.id,
-                content = memory.content,
-                settings = settings.value,
-                type = memory.type,
-            )
-        }
+    /** 当前助手读写的记忆库 */
+    val memoryId: String get() = memoryIdOf(assistant.value)
+
+    /** 整理所有待整理的对话，并把整个记忆库清理一遍 */
+    fun organizeMemory() {
+        memoryConsolidationScheduler.organize(memoryId)
     }
 
-    fun deleteMemory(memory: AssistantMemory) {
+    fun deleteMemory(memory: MemoryFile) {
         viewModelScope.launch {
-            memoryRepository.deleteMemory(id = memory.id)
+            memoryRepository.deleteFile(memoryIdOf(assistant.value), memory.path)
         }
     }
 

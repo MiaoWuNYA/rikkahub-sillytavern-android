@@ -37,10 +37,6 @@ data class Assistant(
     // 记忆功能默认开启：记忆让 AI 更了解用户，不为省上下文牺牲体验（旧助手保留原设置）
     val enableMemory: Boolean = true,
     val useGlobalMemory: Boolean = false, // 使用全局共享记忆而非助手隔离记忆
-    // 记忆 RAG：基于嵌入向量对记忆做语义检索（词法兜底），只注入与当前对话相关的记忆
-    val enableMemoryRag: Boolean = true,
-    // 允许 episodic（情节）记忆：模型可记录具体事件，检索时按时间衰减加权
-    val enableEpisodicMemory: Boolean = true,
     // 上下文滚动压缩：达到阈值后自动把早期对话压缩为摘要（保留原文，仅请求时替换前缀）
     // 默认开启：滚动压缩是「全局开关 + 助手级开关」双重控制，
     // 助手级默认 false 意味着用户在华灯设置里开了总开关也什么都不发生
@@ -109,9 +105,6 @@ data class Assistant(
     val enableAutoCompact: Boolean = true,               // 自动压缩对话历史（token过多时）
     val enableAutoMemoryExtract: Boolean = true,          // [新增] 自动从对话提取记忆（独立开关，不依赖 enableMemory）
     val autoMemoryExtractInterval: Int = 5,                // 每 N 轮对话提取一次记忆
-    // ---- 三层记忆（固定记忆 + 跨窗口生活流 + 长期记忆按需召回） ----
-    // 按相关性召回长期记忆（词项重叠打分），替代全量注入；默认开启
-    val enableThreeLayerMemory: Boolean = true,
     // 跨窗口生活流：同一助手在不同对话间的近期经历共享（SharedPreferences 存储）
     // 默认关闭：注入内容易被 AI 当成本轮话题，打断沉浸式对话；需要时在助手设置里手动开启
     val enableCrossWindowMemory: Boolean = false,
@@ -120,9 +113,6 @@ data class Assistant(
     val crossWindowMemoryCompressionThresholdChars: Int = 12000,
     // 压缩时保留的最近原文条数
     val crossWindowMemoryTailEntries: Int = 16,
-    // 每轮最多召回的长期记忆条数 / 最大字符数
-    val longTermMemoryRecallCount: Int = 6,
-    val longTermMemoryMaxChars: Int = 3000,
 )
 
 @Serializable
@@ -130,33 +120,6 @@ data class QuickMessage(
     val id: Uuid = Uuid.random(),
     val title: String = "",
     val content: String = "",
-)
-
-// 记忆类别：fact 为长期事实/偏好，episodic 为具体事件经历（检索时带时间衰减加权）
-@Serializable
-enum class MemoryType {
-    @SerialName("fact")
-    FACT,
-
-    @SerialName("episodic")
-    EPISODIC,
-    ;
-
-    companion object {
-        fun fromWireName(value: String?): MemoryType = when (value?.lowercase()) {
-            "episodic" -> EPISODIC
-            else -> FACT
-        }
-    }
-}
-
-@Serializable
-data class AssistantMemory(
-    val id: Int,
-    val content: String = "",
-    val type: MemoryType = MemoryType.FACT,
-    val createdAt: Long = 0L,
-    val sourceConversationId: String? = null,
 )
 
 @Serializable

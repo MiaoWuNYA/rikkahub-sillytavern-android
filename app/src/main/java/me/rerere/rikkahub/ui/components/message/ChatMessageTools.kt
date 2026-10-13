@@ -17,6 +17,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -94,16 +96,21 @@ import me.rerere.hugeicons.stroke.Zap
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.event.AppEvent
 import me.rerere.rikkahub.data.event.AppEventBus
+import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.repository.MemoryRepository
+import me.rerere.rikkahub.data.repository.memoryId
+import me.rerere.rikkahub.ui.components.message.tools.DefaultToolPreview
+import me.rerere.rikkahub.ui.components.message.tools.ToolUIContext
+import me.rerere.rikkahub.ui.components.message.tools.ToolUIRegistry
 import me.rerere.rikkahub.ui.components.message.tools.toolDisplayName
 import me.rerere.rikkahub.ui.components.richtext.HighlightCodeBlock
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import me.rerere.rikkahub.ui.components.richtext.ZoomableAsyncImage
 import me.rerere.rikkahub.ui.components.ui.ChainOfThoughtScope
-import me.rerere.rikkahub.ui.components.ui.DotLoading
+import me.rerere.ui.components.DotLoading
 import me.rerere.rikkahub.ui.components.ui.Favicon
 import me.rerere.rikkahub.ui.components.ui.FaviconRow
-import me.rerere.rikkahub.ui.components.ui.FormItem
+import me.rerere.ui.components.FormItem
 import me.rerere.rikkahub.ui.modifier.shimmer
 import me.rerere.rikkahub.utils.JsonInstant
 import me.rerere.rikkahub.utils.JsonInstantPretty
@@ -208,6 +215,7 @@ fun ChainOfThoughtScope.ChatMessageServerToolStep(tool: UIMessagePart.ServerTool
 fun ChainOfThoughtScope.ChatMessageToolStep(
     tool: UIMessagePart.Tool,
     loading: Boolean = false,
+    assistant: Assistant? = null,
     onToolApproval: ((toolCallId: String, approved: Boolean, reason: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
 ) {
@@ -216,6 +224,30 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
     if (isAskUser) {
         AskUserToolStep(tool = tool, loading = loading, onToolAnswer = onToolAnswer)
         return
+    }
+
+    val renderer = remember(tool.toolName) { ToolUIRegistry.resolve(tool.toolName) }
+    val outputJson = remember(tool) {
+        if (tool.isExecuted) {
+            runCatching {
+                JsonInstant.parseToJsonElement(
+                    tool.output.filterIsInstance<UIMessagePart.Text>().joinToString("\n") { it.text }
+                )
+            }.getOrNull()
+        } else {
+            null
+        }
+    }
+    // 输出不是 JSON 时定制渲染器读不到字段，详情用默认渲染展示原文
+    val outputUnparsable = tool.isExecuted && outputJson == null
+    val context = remember(tool, loading, assistant) {
+        ToolUIContext(
+            tool = tool,
+            arguments = tool.inputAsJson(),
+            content = if (tool.isExecuted) outputJson ?: JsonObject(emptyMap()) else null,
+            loading = loading,
+            assistant = assistant,
+        )
     }
     var showResult by remember { mutableStateOf(false) }
     var showDenyDialog by remember { mutableStateOf(false) }
@@ -680,14 +712,36 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
     }
 
     if (showResult) {
-        ToolCallPreviewSheet(
-            toolName = tool.toolName,
-            arguments = arguments,
-            content = content,
-            output = tool.output,
-            onDismissRequest = { showResult = false }
-        )
+        if (renderer.toolName == tool.toolName) {
+            ModalBottomSheet(
+                sheetState = rememberBottomSheetState(
+                    initialValue = SheetValue.Hidden,
+                    enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+                ),
+                onDismissRequest = { showResult = false },
+                content = {
+                    if (outputUnparsable) {
+                        DefaultToolPreview(context = context)
+                    } else {
+                        renderer.Preview(
+                            context = context,
+                            onDismissRequest = { showResult = false },
+                        )
+                    }
+                },
+            )
+        } else {
+            ToolCallPreviewSheet(
+                toolName = tool.toolName,
+                arguments = arguments,
+                content = content,
+                output = tool.output,
+                assistantId = assistant?.memoryId ?: "",
+                onDismissRequest = { showResult = false }
+            )
+        }
     }
+
 }
 
 @Composable
@@ -696,6 +750,7 @@ private fun ToolCallPreviewSheet(
     arguments: JsonElement,
     content: JsonElement?,
     output: List<UIMessagePart>,
+    assistantId: String,
     onDismissRequest: () -> Unit = {}
 ) {
     val memoryRepo: MemoryRepository = koinInject()
@@ -910,21 +965,6 @@ private fun GenericToolPreview(
                 textAlign = TextAlign.Center
             )
 
-            if (isMemoryOperation && memoryId != null) {
-                IconButton(
-                    onClick = {
-                        scope.launch {
-                            memoryRepo.deleteMemory(memoryId)
-                            onDismissRequest()
-                        }
-                    }
-                ) {
-                    Icon(
-                        imageVector = HugeIcons.Delete01,
-                        contentDescription = "Delete memory"
-                    )
-                }
-            }
         }
         FormItem(
             label = {

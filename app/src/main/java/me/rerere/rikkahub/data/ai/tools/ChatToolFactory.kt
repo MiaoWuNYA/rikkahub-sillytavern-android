@@ -1,7 +1,6 @@
 package me.rerere.rikkahub.data.ai.tools
 
 import android.util.Log
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import me.rerere.ai.core.Tool
 import me.rerere.ai.provider.BuiltInTools
@@ -14,6 +13,7 @@ import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.data.repository.MemoryRepository
 import me.rerere.rikkahub.data.repository.WorkspaceRepository
+import me.rerere.rikkahub.data.repository.memoryId
 import me.rerere.workspace.WorkspaceShellStatus
 
 private const val TAG = "ChatToolFactory"
@@ -27,14 +27,12 @@ class InvalidMcpServerNamesException(val names: List<String>) :
 
 /** Creates the complete tool set for one generation run, including approval resumption. */
 class ChatToolFactory(
-    private val json: Json,
     private val memoryRepository: MemoryRepository,
     private val conversationRepository: ConversationRepository,
     private val localTools: LocalTools,
     private val mcpManager: McpManager,
     private val skillManager: SkillManager,
     private val workspaceRepository: WorkspaceRepository,
-    private val memoryEmbeddingService: me.rerere.rikkahub.data.memory.MemoryEmbeddingService,
 ) {
     suspend fun createTools(
         settings: Settings,
@@ -43,35 +41,7 @@ class ChatToolFactory(
         workspaceCwd: String? = null,
     ): List<Tool> = buildList {
         if (assistant.enableMemory) {
-            val memoryAssistantId = if (assistant.useGlobalMemory) {
-                MemoryRepository.GLOBAL_MEMORY_ID
-            } else {
-                assistant.id.toString()
-            }
-            addAll(
-                buildMemoryTools(
-                    json = json,
-                    allowEpisodicMemory = assistant.enableEpisodicMemory,
-                    onCreation = { content, type ->
-                        memoryEmbeddingService.addMemory(
-                            assistantId = memoryAssistantId,
-                            content = content,
-                            settings = settings,
-                            type = type,
-                        )
-                    },
-                    onUpdate = { id, content, type ->
-                        memoryEmbeddingService.updateMemory(
-                            id = id,
-                            content = content,
-                            settings = settings,
-                            type = type,
-                        )
-                    },
-                    onDelete = { id -> memoryRepository.deleteMemory(id) },
-                    onList = { memoryRepository.getMemoriesOfAssistant(memoryAssistantId) },
-                )
-            )
+            addAll(buildMemoryTools(memoryRepository, assistant.memoryId))
         }
         if (shouldUseExternalWebSearch(assistant, model)) {
             addAll(createSearchTools(settings))
@@ -92,7 +62,7 @@ class ChatToolFactory(
             )
         }
 
-        val mcpTools = mcpManager.getAllAvailableTools()
+        val mcpTools = mcpManager.getAllAvailableTools(assistant)
         val invalidNames = mcpTools
             .map { it.second }
             .distinct()

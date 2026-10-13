@@ -75,13 +75,13 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.ItemAction
 import me.rerere.rikkahub.ui.components.ui.ItemActionMenu
-import me.rerere.rikkahub.ui.components.ui.RikkaConfirmDialog
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.pages.setting.components.PresetThemeButtonGroup
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.ui.theme.CustomTheme
 import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import me.rerere.rikkahub.utils.plus
+import me.rerere.ui.components.RikkaConfirmDialog
 import org.koin.androidx.compose.koinViewModel
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
@@ -162,7 +162,7 @@ fun SettingThemePage(vm: SettingVM = koinViewModel()) {
                                 themeId = settings.themeId,
                                 modifier = Modifier.fillMaxWidth(),
                                 onChangeTheme = {
-                                    vm.updateSettings(settings.copy(themeId = it))
+                                    vm.updateSettings { latest -> latest.copy(themeId = it) }
                                 }
                             )
                         }
@@ -226,7 +226,7 @@ fun SettingThemePage(vm: SettingVM = koinViewModel()) {
                         theme = theme,
                         isSelected = settings.themeId == theme.id,
                         onSelect = {
-                            vm.updateSettings(settings.copy(themeId = theme.id))
+                            vm.updateSettings { it.copy(themeId = theme.id) }
                         },
                         onExport = {
                             val json = themeJson.encodeToString(theme)
@@ -260,12 +260,12 @@ fun SettingThemePage(vm: SettingVM = koinViewModel()) {
                 } else {
                     settings.customThemes + theme
                 }
-                vm.updateSettings(
-                    settings.copy(
+                vm.updateSettings {
+                    it.copy(
                         customThemes = newThemes,
                         themeId = theme.id
                     )
-                )
+                }
                 showEditSheet = false
             }
         )
@@ -276,12 +276,12 @@ fun SettingThemePage(vm: SettingVM = koinViewModel()) {
             onDismiss = { showImportDialog = false },
             onImport = { theme ->
                 val importedTheme = theme.copy(id = Uuid.random().toString())
-                vm.updateSettings(
-                    settings.copy(
-                        customThemes = settings.customThemes + importedTheme,
+                vm.updateSettings {
+                    it.copy(
+                        customThemes = it.customThemes + importedTheme,
                         themeId = importedTheme.id
                     )
-                )
+                }
                 showImportDialog = false
                 toaster.show(importSuccessMsg, type = ToastType.Success)
             }
@@ -297,7 +297,7 @@ fun SettingThemePage(vm: SettingVM = koinViewModel()) {
             deletingTheme?.let { theme ->
                 val newThemes = settings.customThemes.filter { it.id != theme.id }
                 val newThemeId = if (settings.themeId == theme.id) "sakura" else settings.themeId
-                vm.updateSettings(settings.copy(customThemes = newThemes, themeId = newThemeId))
+                vm.updateSettings { it.copy(customThemes = newThemes, themeId = newThemeId) }
             }
             deletingTheme = null
         },

@@ -35,4 +35,6 @@ data class ConversationEntity(
     // 上下文滚动压缩摘要（RollingContextSummary 的 JSON，空串表示无摘要）
     @ColumnInfo("rolling_context_summary", defaultValue = "")
     val rollingContextSummary: String = "",
+    @ColumnInfo("config", defaultValue = "")
+    val config: String = "",
 )

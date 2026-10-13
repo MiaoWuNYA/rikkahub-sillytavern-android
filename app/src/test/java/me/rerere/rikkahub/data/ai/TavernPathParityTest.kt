@@ -67,14 +67,10 @@ class TavernPathParityTest {
     }
 
     @Test
-    fun `memory tool registration goes through the shared predicate`() {
+    fun `memory tools are stripped in tavern mode at the shared choke point`() {
         assertTrue(
-            "记忆工具注册必须走 shouldRegisterMemoryTool，不能退回内联条件",
-            source.contains("shouldRegisterMemoryTool("),
-        )
-        assertTrue(
-            "不应再出现直接内联的 enableMemory 判断",
-            !Regex("""if \(assistant\?\.enableMemory == true &&""").containsMatchIn(source),
+            "酒馆模式必须在公共叠加点整组剔除记忆工具（tools 已含上游注册的 memory_*）",
+            source.contains("""removeAll { it.name.startsWith("memory_") }"""),
         )
     }
 }

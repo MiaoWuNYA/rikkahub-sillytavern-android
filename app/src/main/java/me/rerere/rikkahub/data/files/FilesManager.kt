@@ -146,14 +146,18 @@ class FilesManager(
         return newUris
     }
 
-    fun createChatFilesByByteArrays(byteArrays: List<ByteArray>): List<Uri> {
+    fun createChatFilesByByteArrays(
+        byteArrays: List<ByteArray>,
+        displayName: String = "image.png",
+        mimeType: String = "image/png",
+    ): List<Uri> {
         val newUris = mutableListOf<Uri>()
         val dir = context.filesDir.resolve(FileFolders.UPLOAD)
         if (!dir.exists()) {
             dir.mkdirs()
         }
         byteArrays.forEach { byteArray ->
-            val fileName = buildUuidFileName(displayName = "image.png", mimeType = "image/png")
+            val fileName = buildUuidFileName(displayName = displayName, mimeType = mimeType)
             val file = dir.resolve(fileName)
             if (!file.exists()) {
                 file.createNewFile()
@@ -165,8 +169,8 @@ class FilesManager(
             trackManagedFile(
                 folder = FileFolders.UPLOAD,
                 file = file,
-                displayName = "image.png",
-                mimeType = "image/png"
+                displayName = displayName,
+                mimeType = mimeType
             )
             newUris.add(newUri)
         }
@@ -567,6 +571,7 @@ object FileFolders {
     const val BUILTIN_SKILLS = "builtin_skills"
     const val FONTS = "fonts"
     const val TOOL_OUTPUTS = "tool_outputs"
+    const val MEDIA_CREATION = "media_creation"
 }
 
 data class FileCleanupResult(

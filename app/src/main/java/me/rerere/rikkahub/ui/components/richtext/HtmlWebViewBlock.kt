@@ -53,8 +53,8 @@ import me.rerere.hugeicons.stroke.View as ViewIcon
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.ui.components.webview.WEB_VIEW_BASE_URL
-import me.rerere.rikkahub.ui.components.webview.WebViewLocalAssets
+import me.rerere.ui.webview.WEB_VIEW_BASE_URL
+import me.rerere.ui.webview.WebViewLocalAssets
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.context.LocalToaster
 import com.dokar.sonner.ToastType
