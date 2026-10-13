@@ -1267,7 +1267,7 @@
   <string name="prompt_page_logic_not_any">NOT ANY</string>
   <string name="prompt_page_logic_or_any">OR ANY</string>
   <string name="prompt_page_lorebook_empty">No Lorebooks</string>
-  <string name="prompt_page_lorebook_tab">Lorebook</string>
+  <string name="prompt_page_lorebook_tab">World Info &amp; Presets</string>
   <string name="prompt_page_match_char_depth_prompt">Depth Prompt</string>
   <string name="prompt_page_match_char_description">Character Description</string>
   <string name="prompt_page_match_char_personality">Character Personality</string>

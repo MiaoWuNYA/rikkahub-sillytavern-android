@@ -1222,7 +1222,7 @@
   <string name="prompt_page_logic_not_any">NOT ANY</string>
   <string name="prompt_page_logic_or_any">OR ANY</string>
   <string name="prompt_page_lorebook_empty">Нет Lorebooks</string>
-  <string name="prompt_page_lorebook_tab">Лорбук</string>
+  <string name="prompt_page_lorebook_tab">Вайлдбук и пресеты</string>
   <string name="prompt_page_match_char_depth_prompt">Промпт глубины</string>
   <string name="prompt_page_match_char_description">Описание персонажа</string>
   <string name="prompt_page_match_char_personality">Характер персонажа</string>

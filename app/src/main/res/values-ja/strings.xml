@@ -1222,7 +1222,7 @@
   <string name="prompt_page_logic_not_any">NOT ANY</string>
   <string name="prompt_page_logic_or_any">OR ANY</string>
   <string name="prompt_page_lorebook_empty">ロアブックがありません</string>
-  <string name="prompt_page_lorebook_tab">ロアブック</string>
+  <string name="prompt_page_lorebook_tab">世界書とプリセット</string>
   <string name="prompt_page_match_char_depth_prompt">深度プロンプト</string>
   <string name="prompt_page_match_char_description">キャラクター説明</string>
   <string name="prompt_page_match_char_personality">キャラクター性格</string>

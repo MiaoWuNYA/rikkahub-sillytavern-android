@@ -604,7 +604,7 @@
   <string name="prompt_page_keywords_format">الكلمات المفتاحية: %s</string>
   <string name="prompt_page_keywords_label">الكلمات المفتاحية</string>
   <string name="prompt_page_lorebook_empty">لا توجد كتب معرفة</string>
-  <string name="prompt_page_lorebook_tab">كتاب المعرفة</string>
+  <string name="prompt_page_lorebook_tab">كتاب العالم والقوالب</string>
   <string name="prompt_page_mode_injection_empty">لا توجد حقن للأوضاع</string>
   <string name="prompt_page_mode_injection_tab">حقن الأوضاع</string>
   <string name="prompt_page_name">الاسم</string>
