@@ -4,12 +4,17 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.descriptors.elementNames
+import me.rerere.ai.core.MessageRole
 import me.rerere.ai.core.ReasoningLevel
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.asr.ASRProviderSetting
 import me.rerere.mediagen.provider.MediaGenerationProviderSetting
 import me.rerere.rikkahub.data.ai.mcp.McpServerConfig
 import me.rerere.rikkahub.data.model.Assistant
+import me.rerere.rikkahub.data.model.AuthorNoteEntry
+import me.rerere.rikkahub.data.model.AuthorNotePosition
+import me.rerere.rikkahub.data.model.GroupChat
+import me.rerere.rikkahub.data.model.Persona
 import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.QuickMessage
@@ -163,6 +168,47 @@ private val SAMPLE = Settings(
     webServerLocalhostOnly = true,
     backupReminderConfig = BackupReminderConfig(enabled = true),
     sponsorAlertDismissedAt = 7,
+
+    // --- 本地/上游新增字段的非默认样本 ---
+    huadengSettings = HuaDengSettings(enableProxyFix = true),
+    wechatBotSetting = WechatBotSetting(enabled = true),
+    qqBotSetting = QqBotSetting(enabled = true),
+    proactiveMessageSetting = ProactiveMessageSetting(enabled = true),
+    securitySetting = SecuritySetting(forceConfirmToolCalls = true),
+    titleModelId = id(15),
+    titleReasoningLevel = ReasoningLevel.HIGH,
+    imageGenerationSize = "1024x1024",
+    imageGenerationReasoningLevel = ReasoningLevel.HIGH,
+    worldInfoBudget = 200,
+    worldInfoBudgetCap = 512,
+    worldInfoMinActivations = 1,
+    worldInfoMinActivationsDepthMax = 3,
+    worldInfoRecursive = true,
+    worldInfoMaxRecursionSteps = 2,
+    worldInfoDepth = 4,
+    worldInfoCharacterStrategy = 2,
+    worldInfoOverflowAlert = true,
+    worldInfoUseGroupScoring = true,
+    vectorStorageEnabled = true,
+    vectorStorageModelId = id(16),
+    vectorStorageThreshold = 0.5f,
+    vectorStorageScanDepth = 4,
+    personas = listOf(Persona(id = id(17), name = "persona")),
+    activePersonaId = id(17),
+    authorNote = "note",
+    authorNoteEnabled = true,
+    authorNotePosition = AuthorNotePosition.BEFORE_PROMPT,
+    authorNoteDepth = 6,
+    authorNoteRole = MessageRole.USER,
+    authorNoteInterval = 2,
+    groupChats = listOf(GroupChat(id = id(18), name = "gc")),
+    macroGlobalVariables = mapOf("gk" to "gv"),
+    macroChatVariables = mapOf("c1" to mapOf("ck" to "cv")),
+    githubToken = "tok",
+    enableWebSearch = false,
+    fileRetentionDays = 30,
+    launchCount = 9,
+    authorNoteEntries = listOf(AuthorNoteEntry(content = "entry")),
 )
 
 private val STORED_KEYS = setOf(
@@ -171,14 +217,23 @@ private val STORED_KEYS = setOf(
     "custom_themes",
     "display_setting",
     "network_setting",
+    "huadeng_settings",
+    "wechat_bot_setting",
+    "qq_bot_setting",
+    "proactive_message_setting",
+    "security_setting",
     "developer_mode",
     "favorite_models",
     "chat_model",
     "fast_model",
     "fast_model_reasoning_level",
+    "title_model",
+    "title_reasoning_level",
     "translate_model",
     "enable_suggestion",
     "image_generation_model",
+    "image_generation_size",
+    "image_generation_reasoning_level",
     "title_prompt",
     "translation_prompt",
     "translate_thinking_budget",
@@ -206,12 +261,43 @@ private val STORED_KEYS = setOf(
     "selected_asr_provider",
     "web_server_enabled",
     "web_server_port",
+    "enable_web_search",
+    "file_retention_days",
+    "launch_count",
     "web_server_jwt_enabled",
     "web_server_access_password",
     "web_server_localhost_only",
     "mode_injections",
     "lorebooks",
     "quick_messages",
+    "world_info_budget",
+    "world_info_budget_cap",
+    "world_info_min_activations",
+    "world_info_min_activations_depth_max",
+    "world_info_recursive",
+    "world_info_max_recursion_steps",
+    "world_info_depth",
+    "world_info_character_strategy",
+    "world_info_overflow_alert",
+    "world_info_use_group_scoring",
+    "vector_storage_enabled",
+    "vector_storage_threshold",
+    "vector_storage_scan_depth",
+    "vector_storage_model_id",
+    "personas",
+    "author_note",
+    "author_note_enabled",
+    "author_note_position",
+    "author_note_depth",
+    "author_note_role",
+    "author_note_entries",
+    "author_note_interval",
+    "active_persona_id",
+    "group_chats",
+    "macro_global_variables",
+    "macro_chat_variables",
     "backup_reminder_config",
+    "github_token",
     "sponsor_alert_dismissed_at",
+    "title_prompt_revision",
 )

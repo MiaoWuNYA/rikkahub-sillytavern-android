@@ -41,7 +41,6 @@ data class Settings(
     @Transient
     val init: Boolean = false,
     val dynamicColor: Boolean = true,
-    val enableWebSearch: Boolean = true, // 全局网络搜索开关
     val themeId: String = PresetThemes[0].id,
     val customThemes: List<CustomTheme> = emptyList(),
     val developerMode: Boolean = false,
@@ -82,6 +81,7 @@ data class Settings(
     val mcpServers: List<McpServerConfig> = emptyList(),
     val webDavConfig: WebDavConfig = WebDavConfig(),
     val s3Config: S3Config = S3Config(),
+    val enableWebSearch: Boolean = true, // 全局网络搜索开关
     val fileRetentionDays: Int = 0, // 聊天附件与生成图片保留天数（0=不清理，移植自 Rikkahub-Revised 的按日文件清理）
     // RemoteFileStore 上传临时素材用的桶，和备份的 s3Config 互不影响；items 字段在这里不使用
     val uploadS3Config: S3Config = S3Config(),

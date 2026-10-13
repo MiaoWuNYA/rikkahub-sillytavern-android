@@ -55,17 +55,21 @@ class CharacterBookBudgetTest {
     @Test
     fun `default budget is unlimited`() {
         val pref = listOf(
-            File("src/main/java/me/rerere/rikkahub/data/datastore/PreferencesStore.kt"),
-            File("app/src/main/java/me/rerere/rikkahub/data/datastore/PreferencesStore.kt"),
+            File("src/main/java/me/rerere/rikkahub/data/datastore/Settings.kt"),
+            File("app/src/main/java/me/rerere/rikkahub/data/datastore/Settings.kt"),
         ).firstOrNull { it.exists() }?.readText().orEmpty()
-        assertTrue("找不到 PreferencesStore.kt", pref.isNotEmpty())
+        assertTrue("找不到 Settings.kt", pref.isNotEmpty())
         assertTrue(
             "默认预算应为 100（不裁剪）；25 会让中文大卡的关键格式条目被丢弃",
             pref.contains("val worldInfoBudget: Int = 100"),
         )
+        // 字段表架构后读取兜底 = Settings 默认参数（盘上无 key 时读出 100）；
+        // 字段表必须注册 WORLD_INFO_BUDGET，否则盘上值读不回来
+        val fields = File("src/main/java/me/rerere/rikkahub/data/datastore/SettingsFields.kt").readText()
         assertTrue(
             "读取兜底也必须是 100，否则老用户仍拿到 25",
-            pref.contains("preferences[WORLD_INFO_BUDGET]?.coerceIn(0, 100) ?: 100"),
+            pref.contains("val worldInfoBudget: Int = 100") &&
+                fields.contains("plain(WORLD_INFO_BUDGET, Settings::worldInfoBudget)"),
         )
     }
 
