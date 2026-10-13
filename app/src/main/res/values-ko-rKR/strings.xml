@@ -676,6 +676,8 @@
   <string name="huadeng_system_prompt_escape_desc">시스템 프롬프트의 &lt;와 &gt;를 전각 ＜ ＞로 바꿔 태그로 오해받지 않도록 합니다</string>
   <string name="huadeng_tool_result_truncation">도구 결과 잘라내기</string>
   <string name="huadeng_tool_result_truncation_desc">긴 도구 실행 결과를 잘라 컨텍스트를 아낍니다</string>
+  <string name="huadeng_sub_agent">서브 에이전트</string>
+  <string name="huadeng_sub_agent_desc">AI가 하위 작업을 독립적인 서브 에이전트에 위임하고(대화 기록 없음) 결과를 가져옵니다</string>
   <string name="huadeng_transient_prune">임시 메시지 정리</string>
   <string name="huadeng_transient_prune_desc">일회성 프롬프트 주입 내용을 응답 후에 제거합니다</string>
   <string name="imggen_page_aspect_ratio">이미지 비율</string>

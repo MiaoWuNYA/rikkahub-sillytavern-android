@@ -691,6 +691,8 @@
   <string name="huadeng_tavern_mode_desc">Only sends: the character card (including lorebook / example messages / system prompt), chat history, and minimal tool definitions. Plugin prompts, memory retrieval, cross-window life stream, all injections other than template macros, workspace reminders, time reminders, author\'s note, skill auto-trigger, document-to-prompt, OCR, Recent Chats, rolling summary, tool routing and work ethic blocks, and tool system prompts are all dropped. Suited to roleplay and creative writing where workflow noise degrades output quality</string>
   <string name="huadeng_tool_result_truncation">Tool Result Truncation</string>
   <string name="huadeng_tool_result_truncation_desc">Tool output over 32 KB is truncated and saved to a file. Turn off to keep full tool results in message history (try this if tool calls misbehave through a proxy)</string>
+  <string name="huadeng_sub_agent">Sub-Agent</string>
+  <string name="huadeng_sub_agent_desc">Let the AI delegate subtasks to an independent sub-agent (no conversation history) and take back the result</string>
   <string name="huadeng_transient_prune">Transient Content Pruning</string>
   <string name="huadeng_transient_prune_desc">Web search results, images, audio and video from more than two turns ago are no longer sent with every request (a placeholder with the message ID is attached instead; the AI can fetch the original via the read_history_message tool). Greatly reduces token usage in long image/search-heavy conversations; message storage and chat display are unaffected</string>
   <string name="imggen_page_aspect_ratio">Image Aspect Ratio</string>

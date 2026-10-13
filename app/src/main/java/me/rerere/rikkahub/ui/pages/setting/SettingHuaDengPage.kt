@@ -213,6 +213,26 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
+                        headlineContent = { Text(stringResource(R.string.huadeng_sub_agent)) },
+                        supportingContent = {
+                            Text(stringResource(R.string.huadeng_sub_agent_desc))
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = settings.huadengSettings.enableSubAgent,
+                                onCheckedChange = { enabled ->
+                                    vm.updateSettings {
+                                        it.copy(
+                                            huadengSettings = it.huadengSettings.copy(
+                                                enableSubAgent = enabled,
+                                            ),
+                                        )
+                                    }
+                                },
+                            )
+                        },
+                    )
+                    item(
                         headlineContent = { Text(stringResource(R.string.huadeng_tavern_mode)) },
                         supportingContent = {
                             Text(stringResource(R.string.huadeng_tavern_mode_desc))

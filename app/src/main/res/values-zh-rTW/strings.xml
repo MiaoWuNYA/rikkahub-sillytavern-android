@@ -676,6 +676,8 @@
   <string name="huadeng_system_prompt_escape_desc">將系統訊息中的 &lt; &gt; 轉為 HTML 實體，繞過中轉站 WAF 安全策略攔截（如遇到 upstream_content_rejected 錯誤可開啟）。一般不需要開啟</string>
   <string name="huadeng_tool_result_truncation">工具結果截斷</string>
   <string name="huadeng_tool_result_truncation_desc">工具輸出超過 32KB 時自動截斷並儲存到檔案。關閉後工具結果不截斷，完整內容保留在訊息歷史中（若中轉站導致工具呼叫異常，可嘗試關閉)</string>
+  <string name="huadeng_sub_agent">子 agent</string>
+  <string name="huadeng_sub_agent_desc">允許 AI 把子任務派給獨立的子 agent 執行（不產生會話歷史），完成後取回結果</string>
   <string name="huadeng_transient_prune">上下文瞬態內容裁剪</string>
   <string name="huadeng_transient_prune_desc">超過兩輪對話之前的網頁搜尋結果、圖片、音訊與影片不再隨每次請求傳送（佔位說明附帶訊息 ID，AI 可透過 read_history_message 工具按需取回原文），大幅減少圖片與搜尋類長對話的 token 消耗；訊息儲存與聊天記錄顯示不受影響</string>
   <string name="imggen_page_aspect_ratio">圖片比例</string>

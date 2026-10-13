@@ -676,6 +676,8 @@
   <string name="huadeng_system_prompt_escape_desc">システムメッセージ内の &lt; と &gt; をHTMLエンティティに変換し、プロキシWAFのブロックを回避します（upstream_content_rejected エラーが出る場合に有効化してください）。通常は不要です</string>
   <string name="huadeng_tool_result_truncation">ツール結果の切り詰め</string>
   <string name="huadeng_tool_result_truncation_desc">32 KBを超えるツール出力は切り詰めてファイルに保存します。オフにするとツール結果全文がメッセージ履歴に残ります（プロキシ経由でツール呼び出しがおかしい場合は試してください）</string>
+  <string name="huadeng_sub_agent">サブエージェント</string>
+  <string name="huadeng_sub_agent_desc">AI がサブタスクを独立したサブエージェントに委譲し（会話履歴なし）、結果を取得できるようにします</string>
   <string name="huadeng_transient_prune">一時コンテンツの間引き</string>
   <string name="huadeng_transient_prune_desc">2ターンより前のウェブ検索結果・画像・音声・動画はリクエストごとに送信されなくなります（代わりにメッセージID付きのプレースホルダーを添付。AIは read_history_message ツールで元データを取得できます）。画像や検索の多い長い会話でトークン消費を大幅に削減します。メッセージの保存やチャット表示には影響しません</string>
   <string name="imggen_page_aspect_ratio">画像のアスペクト比</string>

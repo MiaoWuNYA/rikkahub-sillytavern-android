@@ -690,6 +690,8 @@
   <string name="huadeng_tavern_mode_desc">开启后请求只发送：角色卡（含世界书/示例消息/系统提示）、聊天历史、工具的最小可用定义。插件提示词、记忆检索、跨窗口生活流、模板宏以外的全部注入、工作空间提醒、时间提醒、作者注释、技能自动触发、文档转 Prompt、OCR、Recent Chats、滚动压缩摘要、工具路由与工作伦理区、工具系统提示词——全部不再发送。适合角色扮演与创作，避免工作流噪声干扰生成质量</string>
   <string name="huadeng_tool_result_truncation">工具结果截断</string>
   <string name="huadeng_tool_result_truncation_desc">工具输出超过 32KB 时自动截断并保存到文件。关闭后工具结果不截断，完整内容保留在消息历史中（若中转站导致工具调用异常，可尝试关闭)</string>
+  <string name="huadeng_sub_agent">子 agent</string>
+  <string name="huadeng_sub_agent_desc">允许 AI 把子任务派给独立的子 agent 执行（不产生会话历史），完成后取回结果</string>
   <string name="huadeng_transient_prune">上下文瞬态内容裁剪</string>
   <string name="huadeng_transient_prune_desc">超过两轮对话之前的网页搜索结果、图片、音视频不再随每次请求发送（占位说明附带消息 ID，AI 可通过 read_history_message 工具按需取回原文），大幅减少图片与搜索类长对话的 token 消耗；消息存储与聊天记录显示不受影响</string>
   <string name="imggen_page_aspect_ratio">图片比例</string>
