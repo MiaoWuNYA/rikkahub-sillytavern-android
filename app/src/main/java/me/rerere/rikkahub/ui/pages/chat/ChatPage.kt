@@ -103,6 +103,8 @@ import me.rerere.rikkahub.service.ChatError
 import me.rerere.rikkahub.service.VoiceCallService
 import me.rerere.rikkahub.ui.components.ai.ChatAttachmentPickerActions
 import me.rerere.rikkahub.ui.components.ai.ChatInput
+import me.rerere.rikkahub.ui.components.richtext.findFencedHtmlDocument
+import me.rerere.rikkahub.ui.components.richtext.splitCardSegments
 import me.rerere.rikkahub.ui.components.ai.FilesPicker
 import me.rerere.rikkahub.ui.components.ai.SearchMode
 import me.rerere.rikkahub.ui.components.ai.SlashVarOp
@@ -445,7 +447,17 @@ private fun ChatPageContent(
             bottomBar = {
                 val messageQueue by vm.messageQueue.collectAsStateWithLifecycle()
                 val voiceState by vm.voiceSession.state.collectAsStateWithLifecycle()
+                // 前端卡（HTML 文档 WebView）在场时禁用输入栏模糊/玻璃：
+                // Haze 采样含 WebView 硬件层的 Compose layer 会崩溃（Android 15 实测），
+                // 只有开前端卡的会话受影响，其余会话效果不受影响。
+                val hasFrontendCard = conversation.currentMessages.any { msg ->
+                    msg.parts.filterIsInstance<UIMessagePart.Text>().any { part ->
+                        findFencedHtmlDocument(part.text) != null ||
+                            splitCardSegments(part.text).any { it.first }
+                    }
+                }
                 ChatInput(
+                    hasFrontendCard = hasFrontendCard,
                     onStartVoiceMode = onStartVoiceMode,
                     voiceState = voiceState,
                     onStopVoiceMode = vm.voiceSession::stop,
