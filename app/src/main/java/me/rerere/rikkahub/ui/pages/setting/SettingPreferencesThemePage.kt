@@ -12,6 +12,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -23,6 +24,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import me.rerere.hugeicons.stroke.SmartPhone01
+import me.rerere.hugeicons.stroke.Moon02
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.Edit01
@@ -36,6 +39,11 @@ import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.data.datastore.BackgroundEffectType
 import me.rerere.rikkahub.ui.components.ui.ConnectedChoiceButtons
 import me.rerere.rikkahub.ui.components.ui.ConnectedChoiceLabel
+import me.rerere.rikkahub.ui.theme.ColorMode
+import me.rerere.rikkahub.ui.hooks.rememberColorMode
+import me.rerere.rikkahub.ui.components.ui.CardGroupIcon
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.Alignment
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.PagerTab
 import me.rerere.rikkahub.ui.components.ui.PagerTabs
@@ -121,6 +129,59 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        item {
+            var colorMode by rememberColorMode()
+            val containerColor = MaterialTheme.colorScheme.primaryContainer
+            val contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            CardGroup(
+                title = { Text(stringResource(R.string.setting_page_general_settings)) },
+            ) {
+                formItem {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        CardGroupIcon(
+                            when (colorMode) {
+                                ColorMode.SYSTEM -> HugeIcons.SmartPhone01
+                                ColorMode.LIGHT -> HugeIcons.Sun01
+                                ColorMode.DARK -> HugeIcons.Moon02
+                            },
+                            containerColor = containerColor,
+                            contentColor = contentColor,
+                        )
+                        Text(stringResource(R.string.setting_page_color_mode))
+                    }
+                    ConnectedChoiceButtons(
+                        options = ColorMode.entries,
+                        selected = colorMode,
+                        onSelect = {
+                            colorMode = it
+                            navController.navigate(Screen.Setting) {
+                                popUpTo(Screen.Setting) {
+                                    inclusive = true
+                                }
+                            }
+                        },
+                    ) { mode, selected ->
+                        ConnectedChoiceLabel(
+                            text = when (mode) {
+                                ColorMode.SYSTEM -> stringResource(R.string.setting_page_color_mode_system)
+                                ColorMode.LIGHT -> stringResource(R.string.setting_page_color_mode_light)
+                                ColorMode.DARK -> stringResource(R.string.setting_page_color_mode_dark)
+                            },
+                            selected = selected,
+                            icon = when (mode) {
+                                        ColorMode.SYSTEM -> HugeIcons.SmartPhone01
+                                        ColorMode.LIGHT -> HugeIcons.Sun01
+                                        ColorMode.DARK -> HugeIcons.Moon02
+                                    },
+                        )
+                    }
+                }
+            }
+        }
+
         item {
             CardGroup {
                 switchItem(

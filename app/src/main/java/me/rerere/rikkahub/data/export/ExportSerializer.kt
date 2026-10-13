@@ -269,7 +269,7 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
         // chatHistory 标记位置：绝对定位条目在它之前/之后决定落点
         val chatHistoryIndex = order.indexOfFirst { promptsById[it.identifier]?.marker == true && it.identifier == "chatHistory" }
 
-        return order.mapIndexedNotNull { index, entry ->
+        val ordered = order.mapIndexedNotNull { index, entry ->
             val prompt = promptsById[entry.identifier] ?: return@mapIndexedNotNull null
             if (prompt.marker) return@mapIndexedNotNull null
             // 未启用条目要保留，只是导入为禁用状态。此前这里直接 return null，
@@ -278,7 +278,7 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
             // 留在列表里、保持关闭，本地注入逻辑同样尊重 enabled
             // （PromptInjectionTransformer 有 `if (!entry.enabled) continue`），
             // 所以保留是安全的：关着就不会被注入。
-            if (prompt.content.isBlank()) return@mapIndexedNotNull null
+            if (prompt.content.isBlank() && entry.enabled) return@mapIndexedNotNull null
             val role = when (prompt.role?.lowercase()) {
                 "user", "1" -> me.rerere.ai.core.MessageRole.USER
                 "assistant", "2" -> me.rerere.ai.core.MessageRole.ASSISTANT
@@ -297,8 +297,9 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
             PromptInjection.RegexInjection(
                 id = Uuid.random(),
                 name = prompt.name.ifBlank { prompt.identifier },
-                // 透传原状态：写死 true 会让预设里明确关掉的条目直接开始注入
-                enabled = entry.enabled,
+                // 透传原状态：order 与 prompts 条目两处开关任一关即视为未激活，
+                // 写死 true 会让预设里明确关掉的条目直接开始注入
+                enabled = entry.enabled && prompt.enabled,
                 position = position,
                 injectDepth = prompt.injectionDepth ?: 4,
                 content = prompt.content,
@@ -306,6 +307,31 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
                 constantActive = true, // 预设条目无条件注入
             )
         }
+        // prompts 里存在但未列进 prompt_order 的条目（酒馆的"未加入顺序"区）。
+        // 二创预设常把大量备选条目留在这里，只按 order 导入会让它们整批消失。
+        // 位置统一给角色卡区，状态沿用条目自身开关。
+        val orderedIds = order.map { it.identifier }.toSet()
+        val extra = preset.prompts.mapNotNull { prompt ->
+            if (prompt.identifier in orderedIds) return@mapNotNull null
+            if (prompt.marker) return@mapNotNull null
+            if (prompt.content.isBlank() && prompt.enabled) return@mapNotNull null
+            val role = when (prompt.role?.lowercase()) {
+                "user", "1" -> me.rerere.ai.core.MessageRole.USER
+                "assistant", "2" -> me.rerere.ai.core.MessageRole.ASSISTANT
+                else -> me.rerere.ai.core.MessageRole.SYSTEM
+            }
+            PromptInjection.RegexInjection(
+                id = Uuid.random(),
+                name = prompt.name.ifBlank { prompt.identifier },
+                enabled = prompt.enabled,
+                position = if (prompt.injectionPosition == 0) InjectionPosition.AT_DEPTH else InjectionPosition.AFTER_SYSTEM_PROMPT,
+                injectDepth = prompt.injectionDepth ?: 4,
+                content = prompt.content,
+                role = role,
+                constantActive = true,
+            )
+        }
+        return ordered + extra
     }
 
     /** 旧版预设（main_prompt 平铺字段）解析 */
@@ -419,6 +445,8 @@ private data class StPresetPrompt(
     val name: String = "",
     val content: String = "",
     val marker: Boolean = false,
+    // 部分二创预设把激活状态标在 prompts 条目上；order 缺省时以它为准
+    val enabled: Boolean = true,
     val role: String? = null,
     @SerialName("injection_position") val injectionPosition: Int? = null,
     @SerialName("injection_depth") val injectionDepth: Int? = null,
