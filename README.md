@@ -10,7 +10,7 @@
 
 [**English**](README.md) | [**简体中文**](README_CN.md) | [Divergence map](DIVERGENCE.md) | [Divergence map (EN)](DIVERGENCE_EN.md)
 
-[![Release](https://img.shields.io/github/v/release/MiaoWuNYA/rikkahub-sillytavern-android?label=release&color=brightgreen)](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases)
+[![Website](https://img.shields.io/badge/Website-rikkahub.luoca.cn-8f4c00)](https://rikkahub.luoca.cn/) [![Docs](https://img.shields.io/badge/Docs-docs-8f4c00)](https://rikkahub.luoca.cn/docs/) [![Release](https://img.shields.io/github/v/release/MiaoWuNYA/rikkahub-sillytavern-android?label=release&color=brightgreen)](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases)
 [![Stars](https://img.shields.io/github/stars/MiaoWuNYA/rikkahub-sillytavern-android?color=yellow)](https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/stargazers)
@@ -23,8 +23,8 @@
 > - **Migrating from desktop SillyTavern**: character cards, lorebooks, presets, regex and themes import losslessly with official semantics — no Termux, no Node.js.
 >
 > Both routes share the same client and don't interfere with each other.
->
 
+**Website & docs**: [rikkahub.luoca.cn](https://rikkahub.luoca.cn/) · [Documentation](https://rikkahub.luoca.cn/docs/) (installation, configuration, tavern imports, plugin development)
 
 ---
 
