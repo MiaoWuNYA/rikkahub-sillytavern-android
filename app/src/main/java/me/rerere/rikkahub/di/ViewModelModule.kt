@@ -13,7 +13,6 @@ import me.rerere.rikkahub.ui.pages.onboarding.OnboardingVM
 import me.rerere.rikkahub.ui.pages.search.SearchVM
 import me.rerere.rikkahub.ui.pages.history.HistoryVM
 import me.rerere.rikkahub.ui.pages.stats.StatsVM
-import me.rerere.rikkahub.ui.pages.imggen.ImgGenVM
 import me.rerere.rikkahub.ui.pages.mediacreation.MediaCreationSessionsVM
 import me.rerere.rikkahub.ui.pages.mediacreation.MediaCreationVM
 import me.rerere.rikkahub.ui.pages.memory.MemoryFileVM
@@ -77,7 +76,6 @@ val viewModelModule = module {
     }
     viewModelOf(::BackupVM)
     viewModelOf(::OnboardingVM)
-    viewModelOf(::ImgGenVM)
     viewModelOf(::MediaCreationSessionsVM)
     viewModel<MediaCreationVM> {
         MediaCreationVM(

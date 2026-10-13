@@ -119,7 +119,6 @@ import me.rerere.rikkahub.plugin.ui.PluginFolderPage
 import me.rerere.rikkahub.plugin.ui.PluginManagePage
 import me.rerere.rikkahub.ui.pages.favorite.FavoritePage
 import me.rerere.rikkahub.ui.pages.history.HistoryPage
-import me.rerere.rikkahub.ui.pages.imggen.ImageGenPage
 import me.rerere.rikkahub.ui.pages.log.LogPage
 import me.rerere.rikkahub.ui.pages.mediacreation.MediaCreationPage
 import me.rerere.rikkahub.ui.pages.mediacreation.MediaCreationSessionsPage
@@ -539,9 +538,7 @@ class RouteActivity : ComponentActivity() {
                                 BackupPage()
                             }
 
-                            entry<Screen.ImageGen> {
-                                ImageGenPage()
-                            }
+                            
 
                             entry<Screen.MediaCreationSessions> {
                                 MediaCreationSessionsPage()
@@ -909,9 +906,6 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object Backup : Screen
-
-    @Serializable
-    data object ImageGen : Screen
 
     @Serializable
     data object MediaCreationSessions : Screen
