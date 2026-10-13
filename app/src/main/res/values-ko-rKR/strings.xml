@@ -1568,6 +1568,7 @@
   <string name="setting_display_page_text_color_light_gray">라이트 그레이</string>
   <string name="setting_display_page_text_color_pink">핑크</string>
   <string name="setting_display_page_text_color_quote_title">인용 색상</string>
+  <string name="setting_display_page_text_color_bracket_title">괄호 색상</string>
   <string name="setting_display_page_text_color_reset_default">기본값으로 초기화</string>
   <string name="setting_display_page_text_color_white">화이트</string>
   <string name="setting_display_page_title">디스플레이 설정</string>

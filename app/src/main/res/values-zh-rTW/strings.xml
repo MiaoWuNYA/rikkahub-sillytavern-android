@@ -1568,6 +1568,7 @@
   <string name="setting_display_page_text_color_light_gray">淺灰</string>
   <string name="setting_display_page_text_color_pink">粉紅</string>
   <string name="setting_display_page_text_color_quote_title">引號色</string>
+  <string name="setting_display_page_text_color_bracket_title">括號顏色</string>
   <string name="setting_display_page_text_color_reset_default">恢復預設</string>
   <string name="setting_display_page_text_color_white">白色</string>
   <string name="setting_display_page_title">顯示設定</string>

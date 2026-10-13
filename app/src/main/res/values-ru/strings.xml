@@ -1568,6 +1568,7 @@
   <string name="setting_display_page_text_color_light_gray">Светло-серый</string>
   <string name="setting_display_page_text_color_pink">Розовый</string>
   <string name="setting_display_page_text_color_quote_title">Цвет цитат</string>
+  <string name="setting_display_page_text_color_bracket_title">Цвет скобок</string>
   <string name="setting_display_page_text_color_reset_default">По умолчанию</string>
   <string name="setting_display_page_text_color_white">Белый</string>
   <string name="setting_display_page_title">Настройки отображения</string>
