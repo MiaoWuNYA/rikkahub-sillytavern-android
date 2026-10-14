@@ -699,13 +699,13 @@
     frame.setAttribute('frameborder', '0');
     // 起始高度给一个保守值，装上后用内容实测高度覆盖
     frame.style.height = '80px';
-    // 重装文档但不重建 iframe 元素：重建会丢掉卡内脚本状态
     frame._ripple = function (nextKey, nextDesc) {
       if (nextKey) frame.dataset.cardKey = nextKey;
       var target = nextDesc || desc;
       frame.srcdoc = cardDocHtml(target, target.ctx || {});
     };
     frame.srcdoc = cardDocHtml(desc, desc.ctx || {});
+    return frame;
     return frame;
   }
 
@@ -1058,16 +1058,20 @@
     return String(msg.signature == null ? '' : msg.signature);
   }
 
-  var OPS = [
-    { action: 'copy', label: '复制', icon: '<rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h8"></path>' },
-    { action: 'edit', label: '编辑', icon: '<path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"></path>' },
-    { action: 'regenerate', label: '重新生成', icon: '<path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 5v6h-6"></path>' },
-    { action: 'translate', label: '翻译', icon: '<path d="M4 6h9"></path><path d="M8 4v2c0 4-2 7-4 8"></path><path d="M6.5 10c1 2.5 3 4.5 5.5 5.5"></path><path d="m13 20 4-9 4 9"></path><path d="M14.5 17h5"></path>' },
-    { action: 'favorite', label: '收藏', icon: '<path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.6-4.8 2.6.9-5.4L4.2 9.7l5.4-.8Z"></path>' },
-    { action: 'share', label: '分享', icon: '<path d="M12 16V4"></path><path d="m8 8 4-4 4 4"></path><path d="M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"></path>' },
-    { action: 'delete', label: '删除', icon: '<path d="M4 7h16"></path><path d="M9 7V5h6v2"></path><path d="M6 7l1 13h10l1-13"></path>' },
-    { action: '', label: '更多', icon: '<circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle>' }
-  ];
+  var OPS_ICON = {
+    copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/>',
+    regenerate: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/>',
+    speak: '<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M16 9a4 4 0 0 1 0 6"/><path d="M19 6a8 8 0 0 1 0 12"/>',
+    edit: '<path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"/>',
+    translate: '<path d="M4 6h9"/><path d="M8 4v2c0 4-2 7-4 8"/><path d="M6.5 10c1 2.5 3 4.5 5.5 5.5"/><path d="m13 20 4-9 4 9"/><path d="M14.5 17h5"/>',
+    menu: '<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>',
+  };
+  var OPS_USER = [['copy','复制'],['regenerate','重试'],['menu','菜单']];
+  var OPS_ASSISTANT = [['copy','复制'],['regenerate','重试'],['speak','朗读'],['edit','编辑'],['translate','翻译'],['menu','菜单']];
+  function opsFor(msg) {
+    var list = msg.role === 'user' ? OPS_USER : OPS_ASSISTANT;
+    return list.map(function (it) { return { action: it[0], label: it[1], icon: OPS_ICON[it[0]] || '' }; });
+  }
 
   var TR_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
@@ -1101,7 +1105,7 @@
     var ops = document.createElement('div');
     ops.className = 'ops';
     ops.dataset.kind = 'ops';
-    OPS.forEach(function (def) {
+    opsFor(msg).forEach(function (def) {
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'op';
@@ -1311,7 +1315,19 @@
     var isAssistant = msg.role !== 'user';
     var live = !!streaming && isAssistant;
     for (var i = 0; i < bubbles.length; i++) {
-      bubbles[i].classList.toggle('typing', live && i === bubbles.length - 1);
+      var tail = live && i === bubbles.length - 1;
+      bubbles[i].classList.toggle('typing', tail);
+      // 正文还空着时给动态指示，和原版一致
+      var dots = bubbles[i].querySelector('.gen-dots');
+      var wantDots = tail && !String(bubbles[i].textContent || '').trim();
+      if (wantDots && !dots) {
+        dots = document.createElement('span');
+        dots.className = 'gen-dots';
+        dots.innerHTML = '<i></i><i></i><i></i>';
+        bubbles[i].appendChild(dots);
+      } else if (!wantDots && dots) {
+        dots.remove();
+      }
     }
     var avatar = row.querySelector('.avatar');
     if (avatar) avatar.classList.toggle('loading', live);
