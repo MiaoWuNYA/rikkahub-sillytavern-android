@@ -33,6 +33,7 @@ import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Avatar
+import me.rerere.rikkahub.ui.components.richtext.parseCardDocument
 import me.rerere.rikkahub.ui.components.richtext.splitCardSegments
 import kotlinx.datetime.toJavaLocalDateTime
 import me.rerere.rikkahub.utils.toMessageTimeString
@@ -235,11 +236,17 @@ internal fun buildMessage(
             var cardIndex = 0
             splitCardSegments(part.text).forEach { (isCard, segment) ->
                 if (isCard) {
+                    // 卡片段自己也要剥围栏、拆文档。带 ``` 围栏或 <html>/<head> 外壳的原文
+                    // 塞进 iframe 的 body 会把解析树整个搞乱：样式表落进正文变成可见文本、
+                    // 卡片脚本拿不到预期的 DOM（表现为卡片停在 opacity:0、页面里出现一段 JS 源码）。
+                    val document = parseCardDocument(stripLoneFences(segment))
                     add(
                         buildJsonObject {
                             put("type", "card")
                             put("index", cardIndex++)
-                            put("html", segment)
+                            put("html", document.bodyHtml)
+                            if (document.headHtml.isNotBlank()) put("head", document.headHtml)
+                            if (document.styleCss.isNotBlank()) put("style", document.styleCss)
                         }
                     )
                 } else {

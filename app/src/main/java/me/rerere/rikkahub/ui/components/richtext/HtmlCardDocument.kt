@@ -292,6 +292,8 @@ private val BODY_BLOCK = Regex("""<body\b([^>]*)>([\s\S]*?)</body\s*>""", RegexO
 private val DOCTYPE = Regex("""<!DOCTYPE[^>]*>""", RegexOption.IGNORE_CASE)
 private val HTML_TAG = Regex("""</?html\b[^>]*>""", RegexOption.IGNORE_CASE)
 
+private val HEAD_KEEP = Regex("<(?:script|link)\\b[^>]*>[\\s\\S]*?</(?:script|link)>|<link\\b[^>]*/?>", RegexOption.IGNORE_CASE)
+
 internal fun parseCardDocument(doc: String): CardDocument {
     val normalized = normalizeNewlines(doc).trimCardEdges()
     val styles = mutableListOf<String>()
@@ -308,7 +310,8 @@ internal fun parseCardDocument(doc: String): CardDocument {
                 .replace(HTML_TAG, "")
         }
 
-    val headRest = head.replace(STYLE_BLOCK, "")
+    // head 里只保留能生效的标签，title/meta 这类塞进文档会变成可见文本或被忽略
+    val headRest = HEAD_KEEP.findAll(head.replace(STYLE_BLOCK, "")).joinToString("\n") { it.value }
     return CardDocument(
         headHtml = headRest,
         bodyHtml = body,
