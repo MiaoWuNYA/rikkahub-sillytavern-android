@@ -102,8 +102,9 @@ fun WebChatSurface(
             put("bottom", kotlinx.serialization.json.JsonPrimitive(with(density) { safeAreaBottom.roundToPx() }))
         }.toString()
     }
-    val appearanceJson = remember(settings.displaySetting) {
-        buildAppearanceJson(settings.displaySetting)
+    val darkMode = me.rerere.rikkahub.ui.theme.LocalDarkMode.current
+    val appearanceJson = remember(settings.displaySetting, darkMode) {
+        buildAppearanceJson(settings.displaySetting, darkMode)
     }
     val macroJson = remember(messages, assistant, settings, modelName) {
         buildMacros(messages, assistant, settings, modelName).toString()
@@ -338,7 +339,11 @@ internal fun quoteJs(json: String): String =
 private fun Color.hexForWeb(): String = String.format("#%06X", toArgb() and 0xFFFFFF)
 
 // 聊天外观自定义 → 页面 CSS 变量：设置里凡影响消息区外观的字段都在这里下发，页面不读设置
-internal fun buildAppearanceJson(display: me.rerere.rikkahub.data.datastore.DisplaySetting): String =
+// 引号/括号/斜体的兜底色与原生一致：设置留空时按深浅色各取一套内置值
+internal fun buildAppearanceJson(
+    display: me.rerere.rikkahub.data.datastore.DisplaySetting,
+    darkMode: Boolean = false,
+): String =
     buildJsonObject {
         val md = display.themeMarkdownStyle
         fun color(name: String, value: Long?) {
@@ -396,9 +401,15 @@ internal fun buildAppearanceJson(display: me.rerere.rikkahub.data.datastore.Disp
         color("shadowColor", display.bubbleShadowColor)
         color("quoteBackgroundColor", display.quoteBackgroundColor)
         color("underlineColor", display.underlineColor)
-        put("quoteColor", kotlinx.serialization.json.JsonPrimitive(display.quoteColor))
-        put("italicsColor", kotlinx.serialization.json.JsonPrimitive(display.italicsColor))
-        put("bracketColor", kotlinx.serialization.json.JsonPrimitive(display.bracketColor))
+        put(
+            "quoteColor",
+            kotlinx.serialization.json.JsonPrimitive(display.quoteColor.ifBlank { if (darkMode) "#E18A24" else "#C7731E" }),
+        )
+        put("italicsColor", kotlinx.serialization.json.JsonPrimitive(display.italicsColor.ifBlank { "#919191" }))
+        put(
+            "bracketColor",
+            kotlinx.serialization.json.JsonPrimitive(display.bracketColor.ifBlank { if (darkMode) "#7EAFC4" else "#5B8DEF" }),
+        )
 
         // —— 气泡/背景图 ——
         asset("userBubbleImage", display.userBubbleImagePath)

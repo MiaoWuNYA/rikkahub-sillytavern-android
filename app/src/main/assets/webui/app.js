@@ -153,6 +153,18 @@
     return out + convertCharaTags(text.slice(last));
   }
 
+  // 卡片 HTML 里若把标签本身转义了（&lt;span style=…&gt;），浏览器只会把它当文字显示。
+  // 只还原白名单行内标签的转义形态，其余转义（代码、想展示的源码）一律保持原样。
+  var ESCAPED_INLINE_RE = /&lt;(\/?)(span|font|b|i|u|em|strong|sub|sup|small)\b((?:(?!&gt;)[\s\S])*?)&gt;/gi;
+
+  function decodeEscapedInlineTags(html) {
+    var text = String(html == null ? '' : html);
+    if (text.indexOf('&lt;') < 0) return text;
+    return text.replace(ESCAPED_INLINE_RE, function (full, slash, name, attrs) {
+      return '<' + slash + name + String(attrs).replace(/&quot;/g, '"').replace(/&#39;/g, "'") + '>';
+    });
+  }
+
   // 卡片 CSS 里的非 ASCII 元素选择器（清韵{…}）同样是死规则，改写成属性选择器；
   // 只在选择器区域替换，声明体（font-family: 微软雅黑 之类）原样保留。
   function rewriteCharaSelector(part) {
@@ -562,7 +574,7 @@
    *   3. 外壳兜底排版，保证未知标签不会挤成一行。
    */
   function cardDocHtml(html, ctx, shellVersionForDoc) {
-    var body = expandMacros(normalizeCharaTags(html));
+    var body = expandMacros(decodeEscapedInlineTags(normalizeCharaTags(html)));
     var libs = state.libs || {};
     var compat = libs.compat || RUNTIME_COMPAT;
     var parts = splitCardDoc(body);
@@ -680,17 +692,28 @@
   }
 
   // 正文渲染：代码块三个开关会改变输出结构，故渲染键带上它们，开关变了才重渲染
+  function textColors() {
+    var a = state.appearance || {};
+    if (a.textColorEnabled === false) return null;
+    if (!a.quoteColor && !a.bracketColor) return null;
+    return { quote: a.quoteColor, bracket: a.bracketColor };
+  }
+
   function renderMarkdown(text) {
     var a = state.appearance || {};
     return window.RikkaMarkdown.render(text, {
       lineNumbers: a.lineNumbers === true,
-      collapse: a.codeCollapse === true
+      collapse: a.codeCollapse === true,
+      colors: textColors()
     });
   }
 
+  // 渲染键带上影响输出结构的开关，设置变了才重渲染
   function renderKey(text) {
     var a = state.appearance || {};
-    return String(text) + '\u0000' + (a.lineNumbers === true ? 'n' : '') + (a.codeCollapse === true ? 'c' : '');
+    var c = textColors();
+    return String(text) + '\u0000' + (a.lineNumbers === true ? 'n' : '') + (a.codeCollapse === true ? 'c' : '') +
+      '\u0000' + (c ? (c.quote || '') + '|' + (c.bracket || '') : '-');
   }
 
   var REASONING_ICON = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +

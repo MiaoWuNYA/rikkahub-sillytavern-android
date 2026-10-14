@@ -25,8 +25,31 @@
     return '#';
   }
 
+  /**
+   * 解一层 HTML 实体。
+   *
+   * 有些来源（客户端复制、正则脚本、模型自我保护）会把 HTML 先转义一次再落进消息，
+   * 文本里于是是 `&lt;span style=&quot;color:#x&quot;&gt;`。渲染器再转义一次就成了双重转义，
+   * 白名单还原匹配不上，页面上就原样显示 `<span style="color:#x">` 给用户看。
+   * 先用单次扫描解开一层（不做递归），再走正常的转义 + 白名单还原。
+   */
+  var ENTITY_RE = /&(?:lt|gt|quot|#39|amp);/g;
+  var ENTITY_MAP = { '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&amp;': '&' };
+
+  function decodeEntities(text) {
+    var s = String(text == null ? '' : text);
+    if (s.indexOf('&') < 0) return s;
+    // 最多解两层：客户端复制与正则脚本常各转义一次
+    for (var i = 0; i < 2; i++) {
+      var next = s.replace(ENTITY_RE, function (m) { return ENTITY_MAP[m] || m; });
+      if (next === s) break;
+      s = next;
+    }
+    return s;
+  }
+
   function inline(text) {
-    var out = escapeHtml(text);
+    var out = escapeHtml(decodeEntities(text));
     // 行内代码先占位，避免其中内容再被其它规则改写
     var codes = [];
     out = out.replace(/`([^`\n]+)`/g, function (_, code) {
@@ -234,11 +257,55 @@
         i++;
       }
     }
-    return restoreCharaTags(restoreInlineTags(html.join('\n')));
+    return colorizeHtml(restoreCharaTags(restoreInlineTags(html.join('\n'))), options.colors);
   }
 
   function splitRow(line) {
     return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(function (c) { return c.trim(); });
+  }
+
+  /**
+   * 引号/括号染色（对原生 Markdown.kt 的 TEXT_COLOR_REGEX 同一套配对）。
+   *
+   * 只对标签之外的文本做替换，且输出 class 而不是内联 span：内联 span 的 style 属性里
+   * 带引号，注入后再被引号规则扫到就会整段错位——原生那边正是这么坏掉的。
+   * 匹配半角引号用 `&quot;` 实体形态，天然不会碰到刚注入标签自己的属性引号。
+   */
+  var COLOR_SKIP_RE = /<(pre|code|script|style|textarea)\b[^>]*>[\s\S]*?<\/\1\s*>/gi;
+  var COLOR_TAG_RE = /<[^>]*>/g;
+  var COLOR_BRACKET_RE = /（[^（）]*）|【[^【】]*】|「[^「」]*」|『[^『』]*』|《[^《》]*》|‹[^‹›]*›|〔[^〔〕]*〕|｛[^｛｝]*｝|\{[^{}]*\}/g;
+  var COLOR_QUOTE_RE = /&quot;[^&]*?&quot;|“[^“”]*”|«[^«»]*»|＂[^＂]*＂/g;
+
+  function colorizeChunk(chunk, colors) {
+    var out = chunk;
+    if (colors.bracket) out = out.replace(COLOR_BRACKET_RE, '<span class="b">$&</span>');
+    if (colors.quote) out = out.replace(COLOR_QUOTE_RE, '<span class="q">$&</span>');
+    return out;
+  }
+
+  function colorizeSegment(html, colors) {
+    var out = '';
+    var last = 0;
+    var m;
+    COLOR_TAG_RE.lastIndex = 0;
+    while ((m = COLOR_TAG_RE.exec(html)) !== null) {
+      out += colorizeChunk(html.slice(last, m.index), colors) + m[0];
+      last = m.index + m[0].length;
+    }
+    return out + colorizeChunk(html.slice(last), colors);
+  }
+
+  function colorizeHtml(html, colors) {
+    if (!colors || (!colors.quote && !colors.bracket)) return html;
+    var out = '';
+    var last = 0;
+    var m;
+    COLOR_SKIP_RE.lastIndex = 0;
+    while ((m = COLOR_SKIP_RE.exec(html)) !== null) {
+      out += colorizeSegment(html.slice(last, m.index), colors) + m[0];
+      last = m.index + m[0].length;
+    }
+    return out + colorizeSegment(html.slice(last), colors);
   }
 
   global.RikkaMarkdown = {
@@ -246,6 +313,7 @@
     escapeHtml: escapeHtml,
     inline: inline,
     restoreInlineTags: restoreInlineTags,
-    restoreCharaTags: restoreCharaTags
+    restoreCharaTags: restoreCharaTags,
+    colorizeHtml: colorizeHtml
   };
 })(window);
