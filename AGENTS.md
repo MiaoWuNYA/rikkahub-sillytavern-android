@@ -68,6 +68,16 @@ Material 3 look (cards with dividers, plain forms).
   users to regenerate responses and switch between different conversation branches, creating a tree-like conversation
   structure. (app/src/main/java/me/rerere/rikkahub/data/model/Conversation.kt)
 
+- **Frontend Card Mode**: When a conversation's assistant was imported from a card containing HTML
+  frontend cards, the chat message area is rendered by a single WebView
+  (`ui/pages/chat/FrontendCardChatView.kt` + `app/src/main/assets/frontend-card/`) instead of the
+  Compose `ChatList`; the top bar and chat input stay native. The card iframes get a thin
+  TavernHelper-style bridge (slash commands, sendMessage, variables) and the page only displays text
+  already processed by the native pipeline (regex, macros, context assembly). Non-frontend
+  conversations keep the original per-message embedded rendering. (
+  app/src/main/java/me/rerere/rikkahub/ui/pages/chat/FrontendCardChatView.kt,
+  app/src/main/assets/frontend-card/)
+
 - **Message Transformer**: A pipeline mechanism for transforming messages before sending to AI providers (
   InputMessageTransformer) or after receiving responses (OutputMessageTransformer). Transformers can modify message
   content, add metadata, apply templates, handle special tags, convert formats, and perform OCR. Common transformers
