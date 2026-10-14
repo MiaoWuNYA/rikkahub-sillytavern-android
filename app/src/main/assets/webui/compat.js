@@ -4,6 +4,26 @@
 
   var g = typeof window !== 'undefined' ? window : globalThis;
 
+  // 不透明源（某些 WebView 下的 srcdoc iframe）一访问 localStorage 就抛，卡片脚本会整段中断
+  try {
+    void g.localStorage.length;
+  } catch (e) {
+    try {
+      var memStore = {};
+      Object.defineProperty(g, 'localStorage', {
+        configurable: true,
+        value: {
+          getItem: function (k) { return Object.prototype.hasOwnProperty.call(memStore, String(k)) ? memStore[String(k)] : null; },
+          setItem: function (k, v) { memStore[String(k)] = String(v); },
+          removeItem: function (k) { delete memStore[String(k)]; },
+          clear: function () { memStore = {}; },
+          key: function (i) { return Object.keys(memStore)[i] || null; },
+          get length() { return Object.keys(memStore).length; }
+        }
+      });
+    } catch (e2) { /* 覆盖不了就保持原样 */ }
+  }
+
   if (!g.requestIdleCallback) {
     g.requestIdleCallback = function (fn) {
       var start = Date.now();

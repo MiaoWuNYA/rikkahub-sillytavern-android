@@ -76,7 +76,13 @@ fun WebChatSurface(
     // 有 WebView 存活时，输入栏的模糊/玻璃效果必须让位
     TrackWebViewPresence()
     val assetsManager = androidx.compose.ui.platform.LocalContext.current.assets
+    // 模型图标内联进页面：<img> 引 svg 拿不到 currentColor，深色主题下会变成黑块
+    val iconCache = remember(assetsManager) { mutableMapOf<String, String?>() }
+    val iconText: (String) -> String? = { path ->
+        if (iconCache.containsKey(path)) iconCache[path] else readCardIcon(assetsManager, path).also { iconCache[path] = it }
+    }
     val placeholder = stringResource(R.string.chat_input_placeholder)
+    val labels = WebLabels(stringResource(R.string.translating), stringResource(R.string.translation_text))
     val colorScheme = MaterialTheme.colorScheme
     val themeJson = remember(colorScheme) {
         buildJsonObject {
@@ -91,6 +97,7 @@ fun WebChatSurface(
             put("surface-container-high", colorScheme.surfaceContainerHigh.toCssHex())
             put("on-surface", colorScheme.onSurface.toCssHex())
             put("on-surface-variant", colorScheme.onSurfaceVariant.toCssHex())
+            put("outline", colorScheme.outline.toCssHex())
             put("outline-variant", colorScheme.outlineVariant.toCssHex())
             put("error", colorScheme.error.toCssHex())
         }.toString()
@@ -109,8 +116,8 @@ fun WebChatSurface(
     val macroJson = remember(messages, assistant, settings, modelName) {
         buildMacros(messages, assistant, settings, modelName).toString()
     }
-    val stateJson = remember(messages, settings, streaming, placeholder) {
-        buildState(messages, assistant, settings, macroJson, themeJson, placeholder, extractCardStyle(assistant), nodes).toString()
+    val stateJson = remember(messages, nodes, settings, streaming, placeholder, labels) {
+        buildState(messages, assistant, settings, macroJson, themeJson, placeholder, extractCardStyle(assistant), nodes, iconText, labels).toString()
     }
     // 流式帧只认助手消息：用户刚发完时最后一条是用户消息，那种情况下不打光标
     val streamingMessage = remember(messages, streaming) {
@@ -118,12 +125,27 @@ fun WebChatSurface(
         else messages.lastOrNull()?.takeIf { it.role == me.rerere.ai.core.MessageRole.ASSISTANT }
     }
     val streamJson = remember(streamingMessage, assistant, settings) {
-        streamingMessage?.let { buildMessage(it, assistant, settings).toString() }
+        streamingMessage?.let { buildMessage(it, assistant, settings, iconText = iconText, labels = labels).toString() }
     }
     val lastJson = remember(messages) {
-        messages.lastOrNull()?.let { buildMessage(it, assistant, settings).toString() }
+        messages.lastOrNull()?.let { buildMessage(it, assistant, settings, iconText = iconText, labels = labels).toString() }
     }
-    val idsKey = remember(messages) { messages.joinToString(",") { it.id.toString() } }
+    // 下发时机只看渲染元数据：正文增长走流式增量，收藏/翻译/分支这类字段没有事件可依赖
+    val stateKey = remember(messages, nodes) {
+        val nodeOf = mutableMapOf<kotlin.uuid.Uuid, me.rerere.rikkahub.data.model.MessageNode>()
+        nodes.forEach { node -> node.messages.forEach { msg -> nodeOf[msg.id] = node } }
+        messages.joinToString(";") { message ->
+            val node = nodeOf[message.id]
+            listOf(
+                message.id,
+                node?.isFavorite == true,
+                node?.selectIndex ?: 0,
+                node?.messages?.size ?: 1,
+                message.translation?.hashCode() ?: 0,
+                message.parts.size,
+            ).joinToString("|")
+        }
+    }
     val toolbarJson = remember(
         modelName, searchEnabled, searchVisible, reasoningEnabled, reasoningVisible,
         symbolVisible, bracketSymbol, moreVisible,
@@ -256,7 +278,7 @@ fun WebChatSurface(
         }
     }
 
-    LaunchedEffect(ready, idsKey) {
+    LaunchedEffect(ready, stateKey) {
         if (!ready) return@LaunchedEffect
         webViewRef?.evaluateJavascript("window.webui.setSafeArea(${quoteJs(safeAreaJson)});", null)
         webViewRef?.evaluateJavascript("window.webui.setAppearance(${quoteJs(appearanceJson)});", null)
@@ -446,6 +468,13 @@ internal fun buildAppearanceJson(
         asset("botAvatarFrame", display.themeIcons.avatarFrame(false))
         put("avatarFrameScale", kotlinx.serialization.json.JsonPrimitive(display.themeIcons.avatarFrameScale))
     }.toString()
+
+// 模型图标：单色 svg 补 currentColor，否则内联后按黑渲染、深色主题下看不见
+private fun readCardIcon(assets: android.content.res.AssetManager, path: String): String? = runCatching {
+    val svg = assets.open("icons/$path").use { it.readBytes().decodeToString() }
+    if (Regex("""<svg\b[^>]*\bfill\s*=""").containsMatchIn(svg)) svg
+    else svg.replaceFirst(Regex("""<svg\b"""), """<svg fill="currentColor"""")
+}.getOrNull()
 
 // ARGB 整数 → #RRGGBB
 private fun argbToCss(value: Long): String = String.format("#%06X", value.toInt() and 0xFFFFFF)

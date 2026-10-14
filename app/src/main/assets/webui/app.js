@@ -23,6 +23,17 @@
   var RUNTIME_COMPAT = [
     '(function(){',
     '  var W = window;',
+    '  try { void W.localStorage.length; } catch (e) { try {',
+    '    var mem = {};',
+    '    Object.defineProperty(W, "localStorage", { configurable: true, value: {',
+    '      getItem: function(k){ return Object.prototype.hasOwnProperty.call(mem, String(k)) ? mem[String(k)] : null; },',
+    '      setItem: function(k, v){ mem[String(k)] = String(v); },',
+    '      removeItem: function(k){ delete mem[String(k)]; },',
+    '      clear: function(){ mem = {}; },',
+    '      key: function(i){ return Object.keys(mem)[i] || null; },',
+    '      get length(){ return Object.keys(mem).length; }',
+    '    } });',
+    '  } catch (e2) {} }',
     '  if (typeof W.requestIdleCallback !== "function") {',
     '    W.requestIdleCallback = function(cb, opts){',
     '      var start = Date.now();',
@@ -91,7 +102,8 @@
     macros: {},
     libs: {},
     cardStyle: '',
-    appearance: {}
+    appearance: {},
+    labels: {}
   };
   var variables = loadVariables();
   var globalVariables = {};
@@ -721,7 +733,7 @@
         desc.push({ kind: 'text', text: String(block.text) });
       }
     });
-    if (msg.translation) desc.push({ kind: 'translation', text: String(msg.translation) });
+    if (msg.translation) desc.push({ kind: 'translation', text: String(msg.translation), translating: msg.translating === true });
     return desc;
   }
 
@@ -851,8 +863,14 @@
       var tr = document.createElement('div');
       tr.className = 'blk translation';
       tr.dataset.kind = 'translation';
-      tr.innerHTML = renderMarkdown(desc.text);
-      tr._text = renderKey(desc.text);
+      tr.innerHTML = '<div class="tr-rule"></div>' +
+        '<div class="tr-head"><span class="tr-title">' + TR_ICON +
+        '<span class="tr-label"></span></span>' +
+        '<button type="button" class="tr-toggle" aria-label="toggle">' + TR_ARROW + '</button></div>' +
+        '<div class="tr-card"></div>';
+      tr.querySelector('.tr-label').textContent = String((state.labels || {}).translation || '');
+      tr.querySelector('.tr-toggle').addEventListener('click', function () { tr.classList.toggle('collapsed'); });
+      fillTranslation(tr, desc);
       return tr;
     }
     var bubble = document.createElement('div');
@@ -904,14 +922,22 @@
       }
       return node;
     }
-    if (desc.kind === 'text' || desc.kind === 'translation') {
+    if (desc.kind === 'translation') {
+      var trKey = renderKey(desc.text);
+      if (node._text !== trKey) {
+        node._text = trKey;
+        fillTranslation(node, desc);
+      }
+      return node;
+    }
+    if (desc.kind === 'text') {
       // 文本变了才重设 innerHTML，避免每帧重排导致滚动跳动
       var key = renderKey(desc.text);
       if (node._text !== key) {
         node._text = key;
         node.innerHTML = renderMarkdown(desc.text);
       }
-      if (desc.kind === 'text') node.classList.toggle('typing', !!streaming);
+      node.classList.toggle('typing', !!streaming);
       return node;
     }
     if (node.textContent !== desc.text) node.textContent = desc.text;
@@ -959,22 +985,49 @@
     return '';
   }
 
+  // 头像来源由原生决定（助手头像 / 模型图标 / 用户头像 / 首字），页面只按描述画
+  function avatarSpec(msg) {
+    var spec = msg.avatar;
+    if (spec && typeof spec === 'object') return spec;
+    var url = safeUrl(spec);
+    return { kind: url ? 'image' : 'initials', value: url };
+  }
+
+  function avatarKey(msg) {
+    var s = avatarSpec(msg);
+    var appearance = state.appearance || {};
+    return [s.kind, s.value, s.from, s.to, msg.name,
+      appearance.userAvatarFrame, appearance.botAvatarFrame, appearance.avatarFrameScale].join('\u0000');
+  }
+
   function avatarNode(msg) {
+    var spec = avatarSpec(msg);
+    if (spec.kind === 'none') return null;
     var avatar = document.createElement('div');
     avatar.className = 'avatar';
-    var url = safeUrl(msg.avatar);
-    if (url) {
+    avatar.dataset.kind = spec.kind;
+    avatar._key = avatarKey(msg);
+    if (spec.kind === 'image') {
       var img = document.createElement('img');
       img.alt = '';
-      img.src = url;
+      img.src = safeUrl(spec.value);
       // 图片挂了就退回名字首字，保持行高稳定
       img.addEventListener('error', function () {
-        if (img.parentNode === avatar) avatar.removeChild(img);
-        avatar.textContent = initials(msg.name);
+        if (img.parentNode === avatar) {
+          avatar.removeChild(img);
+          avatar.textContent = initials(msg.name);
+        }
       });
       avatar.appendChild(img);
+    } else if (spec.kind === 'emoji') {
+      avatar.textContent = String(spec.value == null ? '' : spec.value);
+    } else if (spec.kind === 'dummy') {
+      avatar.style.setProperty('--avatar-from', String(spec.from || 'transparent'));
+      avatar.style.setProperty('--avatar-to', String(spec.to || 'transparent'));
+    } else if (spec.kind === 'svg') {
+      avatar.innerHTML = String(spec.value == null ? '' : spec.value);
     } else {
-      avatar.textContent = initials(msg.name);
+      avatar.textContent = initials(spec.value || msg.name);
     }
     var isUser = msg.role === 'user';
     var frameUrl = safeUrl(isUser ? state.appearance.userAvatarFrame : state.appearance.botAvatarFrame);
@@ -999,8 +1052,37 @@
     { action: 'translate', label: '翻译', icon: '<path d="M4 6h9"></path><path d="M8 4v2c0 4-2 7-4 8"></path><path d="M6.5 10c1 2.5 3 4.5 5.5 5.5"></path><path d="m13 20 4-9 4 9"></path><path d="M14.5 17h5"></path>' },
     { action: 'favorite', label: '收藏', icon: '<path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.6-4.8 2.6.9-5.4L4.2 9.7l5.4-.8Z"></path>' },
     { action: 'share', label: '分享', icon: '<path d="M12 16V4"></path><path d="m8 8 4-4 4 4"></path><path d="M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"></path>' },
-    { action: 'delete', label: '删除', icon: '<path d="M4 7h16"></path><path d="M9 7V5h6v2"></path><path d="M6 7l1 13h10l1-13"></path>' }
+    { action: 'delete', label: '删除', icon: '<path d="M4 7h16"></path><path d="M9 7V5h6v2"></path><path d="M6 7l1 13h10l1-13"></path>' },
+    { action: '', label: '更多', icon: '<circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle>' }
   ];
+
+  var TR_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<circle cx="12" cy="12" r="9"></circle><path d="M3 12h18"></path>' +
+    '<path d="M12 3c2.5 2.6 3.8 5.6 3.8 9S14.5 18.4 12 21c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z"></path></svg>';
+  var TR_ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="m6 15 6-6 6 6"></path></svg>';
+
+  function fillTranslation(node, desc) {
+    var card = node.querySelector('.tr-card');
+    if (!card) return;
+    card.innerHTML = '';
+    if (desc.translating) {
+      var row = document.createElement('div');
+      row.className = 'tr-loading';
+      var spin = document.createElement('span');
+      spin.className = 'tr-spinner';
+      var text = document.createElement('span');
+      text.textContent = String(desc.text);
+      row.appendChild(spin);
+      row.appendChild(text);
+      card.appendChild(row);
+    } else {
+      card.innerHTML = renderMarkdown(desc.text);
+    }
+    node._text = renderKey(desc.text);
+  }
 
   function buildOps(row, msg) {
     var ops = document.createElement('div');
@@ -1106,7 +1188,8 @@
     head.className = 'head';
     var isUser = msg.role === 'user';
     if (isUser) {
-      head.appendChild(avatarNode(msg));
+      var userAvatar = avatarNode(msg);
+      if (userAvatar) head.appendChild(userAvatar);
       var label = document.createElement('span');
       label.className = 'head-name';
       label.textContent = msg.name == null ? '' : String(msg.name);
@@ -1114,12 +1197,13 @@
       // 用户侧整行由 showUserAvatar 控制
       if (state.appearance.showUserAvatar === false) head.hidden = true;
     } else {
-      head.appendChild(avatarNode(msg));
+      var aiAvatar = avatarNode(msg);
+      if (aiAvatar) head.appendChild(aiAvatar);
       var model = document.createElement('span');
       model.className = 'head-name';
       model.textContent = msg.name == null ? '' : String(msg.name);
       head.appendChild(model);
-      if (state.appearance.showModelIcon === false) head.querySelector('.avatar').hidden = true;
+      if (aiAvatar && state.appearance.showModelIcon === false) aiAvatar.hidden = true;
       if (state.appearance.showModelName === false) model.hidden = true;
     }
     return head;
@@ -1142,14 +1226,14 @@
     patchBody(body, msg, !!streaming);
     col.appendChild(body);
 
+    var ops = buildOps(row, msg);
+    ops.hidden = streaming === true;
+    col.appendChild(ops);
+
     var nerd = document.createElement('div');
     nerd.className = 'nerd';
     syncNerd(nerd, msg);
     col.appendChild(nerd);
-
-    var ops = buildOps(row, msg);
-    ops.hidden = streaming === true;
-    col.appendChild(ops);
 
     var time = document.createElement('span');
     time.className = 'time';
@@ -1174,11 +1258,11 @@
       var nameNode = head.querySelector('.head-name');
       var avatarEl = head.querySelector('.avatar');
       var nameText = msg.name == null ? '' : String(msg.name);
-      if (nameNode && nameNode.textContent !== nameText) {
-        nameNode.textContent = nameText;
-        avatarEl.textContent = '';
+      if (nameNode && nameNode.textContent !== nameText) nameNode.textContent = nameText;
+      if (avatarEl && avatarEl._key !== avatarKey(msg)) {
         var freshAvatar = avatarNode(msg);
-        head.replaceChild(freshAvatar, avatarEl);
+        if (freshAvatar) head.replaceChild(freshAvatar, avatarEl);
+        else head.removeChild(avatarEl);
       }
       head.hidden = isUser ? state.appearance.showUserAvatar === false : false;
       var icon = head.querySelector('.avatar');
@@ -1377,6 +1461,7 @@
         shellVersion++;
       }
       if (typeof payload.placeholder === 'string') state.placeholder = payload.placeholder;
+      if (payload.labels) state.labels = payload.labels;
       state.messages = payload.messages || [];
       if (streamId && !messageById(streamId)) streamId = null;
       schedule(renderAll);
