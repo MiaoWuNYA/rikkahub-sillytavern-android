@@ -678,8 +678,8 @@
   <string name="huadeng_tool_result_truncation_desc">Вывод инструмента более 32 КБ обрезается и сохраняется в файл. Отключите, чтобы хранить полные результаты инструментов в истории сообщений (попробуйте, если вызовы инструментов ведут себя странно через прокси)</string>
   <string name="huadeng_sub_agent">Суб-агент</string>
   <string name="huadeng_sub_agent_desc">Позволяет ИИ передавать подзадачи независимому суб-агенту (без истории диалога) и получать результат</string>
-  <string name="huadeng_frontend_card_mode">Режим только фронт-карт</string>
-  <string name="huadeng_frontend_card_mode_desc">Принудительно включать фронт-режим во всех диалогах (обычно включается автоматически при импорте карты с HTML-фронтом)</string>
+  <string name="huadeng_frontend_card_mode">Режим совместимости</string>
+  <string name="huadeng_frontend_card_mode_desc">Определяет веб-страницы в приветствии или мире; можно задать принудительно</string>
   <string name="huadeng_frontend_card_auto_switched">Фронт-режим включён автоматически</string>
   <string name="huadeng_frontend_card_slash_unsupported">Команда фронт-карты %1$s пока не поддерживается</string>
   <string name="huadeng_transient_prune">Обрезка переходящего содержимого</string>
@@ -3056,7 +3056,7 @@
   <string name="weixin_bot_scan_login">Сканировать для входа</string>
   <string name="weixin_bot_unknown">Неизвестно</string>
   <string name="huadeng_frontend_card_mode_auto">Авто (веб-страница в приветствии или мире)</string>
-  <string name="huadeng_frontend_card_mode_always">Всегда использовать WebView</string>
-  <string name="huadeng_frontend_card_mode_never">Всегда использовать нативный интерфейс</string>
+  <string name="huadeng_frontend_card_mode_always">Always use frontend compatibility mode</string>
+  <string name="huadeng_frontend_card_mode_never">Always use the native interface</string>
   <string name="setting_page_huadeng_compat">Совместимость и помощники</string>
 </resources>

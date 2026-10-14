@@ -1601,13 +1601,13 @@
   <string name="setting_display_page_text_color_bracket_title">لون الأقواس</string>
   <string name="huadeng_sub_agent">الوكيل الفرعي</string>
   <string name="huadeng_sub_agent_desc">يسمح للذكاء الاصطناعي بتفويض المهام الفرعية إلى وكيل مستقل (بدون سجل المحادثة) واسترداد النتيجة</string>
-  <string name="huadeng_frontend_card_mode">وضع بطاقات الواجهة فقط</string>
-  <string name="huadeng_frontend_card_mode_desc">فرض تشغيل وضع الواجهة في كل المحادثات (يُشغَّل تلقائيًا عادةً عند استيراد بطاقة تحتوي واجهة HTML)</string>
+  <string name="huadeng_frontend_card_mode">وضع التوافق</string>
+  <string name="huadeng_frontend_card_mode_desc">يكتشف صفحات الويب في الترحيب أو المعلومات، ويمكن فرضه لكل مساعد</string>
   <string name="huadeng_frontend_card_auto_switched">تم تشغيل وضع الواجهة تلقائيًا</string>
   <string name="huadeng_frontend_card_slash_unsupported">أمر بطاقة الواجهة %1$s غير مدعوم بعد</string>
   <string name="setting_page_huadeng_title_desc">إصلاحات الاتصال، احتياطي الردود الفارغة، تقليم المحتوى، ضغط السياق</string>
   <string name="huadeng_frontend_card_mode_auto">تلقائي (عند وجود صفحة ويب في الترحيب أو المعلومات)</string>
-  <string name="huadeng_frontend_card_mode_always">استخدام واجهة WebView دائمًا</string>
-  <string name="huadeng_frontend_card_mode_never">استخدام الواجهة الأصلية دائمًا</string>
+  <string name="huadeng_frontend_card_mode_always">Always use frontend compatibility mode</string>
+  <string name="huadeng_frontend_card_mode_never">Always use the native interface</string>
   <string name="setting_page_huadeng_compat">التوافق والمساعدة</string>
 </resources>

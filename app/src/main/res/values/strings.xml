@@ -693,8 +693,8 @@
   <string name="huadeng_tool_result_truncation_desc">Tool output over 32 KB is truncated and saved to a file. Turn off to keep full tool results in message history (try this if tool calls misbehave through a proxy)</string>
   <string name="huadeng_sub_agent">Sub-Agent</string>
   <string name="huadeng_sub_agent_desc">Let the AI delegate subtasks to an independent sub-agent (no conversation history) and take back the result</string>
-  <string name="huadeng_frontend_card_mode">Frontend-Card Only Mode</string>
-  <string name="huadeng_frontend_card_mode_desc">Force frontend mode on for every conversation (normally switched on automatically when importing a card with HTML frontend)</string>
+  <string name="huadeng_frontend_card_mode">Frontend compatibility</string>
+  <string name="huadeng_frontend_card_mode_desc">Detects pages in the greeting or world info; can also be forced per assistant</string>
   <string name="huadeng_frontend_card_auto_switched">Frontend mode switched on automatically</string>
   <string name="huadeng_frontend_card_slash_unsupported">Frontend card command %1$s is not supported yet</string>
   <string name="huadeng_transient_prune">Transient Content Pruning</string>
@@ -3135,7 +3135,7 @@
   <string name="weixin_bot_scan_login">Scan to Login</string>
   <string name="weixin_bot_unknown">Unknown</string>
   <string name="huadeng_frontend_card_mode_auto">Auto (detect web pages in greeting or world info)</string>
-  <string name="huadeng_frontend_card_mode_always">Always use the WebView interface</string>
+  <string name="huadeng_frontend_card_mode_always">Always use frontend compatibility mode</string>
   <string name="huadeng_frontend_card_mode_never">Always use the native interface</string>
   <string name="setting_page_huadeng_compat">Compatibility &amp; helpers</string>
 </resources>
