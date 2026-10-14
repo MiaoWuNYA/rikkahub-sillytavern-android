@@ -144,8 +144,21 @@
   var CHARA_TAG_RE = /<(\/?)([A-Za-z0-9_:\-]*[\u0080-\uFFFF][A-Za-z0-9_:\-\u0080-\uFFFF]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/g;
   var SKIP_REGION_RE = /<(style|script|pre|code|textarea)\b[^>]*>[\s\S]*?<\/\1\s*>|<!--[\s\S]*?-->/gi;
 
+  // 卡片分块标签：option 在 select 外浏览器不显示，main/StatusBlock 这类需要按块渲染
+  var BLOCK_TAG_RE = /<(\/?)(main|option|statusblock|status|tickbubble|choice)((?:"[^"]*"|'[^']*'|[^>"'])*)>/gi;
+
+  function convertBlockTags(chunk) {
+    return chunk.replace(BLOCK_TAG_RE, function (full, slash, name) {
+      var tag = name.toLowerCase();
+      if (tag === 'main') return full;
+      if (slash === '/') return '</div>';
+      var attrs = arguments[3] || '';
+      return '<div class="rikka-block rikka-block-' + tag + '"' + attrs.replace(/\s*tickbubble\s*/gi, ' ') + '>';
+    });
+  }
+
   function convertCharaTags(chunk) {
-    return chunk.replace(CHARA_TAG_RE, function (full, slash, name) {
+    return convertBlockTags(chunk).replace(CHARA_TAG_RE, function (full, slash, name) {
       if (slash === '/') return '</span>';
       return '<span class="chara-tag" data-chara="' + name + '">';
     });
