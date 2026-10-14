@@ -38,269 +38,7 @@ import kotlinx.datetime.toJavaLocalDateTime
 import me.rerere.rikkahub.utils.toMessageTimeString
 import me.rerere.rikkahub.ui.components.richtext.TrackWebViewPresence
 import me.rerere.rikkahub.data.model.MessageNode
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.width
 import androidx.compose.ui.unit.dp
-
-// 前端卡专属模式：整块消息区交给单个 WebView。
-@SuppressLint("SetJavaScriptEnabled")
-@Composable
-fun FrontendCardChatView(
-    messages: List<UIMessage>,
-    assistant: Assistant,
-    settings: Settings,
-    streaming: Boolean,
-    onSend: (String) -> Unit,
-    onStop: () -> Unit,
-    onRegenerate: () -> Unit,
-    onOpenLink: (String) -> Unit,
-    onSlash: (String) -> Unit = {},
-    modelName: String = "",
-    // 变量域（local/global）与后端能力：变量落盘、宏走后端引擎
-    variablesJson: String = "{}",
-    onSaveVariables: (String) -> Unit = {},
-    onSubstituteMacros: (suspend (String) -> String)? = null,
-    onMessagesJson: () -> String = { "[]" },
-    nodes: List<me.rerere.rikkahub.data.model.MessageNode> = emptyList(),
-    pageApi: String = "rikka",
-    events: kotlinx.coroutines.flow.SharedFlow<WebUiEvent>? = null,
-    onSetChatMessages: (String) -> Unit = {},
-    onCreateChatMessages: (String) -> Unit = {},
-    onDeleteChatMessages: (String) -> Unit = {},
-    onMessageAction: (String) -> Unit = {},
-    onClipboard: (String) -> Unit = {},
-    onHttpRequest: (String, (String) -> Unit) -> Unit = { _, done -> done("{}") },
-    onSelectSwipe: (String) -> Unit = {},
-    modifier: Modifier = Modifier,
-) {
-    // 有 WebView 存活时，输入栏的模糊/玻璃效果必须让位
-    TrackWebViewPresence()
-    val assetsManager = androidx.compose.ui.platform.LocalContext.current.assets
-    val placeholder = stringResource(R.string.chat_input_placeholder)
-    val colorScheme = MaterialTheme.colorScheme
-    val themeJson = remember(colorScheme) {
-        buildJsonObject {
-            put("primary", colorScheme.primary.toCssHex())
-            put("on-primary", colorScheme.onPrimary.toCssHex())
-            put("primary-container", colorScheme.primaryContainer.toCssHex())
-            put("on-primary-container", colorScheme.onPrimaryContainer.toCssHex())
-            put("secondary-container", colorScheme.secondaryContainer.toCssHex())
-            put("on-secondary-container", colorScheme.onSecondaryContainer.toCssHex())
-            put("surface", colorScheme.surface.toCssHex())
-            put("surface-container", colorScheme.surfaceContainer.toCssHex())
-            put("surface-container-high", colorScheme.surfaceContainerHigh.toCssHex())
-            put("on-surface", colorScheme.onSurface.toCssHex())
-            put("on-surface-variant", colorScheme.onSurfaceVariant.toCssHex())
-            put("outline-variant", colorScheme.outlineVariant.toCssHex())
-            put("error", colorScheme.error.toCssHex())
-        }.toString()
-    }
-
-    val appearanceJson = remember(settings.displaySetting) {
-        buildAppearanceJson(settings.displaySetting)
-    }
-    val macroJson = remember(messages, assistant, settings, modelName) {
-        buildMacros(messages, assistant, settings, modelName).toString()
-    }
-    val stateJson = remember(messages, settings, streaming) {
-        buildState(messages, assistant, settings, macroJson, themeJson, placeholder, extractCardStyle(assistant), nodes).toString()
-    }
-    val streamJson = remember(messages, streaming) {
-        if (!streaming) null else messages.lastOrNull()?.let { buildMessage(it, assistant, settings).toString() }
-    }
-    val lastJson = remember(messages) {
-        messages.lastOrNull()?.let { buildMessage(it, assistant, settings).toString() }
-    }
-    // 只在消息集合结构变化（条数/顺序）时全量重绘，其余情况逐条更新
-    val idsKey = remember(messages) { messages.joinToString(",") { it.id.toString() } }
-
-    // 发送、停止、重新生成：闭包会被 JS 线程调用，用 State 持有最新实现
-    val macroScope = rememberCoroutineScope()
-    var bridge by remember { mutableStateOf<RikkaNativeBridge?>(null) }
-    var ready by remember { mutableStateOf(false) }
-    var webViewRef by remember { mutableStateOf<WebView?>(null) }
-
-    LaunchedEffect(onSend, onStop, onRegenerate, onOpenLink, onSlash) {
-        bridge?.onSend = onSend
-        bridge?.onStop = onStop
-        bridge?.onRegenerate = onRegenerate
-        bridge?.onOpenLink = onOpenLink
-        bridge?.onSlash = onSlash
-    }
-
-    AndroidView(
-        modifier = modifier.fillMaxSize(),
-        factory = { context ->
-            WebView(context).apply {
-                setBackgroundColor(AndroidColor.TRANSPARENT)
-                this.settings.javaScriptEnabled = true
-                this.settings.domStorageEnabled = true
-                this.settings.allowFileAccess = true
-                this.settings.mediaPlaybackRequiresUserGesture = false
-                isVerticalScrollBarEnabled = true
-                webViewClient = object : WebViewClient() {
-                    override fun shouldOverrideUrlLoading(
-                        view: WebView,
-                        request: WebResourceRequest,
-                    ): Boolean {
-                        val url = request.url.toString()
-                        // 页内锚点与本地资产照常加载，其余交给系统浏览器
-                        if (url.startsWith("file:///android_asset/") || url.startsWith("about:")) return false
-                        bridge?.onOpenLink?.invoke(url)
-                        return true
-                    }
-
-                    override fun onPageFinished(view: WebView, url: String) {
-                        super.onPageFinished(view, url)
-                        ready = true
-                    }
-                }
-                val localBridge = RikkaNativeBridge()
-                localBridge.webView = this
-                localBridge.pageApi = pageApi
-                bridge = localBridge
-                addJavascriptInterface(localBridge, "rikkaNative")
-                loadUrl("file:///android_asset/frontend-card/index.html")
-                webViewRef = this
-            }
-        },
-    )
-
-
-    // 首帧：主题 + 全量状态
-    LaunchedEffect(bridge, variablesJson, messages, assistant, settings, modelName) {
-        bridge?.onSyncRequest = { method, payload ->
-            when (method) {
-                "getChatMessages" -> onMessagesJson()
-                "getVariables" -> variablesJson
-                else -> null
-            }
-        }
-        bridge?.onAsyncRequest = { method, requestId, payload ->
-            when (method) {
-                "substituteMacros" -> {
-                    val job = macroScope.launch {
-                        val result = onSubstituteMacros?.invoke(payload) ?: payload
-                        bridge?.resolve(requestId, result)
-                    }
-                    job.invokeOnCompletion { }
-                }
-
-                "setChatMessages" -> {
-                    onSetChatMessages(payload)
-                    bridge?.resolve(requestId, "null")
-                }
-
-                "createChatMessages" -> {
-                    onCreateChatMessages(payload)
-                    bridge?.resolve(requestId, "null")
-                }
-
-                "deleteChatMessages" -> {
-                    onDeleteChatMessages(payload)
-                    bridge?.resolve(requestId, "null")
-                }
-
-                "selectSwipe" -> {
-                    onSelectSwipe(payload)
-                    bridge?.resolve(requestId, "null")
-                }
-
-                "httpRequest" -> {
-                    onHttpRequest(payload) { result ->
-                        bridge?.resolve(requestId, result)
-                    }
-                }
-
-                "messageAction" -> {
-                    onMessageAction(payload)
-                    bridge?.resolve(requestId, "null")
-                }
-
-                "saveVariables" -> {
-                    onSaveVariables(payload)
-                    bridge?.resolve(requestId, payload)
-                }
-
-                "triggerSlash" -> {
-                    onSlash(payload)
-                    bridge?.resolve(requestId, "")
-                }
-
-                else -> bridge?.resolve(requestId, "null")
-            }
-        }
-    }
-
-
-    // 卡片运行环境：jQuery 与 toastr 随包内置
-    LaunchedEffect(ready) {
-        if (!ready) return@LaunchedEffect
-        val libs = runCatching {
-            val payload = buildJsonObject {
-                listOf(
-                    "jquery" to "lib/jquery.min.js",
-                    "toastr" to "lib/toastr.min.js",
-                    // 运行环境补丁：卡片与页面都用它补齐旧 WebView 缺失的标准方法
-                    "compat" to "webui/compat.js",
-                ).forEach { (name, path) ->
-                    val bytes = assetsManager.open(path).use { it.readBytes() }
-                    put(name, kotlinx.serialization.json.JsonPrimitive(android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)))
-                }
-            }.toString()
-            payload
-        }.getOrNull()
-        if (libs != null) {
-            webViewRef?.evaluateJavascript("window.rikka.setLibs(${quote(libs)});", null)
-        }
-    }
-
-    LaunchedEffect(events, ready) {
-        val flow = events ?: return@LaunchedEffect
-        flow.collect { event ->
-            val payload = event.payloadJson
-                .replace("\\", "\\\\")
-                .replace("'", "\\'")
-                .replace("\n", "\\n")
-            webViewRef?.evaluateJavascript(
-                "window.rikka.emitEvent('${event.name}', '$payload');",
-                null,
-            )
-        }
-    }
-
-    LaunchedEffect(ready, idsKey) {
-        if (!ready) return@LaunchedEffect
-        webViewRef?.evaluateJavascript("window.rikka.setAppearance(${quote(appearanceJson)});", null)
-        webViewRef?.evaluateJavascript("window.API.setVariables(${quote(variablesJson)});", null)
-        webViewRef?.evaluateJavascript("window.rikka.setTheme(${quote(themeJson)});", null)
-        webViewRef?.evaluateJavascript("window.rikka.setState(${quote(stateJson)});", null)
-    }
-
-    // 流式阶段只追加/更新最后一条
-    LaunchedEffect(appearanceJson, ready) {
-        if (!ready) return@LaunchedEffect
-        webViewRef?.evaluateJavascript("window.rikka.setAppearance(${quote(appearanceJson)});", null)
-    }
-
-    LaunchedEffect(streamJson, ready) {
-        if (!ready || streamJson == null) return@LaunchedEffect
-        webViewRef?.evaluateJavascript("window.rikka.appendStream(${quote(streamJson)});", null)
-    }
-
-    // 生成结束：落定最后一条，不整页重绘，卡片 iframe 得以保留
-    LaunchedEffect(streaming, ready) {
-        if (!ready || streaming) return@LaunchedEffect
-        lastJson?.let { webViewRef?.evaluateJavascript("window.rikka.appendMessage(${quote(it)});", null) }
-    }
-}
-
-// 传给页面的 JSON 用单引号包一层再交给 evaluateJavascript
-private fun quote(json: String): String = "'" + json.replace("\\", "\\\\").replace("'", "\\'") + "'"
 
 internal fun androidx.compose.ui.graphics.Color.toCssHex(): String =
     String.format("#%06X", toArgb() and 0xFFFFFF)
@@ -309,7 +47,6 @@ internal class RikkaNativeBridge {
     // 回填结果用；由 AndroidView 工厂注入
     @Volatile var webView: WebView? = null
 
-    // 页面对象名（前端卡页是 rikka，界面页是 webui）
     @Volatile var pageApi: String = "rikka"
 
     @Volatile var onSend: ((String) -> Unit)? = null
@@ -425,6 +162,7 @@ internal fun buildState(
                         swipeCount = node?.messages?.size ?: 1,
                         swipeIndex = node?.selectIndex ?: 0,
                         nodeId = node?.id?.toString().orEmpty(),
+                        favorited = node?.isFavorite ?: false,
                     ),
                 )
             }
@@ -445,6 +183,7 @@ internal fun buildMessage(
     swipeCount: Int = 1,
     swipeIndex: Int = 0,
     nodeId: String = "",
+    favorited: Boolean = false,
 ): JsonObject {
     val isUser = message.role == MessageRole.USER
     val textParts = message.parts.filterIsInstance<UIMessagePart.Text>()
@@ -551,6 +290,24 @@ internal fun buildMessage(
         if (reasoning.isNotBlank()) put("reasoning", reasoning)
         put("blocks", blocks)
         put("text", textParts.joinToString("\n") { it.text })
+        // 消息操作排与元信息行需要的附带数据
+        put("favorited", JsonPrimitive(favorited))
+        message.modelSnapshot?.displayName?.takeIf { it.isNotBlank() }?.let { put("model", JsonPrimitive(it)) }
+        message.translation?.takeIf { it.isNotBlank() }?.let { put("translation", JsonPrimitive(it)) }
+        message.usage?.let { usage ->
+            put(
+                "usage",
+                buildJsonObject {
+                    put("prompt", JsonPrimitive(usage.promptTokens))
+                    put("completion", JsonPrimitive(usage.completionTokens))
+                    put("cached", JsonPrimitive(usage.cachedTokens))
+                    put("total", JsonPrimitive(usage.totalTokens))
+                },
+            )
+        }
+        // 技术统计行（tok/s、耗时）要按真实时刻算，页面拿到的是毫秒时间戳
+        put("createdAt", JsonPrimitive(message.createdAt.toEpochMillis()))
+        message.finishedAt?.let { put("finishedAt", JsonPrimitive(it.toEpochMillis())) }
         // 页面用它判断内容是否真的变了，避免每次重组都重建 iframe
         put("signature", (message.parts.toString() + reasoning).hashCode().toString())
     }
@@ -590,7 +347,11 @@ private fun Avatar.toDisplayUrl(): String = when (this) {
     Avatar.Dummy -> ""
 }
 
-// 抽角色卡自带的样式块：前端卡的排版与配色通常写在这里
+// 抽角色卡自带的样式块：前端卡的排版与配色通常写在这里。
+//
+// 备选开场白自身不带 <style>（实测：整张卡只有 first_mes 里有 style），它们的外观
+// 完全依赖这份助手级 CSS，所以这里必须抽全——每个来源里所有 style 块都要，重复的
+// 只留一份，且不做长度截断（旧实现 take(20_000) 正好把一张 20200 字符的卡削掉尾巴）。
 internal fun extractCardStyle(assistant: Assistant): String {
     val sources = buildList {
         add(assistant.systemPrompt)
@@ -606,9 +367,11 @@ internal fun extractCardStyle(assistant: Assistant): String {
         assistant.tavernData?.scenario?.let { add(it) }
     }
     val styleRegex = Regex("<style\\b[^>]*>([\\s\\S]*?)</style\\s*>", RegexOption.IGNORE_CASE)
-    return sources.mapNotNull { styleRegex.find(it)?.groupValues?.get(1) }
+    return sources
+        .flatMap { source -> styleRegex.findAll(source).map { it.groupValues[1].trim() } }
+        .filter { it.isNotEmpty() }
+        .distinct()
         .joinToString("\n")
-        .take(20_000)
 }
 
 // 去掉单独成行的围栏标记（``` 或 ```lang），保留正文内容
@@ -617,3 +380,7 @@ internal fun stripLoneFences(text: String): String = text
     .filterNot { line -> line.trim().matches(Regex("```[a-zA-Z0-9+-]*")) }
     .joinToString("\n")
     .trim()
+
+// 页面算 tok/s 与耗时用的是毫秒时间戳，时区取本机，与原生 Duration 计算一致
+private fun kotlinx.datetime.LocalDateTime.toEpochMillis(): Long =
+    toJavaLocalDateTime().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()

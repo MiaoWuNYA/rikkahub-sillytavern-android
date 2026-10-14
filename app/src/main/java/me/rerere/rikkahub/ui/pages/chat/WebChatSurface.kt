@@ -28,12 +28,6 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.ui.components.richtext.TrackWebViewPresence
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.width
 
 // 原生 → 页面的事件（酒馆事件名 + 参数 JSON 数组）
 data class WebUiEvent(val name: String, val payloadJson: String)
@@ -117,8 +111,13 @@ fun WebChatSurface(
     val stateJson = remember(messages, settings, streaming, placeholder) {
         buildState(messages, assistant, settings, macroJson, themeJson, placeholder, extractCardStyle(assistant), nodes).toString()
     }
-    val streamJson = remember(messages, streaming) {
-        if (!streaming) null else messages.lastOrNull()?.let { buildMessage(it, assistant, settings).toString() }
+    // 流式帧只认助手消息：用户刚发完时最后一条是用户消息，那种情况下不打光标
+    val streamingMessage = remember(messages, streaming) {
+        if (!streaming) null
+        else messages.lastOrNull()?.takeIf { it.role == me.rerere.ai.core.MessageRole.ASSISTANT }
+    }
+    val streamJson = remember(streamingMessage, assistant, settings) {
+        streamingMessage?.let { buildMessage(it, assistant, settings).toString() }
     }
     val lastJson = remember(messages) {
         messages.lastOrNull()?.let { buildMessage(it, assistant, settings).toString() }
@@ -338,31 +337,103 @@ internal fun quoteJs(json: String): String =
 @Suppress("unused")
 private fun Color.hexForWeb(): String = String.format("#%06X", toArgb() and 0xFFFFFF)
 
-// 聊天外观自定义 → 页面样式：
+// 聊天外观自定义 → 页面 CSS 变量：设置里凡影响消息区外观的字段都在这里下发，页面不读设置
 internal fun buildAppearanceJson(display: me.rerere.rikkahub.data.datastore.DisplaySetting): String =
     buildJsonObject {
+        val md = display.themeMarkdownStyle
+        fun color(name: String, value: Long?) {
+            value?.let { put(name, kotlinx.serialization.json.JsonPrimitive(argbToCss(it))) }
+        }
+
+        fun asset(name: String, value: String?) {
+            value?.takeIf { it.isNotBlank() }?.let {
+                put(name, kotlinx.serialization.json.JsonPrimitive(it.toWebImageUrl()))
+            }
+        }
+
+        // —— 气泡与排版 ——
         put("bubbleRadius", kotlinx.serialization.json.JsonPrimitive(display.bubbleCornerRadius))
         put("bubbleOpacity", kotlinx.serialization.json.JsonPrimitive(display.bubbleOpacity))
         put("fontSizeRatio", kotlinx.serialization.json.JsonPrimitive(display.fontSizeRatio))
         put("showAssistantBubble", kotlinx.serialization.json.JsonPrimitive(display.showAssistantBubble))
+        put("showUserAvatar", kotlinx.serialization.json.JsonPrimitive(display.showUserAvatar))
         put("imageOverlay", kotlinx.serialization.json.JsonPrimitive(display.bubbleImageOverlayEnabled))
         put("imageSize", kotlinx.serialization.json.JsonPrimitive(display.bubbleBackgroundSize))
         put("borderWidth", kotlinx.serialization.json.JsonPrimitive(display.bubbleBorderWidth))
+        put("shadowWidth", kotlinx.serialization.json.JsonPrimitive(display.bubbleShadowWidth))
         put("textColorEnabled", kotlinx.serialization.json.JsonPrimitive(display.enableTextColor))
         put("fontFamily", kotlinx.serialization.json.JsonPrimitive(display.chatFontFamily.name))
-        display.userBubbleColor?.let { put("userBubbleColor", kotlinx.serialization.json.JsonPrimitive(argbToCss(it))) }
-        display.assistantBubbleColor?.let { put("assistantBubbleColor", kotlinx.serialization.json.JsonPrimitive(argbToCss(it))) }
-        display.thinkingBubbleColor?.let { put("thinkingBubbleColor", kotlinx.serialization.json.JsonPrimitive(argbToCss(it))) }
-        display.chatBackgroundColor?.let { put("chatBackgroundColor", kotlinx.serialization.json.JsonPrimitive(argbToCss(it))) }
-        display.globalTextColor?.let { put("textColor", kotlinx.serialization.json.JsonPrimitive(argbToCss(it))) }
-        display.bubbleBorderColor?.let { put("borderColor", kotlinx.serialization.json.JsonPrimitive(argbToCss(it))) }
-        display.bubbleShadowColor?.let { put("shadowColor", kotlinx.serialization.json.JsonPrimitive(argbToCss(it))) }
+        put("customFontName", kotlinx.serialization.json.JsonPrimitive(display.chatCustomFontName))
+        asset("customFontUrl", display.chatCustomFontPath)
+
+        // —— 元信息显示开关 ——
+        put("showTime", kotlinx.serialization.json.JsonPrimitive(display.showDateTimeInMessage))
+        put("showModelIcon", kotlinx.serialization.json.JsonPrimitive(display.showModelIcon))
+        put("showModelName", kotlinx.serialization.json.JsonPrimitive(display.showModelName))
+        put("showTokenUsage", kotlinx.serialization.json.JsonPrimitive(display.showTokenUsage))
+
+        // —— 推理与代码块 ——
+        put("showThinking", kotlinx.serialization.json.JsonPrimitive(display.showThinkingContent))
+        put("autoCloseThinking", kotlinx.serialization.json.JsonPrimitive(display.autoCloseThinking))
+        put("codeWrap", kotlinx.serialization.json.JsonPrimitive(display.codeBlockAutoWrap))
+        put("codeCollapse", kotlinx.serialization.json.JsonPrimitive(display.codeBlockAutoCollapse))
+        put("lineNumbers", kotlinx.serialization.json.JsonPrimitive(display.showLineNumbers))
+        put("latex", kotlinx.serialization.json.JsonPrimitive(display.enableLatexRendering))
+
+        // —— 滚动与跳转 ——
+        put("autoScroll", kotlinx.serialization.json.JsonPrimitive(display.enableAutoScroll))
+        put("messageJumper", kotlinx.serialization.json.JsonPrimitive(display.showMessageJumper))
+        put("jumperLeft", kotlinx.serialization.json.JsonPrimitive(display.messageJumperOnLeft))
+
+        // —— 颜色覆盖层（null = 跟随主题）——
+        color("primaryColor", display.primaryColor)
+        color("userBubbleColor", display.userBubbleColor)
+        color("assistantBubbleColor", display.assistantBubbleColor)
+        color("thinkingBubbleColor", display.thinkingBubbleColor)
+        color("chatBackgroundColor", display.chatBackgroundColor)
+        color("textColor", display.globalTextColor)
+        color("borderColor", display.bubbleBorderColor)
+        color("shadowColor", display.bubbleShadowColor)
+        color("quoteBackgroundColor", display.quoteBackgroundColor)
+        color("underlineColor", display.underlineColor)
         put("quoteColor", kotlinx.serialization.json.JsonPrimitive(display.quoteColor))
         put("italicsColor", kotlinx.serialization.json.JsonPrimitive(display.italicsColor))
         put("bracketColor", kotlinx.serialization.json.JsonPrimitive(display.bracketColor))
-        put("userBubbleImage", kotlinx.serialization.json.JsonPrimitive(display.userBubbleImagePath.toWebImageUrl()))
-        put("assistantBubbleImage", kotlinx.serialization.json.JsonPrimitive(display.assistantBubbleImagePath.toWebImageUrl()))
-        put("chatBackgroundImage", kotlinx.serialization.json.JsonPrimitive(display.chatBackgroundImagePath.toWebImageUrl()))
+
+        // —— 气泡/背景图 ——
+        asset("userBubbleImage", display.userBubbleImagePath)
+        asset("assistantBubbleImage", display.assistantBubbleImagePath)
+        asset("chatBackgroundImage", display.chatBackgroundImagePath)
+
+        // —— 主题导入的 Markdown 元素样式（代码框/引用块/高亮/斜体/思维链）——
+        put("mdInlineCodeBg", kotlinx.serialization.json.JsonPrimitive(md.inlineCodeBackgroundArgb?.let { argbToCss(it) }.orEmpty()))
+        put("mdInlineCodeColor", kotlinx.serialization.json.JsonPrimitive(md.inlineCodeColorArgb?.let { argbToCss(it) }.orEmpty()))
+        put("mdInlineCodeRadius", kotlinx.serialization.json.JsonPrimitive(md.inlineCodeCornerRadiusDp))
+        put("mdCodeBg", kotlinx.serialization.json.JsonPrimitive(md.codeBlockBackgroundArgb?.let { argbToCss(it) }.orEmpty()))
+        put("mdCodeColor", kotlinx.serialization.json.JsonPrimitive(md.codeBlockColorArgb?.let { argbToCss(it) }.orEmpty()))
+        put("mdCodeRadius", kotlinx.serialization.json.JsonPrimitive(md.codeBlockCornerRadiusDp))
+        put("mdCodeBorder", kotlinx.serialization.json.JsonPrimitive(md.codeBlockBorderColorArgb?.let { argbToCss(it) }.orEmpty()))
+        put("mdCodeBorderWidth", kotlinx.serialization.json.JsonPrimitive(md.codeBlockBorderWidthDp))
+        put("mdQuoteBg", kotlinx.serialization.json.JsonPrimitive(md.quoteBackgroundArgb?.let { argbToCss(it) }.orEmpty()))
+        put("mdQuoteColor", kotlinx.serialization.json.JsonPrimitive(md.quoteColorArgb?.let { argbToCss(it) }.orEmpty()))
+        put("mdQuoteRadius", kotlinx.serialization.json.JsonPrimitive(md.quoteCornerRadiusDp))
+        put("mdQuoteBorder", kotlinx.serialization.json.JsonPrimitive(md.quoteBorderColorArgb?.let { argbToCss(it) }.orEmpty()))
+        put("mdQuoteBorderWidth", kotlinx.serialization.json.JsonPrimitive(md.quoteBorderWidthDp))
+        put("mdQuoteAccentWidth", kotlinx.serialization.json.JsonPrimitive(md.quoteAccentWidthDp))
+        put("mdMarkBg", kotlinx.serialization.json.JsonPrimitive(md.markBackgroundArgb?.let { argbToCss(it) }.orEmpty()))
+        put("mdMarkColor", kotlinx.serialization.json.JsonPrimitive(md.markColorArgb?.let { argbToCss(it) }.orEmpty()))
+        put("mdMarkRadius", kotlinx.serialization.json.JsonPrimitive(md.markCornerRadiusDp))
+        put("mdEmphasisBg", kotlinx.serialization.json.JsonPrimitive(md.emphasisBackgroundArgb?.let { argbToCss(it) }.orEmpty()))
+        put("mdEmphasisColor", kotlinx.serialization.json.JsonPrimitive(md.emphasisColorArgb?.let { argbToCss(it) }.orEmpty()))
+        put("mdEmphasisRadius", kotlinx.serialization.json.JsonPrimitive(md.emphasisCornerRadiusDp))
+        put("mdReasoningBg", kotlinx.serialization.json.JsonPrimitive(md.reasoningBackgroundArgb?.let { argbToCss(it) }.orEmpty()))
+        put("mdReasoningColor", kotlinx.serialization.json.JsonPrimitive(md.reasoningColorArgb?.let { argbToCss(it) }.orEmpty()))
+        put("mdReasoningRadius", kotlinx.serialization.json.JsonPrimitive(md.reasoningCornerRadiusDp))
+
+        // —— 主题头像框（用户侧与助手侧分开，缺省回退到不分侧的框）——
+        asset("userAvatarFrame", display.themeIcons.avatarFrame(true))
+        asset("botAvatarFrame", display.themeIcons.avatarFrame(false))
+        put("avatarFrameScale", kotlinx.serialization.json.JsonPrimitive(display.themeIcons.avatarFrameScale))
     }.toString()
 
 // ARGB 整数 → #RRGGBB
