@@ -534,6 +534,8 @@ private fun ChatPageContent(
                 )
             },
             bottomBar = {
+            val barFocusManager = LocalFocusManager.current
+            val barKeyboard = LocalSoftwareKeyboardController.current
                 val messageQueue by vm.messageQueue.collectAsStateWithLifecycle()
                 val voiceState by vm.voiceSession.state.collectAsStateWithLifecycle()
                 // 前端卡（HTML 文档 WebView）在场时禁用输入栏模糊/玻璃：
@@ -579,6 +581,8 @@ private fun ChatPageContent(
                             vm.handleMessageSend(inputState.getContents())
                             inputState.clearInput()
                         }
+                        barFocusManager.clearFocus(force = true)
+                        barKeyboard?.hide()
                         scope.launch {
                             delay(100.milliseconds)
                             chatListState.requestScrollToItem(conversation.currentMessages.size + 5)
@@ -591,6 +595,8 @@ private fun ChatPageContent(
                             vm.handleMessageSend(content = inputState.getContents(), answer = false)
                         }
                         inputState.clearInput()
+                        barFocusManager.clearFocus(force = true)
+                        barKeyboard?.hide()
                     },
                     onSlashDuplicate = {
                         val src = setting.getCurrentAssistant()
@@ -922,7 +928,6 @@ private fun ChatPageContent(
                             .substituteGreetingMacros(context, setting, chatAssistant, text)
                     },
                     events = webEvents,
-                    onEdgeSwipe = { pageScope.launch { drawerState.open() } },
                     // 卡片里的本地路由请求走 App 的网络栈（代理/证书与 App 一致）
                     onHttpRequest = { payload, done ->
                         pageScope.launch {

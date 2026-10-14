@@ -531,6 +531,20 @@
     return '<script>' + String(source == null ? '' : source).replace(/<\/(script)/gi, '<\\/$1') + '<\/script>';
   }
 
+  // 拆分卡片文档：head 只保留 style/link/script，title 与 meta 丢弃
+  function splitCardDoc(html) {
+    try {
+      var doc = new DOMParser().parseFromString(String(html), 'text/html');
+      var kept = [];
+      Array.prototype.forEach.call(doc.head ? doc.head.querySelectorAll('style,link,script') : [], function (el) {
+        kept.push(el.outerHTML);
+      });
+      return { head: kept.join('\n'), body: doc.body ? doc.body.innerHTML : String(html) };
+    } catch (e) {
+      return { head: '', body: String(html) };
+    }
+  }
+
   function cardFrame(key, html, ctx) {
     ctx = ctx || {};
     var body = expandMacros(applySetVars(html));
@@ -566,13 +580,15 @@
         '  setTimeout(report, 60); setTimeout(report, 400);' +
         '})();'
       ) +
+      parts.head +
       '</head><body>';
+    var parts = splitCardDoc(body);
     var frame = document.createElement('iframe');
     frame.dataset.cardKey = key;
     frame.setAttribute('frameborder', '0');
     frame.setAttribute('loading', 'lazy');
     frame.className = 'card-frame';
-    frame.srcdoc = shellHead + body + '</body></html>';
+    frame.srcdoc = shellHead + parts.body + '</body></html>';
     frame.style.height = '360px';
     frame.addEventListener('load', function () { watchCardHeight(frame); });
     return frame;
