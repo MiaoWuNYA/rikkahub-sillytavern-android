@@ -5,7 +5,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeFlexibleTopAppBar
+import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.ArrowRight01
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -26,10 +29,12 @@ import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.plus
 import org.koin.androidx.compose.koinViewModel
+import me.rerere.rikkahub.Screen
 
 // 兼容与辅助：连接修复、空响应兜底、内容裁剪、滚动压缩、工具结果截断等全局开关。
 @Composable
 fun SettingHuaDengCompatPage(vm: SettingVM = koinViewModel()) {
+    val navController = me.rerere.rikkahub.ui.context.LocalNavController.current
     val settings by vm.settings.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -56,10 +61,12 @@ fun SettingHuaDengCompatPage(vm: SettingVM = koinViewModel()) {
                     title = { Text(stringResource(R.string.setting_page_huadeng_title)) },
                 ) {
                     item(
+                        onClick = { navController.navigate(Screen.Assistant) },
                         headlineContent = { Text(stringResource(R.string.huadeng_frontend_card_mode)) },
                         supportingContent = {
                             Text(stringResource(R.string.huadeng_frontend_card_mode_desc))
                         },
+                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
                     )
                     item(
                         headlineContent = { Text(stringResource(R.string.assistant_page_proxy_fix)) },
