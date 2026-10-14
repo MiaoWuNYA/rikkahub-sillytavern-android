@@ -15,13 +15,7 @@
 (function () {
   'use strict';
 
-  /**
-   * 内置的运行环境兜底补丁（最小集）。
-   *
-   * 正式补丁是 assets/webui/compat.js：页面用 <script src> 同步加载，卡片由原生通过
-   * setLibs 下发（base64）后注入外壳。原生还没下发时（或该文件缺失）卡片会退回这一份，
-   * 保证 .at()/requestIdleCallback 这类「缺一个就白屏」的 API 始终可用。
-   */
+  // 内置兜底补丁（最小集）；正式补丁是 compat.js，仅在它没就位时用这份顶上
   var RUNTIME_COMPAT = [
     '(function(){',
     '  var W = window;',
@@ -68,7 +62,7 @@
     '})();'
   ].join('\n');
 
-  /** 把一段脚本源码同步注入当前文档（同一份补丁要在页面与卡片两个环境各跑一次） */
+  // 把脚本源码同步注入当前文档（页面与卡片是两个独立 JS 环境，各跑一次）
   function injectScript(source) {
     try {
       var el = document.createElement('script');
@@ -79,8 +73,7 @@
     } catch (e) { return false; }
   }
 
-  // 正式补丁走 index.html 的 <script src="compat.js">（同步、不依赖原生下发时序）；
-  // 这里只兜底：compat.js 没装上就先铺一层最小集，后面 setLibs 到了再补完整版
+  // 正式补丁走 index.html 的 compat.js；这里只兜底，setLibs 到了再补完整版
   if (!window.RikkaCompat) injectScript(RUNTIME_COMPAT);
 
   var list = document.getElementById('list');
@@ -88,10 +81,8 @@
 
   var state = { messages: [], placeholder: '', macros: {} };
   state.libs = {};
-  // 运行库版本：原生下发 setLibs 时自增。首帧 setState 早于 setLibs（Kotlin 侧两个
-  // LaunchedEffect 的顺序就是这样），所以装配过早的卡片必须能识别出「我这台机器上
-  // 还没有 jQuery/compat」并按版本重建一次。
-  var libsVersion = 0;
+  // 外壳版本：setLibs 或 cardStyle 变化时自增，用来把已装配的卡片重装一次
+  var shellVersion = 0;
   // 工具条状态：默认值保证「原生还没下发 setToolbar」时页面依然可用
   var bar = {
     modelName: '',
@@ -112,7 +103,7 @@
   var globalVariables = {};
   var messageVariables = {};
 
-  /** 变量域变化广播给卡片（卡片各自留一份副本，读操作保持同步） */
+  // 变量域变化广播给卡片（卡片各自留一份副本，读操作保持同步）
   function pushVarsToCards() {
     var frames = document.querySelectorAll('iframe');
     var scopes = { local: variables, global: globalVariables, message: messageVariables };
@@ -128,7 +119,7 @@
   }
 
 
-  /** 聊天外观自定义：把设置里的气泡、背景、字体、引用配色落到 CSS 变量 */
+  // 聊天外观自定义：把设置里的气泡、背景、字体、引用配色落到 CSS 变量
   function withAlpha(hex, alpha) {
     var m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
     if (!m) return hex;
@@ -138,7 +129,7 @@
   }
 
 
-  /** 附件块：图片 / 视频 / 音频 / 文档 */
+  // 附件块：图片 / 视频 / 音频 / 文档
   function attachmentNode(block) {
     var wrap = document.createElement('div');
     wrap.className = 'blk attach';
@@ -174,7 +165,7 @@
     return wrap;
   }
 
-  /** 原生标题栏 / 输入栏遮住的区域，页面据此留白 */
+  // 原生标题栏 / 输入栏遮住的区域，页面据此留白
   function measureToolbar() {
     try {
       var bar = document.getElementById('toolbar');
@@ -256,7 +247,7 @@
     try { localStorage.setItem('rikka.frontend.vars', JSON.stringify(variables)); } catch (e) { /* 隐私模式等忽略 */ }
   }
 
-  /** 酒馆内置宏：静态值、变量、掷骰、随机、注释 */
+  // 酒馆内置宏：静态值、变量、掷骰、随机、注释
   function expandMacros(text) {
     if (!text || text.indexOf('{{') < 0) return text;
     var m = state.macros || {};
@@ -300,7 +291,7 @@
     return out;
   }
 
-  /** setvar 要在渲染前生效，所以先单独跑一遍写操作 */
+  // setvar 要在渲染前生效，所以先单独跑一遍写操作
   function applySetVars(text) {
     if (!text || text.indexOf('{{') < 0) return text;
     return String(text).replace(/\{\{\s*(?:setvar|setglobalvar)\s*::\s*([^:\n}]+?)\s*::([^\n}]*?)\}\}/gi,
@@ -325,9 +316,8 @@
     return total;
   }
 
-  /** 卡片页内桥：酒馆前端卡常直接调这些接口 */
-
-  /** 卡片常依赖的 lodash 子集：只实现被高频使用的部分，未覆盖的返回安全的空值 */
+  // 卡片页内桥：酒馆前端卡常直接调这些接口
+  // 卡片常依赖的 lodash 子集：只实现被高频使用的部分，未覆盖的返回安全的空值
   var LODASH_LITE = [
     '(function(){',
     '  var _ = {};',
@@ -485,7 +475,7 @@
     '<\/script>'
   ].join('\n');
 
-  /** 组装某张卡片的桥：把消息 id、卡序号与角色信息一并注入 */
+  // 组装某张卡片的桥：把消息 id、卡序号与角色信息一并注入
   function buildCardBridge(messageId, cardIndex, charName, userName, avatar) {
     return CARD_BRIDGE_TEMPLATE
       .replace('__MID__', JSON.stringify(String(messageId == null ? '' : messageId)))
@@ -495,14 +485,7 @@
       .replace('__AVATAR__', JSON.stringify(String(avatar == null ? '' : avatar)));
   }
 
-  /**
-   * 卡片外壳的默认排版。
-   *
-   * 酒馆卡把内容塞进自定义标签（<mainbody><phone><wechat>…），HTML 解析器把未知标签当
-   * 行内元素处理：容器全挤在一行、卡片自己的 <style> 又常常只给颜色不给 display，
-   * 于是非完整文档形态的开场白会糊成一团。这里给常见容器标签兜一层块级默认值——
-   * 它排在卡片自带样式之前、同为元素选择器，卡片自己的规则仍然优先。
-   */
+  // 卡片外壳默认排版：未知容器标签默认行内（酒馆卡的 <mainbody>/<phone> 会挤成一行），这里兜块级
   var CARD_SHELL_CSS =
     'html,body{margin:0;padding:0;background:transparent;color:inherit;' +
     'font-family:-apple-system,"Noto Sans CJK SC",Roboto,sans-serif;word-break:break-word;}' +
@@ -514,12 +497,7 @@
     'chat,message,dialog,dialogue,bubble,card,panel,content,container,item,row,col,column,' +
     'header,footer,title{display:block;box-sizing:border-box;max-width:100%;}';
 
-  /**
-   * 未知标签兜底：CSS 选择不到「未知标签」本身，而酒馆卡里还有 <昕彤>、<月绮> 这种
-   * 以角色名做标签的写法。渲染后遍历一遍：容器上下文里 computed 仍是 inline 的
-   * 未知标签提升为块级；卡片自己写了 display 的、以及段内（父节点是已知 HTML 标签）
-   * 的装饰标签，一律不碰。
-   */
+  // CSS 选择不到「未知标签」，只能渲染后遍历：容器上下文里仍是 inline 的未知标签升为块级
   var CARD_SHELL_NORMALIZE = [
     '(function(){',
     '  var KNOWN = {};',
@@ -546,18 +524,9 @@
     '})();'
   ].join('\n');
 
-  /** 前端卡：做成内联 iframe，宏与桥在其中一并注入 */
-  /**
-   * 前端卡：作为网页嵌在对话流里。
-   *
-   * 外壳按酒馆助手的做法固定：charset → viewport → 基础样式 → 运行环境
-   * （jQuery / lodash 子集 / toastr）→ 桥 → 高度上报，卡片原文整段放进 body。
-   * 不加 sandbox：同源才能让卡片访问 parent 并把自身高度写回 iframe。
-   */
-  /**
-   * 把脚本源码包成 srcdoc 里安全的内联 <script>：源码中若出现 `</script`
-   * （第三方库的字符串、注释里都可能撞上）会提前收尾，这里先打断它。
-   */
+  // 前端卡：做成内联 iframe，宏与桥在其中一并注入
+  // 前端卡：作为网页嵌在对话流里，卡片原文整段放进 body；不加 sandbox（同源才能写回高度）
+  // 把脚本源码包成 srcdoc 里安全的内联 <script>：源码里的 `</script` 会提前收尾，先打断
   function inlineScript(source) {
     return '<script>' + String(source == null ? '' : source).replace(/<\/(script)/gi, '<\\/$1') + '<\/script>';
   }
@@ -566,16 +535,14 @@
     ctx = ctx || {};
     var body = expandMacros(applySetVars(html));
     var libs = state.libs || {};
-    // 卡片才是真正需要补丁的地方：优先原生下发的 compat.js（含剪贴板/网络转发），
-    // 原生还没下发时退回内置最小集
+    // 卡片才真正需要补丁：优先原生下发的 compat.js，未下发时退回内置最小集
     var compat = libs.compat || RUNTIME_COMPAT;
     var shellHead = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
       '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
       '<style>' + CARD_SHELL_CSS +
       ':root{--TH-viewport-height:' + Math.max(320, window.innerHeight || 640) + 'px;}' +
       '</style>' +
-      // 卡片自带样式必须独立成一个 <style> 元素：嵌在外层 <style> 里只会被当成纯文本，
-      // 卡片排版整体失效，紧跟其后的 :root 变量也会一起被吃掉
+      // 卡片自带样式必须独立成 <style>：嵌在外层 <style> 里只是纯文本，规则与 :root 变量全废
       (state.cardStyle ? '<style>' + state.cardStyle + '</style>' : '') +
       // 运行环境排在最前面：卡片的 jQuery/lodash 与卡片脚本都可能在首帧用到这些 API
       inlineScript(compat) +
@@ -611,7 +578,7 @@
     return frame;
   }
 
-  /** 卡片高度自适应：轮询 + ResizeObserver 双保险（卡片常异步刷新内容） */
+  // 卡片高度自适应：轮询 + ResizeObserver 双保险（卡片常异步刷新内容）
   function watchCardHeight(frame) {
     var measure = function () {
       try {
@@ -640,7 +607,7 @@
 
   // —— 消息正文：把一条消息摊平成有序的块序列，再与现有 DOM 逐位对齐 ——
 
-  /** 块序列：reasoning（若有）在前，其后按 blocks 顺序展开 text/card/tool */
+  // 块序列：reasoning（若有）在前，其后按 blocks 顺序展开 text/card/tool
   function blocksOf(msg) {
     var desc = [];
     if (msg.reasoning) desc.push({ kind: 'reasoning', text: String(msg.reasoning) });
@@ -661,8 +628,7 @@
           }
         });
       } else if (block.type === 'image' || block.type === 'video' || block.type === 'audio' || block.type === 'document') {
-        // 附件也是「有序块」之一：必须交给 patchBody 定位复用。
-        // 直接往 body 里塞会在每次流式刷新时重复追加，且打乱块下标。
+        // 附件也是有序块：必须交给 patchBody 定位复用，直接塞 body 会重复叠加
         desc.push({
           kind: 'attach',
           key: [block.type, block.url || '', block.name || ''].join('|'),
@@ -692,13 +658,12 @@
     } else if (desc.kind === 'card') {
       node.className = 'blk card';
       node.dataset.cardKey = desc.key;
-      // 流式帧只铺文本与光标，不装配卡片运行时（对齐 TauriTavern 的 transient 渲染）：
-      // 帧内先留空占位块，落定（appendMessage / setState）时才建 iframe
+      // 流式帧只铺文本与光标，不装配卡片（对齐 TauriTavern 的 transient 渲染），落定才建 iframe
       if (!streaming) {
         node.appendChild(cardFrame(desc.key, desc.html, desc.ctx));
         node._html = desc.html;
         node._desc = desc;
-        node._libsVersion = libsVersion;
+        node._shellVersion = shellVersion;
       }
     } else if (desc.kind === 'tool') {
       node.className = 'blk tool';
@@ -712,12 +677,11 @@
     return node;
   }
 
-  /** 就地更新块；返回真正留在 DOM 里的节点（卡片换了内容时会换成新节点） */
+  // 就地更新块；返回真正留在 DOM 里的节点（卡片换了内容时会换成新节点）
   function updateBlockNode(node, desc, streaming) {
     if (desc.kind === 'card') {
-      // 流式期间绝不重建 iframe（卡内脚本状态会全丢）；落定时内容真的变了才换新。
-      // 流式帧留下的空占位块 _html 为空，落定时同样走这里装配；运行库换过版本也要重装。
-      if (!streaming && (node._html !== desc.html || node._libsVersion !== libsVersion)) {
+      // 流式期间绝不重建 iframe（卡内脚本状态会全丢）；落定且内容/外壳版本变了才换新
+      if (!streaming && (node._html !== desc.html || node._shellVersion !== shellVersion)) {
         var fresh = makeBlockNode(desc, false);
         node.parentNode.replaceChild(fresh, node);
         return fresh;
@@ -739,7 +703,7 @@
     return node;
   }
 
-  /** 把块序列铺进 body：同 kind（卡片还要求 key 相同）的节点原地复用 */
+  // 把块序列铺进 body：同 kind（卡片还要求 key 相同）的节点原地复用
   function patchBody(body, msg, streaming) {
     var want = blocksOf(msg);
     var children = [];
@@ -765,13 +729,7 @@
     }
   }
 
-  /**
-   * 运行库到位（或换版本）后重建已装配的卡片。
-   *
-   * 首帧 setState 早于 setLibs，那时建出来的 iframe 里没有 jQuery / toastr / compat，
-   * 卡片脚本要么白屏要么缺能力；而「内容没变就复用」的策略会让这个坏状态一直留着，
-   * 所以这里主动重建一次。只重建已经装配好的卡片，流式占位块等落定时自然会用新库。
-   */
+  // 运行库或 cardStyle 变化后重装已装配的卡片：首帧 setState 早于 setLibs，不重装会一直缺 jQuery/compat
   function rebuildCards() {
     var nodes = list.querySelectorAll('.blk.card');
     for (var i = 0; i < nodes.length; i++) {
@@ -805,6 +763,49 @@
     return String(msg.signature == null ? '' : msg.signature);
   }
 
+  // 多分支消息的切换条：‹ i/n ›，点击回请原生 selectSwipe
+  function syncSwipes(col, msg) {
+    if (!col) return;
+    var bar = null;
+    for (var i = 0; i < col.children.length; i++) {
+      if (col.children[i].classList.contains('swipes')) { bar = col.children[i]; break; }
+    }
+    var count = Number(msg.swipeCount) || 0;
+    var nodeId = msg.nodeId == null ? '' : String(msg.nodeId);
+    if (count < 2 || !nodeId) {
+      if (bar) col.removeChild(bar);
+      return;
+    }
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'swipes';
+      bar.innerHTML = '<button type="button" class="swipe-btn" data-step="-1" aria-label="上一条分支">‹</button>' +
+        '<span class="swipe-label"></span>' +
+        '<button type="button" class="swipe-btn" data-step="1" aria-label="下一条分支">›</button>';
+      bar.addEventListener('click', function (event) {
+        event.stopPropagation();
+        var btn = event.target && event.target.closest ? event.target.closest('.swipe-btn') : null;
+        if (!btn || btn.disabled) return;
+        var total = Number(bar.dataset.count) || 0;
+        var next = (Number(bar.dataset.index) || 0) + (Number(btn.dataset.step) || 0);
+        if (next < 0 || next >= total) return;
+        requestNative('selectSwipe', JSON.stringify({ nodeId: bar.dataset.nodeId || '', index: next }));
+      });
+      col.appendChild(bar);
+    }
+    // 状态放在 dataset 上，点击时现读，避免闭包拿到旧下标
+    var index = Math.max(0, Math.min(count - 1, Number(msg.swipeIndex) || 0));
+    bar.dataset.count = String(count);
+    bar.dataset.index = String(index);
+    bar.dataset.nodeId = nodeId;
+    var label = bar.querySelector('.swipe-label');
+    if (label) label.textContent = (index + 1) + '/' + count;
+    var prev = bar.querySelector('[data-step="-1"]');
+    var next2 = bar.querySelector('[data-step="1"]');
+    if (prev) prev.disabled = index <= 0;
+    if (next2) next2.disabled = index >= count - 1;
+  }
+
   function renderRow(msg, streaming) {
     var row = document.createElement('div');
     row.className = 'row ' + (msg.role === 'user' ? 'user' : 'ai');
@@ -813,7 +814,7 @@
     row.dataset.streaming = streaming ? '1' : '';
     // 点消息回请原生菜单：复制、编辑、删除等仍走原生那套，WebView 只做入口
     row.addEventListener('click', function (event) {
-      if (event.target.closest && event.target.closest('a, .attach-doc, iframe, audio, video, .bubble a')) return;
+      if (event.target.closest && event.target.closest('a, .attach-doc, iframe, audio, video, .swipes, .bubble a')) return;
       native('messageAction', JSON.stringify({ id: String(msg.id), role: msg.role }));
     });
     row.appendChild(avatarNode(msg));
@@ -837,12 +838,13 @@
     time.textContent = msg.time == null ? '' : String(msg.time);
     time.hidden = !time.textContent;
     col.appendChild(time);
+    syncSwipes(col, msg);
 
     row.appendChild(col);
     return row;
   }
 
-  /** 就地更新一行（只碰正文与时间，头像不重建） */
+  // 就地更新一行（只碰正文与时间，头像不重建）
   function updateRow(row, msg, streaming) {
     var body = row.querySelector('.body');
     if (body) patchBody(body, msg, streaming);
@@ -858,6 +860,7 @@
     }
     row.dataset.signature = signatureOf(msg);
     row.dataset.streaming = streaming ? '1' : '';
+    syncSwipes(row.querySelector('.col'), msg);
   }
 
   function rowById(id) {
@@ -880,14 +883,7 @@
     if (empty) list.removeChild(empty);
   }
 
-  /**
-   * 全量重绘：按消息 id 复用已有的行，只在内容真的变了时才动 DOM。
-   *
-   * 原来的 `list.innerHTML = ''` 会把所有卡片 iframe 拆掉重建——卡内脚本状态、定时器、
-   * 滚动位置全丢，重渲染一次就等于把卡片重新冷启动一遍（这也是「卡片黑屏」的结构性
-   * 原因）。卡片 iframe 是否会换新，交给 patchBody/updateBlockNode 按 (消息 id, 卡序号)
-   * 与卡片 HTML 文本比对决定。
-   */
+  // 全量重绘按消息 id 复用行：老实现的 list.innerHTML = '' 会把所有卡片 iframe 拆掉重建
   function renderAll() {
     if (!state.messages.length) {
       list.innerHTML = '';
@@ -955,6 +951,7 @@
   }
 
   function applyToolbar() {
+    if (!ui.model) return;
     ui.modelLabel.textContent = bar.modelName || '';
     ui.modelLabel.hidden = !bar.modelName;
     ui.model.setAttribute('aria-label', bar.modelName ? '选择模型：' + bar.modelName : '选择模型');
@@ -993,7 +990,7 @@
 
   // —— 原生侧接口 ——
   window.webui = {
-    /** 原生下发的卡片运行库（jQuery / toastr / compat，base64 传输避免转义问题） */
+    // 原生下发的卡片运行库（jQuery / toastr / compat，base64 传输避免转义问题）
     setLibs: function (json) {
       var payload = parse(json) || {};
       var changed = false;
@@ -1005,18 +1002,17 @@
       });
       // compat.js 是页面唯一的完整补丁：index.html 那次加载没成功时，用原生下发的这份补上
       if (!window.RikkaCompat && state.libs.compat) injectScript(state.libs.compat);
-      // 首帧装配的卡片是在「没有运行库」的状态下建的，这里按版本重建一次；
-      // 之后 setLibs 重复下发同一份内容不会触发重建，卡片状态不受影响
-      if (changed) { libsVersion++; rebuildCards(); }
+      // 运行库变了：首帧装配的卡片是在没有 libs 的状态下建的，按版本重装一次
+      if (changed) { shellVersion++; rebuildCards(); }
     },
 
-    /** 原生下发的遮挡区域（标题栏 / 输入栏高度） */
+    // 原生下发的遮挡区域（标题栏 / 输入栏高度）
     setSafeArea: function (json) { applySafeArea(parse(json)); },
 
-    /** 原生下发的聊天外观自定义 */
+    // 原生下发的聊天外观自定义
     setAppearance: function (json) { applyAppearance(parse(json)); },
 
-    /** 原生下发的变量域快照（local / global / message） */
+    // 原生下发的变量域快照（local / global / message）
     setVariables: function (json) {
       var payload = parse(json) || {};
       Object.keys(payload).forEach(function (scope) {
@@ -1028,12 +1024,7 @@
       pushVarsToCards();
     },
 
-    /**
-     * 原生回填：把结果送进发起方。
-     * 两条通道都要喂：桥的 `__rikkaResolve`（call() 的 Promise）与 compat.js 的
-     * `__rikkaNetResolve`（fetch/XHR 本地路由 → httpRequest 的回填）。
-     * 页面自己也可能通过 RikkaCompat.nativeRequest 发请求，所以本窗口也要走一遍。
-     */
+    // 原生回填：桥的 __rikkaResolve 与 compat.js 的 __rikkaNetResolve 两条通道都要喂（含本窗口）
     resolve: function (requestId, value) {
       var targets = [window];
       var frames = document.querySelectorAll('iframe');
@@ -1046,7 +1037,7 @@
       });
     },
 
-    /** 原生事件 → 页面 → 所有卡片 */
+    // 原生事件 → 页面 → 所有卡片
     emitEvent: function (name, payloadJson) {
       var frames = document.querySelectorAll('iframe');
       for (var i = 0; i < frames.length; i++) {
@@ -1061,12 +1052,16 @@
       var payload = parse(json) || {};
       if (payload.theme) applyTheme(payload.theme);
       if (payload.macros) state.macros = payload.macros;
-      if (typeof payload.cardStyle === 'string') state.cardStyle = payload.cardStyle;
+      // 卡片样式变了：外壳版本自增，下面的 renderAll 会把已装配的卡片按新样式重装
+      if (typeof payload.cardStyle === 'string' && payload.cardStyle !== state.cardStyle) {
+        state.cardStyle = payload.cardStyle;
+        shellVersion++;
+      }
       if (typeof payload.placeholder === 'string') state.placeholder = payload.placeholder;
       state.messages = payload.messages || [];
       renderAll();
     },
-    /** 流式增量：只动那条消息，卡片 iframe 原地保留 */
+    // 流式增量：只动那条消息，卡片 iframe 原地保留
     appendStream: function (json) {
       var msg = parse(json);
       if (!msg) return;
@@ -1076,11 +1071,7 @@
       else { removeEmpty(); list.appendChild(renderRow(msg, true)); }
       if (stick) scrollToBottom(false);
     },
-    /**
-     * 追加或落定单条：生成结束时用它收尾，避免整页 setState 重建所有卡片 iframe。
-     * signature 未变说明内容一样，直接跳过；但正在流式的那一行必须收尾，
-     * 否则 typing 光标永远不灭、最后一段文本停在流式态。
-     */
+    // 追加或落定单条：signature 未变才跳过，但正在流式的那一行必须收尾（否则 typing 光标不灭）
     appendMessage: function (json) {
       var msg = parse(json);
       if (!msg) return;
@@ -1113,6 +1104,15 @@
     try {
       if (window.rikkaNative && typeof window.rikkaNative[name] === 'function') {
         window.rikkaNative[name](payload == null ? '' : String(payload));
+      }
+    } catch (e) { /* 原生侧未就绪时静默 */ }
+  }
+
+  // 无回填的 request 通道：rikkaNative.request(method, requestId, payload)
+  function requestNative(method, payload) {
+    try {
+      if (window.rikkaNative && typeof window.rikkaNative.request === 'function') {
+        window.rikkaNative.request(method, '', payload == null ? '' : String(payload));
       }
     } catch (e) { /* 原生侧未就绪时静默 */ }
   }
