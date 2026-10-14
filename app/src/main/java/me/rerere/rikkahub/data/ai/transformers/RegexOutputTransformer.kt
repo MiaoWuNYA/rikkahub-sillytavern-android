@@ -3,57 +3,68 @@ package me.rerere.rikkahub.data.ai.transformers
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
+import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantAffectScope
 import me.rerere.rikkahub.data.model.replaceRegexes
+import kotlin.uuid.Uuid
 import org.koin.core.component.KoinComponent
 
-object RegexOutputTransformer : OutputMessageTransformer, KoinComponent {
-    // 按用户轮冻结的每条消息深度：agentic 工具循环每步重跑本 transform，
-    // depth = messages.size - index 每步都变，带 depth 条件的正则对同一条消息的
-    // 判定可能步间翻转（改写前缀打断缓存）。旧消息的深度首步记下、整轮复用；
-    // 本轮新生成的消息不在备忘里，按当前列表实时计算。
-    // key = assistantId:conversationId:lastUserMsgId → (messageId → depth)
-    private val depthMemo = java.util.concurrent.ConcurrentHashMap<String, MutableMap<String, Int>>()
+// 生成循环每步重跑，带 depth 条件的正则会因为 depth 逐轮变化而翻转判定，故按用户轮冻结
+// key = assistantId:conversationId:lastUserMsgId → (messageId → depth)
+private val depthMemo = java.util.concurrent.ConcurrentHashMap<String, MutableMap<String, Int>>()
 
+internal fun List<UIMessage>.replaceRegexesForDisplay(
+    assistant: Assistant,
+    conversationId: Uuid?,
+    visual: Boolean,
+): List<UIMessage> {
+    if (assistant.regexes.isEmpty()) return this
+    val lastUserMsgId = lastOrNull { it.role == MessageRole.USER }?.id?.toString()
+    val memo = if (lastUserMsgId != null) {
+        val memoKey = "${assistant.id}:${conversationId ?: "no-conversation"}:$lastUserMsgId"
+        depthMemo.getOrPut(memoKey) {
+            if (depthMemo.size >= 64) depthMemo.clear()
+            java.util.concurrent.ConcurrentHashMap()
+        }
+    } else {
+        null
+    }
+    return mapIndexed { index, message ->
+        // 官方深度语义：1 = 最新一条消息
+        val depth = memo?.getOrPut(message.id.toString()) { size - index } ?: (size - index)
+        if (message.role != MessageRole.ASSISTANT) return@mapIndexed message
+        message.copy(
+            parts = message.parts.map { part ->
+                when (part) {
+                    is UIMessagePart.Text -> part.copy(
+                        text = part.text.replaceRegexes(assistant, AssistantAffectScope.ASSISTANT, visual, depth),
+                    )
+
+                    is UIMessagePart.Reasoning -> part.copy(
+                        reasoning = part.reasoning.replaceRegexes(assistant, AssistantAffectScope.ASSISTANT, visual, depth),
+                    )
+
+                    else -> part
+                }
+            }
+        )
+    }
+}
+
+// 提示词层：结果会写回会话，markdownOnly 的正则（前端卡 HTML）必须跳过
+
+object RegexOutputTransformer : OutputMessageTransformer, KoinComponent {
     override suspend fun visualTransform(
         ctx: TransformerContext,
         messages: List<UIMessage>,
-    ): List<UIMessage> {
-        val assistant = ctx.assistant
-        if (assistant.regexes.isEmpty()) return messages // No regexes, return original messages
-        val lastUserMsgId = messages.lastOrNull { it.role == MessageRole.USER }?.id?.toString()
-        val memo = if (lastUserMsgId != null) {
-            val memoKey = "${ctx.assistant.id}:${ctx.conversationId ?: "no-conversation"}:$lastUserMsgId"
-            depthMemo.getOrPut(memoKey) {
-                if (depthMemo.size >= 64) depthMemo.clear()
-                java.util.concurrent.ConcurrentHashMap()
-            }
-        } else {
-            null
-        }
-        return messages.mapIndexed { index, message ->
-            // 官方深度语义：1 = 最新一条消息
-            val depth = memo?.getOrPut(message.id.toString()) { messages.size - index }
-                ?: (messages.size - index)
-            val scope = when (message.role) {
-                MessageRole.ASSISTANT -> AssistantAffectScope.ASSISTANT
-                else -> return@mapIndexed message // Skip non-assistant messages
-            }
-            message.copy(
-                parts = message.parts.map { part ->
-                    when (part) {
-                        is UIMessagePart.Text -> {
-                            part.copy(text = part.text.replaceRegexes(assistant, scope, visual = false, depth = depth))
-                        }
+    ): List<UIMessage> = messages.replaceRegexesForDisplay(ctx.assistant, ctx.conversationId, visual = false)
+}
 
-                        is UIMessagePart.Reasoning -> {
-                            part.copy(reasoning = part.reasoning.replaceRegexes(assistant, scope, visual = false, depth = depth))
-                        }
+// 纯显示层：结果只进渲染
 
-                        else -> part
-                    }
-                }
-            )
-        }
-    }
+object RegexVisualTransformer : OutputMessageTransformer {
+    override suspend fun visualTransform(
+        ctx: TransformerContext,
+        messages: List<UIMessage>,
+    ): List<UIMessage> = messages.replaceRegexesForDisplay(ctx.assistant, ctx.conversationId, visual = true)
 }

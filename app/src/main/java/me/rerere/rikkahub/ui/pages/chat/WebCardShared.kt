@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
+import java.security.MessageDigest
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -36,6 +37,7 @@ import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.ui.components.richtext.parseCardDocument
 import me.rerere.rikkahub.ui.components.richtext.splitCardSegments
 import kotlinx.datetime.toJavaLocalDateTime
+import me.rerere.rikkahub.utils.computeAIIconByName
 import me.rerere.rikkahub.utils.toMessageTimeString
 import me.rerere.rikkahub.ui.components.richtext.TrackWebViewPresence
 import me.rerere.rikkahub.data.model.MessageNode
@@ -140,6 +142,12 @@ internal class RikkaNativeBridge {
     fun ready() = Unit
 }
 
+// 页面不引资源表，原生侧把需要比较/显示的字面量一起下发
+internal data class WebLabels(
+    val translating: String = "",
+    val translation: String = "",
+)
+
 internal fun buildState(
     messages: List<UIMessage>,
     assistant: Assistant,
@@ -149,6 +157,8 @@ internal fun buildState(
     placeholder: String,
     cardStyle: String,
     nodes: List<MessageNode> = emptyList(),
+    iconText: (String) -> String? = { null },
+    labels: WebLabels = WebLabels(),
 ): JsonObject = buildJsonObject {
     put(
         "messages",
@@ -164,12 +174,21 @@ internal fun buildState(
                         swipeIndex = node?.selectIndex ?: 0,
                         nodeId = node?.id?.toString().orEmpty(),
                         favorited = node?.isFavorite ?: false,
+                        iconText = iconText,
+                        labels = labels,
                     ),
                 )
             }
         },
     )
     put("placeholder", placeholder)
+    put(
+        "labels",
+        buildJsonObject {
+            put("translating", labels.translating)
+            put("translation", labels.translation)
+        },
+    )
     // 角色卡自带的 <style> 作为卡片主题下发：这类卡片（如 <mainbody
     put("cardStyle", cardStyle)
     put("macros", kotlinx.serialization.json.Json.parseToJsonElement(macroJson))
@@ -185,6 +204,8 @@ internal fun buildMessage(
     swipeIndex: Int = 0,
     nodeId: String = "",
     favorited: Boolean = false,
+    iconText: (String) -> String? = { null },
+    labels: WebLabels = WebLabels(),
 ): JsonObject {
     val isUser = message.role == MessageRole.USER
     val textParts = message.parts.filterIsInstance<UIMessagePart.Text>()
@@ -273,15 +294,18 @@ internal fun buildMessage(
         }
     }
 
-    val name = if (isUser) {
-        settings.displaySetting.userNickname.ifBlank { "You" }
-    } else {
-        assistant.name.ifBlank { "Assistant" }
+    val model = message.modelSnapshot
+    val useAssistantAvatar = !isUser && assistant.useAssistantAvatar
+    val name = message.name?.takeIf { it.isNotBlank() } ?: when {
+        isUser -> settings.displaySetting.userNickname.ifBlank { "You" }
+        useAssistantAvatar || model == null -> assistant.name.ifBlank { "Assistant" }
+        else -> model.displayName
     }
-    val avatar = if (isUser) {
-        settings.displaySetting.userAvatar.toDisplayUrl()
-    } else {
-        assistant.avatar.toDisplayUrl()
+    val avatar = when {
+        isUser -> avatarOf(settings.displaySetting.userAvatar, name)
+        useAssistantAvatar -> avatarOf(assistant.avatar, name)
+        model != null -> modelAvatarOf(model.modelId, iconText)
+        else -> buildJsonObject { put("kind", "none") }
     }
 
     return buildJsonObject {
@@ -300,7 +324,10 @@ internal fun buildMessage(
         // 消息操作排与元信息行需要的附带数据
         put("favorited", JsonPrimitive(favorited))
         message.modelSnapshot?.displayName?.takeIf { it.isNotBlank() }?.let { put("model", JsonPrimitive(it)) }
-        message.translation?.takeIf { it.isNotBlank() }?.let { put("translation", JsonPrimitive(it)) }
+        message.translation?.takeIf { it.isNotBlank() }?.let {
+            put("translation", JsonPrimitive(it))
+            put("translating", JsonPrimitive(labels.translating.isNotBlank() && it == labels.translating))
+        }
         message.usage?.let { usage ->
             put(
                 "usage",
@@ -347,11 +374,65 @@ internal fun buildMacros(
     }
 }
 
-// 页面只认图片地址；表情与占位交给页面用名字首字兜底
-private fun Avatar.toDisplayUrl(): String = when (this) {
-    is Avatar.Image -> url
-    is Avatar.Emoji -> ""
-    Avatar.Dummy -> ""
+private fun avatarOf(avatar: Avatar, name: String): JsonObject = buildJsonObject {
+    when (avatar) {
+        is Avatar.Image -> {
+            put("kind", "image")
+            put("value", avatar.url)
+        }
+
+        is Avatar.Emoji -> {
+            put("kind", "emoji")
+            put("value", avatar.content)
+        }
+
+        Avatar.Dummy -> {
+            // 原生 ProceduralAvatar：SHA-1(名字) 定色相的线性渐变
+            put("kind", "dummy")
+            val hue = MessageDigest.getInstance("SHA-1").digest(name.toByteArray())
+                .sumOf { it.toInt() and 0xFF } % 360
+            put("from", hslHex(hue.toFloat(), .65f, .55f))
+            put("to", hslHex((hue + 120) % 360f, .65f, .55f))
+        }
+    }
+}
+
+private fun modelAvatarOf(modelId: String, iconText: (String) -> String?): JsonObject {
+    val path = computeAIIconByName(modelId)
+    val svg = path?.let(iconText)
+    // 单色图标靠 currentColor 跟随主题，彩色图标自带 fill 不受影响
+    return if (svg == null) {
+        buildJsonObject {
+            put("kind", "initials")
+            put("value", modelId)
+        }
+    } else {
+        buildJsonObject {
+            put("kind", "svg")
+            put("value", svg)
+        }
+    }
+}
+
+private fun hslHex(h: Float, s: Float, l: Float): String {
+    val c = (1f - kotlin.math.abs(2f * l - 1f)) * s
+    val hp = h / 60f
+    val x = c * (1f - kotlin.math.abs(hp % 2f - 1f))
+    val (r, g, b) = when {
+        hp < 1f -> Triple(c, x, 0f)
+        hp < 2f -> Triple(x, c, 0f)
+        hp < 3f -> Triple(0f, c, x)
+        hp < 4f -> Triple(0f, x, c)
+        hp < 5f -> Triple(x, 0f, c)
+        else -> Triple(c, 0f, x)
+    }
+    val m = l - c / 2f
+    return String.format(
+        "#%02X%02X%02X",
+        ((r + m) * 255).toInt().coerceIn(0, 255),
+        ((g + m) * 255).toInt().coerceIn(0, 255),
+        ((b + m) * 255).toInt().coerceIn(0, 255),
+    )
 }
 
 // 抽角色卡自带的样式块：前端卡的排版与配色通常写在这里。

@@ -451,6 +451,8 @@ private fun ChatPageContent(
     }
     // WebView 里点消息 → 用原生对话框做操作，功能与原生列表一致
     var webActionIndex by remember { mutableStateOf<Int?>(null) }
+    // 翻译与原生消息菜单同一入口：先选目标语言，不直接用系统语言
+    var webTranslateMessage by remember { mutableStateOf<UIMessage?>(null) }
     var webEditIndex by remember { mutableStateOf<Int?>(null) }
     var webEditText by remember { mutableStateOf("") }
 
@@ -467,7 +469,7 @@ private fun ChatPageContent(
                     transformers = listOf(
                         me.rerere.rikkahub.data.ai.transformers.ThinkTagTransformer,
                         me.rerere.rikkahub.data.ai.transformers.OutputTagCleanupTransformer,
-                        me.rerere.rikkahub.data.ai.transformers.RegexOutputTransformer,
+                        me.rerere.rikkahub.data.ai.transformers.RegexVisualTransformer,
                     ),
                     context = context,
                     model = currentChatModel ?: me.rerere.ai.provider.Model(),
@@ -769,6 +771,19 @@ private fun ChatPageContent(
             val chatAssistant = setting.getAssistantOf(conversation)
             // 只有该助手被标记为前端卡会话时才走 WebView，普通会话一律原生
             val frontendCardMode = frontendCardPreferredNow
+            webTranslateMessage?.let { target ->
+                me.rerere.rikkahub.ui.components.message.LanguageSelectionDialog(
+                    onLanguageSelected = { locale ->
+                        vm.translateMessage(target, locale)
+                        webTranslateMessage = null
+                    },
+                    onClearTranslation = {
+                        vm.clearTranslationField(target.id)
+                        webTranslateMessage = null
+                    },
+                    onDismissRequest = { webTranslateMessage = null },
+                )
+            }
             // WebView 工具条点按钮 → 原生菜单；处理完清空避免重复触发
             webActionIndex?.let { index ->
                 val message = conversation.currentMessages.getOrNull(index)
@@ -799,9 +814,8 @@ private fun ChatPageContent(
                                     vm.regenerateAtMessage(message, regenerateAssistantMsg = true)
                                     webActionIndex = null
                                 }) { Text(stringResource(R.string.prompt_page_trigger_regenerate)) }
-                                // 翻译：与原生消息菜单同一入口，语言取当前显示语言
                                 TextButton(onClick = {
-                                    vm.translateMessage(message, java.util.Locale.getDefault())
+                                    webTranslateMessage = message
                                     webActionIndex = null
                                 }) { Text(stringResource(R.string.translate)) }
                                 // 分享：把消息正文丢给系统分享
@@ -1021,7 +1035,7 @@ private fun ChatPageContent(
 
                                     "delete" -> vm.deleteMessage(message)
                                     "regenerate" -> vm.regenerateAtMessage(message, regenerateAssistantMsg = true)
-                                    "translate" -> vm.translateMessage(message, java.util.Locale.getDefault())
+                                    "translate" -> webTranslateMessage = message
                                     "favorite" -> {
                                         val node = conversation.messageNodes.find { node ->
                                             node.messages.any { it.id == message.id }
