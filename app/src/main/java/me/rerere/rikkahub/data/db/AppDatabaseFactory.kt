@@ -27,6 +27,8 @@ internal object AppDatabaseFactory {
     fun create(context: Context, name: String = SQLiteConfiguration.DATABASE_NAME): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, name)
             .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
+            // 从更高版本回退安装时库版本会高于本版 schema，清库重建而不是直接崩
+            .fallbackToDestructiveMigrationOnDowngrade(true)
             // 迁移链必须与 DataSourceModule 的主库 builder 完全一致：
             // 这里也用于备份恢复的暂存库校验（BackupManager.stageRestore），
             // 缺迁移会导致恢复旧版本备份时报 "migration not found"（曾缺 24→30，2026-09-13 修复）
