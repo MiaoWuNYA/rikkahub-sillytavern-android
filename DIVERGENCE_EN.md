@@ -60,6 +60,8 @@
 | `data/ai/transformers/MacroEngine.kt` | +879 | macro engine 2.0 |
 | `ui/components/ai/SlashCommands.kt` / `MacroVarSlashOps.kt` | +257 / +92 | slash commands |
 | `ui/pages/extensions/PromptVM.kt` | +77 | lorebook two-way sync |
+| `ui/pages/chat/FrontendCardChatView.kt` + `assets/frontend-card/` | new | Frontend-card-only mode: a single WebView renders the message area (MD3 page + card iframe bridge + macros), auto-detected on character-card import |
+| `ui/pages/setting/SettingHuaDengCompatPage.kt` / `SettingTtsPlaybackPage.kt` | new | Lantern "compatibility & helpers" and TTS playback settings split into their own pages |
 
 ### C. Group chats (local-only)
 
@@ -95,6 +97,8 @@ Web changes are small (`web/routes/ConversationRoutes.kt` +47/-25, `SettingsRout
 - Group chats: `GroupChat.kt`, `GroupChatPage.kt`, `GroupChatListPage.kt`, `GroupSpeakerSelector.kt`
 - Tools: `FileTools.kt`, `TaskTools.kt`, `DatabaseQueryTool.kt`, `ShellTools.kt`, `PythonTools.kt`, `CalculatorTool.kt`, `WebFetchTool.kt`, `MingliTool.kt`, `MingliGuideTool.kt`, `PythonBridge.kt`, `JsBridge.kt`, `SystemPromptAssembler.kt`, `SkillAutoTriggerTransformer.kt`
 - Macros/slash: `MacroEngine.kt`
+- Frontend-card mode: `ui/pages/chat/FrontendCardChatView.kt` + `app/src/main/assets/frontend-card/`
+- Split settings pages: `SettingHuaDengCompatPage.kt`, `SettingTtsPlaybackPage.kt`
 - Services: `service/GenerationForegroundService.kt`
 
 On merge, keep the local version of these files as-is.

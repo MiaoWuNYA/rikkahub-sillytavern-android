@@ -60,6 +60,9 @@
 | `data/ai/transformers/MacroEngine.kt` | +879 | 宏引擎 2.0 |
 | `ui/components/ai/SlashCommands.kt` / `MacroVarSlashOps.kt` | +257 / +92 | 斜杠命令 |
 | `ui/pages/extensions/PromptVM.kt` | +77 | 世界书双向同步 |
+| `ui/pages/chat/FrontendCardChatView.kt` + `assets/frontend-card/` | 新文件 | 前端卡专属模式：单 WebView 承载消息区（MD3 页面 + 卡片 iframe 桥 + 宏），导入角色卡时自动识别 |
+| `ui/pages/assistant/detail/AssistantImporter.kt`（导入后钩子） | — | 命中前端卡时为助手置位并提示已自动切换 |
+| `ui/pages/setting/SettingHuaDengCompatPage.kt` / `SettingTtsPlaybackPage.kt` | 新文件 | 华灯「兼容与辅助」与 TTS 朗读设置各自拆成独立页 |
 
 ### C. 群聊（本地独有）
 
@@ -95,6 +98,8 @@ Web 相关只有小改（`web/routes/ConversationRoutes.kt` +47/-25、`SettingsR
 - 群聊：`GroupChat.kt`、`GroupChatPage.kt`、`GroupChatListPage.kt`、`GroupSpeakerSelector.kt`
 - 工具：`FileTools.kt`、`TaskTools.kt`、`DatabaseQueryTool.kt`、`ShellTools.kt`、`PythonTools.kt`、`CalculatorTool.kt`、`WebFetchTool.kt`、`MingliTool.kt`、`MingliGuideTool.kt`、`PythonBridge.kt`、`JsBridge.kt`、`SystemPromptAssembler.kt`、`SkillAutoTriggerTransformer.kt`
 - 宏/斜杠：`MacroEngine.kt`
+- 前端卡模式：`ui/pages/chat/FrontendCardChatView.kt` + `app/src/main/assets/frontend-card/`（index.html / app.js / markdown.js）
+- 设置拆分页：`SettingHuaDengCompatPage.kt`、`SettingTtsPlaybackPage.kt`
 - 服务：`service/GenerationForegroundService.kt`
 
 合并时这些文件直接保留本地版本即可。

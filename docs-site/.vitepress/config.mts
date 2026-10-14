@@ -18,7 +18,8 @@ const sidebar = [
       { text: '对话', link: '/chat/conversations' },
       { text: '多模态', link: '/chat/multimodal' },
       { text: '分支', link: '/chat/branching' },
-      { text: '网页搜索', link: '/chat/search' }
+      { text: '网页搜索', link: '/chat/search' },
+      { text: '前端卡', link: '/chat/frontend-card' }
     ]
   },
   {

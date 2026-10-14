@@ -353,11 +353,11 @@ Hidable in one tap via **HuaDeng Settings → Clean simple mode**, which also st
 |---|---|
 | **Character cards** (PNG / V2 / V3 JSON) | **20+ fields** (upstream keeps only 6): example messages, alternate greetings, multilingual notes, post-history instructions, character version, tags, nickname, assets, embedded lorebook, raw `extensions` JSON… nothing upstream drops is lost — **import → export round-trips without data loss** |
 | **Lorebooks** | **30+ entry fields**, aligned rule by rule with official `world-info.js`: four secondary-keyword logic modes, whole-word/regex/case, per-entry scan depth, constant activation, cross-book groups + weight + override, trigger probability, sticky / cooldown, delayed activation, recursion controls, budget exemption, character-field matching ×6 |
-| **Presets** | Imported under the official prompt-manager structure |
-| **Regex scripts** | Find / Replace / `_ALT`, OnlyFormat, macros, injection depth (minDepth/maxDepth), ordering and caching — applied at both the display and prompt layers |
+| **Presets** | Imported with the official prompt-manager structure and **kept in full**: entries present in `prompts` but missing from `prompt_order` (SillyTavern's "not in order" area) are imported as disabled entries too; enable state merges both switches, only `marker` slots are skipped || **Regex scripts** | Find / Replace / `_ALT`, OnlyFormat, macros, injection depth (minDepth/maxDepth), ordering and caching — applied at both the display and prompt layers |
 | **Quick Replies** (QR) | QR sets import; run from the slash popup in one tap |
 | **Beautification themes** | **Verified against 537 real themes** (537/537 parse): layered color compositing, `custom_css` backgrounds, bubble corner radius, theme fonts |
 | **HTML display cards** | Rendered in-chat, expanded by default with tap-to-fullscreen |
+| **Frontend-card mode** | Conversations with HTML frontend cards can render the whole message area in a single WebView (auto-detected and announced on character-card import) — cards get `TavernHelper.triggerSlash` / `sendMessage` / variable access, macros and slash commands work as usual |
 | **Multiple greetings** | Full `alternate_greetings` import with in-chat switching |
 
 **The prompt pipeline follows the official structure too**: main prompt, standalone character-field messages, example messages split on `<START>` into real user/assistant turns, PHI appended after history, depth prompts injected at their configured depth and role.
