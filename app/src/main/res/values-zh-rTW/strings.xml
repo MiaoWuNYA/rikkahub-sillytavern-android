@@ -681,6 +681,7 @@
   <string name="huadeng_frontend_card_mode">前端卡專屬模式</string>
   <string name="huadeng_frontend_card_mode_desc">為所有會話強制開啟前端模式（通常匯入帶 HTML 前端的角色卡時會自動開啟）</string>
   <string name="huadeng_frontend_card_auto_switched">已自動切換前端模式</string>
+  <string name="huadeng_frontend_card_slash_unsupported">前端卡命令 %1$s 尚未支援</string>
   <string name="huadeng_transient_prune">上下文瞬態內容裁剪</string>
   <string name="huadeng_transient_prune_desc">超過兩輪對話之前的網頁搜尋結果、圖片、音訊與影片不再隨每次請求傳送（佔位說明附帶訊息 ID，AI 可透過 read_history_message 工具按需取回原文），大幅減少圖片與搜尋類長對話的 token 消耗；訊息儲存與聊天記錄顯示不受影響</string>
   <string name="imggen_page_aspect_ratio">圖片比例</string>
