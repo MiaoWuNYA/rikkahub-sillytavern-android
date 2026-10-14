@@ -3055,4 +3055,7 @@
   <string name="weixin_bot_notification_running_title">위챗 봇 실행 중</string>
   <string name="weixin_bot_scan_login">QR 스캔 로그인</string>
   <string name="weixin_bot_unknown">알 수 없음</string>
+  <string name="huadeng_frontend_card_mode_auto">자동 감지(인사말 또는 세계 정보에 웹 페이지 포함 시)</string>
+  <string name="huadeng_frontend_card_mode_always">항상 WebView 인터페이스 사용</string>
+  <string name="huadeng_frontend_card_mode_never">항상 네이티브 인터페이스 사용</string>
 </resources>

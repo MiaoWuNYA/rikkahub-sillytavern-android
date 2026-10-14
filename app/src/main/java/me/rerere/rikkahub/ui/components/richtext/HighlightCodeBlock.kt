@@ -97,6 +97,8 @@ fun HighlightCodeBlock(
         lineHeight = 16.sp,
     ),
 ) {
+    // 有 WebView 存活时，输入栏的模糊/玻璃效果必须让位
+    TrackWebViewPresence()
     val darkMode = LocalDarkMode.current
     val colorPalette = if (darkMode) AtomOneDarkPalette else AtomOneLightPalette
     val scrollState = rememberScrollState()

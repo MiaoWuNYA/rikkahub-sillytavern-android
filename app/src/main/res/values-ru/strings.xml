@@ -3055,4 +3055,7 @@
   <string name="weixin_bot_notification_running_title">WeChat-бот работает</string>
   <string name="weixin_bot_scan_login">Сканировать для входа</string>
   <string name="weixin_bot_unknown">Неизвестно</string>
+  <string name="huadeng_frontend_card_mode_auto">Авто (веб-страница в приветствии или мире)</string>
+  <string name="huadeng_frontend_card_mode_always">Всегда использовать WebView</string>
+  <string name="huadeng_frontend_card_mode_never">Всегда использовать нативный интерфейс</string>
 </resources>

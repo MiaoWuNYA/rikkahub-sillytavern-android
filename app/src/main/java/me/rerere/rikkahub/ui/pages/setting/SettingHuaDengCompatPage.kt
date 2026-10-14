@@ -27,10 +27,7 @@ import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.plus
 import org.koin.androidx.compose.koinViewModel
 
-/**
- * 兼容与辅助：连接修复、空响应兜底、内容裁剪、滚动压缩、工具结果截断等全局开关。
- * 从华灯设置拆出，避免主页面过长。
- */
+// 兼容与辅助：连接修复、空响应兜底、内容裁剪、滚动压缩、工具结果截断等全局开关。
 @Composable
 fun SettingHuaDengCompatPage(vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
@@ -62,20 +59,6 @@ fun SettingHuaDengCompatPage(vm: SettingVM = koinViewModel()) {
                         headlineContent = { Text(stringResource(R.string.huadeng_frontend_card_mode)) },
                         supportingContent = {
                             Text(stringResource(R.string.huadeng_frontend_card_mode_desc))
-                        },
-                        trailingContent = {
-                            Switch(
-                                checked = settings.huadengSettings.enableFrontendCardMode,
-                                onCheckedChange = { enabled ->
-                                    vm.updateSettings {
-                                        it.copy(
-                                            huadengSettings = it.huadengSettings.copy(
-                                                enableFrontendCardMode = enabled,
-                                            ),
-                                        )
-                                    }
-                                },
-                            )
                         },
                     )
                     item(
@@ -281,8 +264,6 @@ fun SettingHuaDengCompatPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     // ── 通用能力 ──
-                    // 这两项控制的是「模型能不能用好已内置的能力」：
-                    // 关掉不会卸载任何库，只是不再主动告诉模型它们存在。
                     item(
                         headlineContent = { Text(stringResource(R.string.huadeng_python_hints_title)) },
                         supportingContent = {

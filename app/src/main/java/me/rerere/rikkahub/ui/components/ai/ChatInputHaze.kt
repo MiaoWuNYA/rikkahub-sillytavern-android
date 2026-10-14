@@ -22,11 +22,7 @@ import me.rerere.rikkahub.data.datastore.BackgroundEffectType
 import me.rerere.rikkahub.data.datastore.DisplaySetting
 import me.rerere.rikkahub.ui.theme.LocalDarkMode
 
-/**
- * 输入框容器的背景效果（模糊或玻璃），未开启时原样返回。
- *
- * 开启后容器本身需要保持透明，[containerColor] 由效果负责铺底和着色。
- */
+// 输入框容器的背景效果（模糊或玻璃），未开启时原样返回。
 @Composable
 internal fun Modifier.chatInputHaze(
     hazeState: HazeState,
@@ -35,9 +31,7 @@ internal fun Modifier.chatInputHaze(
     shape: RoundedCornerShape,
 ): Modifier {
     if (!displaySetting.enableBlurEffect) return this
-    // 版本门禁：haze-glass 内部走 RuntimeShader（API 33+），haze-blur 走 RenderEffect（API 31+）；
-    // 低版本硬跑会直接 NoSuchMethodError——而且选型会落盘，崩在启动环节表现为无限闪退。
-    // 不满足版本就静默回退到可用档位，保证设置可以进得去、改得回来。
+    // 版本门禁：haze-glass 内部走 RuntimeShader（API 33
     return when (displaySetting.backgroundEffectType) {
         BackgroundEffectType.BLUR -> if (Build.VERSION.SDK_INT >= 31) hazeBlur(
             input = HazeInput.Sources(hazeState),
@@ -79,8 +73,7 @@ internal fun Modifier.chatInputHaze(
     }
 }
 
-// Haze 按系统夜间模式选玻璃的明暗预设，应用内单独设置主题时会选错（深色主题下被提亮发白），
-// 所以按应用主题显式写入。深色数值对应库里 internal 的 GlassStyle.regularDark。
+// Haze 按系统夜间模式选玻璃的明暗预设
 private fun GlassStyleScope.appearanceResponse(dark: Boolean) {
     if (dark) {
         specularIntensity(0.38f)

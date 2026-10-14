@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>RikkaHub 聊天</title>
+<style>
+  /* 与 frontend-card 同一套变量命名，主题由 Kotlin 侧 setTheme 覆盖 */
+  :root {
+    --md-primary: #6750A4;
+    --md-on-primary: #FFFFFF;
+    --md-primary-container: #EADDFF;
+    --md-on-primary-container: #21005D;
+    --md-surface: #FEF7FF;
+    --md-surface-container: #F3EDF7;
+    --md-surface-container-high: #ECE6F0;
+    --md-on-surface: #1D1B20;
+    --md-on-surface-variant: #49454F;
+    --md-outline-variant: #CAC4D0;
+    --md-error: #B3261E;
+    --md-secondary-container: #E8DEF8;
+    --md-on-secondary-container: #1D192B;
+    --bubble-user: var(--md-primary-container);
+    --bubble-ai: var(--md-surface-container);
+    --bubble-radius: 20px;
+    --page-padding: 12px;
+    --avatar-size: 28px;
+    /* 工具条总高（4 + 40 + 4），JS 会在渲染后按实测值覆盖 */
+    --toolbar-h: 48px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--md-surface);
+    color: var(--md-on-surface);
+    font-family: -apple-system, "Noto Sans CJK SC", "Source Han Sans SC", Roboto, sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    word-break: break-word;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+  }
+  /* 底部预留工具条高度，避免最后一条消息被 fixed 工具条盖住 */
+  #list { padding: var(--page-padding) var(--page-padding) calc(var(--toolbar-h) + var(--page-padding)); }
+
+  /* —— 消息行 —— */
+  .row { display: flex; margin-bottom: 10px; gap: 8px; align-items: flex-start; }
+  .row.user { flex-direction: row-reverse; }
+  .avatar {
+    flex: 0 0 var(--avatar-size); width: var(--avatar-size); height: var(--avatar-size);
+    border-radius: 50%; background: var(--md-secondary-container);
+    color: var(--md-on-secondary-container);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; overflow: hidden;
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .col { min-width: 0; max-width: 100%; flex: 1 1 auto; display: flex; flex-direction: column; }
+  .row.user .col { align-items: flex-end; }
+  .name { font-size: 11px; color: var(--md-on-surface-variant); margin: 0 6px 2px; }
+  .body { max-width: 100%; min-width: 0; display: flex; flex-direction: column; }
+  .row.user .body { align-items: flex-end; }
+  .blk { max-width: 100%; }
+  .bubble {
+    position: relative;
+    background: var(--bubble-ai);
+    border-radius: var(--bubble-radius);
+    padding: 10px 14px;
+    overflow-wrap: anywhere;
+  }
+  .row.user .bubble { background: var(--bubble-user); color: var(--md-on-primary-container); }
+  .bubble > :first-child { margin-top: 0; }
+  .bubble > :last-child { margin-bottom: 0; }
+  .time { font-size: 10px; color: var(--md-on-surface-variant); opacity: .65; margin: 2px 6px 0; }
+  /* 推理块：左侧竖线 + 次要色，不套气泡 */
+  .reasoning {
+    border-left: 3px solid var(--md-outline-variant);
+    color: var(--md-on-surface-variant);
+    font-size: 13px; padding: 2px 0 2px 10px; margin-bottom: 8px;
+    white-space: pre-wrap;
+  }
+  /* 工具调用：小号等宽灰底块 */
+  .tool {
+    font-family: ui-monospace, monospace; font-size: 12px;
+    background: var(--md-surface-container-high);
+    border-radius: 12px; padding: 6px 10px; margin-bottom: 6px;
+    color: var(--md-on-surface-variant);
+    overflow-x: auto; white-space: pre-wrap;
+  }
+  /* 前端卡：整卡交给内层 iframe 自由排布，不套气泡内边距 */
+  .card { width: 100%; max-width: 100%; margin-bottom: 6px; }
+  .card iframe { width: 100%; border: 0; display: block; background: transparent; }
+  /* 流式光标 */
+  .typing::after {
+    content: "▍"; color: var(--md-primary);
+    animation: blink 1s steps(2, start) infinite;
+  }
+  @keyframes blink { to { visibility: hidden; } }
+  .empty {
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    min-height: 55vh; padding: 0 24px;
+    color: var(--md-on-surface-variant); opacity: .6;
+  }
+
+  /* —— 底部工具条：fixed，透明底，与页面同底色 —— */
+  #toolbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    display: flex; align-items: center; gap: 4px;
+    padding: 4px 8px calc(4px + env(safe-area-inset-bottom, 0px));
+    background: transparent;
+  }
+  /* 左组可横向滚动（窄屏时按钮不换行、不撑破布局） */
+  .tb-group { display: flex; align-items: center; gap: 2px; min-width: 0; }
+  .tb-group.left {
+    flex: 1 1 auto; overflow-x: auto; overflow-y: hidden;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .tb-group.left::-webkit-scrollbar { display: none; }
+  .tb-group.right { flex: 0 0 auto; justify-content: flex-end; gap: 4px; }
+
+  .tb {
+    appearance: none; -webkit-appearance: none;
+    border: 0; background: transparent; color: var(--md-on-surface);
+    font: inherit; padding: 0; margin: 0; cursor: pointer;
+    flex: 0 0 auto;
+  }
+  .tb[hidden] { display: none !important; }
+  .tb:active { opacity: .6; }
+  .tb svg { width: 20px; height: 20px; display: block; }
+  /* 圆形按钮：视觉 30dp，外层 padding 撑到 40px 可点高度 */
+  .tb-hit {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 2px; min-height: 40px; padding: 5px 4px; border-radius: 20px;
+  }
+  .tb-circle {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: 0 0 auto;
+  }
+  .tb-label {
+    font-size: 11px; line-height: 16px; letter-spacing: .4px; font-weight: 500;
+    max-width: 66px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  /* 开关式按钮：ToggleSurface 等效（高 40dp、圆角 50%、左右 8px、24dp 图标位） */
+  .tb-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 40px; padding: 0 8px; border-radius: 50px;
+  }
+  .tb-slot {
+    width: 24px; height: 24px;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: 0 0 auto;
+  }
+  .tb-toggle.on { color: var(--md-primary); }
+
+  /* —— Markdown 基础排版 —— */
+  h1, h2, h3, h4 { margin: .6em 0 .3em; line-height: 1.3; }
+  h1 { font-size: 1.35em; } h2 { font-size: 1.2em; } h3 { font-size: 1.08em; }
+  p { margin: .45em 0; }
+  ul, ol { margin: .45em 0; padding-left: 1.3em; }
+  li { margin: .18em 0; }
+  blockquote {
+    margin: .5em 0; padding: 2px 0 2px 10px;
+    border-left: 3px solid var(--md-outline-variant);
+    color: var(--md-on-surface-variant);
+  }
+  code {
+    font-family: ui-monospace, monospace; font-size: .9em;
+    background: var(--md-surface-container-high);
+    padding: 1px 5px; border-radius: 6px;
+  }
+  pre {
+    background: var(--md-surface-container-high);
+    border-radius: 12px; padding: 10px 12px; overflow-x: auto;
+  }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; max-width: 100%; display: block; overflow-x: auto; }
+  th, td { border: 1px solid var(--md-outline-variant); padding: 5px 8px; }
+  img, video { max-width: 100%; height: auto; border-radius: 10px; }
+  a { color: var(--md-primary); }
+  hr { border: 0; border-top: 1px solid var(--md-outline-variant); margin: 12px 0; }
+  details { margin: .5em 0; }
+  summary { cursor: pointer; color: var(--md-on-surface-variant); }
+
+  /* —— 用户的外观自定义（主题 → 颜色）—— */
+  :root {
+    --font-scale: 1;
+    --bubble-radius: 16px;
+    --bubble-border-width: 0px;
+    --bubble-image-size: contain;
+    --bubble-shadow: none;
+  }
+  html, body {
+    background-color: var(--chat-bg, var(--md-surface));
+    background-image: var(--chat-bg-image, none);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+  body { font-size: calc(15px * var(--font-scale)); }
+  body.solid-text-color { color: var(--text-color); }
+  body.solid-text-color .name, body.solid-text-color .time { color: var(--text-color); opacity: .7; }
+  .bubble {
+    border: var(--bubble-border-width) solid var(--bubble-border-color, transparent);
+    box-shadow: var(--bubble-shadow);
+    background-size: var(--bubble-image-size);
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+  .row.user .bubble { background-image: var(--bubble-user-image, none); }
+  .row.ai .bubble { background-image: var(--bubble-ai-image, none); }
+  body.bubble-image-overlay .row.user .bubble { background-blend-mode: multiply; }
+  body.hide-ai-bubble .row.ai .bubble { background-color: transparent; box-shadow: none; border-color: transparent; }
+  body.hide-ai-bubble .row.ai .bubble .name { opacity: 1; }
+  em, i { color: var(--italics-color, inherit); }
+  blockquote { color: var(--quote-color, inherit); }
+  body[data-font="serif"] { font-family: Georgia, "Noto Serif CJK SC", serif; }
+  body[data-font="monospace"] { font-family: ui-monospace, "Noto Sans Mono CJK SC", monospace; }
+  body[data-font="cursive"] { font-family: "Segoe Script", "Comic Sans MS", cursive; }
+
+  /* 原生标题栏 / 输入栏覆盖在 WebView 之上，页面按安全区让位 */
+  #list {
+    padding-top: calc(var(--safe-top, 0px) + 10px);
+    padding-bottom: calc(var(--safe-bottom, 0px) + var(--toolbar-h, 44px) + 10px);
+    overscroll-behavior-y: contain;
+  }
+  #toolbar { bottom: var(--safe-bottom, 0px); }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    overflow-x: hidden;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* 工具条改由原生输入栏提供：WebView 里不再重复渲染按钮 */
+  #toolbar { display: none !important; }
+  #list { padding-bottom: calc(var(--safe-bottom, 0px) + 12px) !important; }
+</style>
+</head>
+<body>
+  <div id="list"></div>
+
+  <div id="toolbar">
+    <div class="tb-group left">
+      <!-- 模型：30dp 圆形 + 名称文字（modelName 为空时只留图标） -->
+      <button type="button" class="tb tb-hit" id="tb-model" data-action="model" aria-label="选择模型">
+        <span class="tb-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11.5" cy="11" r="6.75"></circle>
+            <circle cx="17.6" cy="17.4" r="1.9" fill="currentColor" stroke="none"></circle>
+          </svg>
+        </span>
+        <span class="tb-label" id="tb-model-label" hidden></span>
+      </button>
+
+      <!-- 搜索：开关式 -->
+      <button type="button" class="tb tb-toggle" id="tb-search" data-action="search" aria-pressed="false" aria-label="联网搜索">
+        <span class="tb-slot">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5"></circle>
+            <path d="M15.9 15.9 20.5 20.5"></path>
+          </svg>
+        </span>
+      </button>
+
+      <!-- 推理：开关式，由 Kotlin 决定是否可见 -->
+      <button type="button" class="tb tb-toggle" id="tb-reasoning" data-action="reasoning" aria-pressed="false" aria-label="推理" hidden>
+        <span class="tb-slot">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3a6 6 0 0 0-3.4 10.94c.5.36.8.94.8 1.56V17h5.2v-1.5c0-.62.3-1.2.8-1.56A6 6 0 0 0 12 3Z"></path>
+            <path d="M9.6 20h4.8"></path>
+          </svg>
+        </span>
+      </button>
+
+      <!-- 符号：点击把 bracketSymbol 交回原生插入 -->
+      <button type="button" class="tb tb-toggle" id="tb-symbol" data-action="symbol" aria-label="插入符号">
+        <span class="tb-slot">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 4.5v15"></path>
+            <path d="M5.5 8.25 18.5 15.75"></path>
+            <path d="M18.5 8.25 5.5 15.75"></path>
+          </svg>
+        </span>
+      </button>
+    </div>
+
+    <div class="tb-group right">
+      <button type="button" class="tb tb-hit" id="tb-more" data-action="more" aria-label="更多">
+        <span class="tb-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 5v14"></path>
+            <path d="M5 12h14"></path>
+          </svg>
+        </span>
+      </button>
+    </div>
+  </div>
+
+<!-- 运行环境补丁必须排在所有业务脚本之前：老 WebView 缺 .at()/requestIdleCallback，
+     卡片脚本一抛错就整张白屏；file:// 同目录相对路径加载最稳，不依赖原生下发时序 -->
+<script src="compat.js"></script>
+<script src="markdown.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
