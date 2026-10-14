@@ -678,8 +678,8 @@
   <string name="huadeng_tool_result_truncation_desc">긴 도구 실행 결과를 잘라 컨텍스트를 아낍니다</string>
   <string name="huadeng_sub_agent">서브 에이전트</string>
   <string name="huadeng_sub_agent_desc">AI가 하위 작업을 독립적인 서브 에이전트에 위임하고(대화 기록 없음) 결과를 가져옵니다</string>
-  <string name="huadeng_frontend_card_mode">프론트 카드 전용 모드</string>
-  <string name="huadeng_frontend_card_mode_desc">모든 대화에서 프론트 모드를 강제로 켭니다(보통 HTML 프론트 카드 가져오기 시 자동 활성화)</string>
+  <string name="huadeng_frontend_card_mode">프런트엔드 호환 모드</string>
+  <string name="huadeng_frontend_card_mode_desc">인사말이나 세계 정보의 웹 페이지를 자동 감지하며 도우미별로 강제할 수 있습니다</string>
   <string name="huadeng_frontend_card_auto_switched">프론트 모드가 자동으로 켜졌습니다</string>
   <string name="huadeng_frontend_card_slash_unsupported">프론트 카드 명령 %1$s은(는) 아직 지원되지 않습니다</string>
   <string name="huadeng_transient_prune">임시 메시지 정리</string>
@@ -3056,7 +3056,7 @@
   <string name="weixin_bot_scan_login">QR 스캔 로그인</string>
   <string name="weixin_bot_unknown">알 수 없음</string>
   <string name="huadeng_frontend_card_mode_auto">자동 감지(인사말 또는 세계 정보에 웹 페이지 포함 시)</string>
-  <string name="huadeng_frontend_card_mode_always">항상 WebView 인터페이스 사용</string>
-  <string name="huadeng_frontend_card_mode_never">항상 네이티브 인터페이스 사용</string>
+  <string name="huadeng_frontend_card_mode_always">Always use frontend compatibility mode</string>
+  <string name="huadeng_frontend_card_mode_never">Always use the native interface</string>
   <string name="setting_page_huadeng_compat">호환성 및 보조</string>
 </resources>

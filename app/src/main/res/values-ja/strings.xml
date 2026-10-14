@@ -678,8 +678,8 @@
   <string name="huadeng_tool_result_truncation_desc">32 KBを超えるツール出力は切り詰めてファイルに保存します。オフにするとツール結果全文がメッセージ履歴に残ります（プロキシ経由でツール呼び出しがおかしい場合は試してください）</string>
   <string name="huadeng_sub_agent">サブエージェント</string>
   <string name="huadeng_sub_agent_desc">AI がサブタスクを独立したサブエージェントに委譲し（会話履歴なし）、結果を取得できるようにします</string>
-  <string name="huadeng_frontend_card_mode">フロントカード専用モード</string>
-  <string name="huadeng_frontend_card_mode_desc">すべての会話でフロントモードを強制有効にします（通常は HTML フロント付きカードの取り込み時に自動で有効）</string>
+  <string name="huadeng_frontend_card_mode">フロントエンド互換モード</string>
+  <string name="huadeng_frontend_card_mode_desc">挨拶や世界情報の Web ページを自動判別。アシスタント単位で強制も可能</string>
   <string name="huadeng_frontend_card_auto_switched">フロントモードを自動で有効にしました</string>
   <string name="huadeng_frontend_card_slash_unsupported">フロントカードのコマンド %1$s は未対応です</string>
   <string name="huadeng_transient_prune">一時コンテンツの間引き</string>
@@ -3056,7 +3056,7 @@
   <string name="weixin_bot_scan_login">スキャンしてログイン</string>
   <string name="weixin_bot_unknown">不明</string>
   <string name="huadeng_frontend_card_mode_auto">自動判別（挨拶や世界情報にWebページがある場合）</string>
-  <string name="huadeng_frontend_card_mode_always">常に WebView 画面を使う</string>
-  <string name="huadeng_frontend_card_mode_never">常にネイティブ画面を使う</string>
+  <string name="huadeng_frontend_card_mode_always">Always use frontend compatibility mode</string>
+  <string name="huadeng_frontend_card_mode_never">Always use the native interface</string>
   <string name="setting_page_huadeng_compat">互換性と補助</string>
 </resources>

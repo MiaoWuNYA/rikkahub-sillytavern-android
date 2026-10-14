@@ -692,8 +692,8 @@
   <string name="huadeng_tool_result_truncation_desc">工具输出超过 32KB 时自动截断并保存到文件。关闭后工具结果不截断，完整内容保留在消息历史中（若中转站导致工具调用异常，可尝试关闭)</string>
   <string name="huadeng_sub_agent">子 agent</string>
   <string name="huadeng_sub_agent_desc">允许 AI 把子任务派给独立的子 agent 执行（不产生会话历史），完成后取回结果</string>
-  <string name="huadeng_frontend_card_mode">前端卡专属模式</string>
-  <string name="huadeng_frontend_card_mode_desc">为所有会话强制开启前端模式（通常导入带 HTML 前端的角色卡时会自动开启）</string>
+  <string name="huadeng_frontend_card_mode">前端兼容模式</string>
+  <string name="huadeng_frontend_card_mode_desc">自动识别开场白或世界书中的网页，也可按助手强制开启或关闭</string>
   <string name="huadeng_frontend_card_auto_switched">已自动切换前端模式</string>
   <string name="huadeng_frontend_card_slash_unsupported">前端卡命令 %1$s 暂未支持</string>
   <string name="huadeng_transient_prune">上下文瞬态内容裁剪</string>
@@ -3135,7 +3135,7 @@
   <string name="weixin_bot_scan_prompt">请用微信扫码</string>
   <string name="weixin_bot_unnamed">未命名</string>
   <string name="huadeng_frontend_card_mode_auto">自动识别（开场白或世界书含网页时切换）</string>
-  <string name="huadeng_frontend_card_mode_always">总是使用 WebView 界面</string>
+  <string name="huadeng_frontend_card_mode_always">总是使用前端兼容模式</string>
   <string name="huadeng_frontend_card_mode_never">总是使用原生界面</string>
   <string name="setting_page_huadeng_compat">兼容与辅助</string>
 </resources>

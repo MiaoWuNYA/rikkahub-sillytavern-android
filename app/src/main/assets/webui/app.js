@@ -679,24 +679,22 @@
     frame.setAttribute('frameborder', '0');
     // 起始高度给一个保守值，装上后用内容实测高度覆盖
     frame.style.height = '80px';
-    // 用 Blob URL 装载：srcdoc 是文档替换式加载，部分 Android WebView 上样式表不参与级联
+    // 用 document.write 装载：同源，contentDocument 可访问，高度自报与脚本都正常
     var load = function (target) {
       var html = cardDocHtml(target, target.ctx || {});
-      try {
-        var url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-        if (frame._blob) URL.revokeObjectURL(frame._blob);
-        frame._blob = url;
-        frame.removeAttribute('srcdoc');
-        frame.src = url;
-      } catch (e) {
-        frame.srcdoc = html;
-      }
+      frame.dataset.cardDoc = html;
+      var doc = frame.contentDocument;
+      if (!doc) return;
+      doc.open();
+      doc.write(html);
+      doc.close();
     };
     frame._ripple = function (nextKey, nextDesc) {
       if (nextKey) frame.dataset.cardKey = nextKey;
       load(nextDesc || desc);
     };
-    load(desc);
+    frame._write = function () { load(desc); };
+    frame.src = 'about:blank';
     return frame;
     return frame;
   }
@@ -857,7 +855,9 @@
       node.dataset.cardKey = desc.key;
       // 流式帧只铺文本与光标，不装配卡片：半截 HTML 会渲染成残缺网页
       if (!streaming) {
-        node.appendChild(cardFrame(desc.key, desc));
+        var cardEl = cardFrame(desc.key, desc);
+        node.appendChild(cardEl);
+        if (typeof cardEl._write === 'function') cardEl._write();
         node._html = cardSig(desc);
         node._desc = desc;
         node._shellVersion = shellVersion;
