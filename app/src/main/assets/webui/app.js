@@ -666,12 +666,24 @@
     frame.setAttribute('frameborder', '0');
     // 起始高度给一个保守值，装上后用内容实测高度覆盖
     frame.style.height = '80px';
+    // 用 Blob URL 装载：srcdoc 是文档替换式加载，部分 Android WebView 上样式表不参与级联
+    var load = function (target) {
+      var html = cardDocHtml(target, target.ctx || {});
+      try {
+        var url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+        if (frame._blob) URL.revokeObjectURL(frame._blob);
+        frame._blob = url;
+        frame.removeAttribute('srcdoc');
+        frame.src = url;
+      } catch (e) {
+        frame.srcdoc = html;
+      }
+    };
     frame._ripple = function (nextKey, nextDesc) {
       if (nextKey) frame.dataset.cardKey = nextKey;
-      var target = nextDesc || desc;
-      frame.srcdoc = cardDocHtml(target, target.ctx || {});
+      load(nextDesc || desc);
     };
-    frame.srcdoc = cardDocHtml(desc, desc.ctx || {});
+    load(desc);
     return frame;
     return frame;
   }
