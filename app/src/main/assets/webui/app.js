@@ -573,13 +573,34 @@
    *   2. 助手级 cardStyle —— 备选开场白自己不带 style，外观全靠它；
    *   3. 外壳兜底排版，保证未知标签不会挤成一行。
    */
-  function cardDocHtml(html, ctx, shellVersionForDoc) {
-    var body = expandMacros(decodeEscapedInlineTags(normalizeCharaTags(html)));
+  /**
+   * 卡片文档的样式来源三层：卡片自带、助手级 cardStyle、外壳兜底。
+   *
+   * 原生侧已把卡片的 <html>/<head> 外壳与 ``` 围栏拆掉（body 只留正文、样式单列在 style），
+   * 这里直接用；收到整份文档（旧数据）时才退回自己拆。
+   */
+  function cardParts(desc) {
+    var html = String(desc.html == null ? '' : desc.html);
+    if (desc.style != null || desc.head != null) {
+      return { head: String(desc.head || ''), body: html, style: String(desc.style || ''), prepared: true };
+    }
+    var parts = splitCardDoc(html);
+    return { head: parts.head, body: parts.body, style: '', prepared: false };
+  }
+
+  function cardDocHtml(desc, ctx) {
+    var parts = cardParts(desc);
+    var body = expandMacros(decodeEscapedInlineTags(normalizeCharaTags(parts.body)));
     var libs = state.libs || {};
     var compat = libs.compat || RUNTIME_COMPAT;
-    var parts = splitCardDoc(body);
     var cardCss = rewriteCharaCss(state.cardStyle);
-    var ownCss = rewriteCharaCss(parts.head);
+    // 拆好的那份是纯 CSS，要自己包 <style>；兜底那份已经是 <style> 标签的 outerHTML
+    var ownHtml = parts.prepared
+      ? (function () {
+        var css = rewriteCharaCss(parts.style);
+        return css ? '<style data-rikka="card-own">' + css + '</style>' : '';
+      })()
+      : rewriteCharaCss(parts.head);
     return '<!DOCTYPE html><html><head><meta charset="utf-8">' +
       '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
       '<style>' + CARD_SHELL_CSS +
@@ -595,12 +616,12 @@
       buildCardBridge(ctx.messageId, ctx.cardIndex, ctx.charName, ctx.userName) +
       inlineScript(CARD_SHELL_NORMALIZE) +
       inlineScript(CARD_HEIGHT_SCRIPT) +
-      ownCss +
-      shellVersionForDoc +
+      ownHtml +
+      (parts.prepared ? parts.head : '') +
       '</head><body class="rikka-card-body">' + body + '</body></html>';
   }
 
-  function cardFrame(key, html, ctx) {
+  function cardFrame(key, desc) {
     var frame = document.createElement('iframe');
     frame.className = 'card-frame';
     frame.dataset.cardKey = key;
@@ -608,11 +629,12 @@
     // 起始高度给一个保守值，装上后用内容实测高度覆盖
     frame.style.height = '80px';
     // 重装文档但不重建 iframe 元素：重建会丢掉卡内脚本状态
-    frame._ripple = function (nextKey, nextHtml, nextCtx) {
+    frame._ripple = function (nextKey, nextDesc) {
       if (nextKey) frame.dataset.cardKey = nextKey;
-      frame.srcdoc = cardDocHtml(nextHtml == null ? html : nextHtml, nextCtx || ctx, '');
+      var target = nextDesc || desc;
+      frame.srcdoc = cardDocHtml(target, target.ctx || {});
     };
-    frame.srcdoc = cardDocHtml(html, ctx, '');
+    frame.srcdoc = cardDocHtml(desc, desc.ctx || {});
     return frame;
   }
 
@@ -631,6 +653,8 @@
           kind: 'card',
           key: String(msg.id) + ':' + (block.index || 0),
           html: block.html == null ? '' : String(block.html),
+          style: block.style == null ? null : String(block.style),
+          head: block.head == null ? null : String(block.head),
           ctx: {
             messageId: msg.id,
             cardIndex: block.index || 0,
@@ -709,6 +733,13 @@
   }
 
   // 渲染键带上影响输出结构的开关，设置变了才重渲染
+  // 卡片文档的比价键：正文、自带样式、自带 head 任一变化都要重装
+  function cardSig(desc) {
+    return String(desc.html == null ? '' : desc.html) + '\u0000' +
+      (desc.style == null ? '' : String(desc.style)) + '\u0000' +
+      (desc.head == null ? '' : String(desc.head));
+  }
+
   function renderKey(text) {
     var a = state.appearance || {};
     var c = textColors();
@@ -763,8 +794,8 @@
       node.dataset.cardKey = desc.key;
       // 流式帧只铺文本与光标，不装配卡片：半截 HTML 会渲染成残缺网页
       if (!streaming) {
-        node.appendChild(cardFrame(desc.key, desc.html, desc.ctx));
-        node._html = desc.html;
+        node.appendChild(cardFrame(desc.key, desc));
+        node._html = cardSig(desc);
         node._desc = desc;
         node._shellVersion = shellVersion;
       }
@@ -791,13 +822,13 @@
     if (desc.kind === 'card') {
       // 流式期间绝不重建 iframe（卡内脚本状态会全丢）
       if (streaming) return node;
-      var htmlChanged = node._html !== desc.html;
+      var htmlChanged = node._html !== cardSig(desc);
       var shellChanged = node._shellVersion !== shellVersion;
       if (!htmlChanged && !shellChanged) return node;
       var frame = node.querySelector('iframe.card-frame');
       // 只有外壳（运行库/助手级样式）变了：换文档、留元素
       if (!htmlChanged && frame && typeof frame._ripple === 'function') {
-        frame._ripple(desc.key, desc.html, desc.ctx);
+        frame._ripple(desc.key, desc);
         node._desc = desc;
         node._shellVersion = shellVersion;
         return node;
@@ -1364,7 +1395,7 @@
       if (!node._desc || node._html == null || !node.parentNode) continue;
       var frame = node.querySelector('iframe.card-frame');
       if (frame && typeof frame._ripple === 'function') {
-        frame._ripple(node.dataset.cardKey, node._html, node._desc.ctx);
+        frame._ripple(node.dataset.cardKey, node._desc);
         node._shellVersion = shellVersion;
       } else {
         node.parentNode.replaceChild(makeBlockNode(node._desc, false), node);
