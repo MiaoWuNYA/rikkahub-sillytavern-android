@@ -2353,6 +2353,7 @@
   <string name="setting_model_page_fast_model">快速模型</string>
   <string name="setting_model_page_fast_model_desc">用於生成標題、聊天建議以及執行其他快速或背景任務</string>
   <string name="setting_model_page_enable_suggestion">啟用聊天建議</string>
+  <string name="setting_model_page_enable_auto_title">自動生成對話標題</string>
   <string name="assistant_page_gradient_background">漸層背景</string>
   <string name="assistant_page_gradient_background_desc">在聊天頁面上使用動態漸變背景</string>
   <string name="assistant_page_workspace">工作區</string>
@@ -2865,7 +2866,7 @@
   <string name="video_player_error">無法播放此影片</string>
   <string name="video_player_open_with">使用其他應用程式開啟</string>
   <string name="setting_media_page_empty">尚無媒體生成供應商。點擊頂端的 + 即可新增。</string>
-  <string name="setting_media_page_s3_desc">部分 API 僅接受公開 URL 的素材（例如用於影片生成的參考圖片與參考影片）。設定完成後，本機檔案會先上傳至此儲存桶，再以臨時 URL 的形式傳遞給 API；上傳的檔案會在 7 天後自動清除。此設定與用於備份的 S3 相互獨立。</string>
+  <string name="setting_media_page_s3_desc">部分 API 僅接受公開 URL 的素材（例如用於影片生成的參考圖片與參考影片）。在此設定 S3 相容的物件儲存服務後，本機檔案會先上傳至其儲存桶，再以臨時 URL 的形式傳遞給 API；上傳的檔案會在 7 天後自動清除。此設定與用於備份的 S3 相互獨立。</string>
   <string name="setting_media_page_provider_type">供應商類型</string>
   <string name="setting_media_page_provider_name">名稱</string>
   <string name="setting_media_page_workspace_id">Workspace ID</string>
@@ -3059,4 +3060,21 @@
   <string name="huadeng_frontend_card_mode_always">總是使用前端相容模式</string>
   <string name="huadeng_frontend_card_mode_never">總是使用原生介面</string>
   <string name="setting_page_huadeng_compat">相容與輔助</string>
+  <string name="setting_provider_page_context_length">上下文長度</string>
+  <string name="setting_provider_page_context_length_custom">自訂</string>
+  <string name="setting_media_page_asset_storage">素材儲存</string>
+  <string name="translator_page_error">翻譯失敗</string>
+  <string name="translator_page_model_missing">未選擇翻譯模型。請輕觸右上角選擇一個。</string>
+  <string name="translator_page_char_count">%1$d 個字元</string>
+  <string name="translator_page_clear_input">清除輸入</string>
+  <string name="translator_page_paste">貼上</string>
+  <string name="translator_page_use_as_input">用作輸入</string>
+  <string name="translator_page_history">翻譯歷史</string>
+  <string name="translator_page_clear_history">清除</string>
+  <string name="translator_page_clear_history_title">清除翻譯記錄</string>
+  <string name="translator_page_clear_history_message">所有翻譯記錄將被刪除。此操作無法復原。</string>
+  <string name="setting_display_page_enable_quote_highlight_title">引號內文字醒目顯示</string>
+  <string name="setting_display_page_enable_quote_highlight_desc">將引號內的文字以主題顏色標示，讓角色對話更突出</string>
+  <string name="workspace_detail_copy_path">複製路徑</string>
+  <string name="workspace_detail_path_copied">路徑已複製</string>
 </resources>

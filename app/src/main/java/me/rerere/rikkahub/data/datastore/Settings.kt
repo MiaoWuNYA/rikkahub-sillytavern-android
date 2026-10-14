@@ -61,10 +61,13 @@ data class Settings(
     // 每次进页面都被重置回 auto 很烦。默认 auto = 不显式指定
     val imageGenerationSize: String = ImageGenSize.AUTO.value,
     val imageGenerationReasoningLevel: ReasoningLevel = ReasoningLevel.AUTO,
+    val enableAutoTitle: Boolean = true,
     val titlePrompt: String = DEFAULT_TITLE_PROMPT,
     val translateModeId: Uuid = Uuid.random(),
     val translatePrompt: String = DEFAULT_TRANSLATION_PROMPT,
     val translateThinkingBudget: Int = 0,
+    // 翻译页的目标语言，存 BCP 47 语言标签
+    val translateTargetLanguage: String = "zh-CN",
     val enableSuggestion: Boolean = true,
     val suggestionPrompt: String = DEFAULT_SUGGESTION_PROMPT,
     val ocrModelId: Uuid = Uuid.random(),
@@ -344,6 +347,7 @@ data class DisplaySetting(
     val sendOnEnter: Boolean = false,
     val enableAutoScroll: Boolean = true,
     val enableLatexRendering: Boolean = true,
+    val enableQuoteHighlight: Boolean = false,
     val enableBlurEffect: Boolean = false,
     val backgroundEffectType: BackgroundEffectType = BackgroundEffectType.BLUR,
     // 输入框模糊/玻璃的不透明度（0.1~1.0），太低会影响正文可读性

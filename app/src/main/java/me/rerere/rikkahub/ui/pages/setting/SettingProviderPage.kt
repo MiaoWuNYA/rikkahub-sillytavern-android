@@ -62,7 +62,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.dokar.sonner.ToastType
+import me.rerere.ui.toast.ToastType
 import io.github.g00fy2.quickie.QRResult
 import io.github.g00fy2.quickie.ScanQRCode
 import kotlin.uuid.Uuid
@@ -484,7 +484,7 @@ private fun ImportProviderButton(
 private fun handleQRResult(
     result: QRResult,
     onAdd: (ProviderSetting) -> Unit,
-    toaster: com.dokar.sonner.ToasterState,
+    toaster: me.rerere.ui.toast.ToasterState,
     context: android.content.Context
 ) {
     runCatching {
@@ -527,7 +527,7 @@ private fun handleQRResult(
 private fun handleImageQRCode(
     uri: Uri,
     onAdd: (ProviderSetting) -> Unit,
-    toaster: com.dokar.sonner.ToasterState,
+    toaster: me.rerere.ui.toast.ToasterState,
     context: android.content.Context
 ) {
     runCatching {

@@ -2354,6 +2354,7 @@
   <string name="setting_model_page_fast_model">Быстрая модель</string>
   <string name="setting_model_page_fast_model_desc">Модель для заголовков, подсказок в чате и других быстрых или фоновых задач</string>
   <string name="setting_model_page_enable_suggestion">Включить подсказки чата</string>
+  <string name="setting_model_page_enable_auto_title">Автоматически создавать заголовки чатов</string>
   <string name="assistant_page_gradient_background">Градиентный фон</string>
   <string name="assistant_page_gradient_background_desc">Использовать динамический градиентный фон на странице чата</string>
   <string name="assistant_page_workspace">Рабочая область</string>
@@ -2895,7 +2896,7 @@
   <string name="media_creation_error_kind_unsupported">%1$s не поддерживает этот тип модели</string>
   <string name="media_creation_error_task_exists">Задача уже существует</string>
   <string name="setting_media_page_empty">Пока нет провайдеров генерации медиа. Нажмите + вверху, чтобы добавить.</string>
-  <string name="setting_media_page_s3_desc">Некоторые API принимают ресурсы только по публичным URL (например, референсные изображения и референсные видео для генерации видео). После настройки локальные файлы сначала загружаются в этот бакет, а затем передаются в API как временные URL; загруженные файлы автоматически удаляются через 7 дней. Эта конфигурация не зависит от S3, используемого для резервных копий.</string>
+  <string name="setting_media_page_s3_desc">Некоторые API принимают ресурсы только по публичным URL (например, референсные изображения и референсные видео для генерации видео). Настройте здесь S3-совместимый сервис объектного хранилища: локальные файлы сначала загружаются в его бакет, а затем передаются в API как временные URL; загруженные файлы автоматически удаляются через 7 дней. Эта конфигурация не зависит от S3, используемого для резервных копий.</string>
   <string name="setting_media_page_provider_type">Тип провайдера</string>
   <string name="setting_media_page_provider_name">Название</string>
   <string name="setting_media_page_workspace_id">ID рабочей области</string>
@@ -3059,4 +3060,21 @@
   <string name="huadeng_frontend_card_mode_always">Always use frontend compatibility mode</string>
   <string name="huadeng_frontend_card_mode_never">Always use the native interface</string>
   <string name="setting_page_huadeng_compat">Совместимость и помощники</string>
+  <string name="setting_provider_page_context_length">Длина контекста</string>
+  <string name="setting_provider_page_context_length_custom">Пользовательский</string>
+  <string name="setting_media_page_asset_storage">Хранилище ресурсов</string>
+  <string name="translator_page_error">Ошибка перевода</string>
+  <string name="translator_page_model_missing">Модель перевода не выбрана. Нажмите в правом верхнем углу, чтобы выбрать её.</string>
+  <string name="translator_page_char_count">%1$d символов</string>
+  <string name="translator_page_clear_input">Очистить ввод</string>
+  <string name="translator_page_paste">Вставить</string>
+  <string name="translator_page_use_as_input">Использовать как ввод</string>
+  <string name="translator_page_history">История переводов</string>
+  <string name="translator_page_clear_history">Очистить</string>
+  <string name="translator_page_clear_history_title">Очистить историю переводов</string>
+  <string name="translator_page_clear_history_message">Все записи перевода будут удалены. Это действие нельзя отменить.</string>
+  <string name="setting_display_page_enable_quote_highlight_title">Подсветка цитируемого текста</string>
+  <string name="setting_display_page_enable_quote_highlight_desc">Окрашивать текст в кавычках в цвет темы, чтобы реплики персонажей выделялись</string>
+  <string name="workspace_detail_copy_path">Скопировать путь</string>
+  <string name="workspace_detail_path_copied">Путь скопирован</string>
 </resources>

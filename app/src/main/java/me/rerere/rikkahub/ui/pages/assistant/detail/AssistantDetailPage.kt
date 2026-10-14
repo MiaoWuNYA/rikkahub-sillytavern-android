@@ -674,7 +674,7 @@ private fun ExportCardDialog(
 private fun doPngExportInternal(
     context: Context,
     scope: CoroutineScope,
-    toaster: com.dokar.sonner.ToasterState,
+    toaster: me.rerere.ui.toast.ToasterState,
     assistant: Assistant,
     imageUri: Uri,
 ) {

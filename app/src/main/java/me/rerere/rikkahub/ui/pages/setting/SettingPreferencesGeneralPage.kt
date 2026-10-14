@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit
 import okhttp3.Request
 import java.io.IOException
 import java.time.Instant
-import com.dokar.sonner.ToastType
+import me.rerere.ui.toast.ToastType
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState

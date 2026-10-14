@@ -82,7 +82,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
-import com.dokar.sonner.ToastType
+import me.rerere.ui.toast.ToastType
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
@@ -665,7 +665,7 @@ private fun TextInputRow(
     assistant: Assistant,
     completionProviders: List<ChatCompletionProvider>,
     onSendMessage: () -> Unit,
-    toaster: com.dokar.sonner.ToasterState,
+    toaster: me.rerere.ui.toast.ToasterState,
     onUpdateAssistant: (Assistant) -> Unit,
     onSlashDuplicate: (() -> Unit)?,
     onSlashInsert: ((MessageRole, String, String?, Int?) -> Unit)?,
@@ -1320,7 +1320,7 @@ private fun handleBuiltinSlash(
     cmd: SlashCommand,
     args: String,
     state: ChatInputState,
-    toaster: com.dokar.sonner.ToasterState,
+    toaster: me.rerere.ui.toast.ToasterState,
     settings: Settings,
     assistant: Assistant,
     onUpdateAssistant: (Assistant) -> Unit,

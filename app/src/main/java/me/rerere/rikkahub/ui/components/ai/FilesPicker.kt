@@ -46,7 +46,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
-import com.dokar.sonner.ToastType
+import me.rerere.ui.toast.ToastType
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.Job
 import me.rerere.ai.provider.Model

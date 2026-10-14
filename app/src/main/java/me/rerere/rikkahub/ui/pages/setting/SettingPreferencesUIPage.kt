@@ -59,7 +59,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.dokar.sonner.ToastType
+import me.rerere.ui.toast.ToastType
 import java.io.File
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
@@ -290,6 +290,12 @@ internal fun SettingPreferencesUIContent(vm: SettingVM, contentPadding: PaddingV
                         onCheckedChange = { updateDisplaySetting(displaySetting.copy(enableLatexRendering = it)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_page_enable_latex_rendering_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_display_page_enable_latex_rendering_title)) },
+                    )
+                    switchItem(
+                        checked = displaySetting.enableQuoteHighlight,
+                        onCheckedChange = { updateDisplaySetting(displaySetting.copy(enableQuoteHighlight = it)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_enable_quote_highlight_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_enable_quote_highlight_title)) },
                     )
                 }
             }

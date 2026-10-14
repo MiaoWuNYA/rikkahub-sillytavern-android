@@ -39,8 +39,8 @@ import com.composables.icons.lucide.Link2
 import com.composables.icons.lucide.MessageSquare
 import com.composables.icons.lucide.Sparkles
 import com.composables.icons.lucide.Lucide
-import com.dokar.sonner.ToastType
-import com.dokar.sonner.ToasterState
+import me.rerere.ui.toast.ToastType
+import me.rerere.ui.toast.ToasterState
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

@@ -57,9 +57,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -71,7 +68,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.dokar.sonner.ToastType
+import me.rerere.ui.toast.ToastType
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.Job
@@ -1335,19 +1332,19 @@ private fun TopBar(
         onUpdateTitle(it)
     }
 
-    // 顶部渐变遮罩：消息在标题栏下面滚动，遮罩从状态栏一直淡出到标题栏下沿之外
-    val scrimColor = MaterialTheme.colorScheme.background
     TopAppBar(
-        modifier = Modifier.drawWithCache {
-            val scrimHeight = size.height + 24.dp.toPx()
-            val brush = Brush.verticalGradient(
-                0f to scrimColor,
-                0.6f to scrimColor.copy(alpha = 0.85f),
-                1f to scrimColor.copy(alpha = 0f),
-                startY = 0f,
-                endY = scrimHeight,
-            )
-            onDrawBehind { drawRect(brush, size = Size(size.width, scrimHeight)) }
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+        navigationIcon = {
+            if (!bigScreen) {
+                IconButton(
+                    onClick = {
+                        // 抽屉已打开时再点一次收起，不必只靠手势划回
+                        scope.launch { if (drawerState.isClosed) drawerState.open() else drawerState.close() }
+                    }
+                ) {
+                    Icon(HugeIcons.Menu03, "Messages")
+                }
+            }
         },
         title = {
             val editTitleWarning = stringResource(R.string.chat_page_edit_title_warning)
@@ -1383,15 +1380,6 @@ private fun TopBar(
                 }
             }
         },
-        navigationIcon = {
-            if (!bigScreen) {
-                IconButton(onClick = {
-                    scope.launch { if (drawerState.isClosed) drawerState.open() else drawerState.close() }
-                }) {
-                    Icon(HugeIcons.Menu03, contentDescription = null)
-                }
-            }
-        },
         actions = {
             // 语音 / 视频通话：仅在 TTS 与 ASR 均已配置时显示
             val ttsReady = settings.getSelectedTTSProvider() != null
@@ -1418,9 +1406,6 @@ private fun TopBar(
                 }
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color.Transparent,
-        ),
     )
     titleState.EditStateContent { title, onUpdate ->
         AlertDialog(

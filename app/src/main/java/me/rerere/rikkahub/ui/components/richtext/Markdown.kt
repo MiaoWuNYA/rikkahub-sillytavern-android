@@ -45,6 +45,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -259,12 +260,13 @@ fun MarkdownBlock(
     }
 
     // 文本染色：引号与括号一遍扫完，按配对符号的首字符决定用引号色还是括号色
+    // 引号色变量与上游 quotedText 用的 quoteColor 区分开，避免同名遮蔽
     val darkMode = LocalDarkMode.current
-    val quoteColor = if (settings.enableTextColor) {
+    val localQuoteColor = if (settings.enableTextColor) {
         settings.quoteColor.ifBlank { if (darkMode) "#E18A24" else "#C7731E" }
     } else null
     val codeBlocks = CODE_BLOCK_REGEX.findAll(content).map { it.range }.toList()
-    val coloredContent = if (quoteColor == null) {
+    val coloredContent = if (localQuoteColor == null) {
         content
     } else {
         val bracketColor = settings.bracketColor.ifBlank { if (darkMode) "#7EAFC4" else "#5B8DEF" }
@@ -273,7 +275,7 @@ fun MarkdownBlock(
             if (opener == null || codeBlocks.any { match.range.first in it }) {
                 match.value
             } else {
-                val color = if (opener in BRACKET_OPENERS) bracketColor else quoteColor
+                val color = if (opener in BRACKET_OPENERS) bracketColor else localQuoteColor
                 "<span style=\"color:$color\">${match.value}</span>"
             }
         }
@@ -282,10 +284,12 @@ fun MarkdownBlock(
     val preprocessed = preProcessMarkdown(coloredContent)
 
     val enableLatexRendering = settings.enableLatexRendering
+    val enableQuoteHighlight = settings.enableQuoteHighlight
     val fontSize = LocalTextStyle.current.merge(style).fontSize
     val density = LocalDensity.current
+    val quoteColor = MaterialTheme.colorScheme.tertiary
     val defaultTheme = MarkdownDefaults.theme(style)
-    val theme = remember(defaultTheme, fontSize, density) {
+    val theme = remember(defaultTheme, fontSize, density, enableQuoteHighlight, quoteColor) {
         defaultTheme.copy(
             inlineCode = defaultTheme.inlineCode.copy(
                 fontFamily = JetbrainsMono,
@@ -293,6 +297,7 @@ fun MarkdownBlock(
             ),
             // 段落间距跟随字号，调整字体大小时保持比例
             blockSpacing = if (fontSize.isSp) with(density) { fontSize.toDp() } else defaultTheme.blockSpacing,
+            quotedText = SpanStyle(color = quoteColor).takeIf { enableQuoteHighlight },
         )
     }
 
@@ -410,7 +415,7 @@ private fun citationWidget(link: MarkdownInline.Link, onClick: (String) -> Unit)
                 .clickable { onClick(id.trim()) }
                 .fillMaxSize()
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.tertiaryContainer.copy(0.2f)),
+                .background(MaterialTheme.colorScheme.tertiaryContainer),
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -421,7 +426,7 @@ private fun citationWidget(link: MarkdownInline.Link, onClick: (String) -> Unit)
                     lineHeight = 10.sp,
                     fontFamily = JetbrainsMono,
                     color = MaterialTheme.colorScheme.onTertiaryContainer,
-                    fontWeight = FontWeight.Thin,
+                    fontWeight = FontWeight.Medium,
                 ),
             )
         }

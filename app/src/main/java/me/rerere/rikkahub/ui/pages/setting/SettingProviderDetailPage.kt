@@ -79,7 +79,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.dokar.sonner.ToastType
+import me.rerere.ui.toast.ToastType
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -140,6 +140,7 @@ import me.rerere.rikkahub.ui.pages.setting.components.SettingProviderBalanceOpti
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.ui.theme.extendColors
 import me.rerere.rikkahub.utils.UiState
+import me.rerere.rikkahub.utils.formatNumber
 import me.rerere.rikkahub.utils.plus
 import me.rerere.ui.components.RikkaConfirmDialog
 import org.koin.androidx.compose.koinViewModel
@@ -149,20 +150,26 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 
 private enum class ProviderDetailTab(
     override val icon: ImageVector,
-    @param:StringRes override val label: Int,
+    @param:StringRes private val labelRes: Int,
 ) : PagerTab {
     CONFIG(HugeIcons.Tools, R.string.setting_provider_page_configuration),
     MODELS(HugeIcons.Package01, R.string.setting_provider_page_models),
-    ADVANCED(HugeIcons.Settings03, R.string.setting_provider_page_advanced_settings),
+    ADVANCED(HugeIcons.Settings03, R.string.setting_provider_page_advanced_settings);
+
+    override val label: String
+        @Composable get() = stringResource(labelRes)
 }
 
 private enum class ModelFormTab(
     override val icon: ImageVector,
-    @param:StringRes override val label: Int,
+    @param:StringRes private val labelRes: Int,
 ) : PagerTab {
     BASIC(HugeIcons.Package01, R.string.setting_provider_page_basic_settings),
     ADVANCED(HugeIcons.Settings03, R.string.setting_provider_page_advanced_settings),
-    BUILT_IN_TOOLS(HugeIcons.Tools, R.string.setting_page_built_in_tools),
+    BUILT_IN_TOOLS(HugeIcons.Tools, R.string.setting_page_built_in_tools);
+
+    override val label: String
+        @Composable get() = stringResource(labelRes)
 }
 
 @Composable
@@ -644,6 +651,13 @@ private fun ModelSettingsForm(
                                 abilities = model.abilities,
                                 onUpdateAbilities = {
                                     onModelChange(model.copy(abilities = it))
+                                }
+                            )
+
+                            ModelContextLengthSelector(
+                                contextLength = model.contextLength,
+                                onUpdateContextLength = {
+                                    onModelChange(model.copy(contextLength = it))
                                 }
                             )
                         }
@@ -1145,6 +1159,55 @@ fun ModalAbilitySelector(
             ),
             selected = selected,
             icon = HugeIcons.Tick01,
+        )
+    }
+}
+
+// 常见的上下文窗口大小，其余的走自定义输入
+private val ContextLengthPresets = listOf(128_000, 200_000, 1_000_000)
+
+@Composable
+private fun ModelContextLengthSelector(
+    contextLength: Int,
+    onUpdateContextLength: (Int) -> Unit
+) {
+    var custom by remember { mutableStateOf(contextLength !in ContextLengthPresets) }
+    // 输入过程中允许为空，只有合法的正整数才写回模型
+    var customText by remember { mutableStateOf(contextLength.toString()) }
+
+    Text(
+        stringResource(R.string.setting_provider_page_context_length),
+        style = MaterialTheme.typography.titleSmall
+    )
+    // null 表示自定义
+    ConnectedChoiceButtons(
+        options = ContextLengthPresets + null,
+        selected = if (custom) null else contextLength,
+        onSelect = { preset ->
+            custom = preset == null
+            if (preset != null) {
+                customText = preset.toString()
+                onUpdateContextLength(preset)
+            }
+        },
+    ) { preset, selected ->
+        ConnectedChoiceLabel(
+            text = preset?.formatNumber() ?: stringResource(R.string.setting_provider_page_context_length_custom),
+            selected = selected,
+        )
+    }
+    AnimatedVisibility(visible = custom) {
+        OutlinedTextField(
+            value = customText,
+            onValueChange = { value ->
+                customText = value.filter { it.isDigit() }
+                customText.toIntOrNull()?.takeIf { it > 0 }?.let(onUpdateContextLength)
+            },
+            modifier = Modifier.fillMaxWidth(),
+            suffix = { Text("tokens") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+            isError = (customText.toIntOrNull() ?: 0) <= 0,
         )
     }
 }

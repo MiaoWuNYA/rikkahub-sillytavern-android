@@ -2354,6 +2354,7 @@
   <string name="setting_model_page_fast_model">빠른 모델</string>
   <string name="setting_model_page_fast_model_desc">제목, 채팅 제안 및 기타 빠른 작업이나 백그라운드 작업에 사용하는 모델</string>
   <string name="setting_model_page_enable_suggestion">채팅 제안 활성화</string>
+  <string name="setting_model_page_enable_auto_title">대화 제목 자동 생성</string>
   <string name="assistant_page_gradient_background">그라데이션 배경</string>
   <string name="assistant_page_gradient_background_desc">채팅 페이지에서 동적 그라데이션 배경 사용</string>
   <string name="assistant_page_workspace">작업 공간</string>
@@ -2895,7 +2896,7 @@
   <string name="media_creation_error_cancelled_remotely">서버에서 작업이 취소되었습니다</string>
   <string name="media_creation_error_expired">작업이 만료되었습니다</string>
   <string name="setting_media_page_empty">아직 미디어 생성 제공자가 없습니다. 상단의 +를 눌러 추가하세요.</string>
-  <string name="setting_media_page_s3_desc">일부 API는 공개 URL에 있는 에셋만 허용합니다(예: 비디오 생성을 위한 참조 이미지 및 참조 비디오). 이 설정을 완료하면 로컬 파일이 먼저 이 버킷에 업로드된 다음 임시 URL로 API에 전달됩니다. 업로드된 파일은 7일 후 자동으로 정리됩니다. 이 구성은 백업에 사용되는 S3와 별개입니다.</string>
+  <string name="setting_media_page_s3_desc">일부 API는 공개 URL에 있는 에셋(동영상 생성용 참조 이미지 및 참조 동영상 등)만 허용합니다. 여기에서 S3 호환 객체 스토리지 서비스를 설정하면, 로컬 파일이 먼저 해당 버킷에 업로드된 후 임시 URL로 API에 전달됩니다. 업로드된 파일은 7일 후 자동으로 정리됩니다. 이 설정은 백업에 사용되는 S3와 별개입니다.</string>
   <string name="setting_media_page_provider_type">제공자 유형</string>
   <string name="setting_media_page_provider_name">이름</string>
   <string name="setting_media_page_workspace_id">워크스페이스 ID</string>
@@ -3059,4 +3060,21 @@
   <string name="huadeng_frontend_card_mode_always">Always use frontend compatibility mode</string>
   <string name="huadeng_frontend_card_mode_never">Always use the native interface</string>
   <string name="setting_page_huadeng_compat">호환성 및 보조</string>
+  <string name="setting_provider_page_context_length">컨텍스트 길이</string>
+  <string name="setting_provider_page_context_length_custom">사용자 지정</string>
+  <string name="setting_media_page_asset_storage">에셋 저장소</string>
+  <string name="translator_page_error">번역 실패</string>
+  <string name="translator_page_model_missing">번역 모델이 선택되지 않았습니다. 오른쪽 상단을 눌러 선택하세요.</string>
+  <string name="translator_page_char_count">%1$d자</string>
+  <string name="translator_page_clear_input">입력 지우기</string>
+  <string name="translator_page_paste">붙여넣기</string>
+  <string name="translator_page_use_as_input">입력으로 사용</string>
+  <string name="translator_page_history">번역 기록</string>
+  <string name="translator_page_clear_history">지우기</string>
+  <string name="translator_page_clear_history_title">번역 기록 지우기</string>
+  <string name="translator_page_clear_history_message">모든 번역 기록이 삭제됩니다. 이 작업은 되돌릴 수 없습니다.</string>
+  <string name="setting_display_page_enable_quote_highlight_title">인용된 텍스트 강조</string>
+  <string name="setting_display_page_enable_quote_highlight_desc">따옴표 안의 텍스트에 테마 색상을 적용하여 캐릭터 대화를 돋보이게 합니다</string>
+  <string name="workspace_detail_copy_path">경로 복사</string>
+  <string name="workspace_detail_path_copied">경로 복사됨</string>
 </resources>

@@ -531,7 +531,7 @@ private fun updateNext(
     skills: List<SkillsVM.GitHubSkillInfo>,
     skillsVM: SkillsVM,
     detailVM: SkillDetailVM,
-    toaster: com.dokar.sonner.ToasterState,
+    toaster: me.rerere.ui.toast.ToasterState,
     repoUrl: String = "",
     updateDoneText: String = "",
     installFailedText: String = "",
