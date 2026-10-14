@@ -989,7 +989,10 @@ private fun ChatPageContent(
                             val action = obj?.get("action")?.toString()?.trim('"').orEmpty()
                             val id = obj?.get("id")?.toString()?.trim('"').orEmpty()
                             val message = conversation.currentMessages.firstOrNull { it.id.toString() == id }
-                            if (message != null) {
+                            if (message != null && action.isEmpty()) {
+                                // 只给 id：打开原生菜单（复制、编辑、翻译、重试等）
+                                webActionIndex = conversation.currentMessages.indexOf(message)
+                            } else if (message != null) {
                                 when (action) {
                                     "copy" -> {
                                         val text = message.parts
