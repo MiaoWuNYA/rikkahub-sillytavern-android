@@ -122,6 +122,9 @@ import me.rerere.rikkahub.ui.components.ai.applyMacroVarSlash
 import me.rerere.rikkahub.ui.components.ai.completion.WorkspaceCompletionProvider
 import me.rerere.rikkahub.ui.components.ai.rememberChatAttachmentPickerActions
 import me.rerere.rikkahub.ui.context.LocalNavController
+import me.rerere.rikkahub.ui.context.LocalTTSState
+import me.rerere.rikkahub.utils.removeBracketedContent
+import me.rerere.rikkahub.utils.extractQuotedContentAsText
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.context.Navigator
 import me.rerere.rikkahub.ui.hooks.ChatInputState
@@ -139,6 +142,10 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 import me.rerere.rikkahub.data.ai.transformers.visualTransforms
 import me.rerere.rikkahub.ui.pages.assistant.detail.hasFrontendCardContent
+
+private val WEB_ACTIONS = setOf(
+    "copy", "delete", "regenerate", "translate", "favorite", "share", "edit", "speak", "menu",
+)
 
 @Composable
 fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
@@ -451,6 +458,7 @@ private fun ChatPageContent(
     }
     // WebView 里点消息 → 用原生对话框做操作，功能与原生列表一致
     var webActionIndex by remember { mutableStateOf<Int?>(null) }
+    val tts = LocalTTSState.current
     // 翻译与原生消息菜单同一入口：先选目标语言，不直接用系统语言
     var webTranslateMessage by remember { mutableStateOf<UIMessage?>(null) }
     var webEditIndex by remember { mutableStateOf<Int?>(null) }
@@ -1022,6 +1030,10 @@ private fun ChatPageContent(
                                 // 只给 id：打开原生菜单（复制、编辑、翻译、重试等）
                                 webActionIndex = conversation.currentMessages.indexOf(message)
                             } else if (message != null) {
+                                if (action == "menu" || action !in WEB_ACTIONS) {
+                                    webActionIndex = conversation.currentMessages.indexOf(message)
+                                    return@runCatching
+                                }
                                 when (action) {
                                     "copy" -> {
                                         val text = message.parts
@@ -1057,6 +1069,21 @@ private fun ChatPageContent(
                                     "edit" -> {
                                         inputState.setContents(message.parts)
                                         inputState.editingMessage = message.id
+                                    }
+
+                                    "speak" -> {
+                                        if (tts.isSpeaking.value) {
+                                            tts.stop()
+                                        } else {
+                                            var text = message.toText()
+                                            if (setting.displaySetting.ttsOnlyReadQuoted) {
+                                                text = text.extractQuotedContentAsText() ?: text
+                                            }
+                                            if (setting.displaySetting.ttsOnlyReadOutsideBrackets) {
+                                                text = text.removeBracketedContent() ?: text
+                                            }
+                                            if (text.isNotBlank()) tts.speak(text)
+                                        }
                                     }
                                 }
                             }

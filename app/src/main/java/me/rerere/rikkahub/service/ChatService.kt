@@ -134,6 +134,7 @@ import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.memory.CrossWindowMemoryStore
 import me.rerere.rikkahub.data.model.Conversation
+import me.rerere.rikkahub.data.model.toMergedMessageNode
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantAffectScope
 import me.rerere.rikkahub.data.model.MessageNode
@@ -567,11 +568,17 @@ class ChatService(
                         }
                     })
                 }
-                Conversation.ofId(
+                val conversation = Conversation.ofId(
                     id = session.id,
                     assistantId = assistant.id,
                     newConversation = true
-                ).updateCurrentMessages(presetMessages)
+                )
+                // 合并开场白：几条开场白是同一条消息的多个 swipe，而不是几条独立消息
+                if (assistant.mergeGreetings && presetMessages.size > 1) {
+                    conversation.copy(messageNodes = listOf(presetMessages.toMergedMessageNode()))
+                } else {
+                    conversation.updateCurrentMessages(presetMessages)
+                }
             }
         }
     }

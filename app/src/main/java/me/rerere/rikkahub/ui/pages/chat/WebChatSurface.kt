@@ -29,6 +29,8 @@ import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.ui.components.richtext.TrackWebViewPresence
 
+private const val WEBUI_URL = "file:///android_asset/webui/index.html"
+
 // 原生 → 页面的事件（酒馆事件名 + 参数 JSON 数组）
 data class WebUiEvent(val name: String, val payloadJson: String)
 
@@ -183,6 +185,8 @@ fun WebChatSurface(
             WebView(context).apply {
                 setBackgroundColor(AndroidColor.TRANSPARENT)
                 this.settings.javaScriptEnabled = true
+                // 便于真机排查渲染问题
+                android.webkit.WebView.setWebContentsDebuggingEnabled(true)
                 this.settings.domStorageEnabled = true
                 this.settings.allowFileAccess = true
                 this.settings.mediaPlaybackRequiresUserGesture = false
@@ -207,8 +211,14 @@ fun WebChatSurface(
                 localBridge.pageApi = "webui"
                 bridge = localBridge
                 addJavascriptInterface(localBridge, "rikkaNative")
-                loadUrl("file:///android_asset/webui/index.html")
+                loadUrl(WEBUI_URL)
                 webViewRef = this
+            }
+        },
+        update = { view ->
+            val url = view.url
+            if (url.isNullOrEmpty() || url == "about:blank" || url.startsWith("chrome-error")) {
+                view.loadUrl(WEBUI_URL)
             }
         },
     )

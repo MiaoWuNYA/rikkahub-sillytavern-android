@@ -57,6 +57,7 @@ data class Assistant(
     val messageTemplate: String = "{{ message }}",
     val contextTemplate: String = DEFAULT_CONTEXT_TEMPLATE, // 上下文组装模板（ADF风格）
     val presetMessages: List<UIMessage> = emptyList(),
+    val mergeGreetings: Boolean = false,
     // 导入的角色卡自带前端（HTML 卡片）时置位：聊天页据此直接进前端模式。
     val frontendCardPreferred: Boolean = false,
     // 界面 WebView 化：默认自动识别（开场白/角色世界书含网页时切换）

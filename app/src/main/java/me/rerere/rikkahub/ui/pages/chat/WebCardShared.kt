@@ -196,6 +196,8 @@ internal fun buildState(
 }
 
 // 单条消息：按段落切成文本块与前端卡块，页面据此决定气泡还是 iframe
+private val MESSAGE_STYLE_BLOCK = Regex("<style\\b[^>]*>([\\s\\S]*?)</style\\s*>", RegexOption.IGNORE_CASE)
+
 internal fun buildMessage(
     message: UIMessage,
     assistant: Assistant,
@@ -217,6 +219,12 @@ internal fun buildMessage(
         it is UIMessagePart.Image || it is UIMessagePart.Video ||
             it is UIMessagePart.Audio || it is UIMessagePart.Document
     }
+
+    val messageStyle = MESSAGE_STYLE_BLOCK.findAll(textParts.joinToString("\n") { it.text })
+        .map { it.groupValues[1].trim() }
+        .filter { it.isNotEmpty() }
+        .distinct()
+        .joinToString("\n")
 
     val blocks = buildJsonArray {
         attachments.forEach { part ->
@@ -261,13 +269,15 @@ internal fun buildMessage(
                     // 塞进 iframe 的 body 会把解析树整个搞乱：样式表落进正文变成可见文本、
                     // 卡片脚本拿不到预期的 DOM（表现为卡片停在 opacity:0、页面里出现一段 JS 源码）。
                     val document = parseCardDocument(stripLoneFences(segment))
+                    if (document.bodyHtml.isBlank()) return@forEach
                     add(
                         buildJsonObject {
                             put("type", "card")
                             put("index", cardIndex++)
                             put("html", document.bodyHtml)
                             if (document.headHtml.isNotBlank()) put("head", document.headHtml)
-                            if (document.styleCss.isNotBlank()) put("style", document.styleCss)
+                            val own = document.styleCss.ifBlank { messageStyle }
+                            if (own.isNotBlank()) put("style", own)
                         }
                     )
                 } else {

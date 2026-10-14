@@ -144,16 +144,42 @@
   var CHARA_TAG_RE = /<(\/?)([A-Za-z0-9_:\-]*[\u0080-\uFFFF][A-Za-z0-9_:\-\u0080-\uFFFF]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/g;
   var SKIP_REGION_RE = /<(style|script|pre|code|textarea)\b[^>]*>[\s\S]*?<\/\1\s*>|<!--[\s\S]*?-->/gi;
 
-  // 卡片分块标签：option 在 select 外浏览器不显示，main/StatusBlock 这类需要按块渲染
-  var BLOCK_TAG_RE = /<(\/?)(main|option|statusblock|status|tickbubble|choice)((?:"[^"]*"|'[^']*'|[^>"'])*)>/gi;
+  var HTML_TAGS = {};
+  ('a abbr address area article aside audio b base bdi bdo blockquote body br button canvas caption cite code col ' +
+   'colgroup data datalist dd del details dfn dialog div dl dt em embed fieldset figcaption figure footer form ' +
+   'h1 h2 h3 h4 h5 h6 head header hgroup hr html i iframe img input ins kbd label legend li link main map mark ' +
+   'menu meta meter nav noscript object ol optgroup option output p picture pre progress q rp rt ruby s samp ' +
+   'script search section select slot small source span strong style sub summary sup table tbody td template ' +
+   'textarea tfoot th thead time title tr track u ul var video wbr svg path circle rect g line polygon polyline ' +
+   'ellipse defs use text tspan mask clippath lineargradient radialgradient stop filter pattern image symbol ' +
+   'marker foreignobject').split(' ').forEach(function (tag) { HTML_TAGS[tag.toUpperCase()] = 1; });
+
+  var BLOCK_OVERRIDE = { MAIN: 1, OPTION: 1 };
+
+  var ANY_TAG_RE = /<(\/?)([a-zA-Z][a-zA-Z0-9_:-]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/g;
+
+  function isCardContainer(tag) {
+    var up = String(tag).toUpperCase();
+    return !!(BLOCK_OVERRIDE[up] || !HTML_TAGS[up]);
+  }
 
   function convertBlockTags(chunk) {
-    return chunk.replace(BLOCK_TAG_RE, function (full, slash, name) {
-      var tag = name.toLowerCase();
-      if (tag === 'main') return full;
-      if (slash === '/') return '</div>';
-      var attrs = arguments[3] || '';
-      return '<div class="rikka-block rikka-block-' + tag + '"' + attrs.replace(/\s*tickbubble\s*/gi, ' ') + '>';
+    return String(chunk == null ? '' : chunk).replace(ANY_TAG_RE, function (full, slash, name, rawAttrs) {
+      if (!isCardContainer(name)) return full;
+      var tag = String(name).toLowerCase();
+      var el = tag === 'option' ? 'div' : name;
+      if (slash === '/') return '</' + el + '>';
+      var cls = 'rikka-block rikka-block-' + tag;
+      var attrs = String(rawAttrs || '');
+      var existing = attrs.match(/\sclass\s*=\s*("[^"]*"|'[^']*')/i);
+      if (existing) {
+        var cur = existing[1].slice(1, -1);
+        if (/(^|\s)rikka-block(\s|$)/.test(cur)) return full;
+        attrs = attrs.replace(existing[0], ' class="' + cls + ' ' + cur + '"');
+      } else {
+        attrs = ' class="' + cls + '"' + attrs;
+      }
+      return '<' + el + attrs + '>';
     });
   }
 
@@ -209,7 +235,6 @@
 
   function normalizeCharaTags(html) {
     var text = String(html == null ? '' : html);
-    if (!NON_ASCII.test(text)) return text;
     var out = '';
     var last = 0;
     var m;
@@ -447,6 +472,16 @@
   window.addEventListener('message', function (event) {
     var data = event.data;
     if (!data || data.__rikkaFrame !== 'height') return;
+    var h = Math.round(Number(data.h) || 0);
+    if (h > 0) {
+      var frames = document.querySelectorAll('iframe.card-frame');
+      for (var i = 0; i < frames.length; i++) {
+        if (frames[i].contentWindow !== event.source) continue;
+        var want = h + 'px';
+        if (frames[i].style.height !== want) frames[i].style.height = want;
+        break;
+      }
+    }
     followBottom();
   }, false);
 
@@ -493,33 +528,68 @@
     'douyin adv ad chat message dialog dialogue bubble card panel content container item row col column ' +
     'header footer title avatar name text bubble-wrapper').split(' ');
 
+  var SUPPORTS_WHERE = (function () {
+    try { return !!(window.CSS && CSS.supports && CSS.supports('selector(:where(a))')); } catch (e) { return false; }
+  })();
+  var wrapWhere = function (selectors) {
+    if (!SUPPORTS_WHERE) return selectors;
+    return selectors.split(',').map(function (s) { return ':where(' + s.trim() + ')'; }).join(',');
+  };
+
   var CARD_SHELL_CSS =
-    'html,body{margin:0;padding:0;height:auto;background:transparent;color:inherit;' +
-    'font-family:inherit;font-size:inherit;line-height:inherit;word-break:break-word;overflow:hidden;}' +
-    'img,video,canvas{max-width:100%;height:auto;}' +
-    'p{margin:.5em 0;}iframe{border:0;}' +
-    'mainbody,body>div,body>section,body>article,body>main{display:block;box-sizing:border-box;max-width:100%;}' +
-    'mainbody>*{margin:0 0 .5em;}' +
+    wrapWhere('html,body') + '{margin:0;padding:0;height:auto;background:transparent;color:inherit;' +
+    'font-family:inherit;font-size:inherit;line-height:inherit;word-break:break-word;overflow-x:hidden;}' +
+    wrapWhere('img,video,canvas') + '{max-width:100%;height:auto;}' +
+    wrapWhere('p') + '{margin:.5em 0;}' +
+    wrapWhere('iframe') + '{border:0;}' +
+    wrapWhere('mainbody,body>div,body>section,body>article,body>main') +
+    '{display:block;box-sizing:border-box;max-width:100%;}' +
+    wrapWhere('.rikka-block') + '{display:block;box-sizing:border-box;max-width:100%;margin:8px 0;' +
+    'padding:10px 12px;border-radius:12px;background:var(--md-surface-container,#F3EDF7);' +
+    'border:1px solid var(--md-outline-variant,#CAC4D0);white-space:pre-wrap;' +
+    'line-height:1.7;font-size:13px;color:inherit;}' +
+    wrapWhere('.rikka-block > *') + '{margin:0 0 4px;}' +
+    wrapWhere('.rikka-block-option') + '{background:var(--md-primary-container,#EADDFF);border-color:transparent;}' +
+    wrapWhere('mainbody > *') + '{margin:0 0 .5em;}' +
     CARD_CONTAINER_TAGS.map(function (tag) {
-      return tag + '{display:block;box-sizing:border-box;max-width:100%;}';
+      return wrapWhere(tag) + '{display:block;box-sizing:border-box;max-width:100%;}';
     }).join('');
 
   // 高度自报：只靠观察者驱动，不用轮询（多张卡片的定时器是滚动卡死的主因）
+  var CARD_FORM_GUARD = [
+    '(function(){',
+    '  var block = function (e) { e.preventDefault(); e.stopPropagation(); };',
+    '  document.addEventListener("submit", block, true);',
+    '})();'
+  ].join('\n');
+
   var CARD_HEIGHT_SCRIPT = [
     '(function(){',
     '  var last = 0;',
     '  var scheduled = false;',
     '  var raf = window.requestAnimationFrame || function(f){ return setTimeout(f, 16); };',
+    '  function contentHeight(){',
+    '    var b = document.body;',
+    '    if (!b) return 0;',
+    '    var box = b.getBoundingClientRect();',
+    '    var h = box.height;',
+    '    var kids = b.children, bottom = 0;',
+    '    for (var i = 0; i < kids.length; i++) {',
+    '      var r = kids[i].getBoundingClientRect();',
+    '      if (r.bottom > bottom) bottom = r.bottom;',
+    '    }',
+    '    if (bottom - box.top > h) h = bottom - box.top;',
+    '    return Math.ceil(h);',
+    '  }',
     '  function measure(){',
     '    scheduled = false;',
-    '    var d = document.documentElement, b = document.body;',
-    '    var h = Math.max(d ? d.scrollHeight : 0, b ? b.scrollHeight : 0, d ? d.offsetHeight : 0, b ? b.offsetHeight : 0);',
+    '    var h = contentHeight();',
     '    if (h <= 0) return;',
     '    if (Math.abs(h - last) > 1) {',
     '      last = h;',
     '      try { if (window.frameElement) window.frameElement.style.height = h + "px"; } catch (e) {}',
+    '      try { parent.postMessage({__rikkaFrame: "height", h: h}, "*"); } catch (e) {}',
     '    }',
-    '    try { parent.postMessage({__rikkaFrame: "height", h: h}, "*"); } catch (e) {}',
     '  }',
     '  function schedule(){ if (scheduled) return; scheduled = true; raf(measure); }',
     '  try {',
@@ -576,6 +646,10 @@
     '  };',
     '  window.TavernHelper = window.TavernHelper || api;',
     '  window.SillyTavern = window.SillyTavern || api;',
+    '  try { if (window.parent && window.parent !== window) {',
+    '    window.parent.TavernHelper = window.parent.TavernHelper || api;',
+    '    window.parent.SillyTavern = window.parent.SillyTavern || api;',
+    '  } } catch (e) {}',
     '  window.triggerSlash = window.triggerSlash || api.triggerSlash;',
     '  window.sendMessage = window.sendMessage || api.sendMessage;',
     '  window.eventOn = window.eventOn || api.eventOn;',
@@ -612,8 +686,20 @@
   }
 
   // 脚本源码包成 srcdoc 里可用的内联 <script>：源码里的 `</script` 会提前收尾，先打断
+  function escapeScriptBodies(html) {
+    return String(html == null ? '' : html).replace(
+      /(<script\b[^>]*>)([\s\S]*?)(<\/script\s*>)/gi,
+      function (all, open, body, close) {
+        return open + body.replace(/<!--/g, '<\\!--') + close;
+      }
+    );
+  }
+
   function inlineScript(source) {
-    return '<script>' + String(source == null ? '' : source).replace(/<\/(script)/gi, '<\\/$1') + '<\/script>';
+    var body = String(source == null ? '' : source)
+      .replace(/<\/(script)/gi, '<\\/$1')
+      .replace(/<!--/g, '<\\!--');
+    return '<script>' + body + '<\/script>';
   }
 
   // 拆分卡片文档：head 只保留 style/link/script，title 与 meta 丢弃
@@ -665,10 +751,11 @@
       (libs.jquery ? inlineScript(libs.jquery) : '') +
       (libs.toastr ? inlineScript(libs.toastr) : '') +
       inlineScript(LODASH_LITE) +
-      buildCardBridge(ctx.messageId, ctx.cardIndex, ctx.charName, ctx.userName) +
+      inlineScript(buildCardBridge(ctx.messageId, ctx.cardIndex, ctx.charName, ctx.userName)) +
+      inlineScript(CARD_FORM_GUARD) +
       inlineScript(CARD_HEIGHT_SCRIPT) +
       ownHtml +
-      (parts.prepared ? parts.head : '') +
+      escapeScriptBodies(parts.prepared ? parts.head : '') +
       '</head><body class="rikka-card-body">' + body + '</body></html>';
   }
 
@@ -679,23 +766,18 @@
     frame.setAttribute('frameborder', '0');
     // 起始高度给一个保守值，装上后用内容实测高度覆盖
     frame.style.height = '80px';
-    // 用 document.write 装载：同源，contentDocument 可访问，高度自报与脚本都正常
     var load = function (target) {
       var html = cardDocHtml(target, target.ctx || {});
       frame.dataset.cardDoc = html;
-      var doc = frame.contentDocument;
-      if (!doc) return;
-      doc.open();
-      doc.write(html);
-      doc.close();
+      // srcdoc 同步解析且不产生导航，卡片脚本只执行一次；document.write + about:blank 会把脚本跑两遍
+      frame.srcdoc = html;
     };
     frame._ripple = function (nextKey, nextDesc) {
       if (nextKey) frame.dataset.cardKey = nextKey;
       load(nextDesc || desc);
     };
     frame._write = function () { load(desc); };
-    frame.src = 'about:blank';
-    return frame;
+    load(desc);
     return frame;
   }
 
@@ -1307,19 +1389,20 @@
     var isAssistant = msg.role !== 'user';
     var live = !!streaming && isAssistant;
     for (var i = 0; i < bubbles.length; i++) {
-      var tail = live && i === bubbles.length - 1;
-      bubbles[i].classList.toggle('typing', tail);
-      // 正文还空着时给动态指示，和原版一致
-      var dots = bubbles[i].querySelector('.gen-dots');
-      var wantDots = tail && !String(bubbles[i].textContent || '').trim();
-      if (wantDots && !dots) {
+      bubbles[i].classList.toggle('typing', live && i === bubbles.length - 1);
+    }
+    var host = live ? (bubbles.length ? bubbles[bubbles.length - 1] : body) : null;
+    var dots = body.querySelector('.gen-dots');
+    var wantDots = !!host && !String(host.textContent || '').trim();
+    if (wantDots) {
+      if (!dots) {
         dots = document.createElement('span');
         dots.className = 'gen-dots';
         dots.innerHTML = '<i></i><i></i><i></i>';
-        bubbles[i].appendChild(dots);
-      } else if (!wantDots && dots) {
-        dots.remove();
       }
+      if (dots.parentNode !== host) host.appendChild(dots);
+    } else if (dots) {
+      dots.remove();
     }
     var avatar = row.querySelector('.avatar');
     if (avatar) avatar.classList.toggle('loading', live);

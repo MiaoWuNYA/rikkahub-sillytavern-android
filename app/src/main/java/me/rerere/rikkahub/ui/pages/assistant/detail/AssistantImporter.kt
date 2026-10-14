@@ -498,6 +498,7 @@ private suspend fun importFromString(
             context = context,
             json = json,
             avatarUri = avatarUri,
+            mergeGreetings = mergeGreetings,
         )
         toaster.show(context.getString(R.string.assistant_importer_import_success))
         val cardAssistant = applyFrontendCardPreference(context, assistant, lorebooks, toaster)
@@ -585,6 +586,7 @@ private fun parseFengyueCard(
     context: Context,
     json: JsonObject,
     avatarUri: String?,
+    mergeGreetings: Boolean = false,
 ): Pair<Assistant, List<Lorebook>> {
     fun str(key: String): String =
         json[key]?.jsonPrimitiveOrNull?.contentOrNull.orEmpty()
@@ -608,6 +610,7 @@ private fun parseFengyueCard(
         avatar = if (avatarUri != null) Avatar.Image(avatarUri) else Avatar.Dummy,
         systemPrompt = systemPrompt,
         presetMessages = presetMessages,
+        mergeGreetings = mergeGreetings,
     )
     return assistant to lorebooks
 }
