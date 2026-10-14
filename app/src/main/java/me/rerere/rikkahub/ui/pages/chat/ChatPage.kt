@@ -332,7 +332,7 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
                 drawerState = drawerState,
                 // WebView 模式下消息区是一个整体滚动的网页：抽屉的边缘手势会把
                 // 纵向滑动判定成开抽屉，表现就是「列表滑不动」。抽屉仍可用顶栏按钮开。
-                gesturesEnabled = !webViewChat,
+                gesturesEnabled = !webViewChat || drawerState.isOpen,
                 drawerContent = {
                     ChatDrawerContent(
                         navController = navController,
