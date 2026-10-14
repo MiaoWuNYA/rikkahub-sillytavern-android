@@ -163,6 +163,8 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val softwareKeyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
+    // 界面 WebView 化时消息区自成一个滚动网页，抽屉手势必须让位（见下面的 gesturesEnabled）
+    val webViewChat = remember(setting, conversation) { resolveFrontendCardMode(setting, conversation) }
 
     // Handle back press when drawer is open
     BackHandler(enabled = drawerState.isOpen) {
@@ -328,6 +330,9 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
         else -> {
             ModalNavigationDrawer(
                 drawerState = drawerState,
+                // WebView 模式下消息区是一个整体滚动的网页：抽屉的边缘手势会把
+                // 纵向滑动判定成开抽屉，表现就是「列表滑不动」。抽屉仍可用顶栏按钮开。
+                gesturesEnabled = !webViewChat,
                 drawerContent = {
                     ChatDrawerContent(
                         navController = navController,
@@ -357,6 +362,28 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
                 )
             }
         }
+    }
+}
+
+/**
+ * 消息区是否交给 WebView。
+ *
+ * 三态：强制开 / 强制关 / 自动（助手标记、卡内容探测、世界书里有没有网页）。
+ * ChatPage 与 ChatPageContent 必须共用同一份判定——前者据此决定要不要关掉抽屉手势。
+ */
+private fun resolveFrontendCardMode(setting: Settings, conversation: Conversation): Boolean {
+    val assistant = setting.getAssistantOf(conversation)
+    return when (assistant.frontendCardMode) {
+        me.rerere.rikkahub.data.model.FrontendCardMode.ALWAYS -> true
+        me.rerere.rikkahub.data.model.FrontendCardMode.NEVER -> false
+        me.rerere.rikkahub.data.model.FrontendCardMode.AUTO ->
+            assistant.frontendCardPreferred ||
+                assistant.hasFrontendCardContent() ||
+                setting.lorebooks.any { book ->
+                    book.id in assistant.lorebookIds && book.entries.any { entry ->
+                        entry.content.contains("<html", true) || entry.content.contains("<body", true)
+                    }
+                }
     }
 }
 
@@ -420,19 +447,7 @@ private fun ChatPageContent(
     val pageScope = rememberCoroutineScope()
     // 三态：自动识别（开场白/角色世界书含网页）/ 强制开 / 强制关
     val frontendCardPreferredNow = remember(setting, conversation) {
-        val current = setting.getAssistantOf(conversation)
-        when (current.frontendCardMode) {
-            me.rerere.rikkahub.data.model.FrontendCardMode.ALWAYS -> true
-            me.rerere.rikkahub.data.model.FrontendCardMode.NEVER -> false
-            me.rerere.rikkahub.data.model.FrontendCardMode.AUTO ->
-                current.frontendCardPreferred ||
-                    current.hasFrontendCardContent() ||
-                    setting.lorebooks.any { book ->
-                        book.id in current.lorebookIds && book.entries.any { entry ->
-                            entry.content.contains("<html", true) || entry.content.contains("<body", true)
-                        }
-                    }
-        }
+        resolveFrontendCardMode(setting, conversation)
     }
     // WebView 里点消息 → 用原生对话框做操作，功能与原生列表一致
     var webActionIndex by remember { mutableStateOf<Int?>(null) }

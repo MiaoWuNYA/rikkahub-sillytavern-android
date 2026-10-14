@@ -20,7 +20,7 @@
   // 只允许安全协议，挡掉 javascript: 之类的注入
   function safeUrl(url) {
     var u = String(url || '').trim();
-    if (/^(https?:|mailto:|tel:|data:image\/|file:)/i.test(u)) return u;
+    if (/^(https?:|mailto:|tel:|data:image\/|file:|content:)/i.test(u)) return u;
     if (/^[./#]/.test(u)) return u;
     return '#';
   }
@@ -56,7 +56,6 @@
   function isTableSep(line) {
     return /^\s*\|?[\s:|-]+\|[\s:|-]*$/.test(line) && line.indexOf('-') >= 0;
   }
-
 
   /**
    * 还原被转义的内联标签并按白名单过滤属性。
@@ -102,8 +101,55 @@
     });
   }
 
-  function render(md) {
+  /**
+   * 非 ASCII 标签还原：卡作者把说话人写成 <清韵>，浏览器不认这种标签名
+   * （`<` 退化成文本、`</清韵>` 退化成注释），页面上就出现「<清韵>」字面量。
+   * 转成 ASCII 类名 + data 属性的行内元素，文字正常显示且能被 CSS 选中。
+   */
+  var CHARA_TAG_RE = /&lt;(\/?)([A-Za-z0-9_:\-]*[\u0080-\uFFFF][A-Za-z0-9_:\-\u0080-\uFFFF]*)((?:(?!&gt;)[\s\S])*?)(\/?)&gt;/g;
+
+  function restoreCharaTags(html) {
+    if (!html || html.indexOf('&lt;') < 0) return html;
+    return html.replace(CHARA_TAG_RE, function (full, slash, name, attrs, selfClose) {
+      if (slash === '/') return '</span>';
+      var open = '<span class="chara-tag" data-chara="' + name + '">' + name + '</span>';
+      // 自闭合的写法只出现一次标签，补一个空配对避免后续 </span> 错位
+      return selfClose ? open : '<span class="chara-tag" data-chara="' + name + '">';
+    });
+  }
+
+  var COPY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h8"></path></svg>';
+
+  var COLLAPSE_LINES = 10;
+
+  /** 围栏代码块：外框 + 语言标签 + 复制按钮（对齐 HighlightCodeBlock） */
+  function codeBlock(code, lang, opts) {
+    var lines = code.split('\n');
+    var body;
+    if (opts && opts.lineNumbers) {
+      body = lines.map(function (line) {
+        return '<span class="cl">' + escapeHtml(line) + '</span>';
+      }).join('\n');
+    } else {
+      body = escapeHtml(code);
+    }
+    var collapsed = !!(opts && opts.collapse) && lines.length > COLLAPSE_LINES;
+    return '<pre' + (collapsed ? ' class="collapsed"' : '') + '>' +
+      '<div class="code-head">' +
+      '<span class="lang">' + escapeHtml(lang || '') + '</span>' +
+      '<span class="spacer"></span>' +
+      '<button type="button" class="copy" data-code aria-label="复制代码" title="复制代码">' + COPY_ICON + '</button>' +
+      '</div>' +
+      '<code' + (lang ? ' class="lang-' + escapeHtml(lang) + '"' : '') + '>' + body + '</code>' +
+      (collapsed ? '<button type="button" class="expand" data-expand>展开全部（共 ' + lines.length + ' 行）</button>' : '') +
+      '</pre>';
+  }
+
+  function render(md, opts) {
     var src = String(md == null ? '' : md);
+    var options = opts || {};
     var lines = src.split('\n');
     var html = [];
     var i = 0;
@@ -117,8 +163,7 @@
         i++;
         while (i < lines.length && !/^\s*```/.test(lines[i])) { buf.push(lines[i]); i++; }
         i++;
-        html.push('<pre><code' + (lang ? ' class="lang-' + escapeHtml(lang) + '"' : '') + '>' +
-          escapeHtml(buf.join('\n')) + '</code></pre>');
+        html.push(codeBlock(buf.join('\n'), lang, options));
         continue;
       }
 
@@ -151,7 +196,7 @@
           quote.push(lines[i].replace(/^\s*>\s?/, ''));
           i++;
         }
-        html.push('<blockquote>' + render(quote.join('\n')) + '</blockquote>');
+        html.push('<blockquote>' + render(quote.join('\n'), options) + '</blockquote>');
         continue;
       }
 
@@ -189,12 +234,18 @@
         i++;
       }
     }
-    return restoreInlineTags(html.join('\n'));
+    return restoreCharaTags(restoreInlineTags(html.join('\n')));
   }
 
   function splitRow(line) {
     return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(function (c) { return c.trim(); });
   }
 
-  global.RikkaMarkdown = { render: render, escapeHtml: escapeHtml, inline: inline, restoreInlineTags: restoreInlineTags };
+  global.RikkaMarkdown = {
+    render: render,
+    escapeHtml: escapeHtml,
+    inline: inline,
+    restoreInlineTags: restoreInlineTags,
+    restoreCharaTags: restoreCharaTags
+  };
 })(window);
