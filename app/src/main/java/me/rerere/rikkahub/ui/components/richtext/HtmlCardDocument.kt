@@ -214,10 +214,8 @@ private val CUSTOM_TAG_SELF_CLOSE = Regex(
  * 这样既保住「开场白 + 状态面板」这类酒馆卡写法，又不会让散文里的
  * 零散标签（含插件要求模型自造的 `<TARGET>` 之类占位符）把整条消息变成网页。
  */
-// 酒馆卡惯用的分块标签：<main tickbubble>、<option tickbubble>、<StatusBlock> 等
 private val CARD_BLOCK_TAG = Regex(
-    """<(main|option|statusblock|status|choice|tickbubble|dialog|panel)\b[^>]*>""",
-    RegexOption.IGNORE_CASE,
+    """<(main|option|statusblock|status|choice|tickbubble|dialog|panel|[A-Z][A-Z0-9_]*)\b[^>]*>""",
 )
 
 internal fun looksLikeCardMarkup(html: String): Boolean {
@@ -228,7 +226,6 @@ internal fun looksLikeCardMarkup(html: String): Boolean {
     if (CUSTOM_TAG_LINE_START.matches(t)) return false
     // 必须有闭合标签，否则只是残缺片段
     if (!Regex("""</[a-zA-Z][\w-]*[^>]*>""").containsMatchIn(t)) return false
-    // 分块标签包裹的卡片块：闭合标签可以带属性（</main tickbubble>）
     if (CARD_BLOCK_TAG.containsMatchIn(t) &&
         Regex("""</[a-zA-Z][\w-]*[^>]*>""").containsMatchIn(t)
     ) return true
@@ -327,7 +324,7 @@ internal fun parseCardDocument(doc: String): CardDocument {
     val headRest = HEAD_KEEP.findAll(head.replace(STYLE_BLOCK, "")).joinToString("\n") { it.value }
     return CardDocument(
         headHtml = headRest,
-        bodyHtml = body.replace(TITLE_BLOCK, ""),
+        bodyHtml = body.replace(STYLE_BLOCK, "").replace(TITLE_BLOCK, ""),
         styleCss = styles.joinToString("\n"),
     )
 }

@@ -137,6 +137,10 @@ data class MessageNode(
     }
 }
 
+fun List<UIMessage>.toMergedMessageNode(): MessageNode {
+    return MessageNode(messages = this, selectIndex = 0)
+}
+
 fun UIMessage.toMessageNode(): MessageNode {
     return MessageNode(
         messages = listOf(this),
