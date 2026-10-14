@@ -62,8 +62,18 @@ fun ReasoningButton(
     reasoningLevel: ReasoningLevel,
     themeIcons: ThemeIconSet = ThemeIconSet(),
     onUpdateReasoningLevel: (ReasoningLevel) -> Unit,
+    // WebView 工具条代理点击：外部要求打开原生选择器
+    forceShow: Boolean = false,
+    onForceShowHandled: () -> Unit = {},
 ) {
     var showPicker by remember { mutableStateOf(false) }
+
+    LaunchedEffect(forceShow) {
+        if (forceShow) {
+            showPicker = true
+            onForceShowHandled()
+        }
+    }
 
     if (showPicker) {
         ReasoningPicker(

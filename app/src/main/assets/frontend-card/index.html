@@ -120,6 +120,57 @@
   details { margin: .5em 0; }
   summary { cursor: pointer; color: var(--md-on-surface-variant); }
   .empty { text-align: center; color: var(--md-on-surface-variant); opacity: .6; margin-top: 40vh; }
+
+  /* —— 用户的外观自定义（主题 → 颜色）—— */
+  :root {
+    --font-scale: 1;
+    --bubble-radius: 16px;
+    --bubble-border-width: 0px;
+    --bubble-image-size: contain;
+    --bubble-shadow: none;
+  }
+  html, body {
+    background-color: var(--chat-bg, var(--md-surface));
+    background-image: var(--chat-bg-image, none);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+  body { font-size: calc(15px * var(--font-scale)); }
+  body.solid-text-color { color: var(--text-color); }
+  body.solid-text-color .name, body.solid-text-color .time { color: var(--text-color); opacity: .7; }
+  .bubble {
+    border: var(--bubble-border-width) solid var(--bubble-border-color, transparent);
+    box-shadow: var(--bubble-shadow);
+    background-size: var(--bubble-image-size);
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+  .row.user .bubble { background-image: var(--bubble-user-image, none); }
+  .row.ai .bubble { background-image: var(--bubble-ai-image, none); }
+  body.bubble-image-overlay .row.user .bubble { background-blend-mode: multiply; }
+  body.hide-ai-bubble .row.ai .bubble { background-color: transparent; box-shadow: none; border-color: transparent; }
+  body.hide-ai-bubble .row.ai .bubble .name { opacity: 1; }
+  em, i { color: var(--italics-color, inherit); }
+  blockquote { color: var(--quote-color, inherit); }
+  body[data-font="serif"] { font-family: Georgia, "Noto Serif CJK SC", serif; }
+  body[data-font="monospace"] { font-family: ui-monospace, "Noto Sans Mono CJK SC", monospace; }
+  body[data-font="cursive"] { font-family: "Segoe Script", "Comic Sans MS", cursive; }
+
+  /* 原生标题栏 / 输入栏覆盖在 WebView 之上，页面按安全区让位 */
+  #list {
+    padding-top: calc(var(--safe-top, 0px) + 10px);
+    padding-bottom: calc(var(--safe-bottom, 0px) + var(--toolbar-h, 44px) + 10px);
+    overscroll-behavior-y: contain;
+  }
+  #toolbar { bottom: var(--safe-bottom, 0px); }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    overflow-x: hidden;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
 </style>
 </head>
 <body>

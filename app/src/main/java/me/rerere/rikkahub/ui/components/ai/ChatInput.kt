@@ -147,6 +147,11 @@ fun ChatInput(
     loading: Boolean,
     settings: Settings,
     hasFrontendCard: Boolean = false,
+    // WebView 工具条代理：外部请求打开某个原生菜单（"model"/"sear
+    proxyMenu: String? = null,
+    onProxyMenuHandled: () -> Unit = {},
+    // WebView 界面模式下工具条由页面复刻，原生这排按钮隐藏（输入框本体保留）
+    hideToolbar: Boolean = false,
     // 会话视角下的助手和模型：会话开始后以会话上固定的配置为准
     assistant: Assistant,
     chatModel: Model?,
@@ -219,7 +224,7 @@ fun ChatInput(
         focusManager.clearFocus(force = true)
         keyboardController?.hide()
         if (loading) {
-            // 生成中：斜杠命令不打断当前生成（官方 waitUntilCondition 语义），提示等待；普通消息仍可取消
+            // 生成中：斜杠命令不打断当前生成（官方 waitUntilCondition 语义
             val pendingText = state.textContent.text.toString().trimStart()
             if (pendingText.startsWith("/")) {
                 toaster.show(slashContext.getString(R.string.slash_toast_generating))
@@ -310,7 +315,7 @@ fun ChatInput(
         }
     }
 
-    // 底部渐变遮罩：从输入区顶部一直过渡到屏幕底部（键盘弹出时到键盘上沿），避免消息透到系统导航栏
+    // 底部渐变遮罩：从输入区顶部一直过渡到屏幕底部（键盘弹出时到键盘上沿）
     val scrimColor = MaterialTheme.colorScheme.background
     val imeInsets = WindowInsets.ime
     Surface(
@@ -339,12 +344,14 @@ fun ChatInput(
                 onFinishEdit = onFinishEditQueuedMessage,
                 onResume = onResumeMessageQueue,
             )
+            // 只要当前有 WebView 存活（内嵌卡片、代码块、Mermaid、界面模式），
+            val webViewLive = hasFrontendCard || me.rerere.rikkahub.ui.components.richtext.WebViewPresence.active
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(containerShape)
                     .then(
-                        if (hasFrontendCard) Modifier else Modifier.chatInputHaze(
+                        if (webViewLive) Modifier else Modifier.chatInputHaze(
                             hazeState = hazeState,
                             displaySetting = settings.displaySetting,
                             containerColor = containerColor,
@@ -355,8 +362,8 @@ fun ChatInput(
                 tonalElevation = 0.dp,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                 color = when {
-                    // 前端模式整块消息区都是 WebView，采样其硬件层会崩，直接不给透明底
-                    hasFrontendCard -> containerColor
+                    // 有 WebView 在时不给透明底（同上）
+                    webViewLive -> containerColor
                     !settings.displaySetting.enableBlurEffect -> containerColor
                     settings.displaySetting.backgroundEffectType == BackgroundEffectType.BLUR ->
                         containerColor.copy(alpha = settings.displaySetting.inputEffectAlpha.coerceIn(0.1f, 1f))
@@ -403,153 +410,168 @@ fun ChatInput(
                         onShowHelp = { showHelpDialog = true },
                     )
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .weight(1f)
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            // Model Picker
-                            if (!settings.displaySetting.hideModelPicker) {
-                                ModelSelectorButton(
-                                    state = modelListState,
-                                    onlyIcon = true,
-                                    modifier = Modifier,
-                                )
-                            }
-
-                            // Search
-                            val enableSearchMsg = stringResource(R.string.web_search_enabled)
-                            val disableSearchMsg = stringResource(R.string.web_search_disabled)
-                            if (!settings.displaySetting.hideSearchPicker) {
-                                SearchPickerButton(
-                                    enableSearch = assistant.enableWebSearch,
-                                    settings = settings,
-                                    themeIcons = settings.displaySetting.themeIcons,
-                                    onUpdateSearchMode = { mode ->
-                                        onUpdateSearchMode(mode)
-                                        val enabled = mode != SearchMode.OFF
-                                        toaster.show(
-                                            message = if (enabled) enableSearchMsg else disableSearchMsg,
-                                            duration = 1.seconds,
-                                            type = if (enabled) {
-                                                ToastType.Success
-                                            } else {
-                                                ToastType.Normal
-                                            }
-                                        )
-                                    },
-                                    onUpdateSearchService = onUpdateSearchService,
-                                    model = chatModel,
-                                )
-                            }
-
-                            // Reasoning
-                            if (!settings.displaySetting.hideReasoningPicker &&
-                                chatModel?.abilities?.contains(ModelAbility.REASONING) == true
+                    // WebView 界面模式下工具条由页面复刻，这里整排隐藏（输入框本体保留）
+                    if (!hideToolbar) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
-                                ReasoningButton(
-                                    reasoningLevel = assistant.reasoningLevel,
-                                    themeIcons = settings.displaySetting.themeIcons,
-                                    onUpdateReasoningLevel = {
-                                        onUpdateAssistant(assistant.copy(reasoningLevel = it))
-                                    },
-                                    onlyIcon = true,
-                                )
-                            }
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                // Model Picker
+                                if (!settings.displaySetting.hideModelPicker) {
+                                    ModelSelectorButton(
+                                        forceShow = proxyMenu == "model",
+                                        onForceShowHandled = onProxyMenuHandled,
+                                        state = modelListState,
+                                        onlyIcon = true,
+                                        modifier = Modifier,
+                                    )
+                                }
 
-                            // Bracket insert button：放在深度思考右侧、加号左侧
-                            val bracketSymbol = settings.displaySetting.bracketButtonSymbol
-                            if (settings.displaySetting.enableBracketButton && bracketSymbol.isNotBlank()) {
-                                // 与深度思考按钮同构（ToggleSurface + 24dp 图标位），保证并排时尺寸一致
-                                ToggleSurface(
-                                    checked = false,
-                                    onClick = { state.insertSymbol(bracketSymbol) },
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(vertical = 8.dp, horizontal = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Box(
-                                            modifier = Modifier.size(24.dp),
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            Icon(
-                                                imageVector = HugeIcons.Asterisk,
-                                                contentDescription = stringResource(R.string.setting_display_page_bracket_button_title),
-                                                modifier = Modifier.size(20.dp),
+                                // Search
+                                val enableSearchMsg = stringResource(R.string.web_search_enabled)
+                                val disableSearchMsg = stringResource(R.string.web_search_disabled)
+                                if (!settings.displaySetting.hideSearchPicker) {
+                                    SearchPickerButton(
+                                        forceShow = proxyMenu == "search",
+                                        onForceShowHandled = onProxyMenuHandled,
+                                        enableSearch = assistant.enableWebSearch,
+                                        settings = settings,
+                                        themeIcons = settings.displaySetting.themeIcons,
+                                        onUpdateSearchMode = { mode ->
+                                            onUpdateSearchMode(mode)
+                                            val enabled = mode != SearchMode.OFF
+                                            toaster.show(
+                                                message = if (enabled) enableSearchMsg else disableSearchMsg,
+                                                duration = 1.seconds,
+                                                type = if (enabled) {
+                                                    ToastType.Success
+                                                } else {
+                                                    ToastType.Normal
+                                                }
                                             )
+                                        },
+                                        onUpdateSearchService = onUpdateSearchService,
+                                        model = chatModel,
+                                    )
+                                }
+
+                                // Reasoning
+                                if (!settings.displaySetting.hideReasoningPicker &&
+                                    chatModel?.abilities?.contains(ModelAbility.REASONING) == true
+                                ) {
+                                    ReasoningButton(
+                                        forceShow = proxyMenu == "reasoning",
+                                        onForceShowHandled = onProxyMenuHandled,
+                                        reasoningLevel = assistant.reasoningLevel,
+                                        themeIcons = settings.displaySetting.themeIcons,
+                                        onUpdateReasoningLevel = {
+                                            onUpdateAssistant(assistant.copy(reasoningLevel = it))
+                                        },
+                                        onlyIcon = true,
+                                    )
+                                }
+
+                                // Bracket insert button：放在深度思考右侧、加号左侧
+                                val bracketSymbol = settings.displaySetting.bracketButtonSymbol
+                                if (settings.displaySetting.enableBracketButton && bracketSymbol.isNotBlank()) {
+                                    // 与深度思考按钮同构（ToggleSurface + 24dp 图标位）
+                                    ToggleSurface(
+                                        checked = false,
+                                        onClick = { state.insertSymbol(bracketSymbol) },
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(vertical = 8.dp, horizontal = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Box(
+                                                modifier = Modifier.size(24.dp),
+                                                contentAlignment = Alignment.Center,
+                                            ) {
+                                                Icon(
+                                                    imageVector = HugeIcons.Asterisk,
+                                                    contentDescription = stringResource(R.string.setting_display_page_bracket_button_title),
+                                                    modifier = Modifier.size(20.dp),
+                                                )
+                                            }
                                         }
                                     }
                                 }
+
                             }
 
-                        }
-
-                        if (!settings.displaySetting.hideMoreButton) {
-                            ActionIconButton(
-                                onClick = onMoreClick
-                            ) {
-                                // 主题可换「更多」图标（官方对应 #extensionsMenuButton）
-                                val moreIcons = settings.displaySetting.themeIcons
-                                ThemedIcon(
-                                    imageVector = HugeIcons.Add01,
-                                    contentDescription = stringResource(R.string.more_options),
-                                    imageUrl = moreIcons.extensionsImageUrl,
-                                    tint = moreIcons.extensionsTint?.let { Color(it) },
-                                    scale = moreIcons.extensionsScale,
-                                )
+                            if (!settings.displaySetting.hideMoreButton) {
+                                LaunchedEffect(proxyMenu) {
+                                    if (proxyMenu == "more") {
+                                        onMoreClick()
+                                        onProxyMenuHandled()
+                                    }
+                                }
+                                ActionIconButton(
+                                    onClick = onMoreClick
+                                ) {
+                                    // 主题可换「更多」图标（官方对应 #extensionsMenuButton）
+                                    val moreIcons = settings.displaySetting.themeIcons
+                                    ThemedIcon(
+                                        imageVector = HugeIcons.Add01,
+                                        contentDescription = stringResource(R.string.more_options),
+                                        imageUrl = moreIcons.extensionsImageUrl,
+                                        tint = moreIcons.extensionsTint?.let { Color(it) },
+                                        scale = moreIcons.extensionsScale,
+                                    )
+                                }
                             }
-                        }
 
-                        if (!voiceState.isActive && (asrState.isAvailable || asrState.isRecording)) {
-                            AsrButton(
-                                state = asrState,
-                                onClick = {
-                                    when (asrState.status) {
-                                        ASRStatus.Listening -> asr.stop()
-                                        ASRStatus.Idle, ASRStatus.Error -> {
-                                            if (!asrPermission.allRequiredPermissionsGranted) {
-                                                asrPermission.requestPermissions()
-                                            } else {
-                                                asrBaseText = state.textContent.text.toString()
-                                                asr.start { transcript ->
-                                                    val spacer =
-                                                        if (asrBaseText.isBlank() || transcript.isBlank()) "" else " "
-                                                    state.setMessageText(asrBaseText + spacer + transcript)
+                            if (!voiceState.isActive && (asrState.isAvailable || asrState.isRecording)) {
+                                AsrButton(
+                                    state = asrState,
+                                    onClick = {
+                                        when (asrState.status) {
+                                            ASRStatus.Listening -> asr.stop()
+                                            ASRStatus.Idle, ASRStatus.Error -> {
+                                                if (!asrPermission.allRequiredPermissionsGranted) {
+                                                    asrPermission.requestPermissions()
+                                                } else {
+                                                    asrBaseText = state.textContent.text.toString()
+                                                    asr.start { transcript ->
+                                                        val spacer =
+                                                            if (asrBaseText.isBlank() || transcript.isBlank()) "" else " "
+                                                        state.setMessageText(asrBaseText + spacer + transcript)
+                                                    }
                                                 }
                                             }
+
+                                            ASRStatus.Connecting, ASRStatus.Stopping -> {}
                                         }
-
-                                        ASRStatus.Connecting, ASRStatus.Stopping -> {}
                                     }
-                                }
-                            )
-                        }
+                                )
+                            }
 
-                        if (loading) {
-                            KeepScreenOn()
-                        }
+                            if (loading) {
+                                KeepScreenOn()
+                            }
 
-                        AnimatedVisibility(
-                            visible = !asrState.isRecording,
-                            enter = fadeIn() + scaleIn(),
-                            exit = fadeOut() + scaleOut(),
-                        ) {
-                            SendButton(
-                                loading = loading,
-                                empty = state.isEmpty(),
-                                onClick = { sendMessage() },
-                                onLongClick = { sendMessageWithoutAnswer() },
-                                themeIcons = settings.displaySetting.themeIcons,
-                            )
+                            AnimatedVisibility(
+                                visible = !asrState.isRecording,
+                                enter = fadeIn() + scaleIn(),
+                                exit = fadeOut() + scaleOut(),
+                            ) {
+                                SendButton(
+                                    loading = loading,
+                                    empty = state.isEmpty(),
+                                    onClick = { sendMessage() },
+                                    onLongClick = { sendMessageWithoutAnswer() },
+                                    themeIcons = settings.displaySetting.themeIcons,
+                                )
+                            }
                         }
                     }
                 }
@@ -602,7 +624,7 @@ private fun SendButton(
             color = containerColor,
             content = {},
         )
-        // 主题可换图/换色/换尺寸（官方 #send_but 支持 background-image / color / font-size）
+        // 主题可换图/换色/换尺寸（官方 #send_but 支持 background-
         val themedUrl = if (showStop) themeIcons.stopImageUrl else themeIcons.sendImageUrl
         val themedTint = (if (showStop) themeIcons.stopTint else themeIcons.sendTint)
             ?.let { Color(it) } ?: contentColor
@@ -809,7 +831,7 @@ private fun TextInputRow(
             )
         }
 
-        // /help 命令列表：复用斜杠弹窗同款卡片样式，列出全部命令 + 完整描述，点击可执行或填入输入框
+        // /help 命令列表：复用斜杠弹窗同款卡片样式，列出全部命令 + 完整描述
         if (helpDialogVisible) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -956,7 +978,7 @@ private fun TextInputRow(
                                 onClick = {
                                     if (cmd.builtinKind != null) {
                                         if (cmd.argumentHint.isBlank()) {
-                                            // 无参数命令（argumentHint 为空）：点击直接执行（如 /trigger /help），不污染聊天
+                                            // 无参数命令（argumentHint 为空）：点击直接执行（如 /trigger
                                             handleBuiltinSlash(
                                                 cmd = cmd,
                                                 args = slashArgs,
@@ -979,7 +1001,7 @@ private fun TextInputRow(
                                                 context = slashContext,
                                             )
                                         } else {
-                                            // 需要参数的命令：填入输入框，补参数后按发送执行（官方 AutoComplete 行为）
+                                            // 需要参数的命令：填入输入框，补参数后按发送执行（官方 AutoComplete 
                                             state.setMessageText("/${cmd.name} ${slashArgs}".trimEnd())
                                         }
                                     } else {
@@ -1149,11 +1171,7 @@ private fun ChatInputState.applyCompletion(
     }
 }
 
-/**
- * 斜杠命令行（斜杠建议弹窗与 /help 列表共用）
- * fullDescription=true 时显示完整描述（/help 用），否则单行省略（建议弹窗用）
- * /help 模式下有参数/例句的命令可点击箭头展开详情
- */
+// 斜杠命令行（斜杠建议弹窗与 /help 列表共用）
 @Composable
 private fun SlashCommandItem(
     cmd: SlashCommand,
@@ -1297,9 +1315,7 @@ private fun SlashCommandItem(
     }
 }
 
-/**
- * 执行内置斜杠命令（官方常用命令的实用子集）
- */
+// 执行内置斜杠命令（官方常用命令的实用子集）
 private fun handleBuiltinSlash(
     cmd: SlashCommand,
     args: String,
@@ -1362,10 +1378,7 @@ private fun handleBuiltinSlash(
             } else if (onSlashGen == null) {
                 toaster.show(context.getString(R.string.slash_toast_not_supported))
             } else {
-                // 官方 /gen 结果走管道（常配 /setinput 写输入框）；本地无管道，直接填输入框：
-                // trim=true 替换；否则追加到输入框原有文本之后（官方 setInputTextAfterPrompt 语义，
-                // 追加在 prompt 之后）。执行命令时输入框里只有命令本身，命令外文本为空，
-                // 若把命令本身也算进去再写回输入框，会再次匹配 /gen 无限递归。
+                // 官方 /gen 结果走管道（常配 /setinput 写输入框）；本地无管道
                 val full = state.textContent.text.toString().trimEnd()
                 val keep = if (full.startsWith("/")) "" else full
                 state.clearInput()
@@ -1379,7 +1392,7 @@ private fun handleBuiltinSlash(
 
         BuiltinSlashKind.SYS -> {
             val parsed = parseInsertArgs(args)
-            // 官方 NARRATOR_NAME_DEFAULT = "System"（/sys 默认名），可 /sysname 修改（本地不支持，固定 System）
+            // 官方 NARRATOR_NAME_DEFAULT = "System"（/sys
             val name = parsed.name ?: "System"
             if (parsed.text.isBlank()) {
                 toaster.show(context.getString(R.string.slash_toast_sys_usage))
@@ -1393,7 +1406,7 @@ private fun handleBuiltinSlash(
 
         BuiltinSlashKind.SENDAS -> {
             val parsed = parseInsertArgs(args)
-            // 官方行为：不带 name= 时默认使用当前角色卡名字（name2），让 AI 明确认领这条消息
+            // 官方行为：不带 name= 时默认使用当前角色卡名字（name2）
             val charName = assistant.tavernData?.name?.takeIf { it.isNotBlank() } ?: assistant.name
             val name = parsed.name ?: charName.ifBlank { null }
             if (parsed.text.isBlank()) {
@@ -1447,7 +1460,7 @@ private fun handleBuiltinSlash(
 
         BuiltinSlashKind.SYSGEN -> {
             val parsed = parseInsertArgs(args, allowTrim = true)
-            // 官方 NARRATOR_NAME_DEFAULT = "System"（/sysgen 默认名，sendNarratorMessage 同 /sys）
+            // 官方 NARRATOR_NAME_DEFAULT = "System"（/sys
             val name = parsed.name ?: "System"
             if (parsed.text.isBlank()) {
                 toaster.show(context.getString(R.string.slash_toast_sysgen_usage))
@@ -1531,8 +1544,7 @@ private fun handleBuiltinSlash(
         }
 
         BuiltinSlashKind.UPDATE_CHAR -> {
-            // 官方 char-update：多个 字段=值 同时更新，字段名为驼峰（firstMessage/messageExamples/...），
-            // 兼容本地下划线别名；命名参数可从任意位置提取
+            // 官方 char-update：多个 字段=值 同时更新
             val updates = mutableListOf<Pair<String, String>>()
             var rest = args
             while (true) {
@@ -1702,24 +1714,14 @@ private fun FullScreenEditor(
     }
 }
 
-/**
- * 解析消息插入类命令（/sys /sendas /send /sysgen）的参数：
- * 支持任意顺序的 name="显示名" / name=显示名、at=位置、trim=布尔（sysgen 专用）参数，
- * 其余部分为消息文本；不带 name= 时使用默认身份，不带 at= 时追加到末尾。
- */
+// 解析消息插入类命令（/sys /sendas /send /sysgen）的参数
 private data class InsertArgs(val name: String?, val at: Int?, val text: String, val trim: Boolean = false)
 
-/**
- * 官方 isTrueBoolean：true/1/on（大小写不敏感）。
- */
+// 官方 isTrueBoolean：true/1/on（大小写不敏感）。
 private fun isTrueBoolean(value: String): Boolean =
     value.equals("true", ignoreCase = true) || value == "1" || value.equals("on", ignoreCase = true)
 
-/**
- * 解析插消息类命令参数（sys/send/sendas/sysgen）。
- * 官方 SlashCommandParser 允许命名参数出现在任意位置（不仅开头），
- * 解析后从原文剥离，剩余作为正文。
- */
+// 解析插消息类命令参数（sys/send/sendas/sysgen）。
 private fun parseInsertArgs(raw: String, allowTrim: Boolean = false): InsertArgs {
     var args = raw.trim()
     var name: String? = null
@@ -1736,7 +1738,7 @@ private fun parseInsertArgs(raw: String, allowTrim: Boolean = false): InsertArgs
         when (key) {
             "name" -> name = value
             "at" -> at = value.toIntOrNull()
-            // 官方 /sys /send /sendas 没有 trim 参数，正文里的 "trim=..." 应原样保留
+            // 官方 /sys /send /sendas 没有 trim 参数
             "trim" -> if (allowTrim) trim = isTrueBoolean(value)
         }
         args = args.removeRange(m.range.first, m.range.last + 1).trim()
@@ -1744,10 +1746,7 @@ private fun parseInsertArgs(raw: String, allowTrim: Boolean = false): InsertArgs
     return InsertArgs(name, at, args.trim(), trim)
 }
 
-/**
- * 解析 /gen 参数（官方 generateCallback：trim/lock/name/length/as）。
- * 官方 as 缺省即 'system'，只有 char 特殊（quietToLoud），其他值一律按 system 处理。
- */
+// 解析 /gen 参数（官方 generateCallback：trim/lock
 private fun parseGenArgs(raw: String): ChatService.GenArgs {
     var args = raw.trim()
     var asRole = ChatService.QuietPromptAs.SYSTEM

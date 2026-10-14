@@ -44,6 +44,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.rememberBottomSheetState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -101,8 +102,18 @@ fun SearchPickerButton(
     onUpdateSearchMode: (SearchMode) -> Unit,
     onUpdateSearchService: (Int) -> Unit,
     model: Model?,
+    // WebView 工具条代理点击：外部要求打开原生选择器
+    forceShow: Boolean = false,
+    onForceShowHandled: () -> Unit = {},
 ) {
     var showSearchPicker by remember { mutableStateOf(false) }
+
+    LaunchedEffect(forceShow) {
+        if (forceShow) {
+            showSearchPicker = true
+            onForceShowHandled()
+        }
+    }
     val currentService = settings.searchServices.getOrNull(settings.searchServiceSelected)
 
     ToggleSurface(

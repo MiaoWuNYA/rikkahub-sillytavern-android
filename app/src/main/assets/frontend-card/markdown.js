@@ -57,6 +57,51 @@
     return /^\s*\|?[\s:|-]+\|[\s:|-]*$/.test(line) && line.indexOf('-') >= 0;
   }
 
+
+  /**
+   * 还原被转义的内联标签并按白名单过滤属性。
+   *
+   * 模型与角色卡常用 <span style="color:#xxx"> 上色，渲染器为安全先把 HTML 转义了，
+   * 这里在输出阶段把白名单标签放回去——与原生渲染路径同一套白名单与 CSS 属性集。
+   */
+  var INLINE_TAG_RE = /&lt;(\/?)(span|font|b|i|u|em|strong|br|sub|sup|small)\b([^&]*(?:&(?!gt;)[^&]*)*)&gt;/gi;
+  var SAFE_CSS_RE = /(color|background-color|font-size|font-weight|font-style|text-decoration|opacity)\s*:\s*([^;'"<>()]{1,64})/gi;
+
+  function sanitizeStyle(raw) {
+    var out = [];
+    var m;
+    SAFE_CSS_RE.lastIndex = 0;
+    while ((m = SAFE_CSS_RE.exec(String(raw || ''))) !== null) {
+      out.push(m[1].toLowerCase() + ':' + m[2].trim());
+    }
+    return out.join(';');
+  }
+
+  function restoreInlineTags(html) {
+    if (!html || html.indexOf('&lt;') < 0) return html;
+    return html.replace(INLINE_TAG_RE, function (full, slash, tag, attrs) {
+      var name = tag.toLowerCase();
+      if (slash === '/') return '</' + name + '>';
+      if (name === 'br') return '<br>';
+      var attrText = String(attrs || '')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&amp;/g, '&');
+      var styleMatch = /style\s*=\s*"([^"]*)"/i.exec(attrText);
+      if (name === 'font') {
+        var colorMatch = /color\s*=\s*"([^"]*)"/i.exec(attrText);
+        var color = colorMatch ? colorMatch[1].trim() : '';
+        if (!/^#[0-9a-fA-F]{3,8}$|^rgb/i.test(color)) color = '';
+        return color ? '<font color="' + color + '">' : '<font>';
+      }
+      if (name === 'span') {
+        var style = styleMatch ? sanitizeStyle(styleMatch[1]) : '';
+        return style ? '<span style="' + style + '">' : '<span>';
+      }
+      return '<' + name + '>';
+    });
+  }
+
   function render(md) {
     var src = String(md == null ? '' : md);
     var lines = src.split('\n');
@@ -144,12 +189,12 @@
         i++;
       }
     }
-    return html.join('\n');
+    return restoreInlineTags(html.join('\n'));
   }
 
   function splitRow(line) {
     return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(function (c) { return c.trim(); });
   }
 
-  global.RikkaMarkdown = { render: render, escapeHtml: escapeHtml, inline: inline };
+  global.RikkaMarkdown = { render: render, escapeHtml: escapeHtml, inline: inline, restoreInlineTags: restoreInlineTags };
 })(window);

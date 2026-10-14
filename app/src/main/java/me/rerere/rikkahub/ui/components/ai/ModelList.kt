@@ -106,6 +106,7 @@ class ModelListState internal constructor(
     type: ModelType,
     fallbackToAllTypes: Boolean = false,
 ) {
+
     var modelId by mutableStateOf(modelId)
         private set
 
@@ -242,7 +243,17 @@ internal fun ModelSelectorButton(
     onlyIcon: Boolean = false,
     allowClear: Boolean = false,
     onClear: () -> Unit = {},
+    // WebView 工具条代理点击：外部要求打开原生选择器
+    forceShow: Boolean = false,
+    onForceShowHandled: () -> Unit = {},
 ) {
+    // WebView 工具条代理点击：原生菜单由外部请求打开
+    LaunchedEffect(forceShow) {
+        if (forceShow) {
+            state.open()
+            onForceShowHandled()
+        }
+    }
     val model = state.currentModel
 
     if (!onlyIcon) {

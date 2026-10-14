@@ -141,7 +141,7 @@ private fun SillyTavernImporter(
     }
 
     // 春水 AI 的对话导出走同一套 importFile——格式判定放在
-    // importFromJson 里（靠 looksLikeConversationExport 自动识别），
+    // importFromJson 里（靠 looksLikeConversation
     // 这样 URL 导入和拖文件两条路也能吃到它，不用各写一遍。
     val chunshuiPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -173,7 +173,7 @@ private fun SillyTavernImporter(
                  else stringResource(R.string.assistant_importer_import_tavern_json))
         }
         // 春水 AI 的导出是「一段对话」而不是角色卡，字段结构完全不同，
-        // 混在「导入酒馆角色卡 (JSON)」里会走到 V1 分支去读顶层 name 而报错。
+        // 混在「导入酒馆角色卡 (JSON)」里会走到 V1 分支去读顶层 name 而报
         // 单独给一个入口，让报错信息能对症。
         //
         // 不给额外的说明文字：这一行按钮旁边挂一段介绍会显得啰嗦，
@@ -431,7 +431,7 @@ private suspend fun importFromUrl(
             ) {
                 error(context.getString(R.string.assistant_importer_not_character_card))
             }
-            // 魔数最可靠，其次是明确的 Content-Type / 后缀；都没有时按 JSON 尝试
+            // 魔数最可靠，其次是明确的 Content-Type / 后缀
             val png = isPngBytes(data) ||
                 contentType == "image/png" ||
                 (contentType == null && path.endsWith(".png"))
@@ -490,7 +490,7 @@ private suspend fun importFromString(
 
     // 先认风月 AI 的角色卡。
     //
-    // 它有自己一整套字段（ttl / desc / pre_pt / world_book），既没有
+    // 它有自己一整套字段（ttl / desc / pre_pt / world_bo
     // spec、也没有 data，掉到 V1 分支会被当平铺卡读 name 而报错。
     // 判定放在最前面：它的 messages 字段不存在，不会被上一条误判。
     if (looksLikeFengyueCard(json)) {
@@ -507,8 +507,8 @@ private suspend fun importFromString(
 
     // 先认「对话导出」格式。
     //
-    // 这种 JSON 没有 spec、也没有 data，特征是有 messages 数组加
-    // character_name / conversation_id（春水 AI 等应用的导出）。它其实
+    // 这种 JSON 没有 spec、也没有 data
+    // character_name / conversation_id（春水 AI 等
     // 是「一段已经聊过的对话」而不是角色卡：人物设定写在 messages[0]
     // 那条 user 消息里，首条 assistant 是开场白。
     //
@@ -548,7 +548,7 @@ private suspend fun importFromString(
     )
 }
 
-// ==================== 风月 AI 角色卡 ====================
+// ==================== 风月 AI 角色卡 =========
 
 /**
  * 判断是不是风月 AI 的角色卡。
@@ -754,7 +754,7 @@ private fun mapEntryRole(role: String): MessageRole = when (role.lowercase()) {
     else -> MessageRole.SYSTEM
 }
 
-// ==================== 春水 AI 对话导出 ====================
+// ==================== 春水 AI 对话导出 ========
 
 /**
  * 判断是不是「对话导出」格式。
@@ -800,17 +800,17 @@ private fun parseConversationExport(
     fun roleOf(element: JsonElement?): String =
         element?.jsonObjectOrNull?.get("role")?.jsonPrimitiveOrNull?.contentOrNull.orEmpty()
 
-    // 首条 user = 人物设定。若首条不是 user（有的导出直接以 assistant 开场），
+    // 首条 user = 人物设定。若首条不是 user（有的导出直接以 assist
     // 那就不当设定，避免把开场白误当成人设。
     val firstIsUser = messages.firstOrNull()?.let { roleOf(it) == "user" } == true
     // 同样保留原文：设定里也可能带样式标记，而且它是要给模型读的，
     // 擅自删改用户写好的内容没有道理。
     val setting = if (firstIsUser) textOf(messages.first()) else ""
 
-    // 第一条 assistant = 开场白。首条是 user 时取第二条，否则取第一条。
+    // 第一条 assistant = 开场白。首条是 user 时取第二条
     //
     // **原文保留，不做任何清理。** 这类导出常常是「前端卡」——
-    // 开场白本身就是一段 HTML，由应用内的卡片渲染器（HtmlCardDocument
+    // 开场白本身就是一段 HTML，由应用内的卡片渲染器（HtmlCardDocume
     // + CardHostBridge）画成界面。把标签剥掉等于把卡片毁了，只剩一堆
     // 散落的文字。
     val greetingIndex = if (firstIsUser) 1 else 0
@@ -846,7 +846,7 @@ private fun parseConversationExport(
     return assistant to emptyList()
 }
 
-// 本地 PNG 抽出的图优先，其次远程 URL（仅认 http/https），否则默认头像
+// 本地 PNG 抽出的图优先，其次远程 URL（仅认 http/https）
 private fun resolveCardAvatar(avatarUri: String?, remoteAvatar: String?): Avatar = when {
     !avatarUri.isNullOrBlank() -> Avatar.Image(avatarUri)
     !remoteAvatar.isNullOrBlank() &&
@@ -855,7 +855,7 @@ private fun resolveCardAvatar(avatarUri: String?, remoteAvatar: String?): Avatar
     else -> Avatar.Dummy
 }
 
-// ?.jsonObject 挡不住「字段存在但值是 JSON null」，这里两种情况都收敛成 null
+// ?.jsonObject 挡不住「字段存在但值是 JSON null」
 private fun JsonElement?.jsonObjectSafe(): JsonObject? =
     (this as? JsonObject)
 
@@ -874,7 +874,7 @@ private fun flattenV1Card(json: JsonObject): JsonObject {
     val data = buildMap<String, JsonElement> {
         fields.forEach { f -> json[f]?.let { put(f, it) } }
         json["alternate_greetings"]?.let { put("alternate_greetings", it) }
-        // V1 世界书字段名是 character_embdings，归一为 V2 的 character_book
+        // V1 世界书字段名是 character_embdings
         (json["character_book"] ?: json["character_embdings"])?.let { put("character_book", it) }
         json["extensions"]?.let { put("extensions", it) }
     }
@@ -886,7 +886,7 @@ private fun parseV2Card(context: Context, json: JsonObject, background: String?,
     val name = data["name"]?.jsonPrimitiveOrNull?.contentOrNull
         ?: error(context.getString(R.string.assistant_importer_missing_name_field))
 
-    // 官方兼容：V2 顶层 talkativeness/fav 归入 data.extensions（官方导入同样处理），
+    // 官方兼容：V2 顶层 talkativeness/fav 归入 data.ext
     // 原始 extensions 结构保持无损
     val extensionsObj = data["extensions"]?.jsonObjectOrNull?.let { JsonObject(it.toMap()) }
         ?: JsonObject(emptyMap())
@@ -924,14 +924,14 @@ private fun parseV2Card(context: Context, json: JsonObject, background: String?,
 
     val assistant = Assistant(
         name = name,
-        // data.avatar 可能是 chub 这类平台的远程地址，本地卡则是 null
+        // data.avatar 可能是 chub 这类平台的远程地址
         avatar = resolveCardAvatar(avatarUri, data["avatar"]?.jsonPrimitiveOrNull?.contentOrNull),
         systemPrompt = systemPrompt,
         presetMessages = presetMessages,
         background = background,
         tavernData = tavData,
-        // 前端卡（HTML 卡）靠 extensions.regex_scripts 在渲染时把占位标签
-        // （<zd_status>、<StatusPlaceHolderImpl/> 等）替换成整段 HTML 文档。
+        // 前端卡（HTML 卡）靠 extensions.regex_scripts 在渲
+        // （<zd_status>、<StatusPlaceHolderImpl/> 等）
         // 不导入这些脚本，卡只会显示成标签文字。复用全局正则脚本的导入实现，
         // 避免两套语义分叉。
         regexes = extractCardRegexScripts(tavData),
@@ -984,14 +984,14 @@ private fun parseV3Card(context: Context, json: JsonObject, background: String?,
 
     val assistant = Assistant(
         name = name,
-        // data.avatar 可能是 chub 这类平台的远程地址，本地卡则是 null
+        // data.avatar 可能是 chub 这类平台的远程地址
         avatar = resolveCardAvatar(avatarUri, data["avatar"]?.jsonPrimitiveOrNull?.contentOrNull),
         systemPrompt = systemPrompt,
         presetMessages = presetMessages,
         background = background,
         tavernData = tavData,
-        // 前端卡（HTML 卡）靠 extensions.regex_scripts 在渲染时把占位标签
-        // （<zd_status>、<StatusPlaceHolderImpl/> 等）替换成整段 HTML 文档。
+        // 前端卡（HTML 卡）靠 extensions.regex_scripts 在渲
+        // （<zd_status>、<StatusPlaceHolderImpl/> 等）
         // 不导入这些脚本，卡只会显示成标签文字。复用全局正则脚本的导入实现，
         // 避免两套语义分叉。
         regexes = extractCardRegexScripts(tavData),
@@ -1100,7 +1100,7 @@ private fun parseEntriesArray(arr: kotlinx.serialization.json.JsonArray): List<T
                 sticky = parseStickyInt(e["sticky"]),
                 cooldown = e["cooldown"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
                 depth = e["depth"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 4,
-                // 官方语义：条目未写 scan_depth 时为 null → 注入时用全局默认（world_info_depth=2）
+                // 官方语义：条目未写 scan_depth 时为 null → 注入时用全局默认（
                 scanDepth = e["scan_depth"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
                 role = parseEntryRole(e),
                 groupWeight = e["group_weight"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 100,
@@ -1141,7 +1141,7 @@ private fun parseEntriesMap(obj: JsonObject): List<TavernBookEntry> {
                 sticky = parseStickyInt(e["sticky"]),
                 cooldown = e["cooldown"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0,
                 depth = e["depth"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 4,
-                // 官方语义：条目未写 scan_depth 时为 null → 注入时用全局默认（world_info_depth=2）
+                // 官方语义：条目未写 scan_depth 时为 null → 注入时用全局默认（
                 scanDepth = e["scan_depth"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
                 role = parseEntryRole(e),
                 groupWeight = e["group_weight"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 100,
@@ -1168,7 +1168,7 @@ private fun applyEntryExtensions(entry: TavernBookEntry, e: JsonObject?): Tavern
             matchWholeWords = extensions["match_whole_words"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull()
                 ?: entry.matchWholeWords,
             preventRecursion = extBool(extensions["prevent_recursion"]) || entry.preventRecursion,
-            // 官方 delay_until_recursion 可为 true 或数字层级（1/2/3…），extensions 优先，顶层兜底
+            // 官方 delay_until_recursion 可为 true 或数字层级（1
             delayUntilRecursion = parseDelayUntilRecursionInt(extensions["delay_until_recursion"])
                 ?: parseDelayUntilRecursionInt(e["delayUntilRecursion"])
                 ?: entry.delayUntilRecursion,
@@ -1296,7 +1296,7 @@ private fun parseEntryPosition(e: JsonObject): Int {
             else -> raw.trim().toIntOrNull()
         }
     } ?: 1
-    // 官方新版 UI：扩展位置数字存 extensions.position，优先于旧字段
+    // 官方新版 UI：扩展位置数字存 extensions.position
     return e["extensions"]?.jsonObjectOrNull
         ?.get("position")?.jsonPrimitiveOrNull?.contentOrNull?.trim()?.toIntOrNull()
         ?: base
@@ -1465,7 +1465,7 @@ private fun mapInjectionToPosition(pos: InjectionPosition): Int = when (pos) {
     InjectionPosition.BOTTOM_OF_CHAT -> 3
     InjectionPosition.AT_DEPTH -> 4
     InjectionPosition.AUTHOR_NOTE -> 2
-    // 本地扩展位置写入官方枚举时落到最接近的出口（outlet=7），避免产生官方不存在的 8
+    // 本地扩展位置写入官方枚举时落到最接近的出口（outlet=7）
     InjectionPosition.ANTAGONIZE, InjectionPosition.AFTER_DIALOG -> 7
     InjectionPosition.EM_TOP -> 5
     InjectionPosition.EM_BOTTOM -> 6
@@ -1527,17 +1527,38 @@ private fun applyFrontendCardPreference(
     lorebooks: List<Lorebook>,
     toaster: ToasterState,
 ): Assistant {
-    val hasFrontend = buildList {
-        add(assistant.systemPrompt)
-        assistant.presetMessages.forEach { message ->
-            message.parts.filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>().forEach { add(it.text) }
+    val hasFrontend = assistant.hasFrontendCardContent() || lorebooks.any { book ->
+        book.entries.any { entry ->
+            entry.content.isNotBlank() && (
+                findFencedHtmlDocument(entry.content) != null ||
+                    splitCardSegments(entry.content).any { it.first } ||
+                    entry.content.contains("<html", ignoreCase = true) ||
+                    entry.content.contains("<body", ignoreCase = true)
+                )
         }
-        lorebooks.forEach { book -> book.entries.forEach { add(it.content) } }
-    }.any { text ->
-        text.isNotBlank() &&
-            (findFencedHtmlDocument(text) != null || splitCardSegments(text).any { it.first })
     }
     if (!hasFrontend) return assistant
     toaster.show(context.getString(R.string.huadeng_frontend_card_auto_switched), type = ToastType.Success)
     return assistant.copy(frontendCardPreferred = true)
+}
+
+// 助手是否含前端卡内容：导入时置位，渲染时兜底（旧助手不会被追溯置位）
+
+fun Assistant.hasFrontendCardContent(): Boolean {
+    val texts = buildList {
+        add(systemPrompt)
+        presetMessages.forEach { message ->
+            message.parts.filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>().forEach { add(it.text) }
+        }
+    }
+    return texts.any { text ->
+        text.isNotBlank() && (
+            findFencedHtmlDocument(text) != null ||
+                splitCardSegments(text).any { it.first } ||
+                // 内容嗅探兜底：酒馆卡片就是靠这几个标签判定的
+                text.contains("<html", ignoreCase = true) ||
+                text.contains("<head", ignoreCase = true) ||
+                text.contains("<body", ignoreCase = true)
+            )
+    }
 }

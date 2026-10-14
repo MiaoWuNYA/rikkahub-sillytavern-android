@@ -53,12 +53,12 @@ data class Settings(
     // 标题总结模型：null = 跟随快速模型
     val titleModelId: Uuid? = null,
     val fastModelReasoningLevel: ReasoningLevel = ReasoningLevel.AUTO,
-    // 标题推理等级。旧版标题请求直接复用 fastModelReasoningLevel，遇到会思考的模型
+    // 标题推理等级。旧版标题请求直接复用 fastModelReasoningLeve
     // 就会花一二百个 token 在"数字数"上；默认 OFF，让标题请求不走思考链。
     val titleReasoningLevel: ReasoningLevel = ReasoningLevel.OFF,
     val imageGenerationModelId: Uuid = Uuid.random(),
-    // 生图页的尺寸与思考强度。放在全局设置里而不是页面内 state：用户调过一次就该记住，
-    // 每次进页面都被重置回 auto 很烦。默认 auto = 不显式指定，交给站点自己决定。
+    // 生图页的尺寸与思考强度。放在全局设置里而不是页面内 state：用户调过一次就该
+    // 每次进页面都被重置回 auto 很烦。默认 auto = 不显式指定
     val imageGenerationSize: String = ImageGenSize.AUTO.value,
     val imageGenerationReasoningLevel: ReasoningLevel = ReasoningLevel.AUTO,
     val titlePrompt: String = DEFAULT_TITLE_PROMPT,
@@ -83,7 +83,7 @@ data class Settings(
     val s3Config: S3Config = S3Config(),
     val enableWebSearch: Boolean = true, // 全局网络搜索开关
     val fileRetentionDays: Int = 0, // 聊天附件与生成图片保留天数（0=不清理，移植自 Rikkahub-Revised 的按日文件清理）
-    // RemoteFileStore 上传临时素材用的桶，和备份的 s3Config 互不影响；items 字段在这里不使用
+    // RemoteFileStore 上传临时素材用的桶
     val uploadS3Config: S3Config = S3Config(),
     val mediaGenerationProviders: List<MediaGenerationProviderSetting> = emptyList(),
     val ttsProviders: List<TTSProviderSetting> = DEFAULT_TTS_PROVIDERS,
@@ -93,12 +93,12 @@ data class Settings(
     val selectedASRProviderId: Uuid? = null,
     val modeInjections: List<PromptInjection.ModeInjection> = DEFAULT_MODE_INJECTIONS,
     val lorebooks: List<Lorebook> = emptyList(),
-    // 官方 world_info_budget 是上下文 token 的百分比，官方默认 25%。
+    // 官方 world_info_budget 是上下文 token 的百分比
     // 本地默认改成 100（不裁剪）：官方那个 25% 是按短条目英文书设计的，
-    // 中文角色卡的世界书动辄几万 token——一张卡 22 条里 11 条 constant 合计
-    // 3.7 万字符，25% 预算下 <twitter>/<Status>/生成格式 会被逐条丢弃。
-    // 而「生成格式」正是教模型写 <mainbody>/<phone> 骨架的条目，一丢卡就整个失效：
-    // 模型不再输出标签 → 卡内 JS 拿不到数据 → 显示「您未打开 choice 世界书」
+    // 中文角色卡的世界书动辄几万 token——一张卡 22 条里 11 条 cons
+    // 3.7 万字符，25% 预算下 <twitter>/<Status>/生成格式 
+    // 而「生成格式」正是教模型写 <mainbody>/<phone> 骨架的条目
+    // 模型不再输出标签 → 卡内 JS 拿不到数据 → 显示「您未打开 choice 
     // 或只剩一个 HTML 空壳。用户看到的是"卡片坏了"，根因却在这个百分比上。
     val worldInfoBudget: Int = 100,
     val worldInfoBudgetCap: Int = 0,                // 官方 world_info_budget_cap：预算绝对 token 上限（0=不限制，官方默认 0）
@@ -123,7 +123,7 @@ data class Settings(
     val authorNoteDepth: Int = 4,                   // Author's Note 插入深度
     val authorNoteRole: MessageRole = MessageRole.SYSTEM, // 注入角色（官方默认 SYSTEM）
     val authorNoteInterval: Int = 1,                // 官方语义：1=每次注入，0=关闭，N=每N条用户消息注入一次
-    // null = 尚未物化的新格式，继续兼容旧 authorNote + 全局参数；emptyList = 用户明确清空。
+    // null = 尚未物化的新格式，继续兼容旧 authorNote + 全局参数
     val authorNoteEntries: List<AuthorNoteEntry>? = null,
     val groupChats: List<GroupChat> = emptyList(),   // 群聊列表
     val macroGlobalVariables: Map<String, String> = emptyMap(),        // 宏引擎全局变量（跨对话持久）
@@ -194,12 +194,12 @@ data class NetworkSetting(
  */
 @Serializable
 data class HuaDengSettings(
-    // 中转站兼容：修复 Gemini 经 OpenAI 兼容中转时 reasoning_content 吞掉正文的问题
+    // 中转站兼容：修复 Gemini 经 OpenAI 兼容中转时 reasoning
     val enableProxyFix: Boolean = false,
     // 防空回复（全局）：系统提示词入对话流 + 空回复微扰重试，针对 Gemini
     val enableAntiEmptyResponse: Boolean = false,
-    // 上下文瞬态内容裁剪：超过两轮之前的网页搜索结果/图片/音视频不随请求发送（AI 可用
-    // read_history_message 按消息 ID 取回），大幅减少图片与搜索类长对话的 token 消耗
+    // 上下文瞬态内容裁剪：超过两轮之前的网页搜索结果/图片/音视频不随请求发送（AI 
+    // read_history_message 按消息 ID 取回）
     val enableTransientContentPrune: Boolean = true,
     // 清爽简洁模式：隐藏情侣空间/生活空间等娱乐功能入口，并不再注册对应 AI 工具
     val enableCleanMode: Boolean = false,
@@ -207,30 +207,31 @@ data class HuaDengSettings(
     val enableRollingContextCompression: Boolean = true,
     // 工具结果截断：关闭后工具输出不再截断（默认截断超过 32KB 的输出）
     val enableToolResultTruncation: Boolean = true,
-    // 子 agent：主模型可把子任务派给独立 agent 完成后取回结果（不产生会话历史）
+    // 子 agent：主模型可把子任务派给独立 agent 完成后取回结果（不产生会话
     val enableSubAgent: Boolean = false,
-    // 前端卡专属模式：会话含前端卡时整块消息区改由单个 WebView 渲染，
-    // 规避多 WebView 同时存活导致的闪退与采样崩溃
-    val enableFrontendCardMode: Boolean = true,
-    // 本地 OCR 兜底：未配置 OCR 模型（或远程识别失败）时，用内置的 ML Kit
+    // 界面 WebView 化总开关，默认关闭
+    val enableFrontendCardMode: Boolean = false,
+    // 页面与前端卡的变量域（local / global），由页面托管、App 落盘
+    val webviewVariables: Map<String, Map<String, String>> = emptyMap(),
+    // 本地 OCR 兜底：未配置 OCR 模型（或远程识别失败）时
     // 离线识别图片文字。不联网、不上传图片。关掉则回到旧行为——直接给模型
     // 一个 "[Image]" 占位符，图片内容等于不可见。
     // 已废弃：本地离线 OCR（ML Kit 中文包）占用 11 MB 的
-    // libmlkit_google_ocr_pipeline.so，为「偶尔看图」付这个体积不划算，
+    // libmlkit_google_ocr_pipeline.so
     // 已改为完全依赖用户配置的视觉模型。
     // 字段保留是为了让老配置还能正常反序列化，不再读写。
     val enableLocalOcrFallback: Boolean = false,
-    // Python 能力说明：在 execute_python 的工具描述里列出可用的第三方库
-    // （numpy/pandas/pillow/docx/pdf 等）。关掉可以省几百 token 的工具描述，
+    // Python 能力说明：在 execute_python 的工具描述里列出可用的
+    // （numpy/pandas/pillow/docx/pdf 等）
     // 代价是模型不知道有哪些库可用、倾向于不用它们。
     val enablePythonLibraryHints: Boolean = true,
-    // 系统提示词转义：将系统消息中的 < > 转为 HTML 实体，绕过中转站 WAF 安全策略拦截
+    // 系统提示词转义：将系统消息中的 < > 转为 HTML 实体
     val enableSystemPromptEscape: Boolean = false,
 
     // ---- 酒馆模式：纯净请求 ----
-    // 开启后请求里只保留「角色卡（含世界书/示例消息/系统提示）+ 聊天历史 + 工具最小可用定义」，
-    // 其余一律不发：插件提示词、记忆检索、跨窗口生活流、模板宏、工作空间提醒、时间提醒、
-    // 作者注释、技能自动触发、文档转提示词、OCR、占位符替换、Recent Chats、滚动压缩摘要、
+    // 开启后请求里只保留「角色卡（含世界书/示例消息/系统提示）+ 聊天历史 + 工具
+    // 其余一律不发：插件提示词、记忆检索、跨窗口生活流、模板宏、工作空间提醒
+    // 作者注释、技能自动触发、文档转提示词、OCR、占位符替换
     // 用户上下文（记忆/日期）、工具路由与工作伦理区、工具系统提示词。
     val enableTavernMode: Boolean = false,
     // 酒馆模式·保留工具。
@@ -244,19 +245,19 @@ data class HuaDengSettings(
     // 需要工具的人可以在设置里单独打开。
     val tavernModeKeepTools: Boolean = false,
 
-    // ---- Jev 智能决策（TypeSafe System One Model）----
-    // 只做判断不生成文本的隐形决策层，永不进入用户可选模型列表。全部字段必须在请求失败时静默回退。
-    // 注意：本类整体以 JSON 存在 DataStore，任一字段解析失败会整块回退默认值，
+    // ---- Jev 智能决策（TypeSafe System One Model）
+    // 只做判断不生成文本的隐形决策层，永不进入用户可选模型列表
+    // 注意：本类整体以 JSON 存在 DataStore
     // 所以这里只能放基础可序列化类型，不要引入自定义 serializer。
     val jevBaseUrl: String = "https://api.typesafe.ai",
     val jevApiKey: String = "",
-    // 判断模型：默认 jev-latest，签发方另有 jev-preview 时可在设置里切换。
+    // 判断模型：默认 jev-latest
     // 留空按默认处理；请求体里这个字段是必填，绝不能省。
     val jevModel: String = "jev-latest",
-    // 低于该置信度不用 Jev 的判断，回退原有逻辑。noul 没有 confidence，用 |p-0.5|*2 折算
-    // 注意：记忆筛选不使用这个阈值，它有自己的更低门槛（见 MemoryRetrievalTransformer）
+    // 低于该置信度不用 Jev 的判断，回退原有逻辑
+    // 注意：记忆筛选不使用这个阈值，它有自己的更低门槛（见 MemoryRetriev
     val jevConfidenceThreshold: Float = 0.7f,
-    // 自动记忆筛选：记忆检索改由 Jev 判相关性，替代 embedding 相似度召回
+    // 自动记忆筛选：记忆检索改由 Jev 判相关性
     val jevTakeoverMemory: Boolean = false,
     // 大模型工具调用：把 Jev 注册成 judge 工具挂给主力模型
     val jevJudgeTool: Boolean = false,
@@ -267,7 +268,7 @@ data class HuaDengSettings(
  */
 @Serializable
 data class SecuritySetting(
-    // 强制确认所有工具调用：无视单工具的 needsApproval，每次执行前都要用户确认
+    // 强制确认所有工具调用：无视单工具的 needsApproval
     val forceConfirmToolCalls: Boolean = false,
     // 自动批准所有工具调用：跳过审批直接执行（优先级高于强制确认）
     val autoApproveAllTools: Boolean = true,
@@ -360,7 +361,7 @@ data class DisplaySetting(
     // ---- 聊天外观自定义覆盖层（null/空串 = 跟随主题） ----
     // 主色调（按钮/链接等强调色），覆盖 colorScheme.primary
     val primaryColor: Long? = null,
-    // 全局字体颜色，覆盖 onBackground/onSurface/onSurfaceVariant
+    // 全局字体颜色，覆盖 onBackground/onSurface/onSurfa
     val globalTextColor: Long? = null,
     // 气泡/背景颜色（ARGB Long）
     val userBubbleColor: Long? = null,
@@ -377,7 +378,7 @@ data class DisplaySetting(
     val bubbleCornerRadius: Float = 16f,
     // 气泡背景图的缩放方式（对齐酒馆 background-size）：
     // "cover" = 裁切铺满；"contain" / 空 = 等比完整显示。
-    // 主题常写 width:100% + height:200px + cover，本地气泡高度由文字撑开，
+    // 主题常写 width:100% + height:200px + cover
     // 无条件裁切会把图纵向拉扯变形，故默认等比。
     val bubbleBackgroundSize: String = "contain",
     // 抽屉（侧边栏）背景图路径
@@ -386,10 +387,10 @@ data class DisplaySetting(
     val chatBackgroundImagePath: String = "",
     // 酒馆主题图标定制（发送栏/菜单/扩展/停止/头像框），空值 = 未导入主题图标
     val themeIcons: ThemeIconSet = ThemeIconSet(),
-    // 气泡边框：对齐官方 --SmartThemeBorderColor + border 简写（含宽度/颜色/样式）
+    // 气泡边框：对齐官方 --SmartThemeBorderColor + bord
     val bubbleBorderColor: Long? = null,
     val bubbleBorderWidth: Float = 0f,
-    // 气泡阴影：对齐官方 --SmartThemeShadowColor + --shadowWidth
+    // 气泡阴影：对齐官方 --SmartThemeShadowColor + --sh
     val bubbleShadowColor: Long? = null,
     val bubbleShadowWidth: Float = 0f,
     // 聊天界面按钮隐藏开关（true = 隐藏，默认全部显示）
@@ -404,11 +405,11 @@ data class DisplaySetting(
     val bracketButtonSymbol: String = "()",
     // 符号按钮颜色（#RRGGBB，空串 = 跟随主题）
     val bracketButtonColor: String = "",
-    // 引用块背景色（官方 --SmartThemeQuoteColor 常同时用于引用框）
+    // 引用块背景色（官方 --SmartThemeQuoteColor 常同时用于引用
     val quoteBackgroundColor: Long? = null,
     // 下划线颜色（官方 --SmartThemeUnderlineColor）
     val underlineColor: Long? = null,
-    // 气泡内层元素样式（代码框/引用块/高亮/斜体/思维链）：主题导入时从 custom_css 提取，
+    // 气泡内层元素样式（代码框/引用块/高亮/斜体/思维链）：主题导入时从 custo
     // 旧实现只搬了纯色 token，导致这些元素"只有文字变色、底色圆角全丢"。
     val themeMarkdownStyle: ThemeMarkdownStyle = ThemeMarkdownStyle(),
 )

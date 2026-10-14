@@ -106,6 +106,8 @@ fun HtmlWebViewBlock(
     /** 当前对话的消息快照（官方 swipes 结构），供 `getChatMessages` 读取。 */
     cardMessagesJson: String = "[]",
 ) {
+    // 有 WebView 存活时，输入栏的模糊/玻璃效果必须让位
+    TrackWebViewPresence()
     val density = LocalDensity.current
     val colorScheme = MaterialTheme.colorScheme
     val context = LocalContext.current

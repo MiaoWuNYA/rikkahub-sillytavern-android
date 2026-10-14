@@ -1,6 +1,7 @@
 package me.rerere.rikkahub.ui.pages.chat
 
 import android.net.Uri
+import me.rerere.ai.provider.ModelAbility
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -75,6 +76,7 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import me.rerere.ai.provider.Model
 import me.rerere.ai.ui.UIMessage
@@ -89,6 +91,11 @@ import me.rerere.hugeicons.stroke.Telephone
 import me.rerere.hugeicons.stroke.Video01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
+import me.rerere.ai.core.MessageRole
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import me.rerere.rikkahub.data.datastore.getAssistantById
 import me.rerere.rikkahub.data.model.getAssistantOf
 import me.rerere.rikkahub.ui.theme.CustomColors
@@ -130,6 +137,8 @@ import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
+import me.rerere.rikkahub.data.ai.transformers.visualTransforms
+import me.rerere.rikkahub.ui.pages.assistant.detail.hasFrontendCardContent
 
 @Composable
 fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
@@ -175,7 +184,6 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
         windowAdaptiveInfo.width > windowAdaptiveInfo.height && windowAdaptiveInfo.width >= 1100.dp
 
     // 进入大屏（永久抽屉）模式时重置抽屉状态为关闭，
-    // 避免从横屏旋转回竖屏后，模态抽屉残留为打开状态且无法关闭（#1304）
     LaunchedEffect(isBigScreen) {
         if (isBigScreen && drawerState.isOpen) {
             drawerState.close()
@@ -407,6 +415,85 @@ private fun ChatPageContent(
         modifier = Modifier.fillMaxSize()
     ) {
         AssistantBackground(setting = setting, modifier = Modifier.hazeSource(hazeState))
+    // WebView 工具条点按钮 → 原生菜单；处理完清空避免重复触发
+    var proxyMenu by remember { mutableStateOf<String?>(null) }
+    val pageScope = rememberCoroutineScope()
+    // 三态：自动识别（开场白/角色世界书含网页）/ 强制开 / 强制关
+    val frontendCardPreferredNow = remember(setting, conversation) {
+        val current = setting.getAssistantOf(conversation)
+        when (current.frontendCardMode) {
+            me.rerere.rikkahub.data.model.FrontendCardMode.ALWAYS -> true
+            me.rerere.rikkahub.data.model.FrontendCardMode.NEVER -> false
+            me.rerere.rikkahub.data.model.FrontendCardMode.AUTO ->
+                current.frontendCardPreferred ||
+                    current.hasFrontendCardContent() ||
+                    setting.lorebooks.any { book ->
+                        book.id in current.lorebookIds && book.entries.any { entry ->
+                            entry.content.contains("<html", true) || entry.content.contains("<body", true)
+                        }
+                    }
+        }
+    }
+    // WebView 里点消息 → 用原生对话框做操作，功能与原生列表一致
+    var webActionIndex by remember { mutableStateOf<Int?>(null) }
+    var webEditIndex by remember { mutableStateOf<Int?>(null) }
+    var webEditText by remember { mutableStateOf("") }
+
+    // WebView 模式下的展示用消息：与原生渲染同一套展示层转换（消息正则
+    var displayMessages by remember { mutableStateOf(conversation.currentMessages) }
+    LaunchedEffect(conversation.currentMessages, frontendCardPreferredNow) {
+        // 先立刻把原始消息交给页面：展示层转换是挂起操作，等它跑完再显示会让
+        displayMessages = conversation.currentMessages
+        displayMessages = if (!frontendCardPreferredNow) {
+            conversation.currentMessages
+        } else {
+            runCatching {
+                conversation.currentMessages.visualTransforms(
+                    transformers = listOf(
+                        me.rerere.rikkahub.data.ai.transformers.ThinkTagTransformer,
+                        me.rerere.rikkahub.data.ai.transformers.OutputTagCleanupTransformer,
+                        me.rerere.rikkahub.data.ai.transformers.RegexOutputTransformer,
+                    ),
+                    context = context,
+                    model = currentChatModel ?: me.rerere.ai.provider.Model(),
+                    assistant = setting.getAssistantOf(conversation),
+                    settings = setting,
+                    conversationId = conversation.id,
+                )
+            }.getOrDefault(conversation.currentMessages)
+        }
+    }
+
+    // 原生事件总线：把生成与消息变化按酒馆事件名推给页面与卡片
+    val webEvents = remember { MutableSharedFlow<WebUiEvent>(extraBufferCapacity = 64) }
+    var lastEventKey by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(conversation.currentMessages, loadingJob != null) {
+        val list = conversation.currentMessages
+        val key = list.joinToString(",") { it.id.toString() } + "|" + (loadingJob != null)
+        if (lastEventKey == key) return@LaunchedEffect
+        val previous = lastEventKey
+        lastEventKey = key
+        if (previous == null) return@LaunchedEffect
+        val previouslyLoading = previous.endsWith("|true")
+        val nowLoading = loadingJob != null
+        val previousCount = previous.substringBefore("|").split(",").count { it.isNotBlank() }
+        if (!previouslyLoading && nowLoading) {
+            webEvents.tryEmit(WebUiEvent("GENERATION_STARTED", "[]"))
+        }
+        if (previouslyLoading && !nowLoading) {
+            webEvents.tryEmit(WebUiEvent("GENERATION_ENDED", "[${list.lastIndex}]"))
+            webEvents.tryEmit(WebUiEvent("MESSAGE_RECEIVED", "[${list.lastIndex}]"))
+        }
+        if (list.size > previousCount && !nowLoading) {
+            webEvents.tryEmit(WebUiEvent("MESSAGE_SENT", "[${list.lastIndex}]"))
+        }
+        if (list.size < previousCount) {
+            webEvents.tryEmit(WebUiEvent("MESSAGE_DELETED", "[${list.size}]"))
+        } else if (list.size == previousCount && !nowLoading && !previouslyLoading) {
+            webEvents.tryEmit(WebUiEvent("MESSAGE_UPDATED", "[${list.lastIndex}]"))
+        }
+    }
+
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
@@ -450,14 +537,12 @@ private fun ChatPageContent(
                 val messageQueue by vm.messageQueue.collectAsStateWithLifecycle()
                 val voiceState by vm.voiceSession.state.collectAsStateWithLifecycle()
                 // 前端卡（HTML 文档 WebView）在场时禁用输入栏模糊/玻璃：
-                // Haze 采样含 WebView 硬件层的 Compose layer 会崩溃（Android 15 实测），
-                // 只有开前端卡的会话受影响，其余会话效果不受影响。
-                // 与消息区同一判据：前端模式下整块消息区是 WebView，
-                // 输入栏不能再走 Haze（采样 WebView 硬件层会崩）
-                val hasFrontendCard = setting.getAssistantOf(conversation).frontendCardPreferred ||
-                    setting.huadengSettings.enableFrontendCardMode
+                val hasFrontendCard = frontendCardPreferredNow
                 ChatInput(
                     hasFrontendCard = hasFrontendCard,
+                    hideToolbar = false,
+                    proxyMenu = proxyMenu,
+                    onProxyMenuHandled = { proxyMenu = null },
                     onStartVoiceMode = onStartVoiceMode,
                     voiceState = voiceState,
                     onStopVoiceMode = vm.voiceSession::stop,
@@ -552,13 +637,13 @@ private fun ChatPageContent(
                                         toaster.show(context.getString(R.string.slash_toast_persona_not_found, query))
                                     }
 
-                                    // 官方 /persona-set mode=temp：只设置临时用户名，不找/不选人设
+                                    // 官方 /persona-set mode=temp：只设置临时用户名
                                     target != null && mode == "temp" -> {
                                         vm.updateSettings { it.copy(displaySetting = it.displaySetting.copy(userNickname = query)) }
                                         toaster.show(context.getString(R.string.slash_toast_persona_temp_set, query))
                                     }
 
-                                    // 官方 /persona-set mode=all（默认）：先找已有，找不到则设置临时用户名
+                                    // 官方 /persona-set mode=all（默认）：先找已有
                                     target != null -> {
                                         vm.updateSettings { it.copy(activePersonaId = target.id) }
                                         toaster.show(context.getString(R.string.slash_toast_persona_switched, target.name))
@@ -659,19 +744,276 @@ private fun ChatPageContent(
                 )
             },
         ) { innerPadding ->
-            // 前端模式只在两种情况下启用：导入角色卡时检测到前端自动置位，
-            // 或用户在设置里手动打开。会话中途出现的卡片不改变渲染方式。
+            // 界面 WebView 化只在两种情况下启用：导入角色卡时检测到前端自动置位，
             val chatAssistant = setting.getAssistantOf(conversation)
-            val frontendCardMode = chatAssistant.frontendCardPreferred ||
-                setting.huadengSettings.enableFrontendCardMode
+            // 只有该助手被标记为前端卡会话时才走 WebView，普通会话一律原生
+            val frontendCardMode = frontendCardPreferredNow
+            // WebView 工具条点按钮 → 原生菜单；处理完清空避免重复触发
+            webActionIndex?.let { index ->
+                val message = conversation.currentMessages.getOrNull(index)
+                if (message == null) {
+                    webActionIndex = null
+                } else {
+                    AlertDialog(
+                        onDismissRequest = { webActionIndex = null },
+                        title = { Text(stringResource(R.string.assistant_page_actions)) },
+                        text = {
+                            Column {
+                                TextButton(onClick = {
+                                    val clip = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                    clip.setPrimaryClip(android.content.ClipData.newPlainText("message", message.parts.filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>().joinToString("\n") { it.text }))
+                                    webActionIndex = null
+                                }) { Text(stringResource(R.string.copy)) }
+                                TextButton(onClick = {
+                                    webEditText = message.parts.filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>().joinToString("\n") { it.text }
+                                    webEditIndex = index
+                                    webActionIndex = null
+                                }) { Text(stringResource(R.string.edit)) }
+                                TextButton(onClick = {
+                                    vm.deleteMessage(message)
+                                    webActionIndex = null
+                                }) { Text(stringResource(R.string.delete)) }
+                                // 重试：走原生的按消息重新生成，而不是再发一条新消息
+                                TextButton(onClick = {
+                                    vm.regenerateAtMessage(message, regenerateAssistantMsg = true)
+                                    webActionIndex = null
+                                }) { Text(stringResource(R.string.prompt_page_trigger_regenerate)) }
+                                // 翻译：与原生消息菜单同一入口，语言取当前显示语言
+                                TextButton(onClick = {
+                                    vm.translateMessage(message, java.util.Locale.getDefault())
+                                    webActionIndex = null
+                                }) { Text(stringResource(R.string.translate)) }
+                                // 分享：把消息正文丢给系统分享
+                                TextButton(onClick = {
+                                    val text = message.parts.filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>()
+                                        .joinToString("\n") { it.text }
+                                    val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(android.content.Intent.EXTRA_TEXT, text)
+                                    }
+                                    runCatching { context.startActivity(android.content.Intent.createChooser(intent, null)) }
+                                    webActionIndex = null
+                                }) { Text(stringResource(R.string.share)) }
+                                // 收藏：按消息节点切换，与原生列表一致
+                                TextButton(onClick = {
+                                    val node = conversation.messageNodes.find { node ->
+                                        node.messages.any { it.id == message.id }
+                                    }
+                                    if (node != null) vm.toggleMessageFavorite(node)
+                                    webActionIndex = null
+                                }) { Text(stringResource(R.string.chat_message_add_favorite)) }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { webActionIndex = null }) { Text(stringResource(R.string.cancel)) }
+                        },
+                    )
+                }
+            }
+            // 编辑对话框：改完写回同一条消息，走原生编辑路径
+            webEditIndex?.let { index ->
+                val message = conversation.currentMessages.getOrNull(index)
+                if (message == null) {
+                    webEditIndex = null
+                } else {
+                    AlertDialog(
+                        onDismissRequest = { webEditIndex = null },
+                        title = { Text(stringResource(R.string.edit)) },
+                        text = {
+                            OutlinedTextField(
+                                value = webEditText,
+                                onValueChange = { webEditText = it },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                vm.handleMessageEdit(listOf(me.rerere.ai.ui.UIMessagePart.Text(webEditText)), message.id)
+                                webEditIndex = null
+                            }) { Text(stringResource(R.string.confirm)) }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { webEditIndex = null }) { Text(stringResource(R.string.cancel)) }
+                        },
+                    )
+                }
+            }
+
             if (frontendCardMode) {
                 // 前端卡专属模式：整块消息区交给单个 WebView，标题栏与输入栏保持原生
                 val uriHandler = LocalUriHandler.current
-                FrontendCardChatView(
-                    messages = conversation.currentMessages,
+                WebChatSurface(
+                    messages = displayMessages,
+                    nodes = conversation.messageNodes,
                     assistant = chatAssistant,
                     settings = setting,
                     streaming = loadingJob != null,
+                    modelName = currentChatModel?.displayName.orEmpty(),
+                    searchEnabled = chatAssistant.enableWebSearch,
+                    searchVisible = !setting.displaySetting.hideSearchPicker,
+                    reasoningEnabled = chatAssistant.reasoningLevel.isEnabled,
+                    // 与原生一致：模型不支持推理就不渲染该按钮（关掉它反而会让入口消失）
+                    reasoningVisible = !setting.displaySetting.hideReasoningPicker &&
+                        currentChatModel?.abilities?.contains(ModelAbility.REASONING) == true,
+                    symbolVisible = setting.displaySetting.enableBracketButton &&
+                        setting.displaySetting.bracketButtonSymbol.isNotBlank(),
+                    bracketSymbol = setting.displaySetting.bracketButtonSymbol,
+                    moreVisible = !setting.displaySetting.hideMoreButton,
+                    onRequestMenu = { name ->
+                        // 只接受原生真正拥有的菜单入口，其余忽略
+                        if (name in setOf("model", "search", "reasoning", "more")) proxyMenu = name
+                    },
+                    variablesJson = buildVariablesJson(setting),
+                    onSaveVariables = { json ->
+                        val parsed = parseVariablesJson(json)
+                        vm.updateSettings { it.copy(huadengSettings = it.huadengSettings.copy(webviewVariables = parsed)) }
+                    },
+                    // 卡片改消息：按脚下标定位到真实消息，走既有编辑/插入/删除路径，
+                    onSetChatMessages = { payload ->
+                        runCatching {
+                            val list = conversation.currentMessages
+                            val items = kotlinx.serialization.json.Json
+                                .parseToJsonElement(payload) as? kotlinx.serialization.json.JsonArray
+                                ?: return@runCatching
+                            items.forEach { element ->
+                                val obj = element as? kotlinx.serialization.json.JsonObject ?: return@forEach
+                                val index = (obj["message_id"]?.toString()?.trim('"'))?.toIntOrNull() ?: return@forEach
+                                val text = obj["mes"]?.toString()?.trim('"') ?: return@forEach
+                                val target = list.getOrNull(index)
+                                if (target != null && target.parts.filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>().joinToString("\n") { it.text } != text) {
+                                    vm.handleMessageEdit(listOf(me.rerere.ai.ui.UIMessagePart.Text(text)), target.id)
+                                }
+                            }
+                        }
+                    },
+                    onCreateChatMessages = { payload ->
+                        runCatching {
+                            val items = kotlinx.serialization.json.Json
+                                .parseToJsonElement(payload) as? kotlinx.serialization.json.JsonArray
+                                ?: return@runCatching
+                            items.forEach { element ->
+                                val obj = element as? kotlinx.serialization.json.JsonObject ?: return@forEach
+                                val text = obj["mes"]?.toString()?.trim('"') ?: return@forEach
+                                val isUser = obj["is_user"]?.toString() == "true"
+                                val name = obj["name"]?.toString()?.trim('"')?.takeIf { it.isNotBlank() && it != "null" }
+                                vm.handleInsertMessage(
+                                    role = if (isUser) MessageRole.USER else MessageRole.ASSISTANT,
+                                    text = text,
+                                    name = name,
+                                )
+                            }
+                        }
+                    },
+                    onDeleteChatMessages = { payload ->
+                        runCatching {
+                            val list = conversation.currentMessages
+                            val ids = kotlinx.serialization.json.Json
+                                .parseToJsonElement(payload) as? kotlinx.serialization.json.JsonArray
+                                ?: return@runCatching
+                            ids.forEach { element ->
+                                val index = element.toString().trim('"').toIntOrNull() ?: return@forEach
+                                list.getOrNull(index)?.let { vm.deleteMessage(it) }
+                            }
+                        }
+                    },
+                    // 宏一律走后端引擎（与开场白同一入口），页面与卡片都不自己实现宏语义
+                    onSubstituteMacros = { text ->
+                        me.rerere.rikkahub.data.ai.transformers.PlaceholderTransformer
+                            .substituteGreetingMacros(context, setting, chatAssistant, text)
+                    },
+                    events = webEvents,
+                    onEdgeSwipe = { pageScope.launch { drawerState.open() } },
+                    // 卡片里的本地路由请求走 App 的网络栈（代理/证书与 App 一致）
+                    onHttpRequest = { payload, done ->
+                        pageScope.launch {
+                            val result = runCatching {
+                                val obj = kotlinx.serialization.json.Json.parseToJsonElement(payload)
+                                    as? kotlinx.serialization.json.JsonObject
+                                val method = obj?.get("method")?.toString()?.trim('"') ?: "GET"
+                                val url = obj?.get("url")?.toString()?.trim('"') ?: ""
+                                val body = obj?.get("body")?.toString()?.trim('"').orEmpty()
+                                val absolute = if (url.startsWith("http")) url else "http://127.0.0.1$url"
+                                val connection = (java.net.URL(absolute).openConnection() as java.net.HttpURLConnection).apply {
+                                    requestMethod = method.uppercase()
+                                    connectTimeout = 15_000
+                                    readTimeout = 20_000
+                                    if (body.isNotEmpty() && method.uppercase() != "GET") {
+                                        doOutput = true
+                                        outputStream.use { it.write(body.toByteArray()) }
+                                    }
+                                }
+                                val status = connection.responseCode
+                                val stream = if (status in 200..299) connection.inputStream else connection.errorStream
+                                val text = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+                                buildJsonObject {
+                                    put("status", JsonPrimitive(status))
+                                    put("body", JsonPrimitive(text))
+                                    put("contentType", JsonPrimitive(connection.contentType ?: "application/json"))
+                                }.toString()
+                            }.getOrElse { error ->
+                                buildJsonObject {
+                                    put("status", JsonPrimitive(0))
+                                    put("body", JsonPrimitive(""))
+                                    put("error", JsonPrimitive(error.message.orEmpty()))
+                                }.toString()
+                            }
+                            done(result)
+                        }
+                    },
+                    onClipboard = { text ->
+                        runCatching {
+                            val clip = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                            clip.setPrimaryClip(android.content.ClipData.newPlainText("card", text))
+                        }
+                    },
+                    onMessageAction = { payload ->
+                        runCatching {
+                            val obj = kotlinx.serialization.json.Json.parseToJsonElement(payload)
+                                as? kotlinx.serialization.json.JsonObject
+                            val id = obj?.get("id")?.toString()?.trim('"')
+                            webActionIndex = conversation.currentMessages.indexOfFirst { it.id.toString() == id }
+                                .takeIf { it >= 0 }
+                        }
+                    },
+                    safeAreaTop = innerPadding.calculateTopPadding(),
+                    safeAreaBottom = innerPadding.calculateBottomPadding(),
+                    onMessagesJson = {
+                        kotlinx.serialization.json.buildJsonArray {
+                            conversation.currentMessages.forEachIndexed { index, message ->
+                                add(
+                                    kotlinx.serialization.json.buildJsonObject {
+                                        put("message_id", JsonPrimitive(index))
+                                        put("name", JsonPrimitive(message.role.name))
+                                        put("role", JsonPrimitive(if (message.role == MessageRole.USER) "user" else "assistant"))
+                                        put("is_user", JsonPrimitive(message.role == MessageRole.USER))
+                                        put("is_system", JsonPrimitive(message.role == MessageRole.SYSTEM))
+                                        put(
+                                            "mes",
+                                            JsonPrimitive(
+                                                message.parts.filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>()
+                                                    .joinToString("\n") { it.text },
+                                            ),
+                                        )
+                                    },
+                                )
+                            }
+                        }.toString()
+                    },
+                    onInsertSymbol = { symbol -> inputState.insertSymbol(symbol) },
+                    onSlash = { command ->
+                        val trimmed = command.trim()
+                        val sendPrefix = "/send "
+                        if (trimmed.startsWith(sendPrefix)) {
+                            inputState.setMessageText(trimmed.removePrefix(sendPrefix))
+                            vm.handleMessageSend(inputState.getContents())
+                            inputState.clearInput()
+                        } else {
+                            toaster.show(
+                                context.getString(R.string.huadeng_frontend_card_slash_unsupported, trimmed),
+                                type = ToastType.Warning,
+                            )
+                        }
+                    },
                     onSend = { text ->
                         inputState.setMessageText(text)
                         vm.handleMessageSend(inputState.getContents())
@@ -680,7 +1022,8 @@ private fun ChatPageContent(
                     onStop = { vm.stopGeneration() },
                     onRegenerate = { conversation.currentMessages.lastOrNull()?.let { vm.regenerateAtMessage(it) } },
                     onOpenLink = { url -> runCatching { uriHandler.openUri(url) } },
-                    modifier = Modifier.padding(innerPadding),
+                    // 铺满全屏：原生标题栏与输入栏由 Scaffold 覆盖在其上
+                    modifier = Modifier.fillMaxSize(),
                 )
             } else {
             ChatList(
@@ -856,9 +1199,7 @@ private fun ChatFilesPickerSheet(
     }
 }
 
-/**
- * 开场白选择弹窗 — 新对话有多条开场白时自动弹出
- */
+// 开场白选择弹窗 — 新对话有多条开场白时自动弹出
 @Composable
 private fun TopBar(
     settings: Settings,
@@ -880,7 +1221,7 @@ private fun TopBar(
         onUpdateTitle(it)
     }
 
-    // 顶部渐变遮罩：消息在标题栏下面滚动，遮罩从状态栏一直淡出到标题栏下沿之外，保证标题可读
+    // 顶部渐变遮罩：消息在标题栏下面滚动，遮罩从状态栏一直淡出到标题栏下沿之外
     val scrimColor = MaterialTheme.colorScheme.background
     TopAppBar(
         modifier = Modifier.drawWithCache {
@@ -1092,3 +1433,29 @@ private fun GreetingPickerDialog(
         }
     }
 }
+
+// WebView 变量域：从设置里取出 local/global 作用域
+private fun buildVariablesJson(settings: Settings): String {
+    val scopes = settings.huadengSettings.webviewVariables
+    return kotlinx.serialization.json.buildJsonObject {
+        scopes.forEach { (scope, vars) ->
+            put(
+                scope,
+                kotlinx.serialization.json.buildJsonObject {
+                    vars.forEach { (k, v) -> put(k, JsonPrimitive(v)) }
+                },
+            )
+        }
+    }.toString()
+}
+
+// 页面回传的变量域快照，转成可持久化的结构
+private fun parseVariablesJson(json: String): Map<String, Map<String, String>> = runCatching {
+    val obj = kotlinx.serialization.json.Json.parseToJsonElement(json) as? kotlinx.serialization.json.JsonObject
+        ?: return emptyMap()
+    obj.mapValues { (_, value) ->
+        (value as? kotlinx.serialization.json.JsonObject)
+            ?.mapValues { (_, v) -> v.toString().trim('"') }
+            .orEmpty()
+    }
+}.getOrDefault(emptyMap())

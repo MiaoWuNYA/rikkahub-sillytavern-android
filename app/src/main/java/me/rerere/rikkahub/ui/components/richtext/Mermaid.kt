@@ -45,6 +45,8 @@ fun Mermaid(
     code: String,
     modifier: Modifier = Modifier,
 ) {
+    // 有 WebView 存活时，输入栏的模糊/玻璃效果必须让位
+    TrackWebViewPresence()
     val colorScheme = MaterialTheme.colorScheme
     val darkMode = LocalDarkMode.current
     val context = LocalContext.current

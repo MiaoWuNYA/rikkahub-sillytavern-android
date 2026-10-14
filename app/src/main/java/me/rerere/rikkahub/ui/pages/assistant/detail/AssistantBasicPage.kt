@@ -207,6 +207,29 @@ internal fun AssistantBasicContent(
                     },
                 )
             }
+            formItem(
+                headlineContent = { Text(stringResource(R.string.huadeng_frontend_card_mode)) },
+                supportingContent = { Text(stringResource(R.string.huadeng_frontend_card_mode_desc)) },
+            ) {
+                Select(
+                    options = me.rerere.rikkahub.data.model.FrontendCardMode.entries,
+                    selectedOption = assistant.frontendCardMode,
+                    onOptionSelected = { onUpdate(assistant.copy(frontendCardMode = it)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    optionToString = {
+                        when (it) {
+                            me.rerere.rikkahub.data.model.FrontendCardMode.AUTO ->
+                                stringResource(R.string.huadeng_frontend_card_mode_auto)
+
+                            me.rerere.rikkahub.data.model.FrontendCardMode.ALWAYS ->
+                                stringResource(R.string.huadeng_frontend_card_mode_always)
+
+                            me.rerere.rikkahub.data.model.FrontendCardMode.NEVER ->
+                                stringResource(R.string.huadeng_frontend_card_mode_never)
+                        }
+                    },
+                )
+            }
             switchItem(
                 checked = assistant.useAssistantAvatar,
                 onCheckedChange = {
@@ -552,12 +575,7 @@ internal fun AssistantBasicContent(
     }
 }
 
-/**
- * 上下文限制的最小有效值
- *
- * 低于此值时截断点几乎每轮都在移动, 提示词缓存命中率跌破 90%,
- * 且保留的上下文通常达不到可缓存的最小长度, 限制本身失去意义
- */
+// 上下文限制的最小有效值
 private const val MIN_CONTEXT_MESSAGE_LIMIT = 20
 
 internal fun normalizeContextMessageLimit(value: Int): Int =
