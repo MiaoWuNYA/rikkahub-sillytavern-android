@@ -551,6 +551,7 @@
     var libs = state.libs || {};
     // 卡片才真正需要补丁：优先原生下发的 compat.js，未下发时退回内置最小集
     var compat = libs.compat || RUNTIME_COMPAT;
+    var parts = splitCardDoc(body);
     var shellHead = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
       '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
       '<style>' + CARD_SHELL_CSS +
@@ -582,7 +583,6 @@
       ) +
       parts.head +
       '</head><body>';
-    var parts = splitCardDoc(body);
     var frame = document.createElement('iframe');
     frame.dataset.cardKey = key;
     frame.setAttribute('frameborder', '0');
