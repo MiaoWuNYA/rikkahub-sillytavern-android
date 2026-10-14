@@ -247,8 +247,14 @@
     -webkit-overflow-scrolling: touch;
   }
   /* 工具条改由原生输入栏提供：WebView 里不再重复渲染按钮 */
-  #toolbar { display: none !important; }
   #list { padding-bottom: calc(var(--safe-bottom, 0px) + 12px) !important; }
+  .actions { display: flex; flex-wrap: wrap; gap: 2px; margin: 2px 4px 0; opacity: .75; }
+  .row.user .actions { justify-content: flex-end; }
+  .act-btn {
+    border: 0; background: transparent; color: var(--md-on-surface-variant);
+    font-size: 13px; line-height: 1.2; padding: 2px 6px; border-radius: 8px;
+  }
+  .act-btn:active { background: var(--md-surface-container-high); }
 </style>
 </head>
 <body>

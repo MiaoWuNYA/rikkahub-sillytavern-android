@@ -542,7 +542,8 @@ private fun ChatPageContent(
                 val hasFrontendCard = frontendCardPreferredNow
                 ChatInput(
                     hasFrontendCard = hasFrontendCard,
-                    hideToolbar = false,
+                    // 界面模式下工具条由页面自己渲染，避免与原生那排重复
+                    hideToolbar = frontendCardPreferredNow,
                     proxyMenu = proxyMenu,
                     onProxyMenuHandled = { proxyMenu = null },
                     onStartVoiceMode = onStartVoiceMode,
@@ -981,13 +982,53 @@ private fun ChatPageContent(
                             clip.setPrimaryClip(android.content.ClipData.newPlainText("card", text))
                         }
                     },
+                    // 页面内的操作按钮直接执行，不再弹原生菜单
                     onMessageAction = { payload ->
                         runCatching {
                             val obj = kotlinx.serialization.json.Json.parseToJsonElement(payload)
                                 as? kotlinx.serialization.json.JsonObject
-                            val id = obj?.get("id")?.toString()?.trim('"')
-                            webActionIndex = conversation.currentMessages.indexOfFirst { it.id.toString() == id }
-                                .takeIf { it >= 0 }
+                            val action = obj?.get("action")?.toString()?.trim('"').orEmpty()
+                            val id = obj?.get("id")?.toString()?.trim('"').orEmpty()
+                            val message = conversation.currentMessages.firstOrNull { it.id.toString() == id }
+                            if (message != null) {
+                                when (action) {
+                                    "copy" -> {
+                                        val text = message.parts
+                                            .filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>()
+                                            .joinToString("\n") { it.text }
+                                        val clip = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
+                                            as android.content.ClipboardManager
+                                        clip.setPrimaryClip(android.content.ClipData.newPlainText("message", text))
+                                        toaster.show(context.getString(R.string.copied))
+                                    }
+
+                                    "delete" -> vm.deleteMessage(message)
+                                    "regenerate" -> vm.regenerateAtMessage(message, regenerateAssistantMsg = true)
+                                    "translate" -> vm.translateMessage(message, java.util.Locale.getDefault())
+                                    "favorite" -> {
+                                        val node = conversation.messageNodes.find { node ->
+                                            node.messages.any { it.id == message.id }
+                                        }
+                                        if (node != null) vm.toggleMessageFavorite(node)
+                                    }
+
+                                    "share" -> {
+                                        val text = message.parts
+                                            .filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>()
+                                            .joinToString("\n") { it.text }
+                                        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(android.content.Intent.EXTRA_TEXT, text)
+                                        }
+                                        context.startActivity(android.content.Intent.createChooser(intent, null))
+                                    }
+
+                                    "edit" -> {
+                                        inputState.setContents(message.parts)
+                                        inputState.editingMessage = message.id
+                                    }
+                                }
+                            }
                         }
                     },
                     safeAreaTop = innerPadding.calculateTopPadding(),
