@@ -3058,4 +3058,5 @@
   <string name="huadeng_frontend_card_mode_auto">Авто (веб-страница в приветствии или мире)</string>
   <string name="huadeng_frontend_card_mode_always">Всегда использовать WebView</string>
   <string name="huadeng_frontend_card_mode_never">Всегда использовать нативный интерфейс</string>
+  <string name="setting_page_huadeng_compat">Совместимость и помощники</string>
 </resources>

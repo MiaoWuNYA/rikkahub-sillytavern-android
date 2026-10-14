@@ -3058,4 +3058,5 @@
   <string name="huadeng_frontend_card_mode_auto">自動判別（挨拶や世界情報にWebページがある場合）</string>
   <string name="huadeng_frontend_card_mode_always">常に WebView 画面を使う</string>
   <string name="huadeng_frontend_card_mode_never">常にネイティブ画面を使う</string>
+  <string name="setting_page_huadeng_compat">互換性と補助</string>
 </resources>

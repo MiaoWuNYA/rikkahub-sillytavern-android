@@ -88,19 +88,6 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
             contentPadding = contentPadding + PaddingValues(8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item {
-                CardGroup(
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                ) {
-                    item(
-                        onClick = { navController.navigate(Screen.SettingHuaDengCompat) },
-                        leadingContent = { CardGroupIcon(HugeIcons.Settings03) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_huadeng_title_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_huadeng_title)) },
-                    )
-                }
-            }
-
             // ── 接入与自动化 ──
             item {
                 val navController = LocalNavController.current
@@ -141,6 +128,13 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                         leadingContent = { CardGroupIcon(HugeIcons.MessageMultiple01) },
                         supportingContent = { Text(stringResource(R.string.setting_page_qq_bot_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_qq_bot)) },
+                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingHuaDengCompat) },
+                        leadingContent = { CardGroupIcon(HugeIcons.Settings03) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_huadeng_title_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_huadeng_compat)) },
                         trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
                     )
                     item(
