@@ -72,6 +72,20 @@
   .bubble > :first-child { margin-top: 0; }
   .bubble > :last-child { margin-bottom: 0; }
   .time { font-size: 10px; color: var(--md-on-surface-variant); opacity: .65; margin: 2px 6px 0; }
+  /* 多分支回复切换条 */
+  .swipes { display: flex; align-items: center; gap: 4px; margin: 2px 6px 0; }
+  .row.user .swipes { justify-content: flex-end; }
+  .swipe-btn {
+    appearance: none; -webkit-appearance: none; border: 0; background: transparent;
+    color: var(--md-on-surface-variant); font: inherit; font-size: 14px; line-height: 1;
+    padding: 2px 8px; border-radius: 8px; cursor: pointer;
+  }
+  .swipe-btn:disabled { opacity: .3; }
+  .swipe-btn:active { background: var(--md-surface-container-high); }
+  .swipe-label {
+    font-size: 11px; color: var(--md-on-surface-variant); opacity: .8;
+    font-variant-numeric: tabular-nums;
+  }
   /* 推理块：左侧竖线 + 次要色，不套气泡 */
   .reasoning {
     border-left: 3px solid var(--md-outline-variant);
