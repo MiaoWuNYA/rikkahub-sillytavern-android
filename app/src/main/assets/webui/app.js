@@ -491,38 +491,6 @@
       return tag + '{display:block;box-sizing:border-box;max-width:100%;}';
     }).join('');
 
-  // CSS 命中不了「未知标签」，只能在渲染后遍历：容器上下文里还是 inline 的未知标签升为块级
-  var CARD_SHELL_NORMALIZE = [
-    '(function(){',
-    '  var KNOWN = {};',
-    '  ("a abbr address area article aside audio b base bdi bdo blockquote body br button canvas caption cite code col colgroup data datalist dd del details dfn dialog div dl dt em embed fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 head header hgroup hr html i iframe img input ins kbd label legend li link main map mark mark menu meta meter nav noscript object ol optgroup option output p picture pre progress q rp rt ruby s samp script search section select slot small source span strong style sub summary sup table tbody td template textarea tfoot th thead time title tr track u ul var video wbr svg path circle rect g line polygon polyline ellipse defs use text tspan mask clippath lineargradient radialgradient stop filter pattern image symbol marker foreignobject").split(" ").forEach(function(t){ KNOWN[t.toUpperCase()] = 1; });',
-    '  var CONTAINER = {};',
-    '  ("' + CARD_CONTAINER_TAGS.join(' ') + '").split(" ").forEach(function(t){ CONTAINER[t.toUpperCase()] = 1; });',
-    '  function normalize(){',
-    '    if (!document.body) return;',
-    '    var els = document.body.getElementsByTagName("*");',
-    '    for (var i = 0; i < els.length; i++) {',
-    '      var el = els[i];',
-    '      if (el.namespaceURI !== "http://www.w3.org/1999/xhtml") continue;',
-    '      if (el.getAttribute && el.getAttribute("data-chara")) continue;',
-    '      var tag = String(el.tagName || "").toUpperCase();',
-    '      if (KNOWN[tag]) continue;',
-    '      if (CONTAINER[tag]) { el.style.display = "block"; continue; }',
-    '      // 余下的未知标签：只在容器上下文里、且计算样式是行内时才升块级',
-    '      var parent = el.parentNode;',
-    '      var parentTag = parent ? String(parent.tagName || "").toUpperCase() : "";',
-    '      if (parent !== document.body && (KNOWN[parentTag] || CONTAINER[parentTag])) continue;',
-    '      try { if (getComputedStyle(el).display === "inline") el.style.display = "block"; } catch (e) {}',
-    '    }',
-    '  }',
-    '  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", normalize);',
-    '  else normalize();',
-    '  window.addEventListener("load", normalize);',
-    '  setTimeout(normalize, 200);',
-    '  window.__rikkaNormalize = normalize;',
-    '})();'
-  ].join('\n');
-
   // 高度自报：只靠观察者驱动，不用轮询（多张卡片的定时器是滚动卡死的主因）
   var CARD_HEIGHT_SCRIPT = [
     '(function(){',
@@ -685,7 +653,6 @@
       (libs.toastr ? inlineScript(libs.toastr) : '') +
       inlineScript(LODASH_LITE) +
       buildCardBridge(ctx.messageId, ctx.cardIndex, ctx.charName, ctx.userName) +
-      inlineScript(CARD_SHELL_NORMALIZE) +
       inlineScript(CARD_HEIGHT_SCRIPT) +
       ownHtml +
       (parts.prepared ? parts.head : '') +
