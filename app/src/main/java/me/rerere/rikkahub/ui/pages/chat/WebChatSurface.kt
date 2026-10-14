@@ -95,11 +95,11 @@ fun WebChatSurface(
             put("error", colorScheme.error.toCssHex())
         }.toString()
     }
-    val density = androidx.compose.ui.platform.LocalDensity.current
-    val safeAreaJson = remember(safeAreaTop, safeAreaBottom, density) {
+    // 下发 dp 数值：WebView 的 CSS px 与 Compose 的 dp 同量级，传物理像素会被 density 放大
+    val safeAreaJson = remember(safeAreaTop, safeAreaBottom) {
         buildJsonObject {
-            put("top", kotlinx.serialization.json.JsonPrimitive(with(density) { safeAreaTop.roundToPx() }))
-            put("bottom", kotlinx.serialization.json.JsonPrimitive(with(density) { safeAreaBottom.roundToPx() }))
+            put("top", kotlinx.serialization.json.JsonPrimitive(safeAreaTop.value))
+            put("bottom", kotlinx.serialization.json.JsonPrimitive(safeAreaBottom.value))
         }.toString()
     }
     val darkMode = me.rerere.rikkahub.ui.theme.LocalDarkMode.current

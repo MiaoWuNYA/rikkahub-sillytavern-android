@@ -294,6 +294,9 @@ private val HTML_TAG = Regex("""</?html\b[^>]*>""", RegexOption.IGNORE_CASE)
 
 private val HEAD_KEEP = Regex("<(?:script|link)\\b[^>]*>[\\s\\S]*?</(?:script|link)>|<link\\b[^>]*/?>", RegexOption.IGNORE_CASE)
 
+// 卡片不写 </head> 时 title 会落进正文被当文本渲染，正文里再兜一刀
+private val TITLE_BLOCK = Regex("""<title\b[^>]*>[\s\S]*?</title\s*>""", RegexOption.IGNORE_CASE)
+
 internal fun parseCardDocument(doc: String): CardDocument {
     val normalized = normalizeNewlines(doc).trimCardEdges()
     val styles = mutableListOf<String>()
@@ -314,7 +317,7 @@ internal fun parseCardDocument(doc: String): CardDocument {
     val headRest = HEAD_KEEP.findAll(head.replace(STYLE_BLOCK, "")).joinToString("\n") { it.value }
     return CardDocument(
         headHtml = headRest,
-        bodyHtml = body,
+        bodyHtml = body.replace(TITLE_BLOCK, ""),
         styleCss = styles.joinToString("\n"),
     )
 }

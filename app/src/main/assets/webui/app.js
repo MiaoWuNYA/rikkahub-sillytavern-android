@@ -218,6 +218,26 @@
       if (value == null) return;
       document.documentElement.style.setProperty('--md-' + key, String(value));
     });
+    applyBubbleColors();
+  }
+
+  // 气泡底色：设置里没配色时用主题色，与原生 customBubbleColor 的 fallback 一致
+  function applyBubbleColors() {
+    var a = state.appearance || {};
+    var alpha = a.bubbleOpacity == null ? 0.9 : a.bubbleOpacity;
+    setVar('--bubble-user', a.userBubbleColor
+      ? withAlpha(a.userBubbleColor, alpha)
+      : withAlpha(themeHex('--md-primary-container', '#EADDFF'), alpha));
+    setVar('--bubble-ai', a.assistantBubbleColor
+      ? withAlpha(a.assistantBubbleColor, alpha)
+      : withAlpha(themeHex('--md-surface-container-high', '#ECE6F0'), alpha));
+  }
+
+  function themeHex(name, fallback) {
+    try {
+      var value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      return /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
+    } catch (e) { return fallback; }
   }
 
   function setVar(name, value) {
@@ -242,8 +262,7 @@
     setVar('--bubble-border-width', px(a.borderWidth, '0px'));
     setVar('--bubble-image-size', a.imageSize === 'cover' ? 'cover' : 'contain');
     if (a.primaryColor) setVar('--md-primary', a.primaryColor);
-    if (a.userBubbleColor) setVar('--bubble-user', withAlpha(a.userBubbleColor, alpha));
-    if (a.assistantBubbleColor) setVar('--bubble-ai', withAlpha(a.assistantBubbleColor, alpha));
+    applyBubbleColors();
     if (a.thinkingBubbleColor) setVar('--md-reasoning-bg', withAlpha(a.thinkingBubbleColor, alpha));
     if (a.chatBackgroundColor) setVar('--chat-bg', a.chatBackgroundColor);
     if (a.textColor) setVar('--text-color', a.textColor);
@@ -308,19 +327,25 @@
   }
 
   // —— 滚动 ——
-  // 用户上滑就停止跟随；贴底时新内容才自动滚动。所有写入都在 rAF 里做。
+  // 手势期间一律不跟随；程序化滚动不回写状态；只有真正贴底才恢复跟随。
   var stick = true;
+  var gesture = false;
+  var gestureMoved = false;
+  var gestureY = 0;
+  var programmaticUntil = 0;
 
   function distanceFromBottom() {
     return scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight;
   }
 
   function nearBottom() {
-    return distanceFromBottom() < 120;
+    return distanceFromBottom() < 32;
   }
 
   function scrollToBottomNow(smooth) {
     var top = scroller.scrollHeight;
+    // 平滑滚动会连续多帧派发 scroll，整个窗口内都不算用户意图
+    programmaticUntil = Date.now() + (smooth ? 600 : 80);
     if (smooth && scroller.scrollTo) {
       try { scroller.scrollTo({ top: top, behavior: 'smooth' }); return; } catch (e) { /* 老引擎不支持选项 */ }
     }
@@ -328,21 +353,55 @@
   }
 
   function followBottom() {
-    if (!stick) return;
-    schedule(function () { scrollToBottomNow(false); });
+    if (!stick || gesture) return;
+    schedule(function () { if (gesture || !stick) return; scrollToBottomNow(false); });
+  }
+
+  function updateJump() {
+    if (jumpBtn) schedule(function () { jumpBtn.classList.toggle('on', !stick); });
   }
 
   scroller.addEventListener('scroll', function () {
+    if (Date.now() < programmaticUntil) return;
     stick = nearBottom();
-    if (jumpBtn && !jumpBtn.hidden) {
-      schedule(function () { jumpBtn.classList.toggle('on', !stick); });
-    }
+    updateJump();
+  }, { passive: true });
+
+  // 用户一上滑（手指下移）就脱离跟随，避免流式帧每帧把列表拉回底部
+  scroller.addEventListener('touchstart', function (event) {
+    gesture = true;
+    gestureMoved = false;
+    gestureY = event.touches && event.touches[0] ? event.touches[0].clientY : 0;
+  }, { passive: true });
+
+  scroller.addEventListener('touchmove', function (event) {
+    if (!event.touches || !event.touches[0]) return;
+    var y = event.touches[0].clientY;
+    if (Math.abs(y - gestureY) < 4) return;
+    gestureMoved = true;
+    if (y > gestureY) stick = false;
+  }, { passive: true });
+
+  function endGesture() {
+    gesture = false;
+    if (gestureMoved && nearBottom()) stick = true;
+    updateJump();
+  }
+
+  scroller.addEventListener('touchend', endGesture, { passive: true });
+  scroller.addEventListener('touchcancel', endGesture, { passive: true });
+
+  scroller.addEventListener('wheel', function (event) {
+    if (event.deltaY < 0) stick = false;
+    else if (nearBottom()) stick = true;
+    updateJump();
   }, { passive: true });
 
   if (jumpBtn) {
     jumpBtn.addEventListener('click', function () {
       stick = true;
       scrollToBottomNow(true);
+      updateJump();
     });
   }
 
@@ -565,26 +624,13 @@
     }
   }
 
-  /**
-   * 装配一张卡片的独立文档。
-   *
-   * 样式来源三层，缺一不可：
-   *   1. 卡片文档自带的 <style>（first_mes 这类完整 HTML 文档卡的样式在这里）；
-   *   2. 助手级 cardStyle —— 备选开场白自己不带 style，外观全靠它；
-   *   3. 外壳兜底排版，保证未知标签不会挤成一行。
-   */
-  /**
-   * 卡片文档的样式来源三层：卡片自带、助手级 cardStyle、外壳兜底。
-   *
-   * 原生侧已把卡片的 <html>/<head> 外壳与 ``` 围栏拆掉（body 只留正文、样式单列在 style），
-   * 这里直接用；收到整份文档（旧数据）时才退回自己拆。
-   */
+  // 卡片文档：原生已拆好就直接用，收到整份文档时才自己拆（拆前先修非法标签，DOMParser 会把它们转义成文本）
   function cardParts(desc) {
     var html = String(desc.html == null ? '' : desc.html);
     if (desc.style != null || desc.head != null) {
       return { head: String(desc.head || ''), body: html, style: String(desc.style || ''), prepared: true };
     }
-    var parts = splitCardDoc(html);
+    var parts = splitCardDoc(decodeEscapedInlineTags(normalizeCharaTags(html)));
     return { head: parts.head, body: parts.body, style: '', prepared: false };
   }
 
@@ -902,7 +948,7 @@
   function initials(name) {
     var text = String(name == null ? '' : name).trim();
     if (!text) return '?';
-    return Array.from(text)[0] || '?';
+    return (Array.from(text)[0] || '?').toUpperCase();
   }
 
   function safeUrl(url) {
@@ -1085,6 +1131,7 @@
     row.dataset.id = String(msg.id);
     row.dataset.role = msg.role === 'user' ? 'user' : 'ai';
     row.dataset.signature = signatureOf(msg);
+    row.dataset.settled = streaming ? '' : '1';
     row.appendChild(headNode(msg));
 
     var col = document.createElement('div');
@@ -1155,6 +1202,7 @@
     }
     syncSwipes(row.querySelector('.col'), msg);
     row.dataset.signature = signatureOf(msg);
+    row.dataset.settled = streaming ? '' : '1';
   }
 
   // 流式光标只在助手消息上：用户刚发完时最后一条是用户消息，那种情况不打光标
@@ -1352,7 +1400,7 @@
       });
     },
 
-    // 追加或落定单条：signature 未变才跳过，但正在流式的那一行必须收尾（否则光标不灭）
+    // 落定单条：只有已经落定过、且内容签名未变的行才跳过（流式行必须走完整收尾）
     appendMessage: function (json) {
       var msg = parse(json);
       if (!msg) return;
@@ -1362,7 +1410,7 @@
         var row = rowById(msg.id);
         if (row) {
           var sig = signatureOf(msg);
-          if (sig && row.dataset.signature === sig && !row.querySelector('.typing')) return;
+          if (sig && row.dataset.signature === sig && row.dataset.settled === '1') return;
           updateRow(row, msg, false);
         } else {
           removeEmpty();

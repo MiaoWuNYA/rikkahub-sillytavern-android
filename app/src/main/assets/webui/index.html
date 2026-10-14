@@ -25,8 +25,9 @@
     --md-secondary-container: #E8DEF8;
     --md-on-secondary-container: #1D192B;
 
-    /* 列表骨架：ChatList contentPadding 16dp / 项间距 12dp */
+    /* 列表骨架：ChatList contentPadding 16dp，底部另加 32dp，项间距 12dp */
     --page-padding: 16px;
+    --list-tail: 32px;
     --row-bottom: 12px;
     --row-gap: 4px;          /* ChatMessage Column spacedBy(4.dp) */
     --avatar-size: 28px;     /* AVATAR_BASE_SIZE */
@@ -35,7 +36,7 @@
     --avatar-gap-user: 8px;
     --avatar-gap-ai: 6px;
 
-    /* 气泡：RoundedCornerShape(bubbleCornerRadius)，四角同值；内边距 12×8 */
+    /* 气泡：四角同值 RoundedCornerShape(bubbleCornerRadius)，内边距 12×8（8dp 外框 + MarkdownBlock 4dp 水平） */
     --bubble-radius: 16px;
     --bubble-pad-x: 12px;
     --bubble-pad-y: 8px;
@@ -79,9 +80,10 @@
     background-position: center;
     background-repeat: no-repeat;
   }
+  /* 与原生 ChatList 的 contentPadding 同规格：左右 16dp、顶 16dp + 标题栏、底 48dp + 输入栏 */
   #list {
-    padding: calc(var(--safe-top, 0px) + 8px) var(--page-padding)
-             calc(var(--safe-bottom, 0px) + 32px);
+    padding: calc(var(--safe-top, 0px) + var(--page-padding)) var(--page-padding)
+             calc(var(--safe-bottom, 0px) + var(--page-padding) + var(--list-tail));
   }
   body {
     font-family: var(--chat-font, -apple-system, "Noto Sans CJK SC", "Source Han Sans SC", Roboto, sans-serif);
@@ -94,8 +96,8 @@
   body.solid-text-color { color: var(--text-color); }
   body.solid-text-color .head-name, body.solid-text-color .time { color: var(--text-color); }
 
-  /* —— 消息行：原生是「头像头部行 + 内容块」上下堆叠，不是并排 —— */
-  .row { display: flex; flex-direction: column; margin-bottom: var(--row-bottom); }
+  /* —— 消息行：原生是 Column(fillMaxWidth) + spacedBy(4dp)，头行与内容块上下堆叠 —— */
+  .row { display: flex; flex-direction: column; gap: var(--row-gap); width: 100%; margin-bottom: var(--row-bottom); }
   .row.user { align-items: flex-end; }
   .row.ai { align-items: flex-start; }
   .head {
@@ -116,7 +118,9 @@
     background: var(--md-secondary-container);
     color: var(--md-on-secondary-container);
     display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 600; overflow: hidden; position: relative;
+    /* 原生 TextAvatar 用 autoSize 把首字放大到填满，这里按头像尺寸等比给 */
+    font-size: calc(var(--avatar-size) * .78); font-weight: 600; line-height: .8;
+    overflow: hidden; position: relative;
     -webkit-clip-path: var(--avatar-shape); clip-path: var(--avatar-shape);
   }
   .avatar[hidden] { display: none; }
@@ -130,17 +134,20 @@
   .avatar.loading { animation: avatar-pulse 1.4s ease-in-out infinite; }
   @keyframes avatar-pulse { 50% { opacity: .55; } }
 
-  .col { display: flex; flex-direction: column; gap: var(--row-gap); min-width: 0; max-width: 100%; }
+  /* col 必须占满：否则操作排的固有宽度会把正文一起挤窄（原生正文是 fillMaxWidth） */
+  .col { display: flex; flex-direction: column; gap: var(--row-gap); width: 100%; min-width: 0; }
   .row.user .col { align-items: flex-end; }
   .row.ai .col { align-items: flex-start; }
-  .body { display: flex; flex-direction: column; gap: var(--row-gap); max-width: 100%; min-width: 0; }
-  .row.user .body { align-items: flex-end; }
+  .body { display: flex; flex-direction: column; gap: var(--row-gap); width: 100%; min-width: 0; }
   .blk { max-width: 100%; }
+  /* 气泡贴合内容宽度，卡片/思考块铺满（原生语义） */
+  .blk.bubble { align-self: flex-start; }
+  .row.user .blk.bubble { align-self: flex-end; }
 
   /* —— 气泡 —— */
   .bubble {
     position: relative;
-    background: var(--bubble-ai);
+    background: var(--bubble-ai, var(--md-surface-container-high));
     color: var(--md-on-surface);
     border-radius: var(--bubble-radius);
     padding: var(--bubble-pad-y) var(--bubble-pad-x);
@@ -152,7 +159,7 @@
     background-position: center;
   }
   .row.user .bubble {
-    background: var(--bubble-user);
+    background: var(--bubble-user, var(--md-primary-container));
     color: var(--md-on-primary-container);
     background-image: var(--bubble-user-image, none);
   }
@@ -243,7 +250,7 @@
   .time[hidden] { display: none; }
 
   /* —— 消息操作排：常驻在气泡下方，点击经桥回原生 VM —— */
-  .ops { display: flex; align-items: center; gap: 4px; padding: 0 2px; flex-wrap: wrap; }
+  .ops { display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0; padding: 0 2px; flex-wrap: wrap; }
   .row.user .ops { flex-direction: row-reverse; }
   .ops[hidden] { display: none; }
   .op {
@@ -376,9 +383,9 @@
     color: var(--md-on-surface-variant); opacity: .6;
   }
 
-  /* —— 跳到底部按钮 —— */
+  /* —— 跳到底部按钮：贴在原生输入栏上方 8dp（原生 MessageJumper 的 padding(8.dp)）—— */
   #jump {
-    position: fixed; right: 16px; bottom: calc(var(--safe-bottom, 0px) + 16px);
+    position: fixed; right: 16px; bottom: calc(var(--safe-bottom, 0px) + 8px);
     width: 40px; height: 40px; border: 0; border-radius: 20px;
     background: var(--md-surface-container-high); color: var(--md-on-surface);
     box-shadow: 0 2px 6px rgba(0, 0, 0, .18);
