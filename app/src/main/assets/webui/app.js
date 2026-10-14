@@ -736,12 +736,6 @@
     return { head: parts.head, body: parts.body, style: '', prepared: false };
   }
 
-  function escapeHtml(text) {
-    return String(text == null ? '' : text)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
-
   function cardDocHtml(desc, ctx) {
     var parts = cardParts(desc);
     var body = expandMacros(decodeEscapedInlineTags(normalizeCharaTags(parts.body)));
@@ -773,8 +767,6 @@
       ownHtml +
       escapeScriptBodies(parts.prepared ? parts.head : '') +
       '</head><body class="rikka-card-body">' +
-      // 酒馆助手约定：宿主把消息原文放进隐藏的 #rawContent，卡片脚本从它切分文段
-      (ctx.rawText ? '<textarea id="rawContent" style="display:none">' + escapeHtml(ctx.rawText) + '</textarea>' : '') +
       body + '</body></html>';
   }
 
@@ -821,8 +813,7 @@
             messageId: msg.id,
             cardIndex: block.index || 0,
             charName: (state.macros || {}).char,
-            userName: (state.macros || {}).user,
-            rawText: block.text == null ? '' : String(block.text)
+            userName: (state.macros || {}).user
           }
         });
       } else if (block.type === 'image' || block.type === 'video' || block.type === 'audio' || block.type === 'document') {
@@ -1409,7 +1400,10 @@
     var isAssistant = msg.role !== 'user';
     var live = !!streaming && isAssistant;
     for (var i = 0; i < bubbles.length; i++) {
-      bubbles[i].classList.toggle('typing', live && i === bubbles.length - 1);
+      var tail = live && i === bubbles.length - 1;
+      // 圆点已经表示生成中，再挂光标会挤在气泡末尾不动
+      var hasDots = tail && !String(bubbles[i].textContent || '').trim();
+      bubbles[i].classList.toggle('typing', tail && !hasDots);
     }
     var host = live ? (bubbles.length ? bubbles[bubbles.length - 1] : body) : null;
     var dots = body.querySelector('.gen-dots');
@@ -1639,7 +1633,10 @@
         var row = rowById(msg.id);
         if (row) {
           var sig = signatureOf(msg);
-          if (sig && row.dataset.signature === sig && row.dataset.settled === '1') return;
+          if (sig && row.dataset.signature === sig && row.dataset.settled === '1') {
+            applyTyping(row, msg, false);
+            return;
+          }
           updateRow(row, msg, false);
         } else {
           removeEmpty();
