@@ -75,14 +75,16 @@ import kotlin.time.Clock
 private val CODE_BLOCK_REGEX = Regex("```[\\s\\S]*?```|`[^`\n]*`", RegexOption.DOT_MATCHES_ALL)
 
 // 引号染色：匹配半角/全角/中日韩各类引号包裹的内容
-private val QUOTE_REGEX = Regex(
-    "\"(.+?)\"|\u201C(.+?)\u201D|\u00AB(.+?)\u00BB|\u300C(.+?)\u300D|\u300E(.+?)\u300F|\uFF02(.+?)\uFF02"
-)
-
-// 括号染色：全角/中文系成对括号 + 半角花括号；半角 () 和 [] 是 Markdown 链接语法，不能碰
-private val BRACKET_REGEX = Regex(
+// 文本染色用的配对符号。引号与括号必须合成**一个**交替正则一遍扫完：
+// 分两遍做时，第一遍注入的 `<span style="color:#x">` 里含引号，第二遍的引号正则会把
+// style 属性的引号当成待染色的引号对，从第二处符号起整段错位，页面上就成了
+// 「从第二个引号开始把 <span style="…"> 当文本显示」。
+private const val BRACKET_OPENERS = "（【「『《‹〔｛{"
+private const val BRACKET_PATTERN =
     "（(.+?)）|【(.+?)】|「(.+?)」|『(.+?)』|《(.+?)》|‹(.+?)›|〔(.+?)〕|｛(.+?)｝|\\{(.+?)\\}"
-)
+private const val QUOTE_PATTERN =
+    "\"(.+?)\"|\u201C(.+?)\u201D|\u00AB(.+?)\u00BB|\uFF02(.+?)\uFF02"
+private val TEXT_COLOR_REGEX = Regex("$BRACKET_PATTERN|$QUOTE_PATTERN")
 
 // 尚未带 open 属性的 <details> 标签
 private val DETAILS_OPEN_REGEX = Regex("<details\\b(?!\\s+open\\b)")
@@ -256,26 +258,26 @@ fun MarkdownBlock(
         return
     }
 
-    // 引号染色：把引号包裹的内容注入 <span style="color:...">，
-    // 上游管线的 CSS 解析会把 inline color 转成 SpanStyle
+    // 文本染色：引号与括号一遍扫完，按配对符号的首字符决定用引号色还是括号色
     val darkMode = LocalDarkMode.current
     val quoteColor = if (settings.enableTextColor) {
         settings.quoteColor.ifBlank { if (darkMode) "#E18A24" else "#C7731E" }
     } else null
     val codeBlocks = CODE_BLOCK_REGEX.findAll(content).map { it.range }.toList()
-    val bracketColored = if (quoteColor != null) {
+    val coloredContent = if (quoteColor == null) {
+        content
+    } else {
         val bracketColor = settings.bracketColor.ifBlank { if (darkMode) "#7EAFC4" else "#5B8DEF" }
-        BRACKET_REGEX.replace(content) { match ->
-            if (codeBlocks.any { match.range.first in it }) match.value
-            else "<span style=\"color:$bracketColor\">${match.value}</span>"
+        TEXT_COLOR_REGEX.replace(content) { match ->
+            val opener = match.value.firstOrNull()
+            if (opener == null || codeBlocks.any { match.range.first in it }) {
+                match.value
+            } else {
+                val color = if (opener in BRACKET_OPENERS) bracketColor else quoteColor
+                "<span style=\"color:$color\">${match.value}</span>"
+            }
         }
-    } else content
-    val coloredContent = if (quoteColor != null) {
-        QUOTE_REGEX.replace(bracketColored) { match ->
-            if (codeBlocks.any { match.range.first in it }) match.value
-            else "<span style=\"color:$quoteColor\">${match.value}</span>"
-        }
-    } else bracketColored
+    }
 
     val preprocessed = preProcessMarkdown(coloredContent)
 

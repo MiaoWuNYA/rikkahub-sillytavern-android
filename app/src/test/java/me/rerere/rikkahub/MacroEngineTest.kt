@@ -3,9 +3,11 @@ package me.rerere.rikkahub
 import android.content.Context
 import me.rerere.ai.provider.Model
 import me.rerere.ai.ui.UIMessage
+import me.rerere.rikkahub.data.ai.transformers.DefaultPlaceholderProvider
 import me.rerere.rikkahub.data.ai.transformers.MacroEngine
 import me.rerere.rikkahub.data.ai.transformers.MacroVars
 import me.rerere.rikkahub.data.ai.transformers.PlaceholderCtx
+import me.rerere.rikkahub.data.datastore.DisplaySetting
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.model.Assistant
@@ -93,6 +95,28 @@ class MacroEngineTest {
         conversationId = conversationId,
         generationType = generationType,
     )
+
+    // ---------- {{user}} 的取值来源（读盘未完成时不能落成 "user"） ----------
+
+    /**
+     * SettingsStore 在读盘完成前给出的是占位实例（Settings.dummy()，init=true）。
+     * 开场白插入这条路径会先把宏结果**写进消息文本**，一旦那时取到空昵称，
+     * 消息里就永久留着兜底值。这里用 settingsStore=null 复现最极端的未就绪状态：
+     * 取值必须回落到调用方带进来的快照。
+     */
+    @Test
+    fun userMacroFallsBackToSettingsSnapshotWhenStoreIsNotLoaded() {
+        val e = MacroEngine(DefaultPlaceholderProvider.placeholders, MemVars())
+        val settings = Settings(displaySetting = DisplaySetting(userNickname = "夏瑾"))
+        assertEquals("夏瑾", e.substitute("{{user}}", ctx(settings = settings)))
+        assertEquals("夏瑾", e.substitute("{{nickname}}", ctx(settings = settings)))
+    }
+
+    @Test
+    fun userMacroKeepsLastResortDefaultWhenNobodyHasANickname() {
+        val e = MacroEngine(DefaultPlaceholderProvider.placeholders, MemVars())
+        assertEquals("user", e.substitute("{{user}}", ctx(settings = Settings())))
+    }
 
     // ---------- 未知宏保留（Pebble 保护） ----------
 

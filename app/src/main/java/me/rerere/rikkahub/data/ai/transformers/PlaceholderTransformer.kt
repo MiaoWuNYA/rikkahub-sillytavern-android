@@ -130,7 +130,7 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
         }
 
         placeholder("nickname", { Text(stringResource(R.string.placeholder_nickname)) }) {
-            it.settingsStore?.settingsFlow?.value?.displaySetting?.userNickname?.ifBlank { "user" } ?: "user"
+            it.userNickname()
         }
 
         placeholder("char", { Text(stringResource(R.string.placeholder_char)) }) {
@@ -138,7 +138,7 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
         }
 
         placeholder("user", { Text(stringResource(R.string.placeholder_user)) }) {
-            it.settingsStore?.settingsFlow?.value?.displaySetting?.userNickname?.ifBlank { "user" } ?: "user"
+            it.userNickname()
         }
 
         // 角色卡字段（用于世界书注入内容）
@@ -192,7 +192,7 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
 
         // ── 对齐酒馆官方实用宏（第二批）──
         placeholder("persona", { Text(stringResource(R.string.placeholder_persona)) }) {
-            val s = it.settingsStore?.settingsFlow?.value ?: Settings()
+            val s = it.liveSettings()
             s.personas.firstOrNull { p -> p.id == s.activePersonaId && p.enabled }?.description ?: ""
         }
 
@@ -290,7 +290,7 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
         }
 
         placeholder("authorNote", { Text(stringResource(R.string.placeholder_author_note)) }) {
-            it.settingsStore?.settingsFlow?.value?.authorNote ?: ""
+            it.liveSettings().authorNote
         }
 
         // 注意：{{newline}} 由 MacroEngine 处理（支持 {{newline::N}} 重复 N 次）；
@@ -302,11 +302,11 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
     }
 
     private fun PlaceholderCtx.groupMembers(): String {
-        val groups = settingsStore?.settingsFlow?.value?.groupChats ?: emptyList()
+        val live = liveSettings()
+        val groups = live.groupChats
         val group = groups.firstOrNull { g -> assistant.id in g.memberIds }
         val members = group?.memberIds?.mapNotNull { memberId ->
-            (settingsStore?.settingsFlow?.value?.assistants ?: emptyList())
-                .firstOrNull { a -> a.id == memberId }?.name
+            live.assistants.firstOrNull { a -> a.id == memberId }?.name
         }?.joinToString(", ")
         // 官方：单聊时 {{group}} / {{charIfNotGroup}} 返回角色名本身
         return members?.takeIf { it.isNotBlank() } ?: assistant.name.ifBlank { "assistant" }
@@ -375,6 +375,27 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
 /** 注入块使用内部标记避免被当作真实消息，发给模型前移除标记（顶层函数，供两个对象共用） */
 private fun stripInjectedMarker(text: String): String =
     text.removePrefix("[Author's Note]\n").removePrefix("[User Persona]\n")
+
+/**
+ * {{user}} / {{nickname}} 的取值。
+ *
+ * 优先实时 flow（加载完成后是最新值），但它读盘前是 Settings.dummy——此时必须让位给
+ * 调用方带进来的快照（生成管线与开场白插入都先拿 settingsStore.awaitLoaded()）。
+ * 此前只读 flow，于是开场白插入时把 {{user}} 兜底成 "user" 并**写进消息文本**，
+ * 界面上再也回不到真名。
+ */
+private fun PlaceholderCtx.userNickname(): String =
+    liveSettings().displaySetting.userNickname.ifBlank { "user" }
+
+/**
+ * 读设置的最新副本。
+ *
+ * settingsFlow 在读盘完成前是占位实例 Settings.dummy()（init=true）；此时若直接取值，
+ * 拿到的是空昵称/空人设/空分组，再被兜底写进消息就再也回不去。调用方（生成管线、
+ * 开场白插入）都带着已就绪的快照，故占位时让位给快照。
+ */
+private fun PlaceholderCtx.liveSettings(): Settings =
+    settingsStore?.settingsFlow?.value?.takeIf { !it.init } ?: settings
 
 object PlaceholderTransformer : InputMessageTransformer, KoinComponent {
     private val defaultProvider = DefaultPlaceholderProvider

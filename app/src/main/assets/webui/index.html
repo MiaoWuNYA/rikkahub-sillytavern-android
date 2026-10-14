@@ -365,6 +365,9 @@
   /* 卡片与模型常用 <span style> 上色；引号与括号另配色（enableTextColor 控制） */
   u { text-decoration-color: var(--underline-color, currentColor); }
   .chara-tag { font-weight: inherit; }
+  /* 引号/括号染色（enableTextColor 打开时由渲染器加 class） */
+  .q { color: var(--quote-color, inherit); }
+  .b { color: var(--bracket-color, inherit); }
 
   /* —— 空态 —— */
   .empty {
