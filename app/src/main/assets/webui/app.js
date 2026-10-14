@@ -736,6 +736,12 @@
     return { head: parts.head, body: parts.body, style: '', prepared: false };
   }
 
+  function escapeHtml(text) {
+    return String(text == null ? '' : text)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   function cardDocHtml(desc, ctx) {
     var parts = cardParts(desc);
     var body = expandMacros(decodeEscapedInlineTags(normalizeCharaTags(parts.body)));
@@ -766,7 +772,10 @@
       inlineScript(CARD_HEIGHT_SCRIPT) +
       ownHtml +
       escapeScriptBodies(parts.prepared ? parts.head : '') +
-      '</head><body class="rikka-card-body">' + body + '</body></html>';
+      '</head><body class="rikka-card-body">' +
+      // 酒馆助手约定：宿主把消息原文放进隐藏的 #rawContent，卡片脚本从它切分文段
+      (ctx.rawText ? '<div id="rawContent" style="display:none">' + escapeHtml(ctx.rawText) + '</div>' : '') +
+      body + '</body></html>';
   }
 
   function cardFrame(key, desc) {
@@ -812,7 +821,8 @@
             messageId: msg.id,
             cardIndex: block.index || 0,
             charName: (state.macros || {}).char,
-            userName: (state.macros || {}).user
+            userName: (state.macros || {}).user,
+            rawText: block.text == null ? '' : String(block.text)
           }
         });
       } else if (block.type === 'image' || block.type === 'video' || block.type === 'audio' || block.type === 'document') {
