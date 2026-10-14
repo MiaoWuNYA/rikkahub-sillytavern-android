@@ -3137,5 +3137,5 @@
   <string name="huadeng_frontend_card_mode_auto">Auto (detect web pages in greeting or world info)</string>
   <string name="huadeng_frontend_card_mode_always">Always use the WebView interface</string>
   <string name="huadeng_frontend_card_mode_never">Always use the native interface</string>
-  <string name="setting_page_huadeng_compat">Compatibility & helpers</string>
+  <string name="setting_page_huadeng_compat">Compatibility &amp; helpers</string>
 </resources>
