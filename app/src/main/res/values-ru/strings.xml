@@ -681,6 +681,7 @@
   <string name="huadeng_frontend_card_mode">Режим только фронт-карт</string>
   <string name="huadeng_frontend_card_mode_desc">Принудительно включать фронт-режим во всех диалогах (обычно включается автоматически при импорте карты с HTML-фронтом)</string>
   <string name="huadeng_frontend_card_auto_switched">Фронт-режим включён автоматически</string>
+  <string name="huadeng_frontend_card_slash_unsupported">Команда фронт-карты %1$s пока не поддерживается</string>
   <string name="huadeng_transient_prune">Обрезка переходящего содержимого</string>
   <string name="huadeng_transient_prune_desc">Результаты веб-поиска, изображения, аудио и видео старше двух ходов больше не отправляются с каждым запросом (вместо них прикрепляется заполнитель с ID сообщения; ИИ может получить оригинал через инструмент read_history_message). Значительно сокращает расход токенов в длинных беседах с изображениями и поиском; хранение сообщений и отображение чата не затрагиваются</string>
   <string name="imggen_page_aspect_ratio">Соотношение сторон изображения</string>

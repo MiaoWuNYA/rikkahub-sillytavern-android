@@ -696,6 +696,7 @@
   <string name="huadeng_frontend_card_mode">Frontend-Card Only Mode</string>
   <string name="huadeng_frontend_card_mode_desc">Force frontend mode on for every conversation (normally switched on automatically when importing a card with HTML frontend)</string>
   <string name="huadeng_frontend_card_auto_switched">Frontend mode switched on automatically</string>
+  <string name="huadeng_frontend_card_slash_unsupported">Frontend card command %1$s is not supported yet</string>
   <string name="huadeng_transient_prune">Transient Content Pruning</string>
   <string name="huadeng_transient_prune_desc">Web search results, images, audio and video from more than two turns ago are no longer sent with every request (a placeholder with the message ID is attached instead; the AI can fetch the original via the read_history_message tool). Greatly reduces token usage in long image/search-heavy conversations; message storage and chat display are unaffected</string>
   <string name="imggen_page_aspect_ratio">Image Aspect Ratio</string>

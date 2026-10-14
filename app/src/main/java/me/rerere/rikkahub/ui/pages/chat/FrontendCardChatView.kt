@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -24,6 +25,7 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import me.rerere.ai.core.MessageRole
+import me.rerere.rikkahub.R
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.datastore.Settings
@@ -55,8 +57,11 @@ fun FrontendCardChatView(
     onStop: () -> Unit,
     onRegenerate: () -> Unit,
     onOpenLink: (String) -> Unit,
+    onSlash: (String) -> Unit = {},
+    modelName: String = "",
     modifier: Modifier = Modifier,
 ) {
+    val placeholder = stringResource(R.string.chat_input_placeholder)
     val colorScheme = MaterialTheme.colorScheme
     val themeJson = remember(colorScheme) {
         buildJsonObject {
@@ -76,26 +81,32 @@ fun FrontendCardChatView(
         }.toString()
     }
 
-    val macroJson = remember(messages, assistant, settings) {
-        buildMacros(messages, assistant, settings).toString()
+    val macroJson = remember(messages, assistant, settings, modelName) {
+        buildMacros(messages, assistant, settings, modelName).toString()
     }
     val stateJson = remember(messages, settings, streaming) {
-        buildState(messages, assistant, settings, macroJson, themeJson).toString()
+        buildState(messages, assistant, settings, macroJson, themeJson, placeholder).toString()
     }
     val streamJson = remember(messages, streaming) {
         if (!streaming) null else messages.lastOrNull()?.let { buildMessage(it, assistant, settings).toString() }
     }
+    val lastJson = remember(messages) {
+        messages.lastOrNull()?.let { buildMessage(it, assistant, settings).toString() }
+    }
+    // 只在消息集合结构变化（条数/顺序）时全量重绘，其余情况逐条更新
+    val idsKey = remember(messages) { messages.joinToString(",") { it.id.toString() } }
 
     // 发送、停止、重新生成：闭包会被 JS 线程调用，用 State 持有最新实现
     var bridge by remember { mutableStateOf<RikkaNativeBridge?>(null) }
     var ready by remember { mutableStateOf(false) }
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
 
-    LaunchedEffect(onSend, onStop, onRegenerate, onOpenLink) {
+    LaunchedEffect(onSend, onStop, onRegenerate, onOpenLink, onSlash) {
         bridge?.onSend = onSend
         bridge?.onStop = onStop
         bridge?.onRegenerate = onRegenerate
         bridge?.onOpenLink = onOpenLink
+        bridge?.onSlash = onSlash
     }
 
     AndroidView(
@@ -134,20 +145,23 @@ fun FrontendCardChatView(
         },
     )
 
-    // 页面加载完成后推主题、宏与上下文；生成结束后回到整表渲染
-    LaunchedEffect(ready) {
+    // 首帧：主题 + 全量状态
+    LaunchedEffect(ready, idsKey) {
         if (!ready) return@LaunchedEffect
         webViewRef?.evaluateJavascript("window.rikka.setTheme(${quote(themeJson)});", null)
         webViewRef?.evaluateJavascript("window.rikka.setState(${quote(stateJson)});", null)
     }
 
-    LaunchedEffect(streamJson, stateJson, ready) {
-        if (!ready) return@LaunchedEffect
-        if (streamJson != null) {
-            webViewRef?.evaluateJavascript("window.rikka.appendStream(${quote(streamJson)});", null)
-        } else {
-            webViewRef?.evaluateJavascript("window.rikka.finishStream(${quote(stateJson)});", null)
-        }
+    // 流式阶段只追加/更新最后一条
+    LaunchedEffect(streamJson, ready) {
+        if (!ready || streamJson == null) return@LaunchedEffect
+        webViewRef?.evaluateJavascript("window.rikka.appendStream(${quote(streamJson)});", null)
+    }
+
+    // 生成结束：落定最后一条，不整页重绘，卡片 iframe 得以保留
+    LaunchedEffect(streaming, ready) {
+        if (!ready || streaming) return@LaunchedEffect
+        lastJson?.let { webViewRef?.evaluateJavascript("window.rikka.appendMessage(${quote(it)});", null) }
     }
 }
 
@@ -162,6 +176,7 @@ private class RikkaNativeBridge {
     @Volatile var onStop: (() -> Unit)? = null
     @Volatile var onRegenerate: (() -> Unit)? = null
     @Volatile var onOpenLink: ((String) -> Unit)? = null
+    @Volatile var onSlash: ((String) -> Unit)? = null
 
     @JavascriptInterface
     fun send(text: String) {
@@ -183,6 +198,12 @@ private class RikkaNativeBridge {
         if (url.isNotBlank()) onOpenLink?.invoke(url)
     }
 
+    /** 卡片里的 triggerSlash：/send 之类的斜杠命令回传原生处理 */
+    @JavascriptInterface
+    fun slash(command: String) {
+        if (command.isNotBlank()) onSlash?.invoke(command)
+    }
+
     @JavascriptInterface
     fun ready() = Unit
 }
@@ -193,8 +214,10 @@ private fun buildState(
     settings: Settings,
     macroJson: String,
     themeJson: String,
+    placeholder: String,
 ): JsonObject = buildJsonObject {
     put("messages", buildJsonArray { messages.forEach { add(buildMessage(it, assistant, settings)) } })
+    put("placeholder", placeholder)
     put("macros", kotlinx.serialization.json.Json.parseToJsonElement(macroJson))
     put("theme", kotlinx.serialization.json.Json.parseToJsonElement(themeJson))
 }
@@ -273,18 +296,24 @@ private fun buildMacros(
     messages: List<UIMessage>,
     assistant: Assistant,
     settings: Settings,
+    modelName: String,
 ): JsonObject {
     val persona = settings.personas.find { it.id == settings.activePersonaId }
     val lastMessage = messages.lastOrNull { it.role == MessageRole.ASSISTANT }
         ?.parts?.filterIsInstance<UIMessagePart.Text>()?.joinToString("\n") { it.text }
         .orEmpty()
+    // 角色卡字段优先取结构化的酒馆数据，缺失时退回系统提示词，宏名与酒馆保持一致
+    val card = assistant.tavernData
     return buildJsonObject {
         put("char", assistant.name)
         put("user", settings.displaySetting.userNickname.ifBlank { "You" })
         put("persona", persona?.description.orEmpty())
-        put("description", assistant.systemPrompt)
-        put("scenario", "")
-        put("personality", "")
+        put("description", card?.description?.takeIf { it.isNotBlank() } ?: assistant.systemPrompt)
+        put("personality", card?.personality.orEmpty())
+        put("scenario", card?.scenario.orEmpty())
+        put("mesExamples", card?.mesExample.orEmpty())
+        put("charPrompt", card?.systemPrompt.orEmpty())
+        put("model", modelName)
         put("lastMessage", lastMessage)
     }
 }
