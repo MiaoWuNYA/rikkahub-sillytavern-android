@@ -115,11 +115,14 @@ fun SettingPreferencesThemePage(vm: SettingVM = koinViewModel()) {
 
 private enum class ThemeTab(
     override val icon: ImageVector,
-    @param:StringRes override val label: Int,
+    @param:StringRes private val labelRes: Int,
 ) : PagerTab {
     THEME(HugeIcons.Sun01, R.string.setting_page_preferences_theme),
     COLOR(HugeIcons.PaintBoard, R.string.setting_page_display_color),
-    UI(HugeIcons.Edit01, R.string.setting_page_preferences_ui),
+    UI(HugeIcons.Edit01, R.string.setting_page_preferences_ui);
+
+    override val label: String
+        @Composable get() = stringResource(labelRes)
 }
 
 @Composable

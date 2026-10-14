@@ -1991,8 +1991,11 @@ class ChatService(
         }
         if (!shouldGenerate) return@withContext
 
+        val settings = settingsStore.awaitLoaded()
+        // 关掉自动生成后只跳过对话结束时的自动调用，手动重新生成照常执行
+        if (!force && !settings.enableAutoTitle) return@withContext
+
         runCatching {
-            val settings = settingsStore.awaitLoaded()
             // 标题用哪个模型，按这个顺序挑：用户指定的标题模型 → 快速模型 → 当前对话模型。
             // 新用户往往只配了对话模型，回退到它避免刚进门就报「快速模型未找到」。
             val conversationModel = settings.assistants

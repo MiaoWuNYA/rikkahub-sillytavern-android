@@ -459,13 +459,11 @@ dependencies {
 
     // Apache Commons Text
     implementation(libs.commons.text)
-    // Jsoup (HTML 渲染，richtext 组件用)
-    implementation(libs.jsoup)
-    // Toast (Sonner)
-    implementation(libs.sonner)
+
     // Reorderable (https://github.com/Calvin-LL/Reorderable/)
     implementation(libs.reorderable)
-    // lucide icons
+
+    // icons
     implementation(libs.lucide.icons)
     implementation(libs.huge.icons)
     // image viewer

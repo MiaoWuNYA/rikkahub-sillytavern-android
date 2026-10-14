@@ -9,11 +9,22 @@
 |---|---|
 | 本地分支 | `huadeng` |
 | 上游 | `rikkahub/master`（github.com/rikkahub/rikkahub，最上游） |
-| 最近合入 | `rikkahub/master`（2026-10-13 合入 53 提交，含 MD3 Expressive UI 改版 / 记忆库 memory_file 重构 / 媒体创作 / ConversationSessionManager / 会话 config 快照） |
-| 本次冲突 | 79 处，全部人工解决（生成链/ChatService/设置页/UI 组件）；数据库 v30→v31 手写迁移（旧 MemoryEntity 迁 memory_file，couple 六表保留） |
+| 最近合入 | `rikkahub/master`（2026-10-14 合入 16 提交：MCP 详情页 / Toaster 替换 sonner / 翻译页 MD3 改版+翻译历史 / 引号高亮开关 / 自动标题开关 / 模型上下文长度 / 工作区复制路径 / PagerTab 改 Composable label） |
+| 本次冲突 | 28 个文件，全部人工解决；数据库 v31→v32 手写迁移（新增 `translation_history` 表，`Migration_31_32`） |
 | 领先提交数 | 约 1920+ |
 | 上游文件被本地修改 | 约 100 个（含重命名） |
 | 本地独有文件 | 约 50 个 |
+
+### 本次（2026-10-14）合并的固定约定
+
+- **依赖**：上游删掉了 `sonner` 与 `lucide`。本地全量迁移到上游自研 `me.rerere.ui.toast.Toaster`（`ToasterState` / `ToastType` / `rememberToasterState`），`sonner` 不再引入；`lucide` 本地仍有 5 个页面在用，故在 `gradle/libs.versions.toml` 与 `app/build.gradle.kts` 保留 `lucide-icons`。
+- **数据库**：上游把这轮新表算成 v30 且用 `AutoMigration(20→30)`，本地 20→31 是手写迁移链，**不要**把上游的 `AutoMigration(20,21)…(29,30)` 加进 `autoMigrations`（会与 `DataSourceModule` 的 `addMigrations` 重复定义）。上游新增表一律在后接一个手写迁移；本次即 `Migration_31_32`。
+- **`TTSProviderSetting.Volcengine` 本地已改名 `Doubao`**：上游文件里出现 `TTSProviderSetting.Volcengine` 的地方取上游版本后必须改回 `Doubao`（`SettingSpeechPage.kt`、`TTSProviderConfigure.kt`）。`ASRProviderSetting.Volcengine` 未改名，保持原样。
+- **`PagerTab` 接口**：上游把 `label` 改成 `@Composable get(): String`。本地新增的 Tab 枚举要用 `@param:StringRes private val labelRes: Int` + `override val label: String @Composable get() = stringResource(labelRes)`。
+- **不要丢功能**：上一轮合并曾把「工作区长按多选导出」丢掉（`WorkspaceDetailPage.kt` + `WorkspaceDetailVM.kt` 成对回退）。此后凡 `WorkspaceDetail*` 冲突，`theirs` 侧带 `prepareBatchExport`/`exportFilesToDirectory`/`exportResult` 一律收下。
+- **界面优先上游**：页面骨架、顶栏、组件风格以上游为准；本地只在其中保留自己的入口与字段。`TranslatorPage.kt`、`WorkspaceDetailPage.kt` 直接取上游版本。
+- **本地弃用/重写的上游页**：`ui/pages/extensions/skills/*`（本地重写在 `ui/pages/extensions/`）、`ui/pages/imggen/ImgGenPage.kt`（本地弃用，生图走媒体创作）保持删除，上游对它们的改动不回收。
+- **测试**：CI 只跑 `assembleRelease`，不跑 `test`。`app/src/test/.../capability/` 下 `ChubCardImportTest`/`ChunshuiImportTest`/`FengyueImportTest`/`JsonNullCardTest` 依赖本机把样本卡片放在仓库根目录（实际在 `酒馆500+美化/`），标准检出下必然 NPE，与合并无关。`speech` 的 `VolcengineTTSProviderTest` 引用的是本地改名前的 API，已删除（实现重写后那些 `*VolcengineTTS*` 内部符号已不存在）。
 
 ## 1. 合并工作流（推荐）
 

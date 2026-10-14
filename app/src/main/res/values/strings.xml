@@ -1862,6 +1862,7 @@
   <string name="setting_model_page_prompt">Prompt</string>
   <string name="setting_model_page_reset_to_default">Reset to default</string>
   <string name="setting_model_page_enable_suggestion">Enable Chat Suggestions</string>
+  <string name="setting_model_page_enable_auto_title">Auto-generate Conversation Titles</string>
   <string name="setting_model_page_suggestion_model">Chat Suggestion Model</string>
   <string name="setting_model_page_suggestion_model_desc">Model used to generate conversation suggestions. If not set, uses the fast model</string>
   <string name="setting_model_page_suggestion_prompt_vars">Variables: Conversation content: {content}, Language: {locale}</string>
@@ -3001,7 +3002,7 @@
   <string name="setting_media_page_edit_provider">Edit provider</string>
   <string name="setting_media_page_add_provider">Add provider</string>
   <string name="setting_media_page_empty">No media generation providers yet. Tap + at the top to add one.</string>
-  <string name="setting_media_page_s3_desc">Some APIs only accept assets at public URLs (such as reference images and reference videos for video generation). Once this is set up, local files are uploaded to this bucket first and then passed to the API as temporary URLs; uploaded files are cleaned up automatically after 7 days. This configuration is independent of the S3 used for backups.</string>
+  <string name="setting_media_page_s3_desc">Some APIs only accept assets at public URLs (such as reference images and reference videos for video generation). Set up an S3-compatible object storage service here, and local files are uploaded to its bucket first and then passed to the API as temporary URLs; uploaded files are cleaned up automatically after 7 days. This configuration is independent of the S3 used for backups.</string>
   <string name="setting_media_page_provider_type">Provider type</string>
   <string name="setting_media_page_provider_name">Name</string>
   <string name="setting_media_page_workspace_id">Workspace ID</string>
@@ -3138,4 +3139,21 @@
   <string name="huadeng_frontend_card_mode_always">Always use frontend compatibility mode</string>
   <string name="huadeng_frontend_card_mode_never">Always use the native interface</string>
   <string name="setting_page_huadeng_compat">Compatibility &amp; helpers</string>
+  <string name="setting_provider_page_context_length">Context Length</string>
+  <string name="setting_provider_page_context_length_custom">Custom</string>
+  <string name="setting_media_page_asset_storage">Asset Storage</string>
+  <string name="translator_page_error">Translation failed</string>
+  <string name="translator_page_model_missing">No translation model selected. Tap the top-right corner to choose one.</string>
+  <string name="translator_page_char_count">%1$d characters</string>
+  <string name="translator_page_clear_input">Clear input</string>
+  <string name="translator_page_paste">Paste</string>
+  <string name="translator_page_use_as_input">Use as input</string>
+  <string name="translator_page_history">Translation history</string>
+  <string name="translator_page_clear_history">Clear</string>
+  <string name="translator_page_clear_history_title">Clear translation history</string>
+  <string name="translator_page_clear_history_message">All translation records will be deleted. This cannot be undone.</string>
+  <string name="setting_display_page_enable_quote_highlight_title">Highlight Quoted Text</string>
+  <string name="setting_display_page_enable_quote_highlight_desc">Color text inside quotation marks with the theme color to make character dialogue stand out</string>
+  <string name="workspace_detail_copy_path">Copy path</string>
+  <string name="workspace_detail_path_copied">Path copied</string>
 </resources>

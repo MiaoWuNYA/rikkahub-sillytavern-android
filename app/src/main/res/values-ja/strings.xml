@@ -2354,6 +2354,7 @@
   <string name="setting_model_page_fast_model">高速モデル</string>
   <string name="setting_model_page_fast_model_desc">タイトル、チャット候補、その他の高速タスクやバックグラウンドタスクに使用するモデル</string>
   <string name="setting_model_page_enable_suggestion">チャット提案を有効にする</string>
+  <string name="setting_model_page_enable_auto_title">会話タイトルを自動生成する</string>
   <string name="assistant_page_gradient_background">グラデーション背景</string>
   <string name="assistant_page_gradient_background_desc">チャットページで動的なグラデーション背景を使用します</string>
   <string name="assistant_page_workspace">ワークスペース</string>
@@ -2885,7 +2886,7 @@
   <string name="setting_media_page_edit_provider">プロバイダーを編集</string>
   <string name="setting_media_page_add_provider">プロバイダーを追加</string>
   <string name="setting_media_page_empty">メディア生成プロバイダーはまだありません。追加するには上部の + をタップしてください。</string>
-  <string name="setting_media_page_s3_desc">一部のAPIは公開URL上のアセットのみを受け付けます（動画生成用の参照画像や参照動画など）。これを設定すると、ローカルファイルはまずこのバケットにアップロードされ、その後、一時URLとしてAPIに渡されます。アップロードされたファイルは7日後に自動的に削除されます。この設定は、バックアップに使用するS3とは独立しています。</string>
+  <string name="setting_media_page_s3_desc">一部のAPIは、公開URL上のアセット（動画生成用の参照画像や参照動画など）しか受け付けません。ここでS3互換のオブジェクトストレージサービスを設定すると、ローカルファイルはまずそのバケットにアップロードされ、その後、一時URLとしてAPIに渡されます。アップロードされたファイルは7日後に自動的に削除されます。この設定は、バックアップに使用されるS3とは独立しています。</string>
   <string name="setting_media_page_provider_type">プロバイダーの種類</string>
   <string name="setting_media_page_provider_name">名前</string>
   <string name="setting_media_page_workspace_id">ワークスペースID</string>
@@ -3059,4 +3060,21 @@
   <string name="huadeng_frontend_card_mode_always">Always use frontend compatibility mode</string>
   <string name="huadeng_frontend_card_mode_never">Always use the native interface</string>
   <string name="setting_page_huadeng_compat">互換性と補助</string>
+  <string name="setting_provider_page_context_length">コンテキスト長</string>
+  <string name="setting_provider_page_context_length_custom">カスタム</string>
+  <string name="setting_media_page_asset_storage">アセットストレージ</string>
+  <string name="translator_page_error">翻訳に失敗しました</string>
+  <string name="translator_page_model_missing">翻訳モデルが選択されていません。右上隅をタップして選択してください。</string>
+  <string name="translator_page_char_count">%1$d文字</string>
+  <string name="translator_page_clear_input">入力をクリア</string>
+  <string name="translator_page_paste">貼り付け</string>
+  <string name="translator_page_use_as_input">入力として使用</string>
+  <string name="translator_page_history">翻訳履歴</string>
+  <string name="translator_page_clear_history">クリア</string>
+  <string name="translator_page_clear_history_title">翻訳履歴を消去</string>
+  <string name="translator_page_clear_history_message">すべての翻訳履歴が削除されます。この操作は元に戻せません。</string>
+  <string name="setting_display_page_enable_quote_highlight_title">引用テキストをハイライト</string>
+  <string name="setting_display_page_enable_quote_highlight_desc">引用符内のテキストをテーマカラーで着色し、キャラクターのセリフを目立たせます</string>
+  <string name="workspace_detail_copy_path">パスをコピー</string>
+  <string name="workspace_detail_path_copied">パスをコピーしました</string>
 </resources>

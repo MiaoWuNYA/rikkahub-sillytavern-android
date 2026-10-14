@@ -52,10 +52,13 @@ import org.koin.androidx.compose.koinViewModel
 
 private enum class ModelSettingTab(
     override val icon: ImageVector,
-    @param:StringRes override val label: Int,
+    @param:StringRes private val labelRes: Int,
 ) : PagerTab {
     MODEL(HugeIcons.AiBrain01, R.string.setting_model_page_tab_model),
-    PROMPT(HugeIcons.AiEditing, R.string.setting_model_page_tab_prompt),
+    PROMPT(HugeIcons.AiEditing, R.string.setting_model_page_tab_prompt);
+
+    override val label: String
+        @Composable get() = stringResource(labelRes)
 }
 
 @Composable
@@ -195,6 +198,13 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
                             },
                         )
                     },
+                )
+                switchItem(
+                    checked = settings.enableAutoTitle,
+                    onCheckedChange = {
+                        vm.updateSettings { latest -> latest.copy(enableAutoTitle = it) }
+                    },
+                    headlineContent = { Text(stringResource(R.string.setting_model_page_enable_auto_title)) },
                 )
                 switchItem(
                     checked = settings.enableSuggestion,

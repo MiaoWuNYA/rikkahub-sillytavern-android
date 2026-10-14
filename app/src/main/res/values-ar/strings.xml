@@ -904,6 +904,7 @@
   <string name="setting_model_page_compress_model_desc">النموذج المستخدم لضغط سجل المحادثة</string>
   <string name="setting_model_page_compress_prompt_vars">المتغيرات: {content}، {target_tokens}، {additional_context}</string>
   <string name="setting_model_page_enable_suggestion">تمكين اقتراحات الدردشة</string>
+  <string name="setting_model_page_enable_auto_title">إنشاء عناوين المحادثات تلقائيًا</string>
   <string name="setting_model_page_fast_model">النموذج السريع</string>
   <string name="setting_model_page_fast_model_desc">النموذج المستخدم للعناوين واقتراحات الدردشة والمهام السريعة أو الخلفية الأخرى</string>
   <string name="setting_model_page_ocr_model">نموذج OCR</string>
@@ -1506,7 +1507,7 @@
   <string name="media_creation_error_cancelled_remotely">تم إلغاء المهمة على الخادم</string>
   <string name="media_creation_error_expired">انتهت صلاحية المهمة</string>
   <string name="setting_media_page_empty">لا يوجد مزوّدو توليد وسائط بعد. اضغط على + في الأعلى لإضافة مزوّد.</string>
-  <string name="setting_media_page_s3_desc">بعض واجهات API تقبل الأصول فقط عبر روابط URL عامة (مثل الصور المرجعية ومقاطع الفيديو المرجعية لتوليد الفيديو). بمجرد إعداد ذلك، تُرفع الملفات المحلية إلى هذه الحاوية أولاً ثم تُمرَّر إلى API كروابط URL مؤقتة؛ وتُنظَّف الملفات المرفوعة تلقائيًا بعد 7 أيام. هذا الإعداد مستقل عن S3 المستخدم للنسخ الاحتياطي.</string>
+  <string name="setting_media_page_s3_desc">بعض واجهات API تقبل فقط الأصول الموجودة على روابط URL عامة (مثل الصور المرجعية ومقاطع الفيديو المرجعية لتوليد الفيديو). قم بإعداد خدمة تخزين كائنات متوافقة مع S3 هنا، حيث تُرفع الملفات المحلية إلى دلو الخدمة أولاً ثم تُمرَّر إلى API كروابط URL مؤقتة؛ وتُنظَّف الملفات المرفوعة تلقائيًا بعد 7 أيام. هذا الإعداد مستقل عن S3 المستخدم للنسخ الاحتياطية.</string>
   <string name="setting_media_page_provider_type">نوع المزوّد</string>
   <string name="setting_media_page_provider_name">الاسم</string>
   <string name="setting_media_page_workspace_id">معرّف مساحة العمل</string>
@@ -1610,4 +1611,21 @@
   <string name="huadeng_frontend_card_mode_always">Always use frontend compatibility mode</string>
   <string name="huadeng_frontend_card_mode_never">Always use the native interface</string>
   <string name="setting_page_huadeng_compat">التوافق والمساعدة</string>
+  <string name="setting_provider_page_context_length">طول السياق</string>
+  <string name="setting_provider_page_context_length_custom">مخصص</string>
+  <string name="setting_media_page_asset_storage">تخزين الأصول</string>
+  <string name="translator_page_error">فشلت الترجمة</string>
+  <string name="translator_page_model_missing">لم يتم اختيار نموذج ترجمة. اضغط على الزاوية العلوية اليمنى لاختيار واحد.</string>
+  <string name="translator_page_char_count">%1$d أحرف</string>
+  <string name="translator_page_clear_input">مسح الإدخال</string>
+  <string name="translator_page_paste">لصق</string>
+  <string name="translator_page_use_as_input">استخدم كمدخل</string>
+  <string name="translator_page_history">سجل الترجمة</string>
+  <string name="translator_page_clear_history">مسح</string>
+  <string name="translator_page_clear_history_title">مسح سجل الترجمة</string>
+  <string name="translator_page_clear_history_message">سيتم حذف جميع سجلات الترجمة. لا يمكن التراجع عن هذا.</string>
+  <string name="setting_display_page_enable_quote_highlight_title">تمييز النص المقتبس</string>
+  <string name="setting_display_page_enable_quote_highlight_desc">تلوين النص داخل علامات الاقتباس بلون السمة لإبراز حوار الشخصيات</string>
+  <string name="workspace_detail_copy_path">نسخ المسار</string>
+  <string name="workspace_detail_path_copied">تم نسخ المسار</string>
 </resources>
