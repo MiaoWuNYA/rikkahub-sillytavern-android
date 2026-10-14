@@ -822,17 +822,53 @@
     if (next2) next2.disabled = index >= count - 1;
   }
 
+  // 消息操作排：直接执行，不走原生弹窗
+  var MSG_ACTIONS = [
+    ['copy', '\u29c9', '复制'],
+    ['edit', '\u270e', '编辑'],
+    ['delete', '\ud83d\uddd1', '删除'],
+    ['regenerate', '\u21bb', '重新生成'],
+    ['translate', '\ud83c\udf10', '翻译'],
+    ['favorite', '\u2605', '收藏'],
+    ['share', '\u2197', '分享']
+  ];
+
+  function syncActions(col, msg) {
+    if (!col || !msg || !msg.id) return;
+    var bar = null;
+    for (var i = 0; i < col.children.length; i++) {
+      if (col.children[i].classList.contains('actions')) { bar = col.children[i]; break; }
+    }
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'actions';
+      MSG_ACTIONS.forEach(function (item) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'act-btn';
+        btn.dataset.action = item[0];
+        btn.textContent = item[1];
+        btn.setAttribute('aria-label', item[2]);
+        btn.title = item[2];
+        bar.appendChild(btn);
+      });
+      bar.addEventListener('click', function (event) {
+        event.stopPropagation();
+        var btn = event.target && event.target.closest ? event.target.closest('.act-btn') : null;
+        if (!btn) return;
+        requestNative('messageAction', JSON.stringify({ action: btn.dataset.action, id: bar.dataset.id }));
+      });
+      col.appendChild(bar);
+    }
+    bar.dataset.id = String(msg.id);
+  }
+
   function renderRow(msg, streaming) {
     var row = document.createElement('div');
     row.className = 'row ' + (msg.role === 'user' ? 'user' : 'ai');
     row.dataset.id = String(msg.id);
     row.dataset.signature = signatureOf(msg);
     row.dataset.streaming = streaming ? '1' : '';
-    // 点消息回请原生菜单：复制、编辑、删除等仍走原生那套，WebView 只做入口
-    row.addEventListener('click', function (event) {
-      if (event.target.closest && event.target.closest('a, .attach-doc, iframe, audio, video, .swipes, .bubble a')) return;
-      native('messageAction', JSON.stringify({ id: String(msg.id), role: msg.role }));
-    });
     row.appendChild(avatarNode(msg));
 
     var col = document.createElement('div');
@@ -855,6 +891,7 @@
     time.hidden = !time.textContent;
     col.appendChild(time);
     syncSwipes(col, msg);
+    syncActions(col, msg);
 
     row.appendChild(col);
     return row;
@@ -877,6 +914,7 @@
     row.dataset.signature = signatureOf(msg);
     row.dataset.streaming = streaming ? '1' : '';
     syncSwipes(row.querySelector('.col'), msg);
+    syncActions(row.querySelector('.col'), msg);
   }
 
   function rowById(id) {
