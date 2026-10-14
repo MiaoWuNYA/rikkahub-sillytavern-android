@@ -76,6 +76,7 @@ fun WebChatSurface(
     onMessageAction: (String) -> Unit = {},
     onClipboard: (String) -> Unit = {},
     onHttpRequest: (String, (String) -> Unit) -> Unit = { _, done -> done("{}") },
+    onSelectSwipe: (String) -> Unit = {},
     // 左边缘横向拖动交给抽屉：WebView 会吞掉触摸，不划出这条通道侧边栏拉不出来
     onEdgeSwipe: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -253,6 +254,11 @@ fun WebChatSurface(
 
                 "deleteChatMessages" -> {
                     onDeleteChatMessages(payload)
+                    bridge?.resolve(requestId, "null")
+                }
+
+                "selectSwipe" -> {
+                    onSelectSwipe(payload)
                     bridge?.resolve(requestId, "null")
                 }
 

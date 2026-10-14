@@ -960,6 +960,16 @@ private fun ChatPageContent(
                             done(result)
                         }
                     },
+                    onSelectSwipe = { payload ->
+                        runCatching {
+                            val obj = kotlinx.serialization.json.Json.parseToJsonElement(payload)
+                                as? kotlinx.serialization.json.JsonObject
+                            val nodeId = obj?.get("nodeId")?.toString()?.trim('"')
+                            val index = obj?.get("index")?.toString()?.trim('"')?.toIntOrNull()
+                            val node = conversation.messageNodes.firstOrNull { it.id.toString() == nodeId }
+                            if (node != null && index != null) vm.selectMessageNode(node.id, index)
+                        }
+                    },
                     onClipboard = { text ->
                         runCatching {
                             val clip = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager

@@ -23,7 +23,7 @@
   var globalVariables = {};
   var messageVariables = {};
 
-  /** 变量域变化广播给卡片（卡片各自留一份副本，读操作保持同步） */
+  // 变量域变化广播给卡片（卡片各自留一份副本，读操作保持同步）
   function pushVarsToCards() {
     var frames = document.querySelectorAll('iframe');
     var scopes = { local: variables, global: globalVariables, message: messageVariables };
@@ -60,7 +60,7 @@
     try { localStorage.setItem('rikka.frontend.vars', JSON.stringify(variables)); } catch (e) { /* 隐私模式等忽略 */ }
   }
 
-  /** 酒馆内置宏：静态值与变量、掷骰、随机、注释 */
+  // 酒馆内置宏：静态值与变量、掷骰、随机、注释
   function expandMacros(text) {
     if (!text || text.indexOf('{{') < 0) return text;
     var m = state.macros || {};
@@ -107,7 +107,7 @@
     return out;
   }
 
-  /** setvar 需要在渲染前生效，所以单独先跑一遍写操作 */
+  // setvar 需要在渲染前生效，所以单独先跑一遍写操作
   function applySetVars(text) {
     if (!text || text.indexOf('{{') < 0) return text;
     return String(text).replace(/\{\{\s*(?:setvar|setglobalvar)\s*::\s*([^:\n}]+?)\s*::([^\n}]*?)\}\}/gi,
@@ -132,9 +132,8 @@
     return total;
   }
 
-  /** 卡片页内桥：酒馆前端卡常直接调这些接口 */
-
-  /** 卡片常依赖的 lodash 子集：只实现被高频使用的部分，未覆盖的返回安全的空值 */
+  // 卡片页内桥：酒馆前端卡常直接调这些接口
+  // 卡片常依赖的 lodash 子集：只实现被高频使用的部分，未覆盖的返回安全的空值
   var LODASH_LITE = [
     '(function(){',
     '  var _ = {};',
@@ -292,7 +291,7 @@
     '<\/script>'
   ].join('\n');
 
-  /** 组装某张卡片的桥：把消息 id、卡序号与角色信息一并注入 */
+  // 组装某张卡片的桥：把消息 id、卡序号与角色信息一并注入
   function buildCardBridge(messageId, cardIndex, charName, userName, avatar) {
     return CARD_BRIDGE_TEMPLATE
       .replace('__MID__', JSON.stringify(String(messageId == null ? '' : messageId)))
@@ -302,14 +301,7 @@
       .replace('__AVATAR__', JSON.stringify(String(avatar == null ? '' : avatar)));
   }
 
-  /** 前端卡：剥掉围栏标记，做成内联 iframe，宏与桥在其中一并注入 */
-  /**
-   * 前端卡：作为网页嵌在对话流里。
-   *
-   * 外壳按酒馆助手的做法固定：charset → viewport → 基础样式 → 运行环境
-   * （jQuery / lodash 子集 / toastr）→ 桥 → 高度上报，卡片原文整段放进 body。
-   * 不加 sandbox：同源才能让卡片访问 parent 并把自身高度写回 iframe。
-   */
+  // 前端卡：剥掉围栏标记，做成内联 iframe，宏与桥在其中一并注入
   function cardFrame(key, html, ctx) {
     ctx = ctx || {};
     var body = expandMacros(applySetVars(html));
@@ -322,10 +314,8 @@
       'img,video,canvas{max-width:100%;height:auto;}' +
       'body{overflow:hidden;}' +
       // 卡片常把内容包在自定义标签里（如 <mainbody>），未知标签默认是行内元素，
-      // 会导致整段内容挤成一行且无间距，这里统一按块级处理
       'mainbody,body>div,body>section,body>article,body>main{display:block;}' +
       // 卡片把内容包在自定义标签里（<phone>/<wechat>/<choice>），顶层容器要按块级排；
-      // 嵌套在正文里的标签（如 <人名>）保持行内，否则会把一句话断成多行
       'body>*{display:block;}' +
       'body>*>*{display:revert;}' +
       'body>mainbody>*{margin:0 0 .5em;}' +
@@ -363,7 +353,7 @@
     return frame;
   }
 
-  /** 卡片高度自适应：轮询 + ResizeObserver 双保险（卡片常异步刷新内容） */
+  // 卡片高度自适应：轮询 + ResizeObserver 双保险（卡片常异步刷新内容）
   function watchCardHeight(frame) {
     var measure = function () {
       try {
@@ -397,7 +387,7 @@
     body.appendChild(div);
   }
 
-  /** 填充一条消息的正文区（气泡、推理、工具、卡片） */
+  // 填充一条消息的正文区（气泡、推理、工具、卡片）
   function fillBody(body, msg, streaming) {
     body.innerHTML = '';
     if (msg.reasoning) {
@@ -466,6 +456,33 @@
     fillBody(body, msg, !!msg.streaming);
     col.appendChild(body);
 
+    // 备选回复切换：多分支时显示切换条，点箭头回请原生切换
+    if (msg.swipeCount && msg.swipeCount > 1) {
+      var nav = document.createElement('div');
+      nav.className = 'swipe-nav';
+      var prev = document.createElement('button');
+      prev.className = 'swipe-btn';
+      prev.textContent = '\u2039';
+      prev.addEventListener('click', function (event) {
+        event.stopPropagation();
+        native('selectSwipe', JSON.stringify({ nodeId: msg.nodeId, index: Math.max(0, (msg.swipeIndex || 0) - 1) }));
+      });
+      var label = document.createElement('span');
+      label.className = 'swipe-label';
+      label.textContent = ((msg.swipeIndex || 0) + 1) + '/' + msg.swipeCount;
+      var next = document.createElement('button');
+      next.className = 'swipe-btn';
+      next.textContent = '\u203a';
+      next.addEventListener('click', function (event) {
+        event.stopPropagation();
+        native('selectSwipe', JSON.stringify({ nodeId: msg.nodeId, index: Math.min(msg.swipeCount - 1, (msg.swipeIndex || 0) + 1) }));
+      });
+      nav.appendChild(prev);
+      nav.appendChild(label);
+      nav.appendChild(next);
+      col.appendChild(nav);
+    }
+
     if (msg.time) {
       var time = document.createElement('div');
       time.className = 'time';
@@ -494,11 +511,7 @@
     scrollToBottom(false);
   }
 
-  /**
-   * 流式增量：只更新正文。
-   * 卡片所在消息在增量里保持原 iframe 不动（重建会让卡片的脚本状态全部丢失，
-   * 视觉上也会闪），只有文本部分跟着 token 走。
-   */
+  // 流式增量：只更新正文。
   function syncStreaming(streamMsg) {
     var last = list.lastElementChild;
     if (!last || last.dataset.id !== streamMsg.id) {
@@ -547,7 +560,7 @@
 
   // —— 原生侧接口 ——
   window.rikka = {
-    /** 原生下发的卡片运行库（jQuery / toastr，base64 传输避免转义问题） */
+    // 原生下发的卡片运行库（jQuery / toastr，base64 传输避免转义问题）
     setLibs: function (json) {
       var payload = parse(json) || {};
       Object.keys(payload).forEach(function (name) {
@@ -555,13 +568,13 @@
       });
     },
 
-    /** 原生下发的遮挡区域（标题栏 / 输入栏高度） */
+    // 原生下发的遮挡区域（标题栏 / 输入栏高度）
     setSafeArea: function (json) { applySafeArea(parse(json)); },
 
-    /** 原生下发的聊天外观自定义 */
+    // 原生下发的聊天外观自定义
     setAppearance: function (json) { applyAppearance(parse(json)); },
 
-    /** 原生下发的变量域快照（local / global / message） */
+    // 原生下发的变量域快照（local / global / message）
     setVariables: function (json) {
       var payload = parse(json) || {};
       Object.keys(payload).forEach(function (scope) {
@@ -573,7 +586,7 @@
       pushVarsToCards();
     },
 
-    /** 原生回填：把结果送进对应卡片的 Promise（卡片的同步 API 靠这条保持可用） */
+    // 原生回填：把结果送进对应卡片的 Promise（卡片的同步 API 靠这条保持可用）
     resolve: function (requestId, value) {
       var frames = document.querySelectorAll('iframe');
       for (var i = 0; i < frames.length; i++) {
@@ -584,7 +597,7 @@
       }
     },
 
-    /** 原生事件 → 页面 → 所有卡片 */
+    // 原生事件 → 页面 → 所有卡片
     emitEvent: function (name, payloadJson) {
       var frames = document.querySelectorAll('iframe');
       for (var i = 0; i < frames.length; i++) {
@@ -613,11 +626,7 @@
       scrollToBottom(true);
     },
     finishStream: function (json) { window.rikka.setState(json); },
-    /**
-     * 追加或更新单条消息。
-     * 生成结束时用它落定最后一条：整页 setState 会把所有卡片 iframe 重建，
-     * 卡里的脚本状态和滚动位置都会丢，看起来像闪一下。
-     */
+    // 追加或更新单条消息。
     appendMessage: function (json) {
       var msg = parse(json);
       if (!msg) return;
@@ -644,7 +653,7 @@
   };
 
 
-  /** 聊天外观自定义：把设置里的气泡、背景、字体、引用配色落到 CSS 变量 */
+  // 聊天外观自定义：把设置里的气泡、背景、字体、引用配色落到 CSS 变量
   function withAlpha(hex, alpha) {
     var m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
     if (!m) return hex;
@@ -654,7 +663,7 @@
   }
 
 
-  /** 附件块：图片 / 视频 / 音频 / 文档 */
+  // 附件块：图片 / 视频 / 音频 / 文档
   function attachmentNode(block) {
     var wrap = document.createElement('div');
     wrap.className = 'blk attach';
@@ -690,7 +699,7 @@
     return wrap;
   }
 
-  /** 原生标题栏 / 输入栏遮住的区域，页面据此留白 */
+  // 原生标题栏 / 输入栏遮住的区域，页面据此留白
   function measureToolbar() {
     try {
       var bar = document.getElementById('toolbar');
