@@ -75,8 +75,6 @@ fun FrontendCardChatView(
     onClipboard: (String) -> Unit = {},
     onHttpRequest: (String, (String) -> Unit) -> Unit = { _, done -> done("{}") },
     onSelectSwipe: (String) -> Unit = {},
-    // 左边缘横向拖动交给抽屉：WebView 会吞掉触摸，不划出这条通道侧边栏拉不出来
-    onEdgeSwipe: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     // 有 WebView 存活时，输入栏的模糊/玻璃效果必须让位
@@ -134,9 +132,8 @@ fun FrontendCardChatView(
         bridge?.onSlash = onSlash
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
     AndroidView(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         factory = { context ->
             WebView(context).apply {
                 setBackgroundColor(AndroidColor.TRANSPARENT)
@@ -173,35 +170,6 @@ fun FrontendCardChatView(
         },
     )
 
-    // 左边缘手势层：只在边缘 24dp 内接管横向拖动，纵向滚动仍归 WebView
-    Box(
-        modifier = Modifier
-            .align(androidx.compose.ui.Alignment.CenterStart)
-            .fillMaxHeight()
-            .width(24.dp)
-            .pointerInput(Unit) {
-                val threshold = 24.dp.toPx()
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    var totalX = 0f
-                    var totalY = 0f
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                        val delta = change.position - change.previousPosition
-                        totalX += delta.x
-                        totalY += delta.y
-                        if (totalX > threshold && totalX > kotlin.math.abs(totalY) * 1.5f) {
-                            change.consume()
-                            onEdgeSwipe()
-                            break
-                        }
-                        if (!change.pressed) break
-                    }
-                }
-            },
-    )
-    }
 
     // 首帧：主题 + 全量状态
     LaunchedEffect(bridge, variablesJson, messages, assistant, settings, modelName) {
