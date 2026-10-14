@@ -542,8 +542,7 @@ private fun ChatPageContent(
                 val hasFrontendCard = frontendCardPreferredNow
                 ChatInput(
                     hasFrontendCard = hasFrontendCard,
-                    // 界面模式下工具条由页面自己渲染，避免与原生那排重复
-                    hideToolbar = frontendCardPreferredNow,
+                    hideToolbar = false,
                     proxyMenu = proxyMenu,
                     onProxyMenuHandled = { proxyMenu = null },
                     onStartVoiceMode = onStartVoiceMode,
