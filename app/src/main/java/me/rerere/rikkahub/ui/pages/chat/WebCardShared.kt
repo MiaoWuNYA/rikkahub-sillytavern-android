@@ -227,6 +227,15 @@ internal fun buildMessage(
         .joinToString("\n")
 
     val blocks = buildJsonArray {
+        tools.forEach { tool ->
+            add(
+                buildJsonObject {
+                    put("type", "tool")
+                    put("text", tool.toolName)
+                }
+            )
+        }
+
         attachments.forEach { part ->
             when (part) {
                 is UIMessagePart.Image -> add(
@@ -275,8 +284,6 @@ internal fun buildMessage(
                             put("type", "card")
                             put("index", cardIndex++)
                             put("html", document.bodyHtml)
-                            // 卡片脚本按酒馆助手约定从隐藏的 #rawContent 读消息原文
-                            put("text", textParts.joinToString("\n") { it.text })
                             if (document.headHtml.isNotBlank()) put("head", document.headHtml)
                             val own = document.styleCss.ifBlank { messageStyle }
                             if (own.isNotBlank()) put("style", own)
@@ -295,14 +302,6 @@ internal fun buildMessage(
                     }
                 }
             }
-        }
-        tools.forEach { tool ->
-            add(
-                buildJsonObject {
-                    put("type", "tool")
-                    put("text", tool.toolName)
-                }
-            )
         }
     }
 
