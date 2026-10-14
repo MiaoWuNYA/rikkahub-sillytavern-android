@@ -74,6 +74,7 @@ fun FrontendCardChatView(
     onMessageAction: (String) -> Unit = {},
     onClipboard: (String) -> Unit = {},
     onHttpRequest: (String, (String) -> Unit) -> Unit = { _, done -> done("{}") },
+    onSelectSwipe: (String) -> Unit = {},
     // 左边缘横向拖动交给抽屉：WebView 会吞掉触摸，不划出这条通道侧边栏拉不出来
     onEdgeSwipe: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -233,6 +234,11 @@ fun FrontendCardChatView(
 
                 "deleteChatMessages" -> {
                     onDeleteChatMessages(payload)
+                    bridge?.resolve(requestId, "null")
+                }
+
+                "selectSwipe" -> {
+                    onSelectSwipe(payload)
                     bridge?.resolve(requestId, "null")
                 }
 
@@ -450,6 +456,7 @@ internal fun buildState(
                         settings = settings,
                         swipeCount = node?.messages?.size ?: 1,
                         swipeIndex = node?.selectIndex ?: 0,
+                        nodeId = node?.id?.toString().orEmpty(),
                     ),
                 )
             }
@@ -469,6 +476,7 @@ internal fun buildMessage(
     settings: Settings,
     swipeCount: Int = 1,
     swipeIndex: Int = 0,
+    nodeId: String = "",
 ): JsonObject {
     val isUser = message.role == MessageRole.USER
     val textParts = message.parts.filterIsInstance<UIMessagePart.Text>()
@@ -566,6 +574,7 @@ internal fun buildMessage(
         // 备选回复（swipe）：页面据此显示切换入口
         put("swipeCount", JsonPrimitive(swipeCount))
         put("swipeIndex", JsonPrimitive(swipeIndex))
+        put("nodeId", JsonPrimitive(nodeId))
         put("id", message.id.toString())
         put("role", if (isUser) "user" else "assistant")
         put("name", name)

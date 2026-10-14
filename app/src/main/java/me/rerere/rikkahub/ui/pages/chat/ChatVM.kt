@@ -289,6 +289,13 @@ class ChatVM(
         return chatService.forkConversationAtMessage(_conversationId, message.id)
     }
 
+    // 切换备选回复（swipe）
+    fun selectMessageNode(nodeId: Uuid, selectIndex: Int) {
+        viewModelScope.launch {
+            runCatching { chatService.selectMessageNode(_conversationId, nodeId, selectIndex) }
+        }
+    }
+
     fun deleteMessage(message: UIMessage) {
         viewModelScope.launch {
             chatService.deleteMessage(_conversationId, message)
