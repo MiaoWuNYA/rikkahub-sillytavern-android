@@ -656,6 +656,7 @@
     '  try { if (window.parent && window.parent !== window) {',
     '    window.parent.TavernHelper = window.parent.TavernHelper || api;',
     '    window.parent.SillyTavern = window.parent.SillyTavern || api;',
+    '    window.parent.API = window.parent.API || api;',
     '    if (window.parent.webui && !window.parent.webui.emitEvent) window.parent.webui.emitEvent = api.emitEvent;',
     '    if (window.parent.webui && !window.parent.webui.setVariables) window.parent.webui.setVariables = api.setVariables;',
     '  } } catch (e) {}',
@@ -1496,7 +1497,25 @@
   window.addEventListener('resize', followBottom, false);
 
   // —— 原生侧接口 ——
+  var hostPending = {};
   window.webui = {
+    // 卡片脚本在主页面上下文调用宿主 API 时走这条通道
+    request: function (method, payload) {
+      return new Promise(function (resolve) {
+        var rid = 'h' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        hostPending[rid] = resolve;
+        try {
+          if (window.rikkaNative && typeof window.rikkaNative.request === 'function') {
+            window.rikkaNative.request(method, rid, payload == null ? '' : String(payload));
+          } else { resolve(null); }
+        } catch (e) { resolve(null); }
+        setTimeout(function () { if (hostPending[rid]) { hostPending[rid] = null; resolve(null); } }, 8000);
+      });
+    },
+    substituteMacros: function (text) { return window.webui.request('substituteMacros', text == null ? '' : String(text)); },
+    getChatMessages: function (range) { return window.webui.request('getChatMessages', range == null ? '' : String(range)); },
+    triggerSlash: function (cmd) { native('slash', cmd == null ? '' : String(cmd)); return Promise.resolve(); },
+    sendMessage: function (text) { native('send', text == null ? '' : String(text)); return Promise.resolve(); },
     // 原生下发的卡片运行库（jQuery / toastr / compat，base64 传输避免转义问题）
     setLibs: function (json) {
       var payload = parse(json) || {};
@@ -1541,6 +1560,8 @@
 
     // 原生回填：桥的 __rikkaResolve 与 compat.js 的 __rikkaNetResolve 两条通道都要喂（含本窗口）
     resolve: function (requestId, value) {
+      var f = hostPending[requestId];
+      if (f) { hostPending[requestId] = null; f(value); }
       var targets = [window];
       var frames = document.querySelectorAll('iframe');
       for (var i = 0; i < frames.length; i++) {
@@ -1741,4 +1762,8 @@
   window.rikkaStop = function () { native('stop', ''); };
   window.rikkaRegenerate = function () { native('regenerate', ''); };
   window.rikkaInsertSymbol = function (text) { native('insertSymbol', text); };
+  // 卡片脚本会在主页面上下文直接调宿主 API，别名必须在这里就绪，不能依赖卡片 iframe 里的桥
+  window.API = window.API || window.webui;
+  window.TavernHelper = window.TavernHelper || window.webui;
+  window.SillyTavern = window.SillyTavern || window.webui;
 })();
