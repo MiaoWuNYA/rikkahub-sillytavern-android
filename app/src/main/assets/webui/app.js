@@ -774,7 +774,7 @@
       escapeScriptBodies(parts.prepared ? parts.head : '') +
       '</head><body class="rikka-card-body">' +
       // 酒馆助手约定：宿主把消息原文放进隐藏的 #rawContent，卡片脚本从它切分文段
-      (ctx.rawText ? '<div id="rawContent" style="display:none">' + escapeHtml(ctx.rawText) + '</div>' : '') +
+      (ctx.rawText ? '<textarea id="rawContent" style="display:none">' + escapeHtml(ctx.rawText) + '</textarea>' : '') +
       body + '</body></html>';
   }
 
