@@ -151,6 +151,49 @@
     });
   }
 
+  // 只改选择器里的非 ASCII 标签名；注释、声明体、@规则名一律不碰，支持嵌套块
+  var CHARA_SEL_RE = /([A-Za-z0-9_:\-]*[\u0080-\uFFFF][A-Za-z0-9_:\-\u0080-\uFFFF]*)/g;
+
+  function rewriteCharaSelector(sel) {
+    if (!NON_ASCII.test(sel)) return sel;
+    var cut = sel.lastIndexOf('*/');
+    var head = cut >= 0 ? sel.slice(0, cut + 2) : '';
+    var tail = cut >= 0 ? sel.slice(cut + 2) : sel;
+    if (head && tail.indexOf('{') < 0 && tail.trim() === '') return head;
+    return head + tail.replace(CHARA_SEL_RE, function (name) {
+      return name.indexOf('@') === 0 ? name : '[data-chara="' + name + '"]';
+    });
+  }
+
+  function rewriteCharaCss(css) {
+    var text = String(css == null ? '' : css);
+    if (!NON_ASCII.test(text)) return text;
+    var out = '';
+    var i = 0;
+    while (i < text.length) {
+      var ch = text[i];
+      if (ch === '{') {
+        var depth = 1, j = i + 1;
+        while (j < text.length && depth > 0) {
+          if (text[j] === '{') depth++;
+          else if (text[j] === '}') depth--;
+          j++;
+        }
+        var block = text.slice(i + 1, Math.max(i + 1, j - 1));
+        out += '{' + (block.indexOf('{') >= 0 ? rewriteCharaCss(block) : block) + '}';
+        i = j;
+        continue;
+      }
+      var next = text.indexOf('{', i);
+      if (next < 0) { out += rewriteCharaSelector(text.slice(i)); break; }
+      var seg = text.slice(i, next);
+      out += seg.charAt(seg.length - 1) === '}' || seg.indexOf('@') === 0 && seg.indexOf('{') < 0
+        ? seg : rewriteCharaSelector(seg);
+      i = next;
+    }
+    return out;
+  }
+
   function normalizeCharaTags(html) {
     var text = String(html == null ? '' : html);
     if (!NON_ASCII.test(text)) return text;
@@ -179,36 +222,6 @@
 
   // 卡片 CSS 里的非 ASCII 元素选择器（清韵{…}）同样是死规则，改写成属性选择器；
   // 只在选择器区域替换，声明体（font-family: 微软雅黑 之类）原样保留。
-  function rewriteCharaSelector(part) {
-    if (!NON_ASCII.test(part)) return part;
-    return part.replace(/(^|[\s,>+~(\[])([\u0080-\uFFFF][\w\u0080-\uFFFF-]*)/g, function (full, lead, name) {
-      return lead + '[data-chara="' + name + '"]';
-    });
-  }
-
-  function rewriteCharaCss(css) {
-    var text = String(css == null ? '' : css);
-    if (!NON_ASCII.test(text) || text.indexOf('{') < 0) return text;
-    var out = '';
-    var buf = '';
-    var depth = 0;
-    for (var i = 0; i < text.length; i++) {
-      var ch = text[i];
-      if (ch === '{') {
-        out += rewriteCharaSelector(buf) + '{';
-        buf = '';
-        depth++;
-      } else if (ch === '}') {
-        out += buf + '}';
-        buf = '';
-        if (depth > 0) depth--;
-      } else {
-        buf += ch;
-      }
-    }
-    return out + buf;
-  }
-
   // —— 主题 / 外观 ——
   var FONT_STACKS = {
     serif: 'Georgia, "Noto Serif CJK SC", "Songti SC", serif',
