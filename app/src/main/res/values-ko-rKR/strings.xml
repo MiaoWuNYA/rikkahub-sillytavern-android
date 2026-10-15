@@ -1791,6 +1791,12 @@
   <string name="setting_page_general_settings">일반 설정</string>
   <string name="setting_page_group_chat">그룹 채팅</string>
   <string name="setting_page_group_chat_desc">여러 캐릭터가 함께하는 그룹 대화를 만듭니다</string>
+  <string name="setting_page_tavern">선술집 설정</string>
+  <string name="setting_page_tavern_desc">캐릭터 카드, 월드 인포, 페르소나 및 호환 스위치</string>
+  <string name="tavern_section_cards">캐릭터 카드와 설정</string>
+  <string name="tavern_section_prompts">월드 인포와 프리셋</string>
+  <string name="tavern_section_compat">호환과 런타임</string>
+  <string name="tavern_section_automation">자동화</string>
   <string name="setting_page_huadeng">HuaDeng 기능</string>
   <string name="setting_page_huadeng_desc">롤링 압축, 클린 모드 등 화보 &amp; 도구 세부 조정</string>
   <string name="setting_page_huadeng_title">HuaDeng</string>

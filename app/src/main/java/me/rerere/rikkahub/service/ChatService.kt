@@ -83,7 +83,10 @@ import me.rerere.rikkahub.data.ai.tools.createJudgeTool
 import me.rerere.rikkahub.data.ai.prompts.TITLE_MAX_CHARS
 import me.rerere.rikkahub.plugin.provider.PluginToolProvider
 import me.rerere.rikkahub.data.ai.tools.LocalTools
+import me.rerere.rikkahub.data.ai.tools.SubAgentHub
+import me.rerere.rikkahub.data.ai.tools.createSubAgentCheckTool
 import me.rerere.rikkahub.data.ai.tools.createSubAgentTool
+import me.rerere.rikkahub.data.ai.tools.resultText
 import me.rerere.rikkahub.data.ai.tools.LocalToolOption
 import me.rerere.rikkahub.data.ai.tools.createSearchTools
 import me.rerere.rikkahub.data.ai.tools.createWorkspaceTools
@@ -293,6 +296,9 @@ class ChatService(
 
     // 主线程 Handler：用于把 LifecycleRegistry 的注册/注销强制派发到主线程
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    // 后台子代理：派活即返回，跑完再把结果交回对话
+    private val subAgentHub = SubAgentHub()
 
     private val sessionManager = ConversationSessionManager(
         scope = appScope,
@@ -862,6 +868,40 @@ class ChatService(
             }
         }
         session.setJob(job)
+    }
+
+    /** 后台子代理跑完：等本次生成让出对话，把结果作为系统消息写回，并让助手接着说。 */
+    private fun onSubAgentRunFinished(run: SubAgentHub.Run) {
+        val conversationId = runCatching { Uuid.parse(run.conversationId) }.getOrNull() ?: return
+        launchWithConversationReference(conversationId) {
+            val session = sessionManager.getOrCreate(conversationId)
+            runCatching { session.getJob()?.join() }
+            if (run.picked) return@launchWithConversationReference
+            run.picked = true
+
+            val latest = getConversationFlow(conversationId).value
+            val saved = runCatching {
+                saveConversation(
+                    conversationId,
+                    latest.copy(
+                        messageNodes = latest.messageNodes + UIMessage(
+                            role = MessageRole.SYSTEM,
+                            parts = listOf(UIMessagePart.Text(run.resultText())),
+                            name = run.assistantName.takeIf { it.isNotBlank() },
+                        ).toMessageNode(),
+                    ),
+                )
+            }
+            if (saved.isFailure) {
+                addError(saved.exceptionOrNull()!!, conversationId, title = context.getString(R.string.error_title_send_message))
+                return@launchWithConversationReference
+            }
+
+            // 队列里还有消息、或用户已经发起新一轮生成时都不抢：结果留在历史里，模型下一轮自会看到
+            if (session.messageQueue.state.value.messages.isNotEmpty()) return@launchWithConversationReference
+            if (session.getJob()?.isActive == true) return@launchWithConversationReference
+            triggerGeneration(conversationId)
+        }
     }
 
     /**
@@ -1683,6 +1723,10 @@ class ChatService(
                     if (settings.huadengSettings.enableSubAgent) {
                         add(
                             createSubAgentTool(
+                                hub = subAgentHub,
+                                scope = appScope,
+                                conversationId = conversationId.toString(),
+                                onFinished = ::onSubAgentRunFinished,
                                 generationLoop = generationLoop,
                                 settings = settings,
                                 assistant = assistant,
@@ -1693,6 +1737,7 @@ class ChatService(
                                 localTools = localTools,
                             )
                         )
+                        add(createSubAgentCheckTool(subAgentHub, conversationId.toString()))
                     }
                     add(createWebFetchTool())
                     if (assistant.localTools.contains(LocalToolOption.TaskTools)) {

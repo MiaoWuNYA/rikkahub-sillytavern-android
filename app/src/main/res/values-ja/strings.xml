@@ -1791,6 +1791,12 @@
   <string name="setting_page_general_settings">一般設定</string>
   <string name="setting_page_group_chat">グループチャット</string>
   <string name="setting_page_group_chat_desc">複数キャラクターのグループチャット</string>
+  <string name="setting_page_tavern">タバーン設定</string>
+  <string name="setting_page_tavern_desc">キャラクターカード、ワールド情報、ペルソナと互換スイッチ</string>
+  <string name="tavern_section_cards">キャラクターカードと設定</string>
+  <string name="tavern_section_prompts">ワールド情報とプリセット</string>
+  <string name="tavern_section_compat">互換と動作</string>
+  <string name="tavern_section_automation">自動化</string>
   <string name="setting_page_huadeng">花灯（HuaDeng）設定</string>
   <string name="setting_page_huadeng_desc">グローバルプロキシ修正、空返答対策、コンテキスト&amp;ツールの調整</string>
   <string name="setting_page_huadeng_title">互換性</string>
