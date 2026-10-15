@@ -412,6 +412,9 @@ data class DisplaySetting(
     val hideSearchPicker: Boolean = false,
     val hideReasoningPicker: Boolean = false,
     val hideMoreButton: Boolean = false,
+    // 侧边栏功能入口隐藏开关（true = 隐藏）
+    val hideDrawerMediaCreation: Boolean = false,
+    val hideDrawerAiTranslate: Boolean = false,
     // 一键添加符号：开启后输入框下方显示插入按钮
     val enableBracketButton: Boolean = false,
     val bracketButtonSymbol: String = "()",

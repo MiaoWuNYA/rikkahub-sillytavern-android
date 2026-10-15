@@ -84,8 +84,9 @@ import me.rerere.rikkahub.utils.openUrl
 import me.rerere.rikkahub.utils.plus
 import me.rerere.ui.easteregg.EmojiBurstHost
 
-// 自制官网；上游原版仓库按许可标明出处
-private const val AUTHOR_REPO_URL = "https://rikkahub.luoca.cn"
+// 本站仓库与自制官网；上游原版仓库按许可标明出处
+private const val GITHUB_REPO_URL = "https://github.com/MiaoWuNYA/rikkahub-sillytavern-android"
+private const val WEBSITE_URL = "https://rikkahub.luoca.cn"
 private const val UPSTREAM_REPO_URL = "https://github.com/rikkahub/rikkahub"
 
 @Composable
@@ -246,16 +247,16 @@ fun SettingAboutPage() {
                     val contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                     CardGroup {
                         item(
-                            onClick = { context.openUrl("https://rikka-ai.com/") },
+                            onClick = { context.openUrl(WEBSITE_URL) },
                             leadingContent = { CardGroupIcon(HugeIcons.Earth, containerColor = containerColor, contentColor = contentColor) },
-                            supportingContent = { Text("https://rikka-ai.com") },
+                            supportingContent = { Text(WEBSITE_URL) },
                             headlineContent = { Text(stringResource(R.string.about_page_website)) },
                         )
-                        // Github 条目指向自制官网
+                        // Github 条目指向本站仓库
                         item(
-                            onClick = { context.openUrl(AUTHOR_REPO_URL) },
+                            onClick = { context.openUrl(GITHUB_REPO_URL) },
                             leadingContent = { CardGroupIcon(HugeIcons.Github, containerColor = containerColor, contentColor = contentColor) },
-                            supportingContent = { Text(AUTHOR_REPO_URL) },
+                            supportingContent = { Text(GITHUB_REPO_URL) },
                             headlineContent = { Text(stringResource(R.string.about_page_github)) },
                         )
                         // 上游留在下面：本版衍生自它，按许可该标明出处，

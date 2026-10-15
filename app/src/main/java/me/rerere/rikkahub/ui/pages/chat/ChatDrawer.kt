@@ -1225,18 +1225,22 @@ private fun DrawerActions(
         )
 
         // 媒体创作入口
-        DrawerEntry(
-            icon = HugeIcons.ImageToVideo,
-            text = stringResource(R.string.media_creation_title),
-            onClick = { navController.navigate(Screen.MediaCreationSessions) },
-        )
+        if (!settings.displaySetting.hideDrawerMediaCreation) {
+            DrawerEntry(
+                icon = HugeIcons.ImageToVideo,
+                text = stringResource(R.string.media_creation_title),
+                onClick = { navController.navigate(Screen.MediaCreationSessions) },
+            )
+        }
 
         // 翻译入口
-        DrawerEntry(
-            icon = HugeIcons.LanguageCircle,
-            text = stringResource(R.string.chat_page_menu_ai_translator),
-            onClick = { navController.navigate(Screen.Translator) },
-        )
+        if (!settings.displaySetting.hideDrawerAiTranslate) {
+            DrawerEntry(
+                icon = HugeIcons.LanguageCircle,
+                text = stringResource(R.string.chat_page_menu_ai_translator),
+                onClick = { navController.navigate(Screen.Translator) },
+            )
+        }
         if (!settings.huadengSettings.enableCleanMode) {
             // 情侣空间入口
             DrawerEntry(

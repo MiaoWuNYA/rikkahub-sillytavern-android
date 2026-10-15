@@ -16,13 +16,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Settings03
-import me.rerere.hugeicons.stroke.Edit01
-import me.rerere.hugeicons.stroke.AlarmClock
 import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.Brain01
 import me.rerere.hugeicons.stroke.Message01
 import me.rerere.hugeicons.stroke.MessageMultiple01
-import me.rerere.hugeicons.stroke.Notebook
 import me.rerere.hugeicons.stroke.Shield01
 import me.rerere.rikkahub.Screen
 import androidx.compose.foundation.text.KeyboardOptions
@@ -96,20 +93,6 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                     title = { Text(stringResource(R.string.huadeng_section_integration)) },
                 ) {
                     item(
-                        onClick = { navController.navigate(Screen.Persona) },
-                        leadingContent = { CardGroupIcon(HugeIcons.Edit01) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_persona_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_persona)) },
-                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
-                    )
-                    item(
-                        onClick = { navController.navigate(Screen.GroupChatList) },
-                        leadingContent = { CardGroupIcon(HugeIcons.MessageMultiple01) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_group_chat_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_group_chat)) },
-                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
-                    )
-                    item(
                         onClick = { navController.navigate(Screen.SettingJev) },
                         leadingContent = { CardGroupIcon(HugeIcons.Brain01) },
                         supportingContent = { Text(stringResource(R.string.setting_page_jev_desc)) },
@@ -138,24 +121,10 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                         trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
                     )
                     item(
-                        onClick = { navController.navigate(Screen.SettingProactiveMessage) },
-                        leadingContent = { CardGroupIcon(HugeIcons.AlarmClock) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_proactive_message_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_proactive_message)) },
-                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
-                    )
-                    item(
                         onClick = { navController.navigate(Screen.SettingSecurity) },
                         leadingContent = { CardGroupIcon(HugeIcons.Shield01) },
                         supportingContent = { Text(stringResource(R.string.setting_page_security_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_security)) },
-                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
-                    )
-                    item(
-                        onClick = { navController.navigate(Screen.AuthorsNote) },
-                        leadingContent = { CardGroupIcon(HugeIcons.Notebook) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_authors_note_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_authors_note)) },
                         trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
                     )
                 }

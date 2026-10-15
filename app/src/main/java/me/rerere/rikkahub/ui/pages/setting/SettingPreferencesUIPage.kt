@@ -583,6 +583,30 @@ internal fun SettingPreferencesUIContent(vm: SettingVM, contentPadding: PaddingV
                             )
                         },
                     )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_hide_drawer_media_creation_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_hide_drawer_media_creation_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.hideDrawerMediaCreation,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(hideDrawerMediaCreation = it))
+                                }
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_hide_drawer_ai_translate_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_hide_drawer_ai_translate_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.hideDrawerAiTranslate,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(hideDrawerAiTranslate = it))
+                                }
+                            )
+                        },
+                    )
                 }
             }
         }
