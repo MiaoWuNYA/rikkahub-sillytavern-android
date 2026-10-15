@@ -1617,6 +1617,10 @@
   <string name="setting_display_page_hide_model_picker_title">隐藏模型选择</string>
   <string name="setting_display_page_hide_more_button_desc">隐藏发送键左侧的加号按钮</string>
   <string name="setting_display_page_hide_more_button_title">隐藏加号按钮</string>
+  <string name="setting_display_page_hide_drawer_media_creation_desc">隐藏侧边栏的媒体创作入口</string>
+  <string name="setting_display_page_hide_drawer_media_creation_title">隐藏侧边栏媒体创作</string>
+  <string name="setting_display_page_hide_drawer_ai_translate_desc">隐藏侧边栏的 AI翻译入口</string>
+  <string name="setting_display_page_hide_drawer_ai_translate_title">隐藏侧边栏AI翻译</string>
   <string name="setting_display_page_hide_new_chat_button_desc">隐藏右上角的添加新消息按钮</string>
   <string name="setting_display_page_hide_new_chat_button_title">隐藏新消息按钮</string>
   <string name="setting_display_page_hide_reasoning_picker_desc">隐藏输入框旁的深度思考选项</string>

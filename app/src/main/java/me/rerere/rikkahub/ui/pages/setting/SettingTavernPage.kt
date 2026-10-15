@@ -15,6 +15,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.AlarmClock
 import me.rerere.hugeicons.stroke.Book01
 import me.rerere.hugeicons.stroke.Edit01
 import me.rerere.hugeicons.stroke.LookTop
@@ -123,6 +124,12 @@ fun SettingTavernPage() {
                         leadingContent = { CardGroupIcon(HugeIcons.Package) },
                         supportingContent = { Text(stringResource(R.string.setting_page_extensions_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_extensions)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingProactiveMessage) },
+                        leadingContent = { CardGroupIcon(HugeIcons.AlarmClock) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_proactive_message_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_proactive_message)) },
                     )
                 }
             }

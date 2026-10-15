@@ -1624,6 +1624,10 @@
   <string name="setting_display_page_hide_model_picker_title">Hide Model Picker</string>
   <string name="setting_display_page_hide_more_button_desc">Hide the plus button on the left of the send button</string>
   <string name="setting_display_page_hide_more_button_title">Hide Plus Button</string>
+  <string name="setting_display_page_hide_drawer_media_creation_desc">Hide the media creation entry in the sidebar</string>
+  <string name="setting_display_page_hide_drawer_media_creation_title">Hide Sidebar Media Creation</string>
+  <string name="setting_display_page_hide_drawer_ai_translate_desc">Hide the AI translator entry in the sidebar</string>
+  <string name="setting_display_page_hide_drawer_ai_translate_title">Hide Sidebar AI Translator</string>
   <string name="setting_display_page_hide_new_chat_button_desc">Hide the new chat button at the top right corner</string>
   <string name="setting_display_page_hide_new_chat_button_title">Hide New Chat Button</string>
   <string name="setting_display_page_hide_reasoning_picker_desc">Hide the deep thinking option next to the input box</string>
