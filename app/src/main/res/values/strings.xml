@@ -179,7 +179,7 @@
   <string name="assistant_page_thinking_budget">Thinking Budget</string>
   <string name="assistant_page_time_reminder">Time Reminder</string>
   <string name="assistant_page_time_reminder_desc">Automatically inject time reminders before messages with large time gaps to help AI understand conversation intervals</string>
-  <string name="assistant_page_title">Assistant Settings</string>
+  <string name="assistant_page_title">Character Card</string>
   <string name="assistant_page_top_p">Top P</string>
   <string name="assistant_page_top_p_value">Top P: %s</string>
   <string name="assistant_page_top_p_warning">Please don\'t modify this value unless you know what you\'re doing</string>
@@ -1874,8 +1874,8 @@
   <string name="setting_model_page_translate_prompt_vars">Variables: Source text: {source_text}, Target language: {target_lang}</string>
   <string name="setting_page_about">About</string>
   <string name="setting_page_about_desc">About this app</string>
-  <string name="setting_page_assistant">Assistant</string>
-  <string name="setting_page_assistant_desc">Set up personalized assistants (agents)</string>
+  <string name="setting_page_assistant">Character Cards</string>
+  <string name="setting_page_assistant_desc">Character cards: persona, prompts, model and tools</string>
   <string name="setting_page_authors_note">Author\'s Note</string>
   <string name="setting_page_authors_note_desc">Control AI output direction with director notes</string>
   <string name="setting_page_built_in_tools">Built-in Tools</string>
@@ -1908,6 +1908,12 @@
   <string name="setting_page_display_setting_desc">Manage display settings</string>
   <string name="setting_page_group_chat">Group Chat</string>
   <string name="setting_page_group_chat_desc">Multi-character group chat</string>
+  <string name="setting_page_tavern">Tavern Settings</string>
+  <string name="setting_page_tavern_desc">Character cards, world info, persona and compatibility switches</string>
+  <string name="tavern_section_cards">Character Cards &amp; Persona</string>
+  <string name="tavern_section_prompts">World Info &amp; Presets</string>
+  <string name="tavern_section_compat">Compatibility &amp; Runtime</string>
+  <string name="tavern_section_automation">Automation</string>
   <string name="setting_page_huadeng">HuaDeng Settings</string>
   <string name="setting_page_huadeng_desc">Global proxy fix, anti-empty reply, and context &amp; tool tuning</string>
   <string name="setting_page_huadeng_title">Compatibility</string>

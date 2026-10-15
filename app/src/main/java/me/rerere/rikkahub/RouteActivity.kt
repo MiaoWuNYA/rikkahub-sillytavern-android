@@ -152,6 +152,7 @@ import me.rerere.rikkahub.ui.pages.setting.SettingWebPage
 import me.rerere.rikkahub.ui.pages.setting.SettingWeixinBotPage
 import me.rerere.rikkahub.ui.pages.setting.SettingHuaDengCompatPage
 import me.rerere.rikkahub.ui.pages.setting.SettingHuaDengPage
+import me.rerere.rikkahub.ui.pages.setting.SettingTavernPage
 import me.rerere.rikkahub.ui.pages.setting.SettingJevPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSecurityPage
 import me.rerere.rikkahub.ui.pages.share.handler.ShareHandlerPage
@@ -641,6 +642,10 @@ class RouteActivity : ComponentActivity() {
                                 SettingWebPage()
                             }
 
+                            entry<Screen.SettingTavern> {
+                                SettingTavernPage()
+                            }
+
                             entry<Screen.SettingHuaDeng> {
                                 SettingHuaDengPage()
                             }
@@ -995,6 +1000,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingWeb : Screen
+
+    @Serializable
+    data object SettingTavern : Screen
 
     @Serializable
     data object SettingHuaDeng : Screen

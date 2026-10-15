@@ -156,7 +156,8 @@ class GenerationLoop(
         name.startsWith("present_file") -> "🔧 文件 → 正在分享..."
         name.startsWith("eval_javascript") -> "🔧 JS → 正在执行..."
         name.startsWith("memory_") -> "🔧 记忆 → 正在处理..."
-        name == "delegate_agent" -> "🤖 子 agent → 正在执行子任务..."
+        name == "delegate_agent" -> "🤖 子 agent → 已派发到后台..."
+        name == "check_subagent" -> "🤖 子 agent → 正在取回结果..."
             else -> "🔧 $name → 正在处理..."
     }
 

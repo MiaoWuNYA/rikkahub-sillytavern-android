@@ -62,7 +62,6 @@ import me.rerere.hugeicons.stroke.GlobalSearch
 import me.rerere.hugeicons.stroke.Image02
 import me.rerere.hugeicons.stroke.ImageUpload
 import me.rerere.hugeicons.stroke.InLove
-import me.rerere.hugeicons.stroke.LookTop
 import me.rerere.hugeicons.stroke.Edit01
 import me.rerere.hugeicons.stroke.GraduationCap
 import me.rerere.hugeicons.stroke.MessageMultiple01
@@ -198,10 +197,10 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         headlineContent = { Text(stringResource(R.string.setting_page_preferences_general)) },
                     )
                     item(
-                        onClick = { navController.navigate(Screen.Assistant) },
-                        leadingContent = { CardGroupIcon(HugeIcons.LookTop, containerColor = containerColor, contentColor = contentColor) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_assistant_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_assistant)) },
+                        onClick = { navController.navigate(Screen.SettingTavern) },
+                        leadingContent = { CardGroupIcon(HugeIcons.Bookshelf01, containerColor = containerColor, contentColor = contentColor) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_tavern_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_tavern)) },
                     )
                     item(
                         onClick = { navController.navigate(Screen.Extensions) },
@@ -209,13 +208,6 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         supportingContent = { Text(stringResource(R.string.setting_page_extensions_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_extensions)) },
                     )
-                    item(
-                        onClick = { navController.navigate(Screen.SettingHuaDeng) },
-                        leadingContent = { CardGroupIcon(HugeIcons.Settings03, containerColor = containerColor, contentColor = contentColor) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_huadeng_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_huadeng)) },
-                    )
-                    
                 }
             }
 

@@ -1791,6 +1791,12 @@
   <string name="setting_page_general_settings">通用設定</string>
   <string name="setting_page_group_chat">群聊</string>
   <string name="setting_page_group_chat_desc">多人角色群聊</string>
+  <string name="setting_page_tavern">酒館設定</string>
+  <string name="setting_page_tavern_desc">角色卡、世界書、人設與相容開關</string>
+  <string name="tavern_section_cards">角色卡與設定</string>
+  <string name="tavern_section_prompts">世界書與預設</string>
+  <string name="tavern_section_compat">相容與執行</string>
+  <string name="tavern_section_automation">自動化</string>
   <string name="setting_page_huadeng">華燈設定</string>
   <string name="setting_page_huadeng_desc">全域中轉站相容、防空回覆、上下文與工具治理</string>
   <string name="setting_page_huadeng_title">相容與輔助</string>
