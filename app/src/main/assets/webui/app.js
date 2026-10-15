@@ -876,6 +876,8 @@
       img.loading = 'lazy';
       img.alt = '';
       img.addEventListener('load', followBottom);
+      // 图挂了也要留一块可见占位，别缩成 0 宽
+      img.addEventListener('error', function () { img.classList.add('failed'); });
       wrap.appendChild(img);
     } else if (block.type === 'video') {
       var v = document.createElement('video');
