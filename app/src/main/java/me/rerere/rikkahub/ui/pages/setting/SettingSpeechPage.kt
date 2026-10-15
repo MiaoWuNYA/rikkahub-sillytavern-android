@@ -84,23 +84,8 @@ import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
-private enum class SpeechTab(
-    override val icon: ImageVector,
-    @param:StringRes private val labelRes: Int,
-) : PagerTab {
-    TTS(HugeIcons.VolumeHigh, R.string.speech_tab_tts),
-    ASR(HugeIcons.Mic01, R.string.speech_tab_asr);
-
-    override val label: String
-        @Composable get() = stringResource(labelRes)
-}
-
 @Composable
 fun SettingSpeechPage(vm: SettingVM = koinViewModel()) {
-    val settings by vm.settings.collectAsStateWithLifecycle()
-    var editingTTSProvider by remember { mutableStateOf<TTSProviderSetting?>(null) }
-    var editingASRProvider by remember { mutableStateOf<ASRProviderSetting?>(null) }
-    val pagerState = rememberPagerState { SpeechTab.entries.size }
     val navController = LocalNavController.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -114,30 +99,25 @@ fun SettingSpeechPage(vm: SettingVM = koinViewModel()) {
                     BackButton()
                 },
                 actions = {
-                    when (SpeechTab.entries[pagerState.targetPage]) {
-                        SpeechTab.TTS -> {
-                            IconButton(onClick = { navController.navigate(Screen.SettingTtsPlayback) }) {
-                                Icon(
-                                    imageVector = HugeIcons.SlidersHorizontal,
-                                    contentDescription = stringResource(R.string.setting_page_tts_settings),
-                                )
-                            }
-                            AddTTSProviderButton {
-                                vm.updateSettings { latest ->
-                                    latest.copy(
-                                        ttsProviders = listOf(it) + latest.ttsProviders
-                                    )
-                                }
-                            }
+                    IconButton(onClick = { navController.navigate(Screen.SettingTtsPlayback) }) {
+                        Icon(
+                            imageVector = HugeIcons.SlidersHorizontal,
+                            contentDescription = stringResource(R.string.setting_page_tts_settings),
+                        )
+                    }
+                    AddTTSProviderButton {
+                        vm.updateSettings { latest ->
+                            latest.copy(
+                                ttsProviders = listOf(it) + latest.ttsProviders
+                            )
                         }
-
-                        SpeechTab.ASR -> AddASRProviderButton {
-                            vm.updateSettings { latest ->
-                                latest.copy(
-                                    asrProviders = listOf(it) + latest.asrProviders,
-                                    selectedASRProviderId = latest.selectedASRProviderId ?: it.id
-                                )
-                            }
+                    }
+                    AddASRProviderButton {
+                        vm.updateSettings { latest ->
+                            latest.copy(
+                                asrProviders = listOf(it) + latest.asrProviders,
+                                selectedASRProviderId = latest.selectedASRProviderId ?: it.id
+                            )
                         }
                     }
                 },
@@ -148,40 +128,43 @@ fun SettingSpeechPage(vm: SettingVM = koinViewModel()) {
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor,
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .consumeWindowInsets(innerPadding)
-        ) {
-            PagerTabs(
-                pagerState = pagerState,
-                tabs = SpeechTab.entries,
-                modifier = Modifier.padding(bottom = 4.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp),
-            )
+        SpeechServicesContent(vm = vm, contentPadding = innerPadding)
+    }
+}
 
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-            ) { page ->
-                when (SpeechTab.entries[page]) {
-                    SpeechTab.TTS -> TTSProviderList(
-                        settings = settings,
-                        onUpdateSettings = vm::updateSettings,
-                        onEdit = { editingTTSProvider = it },
-                    )
+@Composable
+internal fun SpeechServicesContent(vm: SettingVM, contentPadding: PaddingValues) {
+    val settings by vm.settings.collectAsStateWithLifecycle()
+    var editingTTSProvider by remember { mutableStateOf<TTSProviderSetting?>(null) }
+    var editingASRProvider by remember { mutableStateOf<ASRProviderSetting?>(null) }
 
-                    SpeechTab.ASR -> ASRProviderList(
-                        settings = settings,
-                        onUpdateSettings = vm::updateSettings,
-                        onEdit = { editingASRProvider = it },
-                    )
-                }
-            }
-        }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(contentPadding)
+    ) {
+        Text(
+            text = stringResource(R.string.speech_tab_tts),
+            style = MaterialTheme.typography.titleSmallEmphasized,
+            modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 4.dp),
+        )
+        TTSProviderList(
+            settings = settings,
+            onUpdateSettings = vm::updateSettings,
+            onEdit = { editingTTSProvider = it },
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = stringResource(R.string.speech_tab_asr),
+            style = MaterialTheme.typography.titleSmallEmphasized,
+            modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 4.dp),
+        )
+        ASRProviderList(
+            settings = settings,
+            onUpdateSettings = vm::updateSettings,
+            onEdit = { editingASRProvider = it },
+            modifier = Modifier.weight(1f),
+        )
     }
 
     editingTTSProvider?.let { provider ->
@@ -382,7 +365,7 @@ private fun ASRProviderList(
 
 // 类型在配置面板里选，新建时默认是系统 TTS
 @Composable
-private fun AddTTSProviderButton(onAdd: (TTSProviderSetting) -> Unit) {
+internal fun AddTTSProviderButton(onAdd: (TTSProviderSetting) -> Unit) {
     var newProvider by remember { mutableStateOf<TTSProviderSetting?>(null) }
 
     IconButton(
@@ -406,7 +389,7 @@ private fun AddTTSProviderButton(onAdd: (TTSProviderSetting) -> Unit) {
 
 // 新建时先选类型，再进配置面板
 @Composable
-private fun AddASRProviderButton(onAdd: (ASRProviderSetting) -> Unit) {
+internal fun AddASRProviderButton(onAdd: (ASRProviderSetting) -> Unit) {
     var showTypeSheet by remember { mutableStateOf(false) }
     var newProvider by remember { mutableStateOf<ASRProviderSetting?>(null) }
     val factories = remember {
