@@ -555,8 +555,8 @@ private fun AssistantPromptContent(
                     val expanded = regex.id in expandedIds
                     AssistantRegexCard(
                         regex = regex,
-                        onUpdate = onUpdate,
-                        assistant = assistant,
+                        regexes = assistant.regexes,
+                        onUpdate = { onUpdate(assistant.copy(regexes = it)) },
                         index = index,
                         shape = cardGroupItemShape(index, assistant.regexes.size),
                         expanded = expanded,
@@ -578,8 +578,8 @@ private fun AssistantPromptContent(
 @Composable
 internal fun AssistantRegexCard(
     regex: AssistantRegex,
-    onUpdate: (Assistant) -> Unit,
-    assistant: Assistant,
+    regexes: List<AssistantRegex>,
+    onUpdate: (List<AssistantRegex>) -> Unit,
     index: Int,
     shape: Shape,
     expanded: Boolean,
@@ -626,15 +626,13 @@ internal fun AssistantRegexCard(
                     checked = regex.enabled,
                     onCheckedChange = { enabled ->
                         onUpdate(
-                            assistant.copy(
-                                regexes = assistant.regexes.mapIndexed { i, reg ->
-                                    if (i == index) {
-                                        reg.copy(enabled = enabled)
-                                    } else {
-                                        reg
-                                    }
+                            regexes.mapIndexed { i, reg ->
+                                if (i == index) {
+                                    reg.copy(enabled = enabled)
+                                } else {
+                                    reg
                                 }
-                            )
+                            }
                         )
                     },
                     modifier = Modifier.padding(start = 8.dp)
@@ -660,15 +658,13 @@ internal fun AssistantRegexCard(
                         value = regex.name,
                         onValueChange = { name ->
                             onUpdate(
-                                assistant.copy(
-                                    regexes = assistant.regexes.mapIndexed { i, reg ->
-                                        if (i == index) {
-                                            reg.copy(name = name)
-                                        } else {
-                                            reg
-                                        }
+                                regexes.mapIndexed { i, reg ->
+                                    if (i == index) {
+                                        reg.copy(name = name)
+                                    } else {
+                                        reg
                                     }
-                                )
+                                }
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -679,15 +675,13 @@ internal fun AssistantRegexCard(
                         value = regex.findRegex,
                         onValueChange = { findRegex ->
                             onUpdate(
-                                assistant.copy(
-                                    regexes = assistant.regexes.mapIndexed { i, reg ->
-                                        if (i == index) {
-                                            reg.copy(findRegex = findRegex.trim())
-                                        } else {
-                                            reg
-                                        }
+                                regexes.mapIndexed { i, reg ->
+                                    if (i == index) {
+                                        reg.copy(findRegex = findRegex.trim())
+                                    } else {
+                                        reg
                                     }
-                                )
+                                }
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -699,15 +693,13 @@ internal fun AssistantRegexCard(
                         value = regex.replaceString,
                         onValueChange = { replaceString ->
                             onUpdate(
-                                assistant.copy(
-                                    regexes = assistant.regexes.mapIndexed { i, reg ->
-                                        if (i == index) {
-                                            reg.copy(replaceString = replaceString)
-                                        } else {
-                                            reg
-                                        }
+                                regexes.mapIndexed { i, reg ->
+                                    if (i == index) {
+                                        reg.copy(replaceString = replaceString)
+                                    } else {
+                                        reg
                                     }
-                                )
+                                }
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -735,15 +727,13 @@ internal fun AssistantRegexCard(
                                         regex.affectingScope + scope
                                     }
                                     onUpdate(
-                                        assistant.copy(
-                                            regexes = assistant.regexes.mapIndexed { i, reg ->
-                                                if (i == index) {
-                                                    reg.copy(affectingScope = newScopes)
-                                                } else {
-                                                    reg
-                                                }
+                                        regexes.mapIndexed { i, reg ->
+                                            if (i == index) {
+                                                reg.copy(affectingScope = newScopes)
+                                            } else {
+                                                reg
                                             }
-                                        )
+                                        }
                                     )
                                 },
                                 label = {
@@ -775,16 +765,14 @@ internal fun AssistantRegexCard(
                             checked = regex.visualOnly,
                             onCheckedChange = { visualOnly ->
                                 onUpdate(
-                                    assistant.copy(
-                                        regexes = assistant.regexes.mapIndexed { i, reg ->
-                                            if (i == index) {
-                                                // 对齐酒馆：仅显示 / 仅提示词 互斥
-                                                reg.copy(visualOnly = visualOnly, promptOnly = if (visualOnly) false else reg.promptOnly)
-                                            } else {
-                                                reg
-                                            }
+                                    regexes.mapIndexed { i, reg ->
+                                        if (i == index) {
+                                            // 对齐酒馆：仅显示 / 仅提示词 互斥
+                                            reg.copy(visualOnly = visualOnly, promptOnly = if (visualOnly) false else reg.promptOnly)
+                                        } else {
+                                            reg
                                         }
-                                    )
+                                    }
                                 )
                             }
                         )
@@ -799,15 +787,13 @@ internal fun AssistantRegexCard(
                         checked = regex.promptOnly,
                         onCheckedChange = { promptOnly ->
                             onUpdate(
-                                assistant.copy(
-                                    regexes = assistant.regexes.mapIndexed { i, reg ->
-                                        if (i == index) {
-                                            reg.copy(promptOnly = promptOnly, visualOnly = if (promptOnly) false else reg.visualOnly)
-                                        } else {
-                                            reg
-                                        }
+                                regexes.mapIndexed { i, reg ->
+                                    if (i == index) {
+                                        reg.copy(promptOnly = promptOnly, visualOnly = if (promptOnly) false else reg.visualOnly)
+                                    } else {
+                                        reg
                                     }
-                                )
+                                }
                             )
                         }
                     )
@@ -827,7 +813,7 @@ internal fun AssistantRegexCard(
         dismissText = stringResource(R.string.cancel),
         onConfirm = {
             showDeleteDialog = false
-            onUpdate(assistant.copy(regexes = assistant.regexes.filter { it.id != regex.id }))
+            onUpdate(regexes.filter { it.id != regex.id })
         },
         onDismiss = { showDeleteDialog = false },
     ) {

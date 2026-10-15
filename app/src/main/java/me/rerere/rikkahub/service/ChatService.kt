@@ -130,6 +130,7 @@ import me.rerere.rikkahub.data.ai.transformers.CrossWindowMemoryTransformer
 import me.rerere.rikkahub.data.ai.transformers.SkillAutoTriggerTransformer
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.Settings
+import me.rerere.rikkahub.data.datastore.allRegexesOf
 import me.rerere.rikkahub.data.datastore.findModelById
 import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.datastore.getAssistantById
@@ -720,7 +721,7 @@ class ChatService(
                 }
                 val assistant = settings.getAssistantById(currentConversation.assistantId)
                     ?: settings.getCurrentAssistant()
-                val processedContent = preprocessUserInputParts(content, assistant)
+                val processedContent = preprocessUserInputParts(content, assistant, settings)
 
                 // 添加消息到列表
                 val newConversation = currentConversation.copy(
@@ -814,7 +815,7 @@ class ChatService(
                     }
                     content.map { part ->
                         if (part is UIMessagePart.Text) {
-                            part.copy(text = part.text.replaceRegexes(assistant, scope, visual = false, depth = insertDepth))
+                            part.copy(text = part.text.replaceRegexes(settings.allRegexesOf(assistant), scope, visual = false, depth = insertDepth))
                         } else {
                             part
                         }
@@ -963,7 +964,7 @@ class ChatService(
                 // 官方 /sysgen trim=true：先按最后一个句子边界裁剪（trimToEndSentence），再走 getRegexedString(message, SLASH_COMMAND)
                 val rawNarration = result.message.toText()
                 val trimmed = if (trim) trimToEndSentence(rawNarration) else rawNarration.trim()
-                val narration = trimmed.replaceRegexes(assistant, AssistantAffectScope.ASSISTANT, visual = false, depth = 1)
+                val narration = trimmed.replaceRegexes(settings.allRegexesOf(assistant), AssistantAffectScope.ASSISTANT, visual = false, depth = 1)
                 if (narration.isBlank()) {
                     addError(
                         IllegalStateException(context.getString(R.string.slash_error_sysgen_empty)),
@@ -1033,13 +1034,13 @@ class ChatService(
             cp in 0x1FA70..0x1FAFF || cp in 0x2600..0x27BF || cp in 0x2B00..0x2BFF
     }
 
-    private fun preprocessUserInputParts(parts: List<UIMessagePart>, assistant: Assistant): List<UIMessagePart> {
+    private fun preprocessUserInputParts(parts: List<UIMessagePart>, assistant: Assistant, settings: Settings): List<UIMessagePart> {
         return parts.map { part ->
             when (part) {
                 is UIMessagePart.Text -> {
                     part.copy(
                         text = part.text.replaceRegexes(
-                            assistant = assistant,
+                            regexes = settings.allRegexesOf(assistant),
                             scope = AssistantAffectScope.USER,
                             visual = false,
                             // 用户输入即将作为最新消息发出，官方深度语义 1 = 最新
@@ -3095,7 +3096,7 @@ class ChatService(
         val settings = settingsStore.awaitLoaded()
         val assistant = settings.getAssistantById(currentConversation.assistantId)
             ?: settings.getCurrentAssistant()
-        val processedParts = preprocessUserInputParts(parts, assistant)
+        val processedParts = preprocessUserInputParts(parts, assistant, settings)
         var edited = false
 
         val updatedNodes = currentConversation.messageNodes.map { node ->

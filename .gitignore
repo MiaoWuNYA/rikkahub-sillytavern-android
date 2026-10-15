@@ -51,6 +51,11 @@ cocoon_plugin/
 *插件*.zip
 *主题增强*.zip
 
+# 华灯白饭鱼酒馆助手（签名证书派生加密载荷，不入库）
+com.huadeng.baifanyu.tavern/
+com.huadeng.baifanyu.tavern.zip
+r18_plain/
+
 # 本地素材与杂项文件，不推远程
 plugins.zip
 1_plugins.zip

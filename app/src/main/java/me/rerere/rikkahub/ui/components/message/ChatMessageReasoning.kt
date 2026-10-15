@@ -43,6 +43,7 @@ import me.rerere.ai.ui.UIMessagePart
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Idea01
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.datastore.allRegexesOf
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantAffectScope
 import me.rerere.rikkahub.data.model.replaceRegexes
@@ -129,6 +130,7 @@ private fun ReasoningContent(
     fadeHeight: Float,
     loading: Boolean,
 ) {
+    val settings = LocalSettings.current
     val isPreview = expandState == ReasoningCardState.Preview
     val reasoningTextStyle = MaterialTheme.typography.bodySmall.copy(
         fontFamily = LocalTextStyle.current.fontFamily,
@@ -170,7 +172,7 @@ private fun ReasoningContent(
         val reasoningContent = @Composable {
             MarkdownBlock(
                 content = reasoning.reasoning.replaceRegexes(
-                    assistant = assistant,
+                    regexes = settings.allRegexesOf(assistant),
                     scope = AssistantAffectScope.ASSISTANT,
                     visual = true,
                 ),

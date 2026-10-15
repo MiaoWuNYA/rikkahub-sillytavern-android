@@ -17,6 +17,7 @@ import me.rerere.rikkahub.data.ai.prompts.DEFAULT_TITLE_PROMPT
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_TRANSLATION_PROMPT
 import me.rerere.rikkahub.data.ai.prompts.TITLE_PROMPT_REVISION
 import me.rerere.rikkahub.data.model.Assistant
+import me.rerere.rikkahub.data.model.AssistantRegex
 import me.rerere.rikkahub.data.model.AuthorNoteEntry
 import me.rerere.rikkahub.data.model.AuthorNotePosition
 import me.rerere.rikkahub.data.model.Avatar
@@ -25,6 +26,7 @@ import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.model.Persona
 import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.QuickMessage
+import me.rerere.rikkahub.data.model.RegexGroup
 import me.rerere.rikkahub.data.model.Tag
 import me.rerere.rikkahub.data.model.ThemeIconSet
 import me.rerere.rikkahub.data.model.ThemeMarkdownStyle
@@ -96,6 +98,8 @@ data class Settings(
     val selectedASRProviderId: Uuid? = null,
     val modeInjections: List<PromptInjection.ModeInjection> = DEFAULT_MODE_INJECTIONS,
     val lorebooks: List<Lorebook> = emptyList(),
+    // 全局消息正则分组（页面上的文件夹）：酒馆预设导入的脚本等，对所有角色卡生效
+    val regexGroups: List<RegexGroup> = emptyList(),
     // 官方 world_info_budget 是上下文 token 的百分比
     // 本地默认改成 100（不裁剪）：官方那个 25% 是按短条目英文书设计的，
     // 中文角色卡的世界书动辄几万 token——一张卡 22 条里 11 条 cons
@@ -145,6 +149,10 @@ data class Settings(
     val proactiveMessageSetting: ProactiveMessageSetting = ProactiveMessageSetting(), // AI 主动发消息
     val securitySetting: SecuritySetting = SecuritySetting(),           // 安全设置（工具调用审批策略）
 ) {
+    /** 所有全局正则：各分组按列表顺序拼接。派生视图，不单独持久化。 */
+    val globalRegexes: List<AssistantRegex>
+        get() = regexGroups.flatMap { it.regexes }
+
     companion object {
         // 构造一个用于初始化的settings, 但它不能用于保存，防止使用初始值存储
         fun dummy() = Settings(init = true)

@@ -476,7 +476,7 @@ private fun ChatPageContent(
 
     // WebView 模式下的展示用消息：与原生渲染同一套展示层转换（消息正则
     var displayMessages by remember { mutableStateOf(conversation.currentMessages) }
-    LaunchedEffect(conversation.currentMessages, frontendCardPreferredNow) {
+    LaunchedEffect(conversation.currentMessages, frontendCardPreferredNow, loadingJob != null) {
         // 先立刻把原始消息交给页面：展示层转换是挂起操作，等它跑完再显示会让
         displayMessages = conversation.currentMessages
         displayMessages = if (!frontendCardPreferredNow) {
@@ -487,8 +487,10 @@ private fun ChatPageContent(
                     transformers = listOf(
                         me.rerere.rikkahub.data.ai.transformers.ThinkTagTransformer,
                         me.rerere.rikkahub.data.ai.transformers.OutputTagCleanupTransformer,
+                        // 流式期间不跑正则，生成结束后再一次性生效
+                    ) + if (loadingJob == null) listOf(
                         me.rerere.rikkahub.data.ai.transformers.RegexVisualTransformer,
-                    ),
+                    ) else emptyList(),
                     context = context,
                     model = currentChatModel ?: me.rerere.ai.provider.Model(),
                     assistant = setting.getAssistantOf(conversation),

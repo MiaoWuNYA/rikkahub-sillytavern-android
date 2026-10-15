@@ -18,6 +18,7 @@ import me.rerere.rikkahub.data.model.Persona
 import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.QuickMessage
+import me.rerere.rikkahub.data.model.RegexGroup
 import me.rerere.rikkahub.data.model.Tag
 import me.rerere.rikkahub.data.sync.s3.S3Config
 import me.rerere.rikkahub.ui.theme.CustomTheme
@@ -162,6 +163,7 @@ private val SAMPLE = Settings(
     selectedASRProviderId = id(11),
     modeInjections = listOf(PromptInjection.ModeInjection(id = id(14), name = "mode")),
     lorebooks = listOf(Lorebook(id = id(12), name = "lorebook")),
+    regexGroups = listOf(RegexGroup(id = id(19), name = "group")),
     quickMessages = listOf(QuickMessage(id = id(13), title = "hi")),
     webServerEnabled = true,
     webServerPort = 9090,
@@ -273,6 +275,7 @@ private val STORED_KEYS = setOf(
     "web_server_localhost_only",
     "mode_injections",
     "lorebooks",
+    "regex_groups",
     "quick_messages",
     "world_info_budget",
     "world_info_budget_cap",

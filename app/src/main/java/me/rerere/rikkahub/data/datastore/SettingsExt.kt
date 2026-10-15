@@ -4,6 +4,7 @@ import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.asr.ASRProviderSetting
 import me.rerere.rikkahub.data.model.Assistant
+import me.rerere.rikkahub.data.model.AssistantRegex
 import me.rerere.rikkahub.data.model.AuthorNoteEntry
 import me.rerere.rikkahub.data.model.LEGACY_AUTHOR_NOTE_ENTRY_ID
 import me.rerere.tts.provider.TTSProviderSetting
@@ -84,6 +85,10 @@ fun Settings.getAssistantById(id: Uuid): Assistant? {
 /** 该助手绑定的快捷消息，顺序跟随全局快捷消息列表。 */
 fun Settings.getQuickMessagesOfAssistant(assistant: Assistant) =
     quickMessages.filter { it.id in assistant.quickMessageIds }
+
+/** 该消息实际生效的全部正则：角色卡自身的 + 全局（酒馆预设导入的脚本等）。 */
+fun Settings.allRegexesOf(assistant: Assistant?): List<AssistantRegex> =
+    assistant?.regexes.orEmpty() + globalRegexes
 
 /** 当前选中的 TTS 提供商，选中的 ID 已不存在时回退到第一个。 */
 fun Settings.getSelectedTTSProvider(): TTSProviderSetting? {

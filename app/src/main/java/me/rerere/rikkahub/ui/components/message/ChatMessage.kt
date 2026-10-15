@@ -69,6 +69,7 @@ import me.rerere.hugeicons.stroke.MusicNote03
 import me.rerere.hugeicons.stroke.Video01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
+import me.rerere.rikkahub.data.datastore.allRegexesOf
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantAffectScope
 import me.rerere.rikkahub.data.model.MessageNode
@@ -353,28 +354,21 @@ private fun MessagePartsBlock(
     // Render parts in original order (group thinking/tool as chain-of-thought)
     val groupedParts = remember(parts) { parts.groupMessageParts() }
 
-    // 正则可视化替换的缓存：replaceRegexes 会遍历助手全部正则并做字符串替换，
-    // 流式生成期间每个 chunk、每次重组都会对每条消息重跑一遍，长会话下是主线程卡顿
-    // （Choreographer Skipped frames）的主要来源。这里按 (原文, 作用域, 视觉层, 深度, 助手正则表)
-    // 缓存结果，内容不变时直接复用。
-    // 注意：不缓存正在流式增长的那条消息之外的稳定消息；缓存 key 含文本本身，
-    // 因此流式文本变化时会自然 miss 并重算，语义与原先一致。
-    val regexVisualCache = remember(assistant?.id, assistant?.regexes, messageDepth) {
+    // 正则可视化替换按 (原文, 作用域) 缓存，稳定消息重组直接复用；流式期间见 applyVisualRegexes
+    val effectiveRegexes = remember(assistant?.id, assistant?.regexes, settings.globalRegexes, messageDepth) {
+        settings.allRegexesOf(assistant)
+    }
+    val regexVisualCache = remember(effectiveRegexes, messageDepth) {
         mutableMapOf<Pair<String, AssistantAffectScope>, String>()
     }
     fun applyVisualRegexes(text: String, scope: AssistantAffectScope): String {
-        if (assistant == null || assistant.regexes.isEmpty()) return text
-        // 流式消息文本不断变化，缓存对它是纯开销，直接计算
-        if (loading) return text.replaceRegexes(
-            assistant = assistant,
-            scope = scope,
-            visual = true,
-            depth = messageDepth,
-        )
+        if (effectiveRegexes.isEmpty()) return text
+        // 流式期间不跑正则：整条消息每个 chunk 重算会卡，生成结束后再一次性生效
+        if (loading) return text
         val key = text to scope
         return regexVisualCache.getOrPut(key) {
             text.replaceRegexes(
-                assistant = assistant,
+                regexes = effectiveRegexes,
                 scope = scope,
                 visual = true,
                 depth = messageDepth,

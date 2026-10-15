@@ -22,6 +22,7 @@ import me.rerere.hugeicons.stroke.MagicWand01
 import me.rerere.hugeicons.stroke.Message01
 import me.rerere.hugeicons.stroke.MessageMultiple01
 import me.rerere.hugeicons.stroke.Notebook
+import me.rerere.hugeicons.stroke.Package
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.ui.components.nav.BackButton
@@ -108,6 +109,20 @@ fun SettingTavernPage() {
                         leadingContent = { CardGroupIcon(HugeIcons.Message01) },
                         supportingContent = { Text(stringResource(R.string.extensions_page_quick_messages_desc)) },
                         headlineContent = { Text(stringResource(R.string.assistant_page_quick_messages)) },
+                    )
+                }
+            }
+
+            item("tavernExtensions") {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.tavern_section_extensions)) },
+                ) {
+                    item(
+                        onClick = { navController.navigate(Screen.Extensions) },
+                        leadingContent = { CardGroupIcon(HugeIcons.Package) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_extensions_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_extensions)) },
                     )
                 }
             }
