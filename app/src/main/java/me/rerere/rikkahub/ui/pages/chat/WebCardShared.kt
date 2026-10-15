@@ -34,6 +34,7 @@ import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Avatar
+import me.rerere.rikkahub.ui.components.message.tools.toolDisplayName
 import me.rerere.rikkahub.ui.components.richtext.parseCardDocument
 import me.rerere.rikkahub.ui.components.richtext.splitCardSegments
 import kotlinx.datetime.toJavaLocalDateTime
@@ -60,6 +61,7 @@ internal class RikkaNativeBridge {
     @Volatile var onRequestMenu: ((String) -> Unit)? = null
     @Volatile var onInsertSymbol: ((String) -> Unit)? = null
     @Volatile var onMessageAction: ((String) -> Unit)? = null
+    @Volatile var onOpenImage: ((String) -> Unit)? = null
     @Volatile var onClipboard: ((String) -> Unit)? = null
     // 同步读取类请求：返回 null 表示自己没有实现，交给异步分支
     @Volatile var onSyncRequest: ((method: String, payload: String) -> String?)? = null
@@ -112,6 +114,12 @@ internal class RikkaNativeBridge {
     @JavascriptInterface
     fun openLink(url: String) {
         if (url.isNotBlank()) onOpenLink?.invoke(url)
+    }
+
+    // 消息里的图片：交给原生全屏预览器，页面自己不做放大
+    @JavascriptInterface
+    fun openImage(url: String) {
+        if (url.isNotBlank()) onOpenImage?.invoke(url)
     }
 
     // WebView 工具条点击：请求原生打开对应菜单
@@ -234,7 +242,15 @@ internal fun buildMessage(
             add(
                 buildJsonObject {
                     put("type", "tool")
-                    put("text", tool.toolName)
+                    // 页面不引资源表：中文名与参数、结果都由原生给全，页面只管画
+                    put("text", toolDisplayName(tool.toolName))
+                    put("name", tool.toolName)
+                    put("running", !tool.isExecuted)
+                    val input = tool.input.trim()
+                    if (input.isNotEmpty()) put("input", input.take(4000))
+                    val output = tool.output.filterIsInstance<UIMessagePart.Text>()
+                        .joinToString("\n") { it.text }
+                    if (output.isNotBlank()) put("output", output.take(8000))
                 }
             )
         }

@@ -109,8 +109,13 @@ import me.rerere.rikkahub.service.ChatError
 import me.rerere.rikkahub.service.VoiceCallService
 import me.rerere.rikkahub.ui.components.ai.ChatAttachmentPickerActions
 import me.rerere.rikkahub.ui.components.ai.ChatInput
+import me.rerere.rikkahub.ui.components.message.ChatMessageActionsSheet
+import me.rerere.rikkahub.ui.components.message.ChatMessageCopySheet
+import me.rerere.rikkahub.ui.components.ui.ImagePreviewDialog
+import me.rerere.rikkahub.ui.components.richtext.buildMarkdownPreviewHtml
 import me.rerere.rikkahub.ui.components.richtext.findFencedHtmlDocument
 import me.rerere.rikkahub.ui.components.richtext.splitCardSegments
+import me.rerere.ui.webview.WebViewContentCache
 import me.rerere.rikkahub.ui.components.ai.FilesPicker
 import me.rerere.rikkahub.ui.components.ai.SearchMode
 import me.rerere.rikkahub.ui.components.ai.SlashVarOp
@@ -455,7 +460,15 @@ private fun ChatPageContent(
     }
     // WebView 里点消息 → 用原生对话框做操作，功能与原生列表一致
     var webActionIndex by remember { mutableStateOf<Int?>(null) }
+    var webCopyMessage by remember { mutableStateOf<UIMessage?>(null) }
+    // 页面里的图片点击：交给原生全屏预览器
+    var webPreviewImage by remember { mutableStateOf<String?>(null) }
+    // 预览页要配色，Composable 上下文先取出来给回调用
+    val webPreviewColorScheme = MaterialTheme.colorScheme
     val tts = LocalTTSState.current
+    // 页面那排操作按钮要跟原生一样反映朗读状态
+    val ttsSpeaking by tts.isSpeaking.collectAsStateWithLifecycle()
+    val ttsAvailable by tts.isAvailable.collectAsStateWithLifecycle()
     // 翻译与原生消息菜单同一入口：先选目标语言，不直接用系统语言
     var webTranslateMessage by remember { mutableStateOf<UIMessage?>(null) }
     var webEditIndex by remember { mutableStateOf<Int?>(null) }
@@ -789,66 +802,72 @@ private fun ChatPageContent(
                     onDismissRequest = { webTranslateMessage = null },
                 )
             }
-            // WebView 工具条点按钮 → 原生菜单；处理完清空避免重复触发
+            // WebView 消息操作排点「更多」→ 原生那张消息操作面板，与原生列表同一入口
             webActionIndex?.let { index ->
                 val message = conversation.currentMessages.getOrNull(index)
                 if (message == null) {
                     webActionIndex = null
                 } else {
-                    AlertDialog(
-                        onDismissRequest = { webActionIndex = null },
-                        title = { Text(stringResource(R.string.assistant_page_actions)) },
-                        text = {
-                            Column {
-                                TextButton(onClick = {
-                                    val clip = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                    clip.setPrimaryClip(android.content.ClipData.newPlainText("message", message.parts.filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>().joinToString("\n") { it.text }))
-                                    webActionIndex = null
-                                }) { Text(stringResource(R.string.copy)) }
-                                TextButton(onClick = {
-                                    webEditText = message.parts.filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>().joinToString("\n") { it.text }
-                                    webEditIndex = index
-                                    webActionIndex = null
-                                }) { Text(stringResource(R.string.edit)) }
-                                TextButton(onClick = {
-                                    vm.deleteMessage(message)
-                                    webActionIndex = null
-                                }) { Text(stringResource(R.string.delete)) }
-                                // 重试：走原生的按消息重新生成，而不是再发一条新消息
-                                TextButton(onClick = {
-                                    vm.regenerateAtMessage(message, regenerateAssistantMsg = true)
-                                    webActionIndex = null
-                                }) { Text(stringResource(R.string.prompt_page_trigger_regenerate)) }
-                                TextButton(onClick = {
-                                    webTranslateMessage = message
-                                    webActionIndex = null
-                                }) { Text(stringResource(R.string.translate)) }
-                                // 分享：把消息正文丢给系统分享
-                                TextButton(onClick = {
-                                    val text = message.parts.filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>()
-                                        .joinToString("\n") { it.text }
-                                    val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                        type = "text/plain"
-                                        putExtra(android.content.Intent.EXTRA_TEXT, text)
-                                    }
-                                    runCatching { context.startActivity(android.content.Intent.createChooser(intent, null)) }
-                                    webActionIndex = null
-                                }) { Text(stringResource(R.string.share)) }
-                                // 收藏：按消息节点切换，与原生列表一致
-                                TextButton(onClick = {
-                                    val node = conversation.messageNodes.find { node ->
-                                        node.messages.any { it.id == message.id }
-                                    }
-                                    if (node != null) vm.toggleMessageFavorite(node)
-                                    webActionIndex = null
-                                }) { Text(stringResource(R.string.chat_message_add_favorite)) }
+                    val node = conversation.messageNodes.find { node ->
+                        node.messages.any { it.id == message.id }
+                    }
+                    ChatMessageActionsSheet(
+                        message = message,
+                        // 用消息当时的模型显示名，查不到才退回当前模型
+                        model = message.modelId?.let { id ->
+                            setting.providers.flatMap { it.models }.find { it.id == id }
+                        } ?: currentChatModel,
+                        onDelete = { vm.deleteMessage(message) },
+                        onEdit = {
+                            inputState.setContents(message.parts)
+                            inputState.editingMessage = message.id
+                        },
+                        onShare = {
+                            val text = message.parts.filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>()
+                                .joinToString("\n") { it.text }
+                            val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(android.content.Intent.EXTRA_TEXT, text)
+                            }
+                            runCatching { context.startActivity(android.content.Intent.createChooser(intent, null)) }
+                        },
+                        onFork = {
+                            scope.launch {
+                                val fork = vm.forkMessage(message = message)
+                                navigateToChatPage(navController, chatId = fork.id)
                             }
                         },
-                        confirmButton = {
-                            TextButton(onClick = { webActionIndex = null }) { Text(stringResource(R.string.cancel)) }
+                        onSelectAndCopy = { webCopyMessage = message },
+                        isFavorite = node?.isFavorite == true,
+                        onToggleFavorite = node?.let { target -> { vm.toggleMessageFavorite(target) } },
+                        onWebViewPreview = {
+                            val text = message.parts
+                                .filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>()
+                                .joinToString("\n\n") { it.text }
+                                .trim()
+                            if (text.isNotBlank()) {
+                                val html = buildMarkdownPreviewHtml(context, text, webPreviewColorScheme)
+                                val contentId = WebViewContentCache.store(context.cacheDir, html)
+                                navController.navigate(Screen.WebView(contentId = contentId))
+                            }
                         },
+                        onDismissRequest = { webActionIndex = null },
                     )
                 }
+            }
+            // 选择复制：与原生消息排同一张面板
+            webCopyMessage?.let { message ->
+                ChatMessageCopySheet(
+                    message = message,
+                    onDismissRequest = { webCopyMessage = null },
+                )
+            }
+            // 图片预览：与原生消息里的图片同一套查看器
+            webPreviewImage?.let { url ->
+                ImagePreviewDialog(
+                    images = listOf(url),
+                    onDismissRequest = { webPreviewImage = null },
+                )
             }
             // 编辑对话框：改完写回同一条消息，走原生编辑路径
             webEditIndex?.let { index ->
@@ -899,6 +918,8 @@ private fun ChatPageContent(
                         setting.displaySetting.bracketButtonSymbol.isNotBlank(),
                     bracketSymbol = setting.displaySetting.bracketButtonSymbol,
                     moreVisible = !setting.displaySetting.hideMoreButton,
+                    speaking = ttsSpeaking,
+                    ttsAvailable = ttsAvailable,
                     onRequestMenu = { name ->
                         // 只接受原生真正拥有的菜单入口，其余忽略
                         if (name in setOf("model", "search", "reasoning", "more")) proxyMenu = name
@@ -1133,6 +1154,7 @@ private fun ChatPageContent(
                     onStop = { vm.stopGeneration() },
                     onRegenerate = { conversation.currentMessages.lastOrNull()?.let { vm.regenerateAtMessage(it) } },
                     onOpenLink = { url -> runCatching { uriHandler.openUri(url) } },
+                    onOpenImage = { url -> webPreviewImage = url },
                     // 铺满全屏：原生标题栏与输入栏由 Scaffold 覆盖在其上
                     modifier = Modifier.fillMaxSize(),
                 )
