@@ -576,7 +576,7 @@ private fun AssistantPromptContent(
 }
 
 @Composable
-private fun AssistantRegexCard(
+internal fun AssistantRegexCard(
     regex: AssistantRegex,
     onUpdate: (Assistant) -> Unit,
     assistant: Assistant,

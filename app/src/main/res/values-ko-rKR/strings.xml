@@ -1793,6 +1793,11 @@
   <string name="setting_page_group_chat_desc">여러 캐릭터가 함께하는 그룹 대화를 만듭니다</string>
   <string name="setting_page_tavern">선술집 설정</string>
   <string name="setting_page_tavern_desc">캐릭터 카드, 월드 인포, 페르소나 및 호환 스위치</string>
+  <string name="setting_page_tavern_regex">메시지 정규식</string>
+  <string name="setting_page_tavern_regex_desc">모든 캐릭터 카드의 정규식 스크립트를 한곳에서 확인, 가져오기, 편집</string>
+  <string name="tavern_regex_intro">정규식 스크립트는 캐릭터 카드에 저장됩니다. 카드를 펼쳐 편집하고, 선술집 정규식 JSON 가져오기도 이 화면에서 합니다.</string>
+  <string name="tavern_regex_card_count">정규식 %1$d개</string>
+  <string name="tavern_regex_empty">아직 캐릭터 카드가 없습니다.</string>
   <string name="tavern_section_cards">캐릭터 카드와 설정</string>
   <string name="tavern_section_prompts">월드 인포와 프리셋</string>
   <string name="tavern_section_compat">호환과 런타임</string>
