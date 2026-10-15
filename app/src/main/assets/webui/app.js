@@ -843,7 +843,27 @@
       }
     });
     if (msg.translation) desc.push({ kind: 'translation', text: String(msg.translation), translating: msg.translating === true });
-    return desc;
+    return groupThinkSteps(desc);
+  }
+
+  // 原生把连续的思考与工具调用收进同一张思考卡，页面照同样的分组来
+  function groupThinkSteps(list) {
+    var out = [];
+    var steps = null;
+    function flush() {
+      if (steps) { out.push({ kind: 'think', steps: steps }); steps = null; }
+    }
+    list.forEach(function (item) {
+      if (item.kind === 'reasoning' || item.kind === 'tool') {
+        if (!steps) steps = [];
+        steps.push(item);
+      } else {
+        flush();
+        out.push(item);
+      }
+    });
+    flush();
+    return out;
   }
 
   function attachmentNode(block) {
@@ -922,11 +942,7 @@
   var TOOL_ICON = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M14.7 6.3a4 4 0 0 0 5 5L21 21H3l1.3-9.7a4 4 0 0 0 5-5Z"></path></svg>';
 
-  // 工具卡：标题中文名由原生给，运行中给三点与扫光，展开看参数与结果
-  function toolKey(desc) {
-    return [desc.text, desc.running === true ? '1' : '0', desc.input || '', desc.output || ''].join('\u0000');
-  }
-
+  // 工具卡：中文名与参数、结果都由原生给，页面只管摆位置
   function prettyJson(text) {
     var raw = String(text == null ? '' : text);
     try { return JSON.stringify(JSON.parse(raw), null, 2); } catch (e) { return raw; }
@@ -946,50 +962,98 @@
     return box;
   }
 
-  function paintTool(node, desc) {
-    var head = node.querySelector('.tool-head');
-    if (head) head.classList.toggle('running', desc.running === true);
-    var label = node.querySelector('.t-label');
-    if (label) label.textContent = desc.text || '工具调用';
-    var body = node.querySelector('.tool-body');
-    if (body) {
-      body.textContent = '';
-      if (desc.input) body.appendChild(toolSection('参数', prettyJson(desc.input)));
-      if (desc.output) body.appendChild(toolSection('结果', prettyJson(desc.output)));
-    }
-    node._text = toolKey(desc);
+  // 思考卡：一张卡里按顺序摆思考文本与工具步骤，标题给中文工具名或「思考过程」
+  function thinkKey(desc) {
+    return (desc.steps || []).map(function (s) {
+      return s.kind === 'reasoning'
+        ? 'r\u0000' + s.text
+        : 't\u0000' + s.text + '\u0000' + (s.running === true ? '1' : '0');
+    }).join('\u0001');
   }
 
-  function makeBlockNode(desc, streaming) {    if (desc.kind === 'attach') {
+  function updateThinkStep(node, step) {
+    if (step.kind === 'reasoning') {
+      if (node._text !== step.text) {
+        node._text = step.text;
+        node.querySelector('.think-text').textContent = step.text;
+      }
+      return;
+    }
+    var head = node.querySelector('.think-step-head');
+    if (head) head.classList.toggle('running', step.running === true);
+    var label = node.querySelector('.step-label');
+    if (label) label.textContent = step.text || '工具调用';
+    var key = (step.input || '') + '\u0000' + (step.output || '');
+    if (node._body !== key) {
+      node._body = key;
+      var body = node.querySelector('.think-step-body');
+      body.textContent = '';
+      if (step.input) body.appendChild(toolSection('参数', prettyJson(step.input)));
+      if (step.output) body.appendChild(toolSection('结果', prettyJson(step.output)));
+    }
+  }
+
+  function thinkStepNode(step) {
+    var box = document.createElement('div');
+    box.className = 'think-step';
+    box.dataset.stepKind = step.kind;
+    if (step.kind === 'reasoning') {
+      var text = document.createElement('div');
+      text.className = 'think-text';
+      text.textContent = step.text;
+      box._text = step.text;
+      box.appendChild(text);
+      return box;
+    }
+    box.innerHTML = '<div class="think-step-head">' + TOOL_ICON +
+      '<span class="ico tool-dot"><i></i><i></i><i></i></span>' +
+      '<span class="step-label"></span></div><div class="think-step-body"></div>';
+    updateThinkStep(box, step);
+    return box;
+  }
+
+  function paintThink(node, desc) {
+    var steps = desc.steps || [];
+    var label = node.querySelector('.think-label');
+    var single = steps.length === 1 && steps[0].kind === 'tool';
+    if (label) label.textContent = single ? (steps[0].text || '工具调用') : '思考过程';
+    var head = node.querySelector('.think-head');
+    if (head) {
+      head.classList.toggle('running', steps.some(function (s) { return s.kind === 'tool' && s.running === true; }));
+    }
+    var body = node.querySelector('.think-body');
+    if (body) {
+      for (var i = 0; i < steps.length; i++) {
+        var cur = body.children[i];
+        if (cur && cur.dataset.stepKind === steps[i].kind) updateThinkStep(cur, steps[i]);
+        else {
+          var fresh = thinkStepNode(steps[i]);
+          if (cur) body.replaceChild(fresh, cur); else body.appendChild(fresh);
+        }
+      }
+      for (var j = body.children.length - 1; j >= steps.length; j--) body.removeChild(body.children[j]);
+    }
+    node._text = thinkKey(desc);
+  }
+
+  function makeBlockNode(desc, streaming) {
+    if (desc.kind === 'attach') {
       var attach = attachmentNode(desc.block);
       attach.dataset.kind = 'attach';
       attach.dataset.attachKey = desc.key;
       return attach;
     }
-    if (desc.kind === 'reasoning') {
-      var det = document.createElement('details');
-      det.className = 'blk blk-reasoning';
-      det.dataset.kind = 'reasoning';
-      det.innerHTML = '<summary class="reasoning-head">' + REASONING_ICON +
-        '<span class="r-label">思考</span><span class="dur"></span>' + ARROW_ICON + '</summary>' +
-        '<div class="reasoning-body"></div>';
-      det.querySelector('.reasoning-body').textContent = desc.text;
-      // 原生语义：流式中先露一小段预览，落定后按 autoCloseThinking 收起
-      det.open = !!streaming && state.appearance.autoCloseThinking !== false;
-      return det;
-    }
-    if (desc.kind === 'tool') {
-      var tool = document.createElement('details');
-      tool.className = 'blk blk-tool';
-      tool.dataset.kind = 'tool';
-      tool.innerHTML = '<summary class="tool-head">' + TOOL_ICON +
-        '<span class="ico tool-dot"><i></i><i></i><i></i></span>' +
-        '<span class="t-label"></span>' + ARROW_ICON + '</summary>' +
-        '<div class="tool-body"></div>';
-      paintTool(tool, desc);
-      // 原生工具步骤默认展开
-      tool.open = true;
-      return tool;
+    if (desc.kind === 'think') {
+      var card = document.createElement('details');
+      card.className = 'blk blk-think';
+      card.dataset.kind = 'think';
+      card.innerHTML = '<summary class="think-head">' + REASONING_ICON +
+        '<span class="think-label"></span>' + ARROW_ICON + '</summary>' +
+        '<div class="think-body"></div>';
+      // 原生语义：流式中先露一小段，落定后按 autoCloseThinking 收起
+      card.open = !!streaming && state.appearance.autoCloseThinking !== false;
+      paintThink(card, desc);
+      return card;
     }
     if (desc.kind === 'card') {
       var node = document.createElement('div');
@@ -1050,20 +1114,11 @@
       return fresh;
     }
     if (desc.kind === 'attach') return node;
-    if (desc.kind === 'reasoning') {
-      var body = node.querySelector('.reasoning-body');
-      if (body && node._text !== desc.text) {
-        node._text = desc.text;
-        body.textContent = desc.text;
-      }
+    if (desc.kind === 'think') {
+      if (node._text !== thinkKey(desc)) paintThink(node, desc);
       // 流式结束且开了自动收起：折起来（原生 autoCloseThinking 语义）
       if (!streaming && node.open && state.appearance.autoCloseThinking !== false) node.open = false;
       if (!streaming && state.appearance.autoCloseThinking === false) node.open = true;
-      return node;
-    }
-    if (desc.kind === 'tool') {
-      var toolKeyNow = toolKey(desc);
-      if (node._text !== toolKeyNow) paintTool(node, desc);
       return node;
     }
     if (desc.kind === 'translation') {
@@ -1392,7 +1447,7 @@
 
   function renderRow(msg, streaming) {
     var row = document.createElement('div');
-    row.className = 'row ' + (msg.role === 'user' ? 'user' : 'ai');
+    row.className = 'row enter ' + (msg.role === 'user' ? 'user' : 'ai');
     row.dataset.id = String(msg.id);
     row.dataset.role = msg.role === 'user' ? 'user' : 'ai';
     row.dataset.signature = signatureOf(msg);
