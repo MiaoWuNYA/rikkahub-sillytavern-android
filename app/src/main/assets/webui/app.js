@@ -110,6 +110,8 @@
   var messageVariables = {};
   // 外壳版本：setLibs 或 cardStyle 变化时自增，用来把已装配的卡片按新外壳重装一次
   var shellVersion = 0;
+  // 生成状态由原生权威下发；streamId 只负责指出是哪一条在生成
+  var generating = false;
   // 正在流式的那条消息 id：typing 光标只认它，且只认助手消息
   var streamId = null;
 
@@ -1105,28 +1107,32 @@
     avatar.className = 'avatar';
     avatar.dataset.kind = spec.kind;
     avatar._key = avatarKey(msg);
+    // 内容装在 .avatar-inner 里：形状自转时这一层反向转回来
+    var inner = document.createElement('span');
+    inner.className = 'avatar-inner';
     if (spec.kind === 'image') {
       var img = document.createElement('img');
       img.alt = '';
       img.src = safeUrl(spec.value);
       // 图片挂了就退回名字首字，保持行高稳定
       img.addEventListener('error', function () {
-        if (img.parentNode === avatar) {
-          avatar.removeChild(img);
-          avatar.textContent = initials(msg.name);
+        if (img.parentNode === inner) {
+          inner.removeChild(img);
+          inner.textContent = initials(msg.name);
         }
       });
-      avatar.appendChild(img);
+      inner.appendChild(img);
     } else if (spec.kind === 'emoji') {
-      avatar.textContent = String(spec.value == null ? '' : spec.value);
+      inner.textContent = String(spec.value == null ? '' : spec.value);
     } else if (spec.kind === 'dummy') {
       avatar.style.setProperty('--avatar-from', String(spec.from || 'transparent'));
       avatar.style.setProperty('--avatar-to', String(spec.to || 'transparent'));
     } else if (spec.kind === 'svg') {
-      avatar.innerHTML = String(spec.value == null ? '' : spec.value);
+      inner.innerHTML = String(spec.value == null ? '' : spec.value);
     } else {
-      avatar.textContent = initials(spec.value || msg.name);
+      inner.textContent = initials(spec.value || msg.name);
     }
+    avatar.appendChild(inner);
     var isUser = msg.role === 'user';
     var frameUrl = safeUrl(isUser ? state.appearance.userAvatarFrame : state.appearance.botAvatarFrame);
     if (frameUrl) {
@@ -1399,16 +1405,16 @@
     var bubbles = body.querySelectorAll('.blk.bubble');
     var isAssistant = msg.role !== 'user';
     var live = !!streaming && isAssistant;
+    // 只看正文气泡：思考块与工具块里有字不代表正文已经开了头
+    var tail = live && bubbles.length ? bubbles[bubbles.length - 1] : null;
+    var text = tail ? String(tail.textContent || '').trim() : '';
     for (var i = 0; i < bubbles.length; i++) {
-      var tail = live && i === bubbles.length - 1;
-      // 圆点已经表示生成中，再挂光标会挤在气泡末尾不动
-      var hasDots = tail && !String(bubbles[i].textContent || '').trim();
-      bubbles[i].classList.toggle('typing', tail && !hasDots);
+      bubbles[i].classList.toggle('typing', live && i === bubbles.length - 1 && !!text);
     }
-    var host = live ? (bubbles.length ? bubbles[bubbles.length - 1] : body) : null;
+    // 正文还没落字：圆点摆到块序列末尾（原生就是思考卡下方的生成指示），不跟光标同时出现
+    var host = live ? (tail || body) : null;
     var dots = body.querySelector('.gen-dots');
-    var wantDots = !!host && !String(host.textContent || '').trim();
-    if (wantDots) {
+    if (host && !text) {
       if (!dots) {
         dots = document.createElement('span');
         dots.className = 'gen-dots';
@@ -1428,6 +1434,11 @@
       if (list.children[i].dataset && list.children[i].dataset.id === key) return list.children[i];
     }
     return null;
+  }
+
+  // 正在生成的那条：原生说没在生成就一律不认，指示不会被残留的 streamId 拖着不灭
+  function streamingRowId() {
+    return generating ? streamId : null;
   }
 
   function showEmpty() {
@@ -1458,9 +1469,10 @@
       (existing[child.dataset.id] = existing[child.dataset.id] || []).push(child);
     }
     var kept = [];
+    var liveId = streamingRowId();
     var rows = state.messages.map(function (msg) {
       var id = String(msg.id);
-      var streaming = streamId === id && msg.role !== 'user';
+      var streaming = liveId === id && msg.role !== 'user';
       var row = existing[id] && existing[id].shift(); // 重复 id 的脏行留给下面统一清理
       if (row) updateRow(row, msg, streaming);
       else row = renderRow(msg, streaming);
@@ -1479,12 +1491,13 @@
 
   // 外观变化后按新设置重刷所有行（不动卡片 iframe）
   function syncRows() {
+    var liveId = streamingRowId();
     for (var i = 0; i < list.children.length; i++) {
       var row = list.children[i];
       if (!row.dataset || row.dataset.id === undefined) continue;
       var msg = messageById(row.dataset.id);
       if (!msg) continue;
-      var streaming = streamId === String(msg.id) && msg.role !== 'user';
+      var streaming = liveId === String(msg.id) && msg.role !== 'user';
       updateRow(row, msg, streaming);
       applyTyping(row, msg, streaming);
     }
@@ -1601,7 +1614,9 @@
       if (typeof payload.placeholder === 'string') state.placeholder = payload.placeholder;
       if (payload.labels) state.labels = payload.labels;
       state.messages = payload.messages || [];
-      if (streamId && !messageById(streamId)) streamId = null;
+      // 原生没报生成中就不再是流式：指示必须收干净，不做残留下次生成
+      if (payload.generating != null) generating = payload.generating === true;
+      if (!generating || (streamId && !messageById(streamId))) streamId = null;
       schedule(renderAll);
       followBottom();
     },
@@ -1613,6 +1628,7 @@
       // 光标只认助手消息：用户消息的 id 不会进来（原生侧已过滤）
       if (msg.role === 'user') return;
       streamId = String(msg.id);
+      generating = true;
       upsertMessage(msg);
       schedule(function () {
         var row = rowById(msg.id);

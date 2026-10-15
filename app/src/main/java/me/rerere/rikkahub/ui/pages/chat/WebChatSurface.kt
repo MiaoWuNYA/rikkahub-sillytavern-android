@@ -119,7 +119,19 @@ fun WebChatSurface(
         buildMacros(messages, assistant, settings, modelName).toString()
     }
     val stateJson = remember(messages, nodes, settings, streaming, placeholder, labels) {
-        buildState(messages, assistant, settings, macroJson, themeJson, placeholder, extractCardStyle(assistant), nodes, iconText, labels).toString()
+        buildState(
+            messages = messages,
+            assistant = assistant,
+            settings = settings,
+            macroJson = macroJson,
+            themeJson = themeJson,
+            placeholder = placeholder,
+            cardStyle = extractCardStyle(assistant),
+            nodes = nodes,
+            iconText = iconText,
+            labels = labels,
+            generating = streaming,
+        ).toString()
     }
     // 流式帧只认助手消息：用户刚发完时最后一条是用户消息，那种情况下不打光标
     val streamingMessage = remember(messages, streaming) {
@@ -133,7 +145,8 @@ fun WebChatSurface(
         messages.lastOrNull()?.let { buildMessage(it, assistant, settings, iconText = iconText, labels = labels).toString() }
     }
     // 下发时机只看渲染元数据：正文增长走流式增量，收藏/翻译/分支这类字段没有事件可依赖
-    val stateKey = remember(messages, nodes) {
+    // 生成起止必须进 key：页面靠这次下发开关流式指示，漏掉就会挂在那儿不灭
+    val stateKey = remember(messages, nodes, streaming) {
         val nodeOf = mutableMapOf<kotlin.uuid.Uuid, me.rerere.rikkahub.data.model.MessageNode>()
         nodes.forEach { node -> node.messages.forEach { msg -> nodeOf[msg.id] = node } }
         messages.joinToString(";") { message ->
@@ -146,7 +159,7 @@ fun WebChatSurface(
                 message.translation?.hashCode() ?: 0,
                 message.parts.size,
             ).joinToString("|")
-        }
+        } + "|" + streaming
     }
     val toolbarJson = remember(
         modelName, searchEnabled, searchVisible, reasoningEnabled, reasoningVisible,
