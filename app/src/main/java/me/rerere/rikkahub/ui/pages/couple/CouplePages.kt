@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
@@ -39,6 +40,8 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.delay
+import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.Add01
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.db.entity.CoupleCommentEntity
 import me.rerere.rikkahub.data.db.entity.CoupleDiaryEntity
@@ -47,6 +50,7 @@ import me.rerere.rikkahub.data.db.entity.CouplePostEntity
 import me.rerere.rikkahub.data.db.entity.CoupleRelationshipEntity
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.context.LocalNavController
+import me.rerere.rikkahub.ui.theme.CustomColors
 import androidx.compose.ui.res.stringResource
 import me.rerere.rikkahub.R
 import org.json.JSONArray
@@ -58,13 +62,30 @@ fun CoupleSpacePage(vm: CoupleVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val partner = settings.assistants.firstOrNull { it.id.toString() == relationship?.assistantId }
     var pendingPartnerId by remember { mutableStateOf<String?>(null) }
-    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.couple_space_title)) }, navigationIcon = { BackButton() }) }) { padding ->
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    Scaffold(
+        containerColor = CustomColors.topBarColors.containerColor,
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            LargeFlexibleTopAppBar(
+                title = { Text(stringResource(R.string.couple_space_title)) },
+                navigationIcon = { BackButton() },
+                scrollBehavior = scrollBehavior,
+                colors = CustomColors.topBarColors,
+            )
+        },
+    ) { padding ->
         if (relationship == null || partner == null) {
             LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 item { Text(stringResource(R.string.couple_space_pick_partner), style = MaterialTheme.typography.headlineSmall) }
                 item { Text(stringResource(R.string.couple_space_pick_partner_desc)) }
                 items(settings.assistants) { assistant ->
-                    Card(onClick = { pendingPartnerId = assistant.id.toString() }, modifier = Modifier.fillMaxWidth()) {
+                    Card(
+                        onClick = { pendingPartnerId = assistant.id.toString() },
+                        colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
                         Column(Modifier.padding(16.dp)) {
                             Text(assistant.name.ifBlank { stringResource(R.string.couple_space_unnamed_assistant) }, style = MaterialTheme.typography.titleMedium)
                             Text(stringResource(R.string.couple_space_set_as_partner))
@@ -94,7 +115,11 @@ private fun CoupleHome(relationship: CoupleRelationshipEntity, partnerName: Stri
     val days = TimeUnit.MILLISECONDS.toDays(System.currentTimeMillis() - relationship.startedAt) + 1
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
-            Card(Modifier.fillMaxWidth()) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(stringResource(R.string.couple_space_me_and, partnerName), style = MaterialTheme.typography.headlineSmall)
                     Text(stringResource(R.string.couple_space_day_n, days), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
@@ -110,7 +135,12 @@ private fun CoupleHome(relationship: CoupleRelationshipEntity, partnerName: Stri
 
 @Composable
 private fun FeatureCard(emoji: String, title: String, subtitle: String, onClick: () -> Unit) {
-    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+    Card(
+        onClick = onClick,
+        colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         Row(Modifier.padding(18.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             Text(emoji, style = MaterialTheme.typography.headlineMedium)
             Column { Text(title, style = MaterialTheme.typography.titleLarge); Text(subtitle) }
@@ -164,9 +194,23 @@ fun CoupleMomentsPage(vm: CoupleVM = koinViewModel()) {
         SpaceFilter.AI -> posts.filter { it.author == "assistant" }
     }
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.couple_space_rabbit_title)) }, navigationIcon = { BackButton() }) },
-        floatingActionButton = { FloatingActionButton(onClick = { showAdd = true }) { Text("＋") } },
+        containerColor = CustomColors.topBarColors.containerColor,
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            LargeFlexibleTopAppBar(
+                title = { Text(stringResource(R.string.couple_space_rabbit_title)) },
+                navigationIcon = { BackButton() },
+                scrollBehavior = scrollBehavior,
+                colors = CustomColors.topBarColors,
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showAdd = true }) {
+                Icon(HugeIcons.Add01, contentDescription = null)
+            }
+        },
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding),
@@ -294,7 +338,11 @@ private fun MomentCard(
     var commentDraft by remember(post.id) { mutableStateOf("") }
     var confirmDelete by remember(post.id) { mutableStateOf(false) }
 
-    Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+    ) {
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {
@@ -560,9 +608,23 @@ fun CoupleDiaryPage(vm: CoupleVM = koinViewModel()) {
     }
     val bookmarkedCount = entries.count { it.bookmarked }
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.couple_space_journal_title)) }, navigationIcon = { BackButton() }) },
-        floatingActionButton = { FloatingActionButton(onClick = { showAdd = true }) { Text("＋") } },
+        containerColor = CustomColors.topBarColors.containerColor,
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            LargeFlexibleTopAppBar(
+                title = { Text(stringResource(R.string.couple_space_journal_title)) },
+                navigationIcon = { BackButton() },
+                scrollBehavior = scrollBehavior,
+                colors = CustomColors.topBarColors,
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showAdd = true }) {
+                Icon(HugeIcons.Add01, contentDescription = null)
+            }
+        },
     ) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
@@ -1132,11 +1194,32 @@ private fun <T> EntryListPage(
     var second by remember { mutableStateOf("") }
     var selectedDate by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var showDateChooser by remember { mutableStateOf(false) }
-    Scaffold(topBar = { TopAppBar(title = { Text(title) }, navigationIcon = { BackButton() }) }, floatingActionButton = { FloatingActionButton(onClick = { showAdd = true }) { Text("＋") } }) { padding ->
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    Scaffold(
+        containerColor = CustomColors.topBarColors.containerColor,
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            LargeFlexibleTopAppBar(
+                title = { Text(title) },
+                navigationIcon = { BackButton() },
+                scrollBehavior = scrollBehavior,
+                colors = CustomColors.topBarColors,
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showAdd = true }) {
+                Icon(HugeIcons.Add01, contentDescription = null)
+            }
+        },
+    ) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (entries.isEmpty()) item { Text(stringResource(R.string.couple_list_empty)) }
             items(entries) { entry ->
-                Card(Modifier.fillMaxWidth()) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(content(entry), style = MaterialTheme.typography.bodyLarge)
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

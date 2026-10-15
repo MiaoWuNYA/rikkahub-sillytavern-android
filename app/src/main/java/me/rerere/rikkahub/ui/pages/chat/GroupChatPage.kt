@@ -352,6 +352,7 @@ fun GroupChatPage(groupId: String) {
     }
 
     Scaffold(
+        containerColor = CustomColors.topBarColors.containerColor,
         topBar = {
             LargeFlexibleTopAppBar(
                 title = { Text(gc.name.ifBlank { "群聊" }) },

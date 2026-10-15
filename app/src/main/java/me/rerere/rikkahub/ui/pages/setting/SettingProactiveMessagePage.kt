@@ -38,6 +38,7 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.RiskConfirmDialog
+import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.data.datastore.ProactiveMessageSetting
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.repository.ConversationRepository
@@ -78,7 +79,7 @@ fun SettingProactiveMessagePage(
 ) {
     val context = LocalContext.current
     val settings by vm.settings.collectAsStateWithLifecycle()
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     var showProactiveRiskDialog by remember { mutableStateOf(false) }
     var showLogDialog by remember { mutableStateOf(false) }
@@ -127,11 +128,13 @@ fun SettingProactiveMessagePage(
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = CustomColors.topBarColors.containerColor,
         topBar = {
             LargeFlexibleTopAppBar(
                 title = { Text(stringResource(R.string.proactive_title)) },
                 navigationIcon = { BackButton() },
                 scrollBehavior = scrollBehavior,
+                colors = CustomColors.topBarColors,
             )
         }
     ) { padding ->

@@ -63,6 +63,7 @@ fun AuthorsNotePage() {
     var editingBuiltin by remember { mutableStateOf(false) }
 
     Scaffold(
+        containerColor = CustomColors.topBarColors.containerColor,
         topBar = {
             LargeFlexibleTopAppBar(
                 title = { Text("Author's Note · 导演备注") },

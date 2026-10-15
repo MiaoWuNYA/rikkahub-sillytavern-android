@@ -23,6 +23,8 @@ import me.rerere.rikkahub.data.model.GroupGenerationMode
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.UIAvatar
+import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.Add01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.theme.CustomColors
@@ -40,6 +42,7 @@ fun GroupChatListPage() {
     val scope = rememberCoroutineScope()
 
     Scaffold(
+        containerColor = CustomColors.topBarColors.containerColor,
         topBar = {
             LargeFlexibleTopAppBar(
                 title = { Text(stringResource(R.string.group_chat_list_title)) },
@@ -50,7 +53,7 @@ fun GroupChatListPage() {
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showCreate = true }) {
-                Text("+")
+                Icon(HugeIcons.Add01, contentDescription = stringResource(R.string.group_chat_create_title))
             }
         },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -79,8 +82,8 @@ fun GroupChatListPage() {
                     }
                     Card(
                         onClick = { navController.navigate(Screen.GroupChat(gc.id.toString())) },
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
+                        shape = RoundedCornerShape(20.dp),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Row(
