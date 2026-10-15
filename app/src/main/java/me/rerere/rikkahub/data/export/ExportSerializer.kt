@@ -388,7 +388,7 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
     private fun throwSillyTavernRegexScriptError(json: String): Lorebook? {
         val obj = runCatching { ExportSerializer.DefaultJson.parseToJsonElement(json) }.getOrNull() as? JsonObject
         if (obj != null && obj.containsKey("scriptName") && obj.containsKey("findRegex")) {
-            throw IllegalArgumentException("检测到酒馆正则脚本，请在 助手详情 → 消息正则 区域导入")
+            throw IllegalArgumentException("检测到酒馆正则脚本，请在 角色卡详情 → 消息正则 区域导入")
         }
         return null
     }

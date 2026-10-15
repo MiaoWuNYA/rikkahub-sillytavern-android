@@ -17,8 +17,8 @@
   <string name="assistant_detail_basic_desc">配置名称、头像、模型和参数</string>
   <string name="assistant_detail_extensions_desc">管理提示词注入、世界书和技能等扩展</string>
   <string name="assistant_detail_local_tools_desc">启用本地工具（如 JavaScript 引擎）</string>
-  <string name="assistant_detail_mcp_desc">为助手配置 MCP 服务器工具</string>
-  <string name="assistant_detail_memory_desc">管理助手记忆和最近的聊天引用</string>
+  <string name="assistant_detail_mcp_desc">为角色卡配置 MCP 服务器工具</string>
+  <string name="assistant_detail_memory_desc">管理角色卡记忆和最近的聊天引用</string>
   <string name="assistant_detail_prompt_desc">设置系统提示、消息模板和正则规则</string>
   <string name="assistant_detail_request_desc">配置自定义请求头和正文参数</string>
   <string name="assistant_extensions_page_empty_lorebooks">没有世界书，前往提示词管理创建</string>
@@ -80,25 +80,25 @@
   <string name="assistant_page_change_background">更换背景图片</string>
   <string name="assistant_page_chaotic">混乱 (危险)</string>
   <string name="assistant_page_chat_background">聊天背景</string>
-  <string name="assistant_page_chat_background_desc">设置助手聊天页面的背景图片</string>
+  <string name="assistant_page_chat_background_desc">设置角色卡聊天页面的背景图片</string>
   <string name="assistant_page_chat_model">聊天模型</string>
-  <string name="assistant_page_chat_model_desc">设置助手的默认聊天模型，如果不设置，则使用全局默认聊天模型</string>
+  <string name="assistant_page_chat_model_desc">设置角色卡的默认聊天模型，如果不设置，则使用全局默认聊天模型</string>
   <string name="assistant_page_clone">复制</string>
   <string name="assistant_page_confirm">确定</string>
   <string name="assistant_page_creative">创造</string>
-  <string name="assistant_page_current_assistant">当前助手</string>
+  <string name="assistant_page_current_assistant">当前角色卡</string>
   <string name="assistant_page_custom_bodies">自定义 Body</string>
   <string name="assistant_page_custom_headers">自定义 Headers</string>
-  <string name="assistant_page_default_assistant">默认助手</string>
+  <string name="assistant_page_default_assistant">默认角色卡</string>
   <string name="assistant_page_delete">删除</string>
   <string name="assistant_page_delete_body">删除 Body</string>
-  <string name="assistant_page_delete_dialog_text">确定要删除这个助手吗？此操作无法撤销。</string>
+  <string name="assistant_page_delete_dialog_text">确定要删除这个角色卡吗？此操作无法撤销。</string>
   <string name="assistant_page_delete_header">删除 Header</string>
   <string name="assistant_page_enter_image_url">输入图片URL</string>
   <string name="assistant_page_episodic_memory">情节记忆</string>
   <string name="assistant_page_episodic_memory_desc">允许模型记录具体事件与经历；检索时情节记忆会获得时间新鲜度加权</string>
   <string name="assistant_page_global_memory">全局记忆</string>
-  <string name="assistant_page_global_memory_desc">使用全局共享内存而非助手隔离内存。启用后，所有助手共享同一内存存储</string>
+  <string name="assistant_page_global_memory_desc">使用全局共享内存而非角色卡隔离内存。启用后，所有角色卡共享同一内存存储</string>
   <string name="assistant_page_header_name">Header 名称</string>
   <string name="assistant_page_header_value">Header 值</string>
   <string name="assistant_page_image_url">图片URL</string>
@@ -127,7 +127,7 @@
   <string name="assistant_page_message_template">聊天内容模板</string>
   <string name="assistant_page_message_template_desc">控制聊天消息在发送给LLM之前的内容格式，通常不需要修改</string>
   <string name="assistant_page_message_template_missing_message">模板不包含 {{ message }}，用户消息将不会被发送</string>
-  <string name="assistant_page_name">助手名称</string>
+  <string name="assistant_page_name">角色卡名称</string>
   <string name="assistant_page_preset_messages">预设聊天消息</string>
   <string name="assistant_page_preset_messages_desc">设置对话初始消息</string>
   <string name="assistant_page_proxy_fix">中转站兼容</string>
@@ -136,7 +136,7 @@
   <string name="assistant_page_quick_message_title">标题</string>
   <string name="assistant_page_quick_messages">快捷消息</string>
   <string name="assistant_page_recent_chats">参考历史聊天记录</string>
-  <string name="assistant_page_recent_chats_desc">启用后，允许助手在过去的对话中搜索相关信息</string>
+  <string name="assistant_page_recent_chats_desc">启用后，允许角色卡在过去的对话中搜索相关信息</string>
   <string name="assistant_page_regex_affecting_scopes">影响范围：</string>
   <string name="assistant_page_regex_desc">定义正则表达式模式，在发送/接收消息前对其进行转换</string>
   <string name="assistant_page_regex_find_regex">查找正则表达式</string>
@@ -153,7 +153,7 @@
   <string name="assistant_page_rolling_context">上下文滚动压缩</string>
   <string name="assistant_page_rolling_context_desc">上下文超过阈值时自动把早期对话压缩为摘要，回复仍能了解完整历史，但无需发送每条消息（使用压缩模型）</string>
   <string name="assistant_page_save">保存</string>
-  <string name="assistant_page_search_placeholder">搜索助手</string>
+  <string name="assistant_page_search_placeholder">搜索角色卡</string>
   <string name="assistant_page_select_background">选择背景图片</string>
   <string name="assistant_page_select_from_gallery">从相册选择</string>
   <string name="assistant_page_stream_output">流式输出</string>
@@ -183,8 +183,8 @@
   <string name="assistant_page_top_p">Top P</string>
   <string name="assistant_page_top_p_value">Top P: %s</string>
   <string name="assistant_page_top_p_warning">请不要修改此值, 除非你知道自己在做什么</string>
-  <string name="assistant_page_use_assistant_avatar">使用助手头像</string>
-  <string name="assistant_page_use_assistant_avatar_desc">在聊天中使用助手头像和名字而不是模型头像和名字</string>
+  <string name="assistant_page_use_assistant_avatar">使用角色卡头像</string>
+  <string name="assistant_page_use_assistant_avatar_desc">在聊天中使用角色卡头像和名字而不是模型头像和名字</string>
   <string name="audio">音频</string>
   <string name="avatar_cancel">取消</string>
   <string name="avatar_change_avatar">更换头像</string>
@@ -310,7 +310,7 @@
   <string name="chat_page_compressing">正在压缩...</string>
   <string name="chat_page_conversation_system_prompt">对话系统提示</string>
   <string name="chat_page_conversation_system_prompt_clear">清除</string>
-  <string name="chat_page_conversation_system_prompt_hint">覆盖此对话的助手系统提示</string>
+  <string name="chat_page_conversation_system_prompt_hint">覆盖此对话的角色卡系统提示</string>
   <string name="chat_page_conversation_system_prompt_save">保存</string>
   <string name="chat_page_delete">删除</string>
   <string name="chat_page_dismiss_error">关闭错误</string>
@@ -332,7 +332,7 @@
   <string name="chat_page_menu_prompt_viewer">查看发送的提示词</string>
   <string name="chat_page_menu_prompt_viewer_empty">还没有捕获到提示词，请先发送一条消息</string>
   <string name="chat_page_message_count">%d 条消息</string>
-  <string name="chat_page_move_to_assistant">移至助手</string>
+  <string name="chat_page_move_to_assistant">移至角色卡</string>
   <string name="chat_page_new_chat">新聊天</string>
   <string name="chat_page_new_message">新消息</string>
   <string name="chat_page_nickname_placeholder">请输入昵称</string>
@@ -537,7 +537,7 @@
   <string name="couple_space_since">从 %1$s 开始</string>
   <string name="couple_space_space_photo">空间照片</string>
   <string name="couple_space_title">情侣空间</string>
-  <string name="couple_space_unnamed_assistant">未命名助手</string>
+  <string name="couple_space_unnamed_assistant">未命名角色卡</string>
   <string name="couple_space_whats_on_mind">这一刻想说什么？</string>
   <string name="couple_vm_ai_posted">TA 已发表动态</string>
   <string name="couple_vm_ai_thinking_post">TA 正在想发什么……</string>
@@ -680,7 +680,7 @@
   <string name="huadeng_python_hints_desc">在 execute_python 的工具描述里列出已内置的库（numpy/pandas/pillow/docx/pdf/yaml 等）。不写的话模型倾向于用标准库手搓，装了 pandas 也不用。关掉可省每次请求几百 token</string>
   <string name="huadeng_python_hints_title">提示可用的 Python 库</string>
   <string name="huadeng_rolling_compression">上下文滚动压缩</string>
-  <string name="huadeng_rolling_compression_desc">对话过长时自动将早期消息压缩为摘要以节省 token。需要助手详情 → 记忆 → 「上下文滚动压缩」同时开启才生效（新助手默认开启，旧助手需手动打开）；若遇到每轮都重复压缩或缓存失效，可尝试关闭</string>
+  <string name="huadeng_rolling_compression_desc">对话过长时自动将早期消息压缩为摘要以节省 token。需要角色卡详情 → 记忆 → 「上下文滚动压缩」同时开启才生效（新角色卡默认开启，旧角色卡需手动打开）；若遇到每轮都重复压缩或缓存失效，可尝试关闭</string>
   <string name="huadeng_section_integration">接入与自动化</string>
   <string name="huadeng_system_prompt_escape">系统提示词转义</string>
   <string name="huadeng_system_prompt_escape_desc">将系统消息中的 &lt; &gt; 转为 HTML 实体，绕过中转站 WAF 安全策略拦截（如遇到 upstream_content_rejected 错误可开启）。一般不需要开启</string>
@@ -693,7 +693,7 @@
   <string name="huadeng_sub_agent">子 agent</string>
   <string name="huadeng_sub_agent_desc">允许 AI 把子任务派给独立的子 agent 执行（不产生会话历史），完成后取回结果</string>
   <string name="huadeng_frontend_card_mode">前端兼容模式</string>
-  <string name="huadeng_frontend_card_mode_desc">自动识别开场白或世界书中的网页，也可按助手强制开启或关闭</string>
+  <string name="huadeng_frontend_card_mode_desc">自动识别开场白或世界书中的网页，也可按角色卡强制开启或关闭</string>
   <string name="huadeng_frontend_card_auto_switched">已自动切换前端模式</string>
   <string name="huadeng_frontend_card_slash_unsupported">前端卡命令 %1$s 暂未支持</string>
   <string name="huadeng_transient_prune">上下文瞬态内容裁剪</string>
@@ -992,9 +992,9 @@
   <string name="local_tool_shell_cmd_title">Shell 命令</string>
   <string name="local_tool_shell_timeout_desc">shell命令执行超时，默认30</string>
   <string name="local_tool_shell_timeout_title">Shell超时(秒)</string>
-  <string name="local_tool_show_image_desc">让助手把本地图片直接显示在对话中，而不是只在文字里描述它。</string>
+  <string name="local_tool_show_image_desc">让角色卡把本地图片直接显示在对话中，而不是只在文字里描述它。</string>
   <string name="local_tool_show_image_title">在聊天里显示图片</string>
-  <string name="local_tool_task_desc">让助手在长流程里维护任务清单：创建、更新、跟踪条目。</string>
+  <string name="local_tool_task_desc">让角色卡在长流程里维护任务清单：创建、更新、跟踪条目。</string>
   <string name="local_tool_task_title">任务清单</string>
   <string name="local_tool_total_steps_limit_desc">整个对话AI调工具的总次数上限，默认256</string>
   <string name="local_tool_total_steps_limit_title">总工具调用轮数上限</string>
@@ -1076,7 +1076,7 @@
   <string name="persona_page_position_top">导演备注上方(Top of Author\'s Note)</string>
   <string name="persona_page_presets">快速预设（%d）</string>
   <string name="persona_page_role">身份(Role)</string>
-  <string name="persona_page_role_assistant">助手(Assistant)</string>
+  <string name="persona_page_role_assistant">角色(Assistant)</string>
   <string name="persona_page_role_system">系统(System)</string>
   <string name="persona_page_role_user">用户(User)</string>
   <string name="persona_page_save">保存(Save)</string>
@@ -1090,7 +1090,7 @@
   <string name="pinned_chats">置顶聊天</string>
   <string name="placeholder_author_note">作者注释内容</string>
   <string name="placeholder_battery_level">电池电量</string>
-  <string name="placeholder_char">助手名称</string>
+  <string name="placeholder_char">角色卡名称</string>
   <string name="placeholder_char_instruction">角色历史后指令</string>
   <string name="placeholder_char_prompt">角色提示词覆盖</string>
   <string name="placeholder_char_version">角色版本</string>
@@ -1178,9 +1178,9 @@
   <string name="proactive_battery_not_ignored">未忽略电池优化，系统可能限制后台活动导致消息无法准时触发。建议关闭电池优化。</string>
   <string name="proactive_battery_optimization">电池优化</string>
   <string name="proactive_conversation">发送到的对话</string>
-  <string name="proactive_conversation_auto">该助手最近的对话</string>
-  <string name="proactive_conversation_empty">该助手还没有任何对话</string>
-  <string name="proactive_conversation_load_failed">读取对话列表失败——先切一下助手再回来重试</string>
+  <string name="proactive_conversation_auto">该角色卡最近的对话</string>
+  <string name="proactive_conversation_empty">该角色卡还没有任何对话</string>
+  <string name="proactive_conversation_load_failed">读取对话列表失败——先切一下角色卡再回来重试</string>
   <string name="proactive_enable">启用主动消息</string>
   <string name="proactive_enable_desc">开启后 AI 立即主动发一条消息，之后按设定间隔循环</string>
   <string name="proactive_exact_alarm">精确闹钟权限</string>
@@ -1205,9 +1205,9 @@
   <string name="proactive_title">主动消息</string>
   <string name="proactive_unnamed">未命名</string>
   <string name="proactive_untitled_conversation">未命名对话</string>
-  <string name="proactive_use_assistant">使用助手</string>
-  <string name="proactive_use_assistant_desc">优先使用当前助手: %1$s</string>
-  <string name="proactive_use_current_assistant">跟随当前助手</string>
+  <string name="proactive_use_assistant">使用角色卡</string>
+  <string name="proactive_use_assistant_desc">优先使用当前角色卡: %1$s</string>
+  <string name="proactive_use_current_assistant">跟随当前角色卡</string>
   <string name="proactive_waiting_schedule">等待调度中...</string>
   <string name="prompt_page_add">添加</string>
   <string name="prompt_page_add_content">点击添加注入内容</string>
@@ -1301,7 +1301,7 @@
   <string name="prompt_page_priority_label">优先级(Priority)</string>
   <string name="prompt_page_probability">触发概率: %d%%</string>
   <string name="prompt_page_probability_label">概率(Probability)</string>
-  <string name="prompt_page_role_assistant">助手(Assistant)</string>
+  <string name="prompt_page_role_assistant">角色(Assistant)</string>
   <string name="prompt_page_role_system">系统(System)</string>
   <string name="prompt_page_role_user">用户</string>
   <string name="prompt_page_rounds_suffix">轮</string>
@@ -1373,7 +1373,7 @@
   <string name="qq_bot_enable_desc">开启后建立 WebSocket 连接监听私聊消息. 需先填 AppID 和 Secret.</string>
   <string name="qq_bot_how_to_get_credentials">怎么获取 AppID 和 Secret</string>
   <string name="qq_bot_how_to_get_credentials_desc">1. 去 q.qq.com 注册开发者并创建机器人\n2. 在机器人管理页面找到 AppID 和 AppSecret\n3. 复制填到下面</string>
-  <string name="qq_bot_linked_assistant">关联助手</string>
+  <string name="qq_bot_linked_assistant">关联角色卡</string>
   <string name="qq_bot_notification_disconnected_text">机器人可能已下架或被封禁, 请到 q.qq.com 检查</string>
   <string name="qq_bot_notification_disconnected_title">QQ Bot 已断开</string>
   <string name="qq_bot_notification_running_text">正在监听 QQ 私聊消息</string>
@@ -1386,7 +1386,7 @@
   <string name="qq_bot_section_run">运行</string>
   <string name="qq_bot_title">QQ Bot</string>
   <string name="qq_bot_what_is">QQ Bot 是什么</string>
-  <string name="qq_bot_what_is_desc">把你的 QQ 机器人变成 AI 入口: 别人私聊你的 bot, 会由当前助手回复. 只处理私聊消息.</string>
+  <string name="qq_bot_what_is_desc">把你的 QQ 机器人变成 AI 入口: 别人私聊你的 bot, 会由当前角色卡回复. 只处理私聊消息.</string>
   <string name="quick_messages_page_add_title">添加快捷消息</string>
   <string name="quick_messages_page_delete_message">确定要删除“%s”吗？此操作无法撤销。</string>
   <string name="quick_messages_page_delete_title">删除快速消息</string>
@@ -1424,13 +1424,13 @@
   <string name="risk_qq_bot_title">确认开启 QQ Bot？</string>
   <string name="risk_weixin_bot_message">开启后，您的微信消息将被转发给 AI 处理，AI 的回复也会通过微信发送出去。这意味着您的微信聊天记录可能离开本机，请确认您了解相关隐私风险。</string>
   <string name="risk_weixin_bot_title">确认开启微信 Bot？</string>
-  <string name="safe_mode_assistants">助手</string>
+  <string name="safe_mode_assistants">角色卡</string>
   <string name="safe_mode_copy">复制</string>
   <string name="safe_mode_crash_report">崩溃报告</string>
-  <string name="safe_mode_current_assistant">当前助手：%s</string>
-  <string name="safe_mode_default_assistant">默认助手</string>
-  <string name="safe_mode_description">应用上次启动时崩溃了。您可以切换到其他助手来解决此问题。</string>
-  <string name="safe_mode_switch_assistant">切换助手</string>
+  <string name="safe_mode_current_assistant">当前角色卡：%s</string>
+  <string name="safe_mode_default_assistant">默认角色卡</string>
+  <string name="safe_mode_description">应用上次启动时崩溃了。您可以切换到其他角色卡来解决此问题。</string>
+  <string name="safe_mode_switch_assistant">切换角色卡</string>
   <string name="safe_mode_title">安全模式</string>
   <string name="search_ability_scrape">抓取</string>
   <string name="search_ability_search">搜索</string>
@@ -1556,9 +1556,9 @@
   <string name="setting_display_bubble_shadow_desc">阴影范围，调为 0 可取消主题导入的阴影</string>
   <string name="setting_display_bubbles_section">气泡</string>
   <string name="setting_display_chat_bg_color">聊天背景色</string>
-  <string name="setting_display_chat_bg_color_desc">助手设置里有背景图时图片优先</string>
+  <string name="setting_display_chat_bg_color_desc">角色卡设置里有背景图时图片优先</string>
   <string name="setting_display_chat_bg_image">聊天背景图</string>
-  <string name="setting_display_chat_bg_image_not_set">未设置（优先于助手背景，叠加聊天背景色遮罩）</string>
+  <string name="setting_display_chat_bg_image_not_set">未设置（优先于角色卡背景，叠加聊天背景色遮罩）</string>
   <string name="setting_display_choose">选择</string>
   <string name="setting_display_colors_section">颜色自定义</string>
   <string name="setting_display_custom">自定义</string>
@@ -1574,7 +1574,7 @@
   <string name="setting_display_page_amoled_dark_mode_title">AMOLED 暗色模式</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">思考完成自动折叠思考内容</string>
   <string name="setting_display_page_auto_collapse_thinking_title">自动折叠思考</string>
-  <string name="setting_display_page_auto_play_tts_desc">助手消息生成完成后自动播放TTS</string>
+  <string name="setting_display_page_auto_play_tts_desc">角色卡消息生成完成后自动播放TTS</string>
   <string name="setting_display_page_auto_play_tts_title">生成后自动播放TTS</string>
   <string name="setting_display_page_bracket_button_desc">在输入框下方显示符号按钮，点击在光标处插入自定义符号</string>
   <string name="setting_display_page_bracket_button_title">一键添加符号</string>
@@ -1646,8 +1646,8 @@
   <string name="setting_display_page_quote_color_warm_gold">暖金</string>
   <string name="setting_display_page_send_on_enter_desc">按 Enter 发送消息而非换行</string>
   <string name="setting_display_page_send_on_enter_title">按Enter发送</string>
-  <string name="setting_display_page_show_assistant_bubble_desc">是否为助手消息显示气泡背景</string>
-  <string name="setting_display_page_show_assistant_bubble_title">显示助手消息气泡</string>
+  <string name="setting_display_page_show_assistant_bubble_desc">是否为角色卡消息显示气泡背景</string>
+  <string name="setting_display_page_show_assistant_bubble_title">显示角色卡消息气泡</string>
   <string name="setting_display_page_show_datetime_in_message_desc">在每条消息下方显示日期和时间</string>
   <string name="setting_display_page_show_datetime_in_message_title">在消息中显示日期和时间</string>
   <string name="setting_display_page_show_line_numbers_desc">在代码块中显示行号</string>
@@ -1804,7 +1804,7 @@
   <string name="setting_memory_long_term_section">📚 很久以前的事</string>
   <string name="setting_memory_manage_long_term">管理长期记忆</string>
   <string name="setting_memory_manage_long_term_desc">逐条新增、修改或删除。聊天时只会想起与当前内容相关的部分。</string>
-  <string name="setting_memory_no_assistant">请先创建一个助手。</string>
+  <string name="setting_memory_no_assistant">请先创建一个角色卡。</string>
   <string name="setting_memory_param_recall">每次最多召回多少条长期记忆</string>
   <string name="setting_memory_param_recall_chars">长期记忆每轮最多字符</string>
   <string name="setting_memory_param_tail">保留多少条近期原文</string>
@@ -1818,8 +1818,8 @@
   <string name="setting_memory_recent_summarized">%1$d 条近期原文 · 更早内容已整理成摘要</string>
   <string name="setting_memory_refresh">刷新</string>
   <string name="setting_memory_role_card">角色设定</string>
-  <string name="setting_memory_role_card_empty">角色设定暂时为空。请在助手设置中维护角色卡。</string>
-  <string name="setting_memory_role_card_managed">角色卡由助手设置维护。这个记忆页面不会覆盖它。</string>
+  <string name="setting_memory_role_card_empty">角色设定暂时为空。请在角色卡设置中维护角色卡。</string>
+  <string name="setting_memory_role_card_managed">角色卡由角色卡设置维护。这个记忆页面不会覆盖它。</string>
   <string name="setting_memory_save_custom_params">保存自定义参数</string>
   <string name="setting_memory_save_fixed">保存固定记忆</string>
   <string name="setting_memory_strategy_current">当前：%1$s</string>
@@ -1840,7 +1840,7 @@
   <string name="setting_memory_three_layer">三层记忆</string>
   <string name="setting_memory_three_layer_desc">固定记忆 + 近期生活流 + 长期记忆按需召回</string>
   <string name="setting_memory_title">记忆</string>
-  <string name="setting_memory_unnamed_assistant">未命名助手</string>
+  <string name="setting_memory_unnamed_assistant">未命名角色卡</string>
   <string name="setting_memory_you">你</string>
   <string name="setting_model_page_chat_model">聊天模型</string>
   <string name="setting_model_page_chat_model_desc">全局默认的聊天模型</string>
@@ -1958,7 +1958,7 @@
   <string name="setting_page_providers">提供商</string>
   <string name="setting_page_providers_desc">配置AI提供商</string>
   <string name="setting_page_qq_bot">QQ Bot</string>
-  <string name="setting_page_qq_bot_desc">把 QQ 开放平台机器人作为当前助手的私聊通道</string>
+  <string name="setting_page_qq_bot_desc">把 QQ 开放平台机器人作为当前角色卡的私聊通道</string>
   <string name="setting_page_request_logs">请求日志</string>
   <string name="setting_page_request_logs_desc">查看 HTTP 请求日志</string>
   <string name="setting_page_search_add_provider">添加提供商</string>
@@ -1977,7 +1977,7 @@
   <string name="setting_page_security_tool_calls">工具调用</string>
   <string name="setting_page_share">分享</string>
   <string name="setting_page_share_desc">分享本APP给朋友</string>
-  <string name="setting_page_share_text">RikkaHub - 开源安卓AI助手\n\n官网: https://rikkahub.luoca.cn/</string>
+  <string name="setting_page_share_text">RikkaHub - 开源安卓AI角色卡\n\n官网: https://rikkahub.luoca.cn/</string>
   <string name="setting_page_sponsor_alert_confirm">去点 Star</string>
   <string name="setting_page_sponsor_alert_desc">你已经启动这个应用 100 多次了。如果它帮到过你，去仓库点个 Star 就是最好的支持——不用花钱，也不会打扰你。</string>
   <string name="setting_page_sponsor_alert_dismiss">暂不</string>
@@ -2150,7 +2150,7 @@
   <string name="setting_tts_page_voice_name_placeholder">Kore</string>
   <string name="settings">设置</string>
   <string name="share">分享</string>
-  <string name="share_handler_page_title">选择一个助手处理分享</string>
+  <string name="share_handler_page_title">选择一个角色卡处理分享</string>
   <string name="shortcut_take_picture">拍照提问</string>
   <string name="silicon_flow_description">**全球领先的 AI 能力提供商，加速 AGI 普惠人类。**</string>
   <string name="silicon_flow_website">官网: [https://cloud.siliconflow.cn/](https://cloud.siliconflow.cn/i/u1Ia4Ycf)</string>
@@ -2223,10 +2223,10 @@
   <string name="slash_char_duplicate_desc">复制当前角色卡</string>
   <string name="slash_char_update_desc">修改角色卡字段：可用字段 name/description/personality/scenario/system_prompt/first_mes/mes_example/phi/creator_notes</string>
   <string name="slash_char_update_hint">[字段=值] 如 description=新描述</string>
-  <string name="slash_continue_desc">续写最后一条助手回复：在原回复末尾继续生成，可加补充文本</string>
+  <string name="slash_continue_desc">续写最后一条角色卡回复：在原回复末尾继续生成，可加补充文本</string>
   <string name="slash_decvar_desc">当前对话变量-1</string>
   <string name="slash_decvar_hint">[变量名]</string>
-  <string name="slash_error_continue_no_message">没有可继续的助手消息</string>
+  <string name="slash_error_continue_no_message">没有可继续的角色卡消息</string>
   <string name="slash_error_no_model">请先选择模型</string>
   <string name="slash_error_sysgen_empty">生成的旁白为空</string>
   <string name="slash_error_sysgen_no_messages">当前对话还没有消息，无法生成旁白</string>
@@ -2271,7 +2271,7 @@
   <string name="slash_example_send_2_cmd">/send name=旅行者 我明天出发</string>
   <string name="slash_example_send_2_desc">以「旅行者」的名字插入</string>
   <string name="slash_example_sendas_1_cmd">/sendas 她笑了一下</string>
-  <string name="slash_example_sendas_1_desc">以当前角色身份插入一条助手消息（不触发生成）</string>
+  <string name="slash_example_sendas_1_desc">以当前角色身份插入一条角色卡消息（不触发生成）</string>
   <string name="slash_example_sendas_2_cmd">/sendas name=宁凝 at=-1 她在心里想道</string>
   <string name="slash_example_setvar_1_cmd">/setvar money 100</string>
   <string name="slash_example_setvar_1_desc">设置变量 money 为 100</string>
@@ -2406,7 +2406,7 @@
   <string name="slash_toast_gen_done_append">已生成并追加到输入框，确认后发送</string>
   <string name="slash_toast_gen_done_replace">已生成，确认后发送</string>
   <string name="slash_toast_gen_usage">用法: /gen [trim=true] [as=char] [length=token数] [name=名字] 提示词（默认以系统指令生成）</string>
-  <string name="slash_toast_no_char_card">当前助手没有角色卡</string>
+  <string name="slash_toast_no_char_card">当前角色卡没有酒馆卡片数据</string>
   <string name="slash_toast_no_model">请先选择模型</string>
   <string name="slash_toast_not_supported">当前页面不支持该命令</string>
   <string name="slash_toast_persona_already_off">当前已无激活人设</string>
@@ -2563,8 +2563,8 @@
   <string name="assistant_page_workspace_unbound">未绑定</string>
   <string name="weixin_bot_enable_desc">开启后启动后台长轮询服务. 需先扫码登录.</string>
   <string name="weixin_bot_fetching_qrcode">获取二维码...</string>
-  <string name="weixin_bot_linked_assistant">关联助手</string>
-  <string name="weixin_bot_linked_assistant_desc">固定使用当前助手: %1$s</string>
+  <string name="weixin_bot_linked_assistant">关联角色卡</string>
+  <string name="weixin_bot_linked_assistant_desc">固定使用当前角色卡: %1$s</string>
   <string name="weixin_bot_logged_out">已退出</string>
   <string name="weixin_bot_logging_in">登录中...</string>
   <string name="weixin_bot_login_failed">登录失败: %1$s</string>
@@ -2595,12 +2595,12 @@
   <string name="weixin_bot_unknown">未知</string>
   <string name="weixin_bot_waiting_scan">等待扫码...</string>
   <string name="weixin_bot_what_is">微信 Bot 是什么</string>
-  <string name="weixin_bot_what_is_desc">把你的微信号变成 AI 入口: 别人(或你自己)给这个微信号发消息, 会由关联的助手回复. 相当于给助手多开一个微信通道, AI/记忆/工具都用那个助手的.</string>
+  <string name="weixin_bot_what_is_desc">把你的微信号变成 AI 入口: 别人(或你自己)给这个微信号发消息, 会由关联的角色卡回复. 相当于给角色卡多开一个微信通道, AI/记忆/工具都用那个角色卡的.</string>
   <string name="workspace_page_title">工作区</string>
   <string name="workspace_page_create">创建工作区</string>
   <string name="workspace_page_rename">重命名工作区</string>
   <string name="workspace_page_delete">删除工作区</string>
-  <string name="workspace_page_delete_confirm">这将删除工作区元数据和本地文件，并清除所有引用它的助手绑定。</string>
+  <string name="workspace_page_delete_confirm">这将删除工作区元数据和本地文件，并清除所有引用它的角色卡绑定。</string>
   <string name="workspace_page_empty">暂无工作区</string>
   <string name="workspace_page_empty_desc">创建一个以使用文件工具和沙箱环境</string>
   <string name="workspace_page_name">名称</string>
@@ -2759,8 +2759,8 @@
   <string name="chat_generation_network_disconnected">网络连接已断开</string>
   <string name="setting_tts_page_default_playback_speed">默认播放速度</string>
   <string name="setting_tts_page_default_playback_speed_description">本地应用到所有 TTS 服务商，不改变其合成设置。</string>
-  <string name="search_page_scope_current_assistant">当前助手</string>
-  <string name="search_page_scope_all_assistants">所有助手</string>
+  <string name="search_page_scope_current_assistant">当前角色卡</string>
+  <string name="search_page_scope_all_assistants">所有角色卡</string>
   <string name="chat_page_voice_title">语音模式</string>
   <string name="chat_page_queue_resume">继续发送</string>
   <string name="chat_page_queue_image">[图片]</string>
@@ -3117,7 +3117,7 @@
   <string name="slash_param_setvar_value_name">值</string>
   <string name="slash_param_sysgen_at_example">/sysgen at=-1 描写角色握剑的手</string>
   <string name="slash_persona_desc">切换用户人设/临时用户名：官方 /persona-set 别名，找不到人设时设置临时用户名</string>
-  <string name="slash_sendas_desc">插入助手消息：默认以当前助手身份，可指定角色名与位置，不触发生成</string>
+  <string name="slash_sendas_desc">插入角色卡消息：默认以当前角色卡身份，可指定角色名与位置，不触发生成</string>
   <string name="slash_sysgen_status">正在生成系统旁白…</string>
   <string name="slash_toast_generating">正在生成中，请等待完成后再执行命令</string>
   <string name="slash_toast_persona_none_active">当前无激活人设（可用: %1$s）</string>

@@ -1744,7 +1744,7 @@ private fun EntryEditor(
                     val roleLabels = listOf(
                         "system" to "系统(System)",
                         "user" to "用户(User)",
-                        "assistant" to "助手(Assistant)",
+                        "assistant" to "角色(Assistant)",
                     )
                     roleLabels.forEach { (value, label) ->
                         item(

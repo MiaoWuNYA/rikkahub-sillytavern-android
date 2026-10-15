@@ -81,7 +81,7 @@ class DebugVM(
             .sortedByDescending { it.value }
         if (missing.isEmpty()) return 0
         val recovered = missing.mapIndexed { index, (id, _) ->
-            Assistant(id = id, name = "恢复的助手 ${index + 1}")
+            Assistant(id = id, name = "恢复的角色卡 ${index + 1}")
         }
         settingsStore.update { it.copy(assistants = it.assistants + recovered) }
         return recovered.size
@@ -179,7 +179,7 @@ class DebugVM(
             "聊天", "对话", "内容", "结构", "验证", "分页", "顺序", "稳定", "系统",
         )
         val wordCount = Random.nextInt(6, 14)
-        val prefix = if (role == MessageRole.USER) "用户" else "助手"
+        val prefix = if (role == MessageRole.USER) "用户" else "角色"
         val body = List(wordCount) { fragments.random() }.joinToString(" ")
         return "$prefix#${index + 1}: $body"
     }

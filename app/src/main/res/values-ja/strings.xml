@@ -17,8 +17,8 @@
   <string name="assistant_detail_basic_desc">名前、アバター、モデル、パラメータを設定</string>
   <string name="assistant_detail_extensions_desc">プロンプトインジェクション、ロアブック、スキルを管理</string>
   <string name="assistant_detail_local_tools_desc">JavaScriptエンジンなどのローカルツールを有効化</string>
-  <string name="assistant_detail_mcp_desc">アシスタント用のMCPサーバーツールを設定</string>
-  <string name="assistant_detail_memory_desc">アシスタントメモリと最近のチャット参照を管理</string>
+  <string name="assistant_detail_mcp_desc">キャラクターカード用のMCPサーバーツールを設定</string>
+  <string name="assistant_detail_memory_desc">キャラクターカードメモリと最近のチャット参照を管理</string>
   <string name="assistant_detail_prompt_desc">システムプロンプト、メッセージテンプレート、正規表現ルールを設定</string>
   <string name="assistant_detail_request_desc">カスタムリクエストヘッダーとボディパラメータを設定</string>
   <string name="assistant_extensions_page_empty_lorebooks">利用可能なロアブックがありません。プロンプトで作成してください</string>
@@ -77,25 +77,25 @@
   <string name="assistant_page_change_background">背景画像を変更</string>
   <string name="assistant_page_chaotic">カオス（危険）</string>
   <string name="assistant_page_chat_background">チャット背景</string>
-  <string name="assistant_page_chat_background_desc">アシスタントチャットページの背景画像を設定</string>
+  <string name="assistant_page_chat_background_desc">キャラクターカードチャットページの背景画像を設定</string>
   <string name="assistant_page_chat_model">チャットモデル</string>
-  <string name="assistant_page_chat_model_desc">アシスタントのデフォルトチャットモデルを設定します。設定しない場合は、グローバルデフォルトチャットモデルが使用されます</string>
+  <string name="assistant_page_chat_model_desc">キャラクターカードのデフォルトチャットモデルを設定します。設定しない場合は、グローバルデフォルトチャットモデルが使用されます</string>
   <string name="assistant_page_clone">複製</string>
   <string name="assistant_page_confirm">確認</string>
   <string name="assistant_page_creative">創造的</string>
-  <string name="assistant_page_current_assistant">現在のアシスタント</string>
+  <string name="assistant_page_current_assistant">現在のキャラクターカード</string>
   <string name="assistant_page_custom_bodies">カスタムボディ</string>
   <string name="assistant_page_custom_headers">カスタムヘッダー</string>
-  <string name="assistant_page_default_assistant">デフォルトアシスタント</string>
+  <string name="assistant_page_default_assistant">デフォルトキャラクターカード</string>
   <string name="assistant_page_delete">削除</string>
   <string name="assistant_page_delete_body">ボディを削除</string>
-  <string name="assistant_page_delete_dialog_text">このアシスタントを削除してもよろしいですか？この操作は元に戻せません。</string>
+  <string name="assistant_page_delete_dialog_text">このキャラクターカードを削除してもよろしいですか？この操作は元に戻せません。</string>
   <string name="assistant_page_delete_header">ヘッダーを削除</string>
   <string name="assistant_page_enter_image_url">画像URLを入力</string>
   <string name="assistant_page_episodic_memory">エピソード記憶</string>
   <string name="assistant_page_episodic_memory_desc">モデルが具体的な出来事や体験を記録できるようにします。検索された記憶には新しさのブーストがかかります</string>
   <string name="assistant_page_global_memory">グローバルメモリ</string>
-  <string name="assistant_page_global_memory_desc">アシスタントごとに分離されたメモリではなく、グローバル共有メモリを使用します。有効にすると、すべてのアシスタントが同じメモリストレージを共有します</string>
+  <string name="assistant_page_global_memory_desc">キャラクターカードごとに分離されたメモリではなく、グローバル共有メモリを使用します。有効にすると、すべてのキャラクターカードが同じメモリストレージを共有します</string>
   <string name="assistant_page_header_name">ヘッダー名</string>
   <string name="assistant_page_header_value">ヘッダー値</string>
   <string name="assistant_page_image_url">画像URL</string>
@@ -124,7 +124,7 @@
   <string name="assistant_page_message_template">チャットコンテンツテンプレート</string>
   <string name="assistant_page_message_template_desc">チャットメッセージがLLMに送信される前のコンテンツ形式を制御します。通常は変更する必要がありません</string>
   <string name="assistant_page_message_template_missing_message">テンプレートに{{ message }}が含まれていないため、ユーザーのメッセージは送信されません</string>
-  <string name="assistant_page_name">アシスタント名</string>
+  <string name="assistant_page_name">キャラクターカード名</string>
   <string name="assistant_page_preset_messages">プリセットチャットメッセージ</string>
   <string name="assistant_page_preset_messages_desc">初期会話メッセージを設定</string>
   <string name="assistant_page_proxy_fix">プロキシ修正（中継サーバー）</string>
@@ -133,7 +133,7 @@
   <string name="assistant_page_quick_message_title">タイトル</string>
   <string name="assistant_page_quick_messages">クイックメッセージ</string>
   <string name="assistant_page_recent_chats">最近のチャット履歴を参照</string>
-  <string name="assistant_page_recent_chats_desc">有効にすると、アシスタントは最近のチャット履歴を参照して、より文脈に沿った応答を提供します</string>
+  <string name="assistant_page_recent_chats_desc">有効にすると、キャラクターカードは最近のチャット履歴を参照して、より文脈に沿った応答を提供します</string>
   <string name="assistant_page_regex_affecting_scopes">影響範囲：</string>
   <string name="assistant_page_regex_desc">メッセージの送受信前に変換する正規表現パターンを定義</string>
   <string name="assistant_page_regex_find_regex">正規表現を検索</string>
@@ -149,7 +149,7 @@
   <string name="assistant_page_rolling_context">ローリングコンテキスト圧縮</string>
   <string name="assistant_page_rolling_context_desc">コンテキストがしきい値を超えると以前の会話を自動要約し、すべてのメッセージを送らずに履歴全体を踏まえた返信を可能にします（圧縮モデルを使用）</string>
   <string name="assistant_page_save">保存</string>
-  <string name="assistant_page_search_placeholder">アシスタントを検索</string>
+  <string name="assistant_page_search_placeholder">キャラクターカードを検索</string>
   <string name="assistant_page_select_background">背景画像を選択</string>
   <string name="assistant_page_select_from_gallery">ギャラリーから選択</string>
   <string name="assistant_page_stream_output">ストリーミング出力</string>
@@ -175,12 +175,12 @@
   <string name="assistant_page_thinking_budget">思考バジェット</string>
   <string name="assistant_page_time_reminder">時間リマインダー</string>
   <string name="assistant_page_time_reminder_desc">会話の間隔が大きいメッセージの前に自動で時刻リマインダーを挿入し、AIが会話の間隔を理解しやすくします</string>
-  <string name="assistant_page_title">アシスタント設定</string>
+  <string name="assistant_page_title">キャラクターカード設定</string>
   <string name="assistant_page_top_p">Top P</string>
   <string name="assistant_page_top_p_value">Top P: %s</string>
   <string name="assistant_page_top_p_warning">何をしているのか理解している場合を除き、この値を変更しないでください</string>
-  <string name="assistant_page_use_assistant_avatar">アシスタントアバターを使用</string>
-  <string name="assistant_page_use_assistant_avatar_desc">チャットでモデルアバターと名前ではなくアシスタントアバターと名前を使用</string>
+  <string name="assistant_page_use_assistant_avatar">キャラクターカードアバターを使用</string>
+  <string name="assistant_page_use_assistant_avatar_desc">チャットでモデルアバターと名前ではなくキャラクターカードアバターと名前を使用</string>
   <string name="audio">音声</string>
   <string name="avatar_cancel">キャンセル</string>
   <string name="avatar_change_avatar">アバターを変更</string>
@@ -304,7 +304,7 @@
   <string name="chat_page_compressing">圧縮中…</string>
   <string name="chat_page_conversation_system_prompt">会話システムプロンプト</string>
   <string name="chat_page_conversation_system_prompt_clear">クリア</string>
-  <string name="chat_page_conversation_system_prompt_hint">この会話でアシスタントのシステムプロンプトを上書き</string>
+  <string name="chat_page_conversation_system_prompt_hint">この会話でキャラクターカードのシステムプロンプトを上書き</string>
   <string name="chat_page_conversation_system_prompt_save">保存</string>
   <string name="chat_page_delete">削除</string>
   <string name="chat_page_dismiss_error">エラーを閉じる</string>
@@ -325,7 +325,7 @@
   <string name="chat_page_menu_prompt_viewer">送信済みプロンプトを表示</string>
   <string name="chat_page_menu_prompt_viewer_empty">まだプロンプトが記録されていません — 先にメッセージを送信してください</string>
   <string name="chat_page_message_count">%d件のメッセージ</string>
-  <string name="chat_page_move_to_assistant">アシスタントに移動</string>
+  <string name="chat_page_move_to_assistant">キャラクターカードに移動</string>
   <string name="chat_page_new_chat">新しいチャット</string>
   <string name="chat_page_new_message">新しいメッセージ</string>
   <string name="chat_page_nickname_placeholder">ニックネームを入力してください</string>
@@ -530,7 +530,7 @@
   <string name="couple_space_since">%1$sからずっと一緒</string>
   <string name="couple_space_space_photo">スペース写真</string>
   <string name="couple_space_title">カップルスペース</string>
-  <string name="couple_space_unnamed_assistant">名前なしのアシスタント</string>
+  <string name="couple_space_unnamed_assistant">名前なしのキャラクターカード</string>
   <string name="couple_space_whats_on_mind">今、何を考えてる？</string>
   <string name="couple_vm_ai_posted">投稿が公開されました</string>
   <string name="couple_vm_ai_thinking_post">何を投稿するか考えています…</string>
@@ -670,7 +670,7 @@
   <string name="huadeng_clean_mode">クリーンモード</string>
   <string name="huadeng_clean_mode_desc">カップルスペース、ライフスペースなどの娯楽エントリを非表示にし、そのAIツールの登録も停止します。UIがシンプルになり、リクエストあたりのトークンも削減されます</string>
   <string name="huadeng_rolling_compression">ローリングコンテキスト圧縮</string>
-  <string name="huadeng_rolling_compression_desc">会話が長くなると、以前のメッセージを要約へ自動圧縮します。オフにすると自動圧縮が無効化されます（アシスタントごとのスイッチは引き続き機能）。毎ターン圧縮が繰り返されたりプロンプトキャッシュが壊れる場合は、オフにしてみてください</string>
+  <string name="huadeng_rolling_compression_desc">会話が長くなると、以前のメッセージを要約へ自動圧縮します。オフにすると自動圧縮が無効化されます（キャラクターカードごとのスイッチは引き続き機能）。毎ターン圧縮が繰り返されたりプロンプトキャッシュが壊れる場合は、オフにしてみてください</string>
   <string name="huadeng_section_integration">連携&amp;オートメーション</string>
   <string name="huadeng_system_prompt_escape">システムプロンプトのエスケープ</string>
   <string name="huadeng_system_prompt_escape_desc">システムメッセージ内の &lt; と &gt; をHTMLエンティティに変換し、プロキシWAFのブロックを回避します（upstream_content_rejected エラーが出る場合に有効化してください）。通常は不要です</string>
@@ -679,7 +679,7 @@
   <string name="huadeng_sub_agent">サブエージェント</string>
   <string name="huadeng_sub_agent_desc">AI がサブタスクを独立したサブエージェントに委譲し（会話履歴なし）、結果を取得できるようにします</string>
   <string name="huadeng_frontend_card_mode">フロントエンド互換モード</string>
-  <string name="huadeng_frontend_card_mode_desc">挨拶や世界情報の Web ページを自動判別。アシスタント単位で強制も可能</string>
+  <string name="huadeng_frontend_card_mode_desc">挨拶や世界情報の Web ページを自動判別。キャラクターカード単位で強制も可能</string>
   <string name="huadeng_frontend_card_auto_switched">フロントモードを自動で有効にしました</string>
   <string name="huadeng_frontend_card_slash_unsupported">フロントカードのコマンド %1$s は未対応です</string>
   <string name="huadeng_transient_prune">一時コンテンツの間引き</string>
@@ -1050,7 +1050,7 @@
   <string name="persona_page_position_top">ディレクターノートの上部</string>
   <string name="persona_page_presets">クイックプリセット (%d)</string>
   <string name="persona_page_role">ロール</string>
-  <string name="persona_page_role_assistant">アシスタント</string>
+  <string name="persona_page_role_assistant">キャラクター</string>
   <string name="persona_page_role_system">System</string>
   <string name="persona_page_role_user">ユーザー</string>
   <string name="persona_page_save">保存</string>
@@ -1064,7 +1064,7 @@
   <string name="pinned_chats">固定チャット</string>
   <string name="placeholder_author_note">ディレクターノートの内容</string>
   <string name="placeholder_battery_level">バッテリー残量</string>
-  <string name="placeholder_char">アシスタント名</string>
+  <string name="placeholder_char">キャラクターカード名</string>
   <string name="placeholder_char_instruction">キャラクター履歴後指示</string>
   <string name="placeholder_char_prompt">キャラクタープロンプト上書き</string>
   <string name="placeholder_char_version">キャラクターバージョン</string>
@@ -1166,8 +1166,8 @@
   <string name="proactive_section_about">概要</string>
   <string name="proactive_title">先行メッセージ</string>
   <string name="proactive_unnamed">名前なし</string>
-  <string name="proactive_use_assistant">使用するアシスタント</string>
-  <string name="proactive_use_assistant_desc">現在のアシスタントを優先: %1$s</string>
+  <string name="proactive_use_assistant">使用するキャラクターカード</string>
+  <string name="proactive_use_assistant_desc">現在のキャラクターカードを優先: %1$s</string>
   <string name="proactive_waiting_schedule">スケジュールを待機中...</string>
   <string name="prompt_page_add">追加</string>
   <string name="prompt_page_add_content">タップして注入コンテンツを追加</string>
@@ -1261,7 +1261,7 @@
   <string name="prompt_page_priority_label">優先度</string>
   <string name="prompt_page_probability">確率: %d%%</string>
   <string name="prompt_page_probability_label">確率</string>
-  <string name="prompt_page_role_assistant">アシスタント（プリフィル）</string>
+  <string name="prompt_page_role_assistant">キャラクター（プリフィル）</string>
   <string name="prompt_page_role_system">System</string>
   <string name="prompt_page_role_user">ユーザー</string>
   <string name="prompt_page_rounds_suffix">ターン</string>
@@ -1333,7 +1333,7 @@
   <string name="qq_bot_enable_desc">有効にするとWebSocket接続を確立し、個別メッセージを待ち受けます。先にAppIDとSecretを入力してください。</string>
   <string name="qq_bot_how_to_get_credentials">AppIDとSecretの取得方法</string>
   <string name="qq_bot_how_to_get_credentials_desc">1. q.qq.com で開発者登録し、ボットを作成します\n2. ボット管理ページでAppIDとAppSecretを確認します\n3. コピーして以下に貼り付けます</string>
-  <string name="qq_bot_linked_assistant">連携アシスタント</string>
+  <string name="qq_bot_linked_assistant">連携キャラクターカード</string>
   <string name="qq_bot_notification_disconnected_text">ボットが下架またはBANされた可能性があります。詳細はq.qq.comをご確認ください</string>
   <string name="qq_bot_notification_disconnected_title">QQボットが切断されました</string>
   <string name="qq_bot_notification_running_text">QQの個別メッセージを待機中</string>
@@ -1346,7 +1346,7 @@
   <string name="qq_bot_section_run">実行</string>
   <string name="qq_bot_title">QQボット</string>
   <string name="qq_bot_what_is">QQボットとは</string>
-  <string name="qq_bot_what_is_desc">QQボットをAIの窓口にします: ボットに個別メッセージが来ると、現在のアシスタントが返信します。処理されるのは個別メッセージのみです。</string>
+  <string name="qq_bot_what_is_desc">QQボットをAIの窓口にします: ボットに個別メッセージが来ると、現在のキャラクターカードが返信します。処理されるのは個別メッセージのみです。</string>
   <string name="quick_messages_page_add_title">クイックメッセージを追加</string>
   <string name="quick_messages_page_delete_message">"%s"を削除してもよろしいですか？この操作は元に戻せません。</string>
   <string name="quick_messages_page_delete_title">クイックメッセージを削除</string>
@@ -1384,13 +1384,13 @@
   <string name="risk_qq_bot_title">QQボットを有効にしますか？</string>
   <string name="risk_weixin_bot_message">有効にすると、WeChatのメッセージがAIの処理に転送され、AIの返信がWeChat経由で送り返されます。つまりWeChatのチャット履歴がこの端末の外に出る可能性があります。プライバシーへの影響を十分ご理解のうえお使いください。</string>
   <string name="risk_weixin_bot_title">WeChatボットを有効にしますか？</string>
-  <string name="safe_mode_assistants">アシスタント</string>
+  <string name="safe_mode_assistants">キャラクターカード</string>
   <string name="safe_mode_copy">コピー</string>
   <string name="safe_mode_crash_report">クラッシュレポート</string>
-  <string name="safe_mode_current_assistant">現在のアシスタント: %s</string>
-  <string name="safe_mode_default_assistant">デフォルトアシスタント</string>
-  <string name="safe_mode_description">前回の起動時にアプリがクラッシュしました。別のアシスタントに切り替えて問題を解決できます。</string>
-  <string name="safe_mode_switch_assistant">アシスタントを切り替える</string>
+  <string name="safe_mode_current_assistant">現在のキャラクターカード: %s</string>
+  <string name="safe_mode_default_assistant">デフォルトキャラクターカード</string>
+  <string name="safe_mode_description">前回の起動時にアプリがクラッシュしました。別のキャラクターカードに切り替えて問題を解決できます。</string>
+  <string name="safe_mode_switch_assistant">キャラクターカードを切り替える</string>
   <string name="safe_mode_title">セーフモード</string>
   <string name="search_ability_scrape">スクレイピング</string>
   <string name="search_ability_search">検索</string>
@@ -1480,9 +1480,9 @@
   <string name="setting_display_bubble_opacity">バブルの不透明度</string>
   <string name="setting_display_bubbles_section">バブル</string>
   <string name="setting_display_chat_bg_color">チャット背景色</string>
-  <string name="setting_display_chat_bg_color_desc">アシスタント設定で背景画像が指定されている場合はそちらが優先されます</string>
+  <string name="setting_display_chat_bg_color_desc">キャラクターカード設定で背景画像が指定されている場合はそちらが優先されます</string>
   <string name="setting_display_chat_bg_image">チャット背景画像</string>
-  <string name="setting_display_chat_bg_image_not_set">未設定（アシスタントの背景より優先され、チャット背景色のマスクが重なります）</string>
+  <string name="setting_display_chat_bg_image_not_set">未設定（キャラクターカードの背景より優先され、チャット背景色のマスクが重なります）</string>
   <string name="setting_display_choose">選択</string>
   <string name="setting_display_colors_section">色のカスタマイズ</string>
   <string name="setting_display_custom">カスタム</string>
@@ -1498,7 +1498,7 @@
   <string name="setting_display_page_amoled_dark_mode_title">AMOLED ダークモード</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">思考が完了したら思考内容を自動的に折りたたむ</string>
   <string name="setting_display_page_auto_collapse_thinking_title">思考を自動折りたたむ</string>
-  <string name="setting_display_page_auto_play_tts_desc">アシスタントのメッセージ生成完了後にTTSを自動再生</string>
+  <string name="setting_display_page_auto_play_tts_desc">キャラクターカードのメッセージ生成完了後にTTSを自動再生</string>
   <string name="setting_display_page_auto_play_tts_title">生成後にTTSを自動再生</string>
   <string name="setting_display_page_chat_font_family_default">デフォルト</string>
   <string name="setting_display_page_chat_font_family_monospace">等幅</string>
@@ -1545,8 +1545,8 @@
   <string name="setting_display_page_quote_color_warm_gold">ウォームゴールド</string>
   <string name="setting_display_page_send_on_enter_desc">Enterキーでメッセージを送信し、改行しない</string>
   <string name="setting_display_page_send_on_enter_title">Enterキーで送信</string>
-  <string name="setting_display_page_show_assistant_bubble_desc">アシスタントメッセージのバブル背景を表示するかどうか</string>
-  <string name="setting_display_page_show_assistant_bubble_title">アシスタントメッセージバブルを表示</string>
+  <string name="setting_display_page_show_assistant_bubble_desc">キャラクターカードメッセージのバブル背景を表示するかどうか</string>
+  <string name="setting_display_page_show_assistant_bubble_title">キャラクターカードメッセージバブルを表示</string>
   <string name="setting_display_page_show_datetime_in_message_desc">各メッセージの下に日時を表示します</string>
   <string name="setting_display_page_show_datetime_in_message_title">メッセージに日付と時刻を表示</string>
   <string name="setting_display_page_show_line_numbers_desc">コードブロックに行番号を表示</string>
@@ -1674,7 +1674,7 @@
   <string name="setting_memory_background_compress_desc">しきい値を超えると、古い生エントリが要約に圧縮されます。</string>
   <string name="setting_memory_clear">クリア</string>
   <string name="setting_memory_clear_recent_button">最近のイベントをクリア</string>
-  <string name="setting_memory_clear_recent_message">このアシスタントの最近の生エントリと要約のみがクリアされます。ロールカード、固定記憶、長期記憶は削除されません。</string>
+  <string name="setting_memory_clear_recent_message">このキャラクターカードの最近の生エントリと要約のみがクリアされます。ロールカード、固定記憶、長期記憶は削除されません。</string>
   <string name="setting_memory_clear_recent_title">最近のイベントをクリアしますか？</string>
   <string name="setting_memory_custom_params">カスタムパラメータ</string>
   <string name="setting_memory_enable_long_term">長期記憶を有効にする</string>
@@ -1690,7 +1690,7 @@
   <string name="setting_memory_long_term_section">📚 ずっと昔のこと</string>
   <string name="setting_memory_manage_long_term">長期記憶を管理</string>
   <string name="setting_memory_manage_long_term_desc">エントリを1件ずつ追加・編集・削除します。チャット中は現在の内容に関連する部分だけが思い出されます。</string>
-  <string name="setting_memory_no_assistant">先にアシスタントを作成してください。</string>
+  <string name="setting_memory_no_assistant">先にキャラクターカードを作成してください。</string>
   <string name="setting_memory_param_recall">毎回思い出す長期記憶の最大件数</string>
   <string name="setting_memory_param_recall_chars">1ターンあたりの長期記憶の最大文字数</string>
   <string name="setting_memory_param_tail">保持する最近のエントリ数</string>
@@ -1704,8 +1704,8 @@
   <string name="setting_memory_recent_summarized">最近のエントリ%1$d件 · 古い内容は要約済みです</string>
   <string name="setting_memory_refresh">更新</string>
   <string name="setting_memory_role_card">ロールカード</string>
-  <string name="setting_memory_role_card_empty">ロールカードはまだ空です。アシスタント設定で管理してください。</string>
-  <string name="setting_memory_role_card_managed">ロールカードはアシスタント設定で管理されます。この記憶ページから上書きされることはありません。</string>
+  <string name="setting_memory_role_card_empty">ロールカードはまだ空です。キャラクターカード設定で管理してください。</string>
+  <string name="setting_memory_role_card_managed">ロールカードはキャラクターカード設定で管理されます。この記憶ページから上書きされることはありません。</string>
   <string name="setting_memory_save_custom_params">カスタムパラメータを保存</string>
   <string name="setting_memory_save_fixed">固定記憶を保存</string>
   <string name="setting_memory_strategy_current">現在: %1$s</string>
@@ -1726,7 +1726,7 @@
   <string name="setting_memory_three_layer">3層記憶</string>
   <string name="setting_memory_three_layer_desc">固定記憶 + 最近の生活ログ + 必要に応じて思い出す長期記憶</string>
   <string name="setting_memory_title">記憶</string>
-  <string name="setting_memory_unnamed_assistant">名前なしのアシスタント</string>
+  <string name="setting_memory_unnamed_assistant">名前なしのキャラクターカード</string>
   <string name="setting_memory_you">あなた</string>
   <string name="setting_model_page_chat_model">チャットモデル</string>
   <string name="setting_model_page_chat_model_desc">グローバルデフォルトチャットモデル</string>
@@ -1749,8 +1749,8 @@
   <string name="setting_model_page_translate_prompt_vars">変数: 原文テキスト: {source_text}, 対象言語: {target_lang}</string>
   <string name="setting_page_about">アプリについて</string>
   <string name="setting_page_about_desc">このアプリについて</string>
-  <string name="setting_page_assistant">アシスタント</string>
-  <string name="setting_page_assistant_desc">カスタムアシスタント（エージェント）を設定</string>
+  <string name="setting_page_assistant">キャラクターカード</string>
+  <string name="setting_page_assistant_desc">カスタムキャラクターカード（エージェント）を設定</string>
   <string name="setting_page_authors_note">ディレクターノート</string>
   <string name="setting_page_authors_note_desc">ディレクターノートでAIの出力の方向性を制御します</string>
   <string name="setting_page_built_in_tools">組み込みツール</string>
@@ -1843,7 +1843,7 @@
   <string name="setting_page_providers">プロバイダー</string>
   <string name="setting_page_providers_desc">AIプロバイダーを設定</string>
   <string name="setting_page_qq_bot">QQボット</string>
-  <string name="setting_page_qq_bot_desc">QQオープンプラットフォームのボットを現在のアシスタントの個別チャット窓口として接続します</string>
+  <string name="setting_page_qq_bot_desc">QQオープンプラットフォームのボットを現在のキャラクターカードの個別チャット窓口として接続します</string>
   <string name="setting_page_request_logs">リクエストログ</string>
   <string name="setting_page_request_logs_desc">HTTPリクエストログを表示</string>
   <string name="setting_page_search_add_provider">プロバイダー追加</string>
@@ -1862,7 +1862,7 @@
   <string name="setting_page_security_tool_calls">ツール呼び出し</string>
   <string name="setting_page_share">共有</string>
   <string name="setting_page_share_desc">このアプリを友達と共有</string>
-  <string name="setting_page_share_text">RikkaHub - オープンソースAndroid AIアシスタント\n\nウェブサイト: https://rikka-ai.com/</string>
+  <string name="setting_page_share_text">RikkaHub - オープンソースAndroid AIキャラクターカード\n\nウェブサイト: https://rikka-ai.com/</string>
   <string name="setting_page_sponsor_alert_confirm">寄付</string>
   <string name="setting_page_sponsor_alert_desc">アプリを100回以上起動しました！気に入っていただけたら、開発者をサポートしていただけると嬉しいです。</string>
   <string name="setting_page_sponsor_alert_dismiss">今はしない</string>
@@ -2033,7 +2033,7 @@
   <string name="setting_tts_page_voice_name_placeholder">Kore</string>
   <string name="settings">設定</string>
   <string name="share">共有</string>
-  <string name="share_handler_page_title">共有を処理するアシスタントを選択</string>
+  <string name="share_handler_page_title">共有を処理するキャラクターカードを選択</string>
   <string name="shortcut_take_picture">写真で質問</string>
   <string name="silicon_flow_description">**世界をリードするAI能力プロバイダー、AGIの普及を加速して人類に貢献。**</string>
   <string name="silicon_flow_website">公式サイト: [https://cloud.siliconflow.cn/](https://cloud.siliconflow.cn/i/u1Ia4Ycf)</string>
@@ -2076,10 +2076,10 @@
   <string name="slash_char_duplicate_desc">現在のキャラクターカードを複製します（Char Duplicate）</string>
   <string name="slash_char_update_desc">キャラクターカードのフィールドを更新します（Char Update）</string>
   <string name="slash_char_update_hint">[field=value] 例: description=新しい説明</string>
-  <string name="slash_continue_desc">最後のアシスタント返信を続きから書かせます（Continue）。追加プロンプトは任意</string>
+  <string name="slash_continue_desc">最後のキャラクターカード返信を続きから書かせます（Continue）。追加プロンプトは任意</string>
   <string name="slash_continue_hint">[任意のプロンプト]</string>
   <string name="slash_decvar_hint">[名前]</string>
-  <string name="slash_error_continue_no_message">続きを書くアシスタントメッセージがありません</string>
+  <string name="slash_error_continue_no_message">続きを書くキャラクターカードメッセージがありません</string>
   <string name="slash_error_no_model">先にモデルを選択してください</string>
   <string name="slash_error_sysgen_empty">生成されたナレーションが空です</string>
   <string name="slash_error_sysgen_no_messages">会話にメッセージがないため、ナレーションを生成できません</string>
@@ -2124,7 +2124,7 @@
   <string name="slash_example_send_2_cmd">/send name=旅人 明日出発します</string>
   <string name="slash_example_send_2_desc">「旅人」の名前で挿入されます</string>
   <string name="slash_example_sendas_1_cmd">/sendas 彼女はふっと微笑んだ</string>
-  <string name="slash_example_sendas_1_desc">現在のキャラクターとしてアシスタントメッセージを挿入します（生成なし）</string>
+  <string name="slash_example_sendas_1_desc">現在のキャラクターとしてキャラクターカードメッセージを挿入します（生成なし）</string>
   <string name="slash_example_sendas_2_cmd">/sendas name=ニンニン at=-1 彼女は心の中で思った</string>
   <string name="slash_example_sendas_2_desc">ニンニンとして、最後のメッセージの前に挿入します</string>
   <string name="slash_example_setvar_1_desc">変数moneyを100に設定します</string>
@@ -2245,7 +2245,7 @@
   <string name="slash_reroll_pick_hint">[任意のシード]</string>
   <string name="slash_send_desc">生成をトリガーせずにユーザーメッセージ（Send）を挿入します</string>
   <string name="slash_send_hint">[name=表示名] [at=位置] [テキスト]</string>
-  <string name="slash_sendas_desc">アシスタントメッセージ（Send As）を挿入します。デフォルトは現在のキャラクターで、名前と位置を指定できます</string>
+  <string name="slash_sendas_desc">キャラクターカードメッセージ（Send As）を挿入します。デフォルトは現在のキャラクターで、名前と位置を指定できます</string>
   <string name="slash_setvar_desc">チャット変数を設定します（Set Var）</string>
   <string name="slash_setvar_hint">[名前] [値]</string>
   <string name="slash_sys_desc">生成をトリガーせずにシステムメッセージ（Sys）を挿入します</string>
@@ -2459,7 +2459,7 @@
   <string name="voice_call_status_subtitle">音声通話中</string>
   <string name="weixin_bot_enable_desc">有効にするとバックグラウンドのロングポーリングサービスを開始します。先にスキャンしてログインしてください。</string>
   <string name="weixin_bot_fetching_qrcode">QRコードを取得中...</string>
-  <string name="weixin_bot_linked_assistant">連携アシスタント</string>
+  <string name="weixin_bot_linked_assistant">連携キャラクターカード</string>
   <string name="weixin_bot_logged_in">ログイン済み（ボット: %1$s）</string>
   <string name="weixin_bot_logged_out">ログアウト済み</string>
   <string name="weixin_bot_logging_in">ログイン中...</string>
@@ -2489,12 +2489,12 @@
   <string name="weixin_bot_unnamed">名前なし</string>
   <string name="weixin_bot_waiting_scan">スキャン待ち...</string>
   <string name="weixin_bot_what_is">WeChatボットとは</string>
-  <string name="weixin_bot_what_is_desc">WeChatアカウントをAIの窓口にします: このアカウントにメッセージが来ると（自分からでも）、連携したアシスタントが返信します。アシスタントにとっての追加のWeChatチャンネルのようなもので、AI/記憶/ツールはそのアシスタントのものを使います。</string>
+  <string name="weixin_bot_what_is_desc">WeChatアカウントをAIの窓口にします: このアカウントにメッセージが来ると（自分からでも）、連携したキャラクターカードが返信します。キャラクターカードにとっての追加のWeChatチャンネルのようなもので、AI/記憶/ツールはそのキャラクターカードのものを使います。</string>
   <string name="workspace_page_title">ワークスペース</string>
   <string name="workspace_page_create">ワークスペースを作成</string>
   <string name="workspace_page_rename">ワークスペースの名前を変更</string>
   <string name="workspace_page_delete">ワークスペースを削除</string>
-  <string name="workspace_page_delete_confirm">これにより、ワークスペースのメタデータとローカルファイルが削除され、それを参照するすべてのアシスタントバインディングがクリアされます。</string>
+  <string name="workspace_page_delete_confirm">これにより、ワークスペースのメタデータとローカルファイルが削除され、それを参照するすべてのキャラクターカードバインディングがクリアされます。</string>
   <string name="workspace_page_empty">ワークスペースはまだありません</string>
   <string name="workspace_page_empty_desc">ファイルツールとサンドボックス環境を利用するには、ワークスペースを作成してください</string>
   <string name="workspace_page_name">名前</string>
@@ -2695,8 +2695,8 @@
   <string name="setting_page_preferences_network_auto_retry_desc">ネットワークエラー時、モデルリクエストを最大3回再試行します。</string>
   <string name="setting_tts_page_default_playback_speed">デフォルトの再生速度</string>
   <string name="setting_tts_page_default_playback_speed_description">すべてのTTSプロバイダーにローカルで適用され、合成設定は変更されません。</string>
-  <string name="search_page_scope_current_assistant">現在のアシスタント</string>
-  <string name="search_page_scope_all_assistants">すべてのアシスタント</string>
+  <string name="search_page_scope_current_assistant">現在のキャラクターカード</string>
+  <string name="search_page_scope_all_assistants">すべてのキャラクターカード</string>
   <string name="chat_page_voice_title">音声モード</string>
   <string name="chat_page_voice_connecting">接続中…</string>
   <string name="chat_page_voice_listening_queued">聞き取り中；新しい発話はキューに追加されます</string>
@@ -2862,7 +2862,7 @@
   <string name="slash_param_sendas_name_example">/sendas name=ニンニン 彼女はそっと窓を開けた</string>
   <string name="slash_param_sysgen_at_name">at=</string>
   <string name="slash_sendas_hint">[name=キャラクター] [at=位置] [テキスト]</string>
-  <string name="slash_toast_no_char_card">現在のアシスタントにはキャラクターカードがありません</string>
+  <string name="slash_toast_no_char_card">現在のキャラクターカードに酒場カードのデータがありません</string>
   <string name="slash_toast_sendas_usage">使い方: /sendas [name=キャラクター名] [at=位置] テキスト</string>
   <string name="slash_var_unset">（未設定）</string>
   <string name="tavern_export_png_desc_network">アバターがネットワーク画像のため、ダウンロードしてマージします</string>
@@ -3057,7 +3057,7 @@
   <string name="video_call_blocked_by_another">別の通話が進行中です。先に通話を終了してからビデオ通話を開始してください。</string>
   <string name="video_call_status_subtitle">あなたとビデオ通話中</string>
   <string name="voice_call_listening">聞いています。</string>
-  <string name="weixin_bot_linked_assistant_desc">常に現在のアシスタントを使用します: %1$s</string>
+  <string name="weixin_bot_linked_assistant_desc">常に現在のキャラクターカードを使用します: %1$s</string>
   <string name="weixin_bot_logout">ログアウト</string>
   <string name="weixin_bot_notification_running_title">WeChatボットが実行中</string>
   <string name="weixin_bot_scan_login">スキャンしてログイン</string>
