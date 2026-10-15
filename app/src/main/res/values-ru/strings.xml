@@ -17,8 +17,8 @@
   <string name="assistant_detail_basic_desc">Настройте имя, аватар, модель и параметры</string>
   <string name="assistant_detail_extensions_desc">Управление внедрениями подсказок, лорбуками и навыками</string>
   <string name="assistant_detail_local_tools_desc">Включите локальные инструменты, например движок JavaScript</string>
-  <string name="assistant_detail_mcp_desc">Настройте инструменты MCP-сервера для ассистента</string>
-  <string name="assistant_detail_memory_desc">Управляйте памятью ассистента и ссылками на недавние чаты</string>
+  <string name="assistant_detail_mcp_desc">Настройте инструменты MCP-сервера для карточки персонажа</string>
+  <string name="assistant_detail_memory_desc">Управляйте памятью карточки персонажа и ссылками на недавние чаты</string>
   <string name="assistant_detail_prompt_desc">Задайте системные подсказки, шаблоны сообщений и правила regex</string>
   <string name="assistant_detail_request_desc">Настройте пользовательские заголовки и параметры тела запроса</string>
   <string name="assistant_extensions_page_empty_lorebooks">Нет доступных lorebooks, создайте один в Prompts</string>
@@ -58,7 +58,7 @@
   <string name="assistant_page_allow_conversation_prompt_injection">Промпт-инъекции для каждой беседы</string>
   <string name="assistant_page_allow_conversation_prompt_injection_desc">Разрешить каждой беседе привязывать собственные промпт-инъекции и лорбуки</string>
   <string name="assistant_page_allow_conversation_system_prompt">Системный промпт для каждой беседы</string>
-  <string name="assistant_page_allow_conversation_system_prompt_desc">Разрешить каждому разговору переопределять системный запрос ассистента</string>
+  <string name="assistant_page_allow_conversation_system_prompt_desc">Разрешить каждому разговору переопределять системный запрос карточки персонажа</string>
   <string name="assistant_page_anti_empty_response">Защита от пустых ответов (Gemini)</string>
   <string name="assistant_page_anti_empty_response_desc">Переносит системный промпт в поток беседы (фиктивные ходы пользователя/модели) и при пустом ответе модели автоматически изменяет последнее сообщение и повторяет запрос. Рекомендуется для Gemini. Обычно включать не нужно</string>
   <string name="assistant_page_available_variables">Доступные переменные:</string>
@@ -77,25 +77,25 @@
   <string name="assistant_page_change_background">Изменить фоновое изображение</string>
   <string name="assistant_page_chaotic">Хаотичный (Опасный)</string>
   <string name="assistant_page_chat_background">Фон чата</string>
-  <string name="assistant_page_chat_background_desc">Установить фоновое изображение для страницы чата с ассистентом</string>
+  <string name="assistant_page_chat_background_desc">Установить фоновое изображение для страницы чата с карточкой персонажа</string>
   <string name="assistant_page_chat_model">Модель чата</string>
-  <string name="assistant_page_chat_model_desc">Установить модель чата по умолчанию для ассистента. Если не задано, будет использована глобальная модель чата по умолчанию</string>
+  <string name="assistant_page_chat_model_desc">Установить модель чата по умолчанию для карточки персонажа. Если не задано, будет использована глобальная модель чата по умолчанию</string>
   <string name="assistant_page_clone">Клонировать</string>
   <string name="assistant_page_confirm">Подтвердить</string>
   <string name="assistant_page_creative">Творческий</string>
-  <string name="assistant_page_current_assistant">Текущий ассистент</string>
+  <string name="assistant_page_current_assistant">Текущий карточка персонажа</string>
   <string name="assistant_page_custom_bodies">Пользовательский контекст</string>
   <string name="assistant_page_custom_headers">Пользовательские заголовки</string>
-  <string name="assistant_page_default_assistant">Ассистент по умолчанию</string>
+  <string name="assistant_page_default_assistant">Карточка персонажа по умолчанию</string>
   <string name="assistant_page_delete">Удалить</string>
   <string name="assistant_page_delete_body">Удалить текст</string>
-  <string name="assistant_page_delete_dialog_text">Вы уверены, что хотите удалить этого ассистента? Это действие нельзя отменить.</string>
+  <string name="assistant_page_delete_dialog_text">Вы уверены, что хотите удалить этого карточки персонажа? Это действие нельзя отменить.</string>
   <string name="assistant_page_delete_header">Удалить заголовок</string>
   <string name="assistant_page_enter_image_url">Введите URL изображения</string>
   <string name="assistant_page_episodic_memory">Эпизодическая память</string>
   <string name="assistant_page_episodic_memory_desc">Разрешить модели записывать конкретные события и впечатления; найденные воспоминания получают приоритет по свежести</string>
   <string name="assistant_page_global_memory">Глобальная память</string>
-  <string name="assistant_page_global_memory_desc">Использовать общую память вместо изолированной для ассистента. При включении все ассистенты используют одно и то же хранилище памяти</string>
+  <string name="assistant_page_global_memory_desc">Использовать общую память вместо изолированной для карточки персонажа. При включении все карточки персонажа используют одно и то же хранилище памяти</string>
   <string name="assistant_page_header_name">Имя заголовка</string>
   <string name="assistant_page_header_value">Значение заголовка</string>
   <string name="assistant_page_image_url">URL изображения</string>
@@ -124,7 +124,7 @@
   <string name="assistant_page_message_template">Шаблон содержимого сообщения</string>
   <string name="assistant_page_message_template_desc">Управляет форматом содержимого сообщений чата перед отправкой в LLM, обычно изменять не требуется</string>
   <string name="assistant_page_message_template_missing_message">Шаблон не содержит {{ message }}, сообщения пользователя не будут отправлены</string>
-  <string name="assistant_page_name">Имя ассистента</string>
+  <string name="assistant_page_name">Имя карточки персонажа</string>
   <string name="assistant_page_preset_messages">Предустановленные сообщения чата</string>
   <string name="assistant_page_preset_messages_desc">Установить начальные сообщения разговора</string>
   <string name="assistant_page_proxy_fix">Исправление прокси (中转站)</string>
@@ -133,7 +133,7 @@
   <string name="assistant_page_quick_message_title">Заголовок</string>
   <string name="assistant_page_quick_messages">Быстрые сообщения</string>
   <string name="assistant_page_recent_chats">Справка: недавние чаты</string>
-  <string name="assistant_page_recent_chats_desc">При включении ассистент будет использовать недавнюю историю чатов для более контекстуальных ответов</string>
+  <string name="assistant_page_recent_chats_desc">При включении карточка персонажа будет использовать недавнюю историю чатов для более контекстуальных ответов</string>
   <string name="assistant_page_regex_affecting_scopes">Области действия:</string>
   <string name="assistant_page_regex_desc">Задайте шаблоны регулярных выражений для преобразования сообщений перед отправкой/получением</string>
   <string name="assistant_page_regex_find_regex">Найти регулярное выражение</string>
@@ -149,7 +149,7 @@
   <string name="assistant_page_rolling_context">Скользящее сжатие контекста</string>
   <string name="assistant_page_rolling_context_desc">Автоматически резюмирует более раннюю беседу, когда контекст превышает порог, сохраняя осведомлённость ответов о полной истории без отправки каждого сообщения (используется модель сжатия)</string>
   <string name="assistant_page_save">Сохранить</string>
-  <string name="assistant_page_search_placeholder">Поиск ассистентов</string>
+  <string name="assistant_page_search_placeholder">Поиск карточек персонажа</string>
   <string name="assistant_page_select_background">Выбрать фоновое изображение</string>
   <string name="assistant_page_select_from_gallery">Выбрать из галереи</string>
   <string name="assistant_page_stream_output">Потоковый вывод</string>
@@ -175,12 +175,12 @@
   <string name="assistant_page_thinking_budget">Бюджет на размышления</string>
   <string name="assistant_page_time_reminder">Напоминание о времени</string>
   <string name="assistant_page_time_reminder_desc">Автоматически добавлять напоминания о времени перед сообщениями с большими интервалами, чтобы помочь ИИ понимать паузы в разговоре</string>
-  <string name="assistant_page_title">Настройки ассистента</string>
+  <string name="assistant_page_title">Настройки карточки персонажа</string>
   <string name="assistant_page_top_p">Top P</string>
   <string name="assistant_page_top_p_value">Top P: %s</string>
   <string name="assistant_page_top_p_warning">Пожалуйста, не изменяйте это значение, если не уверены в своих действиях</string>
-  <string name="assistant_page_use_assistant_avatar">Использовать аватар ассистента</string>
-  <string name="assistant_page_use_assistant_avatar_desc">Использовать аватар и имя ассистента вместо аватара и имени модели в чатах</string>
+  <string name="assistant_page_use_assistant_avatar">Использовать аватар карточки персонажа</string>
+  <string name="assistant_page_use_assistant_avatar_desc">Использовать аватар и имя карточки персонажа вместо аватара и имени модели в чатах</string>
   <string name="audio">Аудио</string>
   <string name="avatar_cancel">Отмена</string>
   <string name="avatar_change_avatar">Сменить аватар</string>
@@ -304,7 +304,7 @@
   <string name="chat_page_compressing">Сжатие...</string>
   <string name="chat_page_conversation_system_prompt">Системный запрос для беседы</string>
   <string name="chat_page_conversation_system_prompt_clear">Очистить</string>
-  <string name="chat_page_conversation_system_prompt_hint">Переопределить системный промпт ассистента для этого разговора</string>
+  <string name="chat_page_conversation_system_prompt_hint">Переопределить системный промпт карточки персонажа для этого разговора</string>
   <string name="chat_page_conversation_system_prompt_save">Сохранить</string>
   <string name="chat_page_delete">Удалить</string>
   <string name="chat_page_dismiss_error">Скрыть ошибку</string>
@@ -325,7 +325,7 @@
   <string name="chat_page_menu_prompt_viewer">Просмотр отправленного промпта</string>
   <string name="chat_page_menu_prompt_viewer_empty">Промпт ещё не зафиксирован — сначала отправьте сообщение</string>
   <string name="chat_page_message_count">%d сообщений</string>
-  <string name="chat_page_move_to_assistant">Перейти к ассистенту</string>
+  <string name="chat_page_move_to_assistant">Перейти к карточке персонажа</string>
   <string name="chat_page_new_chat">Новый чат</string>
   <string name="chat_page_new_message">Новое сообщение</string>
   <string name="chat_page_nickname_placeholder">Введите никнейм</string>
@@ -530,7 +530,7 @@
   <string name="couple_space_since">Вместе с %1$s</string>
   <string name="couple_space_space_photo">Фото пространства</string>
   <string name="couple_space_title">Пространство пары</string>
-  <string name="couple_space_unnamed_assistant">Безымянный ассистент</string>
+  <string name="couple_space_unnamed_assistant">Безымянный карточка персонажа</string>
   <string name="couple_space_whats_on_mind">Что у вас на уме?</string>
   <string name="couple_vm_ai_posted">Он/она опубликовал(а) пост</string>
   <string name="couple_vm_ai_thinking_post">Оно думает, что бы опубликовать…</string>
@@ -670,7 +670,7 @@
   <string name="huadeng_clean_mode">Чистый режим</string>
   <string name="huadeng_clean_mode_desc">Скрывает «Пространство пары», «Пространство жизни» и другие развлекательные разделы и прекращает регистрацию их ИИ-инструментов. Проще интерфейс и меньше токенов в каждом запросе</string>
   <string name="huadeng_rolling_compression">Скользящее сжатие контекста</string>
-  <string name="huadeng_rolling_compression_desc">Автоматически сжимает более ранние сообщения в резюме, когда беседа становится длинной. Выключение отключает авто-сжатие (переключатель для каждого ассистента продолжает работать); попробуйте отключить, если сжатие повторяется каждый ход или ломает кэш промпта</string>
+  <string name="huadeng_rolling_compression_desc">Автоматически сжимает более ранние сообщения в резюме, когда беседа становится длинной. Выключение отключает авто-сжатие (переключатель для каждого карточки персонажа продолжает работать); попробуйте отключить, если сжатие повторяется каждый ход или ломает кэш промпта</string>
   <string name="huadeng_section_integration">Интеграции и автоматизация</string>
   <string name="huadeng_system_prompt_escape">Экранирование системного промпта</string>
   <string name="huadeng_system_prompt_escape_desc">Экранирует &lt; и &gt; в системных сообщениях как HTML-сущности, чтобы обойти блокировку WAF прокси (включите, если видите ошибки upstream_content_rejected). Обычно не требуется</string>
@@ -1050,7 +1050,7 @@
   <string name="persona_page_position_top">Верх заметки режиссёра</string>
   <string name="persona_page_presets">Быстрые пресеты (%d)</string>
   <string name="persona_page_role">Роль</string>
-  <string name="persona_page_role_assistant">Ассистент</string>
+  <string name="persona_page_role_assistant">Персонаж</string>
   <string name="persona_page_role_system">Система</string>
   <string name="persona_page_role_user">Пользователь</string>
   <string name="persona_page_save">Сохранить</string>
@@ -1064,7 +1064,7 @@
   <string name="pinned_chats">Закреплённые чаты</string>
   <string name="placeholder_author_note">Содержимое заметки режиссёра</string>
   <string name="placeholder_battery_level">Уровень заряда</string>
-  <string name="placeholder_char">Имя ассистента</string>
+  <string name="placeholder_char">Имя карточки персонажа</string>
   <string name="placeholder_char_instruction">Инструкции персонажа после истории</string>
   <string name="placeholder_char_prompt">Переопределение промпта персонажа</string>
   <string name="placeholder_char_version">Версия персонажа</string>
@@ -1166,8 +1166,8 @@
   <string name="proactive_section_about">О функции</string>
   <string name="proactive_title">Проактивные сообщения</string>
   <string name="proactive_unnamed">Без имени</string>
-  <string name="proactive_use_assistant">Использовать ассистента</string>
-  <string name="proactive_use_assistant_desc">Предпочитается текущий ассистент: %1$s</string>
+  <string name="proactive_use_assistant">Использовать карточки персонажа</string>
+  <string name="proactive_use_assistant_desc">Предпочитается текущий карточка персонажа: %1$s</string>
   <string name="proactive_waiting_schedule">Ожидание планирования…</string>
   <string name="prompt_page_add">Добавить</string>
   <string name="prompt_page_add_content">Нажмите, чтобы добавить содержимое инъекции</string>
@@ -1261,7 +1261,7 @@
   <string name="prompt_page_priority_label">Приоритет</string>
   <string name="prompt_page_probability">Вероятность: %d%%</string>
   <string name="prompt_page_probability_label">Вероятность</string>
-  <string name="prompt_page_role_assistant">Ассистент (предварительное заполнение)</string>
+  <string name="prompt_page_role_assistant">Персонаж (предварительное заполнение)</string>
   <string name="prompt_page_role_system">Система</string>
   <string name="prompt_page_role_user">Пользователь</string>
   <string name="prompt_page_rounds_suffix">ходов</string>
@@ -1333,7 +1333,7 @@
   <string name="qq_bot_enable_desc">При включении устанавливает WebSocket-соединение для прослушивания личных сообщений. Сначала заполните AppID и Secret.</string>
   <string name="qq_bot_how_to_get_credentials">Как получить AppID и Secret</string>
   <string name="qq_bot_how_to_get_credentials_desc">1. Зарегистрируйтесь как разработчик и создайте бота на q.qq.com\n2. Найдите AppID и AppSecret на странице управления ботом\n3. Скопируйте и вставьте их ниже</string>
-  <string name="qq_bot_linked_assistant">Привязанный ассистент</string>
+  <string name="qq_bot_linked_assistant">Привязанный карточка персонажа</string>
   <string name="qq_bot_notification_disconnected_text">Возможно, бота сняли с публикации или заблокировали. Подробности на q.qq.com</string>
   <string name="qq_bot_notification_disconnected_title">QQ-бот отключён</string>
   <string name="qq_bot_notification_running_text">Слушаем личные сообщения QQ</string>
@@ -1346,7 +1346,7 @@
   <string name="qq_bot_section_run">Работа</string>
   <string name="qq_bot_title">QQ-бот</string>
   <string name="qq_bot_what_is">Что такое QQ-бот</string>
-  <string name="qq_bot_what_is_desc">Превратите своего QQ-бота в точку входа для ИИ: когда кто-то пишет боту в личные сообщения, отвечает текущий ассистент. Обрабатываются только личные сообщения.</string>
+  <string name="qq_bot_what_is_desc">Превратите своего QQ-бота в точку входа для ИИ: когда кто-то пишет боту в личные сообщения, отвечает текущий карточка персонажа. Обрабатываются только личные сообщения.</string>
   <string name="quick_messages_page_add_title">Добавить быстрое сообщение</string>
   <string name="quick_messages_page_delete_message">Вы уверены, что хотите удалить "%s"? Это действие нельзя отменить.</string>
   <string name="quick_messages_page_delete_title">Удалить быстрое сообщение</string>
@@ -1387,9 +1387,9 @@
   <string name="safe_mode_assistants">Помощники</string>
   <string name="safe_mode_copy">Копировать</string>
   <string name="safe_mode_crash_report">Отчёт о сбое</string>
-  <string name="safe_mode_current_assistant">Текущий ассистент: %s</string>
-  <string name="safe_mode_default_assistant">Ассистент по умолчанию</string>
-  <string name="safe_mode_description">При последнем запуске приложение завершилось с ошибкой. Вы можете переключиться на другого ассистента, чтобы решить проблему.</string>
+  <string name="safe_mode_current_assistant">Текущий карточка персонажа: %s</string>
+  <string name="safe_mode_default_assistant">Карточка персонажа по умолчанию</string>
+  <string name="safe_mode_description">При последнем запуске приложение завершилось с ошибкой. Вы можете переключиться на другого карточки персонажа, чтобы решить проблему.</string>
   <string name="safe_mode_switch_assistant">Переключить помощника</string>
   <string name="safe_mode_title">Безопасный режим</string>
   <string name="search_ability_scrape">Собрать</string>
@@ -1480,9 +1480,9 @@
   <string name="setting_display_bubble_opacity">Прозрачность пузырьков</string>
   <string name="setting_display_bubbles_section">Пузырьки</string>
   <string name="setting_display_chat_bg_color">Цвет фона чата</string>
-  <string name="setting_display_chat_bg_color_desc">Фоновое изображение имеет приоритет, если задано в настройках ассистента</string>
+  <string name="setting_display_chat_bg_color_desc">Фоновое изображение имеет приоритет, если задано в настройках карточки персонажа</string>
   <string name="setting_display_chat_bg_image">Фоновое изображение чата</string>
-  <string name="setting_display_chat_bg_image_not_set">Не задано (имеет приоритет над фоном ассистента, поверх накладывается цветовая маска фона чата)</string>
+  <string name="setting_display_chat_bg_image_not_set">Не задано (имеет приоритет над фоном карточки персонажа, поверх накладывается цветовая маска фона чата)</string>
   <string name="setting_display_choose">Выбрать</string>
   <string name="setting_display_colors_section">Настройка цветов</string>
   <string name="setting_display_custom">Свой</string>
@@ -1498,7 +1498,7 @@
   <string name="setting_display_page_amoled_dark_mode_title">AMOLED-тёмная тема</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">Автоматически сворачивать блок мышления после его завершения</string>
   <string name="setting_display_page_auto_collapse_thinking_title">Автоматически сворачивать мысли</string>
-  <string name="setting_display_page_auto_play_tts_desc">Автоматически воспроизводить TTS после завершения генерации ответа ассистента</string>
+  <string name="setting_display_page_auto_play_tts_desc">Автоматически воспроизводить TTS после завершения генерации ответа карточки персонажа</string>
   <string name="setting_display_page_auto_play_tts_title">Автовоспроизведение TTS после генерации</string>
   <string name="setting_display_page_chat_font_family_default">По умолчанию</string>
   <string name="setting_display_page_chat_font_family_monospace">Моноширинный</string>
@@ -1545,8 +1545,8 @@
   <string name="setting_display_page_quote_color_warm_gold">Тёплое золото</string>
   <string name="setting_display_page_send_on_enter_desc">Нажмите Enter, чтобы отправить сообщение, а не добавить новую строку</string>
   <string name="setting_display_page_send_on_enter_title">Отправлять по Enter</string>
-  <string name="setting_display_page_show_assistant_bubble_desc">Показывать фоновый пузырь для сообщений ассистента</string>
-  <string name="setting_display_page_show_assistant_bubble_title">Показывать всплывающее сообщение ассистента</string>
+  <string name="setting_display_page_show_assistant_bubble_desc">Показывать фоновый пузырь для сообщений карточки персонажа</string>
+  <string name="setting_display_page_show_assistant_bubble_title">Показывать всплывающее сообщение карточки персонажа</string>
   <string name="setting_display_page_show_datetime_in_message_desc">Показывать дату и время под каждым сообщением</string>
   <string name="setting_display_page_show_datetime_in_message_title">Показывать дату и время в сообщении</string>
   <string name="setting_display_page_show_line_numbers_desc">Отображать номера строк в блоках кода</string>
@@ -1674,7 +1674,7 @@
   <string name="setting_memory_background_compress_desc">После превышения порога более старые исходные записи сжимаются в резюме.</string>
   <string name="setting_memory_clear">Очистить</string>
   <string name="setting_memory_clear_recent_button">Очистить недавние события</string>
-  <string name="setting_memory_clear_recent_message">Очищаются только недавние исходные записи и резюме этого ассистента. Карточка роли, фиксированная и долговременная память не удаляются.</string>
+  <string name="setting_memory_clear_recent_message">Очищаются только недавние исходные записи и резюме этого карточки персонажа. Карточка роли, фиксированная и долговременная память не удаляются.</string>
   <string name="setting_memory_clear_recent_title">Очистить недавние события?</string>
   <string name="setting_memory_custom_params">Пользовательские параметры</string>
   <string name="setting_memory_enable_long_term">Включить долговременную память</string>
@@ -1690,7 +1690,7 @@
   <string name="setting_memory_long_term_section">📚 Давным-давно</string>
   <string name="setting_memory_manage_long_term">Управление долговременной памятью</string>
   <string name="setting_memory_manage_long_term_desc">Добавляйте, редактируйте или удаляйте записи по одной. В чате извлекаются только части, относящиеся к текущему содержимому.</string>
-  <string name="setting_memory_no_assistant">Сначала создайте ассистента.</string>
+  <string name="setting_memory_no_assistant">Сначала создайте карточки персонажа.</string>
   <string name="setting_memory_param_recall">Максимум долговременных воспоминаний за раз</string>
   <string name="setting_memory_param_recall_chars">Максимум символов долговременной памяти за ход</string>
   <string name="setting_memory_param_tail">Количество хранимых недавних записей</string>
@@ -1704,8 +1704,8 @@
   <string name="setting_memory_recent_summarized">%1$d недавних записей · более старое содержимое уже резюмировано</string>
   <string name="setting_memory_refresh">Обновить</string>
   <string name="setting_memory_role_card">Карточка роли</string>
-  <string name="setting_memory_role_card_empty">Карточка роли пока пуста. Поддерживайте её в настройках ассистента.</string>
-  <string name="setting_memory_role_card_managed">Карточка роли поддерживается в настройках ассистента. Эта страница памяти не будет её перезаписывать.</string>
+  <string name="setting_memory_role_card_empty">Карточка роли пока пуста. Поддерживайте её в настройках карточки персонажа.</string>
+  <string name="setting_memory_role_card_managed">Карточка роли поддерживается в настройках карточки персонажа. Эта страница памяти не будет её перезаписывать.</string>
   <string name="setting_memory_save_custom_params">Сохранить пользовательские параметры</string>
   <string name="setting_memory_save_fixed">Сохранить фиксированную память</string>
   <string name="setting_memory_strategy_current">Текущая: %1$s</string>
@@ -1726,7 +1726,7 @@
   <string name="setting_memory_three_layer">Трёхслойная память</string>
   <string name="setting_memory_three_layer_desc">Фиксированная память + поток недавней жизни + долговременная память по запросу</string>
   <string name="setting_memory_title">Память</string>
-  <string name="setting_memory_unnamed_assistant">Безымянный ассистент</string>
+  <string name="setting_memory_unnamed_assistant">Безымянный карточка персонажа</string>
   <string name="setting_memory_you">Вы</string>
   <string name="setting_model_page_chat_model">Модель чата</string>
   <string name="setting_model_page_chat_model_desc">Глобальная модель чата по умолчанию</string>
@@ -1749,8 +1749,8 @@
   <string name="setting_model_page_translate_prompt_vars">Переменные: Исходный текст: {source_text}, Целевой язык: {target_lang}</string>
   <string name="setting_page_about">О приложении</string>
   <string name="setting_page_about_desc">Об этом приложении</string>
-  <string name="setting_page_assistant">Ассистент</string>
-  <string name="setting_page_assistant_desc">Настроить персонализированных ассистентов (агентов)</string>
+  <string name="setting_page_assistant">Карточка персонажа</string>
+  <string name="setting_page_assistant_desc">Настроить персонализированных карточек персонажа (агентов)</string>
   <string name="setting_page_authors_note">Заметка режиссёра</string>
   <string name="setting_page_authors_note_desc">Управляйте направлением ответов ИИ с помощью заметок режиссёра</string>
   <string name="setting_page_built_in_tools">Встроенные инструменты</string>
@@ -1843,7 +1843,7 @@
   <string name="setting_page_providers">Провайдеры</string>
   <string name="setting_page_providers_desc">Настроить поставщиков ИИ</string>
   <string name="setting_page_qq_bot">QQ-бот</string>
-  <string name="setting_page_qq_bot_desc">Подключите бота открытой платформы QQ как канал личных сообщений для текущего ассистента</string>
+  <string name="setting_page_qq_bot_desc">Подключите бота открытой платформы QQ как канал личных сообщений для текущего карточки персонажа</string>
   <string name="setting_page_request_logs">Журналы запросов</string>
   <string name="setting_page_request_logs_desc">Просмотр журналов HTTP-запросов</string>
   <string name="setting_page_search_add_provider">Добавить поставщика</string>
@@ -1862,7 +1862,7 @@
   <string name="setting_page_security_tool_calls">Вызовы инструментов</string>
   <string name="setting_page_share">Поделиться</string>
   <string name="setting_page_share_desc">Поделиться этим приложением с друзьями</string>
-  <string name="setting_page_share_text">RikkaHub — открытый Android-ассистент с ИИ\n\nСайт: https://rikka-ai.com/</string>
+  <string name="setting_page_share_text">RikkaHub — открытый Android-карточка персонажа с ИИ\n\nСайт: https://rikka-ai.com/</string>
   <string name="setting_page_sponsor_alert_confirm">Пожертвовать</string>
   <string name="setting_page_sponsor_alert_desc">Вы запустили приложение более 100 раз! Если вам нравится им пользоваться, пожалуйста, поддержите разработчика.</string>
   <string name="setting_page_sponsor_alert_dismiss">Не сейчас</string>
@@ -2033,7 +2033,7 @@
   <string name="setting_tts_page_voice_name_placeholder">Коре</string>
   <string name="settings">Настройки</string>
   <string name="share">Поделиться</string>
-  <string name="share_handler_page_title">Выбрать ассистента</string>
+  <string name="share_handler_page_title">Выбрать карточки персонажа</string>
   <string name="shortcut_take_picture">Сделать фото и спросить</string>
   <string name="silicon_flow_description">**Ведущий мировой поставщик ИИ-возможностей, ускоряющий AGI на благо человечества.**</string>
   <string name="silicon_flow_website">Веб-сайт: [https://cloud.siliconflow.cn/](https://cloud.siliconflow.cn/i/u1Ia4Ycf)</string>
@@ -2076,10 +2076,10 @@
   <string name="slash_char_duplicate_desc">Дублировать текущую карточку персонажа (Char Duplicate)</string>
   <string name="slash_char_update_desc">Обновить поля карточки персонажа (Char Update)</string>
   <string name="slash_char_update_hint">[поле=значение], например description=new</string>
-  <string name="slash_continue_desc">Продолжить последний ответ ассистента (Continue), необязательный дополнительный промпт</string>
+  <string name="slash_continue_desc">Продолжить последний ответ карточки персонажа (Continue), необязательный дополнительный промпт</string>
   <string name="slash_continue_hint">[необязательный промпт]</string>
   <string name="slash_decvar_hint">[имя]</string>
-  <string name="slash_error_continue_no_message">Нет ответа ассистента, чтобы продолжить</string>
+  <string name="slash_error_continue_no_message">Нет ответа карточки персонажа, чтобы продолжить</string>
   <string name="slash_error_no_model">Сначала выберите модель</string>
   <string name="slash_error_sysgen_empty">Сгенерированное повествование пусто</string>
   <string name="slash_error_sysgen_no_messages">В этой беседе нет сообщений — нельзя сгенерировать повествование</string>
@@ -2124,7 +2124,7 @@
   <string name="slash_example_send_2_cmd">/send name=Путник Я уезжаю завтра</string>
   <string name="slash_example_send_2_desc">Вставлено с именем «Путник»</string>
   <string name="slash_example_sendas_1_cmd">/sendas Она слегка улыбнулась</string>
-  <string name="slash_example_sendas_1_desc">Вставить сообщение ассистента от лица текущего персонажа (без генерации)</string>
+  <string name="slash_example_sendas_1_desc">Вставить сообщение карточки персонажа от лица текущего персонажа (без генерации)</string>
   <string name="slash_example_sendas_2_cmd">/sendas name=Ningning at=-1 Она подумала про себя</string>
   <string name="slash_example_sendas_2_desc">От лица Ningning, вставлено перед последним сообщением</string>
   <string name="slash_example_setvar_1_desc">Установить переменную money равной 100</string>
@@ -2245,7 +2245,7 @@
   <string name="slash_reroll_pick_hint">[необязательный seed]</string>
   <string name="slash_send_desc">Вставить сообщение пользователя (Send) без запуска генерации</string>
   <string name="slash_send_hint">[name=имя] [at=позиция] [текст]</string>
-  <string name="slash_sendas_desc">Вставить сообщение ассистента (Send As); по умолчанию текущий персонаж, можно указать имя и позицию</string>
+  <string name="slash_sendas_desc">Вставить сообщение карточки персонажа (Send As); по умолчанию текущий персонаж, можно указать имя и позицию</string>
   <string name="slash_setvar_desc">Задать переменную чата (Set Var)</string>
   <string name="slash_setvar_hint">[имя] [значение]</string>
   <string name="slash_sys_desc">Вставить системное сообщение (Sys) без запуска генерации</string>
@@ -2459,7 +2459,7 @@
   <string name="voice_call_status_subtitle">Идёт голосовой звонок</string>
   <string name="weixin_bot_enable_desc">При включении запускает фоновую службу долгого опроса. Сначала отсканируйте код для входа.</string>
   <string name="weixin_bot_fetching_qrcode">Получение QR-кода…</string>
-  <string name="weixin_bot_linked_assistant">Привязанный ассистент</string>
+  <string name="weixin_bot_linked_assistant">Привязанный карточка персонажа</string>
   <string name="weixin_bot_logged_in">Выполнен вход (бот: %1$s)</string>
   <string name="weixin_bot_logged_out">Выполнен выход</string>
   <string name="weixin_bot_logging_in">Вход…</string>
@@ -2489,7 +2489,7 @@
   <string name="weixin_bot_unnamed">Без имени</string>
   <string name="weixin_bot_waiting_scan">Ожидание сканирования…</string>
   <string name="weixin_bot_what_is">Что такое WeChat-бот</string>
-  <string name="weixin_bot_what_is_desc">Превратите свою учётную запись WeChat в точку входа для ИИ: когда вам (или кому-то ещё) пишут в эту учётную запись, отвечает привязанный ассистент. Это как дополнительный канал WeChat для ассистента; ИИ, память и инструменты берутся из его настроек.</string>
+  <string name="weixin_bot_what_is_desc">Превратите свою учётную запись WeChat в точку входа для ИИ: когда вам (или кому-то ещё) пишут в эту учётную запись, отвечает привязанный карточка персонажа. Это как дополнительный канал WeChat для карточки персонажа; ИИ, память и инструменты берутся из его настроек.</string>
   <string name="workspace_page_title">Рабочее пространство</string>
   <string name="workspace_page_create">Создать рабочее пространство</string>
   <string name="workspace_page_rename">Переименовать рабочее пространство</string>
@@ -2695,8 +2695,8 @@
   <string name="setting_page_preferences_network_auto_retry_desc">Повторять запросы модели до 3 раз при сетевых ошибках.</string>
   <string name="setting_tts_page_default_playback_speed">Скорость воспроизведения по умолчанию</string>
   <string name="setting_tts_page_default_playback_speed_description">Применяется локально к каждому TTS-провайдеру без изменения его настроек синтеза.</string>
-  <string name="search_page_scope_current_assistant">Текущий ассистент</string>
-  <string name="search_page_scope_all_assistants">Все ассистенты</string>
+  <string name="search_page_scope_current_assistant">Текущий карточка персонажа</string>
+  <string name="search_page_scope_all_assistants">Все карточки персонажа</string>
   <string name="chat_page_voice_title">Голосовой режим</string>
   <string name="chat_page_voice_select_model">Сначала выберите модель чата.</string>
   <string name="chat_page_voice_finish_dictation">Сначала завершите текущий голосовой ввод.</string>
@@ -2862,7 +2862,7 @@
   <string name="slash_param_sendas_name_example">/sendas name=Ningning Она тихонько открыла окно</string>
   <string name="slash_param_sysgen_at_name">at=</string>
   <string name="slash_sendas_hint">[name=персонаж] [at=позиция] [текст]</string>
-  <string name="slash_toast_no_char_card">У текущего ассистента нет карточки персонажа</string>
+  <string name="slash_toast_no_char_card">У текущей карточки персонажа нет данных карточки Tavern</string>
   <string name="slash_toast_sendas_usage">Использование: /sendas [name=имя персонажа] [at=позиция] текст</string>
   <string name="slash_var_unset">(не задано)</string>
   <string name="tavern_export_png_desc_network">Аватар — сетевое изображение, оно будет загружено и объединено</string>
@@ -3057,7 +3057,7 @@
   <string name="video_call_blocked_by_another">Уже идёт другой звонок. Сначала завершите его, прежде чем начать видеозвонок.</string>
   <string name="video_call_status_subtitle">На видеозвонке с вами</string>
   <string name="voice_call_listening">Я слушаю.</string>
-  <string name="weixin_bot_linked_assistant_desc">Всегда используется текущий ассистент: %1$s</string>
+  <string name="weixin_bot_linked_assistant_desc">Всегда используется текущий карточка персонажа: %1$s</string>
   <string name="weixin_bot_logout">Выйти</string>
   <string name="weixin_bot_notification_running_title">WeChat-бот работает</string>
   <string name="weixin_bot_scan_login">Сканировать для входа</string>

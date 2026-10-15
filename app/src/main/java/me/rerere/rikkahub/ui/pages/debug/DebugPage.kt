@@ -314,13 +314,13 @@ private fun RecoveryPage(vm: DebugVM) {
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            "扫描聊天记录中引用的助手，为设置中缺失的助手创建占位助手，使对应聊天记录重新可见。助手的其他配置无法恢复。",
+            "扫描聊天记录中引用的角色卡，为设置中缺失的角色卡创建占位角色卡，使对应聊天记录重新可见。角色卡的其他配置无法恢复。",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Text("设置中的助手数: ${settings.assistants.size}")
-        Text("聊天记录中的助手数: ${conversationAssistants?.size?.toString() ?: "..."}")
-        Text("缺失的助手数: ${missing?.size?.toString() ?: "..."}")
+        Text("设置中的角色卡数: ${settings.assistants.size}")
+        Text("聊天记录中的角色卡数: ${conversationAssistants?.size?.toString() ?: "..."}")
+        Text("缺失的角色卡数: ${missing?.size?.toString() ?: "..."}")
         missing?.forEach { (id, count) ->
             Text(
                 "$id ($count 个对话)",
@@ -341,8 +341,8 @@ private fun RecoveryPage(vm: DebugVM) {
                             .onSuccess { count ->
                                 when (count) {
                                     null -> toaster.show("设置尚未加载", type = ToastType.Error)
-                                    0 -> toaster.show("没有需要恢复的助手")
-                                    else -> toaster.show("已恢复 $count 个助手", type = ToastType.Success)
+                                    0 -> toaster.show("没有需要恢复的角色卡")
+                                    else -> toaster.show("已恢复 $count 个角色卡", type = ToastType.Success)
                                 }
                             }
                             .onFailure {

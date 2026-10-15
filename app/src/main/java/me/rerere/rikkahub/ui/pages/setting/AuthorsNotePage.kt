@@ -457,6 +457,6 @@ private fun authorNotePositionDescription(position: AuthorNotePosition): String 
 private fun authorNoteRoleLabel(role: MessageRole): String = when (role) {
     MessageRole.SYSTEM -> "系统"
     MessageRole.USER -> "用户"
-    MessageRole.ASSISTANT -> "助手"
+    MessageRole.ASSISTANT -> "角色"
     else -> role.name
 }

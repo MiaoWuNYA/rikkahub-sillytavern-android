@@ -312,7 +312,7 @@ private fun RestoreStep(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "选一个备份文件（.zip）。助手、对话、设置全都回来，" +
+                text = "选一个备份文件（.zip）。角色卡、对话、设置全都回来，" +
                     // 这里用 AnnotatedString 而不是 Markdown：
                     // 引导页的 Text 不解析 Markdown，写 ** 只会原样显示成星号。
                     buildAnnotatedString {
@@ -403,7 +403,7 @@ private fun RestartRequiredDialog(onRestart: () -> Unit) {
         title = { Text("好了，重启一下就完成") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("你的助手、对话、设置都已经就位。")
+                Text("你的角色卡、对话、设置都已经就位。")
                 Text(
                     buildAnnotatedString {
                         append("App 需要重启一次来完成切换。这样做是为了保证数据是")
@@ -705,7 +705,7 @@ private fun ExtrasStep(
                             color = MaterialTheme.colorScheme.onTertiaryContainer,
                         )
                         Text(
-                            "开启后助手的工具将被关闭，请求只保留角色卡与聊天历史。" +
+                            "开启后角色卡的工具将被关闭，请求只保留角色卡与聊天历史。" +
                                 "这样能有效精简提示词、减少模型的安全拦截策略。" +
                                 "需要工具时可以随时在设置里单独打开。",
                             style = MaterialTheme.typography.bodySmall,
@@ -732,8 +732,8 @@ private fun ExtrasStep(
                     headlineContent = { Text("导入角色卡") },
                     supportingContent = {
                         Text(
-                            "角色卡是一个 .png 文件。去助手页点右上角的导入，" +
-                                "选中那个文件就会变成一个助手的设定。"
+                            "角色卡是一个 .png 文件。去角色卡页点右上角的导入，" +
+                                "选中那个文件就会变成一个角色卡的设定。"
                         )
                     },
                 )
@@ -787,7 +787,7 @@ private fun ExtrasStep(
                         )
                         Text(
                             "一般在类脑、Discord 频道或者作者主页。拿到的是 .png 文件，" +
-                                "在助手页的导入里选它就可以了。",
+                                "在角色卡页的导入里选它就可以了。",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                         )

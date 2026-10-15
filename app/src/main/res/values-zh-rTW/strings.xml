@@ -77,19 +77,19 @@
   <string name="assistant_page_change_background">更換背景圖片</string>
   <string name="assistant_page_chaotic">混亂 (危險)</string>
   <string name="assistant_page_chat_background">聊天背景</string>
-  <string name="assistant_page_chat_background_desc">設定助手聊天頁面的背景圖片</string>
+  <string name="assistant_page_chat_background_desc">設定角色卡聊天頁面的背景圖片</string>
   <string name="assistant_page_chat_model">聊天模型</string>
-  <string name="assistant_page_chat_model_desc">設定助手的預設聊天模型，如果不設定，則使用全域預設聊天模型</string>
+  <string name="assistant_page_chat_model_desc">設定角色卡的預設聊天模型，如果不設定，則使用全域預設聊天模型</string>
   <string name="assistant_page_clone">複製</string>
   <string name="assistant_page_confirm">確定</string>
   <string name="assistant_page_creative">創造</string>
-  <string name="assistant_page_current_assistant">當前助手</string>
+  <string name="assistant_page_current_assistant">當前角色卡</string>
   <string name="assistant_page_custom_bodies">自定義 Body</string>
   <string name="assistant_page_custom_headers">自定義 Headers</string>
-  <string name="assistant_page_default_assistant">預設助手</string>
+  <string name="assistant_page_default_assistant">預設角色卡</string>
   <string name="assistant_page_delete">刪除</string>
   <string name="assistant_page_delete_body">刪除 Body</string>
-  <string name="assistant_page_delete_dialog_text">確定要刪除這個助手嗎？此操作無法撤銷。</string>
+  <string name="assistant_page_delete_dialog_text">確定要刪除這個角色卡嗎？此操作無法撤銷。</string>
   <string name="assistant_page_delete_header">刪除 Header</string>
   <string name="assistant_page_enter_image_url">輸入圖片URL</string>
   <string name="assistant_page_episodic_memory">情節記憶</string>
@@ -124,7 +124,7 @@
   <string name="assistant_page_message_template">聊天內容模板</string>
   <string name="assistant_page_message_template_desc">控制聊天訊息在發送給LLM之前的內容格式，通常不需要修改</string>
   <string name="assistant_page_message_template_missing_message">範本未包含 {{ message }}，使用者訊息將不會被傳送</string>
-  <string name="assistant_page_name">助手名稱</string>
+  <string name="assistant_page_name">角色卡名稱</string>
   <string name="assistant_page_preset_messages">預設聊天訊息</string>
   <string name="assistant_page_preset_messages_desc">設定對話初始訊息</string>
   <string name="assistant_page_proxy_fix">中轉站相容</string>
@@ -133,7 +133,7 @@
   <string name="assistant_page_quick_message_title">標題</string>
   <string name="assistant_page_quick_messages">快速訊息</string>
   <string name="assistant_page_recent_chats">參考歷史聊天記錄</string>
-  <string name="assistant_page_recent_chats_desc">啟用後，助手將參考最近的聊天歷史記錄來提供更有上下文的回應</string>
+  <string name="assistant_page_recent_chats_desc">啟用後，角色卡將參考最近的聊天歷史記錄來提供更有上下文的回應</string>
   <string name="assistant_page_regex_affecting_scopes">影響範圍：</string>
   <string name="assistant_page_regex_desc">定義正規表示式模式，在傳送或接收前轉換訊息</string>
   <string name="assistant_page_regex_find_regex">尋找正規表示式</string>
@@ -179,8 +179,8 @@
   <string name="assistant_page_top_p">Top P</string>
   <string name="assistant_page_top_p_value">Top P: %s</string>
   <string name="assistant_page_top_p_warning">請不要修改此值, 除非你知道自己在做什麼</string>
-  <string name="assistant_page_use_assistant_avatar">使用助手頭像</string>
-  <string name="assistant_page_use_assistant_avatar_desc">在聊天中使用助手頭像和名字而不是模型頭像和名字</string>
+  <string name="assistant_page_use_assistant_avatar">使用角色卡頭像</string>
+  <string name="assistant_page_use_assistant_avatar_desc">在聊天中使用角色卡頭像和名字而不是模型頭像和名字</string>
   <string name="audio">音訊</string>
   <string name="avatar_cancel">取消</string>
   <string name="avatar_change_avatar">更換頭像</string>
@@ -530,7 +530,7 @@
   <string name="couple_space_since">從 %1$s 開始</string>
   <string name="couple_space_space_photo">空間照片</string>
   <string name="couple_space_title">情侶空間</string>
-  <string name="couple_space_unnamed_assistant">未命名助手</string>
+  <string name="couple_space_unnamed_assistant">未命名角色卡</string>
   <string name="couple_space_whats_on_mind">這一刻想說什麼？</string>
   <string name="couple_vm_ai_posted">TA 已發表動態</string>
   <string name="couple_vm_ai_thinking_post">TA 正在想發什麼……</string>
@@ -670,7 +670,7 @@
   <string name="huadeng_clean_mode">清爽簡潔模式</string>
   <string name="huadeng_clean_mode_desc">開啟後隱藏情侶空間、生活空間等娛樂功能入口，並且不再向 AI 註冊對應工具，介面更簡潔、上下文更省 token</string>
   <string name="huadeng_rolling_compression">上下文滾動壓縮</string>
-  <string name="huadeng_rolling_compression_desc">對話過長時自動將早期訊息壓縮為摘要以節省 token。關閉後不再自動壓縮（助手級開關仍可單獨啟用）；若遇到每輪都重複壓縮或快取失效，可嘗試關閉</string>
+  <string name="huadeng_rolling_compression_desc">對話過長時自動將早期訊息壓縮為摘要以節省 token。關閉後不再自動壓縮（角色卡級開關仍可單獨啟用）；若遇到每輪都重複壓縮或快取失效，可嘗試關閉</string>
   <string name="huadeng_section_integration">接入與自動化</string>
   <string name="huadeng_system_prompt_escape">系統提示詞轉義</string>
   <string name="huadeng_system_prompt_escape_desc">將系統訊息中的 &lt; &gt; 轉為 HTML 實體，繞過中轉站 WAF 安全策略攔截（如遇到 upstream_content_rejected 錯誤可開啟）。一般不需要開啟</string>
@@ -679,7 +679,7 @@
   <string name="huadeng_sub_agent">子 agent</string>
   <string name="huadeng_sub_agent_desc">允許 AI 把子任務派給獨立的子 agent 執行（不產生會話歷史），完成後取回結果</string>
   <string name="huadeng_frontend_card_mode">前端相容模式</string>
-  <string name="huadeng_frontend_card_mode_desc">自動識別開場白或世界書中的網頁，也可依助手強制開啟或關閉</string>
+  <string name="huadeng_frontend_card_mode_desc">自動識別開場白或世界書中的網頁，也可依角色卡強制開啟或關閉</string>
   <string name="huadeng_frontend_card_auto_switched">已自動切換前端模式</string>
   <string name="huadeng_frontend_card_slash_unsupported">前端卡命令 %1$s 尚未支援</string>
   <string name="huadeng_transient_prune">上下文瞬態內容裁剪</string>
@@ -1050,7 +1050,7 @@
   <string name="persona_page_position_top">導演備註上方(Top of Author\'s Note)</string>
   <string name="persona_page_presets">快速預設（%d）</string>
   <string name="persona_page_role">身分(Role)</string>
-  <string name="persona_page_role_assistant">助手(Assistant)</string>
+  <string name="persona_page_role_assistant">角色(Assistant)</string>
   <string name="persona_page_role_system">系統(System)</string>
   <string name="persona_page_role_user">使用者(User)</string>
   <string name="persona_page_save">儲存(Save)</string>
@@ -1064,7 +1064,7 @@
   <string name="pinned_chats">置頂對話</string>
   <string name="placeholder_author_note">作者註釋內容</string>
   <string name="placeholder_battery_level">電池電量</string>
-  <string name="placeholder_char">助手名稱</string>
+  <string name="placeholder_char">角色卡名稱</string>
   <string name="placeholder_char_instruction">角色歷史後指令</string>
   <string name="placeholder_char_prompt">角色提示詞覆蓋</string>
   <string name="placeholder_char_version">角色版本</string>
@@ -1166,8 +1166,8 @@
   <string name="proactive_section_about">說明</string>
   <string name="proactive_title">主動訊息</string>
   <string name="proactive_unnamed">未命名</string>
-  <string name="proactive_use_assistant">使用助手</string>
-  <string name="proactive_use_assistant_desc">優先使用當前助手: %1$s</string>
+  <string name="proactive_use_assistant">使用角色卡</string>
+  <string name="proactive_use_assistant_desc">優先使用當前角色卡: %1$s</string>
   <string name="proactive_waiting_schedule">等待排程中...</string>
   <string name="prompt_page_add">新增</string>
   <string name="prompt_page_add_content">點選添加註入內容</string>
@@ -1261,7 +1261,7 @@
   <string name="prompt_page_priority_label">優先順序</string>
   <string name="prompt_page_probability">觸發機率: %d%%</string>
   <string name="prompt_page_probability_label">機率(Probability)</string>
-  <string name="prompt_page_role_assistant">助手（預填充）</string>
+  <string name="prompt_page_role_assistant">角色(Assistant)</string>
   <string name="prompt_page_role_system">系統(System)</string>
   <string name="prompt_page_role_user">使用者</string>
   <string name="prompt_page_rounds_suffix">輪</string>
@@ -1333,7 +1333,7 @@
   <string name="qq_bot_enable_desc">開啟後建立 WebSocket 連線監聽私聊訊息. 需先填 AppID 和 Secret.</string>
   <string name="qq_bot_how_to_get_credentials">怎麼取得 AppID 和 Secret</string>
   <string name="qq_bot_how_to_get_credentials_desc">1. 去 q.qq.com 註冊開發者並建立機器人\n2. 在機器人管理頁面找到 AppID 和 AppSecret\n3. 複製填到下面</string>
-  <string name="qq_bot_linked_assistant">關聯助手</string>
+  <string name="qq_bot_linked_assistant">關聯角色卡</string>
   <string name="qq_bot_notification_disconnected_text">機器人可能已下架或被封禁, 請到 q.qq.com 檢查</string>
   <string name="qq_bot_notification_disconnected_title">QQ Bot 已斷開</string>
   <string name="qq_bot_notification_running_text">正在監聽 QQ 私聊訊息</string>
@@ -1346,7 +1346,7 @@
   <string name="qq_bot_section_run">執行</string>
   <string name="qq_bot_title">QQ Bot</string>
   <string name="qq_bot_what_is">QQ Bot 是什麼</string>
-  <string name="qq_bot_what_is_desc">把你的 QQ 機器人變成 AI 入口: 別人私聊你的 bot, 會由當前助手回覆. 只處理私聊訊息.</string>
+  <string name="qq_bot_what_is_desc">把你的 QQ 機器人變成 AI 入口: 別人私聊你的 bot, 會由當前角色卡回覆. 只處理私聊訊息.</string>
   <string name="quick_messages_page_add_title">新增快速訊息</string>
   <string name="quick_messages_page_delete_message">您確定要刪除「%s」嗎？此動作無法復原。</string>
   <string name="quick_messages_page_delete_title">刪除快速訊息</string>
@@ -1480,9 +1480,9 @@
   <string name="setting_display_bubble_opacity">氣泡不透明度</string>
   <string name="setting_display_bubbles_section">氣泡</string>
   <string name="setting_display_chat_bg_color">聊天背景色</string>
-  <string name="setting_display_chat_bg_color_desc">助手設定裡有背景圖時圖片優先</string>
+  <string name="setting_display_chat_bg_color_desc">角色卡設定裡有背景圖時圖片優先</string>
   <string name="setting_display_chat_bg_image">聊天背景圖</string>
-  <string name="setting_display_chat_bg_image_not_set">未設定（優先於助手背景，疊加聊天背景色遮罩）</string>
+  <string name="setting_display_chat_bg_image_not_set">未設定（優先於角色卡背景，疊加聊天背景色遮罩）</string>
   <string name="setting_display_choose">選擇</string>
   <string name="setting_display_colors_section">顏色自定義</string>
   <string name="setting_display_custom">自定義</string>
@@ -1690,7 +1690,7 @@
   <string name="setting_memory_long_term_section">📚 很久以前的事</string>
   <string name="setting_memory_manage_long_term">管理長期記憶</string>
   <string name="setting_memory_manage_long_term_desc">逐條新增、修改或刪除。聊天時只會想起與當前內容相關的部分。</string>
-  <string name="setting_memory_no_assistant">請先建立一個助手。</string>
+  <string name="setting_memory_no_assistant">請先建立一個角色卡。</string>
   <string name="setting_memory_param_recall">每次最多召回多少條長期記憶</string>
   <string name="setting_memory_param_recall_chars">長期記憶每輪最多字元</string>
   <string name="setting_memory_param_tail">保留多少條近期原文</string>
@@ -1704,8 +1704,8 @@
   <string name="setting_memory_recent_summarized">%1$d 條近期原文 · 更早內容已整理成摘要</string>
   <string name="setting_memory_refresh">重新整理</string>
   <string name="setting_memory_role_card">角色設定</string>
-  <string name="setting_memory_role_card_empty">角色設定暫時為空。請在助手設定中維護角色卡。</string>
-  <string name="setting_memory_role_card_managed">角色卡由助手設定維護。這個記憶頁面不會覆蓋它。</string>
+  <string name="setting_memory_role_card_empty">角色設定暫時為空。請在角色卡設定中維護角色卡。</string>
+  <string name="setting_memory_role_card_managed">角色卡由角色卡設定維護。這個記憶頁面不會覆蓋它。</string>
   <string name="setting_memory_save_custom_params">儲存自定義參數</string>
   <string name="setting_memory_save_fixed">儲存固定記憶</string>
   <string name="setting_memory_strategy_current">當前：%1$s</string>
@@ -1726,7 +1726,7 @@
   <string name="setting_memory_three_layer">三層記憶</string>
   <string name="setting_memory_three_layer_desc">固定記憶 + 近期生活流 + 長期記憶按需召回</string>
   <string name="setting_memory_title">記憶</string>
-  <string name="setting_memory_unnamed_assistant">未命名助手</string>
+  <string name="setting_memory_unnamed_assistant">未命名角色卡</string>
   <string name="setting_memory_you">你</string>
   <string name="setting_model_page_chat_model">聊天模型</string>
   <string name="setting_model_page_chat_model_desc">全域預設聊天模型</string>
@@ -1843,7 +1843,7 @@
   <string name="setting_page_providers">提供商</string>
   <string name="setting_page_providers_desc">配置AI提供商</string>
   <string name="setting_page_qq_bot">QQ Bot</string>
-  <string name="setting_page_qq_bot_desc">把 QQ 開放平臺機器人作為當前助手的私聊通道</string>
+  <string name="setting_page_qq_bot_desc">把 QQ 開放平臺機器人作為當前角色卡的私聊通道</string>
   <string name="setting_page_request_logs">請求記錄</string>
   <string name="setting_page_request_logs_desc">檢視 HTTP 要求記錄</string>
   <string name="setting_page_search_add_provider">新增提供商</string>
@@ -1862,7 +1862,7 @@
   <string name="setting_page_security_tool_calls">工具呼叫</string>
   <string name="setting_page_share">分享</string>
   <string name="setting_page_share_desc">分享本APP給朋友</string>
-  <string name="setting_page_share_text">RikkaHub - 開源安卓AI助手\n\n官網: https://rikka-ai.com/</string>
+  <string name="setting_page_share_text">RikkaHub - 開源安卓AI角色卡\n\n官網: https://rikka-ai.com/</string>
   <string name="setting_page_sponsor_alert_confirm">捐款</string>
   <string name="setting_page_sponsor_alert_desc">您已啟動應用程式超過 100 次！如果您喜歡使用它，請考慮支持開發者。</string>
   <string name="setting_page_sponsor_alert_dismiss">稍後再說</string>
@@ -2033,7 +2033,7 @@
   <string name="setting_tts_page_voice_name_placeholder">Kore</string>
   <string name="settings">設定</string>
   <string name="share">分享</string>
-  <string name="share_handler_page_title">選擇一個助手處理分享</string>
+  <string name="share_handler_page_title">選擇一個角色卡處理分享</string>
   <string name="shortcut_take_picture">拍照提問</string>
   <string name="silicon_flow_description">**全球領先的 AI 能力提供商，加速 AGI 普惠人類。**</string>
   <string name="silicon_flow_website">官網: [https://cloud.siliconflow.cn/](https://cloud.siliconflow.cn/i/u1Ia4Ycf)</string>
@@ -2076,10 +2076,10 @@
   <string name="slash_char_duplicate_desc">複製當前角色卡</string>
   <string name="slash_char_update_desc">修改角色卡欄位：可用欄位 name/description/personality/scenario/system_prompt/first_mes/mes_example/phi/creator_notes</string>
   <string name="slash_char_update_hint">[欄位=值] 如 description=新描述</string>
-  <string name="slash_continue_desc">續寫最後一條助手回覆：在原回覆末尾繼續生成，可加補充文字</string>
+  <string name="slash_continue_desc">續寫最後一條角色卡回覆：在原回覆末尾繼續生成，可加補充文字</string>
   <string name="slash_decvar_desc">當前對話變數-1</string>
   <string name="slash_decvar_hint">[變數名]</string>
-  <string name="slash_error_continue_no_message">沒有可繼續的助手訊息</string>
+  <string name="slash_error_continue_no_message">沒有可繼續的角色卡訊息</string>
   <string name="slash_error_no_model">請先選擇模型</string>
   <string name="slash_error_sysgen_empty">生成的旁白為空</string>
   <string name="slash_error_sysgen_no_messages">當前對話還沒有訊息，無法生成旁白</string>
@@ -2124,7 +2124,7 @@
   <string name="slash_example_send_2_cmd">/send name=旅行者 我明天出發</string>
   <string name="slash_example_send_2_desc">以「旅行者」的名字插入</string>
   <string name="slash_example_sendas_1_cmd">/sendas 她笑了一下</string>
-  <string name="slash_example_sendas_1_desc">以當前角色身分插入一條助手訊息（不觸發生成）</string>
+  <string name="slash_example_sendas_1_desc">以當前角色身分插入一條角色卡訊息（不觸發生成）</string>
   <string name="slash_example_sendas_2_cmd">/sendas name=寧凝 at=-1 她在心裡想道</string>
   <string name="slash_example_setvar_1_cmd">/setvar money 100</string>
   <string name="slash_example_setvar_1_desc">設定變數 money 為 100</string>
@@ -2259,7 +2259,7 @@
   <string name="slash_toast_gen_done_append">已生成並追加到輸入框，確認後傳送</string>
   <string name="slash_toast_gen_done_replace">已生成，確認後傳送</string>
   <string name="slash_toast_gen_usage">用法: /gen [trim=true] [as=char] [length=token數] [name=名字] 提示詞（預設以系統指令生成）</string>
-  <string name="slash_toast_no_char_card">當前助手沒有角色卡</string>
+  <string name="slash_toast_no_char_card">當前角色卡沒有酒館卡片資料</string>
   <string name="slash_toast_no_model">請先選擇模型</string>
   <string name="slash_toast_not_supported">當前頁面不支援該命令</string>
   <string name="speech_page_title">語音</string>
@@ -2459,7 +2459,7 @@
   <string name="weixin_bot_enable">啟用微信 Bot</string>
   <string name="weixin_bot_enable_desc">開啟後啟動背景長輪詢服務. 需先掃碼登入.</string>
   <string name="weixin_bot_fetching_qrcode">取得二維碼...</string>
-  <string name="weixin_bot_linked_assistant_desc">固定使用當前助手: %1$s</string>
+  <string name="weixin_bot_linked_assistant_desc">固定使用當前角色卡: %1$s</string>
   <string name="weixin_bot_logged_in">已登入 (Bot: %1$s)</string>
   <string name="weixin_bot_logged_out">已退出</string>
   <string name="weixin_bot_logging_in">登入中...</string>
@@ -2489,7 +2489,7 @@
   <string name="weixin_bot_unnamed">未命名</string>
   <string name="weixin_bot_waiting_scan">等待掃碼...</string>
   <string name="weixin_bot_what_is">微信 Bot 是什麼</string>
-  <string name="weixin_bot_what_is_desc">把你的微訊號變成 AI 入口: 別人(或你自己)給這個微訊號發訊息, 會由關聯的助手回覆. 相當於給助手多開一個微信通道, AI/記憶/工具都用那個助手的.</string>
+  <string name="weixin_bot_what_is_desc">把你的微訊號變成 AI 入口: 別人(或你自己)給這個微訊號發訊息, 會由關聯的角色卡回覆. 相當於給角色卡多開一個微信通道, AI/記憶/工具都用那個角色卡的.</string>
   <string name="workspace_page_title">工作區</string>
   <string name="workspace_page_create">創建工作區</string>
   <string name="workspace_page_rename">重新命名工作區</string>
@@ -2695,8 +2695,8 @@
   <string name="setting_page_preferences_network_auto_retry_desc">發生網路錯誤時自動重試模型請求，最多重試 3 次。</string>
   <string name="setting_tts_page_default_playback_speed">預設播放速度</string>
   <string name="setting_tts_page_default_playback_speed_description">在本機套用至每個 TTS 提供者，不變更其合成設定。</string>
-  <string name="search_page_scope_current_assistant">目前助手</string>
-  <string name="search_page_scope_all_assistants">全部助手</string>
+  <string name="search_page_scope_current_assistant">目前角色卡</string>
+  <string name="search_page_scope_all_assistants">全部角色卡</string>
   <string name="chat_page_voice_title">語音模式</string>
   <string name="chat_page_voice_select_model">請先選擇聊天模型</string>
   <string name="chat_page_voice_finish_dictation">請先完成目前的語音輸入</string>
@@ -3043,7 +3043,7 @@
   <string name="slash_param_setvar_value_name">值</string>
   <string name="slash_param_sysgen_at_example">/sysgen at=-1 描寫角色握劍的手</string>
   <string name="slash_persona_desc">切換使用者人設/臨時使用者名稱：官方 /persona-set 別名，找不到人設時設定臨時使用者名稱</string>
-  <string name="slash_sendas_desc">插入助手訊息：預設以當前助手身分，可指定角色名與位置，不觸發生成</string>
+  <string name="slash_sendas_desc">插入角色卡訊息：預設以當前角色卡身分，可指定角色名與位置，不觸發生成</string>
   <string name="slash_sysgen_status">正在生成系統旁白…</string>
   <string name="slash_toast_generating">正在生成中，請等待完成後再執行命令</string>
   <string name="slash_toast_persona_none_active">當前無啟用人設（可用: %1$s）</string>
@@ -3057,7 +3057,7 @@
   <string name="video_call_avatar">頭像</string>
   <string name="video_call_status_speaking">正在說話</string>
   <string name="voice_call_error">通話出現了問題</string>
-  <string name="weixin_bot_linked_assistant">關聯助手</string>
+  <string name="weixin_bot_linked_assistant">關聯角色卡</string>
   <string name="weixin_bot_login_timeout">登入超時</string>
   <string name="weixin_bot_notification_running_text">正在監聽微信訊息</string>
   <string name="weixin_bot_relogin">重新登入</string>
