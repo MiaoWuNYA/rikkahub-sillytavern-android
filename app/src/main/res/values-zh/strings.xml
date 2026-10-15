@@ -1859,7 +1859,7 @@
   <string name="setting_model_page_suggestion_model">聊天建议模型</string>
   <string name="setting_model_page_suggestion_model_desc">用于生成聊天建议的模型。未设置时使用快速模型</string>
   <string name="setting_model_page_suggestion_prompt_vars">变量: 对话内容: {content}, 语言: {locale}</string>
-  <string name="setting_model_page_title">模型设置</string>
+  <string name="setting_model_page_title">模型与服务</string>
   <string name="setting_model_page_title_model">标题总结模型</string>
   <string name="setting_model_page_title_model_desc">用于总结对话标题的模型。未设置时使用快速模型</string>
   <string name="setting_model_page_translate_model">翻译模型</string>
@@ -1893,8 +1893,8 @@
   <string name="setting_page_data_backup">数据备份</string>
   <string name="setting_page_data_backup_desc">备份和恢复应用数据</string>
   <string name="setting_page_data_settings">数据设置</string>
-  <string name="setting_page_default_model">默认模型和提示词</string>
-  <string name="setting_page_default_model_desc">设置各个功能的默认模型</string>
+  <string name="setting_page_default_model">模型与服务</string>
+  <string name="setting_page_default_model_desc">设置默认模型、搜索、语音和图像</string>
   <string name="setting_page_display_color">聊天外观自定义</string>
   <string name="setting_page_display_color_desc">颜色、气泡、透明度、背景图</string>
   <string name="setting_page_display_setting">显示设置</string>

@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -30,10 +32,15 @@ import me.rerere.hugeicons.stroke.AiBrain01
 import me.rerere.hugeicons.stroke.AiEditing
 import me.rerere.hugeicons.stroke.ArrowShrink
 import me.rerere.hugeicons.stroke.BubbleChat
+import me.rerere.hugeicons.stroke.GlobalSearch
+import me.rerere.hugeicons.stroke.Image02
+import me.rerere.hugeicons.stroke.Megaphone01
 import me.rerere.hugeicons.stroke.ScanText
+import me.rerere.hugeicons.stroke.SlidersHorizontal
 import me.rerere.hugeicons.stroke.Translate
 import me.rerere.hugeicons.stroke.Zap
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.ui.components.ai.ModelField
 import me.rerere.rikkahub.ui.components.ai.ModelListSheet
@@ -47,6 +54,7 @@ import me.rerere.rikkahub.ui.components.ui.CardGroupScope
 import me.rerere.rikkahub.ui.components.ui.PagerTab
 import me.rerere.rikkahub.ui.components.ui.PagerTabs
 import me.rerere.rikkahub.ui.components.ui.switchItem
+import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.theme.CustomColors
 import org.koin.androidx.compose.koinViewModel
 
@@ -55,7 +63,10 @@ private enum class ModelSettingTab(
     @param:StringRes private val labelRes: Int,
 ) : PagerTab {
     MODEL(HugeIcons.AiBrain01, R.string.setting_model_page_tab_model),
-    PROMPT(HugeIcons.AiEditing, R.string.setting_model_page_tab_prompt);
+    PROMPT(HugeIcons.AiEditing, R.string.setting_model_page_tab_prompt),
+    SEARCH(HugeIcons.GlobalSearch, R.string.setting_page_search_service),
+    SPEECH(HugeIcons.Megaphone01, R.string.setting_page_tts_service),
+    MEDIA(HugeIcons.Image02, R.string.setting_page_media);
 
     override val label: String
         @Composable get() = stringResource(labelRes)
@@ -67,12 +78,47 @@ fun SettingModelPage(vm: SettingVM = koinViewModel()) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val pagerState = rememberPagerState { ModelSettingTab.entries.size }
 
+    val navController = LocalNavController.current
+
     Scaffold(
         containerColor = CustomColors.topBarColors.containerColor,
         topBar = {
             LargeFlexibleTopAppBar(
                 title = { Text(stringResource(R.string.setting_model_page_title)) },
                 navigationIcon = { BackButton() },
+                actions = {
+                    when (ModelSettingTab.entries[pagerState.currentPage]) {
+                        ModelSettingTab.SEARCH -> AddSearchProviderButton { options ->
+                            vm.updateSettings { it.copy(searchServices = listOf(options) + it.searchServices) }
+                        }
+
+                        ModelSettingTab.SPEECH -> {
+                            IconButton(onClick = { navController.navigate(Screen.SettingTtsPlayback) }) {
+                                Icon(
+                                    imageVector = HugeIcons.SlidersHorizontal,
+                                    contentDescription = stringResource(R.string.setting_page_tts_settings),
+                                )
+                            }
+                            AddTTSProviderButton { provider ->
+                                vm.updateSettings { it.copy(ttsProviders = listOf(provider) + it.ttsProviders) }
+                            }
+                            AddASRProviderButton { provider ->
+                                vm.updateSettings { latest ->
+                                    latest.copy(
+                                        asrProviders = listOf(provider) + latest.asrProviders,
+                                        selectedASRProviderId = latest.selectedASRProviderId ?: provider.id,
+                                    )
+                                }
+                            }
+                        }
+
+                        ModelSettingTab.MEDIA -> AddMediaProviderButton { provider ->
+                            vm.updateSettings { it.copy(mediaGenerationProviders = listOf(provider) + it.mediaGenerationProviders) }
+                        }
+
+                        else -> {}
+                    }
+                },
                 scrollBehavior = scrollBehavior,
                 colors = CustomColors.topBarColors,
             )
@@ -113,6 +159,21 @@ fun SettingModelPage(vm: SettingVM = koinViewModel()) {
 
                     ModelSettingTab.PROMPT -> PromptSettingsPage(
                         settings = settings,
+                        vm = vm,
+                        contentPadding = contentPadding,
+                    )
+
+                    ModelSettingTab.SEARCH -> SearchServicesContent(
+                        vm = vm,
+                        contentPadding = contentPadding,
+                    )
+
+                    ModelSettingTab.SPEECH -> SpeechServicesContent(
+                        vm = vm,
+                        contentPadding = contentPadding,
+                    )
+
+                    ModelSettingTab.MEDIA -> MediaServicesContent(
                         vm = vm,
                         contentPadding = contentPadding,
                     )

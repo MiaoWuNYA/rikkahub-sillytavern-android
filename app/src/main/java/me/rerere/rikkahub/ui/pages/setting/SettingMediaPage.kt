@@ -86,22 +86,8 @@ import org.koin.compose.koinInject
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
-private enum class MediaTab(
-    override val icon: ImageVector,
-    @param:StringRes private val labelRes: Int,
-) : PagerTab {
-    PROVIDERS(HugeIcons.Image02, R.string.setting_media_page_providers),
-    STORAGE(HugeIcons.Database02, R.string.setting_media_page_asset_storage);
-
-    override val label: String
-        @Composable get() = stringResource(labelRes)
-}
-
 @Composable
 fun SettingMediaPage(vm: SettingVM = koinViewModel()) {
-    val settings by vm.settings.collectAsStateWithLifecycle()
-    var editingProvider by remember { mutableStateOf<MediaGenerationProviderSetting?>(null) }
-    val pagerState = rememberPagerState { MediaTab.entries.size }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
@@ -114,13 +100,11 @@ fun SettingMediaPage(vm: SettingVM = koinViewModel()) {
                     BackButton()
                 },
                 actions = {
-                    if (MediaTab.entries[pagerState.targetPage] == MediaTab.PROVIDERS) {
-                        AddMediaProviderButton {
-                            vm.updateSettings { latest ->
-                                latest.copy(
-                                    mediaGenerationProviders = listOf(it) + latest.mediaGenerationProviders
-                                )
-                            }
+                    AddMediaProviderButton {
+                        vm.updateSettings { latest ->
+                            latest.copy(
+                                mediaGenerationProviders = listOf(it) + latest.mediaGenerationProviders
+                            )
                         }
                     }
                 },
@@ -131,39 +115,41 @@ fun SettingMediaPage(vm: SettingVM = koinViewModel()) {
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor,
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .consumeWindowInsets(innerPadding)
-        ) {
-            PagerTabs(
-                pagerState = pagerState,
-                tabs = MediaTab.entries,
-                modifier = Modifier.padding(bottom = 4.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp),
-            )
+        MediaServicesContent(vm = vm, contentPadding = innerPadding)
+    }
+}
 
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-            ) { page ->
-                when (MediaTab.entries[page]) {
-                    MediaTab.PROVIDERS -> MediaProviderList(
-                        settings = settings,
-                        onUpdateSettings = vm::updateSettings,
-                        onEdit = { editingProvider = it },
-                    )
+@Composable
+internal fun MediaServicesContent(vm: SettingVM, contentPadding: PaddingValues) {
+    val settings by vm.settings.collectAsStateWithLifecycle()
+    var editingProvider by remember { mutableStateOf<MediaGenerationProviderSetting?>(null) }
 
-                    MediaTab.STORAGE -> MediaUploadS3Tab(
-                        settings = settings,
-                        onUpdateSettings = vm::updateSettings,
-                    )
-                }
-            }
-        }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(contentPadding)
+    ) {
+        Text(
+            text = stringResource(R.string.setting_media_page_providers),
+            style = MaterialTheme.typography.titleSmallEmphasized,
+            modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 4.dp),
+        )
+        MediaProviderList(
+            settings = settings,
+            onUpdateSettings = vm::updateSettings,
+            onEdit = { editingProvider = it },
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = stringResource(R.string.setting_media_page_asset_storage),
+            style = MaterialTheme.typography.titleSmallEmphasized,
+            modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 4.dp),
+        )
+        MediaUploadS3Tab(
+            settings = settings,
+            onUpdateSettings = vm::updateSettings,
+            modifier = Modifier.weight(1f),
+        )
     }
 
     editingProvider?.let { provider ->
@@ -326,7 +312,7 @@ private fun MediaProviderItem(
 
 // 新建时先选类型，再进配置面板
 @Composable
-private fun AddMediaProviderButton(onAdd: (MediaGenerationProviderSetting) -> Unit) {
+internal fun AddMediaProviderButton(onAdd: (MediaGenerationProviderSetting) -> Unit) {
     var showTypeSheet by remember { mutableStateOf(false) }
     var newProvider by remember { mutableStateOf<MediaGenerationProviderSetting?>(null) }
     val factories = remember {
