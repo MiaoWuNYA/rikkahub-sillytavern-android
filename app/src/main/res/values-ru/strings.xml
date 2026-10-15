@@ -1793,6 +1793,11 @@
   <string name="setting_page_group_chat_desc">Групповой чат с несколькими персонажами</string>
   <string name="setting_page_tavern">Настройки таверны</string>
   <string name="setting_page_tavern_desc">Карточки персонажей, мировая информация, персона и переключатели совместимости</string>
+  <string name="setting_page_tavern_regex">Регулярные выражения</string>
+  <string name="setting_page_tavern_regex_desc">Просмотр, импорт и правка скриптов регулярных выражений всех карточек в одном месте</string>
+  <string name="tavern_regex_intro">Скрипты регулярных выражений хранятся в карточке персонажа. Разверните карточку для правки; импорт JSON из Tavern тоже здесь.</string>
+  <string name="tavern_regex_card_count">Скриптов: %1$d</string>
+  <string name="tavern_regex_empty">Пока нет карточек персонажа.</string>
   <string name="tavern_section_cards">Карточки и персона</string>
   <string name="tavern_section_prompts">Мировая информация и пресеты</string>
   <string name="tavern_section_compat">Совместимость</string>

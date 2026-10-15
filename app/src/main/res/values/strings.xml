@@ -1910,6 +1910,11 @@
   <string name="setting_page_group_chat_desc">Multi-character group chat</string>
   <string name="setting_page_tavern">Tavern Settings</string>
   <string name="setting_page_tavern_desc">Character cards, world info, persona and compatibility switches</string>
+  <string name="setting_page_tavern_regex">Message Regex</string>
+  <string name="setting_page_tavern_regex_desc">View, import and edit the regex scripts of every character card in one place</string>
+  <string name="tavern_regex_intro">Regex scripts are stored on each character card. Expand a card to edit its scripts; importing a Tavern regex JSON also happens on this page.</string>
+  <string name="tavern_regex_card_count">%1$d scripts</string>
+  <string name="tavern_regex_empty">No character cards yet.</string>
   <string name="tavern_section_cards">Character Cards &amp; Persona</string>
   <string name="tavern_section_prompts">World Info &amp; Presets</string>
   <string name="tavern_section_compat">Compatibility &amp; Runtime</string>

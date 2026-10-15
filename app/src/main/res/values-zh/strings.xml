@@ -1908,6 +1908,11 @@
   <string name="setting_page_group_chat_desc">多人角色群聊</string>
   <string name="setting_page_tavern">酒馆设置</string>
   <string name="setting_page_tavern_desc">角色卡、世界书、人设与兼容开关</string>
+  <string name="setting_page_tavern_regex">消息正则</string>
+  <string name="setting_page_tavern_regex_desc">集中查看、导入与编辑各角色卡的正则脚本</string>
+  <string name="tavern_regex_intro">正则脚本跟着角色卡保存。展开卡片即可编辑该卡的正则，导入酒馆正则也在这个页面。</string>
+  <string name="tavern_regex_card_count">%1$d 条正则</string>
+  <string name="tavern_regex_empty">还没有角色卡。</string>
   <string name="tavern_section_cards">角色卡与设定</string>
   <string name="tavern_section_prompts">世界书与预设</string>
   <string name="tavern_section_compat">兼容与运行</string>

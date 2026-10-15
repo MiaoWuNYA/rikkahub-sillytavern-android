@@ -15,17 +15,13 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import me.rerere.hugeicons.HugeIcons
-import me.rerere.hugeicons.stroke.AiMagic
-import me.rerere.hugeicons.stroke.AlarmClock
 import me.rerere.hugeicons.stroke.Book01
-import me.rerere.hugeicons.stroke.Brain01
 import me.rerere.hugeicons.stroke.Edit01
 import me.rerere.hugeicons.stroke.LookTop
+import me.rerere.hugeicons.stroke.MagicWand01
 import me.rerere.hugeicons.stroke.Message01
 import me.rerere.hugeicons.stroke.MessageMultiple01
 import me.rerere.hugeicons.stroke.Notebook
-import me.rerere.hugeicons.stroke.Settings03
-import me.rerere.hugeicons.stroke.Shield01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.ui.components.nav.BackButton
@@ -35,7 +31,7 @@ import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.plus
 
-/** 酒馆设置：角色卡、世界书、人设与兼容开关统一从这一页进。 */
+/** 酒馆设置：只收酒馆上游同款菜单，兼容与自动化仍在华灯设置里。 */
 @Composable
 fun SettingTavernPage() {
     val navController = LocalNavController.current
@@ -102,68 +98,16 @@ fun SettingTavernPage() {
                         headlineContent = { Text(stringResource(R.string.extensions_page_prompts)) },
                     )
                     item(
+                        onClick = { navController.navigate(Screen.SettingTavernRegex) },
+                        leadingContent = { CardGroupIcon(HugeIcons.MagicWand01) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_tavern_regex_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_tavern_regex)) },
+                    )
+                    item(
                         onClick = { navController.navigate(Screen.QuickMessages) },
                         leadingContent = { CardGroupIcon(HugeIcons.Message01) },
                         supportingContent = { Text(stringResource(R.string.extensions_page_quick_messages_desc)) },
                         headlineContent = { Text(stringResource(R.string.assistant_page_quick_messages)) },
-                    )
-                }
-            }
-
-            item("tavernCompat") {
-                CardGroup(
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    title = { Text(stringResource(R.string.tavern_section_compat)) },
-                ) {
-                    item(
-                        onClick = { navController.navigate(Screen.SettingHuaDengCompat) },
-                        leadingContent = { CardGroupIcon(HugeIcons.Settings03) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_huadeng_title_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_huadeng_compat)) },
-                    )
-                    item(
-                        onClick = { navController.navigate(Screen.SettingHuaDeng) },
-                        leadingContent = { CardGroupIcon(HugeIcons.AiMagic) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_huadeng_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_huadeng)) },
-                    )
-                    item(
-                        onClick = { navController.navigate(Screen.SettingJev) },
-                        leadingContent = { CardGroupIcon(HugeIcons.Brain01) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_jev_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_jev)) },
-                    )
-                    item(
-                        onClick = { navController.navigate(Screen.SettingSecurity) },
-                        leadingContent = { CardGroupIcon(HugeIcons.Shield01) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_security_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_security)) },
-                    )
-                }
-            }
-
-            item("tavernAutomation") {
-                CardGroup(
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    title = { Text(stringResource(R.string.tavern_section_automation)) },
-                ) {
-                    item(
-                        onClick = { navController.navigate(Screen.SettingProactiveMessage) },
-                        leadingContent = { CardGroupIcon(HugeIcons.AlarmClock) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_proactive_message_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_proactive_message)) },
-                    )
-                    item(
-                        onClick = { navController.navigate(Screen.SettingWeixinBot) },
-                        leadingContent = { CardGroupIcon(HugeIcons.Message01) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_weixin_bot_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_weixin_bot)) },
-                    )
-                    item(
-                        onClick = { navController.navigate(Screen.SettingQqBot) },
-                        leadingContent = { CardGroupIcon(HugeIcons.MessageMultiple01) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_qq_bot_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_qq_bot)) },
                     )
                 }
             }

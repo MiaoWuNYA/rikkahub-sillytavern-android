@@ -1793,6 +1793,11 @@
   <string name="setting_page_group_chat_desc">多人角色群聊</string>
   <string name="setting_page_tavern">酒館設定</string>
   <string name="setting_page_tavern_desc">角色卡、世界書、人設與相容開關</string>
+  <string name="setting_page_tavern_regex">訊息正則</string>
+  <string name="setting_page_tavern_regex_desc">集中檢視、匯入與編輯各角色卡的正則腳本</string>
+  <string name="tavern_regex_intro">正則腳本跟著角色卡保存。展開卡片即可編輯該卡的正則，匯入酒館正則也在這個頁面。</string>
+  <string name="tavern_regex_card_count">%1$d 條正則</string>
+  <string name="tavern_regex_empty">還沒有角色卡。</string>
   <string name="tavern_section_cards">角色卡與設定</string>
   <string name="tavern_section_prompts">世界書與預設</string>
   <string name="tavern_section_compat">相容與執行</string>

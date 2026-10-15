@@ -1793,6 +1793,11 @@
   <string name="setting_page_group_chat_desc">複数キャラクターのグループチャット</string>
   <string name="setting_page_tavern">タバーン設定</string>
   <string name="setting_page_tavern_desc">キャラクターカード、ワールド情報、ペルソナと互換スイッチ</string>
+  <string name="setting_page_tavern_regex">メッセージ正規表現</string>
+  <string name="setting_page_tavern_regex_desc">各キャラクターカードの正規表現スクリプトをまとめて確認・インポート・編集</string>
+  <string name="tavern_regex_intro">正規表現スクリプトはキャラクターカードごとに保存されます。カードを展開して編集でき、酒場の正規表現 JSON のインポートもこの画面で行えます。</string>
+  <string name="tavern_regex_card_count">正規表現 %1$d 件</string>
+  <string name="tavern_regex_empty">キャラクターカードがまだありません。</string>
   <string name="tavern_section_cards">キャラクターカードと設定</string>
   <string name="tavern_section_prompts">ワールド情報とプリセット</string>
   <string name="tavern_section_compat">互換と動作</string>
