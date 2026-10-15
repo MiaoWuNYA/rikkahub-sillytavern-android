@@ -5,6 +5,7 @@ import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantAffectScope
+import me.rerere.rikkahub.data.model.AssistantRegex
 import me.rerere.rikkahub.data.model.replaceRegexes
 import kotlin.uuid.Uuid
 import org.koin.core.component.KoinComponent
@@ -17,8 +18,10 @@ internal fun List<UIMessage>.replaceRegexesForDisplay(
     assistant: Assistant,
     conversationId: Uuid?,
     visual: Boolean,
+    globalRegexes: List<AssistantRegex> = emptyList(),
 ): List<UIMessage> {
-    if (assistant.regexes.isEmpty()) return this
+    val regexes = assistant.regexes + globalRegexes
+    if (regexes.isEmpty()) return this
     val lastUserMsgId = lastOrNull { it.role == MessageRole.USER }?.id?.toString()
     val memo = if (lastUserMsgId != null) {
         val memoKey = "${assistant.id}:${conversationId ?: "no-conversation"}:$lastUserMsgId"
@@ -37,11 +40,11 @@ internal fun List<UIMessage>.replaceRegexesForDisplay(
             parts = message.parts.map { part ->
                 when (part) {
                     is UIMessagePart.Text -> part.copy(
-                        text = part.text.replaceRegexes(assistant, AssistantAffectScope.ASSISTANT, visual, depth),
+                        text = part.text.replaceRegexes(regexes, AssistantAffectScope.ASSISTANT, visual, depth),
                     )
 
                     is UIMessagePart.Reasoning -> part.copy(
-                        reasoning = part.reasoning.replaceRegexes(assistant, AssistantAffectScope.ASSISTANT, visual, depth),
+                        reasoning = part.reasoning.replaceRegexes(regexes, AssistantAffectScope.ASSISTANT, visual, depth),
                     )
 
                     else -> part
@@ -57,7 +60,9 @@ object RegexOutputTransformer : OutputMessageTransformer, KoinComponent {
     override suspend fun visualTransform(
         ctx: TransformerContext,
         messages: List<UIMessage>,
-    ): List<UIMessage> = messages.replaceRegexesForDisplay(ctx.assistant, ctx.conversationId, visual = false)
+    ): List<UIMessage> = messages.replaceRegexesForDisplay(
+        ctx.assistant, ctx.conversationId, visual = false, globalRegexes = ctx.settings.globalRegexes,
+    )
 }
 
 // 纯显示层：结果只进渲染
@@ -66,5 +71,7 @@ object RegexVisualTransformer : OutputMessageTransformer {
     override suspend fun visualTransform(
         ctx: TransformerContext,
         messages: List<UIMessage>,
-    ): List<UIMessage> = messages.replaceRegexesForDisplay(ctx.assistant, ctx.conversationId, visual = true)
+    ): List<UIMessage> = messages.replaceRegexesForDisplay(
+        ctx.assistant, ctx.conversationId, visual = true, globalRegexes = ctx.settings.globalRegexes,
+    )
 }

@@ -1,5 +1,7 @@
 package me.rerere.rikkahub.ui.pages.extensions
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowDown01
@@ -91,23 +93,29 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.provider.ModelType
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.export.LorebookSerializer
 import me.rerere.rikkahub.data.export.ModeInjectionSerializer
+import me.rerere.rikkahub.data.export.SillyTavernRegexImporter
 import me.rerere.rikkahub.data.export.rememberExporter
 import me.rerere.rikkahub.data.export.rememberImporter
 import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.Lorebook
+import me.rerere.rikkahub.data.model.RegexGroup
+import me.rerere.rikkahub.data.model.RegexGroupSource
 import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.SelectiveLogic
 import me.rerere.rikkahub.ui.components.ai.ExtensionEmptyState
@@ -661,12 +669,47 @@ private fun LorebookTab(
     }
     val importSuccessMsg = stringResource(R.string.export_import_success)
     val importFailedMsg = stringResource(R.string.export_import_failed)
-    val importer = rememberImporter(LorebookSerializer) { result ->
-        result.onSuccess { imported ->
-            onUpdate(currentLorebooks + imported)
-            toaster.show(importSuccessMsg)
-        }.onFailure { error ->
-            toaster.show(importFailedMsg.format(error.message))
+    val presetFolderName = stringResource(R.string.tavern_regex_preset_folder)
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    // 自定义导入流程：世界书/预设（prompts）→ 世界书，预设里的正则脚本 → 全局正则分组。
+    // 走 LorebookSerializer 的通用导入拿不到正则，故这里读一次 JSON 两处都用。
+    val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    val json = context.contentResolver.openInputStream(uri)
+                        ?.bufferedReader()?.use { it.readText() }
+                        ?: error(importFailedMsg)
+                    val fileName = LorebookSerializer.getUriFileName(context, uri)?.removeSuffix(".json")
+                    val book = LorebookSerializer.importFromJson(json, fileName)
+                    // 酒馆预设把脚本挂在 extensions.regex_scripts，导入时按预设名收进一个分组
+                    val regexes = SillyTavernRegexImporter.parseFromPreset(json)
+                    val groupName = fileName?.takeIf { it.isNotBlank() } ?: book.name
+                    book to (groupName to regexes)
+                }
+            }
+            result.onSuccess { (book, groupAndRegexes) ->
+                onUpdate(currentLorebooks + book)
+                val (rawName, regexes) = groupAndRegexes
+                if (regexes.isNotEmpty()) {
+                    val name = rawName.ifBlank { presetFolderName }
+                    // 同名预设视为「同一个文件夹」：重新导入即刷新该文件夹里的脚本，不再堆叠重复分组
+                    val existing = settings.regexGroups.firstOrNull {
+                        it.source == RegexGroupSource.PRESET && it.name == name
+                    }
+                    val groups = if (existing != null) {
+                        settings.regexGroups.map { if (it.id == existing.id) it.copy(regexes = regexes) else it }
+                    } else {
+                        settings.regexGroups + RegexGroup(name = name, source = RegexGroupSource.PRESET, regexes = regexes)
+                    }
+                    onSettingsUpdate(settings.copy(regexGroups = groups))
+                }
+                toaster.show(importSuccessMsg)
+            }.onFailure { error ->
+                toaster.show(importFailedMsg.format(error.message))
+            }
         }
     }
 
@@ -1088,7 +1131,7 @@ private fun LorebookTab(
                 .align(Alignment.BottomCenter)
                 .offset(y = -ScreenOffset),
             leadingContent = {
-                IconButton(onClick = { importer.importFromFile() }) {
+                IconButton(onClick = { importer.launch(arrayOf("*/*")) }) {
                     Icon(HugeIcons.FileImport, null)
                 }
             },

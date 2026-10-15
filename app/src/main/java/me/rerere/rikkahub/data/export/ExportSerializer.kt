@@ -129,18 +129,24 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
 
     override fun import(context: Context, uri: Uri): Result<Lorebook> {
         return runCatching {
-            val json = readUri(context, uri)
-            val fileName = getUriFileName(context, uri)?.removeSuffix(".json")
-            // 首先尝试解析为自己的格式
-            tryImportNative(json)
-            // 然后尝试解析为 SillyTavern 世界书
-                ?: tryImportSillyTavern(json, fileName)
-                // 酒馆 Chat Completion 预设（main_prompt/jailbreak_prompt 等）→ 转成 constant 条目的世界书
-                ?: tryImportSillyTavernPreset(json, fileName)
-                // 正则脚本不在这里导入，给出明确指引而不是静默生成空世界书
-                ?: throwSillyTavernRegexScriptError(json)
-                ?: throw IllegalArgumentException("Unsupported format")
+            importFromJson(readUri(context, uri), getUriFileName(context, uri)?.removeSuffix(".json"))
         }
+    }
+
+    /**
+     * 从已读取的 JSON 解析世界书/酒馆预设。[fileName] 用于给导入的书命名。
+     * 供导入 UI 复用：同一次读取里还要顺带抽预设的正则脚本，免得重复读 URI。
+     */
+    fun importFromJson(json: String, fileName: String?): Lorebook {
+        // 首先尝试解析为自己的格式
+        return tryImportNative(json)
+            // 然后尝试解析为 SillyTavern 世界书
+            ?: tryImportSillyTavern(json, fileName)
+            // 酒馆 Chat Completion 预设（main_prompt/jailbreak_prompt 等）→ 转成 constant 条目的世界书
+            ?: tryImportSillyTavernPreset(json, fileName)
+            // 正则脚本不在这里导入，给出明确指引而不是静默生成空世界书
+            ?: throwSillyTavernRegexScriptError(json)
+            ?: throw IllegalArgumentException("Unsupported format")
     }
 
     private fun tryImportNative(json: String): Lorebook? {
@@ -491,6 +497,17 @@ object SillyTavernRegexImporter {
             is JsonObject -> listOf(element)
             else -> emptyList()
         }.mapNotNull(::parseRegex)
+    }.getOrDefault(emptyList())
+
+    /**
+     * 酒馆预设（Chat Completion preset）把脚本挂在 extensions.regex_scripts 下。
+     * 直接导入整份预设时用这个抽取，避免用户再单独导一次正则文件。
+     */
+    fun parseFromPreset(json: String): List<AssistantRegex> = runCatching {
+        val obj = Json.parseToJsonElement(json) as? JsonObject ?: return@runCatching emptyList()
+        val scripts = obj["extensions"]?.jsonObject?.get("regex_scripts") as? JsonArray
+            ?: return@runCatching emptyList()
+        parse(scripts.toString())
     }.getOrDefault(emptyList())
 
     private fun parseRegex(obj: JsonObject): AssistantRegex? {

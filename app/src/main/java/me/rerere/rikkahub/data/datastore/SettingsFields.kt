@@ -194,6 +194,7 @@ internal val SETTINGS_FIELDS: List<SettingsField<*, *>> = with(SettingsStore) {
         // 提示词注入
         json(MODE_INJECTIONS, Settings::modeInjections) { copy(modeInjections = it) },
         json(LOREBOOKS, Settings::lorebooks) { copy(lorebooks = it) },
+        json(REGEX_GROUPS, Settings::regexGroups) { copy(regexGroups = it) },
         json(QUICK_MESSAGES, Settings::quickMessages) { copy(quickMessages = it) },
 
         // 世界书（酒馆 world_info）

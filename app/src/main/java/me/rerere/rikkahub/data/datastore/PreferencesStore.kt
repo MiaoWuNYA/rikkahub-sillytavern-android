@@ -183,6 +183,7 @@ class SettingsStore internal constructor(
         // 提示词注入
         val MODE_INJECTIONS = stringPreferencesKey("mode_injections")
         val LOREBOOKS = stringPreferencesKey("lorebooks")
+        val REGEX_GROUPS = stringPreferencesKey("regex_groups")
         val WORLD_INFO_BUDGET = intPreferencesKey("world_info_budget")
         val WORLD_INFO_BUDGET_CAP = intPreferencesKey("world_info_budget_cap")
         val WORLD_INFO_MIN_ACTIVATIONS = intPreferencesKey("world_info_min_activations")

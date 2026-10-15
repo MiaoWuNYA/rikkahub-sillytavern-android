@@ -160,6 +160,30 @@ data class AssistantRegex(
     val maxDepth: Int = 0,
 )
 
+/** 全局正则分组的来源，决定分组在页面上的归类与是否可删除。 */
+@Serializable
+enum class RegexGroupSource {
+    /** 用户手动新建/导入的脚本，落在「自定义」文件夹，始终存在、不可删除。 */
+    CUSTOM,
+
+    /** 从酒馆预设导入，文件夹名取自预设文件。 */
+    PRESET,
+}
+
+/**
+ * 全局消息正则的分组（页面上的「文件夹」）。
+ *
+ * 手动导入/新建的脚本进 [RegexGroupSource.CUSTOM] 分组；导入酒馆预设时按预设名
+ * 新建一个 [RegexGroupSource.PRESET] 分组。分组内正则按列表顺序执行。
+ */
+@Serializable
+data class RegexGroup(
+    val id: Uuid = Uuid.random(),
+    val name: String = "",
+    val source: RegexGroupSource = RegexGroupSource.CUSTOM,
+    val regexes: List<AssistantRegex> = emptyList(),
+)
+
 // 流式输出时每个chunk都会调用replaceRegexes
 // 否则长回复期间会重复编译上万次；编译失败也缓存，避免反复构造异常
 private val regexCache = SimpleCache.builder<String, Result<Regex>>()
@@ -201,10 +225,17 @@ fun String.replaceRegexes(
     scope: AssistantAffectScope,
     visual: Boolean = false,
     depth: Int = 0, // 官方酒馆深度语义：1 = 最新一条消息；0/未知 = 不按深度过滤
+): String = replaceRegexes(assistant?.regexes.orEmpty(), scope, visual, depth)
+
+/** 对一组正则依次应用（角色卡正则 + 全局正则合并后走这里） */
+fun String.replaceRegexes(
+    regexes: List<AssistantRegex>,
+    scope: AssistantAffectScope,
+    visual: Boolean = false,
+    depth: Int = 0,
 ): String {
-    if (assistant == null) return this
-    if (assistant.regexes.isEmpty()) return this
-    return assistant.regexes.fold(this) { acc, regex ->
+    if (regexes.isEmpty()) return this
+    return regexes.fold(this) { acc, regex ->
         val depthOk = depth <= 0 || ((regex.minDepth <= 0 || depth >= regex.minDepth) &&
             (regex.maxDepth <= 0 || depth <= regex.maxDepth))
         // 层级语义（对齐官方酒馆 markdownOnly/promptOnly 三态）：
