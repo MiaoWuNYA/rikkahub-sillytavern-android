@@ -159,6 +159,8 @@ internal fun buildState(
     nodes: List<MessageNode> = emptyList(),
     iconText: (String) -> String? = { null },
     labels: WebLabels = WebLabels(),
+    // 生成中与否由原生权威下发：页面据此开关流式指示，不再靠消息内容自己猜
+    generating: Boolean = false,
 ): JsonObject = buildJsonObject {
     put(
         "messages",
@@ -182,6 +184,7 @@ internal fun buildState(
         },
     )
     put("placeholder", placeholder)
+    put("generating", JsonPrimitive(generating))
     put(
         "labels",
         buildJsonObject {
