@@ -18,13 +18,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.Add01
+import me.rerere.hugeicons.stroke.Edit01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.nav.BackButton
+import me.rerere.rikkahub.ui.theme.CustomColors
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.DateFormat
@@ -105,8 +110,18 @@ fun LifeHubPage() {
         }
     }
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.life_hub_title)) }, navigationIcon = { BackButton() }) },
+        containerColor = CustomColors.topBarColors.containerColor,
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            LargeFlexibleTopAppBar(
+                title = { Text(stringResource(R.string.life_hub_title)) },
+                navigationIcon = { BackButton() },
+                scrollBehavior = scrollBehavior,
+                colors = CustomColors.topBarColors,
+            )
+        },
         floatingActionButton = {
             if (section != LifeSection.HOME &&
                 section != LifeSection.STATUS &&
@@ -115,7 +130,10 @@ fun LifeHubPage() {
                 section != LifeSection.READING
             ) {
                 FloatingActionButton(onClick = { showAdd = true }) {
-                    Text(if (section == LifeSection.MEMO) "✎" else "＋", style = MaterialTheme.typography.titleLarge)
+                    Icon(
+                        if (section == LifeSection.MEMO) HugeIcons.Edit01 else HugeIcons.Add01,
+                        contentDescription = null,
+                    )
                 }
             }
         },
@@ -157,7 +175,11 @@ fun LifeHubPage() {
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     item {
-                        Card(Modifier.fillMaxWidth()) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
+                            shape = RoundedCornerShape(20.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
                             Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(section.emoji + " " + section.title, style = MaterialTheme.typography.headlineSmall)
                                 Text(section.hint, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -172,7 +194,12 @@ fun LifeHubPage() {
                     if (section == LifeSection.HOME) {
                         items(LifeSection.entries.filterNot { it == LifeSection.HOME }) { destination ->
                             val latest = entries.filter { it.section == destination }.maxByOrNull { it.createdAt }
-                            Card(onClick = { section = destination }, modifier = Modifier.fillMaxWidth()) {
+                            Card(
+                                onClick = { section = destination },
+                                colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
+                                shape = RoundedCornerShape(20.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
                                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                     Text(destination.emoji + " " + destination.title, style = MaterialTheme.typography.titleLarge)
                                     Text(latest?.title ?: destination.hint, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -183,7 +210,11 @@ fun LifeHubPage() {
                         Text(stringResource(R.string.life_hub_empty), modifier = Modifier.padding(8.dp))
                     }
                     if (section != LifeSection.HOME) items(filtered, key = { it.id }) { entry ->
-                        Card(Modifier.fillMaxWidth()) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
+                            shape = RoundedCornerShape(20.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
                             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Text(entry.title, style = MaterialTheme.typography.titleLarge)

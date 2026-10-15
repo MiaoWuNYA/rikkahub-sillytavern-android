@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -20,9 +21,12 @@ import java.util.Calendar
 import java.util.Date
 import java.util.concurrent.TimeUnit
 import androidx.compose.ui.res.stringResource
+import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.Add01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.db.entity.CoupleAnniversaryEntity
 import me.rerere.rikkahub.ui.components.nav.BackButton
+import me.rerere.rikkahub.ui.theme.CustomColors
 import org.koin.androidx.compose.koinViewModel
 
 private data class AnniversaryCategory(
@@ -70,9 +74,23 @@ fun CoupleAnniversaryBookPage(vm: CoupleVM = koinViewModel()) {
         AnniversaryFilter.UPCOMING -> entries.filter { daysUntil(it, now) in 0L..30L }.sortedBy { nextOccurrence(it, now) }
     }
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.couple_anniv_book_title)) }, navigationIcon = { BackButton() }) },
-        floatingActionButton = { FloatingActionButton(onClick = { showEditor = true }) { Text("＋") } },
+        containerColor = CustomColors.topBarColors.containerColor,
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            LargeFlexibleTopAppBar(
+                title = { Text(stringResource(R.string.couple_anniv_book_title)) },
+                navigationIcon = { BackButton() },
+                scrollBehavior = scrollBehavior,
+                colors = CustomColors.topBarColors,
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showEditor = true }) {
+                Icon(HugeIcons.Add01, contentDescription = null)
+            }
+        },
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding),

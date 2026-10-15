@@ -47,6 +47,7 @@ fun PersonaPage() {
     var showCreate by remember { mutableStateOf(false) }
 
     Scaffold(
+        containerColor = CustomColors.topBarColors.containerColor,
         topBar = {
             LargeFlexibleTopAppBar(
                 title = { Text(stringResource(R.string.persona_page_title)) },
@@ -298,6 +299,7 @@ private fun PersonaEditPage(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
+        containerColor = CustomColors.topBarColors.containerColor,
         topBar = {
             LargeFlexibleTopAppBar(
                 title = { Text(if (initial != null) stringResource(R.string.persona_page_edit) else stringResource(R.string.persona_page_new)) },
