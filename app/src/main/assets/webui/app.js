@@ -103,7 +103,10 @@
     libs: {},
     cardStyle: '',
     appearance: {},
-    labels: {}
+    labels: {},
+    // 原生 TTS 是单例：朗读中所有助手行的朗读按钮一起切到停止态
+    speaking: false,
+    ttsAvailable: true,
   };
   var variables = loadVariables();
   var globalVariables = {};
@@ -826,7 +829,15 @@
           block: block
         });
       } else if (block.type === 'tool') {
-        desc.push({ kind: 'tool', text: block.text == null ? '' : String(block.text) });
+        // text 是原生给的中文工具名，参数与结果也一起带上
+        desc.push({
+          kind: 'tool',
+          text: block.text == null ? '' : String(block.text),
+          name: block.name == null ? '' : String(block.name),
+          running: block.running === true,
+          input: block.input == null ? '' : String(block.input),
+          output: block.output == null ? '' : String(block.output),
+        });
       } else if (block.type === 'text' && String(block.text || '').trim()) {
         desc.push({ kind: 'text', text: String(block.text) });
       }
@@ -911,8 +922,45 @@
   var TOOL_ICON = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M14.7 6.3a4 4 0 0 0 5 5L21 21H3l1.3-9.7a4 4 0 0 0 5-5Z"></path></svg>';
 
-  function makeBlockNode(desc, streaming) {
-    if (desc.kind === 'attach') {
+  // 工具卡：标题中文名由原生给，运行中给三点与扫光，展开看参数与结果
+  function toolKey(desc) {
+    return [desc.text, desc.running === true ? '1' : '0', desc.input || '', desc.output || ''].join('\u0000');
+  }
+
+  function prettyJson(text) {
+    var raw = String(text == null ? '' : text);
+    try { return JSON.stringify(JSON.parse(raw), null, 2); } catch (e) { return raw; }
+  }
+
+  function toolSection(cap, text) {
+    var box = document.createElement('div');
+    box.className = 'tool-section';
+    var head = document.createElement('div');
+    head.className = 'tool-cap';
+    head.textContent = cap;
+    var val = document.createElement('div');
+    val.className = 'tool-val';
+    val.textContent = text;
+    box.appendChild(head);
+    box.appendChild(val);
+    return box;
+  }
+
+  function paintTool(node, desc) {
+    var head = node.querySelector('.tool-head');
+    if (head) head.classList.toggle('running', desc.running === true);
+    var label = node.querySelector('.t-label');
+    if (label) label.textContent = desc.text || '工具调用';
+    var body = node.querySelector('.tool-body');
+    if (body) {
+      body.textContent = '';
+      if (desc.input) body.appendChild(toolSection('参数', prettyJson(desc.input)));
+      if (desc.output) body.appendChild(toolSection('结果', prettyJson(desc.output)));
+    }
+    node._text = toolKey(desc);
+  }
+
+  function makeBlockNode(desc, streaming) {    if (desc.kind === 'attach') {
       var attach = attachmentNode(desc.block);
       attach.dataset.kind = 'attach';
       attach.dataset.attachKey = desc.key;
@@ -935,10 +983,10 @@
       tool.className = 'blk blk-tool';
       tool.dataset.kind = 'tool';
       tool.innerHTML = '<summary class="tool-head">' + TOOL_ICON +
+        '<span class="ico tool-dot"><i></i><i></i><i></i></span>' +
         '<span class="t-label"></span>' + ARROW_ICON + '</summary>' +
         '<div class="tool-body"></div>';
-      tool.querySelector('.t-label').textContent = desc.text || '工具调用';
-      tool.querySelector('.tool-body').textContent = desc.text || '';
+      paintTool(tool, desc);
       // 原生工具步骤默认展开
       tool.open = true;
       return tool;
@@ -1014,12 +1062,8 @@
       return node;
     }
     if (desc.kind === 'tool') {
-      var tbody = node.querySelector('.tool-body');
-      if (tbody && node._text !== desc.text) {
-        node._text = desc.text;
-        tbody.textContent = desc.text;
-        node.querySelector('.t-label').textContent = desc.text || '工具调用';
-      }
+      var toolKeyNow = toolKey(desc);
+      if (node._text !== toolKeyNow) paintTool(node, desc);
       return node;
     }
     if (desc.kind === 'translation') {
@@ -1153,12 +1197,14 @@
     copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/>',
     regenerate: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/>',
     speak: '<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M16 9a4 4 0 0 1 0 6"/><path d="M19 6a8 8 0 0 1 0 12"/>',
+    speakStop: '<circle cx="12" cy="12" r="8"/><rect x="9" y="9" width="6" height="6" rx="1"/>',
     edit: '<path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"/>',
     translate: '<path d="M4 6h9"/><path d="M8 4v2c0 4-2 7-4 8"/><path d="M6.5 10c1 2.5 3 4.5 5.5 5.5"/><path d="m13 20 4-9 4 9"/><path d="M14.5 17h5"/>',
     menu: '<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>',
   };
-  var OPS_USER = [['copy','复制'],['regenerate','重试'],['menu','菜单']];
-  var OPS_ASSISTANT = [['copy','复制'],['regenerate','重试'],['speak','朗读'],['edit','编辑'],['translate','翻译'],['menu','菜单']];
+  // 与原生消息操作排同序：复制、重试、朗读、翻译、更多（编辑等收进「更多」面板）
+  var OPS_USER = [['copy', '复制'], ['regenerate', '重试'], ['menu', '菜单']];
+  var OPS_ASSISTANT = [['copy', '复制'], ['regenerate', '重试'], ['speak', '朗读'], ['translate', '翻译'], ['menu', '菜单']];
   function opsFor(msg) {
     var list = msg.role === 'user' ? OPS_USER : OPS_ASSISTANT;
     return list.map(function (it) { return { action: it[0], label: it[1], icon: OPS_ICON[it[0]] || '' }; });
@@ -1192,6 +1238,22 @@
     node._text = renderKey(desc.text);
   }
 
+  function opIcon(name) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (OPS_ICON[name] || '') + '</svg>';
+  }
+
+  // 朗读中与原生一致：图标换停止、底色走 secondaryContainer
+  function paintSpeakButtons() {
+    var nodes = list.querySelectorAll('.op[data-action="speak"]');
+    var on = state.speaking === true;
+    for (var i = 0; i < nodes.length; i++) {
+      nodes[i].innerHTML = opIcon(on ? 'speakStop' : 'speak');
+      nodes[i].classList.toggle('on', on);
+      nodes[i].disabled = state.ttsAvailable === false;
+    }
+  }
+
   function buildOps(row, msg) {
     var ops = document.createElement('div');
     ops.className = 'ops';
@@ -1203,9 +1265,15 @@
       btn.dataset.action = def.action;
       btn.setAttribute('aria-label', def.label);
       btn.setAttribute('title', def.label);
-      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
-        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + def.icon + '</svg>';
-      if (def.action === 'favorite') btn.classList.toggle('on', msg.favorited === true);
+      if (def.action === 'speak') {
+        var on = state.speaking === true;
+        btn.innerHTML = opIcon(on ? 'speakStop' : 'speak');
+        btn.classList.toggle('on', on);
+        btn.disabled = state.ttsAvailable === false;
+      } else {
+        btn.innerHTML = opIcon(def.action);
+        if (def.action === 'favorite') btn.classList.toggle('on', msg.favorited === true);
+      }
       ops.appendChild(btn);
     });
     ops.addEventListener('click', function (event) {
@@ -1218,16 +1286,17 @@
   }
 
   // 多分支消息的切换条：‹ i/n ›，点击回请原生 selectSwipe
+  // 原生把分支条排在操作排里、时间之前，这里跟着放，避免多出一行
   function syncSwipes(col, msg) {
     if (!col) return;
-    var barNode = null;
-    for (var i = 0; i < col.children.length; i++) {
-      if (col.children[i].classList.contains('swipes')) { barNode = col.children[i]; break; }
-    }
+    var ops = col.querySelector('.ops');
+    var host = ops && !ops.hidden ? ops : col;
+    // 查找范围始终是整行：流式时它挂在行上，落定后要挪进操作排
+    var barNode = col.querySelector('.swipes');
     var count = Number(msg.swipeCount) || 0;
     var nodeId = msg.nodeId == null ? '' : String(msg.nodeId);
     if (count < 2 || !nodeId) {
-      if (barNode) col.removeChild(barNode);
+      if (barNode && barNode.parentNode) barNode.parentNode.removeChild(barNode);
       return;
     }
     if (!barNode) {
@@ -1245,7 +1314,11 @@
         if (next < 0 || next >= total) return;
         requestNative('selectSwipe', JSON.stringify({ nodeId: barNode.dataset.nodeId || '', index: next }));
       });
-      col.appendChild(barNode);
+    }
+    // 流式期间操作排整块隐藏，分支条先挂在行上；落定后要跟着挪回操作排里
+    var before = host === ops ? ops.querySelector('.time') : null;
+    if (barNode.parentNode !== host || (before && barNode.nextSibling !== before)) {
+      if (before) ops.insertBefore(barNode, before); else host.appendChild(barNode);
     }
     // 状态放 dataset 上，点击时现读，避免闭包拿到旧下标
     var index = Math.max(0, Math.min(count - 1, Number(msg.swipeIndex) || 0));
@@ -1563,6 +1636,14 @@
     setAppearance: function (json) { applyAppearance(parse(json)); },
     setTheme: function (json) { applyTheme(parse(json)); },
 
+    // 朗读状态：与原生那排按钮共用同一个 TTS 单例
+    setSpeaking: function (json) {
+      var payload = parse(json) || {};
+      state.speaking = payload.speaking === true;
+      state.ttsAvailable = payload.available !== false;
+      schedule(paintSpeakButtons);
+    },
+
     // 原生下发的变量域快照（local / global / message）
     setVariables: function (json) {
       var payload = parse(json) || {};
@@ -1758,6 +1839,12 @@
   document.addEventListener('click', function (event) {
     var target = event.target;
     if (!target || !target.closest) return;
+    // 图片交给原生预览器：正文插图与附件图都算
+    var img = target.closest('.bubble img, .attach-img');
+    if (img && img.src) {
+      native('openImage', img.src);
+      return;
+    }
     var copyBtn = target.closest('.code-head .copy');
     if (copyBtn) {
       var pre = copyBtn.closest('pre');

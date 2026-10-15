@@ -50,6 +50,9 @@ fun WebChatSurface(
     symbolVisible: Boolean,
     bracketSymbol: String,
     moreVisible: Boolean,
+    // 朗读状态：页面那排操作按钮与原生共用同一个 TTS 单例
+    speaking: Boolean = false,
+    ttsAvailable: Boolean = true,
     onSend: (String) -> Unit,
     onStop: () -> Unit,
     onRegenerate: () -> Unit,
@@ -70,6 +73,7 @@ fun WebChatSurface(
     onCreateChatMessages: (String) -> Unit = {},
     onDeleteChatMessages: (String) -> Unit = {},
     onMessageAction: (String) -> Unit = {},
+    onOpenImage: (String) -> Unit = {},
     onClipboard: (String) -> Unit = {},
     onHttpRequest: (String, (String) -> Unit) -> Unit = { _, done -> done("{}") },
     onSelectSwipe: (String) -> Unit = {},
@@ -182,7 +186,7 @@ fun WebChatSurface(
     var ready by remember { mutableStateOf(false) }
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
 
-    LaunchedEffect(onSend, onStop, onRegenerate, onOpenLink, onSlash, onRequestMenu, onInsertSymbol, onMessageAction, onClipboard) {
+    LaunchedEffect(onSend, onStop, onRegenerate, onOpenLink, onSlash, onRequestMenu, onInsertSymbol, onOpenImage) {
         bridge?.onSend = onSend
         bridge?.onStop = onStop
         bridge?.onRegenerate = onRegenerate
@@ -190,6 +194,7 @@ fun WebChatSurface(
         bridge?.onSlash = onSlash
         bridge?.onRequestMenu = onRequestMenu
         bridge?.onInsertSymbol = onInsertSymbol
+        bridge?.onOpenImage = onOpenImage
     }
 
     AndroidView(
@@ -362,6 +367,15 @@ fun WebChatSurface(
     LaunchedEffect(toolbarJson, ready) {
         if (!ready) return@LaunchedEffect
         webViewRef?.evaluateJavascript("window.webui.setToolbar(${quoteJs(toolbarJson)});", null)
+    }
+
+    LaunchedEffect(speaking, ttsAvailable, ready) {
+        if (!ready) return@LaunchedEffect
+        val json = buildJsonObject {
+            put("speaking", speaking)
+            put("available", ttsAvailable)
+        }.toString()
+        webViewRef?.evaluateJavascript("window.webui.setSpeaking(${quoteJs(json)});", null)
     }
 
     LaunchedEffect(streamJson, ready) {

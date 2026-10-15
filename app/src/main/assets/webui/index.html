@@ -246,11 +246,28 @@
   .tool-head {
     display: flex; align-items: center; gap: 8px;
     min-height: 32px; padding: 8px 0;
+    position: relative; overflow: hidden;
     color: var(--md-secondary); font-size: 14px; line-height: 20px;
     cursor: pointer; list-style: none;
   }
   .tool-head::-webkit-details-marker { display: none; }
   .tool-head .ico { flex: 0 0 16px; width: 16px; height: 16px; }
+  .tool-head .t-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* 运行中换三点并扫光，对齐原生 titleSmall 的 DotLoading + shimmer */
+  .tool-head .tool-dot { display: none; }
+  .tool-head.running .tool-dot { display: inline-flex; flex: 0 0 auto; width: auto; align-items: center; gap: 3px; }
+  .tool-head.running .ico:not(.tool-dot) { display: none; }
+  .tool-dot i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; animation: toolDot 1s ease-in-out infinite; }
+  .tool-dot i:nth-child(2) { animation-delay: .15s; }
+  .tool-dot i:nth-child(3) { animation-delay: .3s; }
+  @keyframes toolDot { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+  .tool-head.running::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, .18) 50%, transparent 70%);
+    background-size: 220% 100%;
+    animation: toolShimmer 1.6s linear infinite;
+  }
+  @keyframes toolShimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
   .tool-head .arrow { margin-left: auto; flex: 0 0 16px; width: 16px; height: 16px; transition: transform .18s; }
   details[open] > .tool-head .arrow { transform: rotate(180deg); }
   .tool-body {
@@ -260,6 +277,10 @@
     color: var(--md-on-surface-variant);
     overflow-x: auto; white-space: pre-wrap;
   }
+  .tool-body:empty { display: none; }
+  .tool-section + .tool-section { margin-top: 8px; }
+  .tool-section .tool-cap { font-size: 11px; line-height: 16px; opacity: .7; margin-bottom: 2px; }
+  .tool-section .tool-val { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow-y: auto; }
 
   /* —— 技术统计行（ChatMessageNerdLine：labelSmall + secondary α.5）—— */
   .nerd {
@@ -309,8 +330,12 @@
 
   /* —— 附件：消息 part 图片固定 72dp 高、圆角 12dp —— */
   .attach { display: flex; flex-wrap: wrap; gap: 4px; }
+  /* 附件块贴各自一侧，别被列方向的 stretch 拉满整行 */
+  .row.user .blk.attach { align-self: flex-end; }
+  .row.ai .blk.attach { align-self: flex-start; }
   .attach[hidden] { display: none; }
-  .attach-img { height: 72px; width: auto; max-width: 100%; border-radius: 12px; display: block; object-fit: cover; }
+  .attach-img { height: 72px; width: auto; max-width: 100%; border-radius: 12px; display: block; object-fit: cover; cursor: zoom-in; }
+  .bubble img { cursor: zoom-in; }
   .attach-media { max-width: 100%; border-radius: 12px; display: block; }
   .attach-doc {
     display: inline-flex; align-items: center; gap: 6px;
