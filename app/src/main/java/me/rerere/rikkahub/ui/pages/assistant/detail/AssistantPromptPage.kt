@@ -668,6 +668,7 @@ internal fun AssistantRegexCard(
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
                         label = { Text(stringResource(R.string.assistant_page_regex_name)) }
                     )
 
@@ -685,6 +686,8 @@ internal fun AssistantRegexCard(
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
+                        // 正则/替换串可能是整段 HTML，限制行数避免超高约束崩溃
+                        maxLines = 8,
                         label = { Text(stringResource(R.string.assistant_page_regex_find_regex)) },
                         placeholder = { Text("e.g., \\b\\w+@\\w+\\.\\w+\\b") },
                     )
@@ -703,6 +706,7 @@ internal fun AssistantRegexCard(
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
+                        maxLines = 8,
                         label = { Text(stringResource(R.string.assistant_page_regex_replace_string)) },
                         placeholder = { Text("e.g., [EMAIL]") }
                     )
