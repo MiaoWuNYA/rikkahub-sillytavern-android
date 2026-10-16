@@ -11,6 +11,24 @@ val enableFirebase = providers.gradleProperty("rikkahub.enableFirebase")
     .getOrElse(false)
 
 /**
+ * 原生工具链版本，只从 gradle.properties 读，此处不设默认值。
+ *
+ * 必须显式声明、且缺失即失败：NDK 一旦不写，AGP 9.4.0 会退回自己的硬编码
+ * 默认值，CI 每次构建都要现下约 722MB 的 NDK 包，下载被截断就报
+ * "Error reading Zip content from a SeekableByteChannel"。
+ * 有兜底值反而会掩盖这种错位，所以这里直接 error() 中断构建。
+ *
+ * 空串同样视为缺失：`rikkahub.ndkVersion=` 这种写法会让 orNull 返回 ""，
+ * 若只判 null 就会把空版本号传给 AGP，报错信息远不如这里直白。
+ */
+fun nativeToolchainVersion(key: String): String =
+    providers.gradleProperty(key).orNull?.takeIf { it.isNotBlank() }
+        ?: error("gradle.properties 缺少 $key（或该值为空）")
+
+val nativeNdkVersion = nativeToolchainVersion("rikkahub.ndkVersion")
+val nativeCmakeVersion = nativeToolchainVersion("rikkahub.cmakeVersion")
+
+/**
  * libhdguard.so 内置的派生因子。
  *
  * 它与由签名口令推导出的 kdfFactor 必须一致——native 侧按这个值分段异或存放。
@@ -172,6 +190,9 @@ chaquopy {
 android {
     namespace = "me.rerere.rikkahub"
     compileSdk = 37
+    // 显式钉住 NDK 版本，取值见 gradle.properties 的 rikkahub.ndkVersion。
+    // 不写这一行时 AGP 会用自带默认值，导致 CI 每次构建重新下载整个 NDK。
+    ndkVersion = nativeNdkVersion
     defaultConfig {
         applicationId = "me.rerere.rikkahub.huadeng"
         minSdk = 26
@@ -249,7 +270,8 @@ android {
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
+            // 与 gradle.properties 的 rikkahub.cmakeVersion、CI 预装版本三者一致
+            version = nativeCmakeVersion
         }
     }
     signingConfigs {
