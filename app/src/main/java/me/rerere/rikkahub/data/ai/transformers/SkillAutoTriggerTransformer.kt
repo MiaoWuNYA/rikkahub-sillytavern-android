@@ -2,8 +2,8 @@ package me.rerere.rikkahub.data.ai.transformers
 
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.ui.UIMessage
-import me.rerere.rikkahub.data.files.SkillManager
-import me.rerere.rikkahub.data.files.SkillMetadata
+import me.rerere.rikkahub.data.skills.SkillManager
+import me.rerere.rikkahub.data.skills.SkillMetadata
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 

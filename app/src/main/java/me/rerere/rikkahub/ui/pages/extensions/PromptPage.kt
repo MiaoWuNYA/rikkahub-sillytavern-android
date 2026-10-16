@@ -110,8 +110,8 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.export.LorebookSerializer
 import me.rerere.rikkahub.data.export.ModeInjectionSerializer
 import me.rerere.rikkahub.data.export.SillyTavernRegexImporter
-import me.rerere.rikkahub.data.export.rememberExporter
-import me.rerere.rikkahub.data.export.rememberImporter
+import me.rerere.rikkahub.ui.hooks.rememberExporter
+import me.rerere.rikkahub.ui.hooks.rememberImporter
 import me.rerere.rikkahub.data.model.InjectionPosition
 import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.model.RegexGroup
