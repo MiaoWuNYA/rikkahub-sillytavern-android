@@ -3,8 +3,18 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// 原生工具链版本来自 gradle.properties，与 :app 模块、CI 预装步骤共用同一来源。
+// 缺失或为空即失败，避免 AGP 悄悄回退到自带默认 NDK 版本后重新触发整包下载。
+fun nativeToolchainVersion(key: String): String =
+    providers.gradleProperty(key).orNull?.takeIf { it.isNotBlank() }
+        ?: error("gradle.properties 缺少 $key（或该值为空）")
+
+val nativeNdkVersion = nativeToolchainVersion("rikkahub.ndkVersion")
+val nativeCmakeVersion = nativeToolchainVersion("rikkahub.cmakeVersion")
+
 android {
     namespace = "me.rerere.workspace"
+    ndkVersion = nativeNdkVersion
 
     defaultConfig {
         externalNativeBuild {
@@ -16,7 +26,7 @@ android {
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
+            version = nativeCmakeVersion
         }
     }
 }

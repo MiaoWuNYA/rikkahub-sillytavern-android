@@ -46,6 +46,11 @@ jobs:
           fetch-depth: 0
           submodules: recursive # 拉取子模块
 
+      # 与 Build APK 同一道防护：AGP 隐式下载 NDK 失败会随机打断构建。
+      # 版本取自 gradle.properties，与模块 ndkVersion 同源。
+      - name: Setup Android native toolchain
+        uses: ./.github/actions/setup-android-native
+
       # 与 Android Studio 自带的 JetBrains Runtime 21 保持一致
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -145,12 +150,50 @@ jobs:
       # 先提交 update.json 再发布：nightly 的镜像/更新检查都以分支上的这个文件为准
       - name: Commit update.json
         run: |
+          set -euo pipefail
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add update.json
-          git diff --cached --quiet && echo "update.json 无变化，跳过提交" && exit 0
-          git commit -m "chore: nightly 更新 update.json"
-          git push
+          if git diff --cached --quiet; then
+            echo "update.json 无变化，无需提交"
+          else
+            git commit -m "chore: nightly 更新 update.json"
+          fi
+
+          # 竞态防护：本步骤的提交发生在 checkout 之后十几分钟（构建耗时），
+          # 期间若有新提交推到远端，裸 git push 会被拒绝：
+          #
+          #     ! [rejected] huadeng -> huadeng (fetch first)
+          #
+          # 2026-10-14 14:27 那次定时构建就因此失败，APK 白构建一遍。
+          # 改成「先 rebase 再推」，最多重试三轮：rebase 与 push 之间仍可能
+          # 被别的推送抢先，重试即可收敛。
+          #
+          # -X theirs：本步骤只提交 update.json，因此 rebase 唯一的冲突来源
+          # 就是远端也改过 update.json（另一个 nightly、或手工提交）。
+          # 此时应当以本次构建写入的时间戳为准——它最新，也正是要发布的内容。
+          # 注意 rebase 的 ours/theirs 与 merge 相反，theirs 指「被重放的提交」。
+          #
+          # 只 rebase 不 merge，避免在分支上留下无意义的合并提交。
+          for attempt in 1 2 3; do
+            echo "── push 尝试 $attempt ──"
+            if ! git pull --rebase --autostash -X theirs origin "$GITHUB_REF_NAME"; then
+              echo "::warning::rebase 失败，已中止（避免把未解决的冲突推上去）"
+              git rebase --abort 2>/dev/null || true
+              exit 1
+            fi
+
+            if git push origin "HEAD:$GITHUB_REF_NAME"; then
+              echo "推送成功（第 $attempt 次尝试）"
+              exit 0
+            fi
+
+            echo "::warning::第 $attempt 次推送被拒（远端有新提交），拉取后重试"
+            sleep $((attempt * 5))
+          done
+
+          echo "::error::连续 3 次推送均被拒绝，远端分支可能正被高频写入"
+          exit 1
 
       # 先把 APK 改成与 update.json 中 downloads[].name 完全一致的固定名字：
       # nightly 是覆盖式预发布，固定文件名可让下载直链长期有效，

@@ -1,0 +1,159 @@
+name: Setup Android native toolchain
+description: >-
+  预装 NDK / CMake，把 AGP 的隐式下载变成显式、可重试、可校验的一步。
+
+  起因：项目原先没有声明 ndkVersion，AGP 9.4.0 会退回自己的硬编码默认值
+  （28.2.13676358，取自 AGP 内部常量），于是每次构建都要现下约 722MB 的
+  android-ndk-r28c-linux.zip。这一步发生在 Gradle 任务内部，既没有重试
+  也没有缓存，下载被截断就直接死在：
+
+      Failed to install the following SDK components: ndk;28.2.13676358
+      java.io.IOException: Error reading Zip content from a SeekableByteChannel
+
+  历史上 Build APK 因此偶发失败（"下载"只用了 26s / 59s，而正常需要 40s+，
+  时长本身就是截断的证据）。
+
+  版本来源：默认从仓库根目录 gradle.properties 的 rikkahub.ndkVersion /
+  rikkahub.cmakeVersion 读取，与各模块的 ndkVersion、externalNativeBuild
+  .cmake.version 同源，避免"预装了 A、AGP 却要 B、于是又去下载"的错位。
+  也可用 inputs 显式覆盖。
+
+inputs:
+  ndk-version:
+    description: 覆盖 NDK 版本；留空则读 gradle.properties 的 rikkahub.ndkVersion
+    required: false
+    default: ''
+  cmake-version:
+    description: 覆盖 CMake 版本；留空则读 gradle.properties 的 rikkahub.cmakeVersion
+    required: false
+    default: ''
+  attempts:
+    description: 单个组件的最大安装尝试次数
+    required: false
+    default: '4'
+
+runs:
+  using: composite
+  steps:
+    - name: Install NDK & CMake
+      shell: bash
+      env:
+        INPUT_NDK_VERSION: ${{ inputs.ndk-version }}
+        INPUT_CMAKE_VERSION: ${{ inputs.cmake-version }}
+        MAX_ATTEMPTS: ${{ inputs.attempts }}
+      run: |
+        set -euo pipefail
+
+        SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+        if [ -z "$SDK_ROOT" ] || [ ! -d "$SDK_ROOT" ]; then
+          echo "::error::ANDROID_SDK_ROOT / ANDROID_HOME 都不可用，无法预装原生工具链"
+          exit 1
+        fi
+        echo "SDK_ROOT = $SDK_ROOT"
+
+        # 版本号优先用输入，否则从 gradle.properties 取，保证与 Gradle 侧一致。
+        # 路径基于 github.workspace 拼接而非直接写相对路径：composite action 的
+        # 工作目录由调用方决定，写死相对路径有可能读不到仓库根的版本声明。
+        GP="${GITHUB_WORKSPACE:-$PWD}/gradle.properties"
+        read_gp() {
+          [ -f "$GP" ] || { echo ""; return; }
+          sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*\([^[:space:]]*\).*/\1/p" \
+            "$GP" | tail -n 1
+        }
+        echo "gradle.properties = $GP"
+
+        NDK_VERSION="${INPUT_NDK_VERSION:-$(read_gp rikkahub.ndkVersion)}"
+        CMAKE_VERSION="${INPUT_CMAKE_VERSION:-$(read_gp rikkahub.cmakeVersion)}"
+
+        if [ -z "$NDK_VERSION" ] || [ -z "$CMAKE_VERSION" ]; then
+          echo "::error::无法确定 NDK/CMake 版本（gradle.properties 里缺 rikkahub.ndkVersion 或 rikkahub.cmakeVersion）"
+          exit 1
+        fi
+        echo "NDK_VERSION   = $NDK_VERSION"
+        echo "CMAKE_VERSION = $CMAKE_VERSION"
+
+        SDKMANAGER=""
+        if command -v sdkmanager >/dev/null 2>&1; then
+          SDKMANAGER="$(command -v sdkmanager)"
+        else
+          for cand in \
+            "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" \
+            "$SDK_ROOT/cmdline-tools/bin/sdkmanager" \
+            "$SDK_ROOT/tools/bin/sdkmanager"; do
+            if [ -x "$cand" ]; then SDKMANAGER="$cand"; break; fi
+          done
+        fi
+        if [ -z "$SDKMANAGER" ]; then
+          echo "::error::找不到 sdkmanager，无法预装原生工具链"
+          exit 1
+        fi
+        echo "sdkmanager = $SDKMANAGER"
+
+        # 许可需先接受，否则 --install 可能因许可未确认而中断。
+        # 注意：管道左侧的 yes 会被 SIGPIPE 结束并返回 141，而 set -o pipefail 会
+        # 把这个 141 当成本次执行失败，所以这一句必须临时关掉 pipefail。
+        set +o pipefail
+        yes 2>/dev/null | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses \
+          > /tmp/sdk-licenses.log 2>&1 || true
+        set -o pipefail
+        echo "[sdk] 许可已处理"
+
+        # 一个组件装到就绪为止；SDK 缓存目录里的半成品是
+        # "Error reading Zip content" 的直接来源，每轮重试前先清掉。
+        install_pkg() {
+          pkg="$1"
+          dest="$2"
+          label="$3"
+
+          if [ -f "$dest/source.properties" ]; then
+            echo "[sdk] $label 已就绪：$dest"
+            return 0
+          fi
+
+          n=1
+          while [ "$n" -le "$MAX_ATTEMPTS" ]; do
+            echo "[sdk] 第 $n/$MAX_ATTEMPTS 次安装 $label ($pkg)"
+            rm -rf "$SDK_ROOT/.temp" "$SDK_ROOT/.downloadIntermediates" || true
+
+            # 关键：这里必须容忍非零退出码。
+            # 本轮安装失败是预期内的情况（正是要重试的场景），而 set -e 会因为
+            # 管道返回非零直接杀掉整个脚本，让下面的重试逻辑永远执行不到。
+            # 成功与否统一由 source.properties 判定。
+            #
+            # 同时临时关闭 pipefail：yes 被 SIGPIPE 结束返回 141，不代表安装失败。
+            set +o pipefail
+            yes 2>/dev/null | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --install "$pkg" \
+              > /tmp/sdkmanager.log 2>&1 || true
+            set -o pipefail
+
+            if [ -f "$dest/source.properties" ]; then
+              echo "[sdk] $label 安装成功：$dest"
+              tail -n 3 /tmp/sdkmanager.log || true
+              return 0
+            fi
+
+            echo "::warning::$label 第 $n 次安装未成功，sdkmanager 输出尾部："
+            tail -n 25 /tmp/sdkmanager.log || true
+            n=$((n + 1))
+            if [ "$n" -le "$MAX_ATTEMPTS" ]; then
+              sleep $((n * 10))
+            fi
+          done
+
+          echo "::error::$label 连续 $MAX_ATTEMPTS 次安装失败：$pkg"
+          return 1
+        }
+
+        install_pkg "ndk;$NDK_VERSION" \
+          "$SDK_ROOT/ndk/$NDK_VERSION" "NDK $NDK_VERSION"
+        install_pkg "cmake;$CMAKE_VERSION" \
+          "$SDK_ROOT/cmake/$CMAKE_VERSION" "CMake $CMAKE_VERSION"
+
+        # 落的版本必须精确匹配，否则 AGP 会认为没装、重新触发它自己的下载
+        echo "--- 已安装 ---"
+        ls -1 "$SDK_ROOT/ndk" 2>/dev/null || true
+        ls -1 "$SDK_ROOT/cmake" 2>/dev/null || true
+        grep -h '^Pkg\.Revision' "$SDK_ROOT/ndk/$NDK_VERSION/source.properties" \
+          || true
+        grep -h '^Pkg\.Revision' "$SDK_ROOT/cmake/$CMAKE_VERSION/source.properties" \
+          || true
