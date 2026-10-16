@@ -139,7 +139,7 @@ fun LifeHubPage() {
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            ScrollableTabRow(selectedTabIndex = section.ordinal, edgePadding = 8.dp) {
+            PrimaryScrollableTabRow(selectedTabIndex = section.ordinal, edgePadding = 8.dp) {
                 LifeSection.entries.forEach { item ->
                     Tab(
                         selected = section == item,

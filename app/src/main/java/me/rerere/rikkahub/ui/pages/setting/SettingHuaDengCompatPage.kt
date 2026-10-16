@@ -5,22 +5,16 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeFlexibleTopAppBar
-import me.rerere.hugeicons.HugeIcons
-import me.rerere.hugeicons.stroke.ArrowRight01
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import me.rerere.rikkahub.data.datastore.Settings
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import me.rerere.rikkahub.R
@@ -29,12 +23,10 @@ import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.plus
 import org.koin.androidx.compose.koinViewModel
-import me.rerere.rikkahub.Screen
 
-// 兼容与辅助：连接修复、空响应兜底、内容裁剪、滚动压缩、工具结果截断等全局开关。
+// 兼容与辅助：连接修复、空响应兜底、内容裁剪、工具结果截断等全局开关。
 @Composable
 fun SettingHuaDengCompatPage(vm: SettingVM = koinViewModel()) {
-    val navController = me.rerere.rikkahub.ui.context.LocalNavController.current
     val settings by vm.settings.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -60,14 +52,6 @@ fun SettingHuaDengCompatPage(vm: SettingVM = koinViewModel()) {
                     modifier = Modifier.padding(horizontal = 8.dp),
                     title = { Text(stringResource(R.string.setting_page_huadeng_title)) },
                 ) {
-                    item(
-                        onClick = { navController.navigate(Screen.Assistant) },
-                        headlineContent = { Text(stringResource(R.string.huadeng_frontend_card_mode)) },
-                        supportingContent = {
-                            Text(stringResource(R.string.huadeng_frontend_card_mode_desc))
-                        },
-                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
-                    )
                     item(
                         headlineContent = { Text(stringResource(R.string.assistant_page_proxy_fix)) },
                         supportingContent = {
@@ -149,26 +133,6 @@ fun SettingHuaDengCompatPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
-                        headlineContent = { Text(stringResource(R.string.huadeng_rolling_compression)) },
-                        supportingContent = {
-                            Text(stringResource(R.string.huadeng_rolling_compression_desc))
-                        },
-                        trailingContent = {
-                            Switch(
-                                checked = settings.huadengSettings.enableRollingContextCompression,
-                                onCheckedChange = { enabled ->
-                                    vm.updateSettings {
-                                        it.copy(
-                                            huadengSettings = it.huadengSettings.copy(
-                                                enableRollingContextCompression = enabled,
-                                            ),
-                                        )
-                                    }
-                                },
-                            )
-                        },
-                    )
-                    item(
                         headlineContent = { Text(stringResource(R.string.huadeng_tool_result_truncation)) },
                         supportingContent = {
                             Text(stringResource(R.string.huadeng_tool_result_truncation_desc))
@@ -181,26 +145,6 @@ fun SettingHuaDengCompatPage(vm: SettingVM = koinViewModel()) {
                                         it.copy(
                                             huadengSettings = it.huadengSettings.copy(
                                                 enableToolResultTruncation = enabled,
-                                            ),
-                                        )
-                                    }
-                                },
-                            )
-                        },
-                    )
-                    item(
-                        headlineContent = { Text(stringResource(R.string.huadeng_sub_agent)) },
-                        supportingContent = {
-                            Text(stringResource(R.string.huadeng_sub_agent_desc))
-                        },
-                        trailingContent = {
-                            Switch(
-                                checked = settings.huadengSettings.enableSubAgent,
-                                onCheckedChange = { enabled ->
-                                    vm.updateSettings {
-                                        it.copy(
-                                            huadengSettings = it.huadengSettings.copy(
-                                                enableSubAgent = enabled,
                                             ),
                                         )
                                     }

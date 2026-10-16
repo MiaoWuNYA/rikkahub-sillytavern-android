@@ -12,7 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
@@ -25,6 +24,7 @@ import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.UIAvatar
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
+import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.theme.CustomColors
@@ -90,9 +90,21 @@ fun GroupChatListPage() {
                             modifier = Modifier.padding(14.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
+                            Row(
+                                modifier = Modifier.padding(end = 12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                members.take(4).forEach { assistant ->
+                                    UIAvatar(
+                                        name = assistant.name,
+                                        value = assistant.avatar,
+                                        modifier = Modifier.size(36.dp),
+                                    )
+                                }
+                            }
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(gc.name.ifBlank { "未命名群聊" },
-                                    style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                                    style = MaterialTheme.typography.titleMediumEmphasized)
                                 Text(
                                     stringResource(R.string.group_member_subtitle, members.size, members.take(3).joinToString { it.name }),
                                     style = MaterialTheme.typography.bodySmall,
@@ -100,6 +112,11 @@ fun GroupChatListPage() {
                                     maxLines = 1,
                                 )
                             }
+                            Icon(
+                                HugeIcons.ArrowRight01,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                     }
                 }

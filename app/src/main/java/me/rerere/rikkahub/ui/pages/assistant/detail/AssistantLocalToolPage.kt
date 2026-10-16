@@ -44,6 +44,7 @@ import me.rerere.hugeicons.stroke.JavaScript
 import me.rerere.hugeicons.stroke.MessageQuestion
 import me.rerere.hugeicons.stroke.Python
 import me.rerere.hugeicons.stroke.SmartPhone01
+import me.rerere.hugeicons.stroke.Robot01
 import me.rerere.hugeicons.stroke.SourceCode
 import me.rerere.hugeicons.stroke.Task01
 import me.rerere.hugeicons.stroke.Share04
@@ -430,6 +431,13 @@ private fun AssistantLocalToolContent(
                 icon = HugeIcons.Diff,
                 title = R.string.local_tool_diff_text_title,
                 description = R.string.local_tool_diff_text_desc,
+            )
+            // 子 agent：把子任务派给独立 agent 完成后取回结果
+            toolItem(
+                option = LocalToolOption.SubAgent,
+                icon = HugeIcons.Robot01,
+                title = R.string.huadeng_sub_agent,
+                description = R.string.huadeng_sub_agent_desc,
             )
         }
     }

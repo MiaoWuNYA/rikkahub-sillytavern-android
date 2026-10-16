@@ -828,8 +828,6 @@ fun GroupChatPage(groupId: String) {
                         )
                     }
 
-                    Divider()
-
                     // 激活策略
                     CardGroup(title = { Text(stringResource(R.string.group_activation_strategy)) }) {
                         listOf(
@@ -904,20 +902,26 @@ fun GroupChatPage(groupId: String) {
                     }
 
                     // 允许自回复
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(stringResource(R.string.group_allow_self_reply), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
-                            Text(stringResource(R.string.group_self_reply_desc), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Switch(
-                            checked = gc.allowSelfResponses,
-                            onCheckedChange = { v ->
-                                scope.launch {
-                                settingsStore.update { s ->
-                                    s.copy(groupChats = s.groupChats.map { if (it.id == gcId) it.copy(allowSelfResponses = v) else it })
-                                }
-                                }
-                            }
+                    CardGroup {
+                        item(
+                            headlineContent = {
+                                Text(stringResource(R.string.group_allow_self_reply), style = MaterialTheme.typography.bodyMedium)
+                            },
+                            supportingContent = {
+                                Text(stringResource(R.string.group_self_reply_desc), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            },
+                            trailingContent = {
+                                Switch(
+                                    checked = gc.allowSelfResponses,
+                                    onCheckedChange = { v ->
+                                        scope.launch {
+                                            settingsStore.update { s ->
+                                                s.copy(groupChats = s.groupChats.map { if (it.id == gcId) it.copy(allowSelfResponses = v) else it })
+                                            }
+                                        }
+                                    }
+                                )
+                            },
                         )
                     }
 
@@ -974,15 +978,13 @@ fun GroupChatPage(groupId: String) {
                         }
                     }
 
-                    Divider()
-
                     // 成员列表
-                    Text(stringResource(R.string.group_member_settings), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
+                    Text(stringResource(R.string.group_member_settings), style = MaterialTheme.typography.titleMediumEmphasized)
                     members.forEach { m ->
                         val isEnabled = m.id !in gc.disabledMemberIds
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            shape = RoundedCornerShape(16.dp),
+                            color = CustomColors.listItemColors.containerColor,
                         ) {
                             Column(Modifier.padding(8.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {

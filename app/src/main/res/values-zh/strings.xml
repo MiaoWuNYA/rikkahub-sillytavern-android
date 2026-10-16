@@ -179,7 +179,7 @@
   <string name="assistant_page_thinking_budget">思考预算</string>
   <string name="assistant_page_time_reminder">时间提醒</string>
   <string name="assistant_page_time_reminder_desc">在间隔较大的消息前自动插入时间提醒，帮助 AI 理解对话间隔</string>
-  <string name="assistant_page_title">角色卡</string>
+  <string name="assistant_page_title">助手与角色卡</string>
   <string name="assistant_page_top_p">Top P</string>
   <string name="assistant_page_top_p_value">Top P: %s</string>
   <string name="assistant_page_top_p_warning">请不要修改此值, 除非你知道自己在做什么</string>
@@ -620,7 +620,7 @@
   <string name="extensions_page_prompts_desc">管理和使用自定义提示词</string>
   <string name="extensions_page_quick_messages_desc">管理共享的快速消息模板</string>
   <string name="extensions_page_section_extensions">扩展</string>
-  <string name="extensions_page_title">酒馆扩展</string>
+  <string name="extensions_page_title">扩展管理</string>
   <string name="favorite_page_no_favorites">暂无收藏</string>
   <string name="favorite_page_removed">收藏已移除</string>
   <string name="favorite_page_title">收藏</string>
@@ -1867,7 +1867,7 @@
   <string name="setting_model_page_translate_prompt_vars">变量: 原始文本: {source_text}, 目标语言: {target_lang}</string>
   <string name="setting_page_about">关于</string>
   <string name="setting_page_about_desc">关于本APP</string>
-  <string name="setting_page_assistant">角色卡</string>
+  <string name="setting_page_assistant">助手与角色卡</string>
   <string name="setting_page_assistant_desc">角色卡的人设、提示词、模型与工具</string>
   <string name="setting_page_authors_note">导演备注</string>
   <string name="setting_page_authors_note_desc">控制 AI 输出方向</string>
@@ -1905,8 +1905,8 @@
   <string name="setting_page_donate_desc">喜欢的话，去仓库点个 Star</string>
   <string name="setting_page_dynamic_color">动态颜色</string>
   <string name="setting_page_dynamic_color_desc">是否基于壁纸动态生成 app 主题配色</string>
-  <string name="setting_page_extensions">酒馆扩展</string>
-  <string name="setting_page_extensions_desc">管理预设、插件、SKILL、MCP</string>
+  <string name="setting_page_extensions">扩展管理</string>
+  <string name="setting_page_extensions_desc">管理插件、SKILL、MCP</string>
   <string name="setting_page_general_settings">通用设置</string>
   <string name="setting_page_group_chat">群聊</string>
   <string name="setting_page_group_chat_desc">多人角色群聊</string>
@@ -1932,7 +1932,7 @@
   <string name="tavern_section_compat">兼容与运行</string>
   <string name="tavern_section_automation">自动化</string>
   <string name="setting_page_huadeng">华灯设置</string>
-  <string name="setting_page_huadeng_desc">全局中转站兼容、防空回复、上下文与工具治理</string>
+  <string name="setting_page_huadeng_desc">决策模型、BOT、兼容和审批</string>
   <string name="setting_page_huadeng_title">兼容与辅助</string>
   <string name="setting_page_huadeng_title_desc">连接修复、空响应兜底、内容裁剪、上下文压缩等全局开关</string>
   <string name="setting_page_interaction_notification_settings">互动与通知</string>

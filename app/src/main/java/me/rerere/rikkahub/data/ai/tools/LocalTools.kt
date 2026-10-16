@@ -153,6 +153,11 @@ sealed class LocalToolOption {
     @Serializable
     @SerialName("check_code")
     data object CodeCheck : LocalToolOption()
+
+    /** 子 agent：主模型可把子任务派给独立 agent 完成后取回结果。 */
+    @Serializable
+    @SerialName("sub_agent")
+    data object SubAgent : LocalToolOption()
 }
 
 class LocalTools(
