@@ -209,6 +209,8 @@
   <string name="backup_page_delete_failed">删除失败: %s</string>
   <string name="backup_page_delete_success">删除成功</string>
   <string name="backup_page_export_desc">导出APP数据为文件</string>
+  <string name="backup_page_export_upstream">导出上游兼容备份</string>
+  <string name="backup_page_export_upstream_desc">导出官方 Rikkahub 能直接导入的备份；本分支独有功能的数据会被舍弃</string>
   <string name="backup_page_exporting">正在导出...</string>
   <string name="backup_page_files">文件</string>
   <string name="backup_page_import_chatbox_desc">导入 ChatBox 提供商配置和完整聊天记录</string>

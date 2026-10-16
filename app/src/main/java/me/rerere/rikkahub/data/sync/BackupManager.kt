@@ -41,7 +41,12 @@ class BackupManager(
 ) {
     private val restoreMutex = Mutex()
 
-    suspend fun createBackup(includeDatabase: Boolean, includeFiles: Boolean): File = withContext(Dispatchers.IO) {
+    /** [upstreamCompatible] 为 true 时导出上游 rikkahub 能直接导入的备份，本地独有数据会被丢弃。 */
+    suspend fun createBackup(
+        includeDatabase: Boolean,
+        includeFiles: Boolean,
+        upstreamCompatible: Boolean = false,
+    ): File = withContext(Dispatchers.IO) {
         val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
         val archive = File.createTempFile("backup_${timestamp}_", ".zip", context.cacheDir)
         val staging = Files.createTempDirectory(context.cacheDir.toPath(), "backup-").toFile()
@@ -50,11 +55,14 @@ class BackupManager(
             ZipOutputStream(FileOutputStream(archive)).use { zip ->
                 zip.putNextEntry(ZipEntry("settings.json"))
                 val settingsJson = json.encodeSettings(settings, settingsStore.launchCountFlow.first())
-                zip.write(settingsJson.toByteArray(Charsets.UTF_8))
+                val payload =
+                    if (upstreamCompatible) UpstreamCompat.settingsJson(settingsJson, json) else settingsJson
+                zip.write(payload.toByteArray(Charsets.UTF_8))
                 zip.closeEntry()
                 if (includeDatabase) {
                     val snapshot = File(staging, SQLiteConfiguration.DATABASE_NAME)
                     DatabaseBackup.createSnapshot(database.openHelper.writableDatabase, snapshot)
+                    if (upstreamCompatible) UpstreamCompat.downgradeDatabase(context, snapshot, json)
                     addFile(zip, snapshot, DatabaseBackup.ARCHIVE_DATABASE)
                 }
                 if (includeFiles) {
