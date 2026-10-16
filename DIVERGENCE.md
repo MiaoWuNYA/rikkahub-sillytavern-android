@@ -30,6 +30,8 @@
 - **不要丢功能**：上一轮合并曾把「工作区长按多选导出」丢掉（`WorkspaceDetailPage.kt` + `WorkspaceDetailVM.kt` 成对回退）。此后凡 `WorkspaceDetail*` 冲突，`theirs` 侧带 `prepareBatchExport`/`exportFilesToDirectory`/`exportResult` 一律收下。
 - **界面优先上游**：页面骨架、顶栏、组件风格以上游为准；本地只在其中保留自己的入口与字段。`TranslatorPage.kt`、`WorkspaceDetailPage.kt` 直接取上游版本。
 - **本地弃用/重写的上游页**：`ui/pages/extensions/skills/*`（本地重写在 `ui/pages/extensions/`）、`ui/pages/imggen/ImgGenPage.kt`（本地弃用，生图走媒体创作）保持删除，上游对它们的改动不回收。
+- **显示设置的缩放**：本地在 `DisplaySetting` 里加了 `codeBlockFontSizeRatio`（默认 1.0），代码块字号独立于正文字号。原生渲染在 `HighlightCodeBlock` 的 `textStyle` 收口，WebView 侧靠 `WebChatSurface.buildAppearanceJson` 下发 `codeFontScale` → `app.js` 的 `--code-font-scale` → `index.html` 的 `calc()`，**两边必须同时改**。
+- **`DisplaySetting` 加字段安全**：整份设置以 JSON 落盘，新字段给默认值即可，老数据反序列化缺字段走默认，不需要 dataStore 迁移或注册表改动。
 - **测试**：CI 只跑 `assembleRelease`，不跑 `test`。`app/src/test/.../capability/` 下 `ChubCardImportTest`/`ChunshuiImportTest`/`FengyueImportTest`/`JsonNullCardTest` 依赖本机把样本卡片放在仓库根目录（实际在 `酒馆500+美化/`），标准检出下必然 NPE，与合并无关。`speech` 的 `VolcengineTTSProviderTest` 引用的是本地改名前的 API，已删除（实现重写后那些 `*VolcengineTTS*` 内部符号已不存在）。
 
 ## 1. 合并工作流（推荐）
@@ -77,7 +79,7 @@
 | `data/ai/transformers/MacroEngine.kt` | +879 | 宏引擎 2.0 |
 | `ui/components/ai/SlashCommands.kt` / `MacroVarSlashOps.kt` | +257 / +92 | 斜杠命令 |
 | `ui/pages/extensions/PromptVM.kt` | +77 | 世界书双向同步 |
-| `ui/pages/chat/FrontendCardChatView.kt` + `assets/frontend-card/` | 新文件 | 前端卡专属模式：单 WebView 承载消息区（MD3 页面 + 卡片 iframe 桥 + 宏），导入角色卡时自动识别 |
+| `ui/pages/chat/WebCardShared.kt` + `assets/webui/` | 新文件 | WebView 消息区模式：单 WebView 承载消息区（MD3 页面 + 卡片 iframe 桥 + 宏），导入角色卡时自动识别 |
 | `ui/pages/assistant/detail/AssistantImporter.kt`（导入后钩子） | — | 命中前端卡时为助手置位并提示已自动切换 |
 | `ui/pages/setting/SettingHuaDengCompatPage.kt` / `SettingTtsPlaybackPage.kt` | 新文件 | 华灯「兼容与辅助」与 TTS 朗读设置各自拆成独立页 |
 
@@ -115,7 +117,7 @@ Web 相关只有小改（`web/routes/ConversationRoutes.kt` +47/-25、`SettingsR
 - 群聊：`GroupChat.kt`、`GroupChatPage.kt`、`GroupChatListPage.kt`、`GroupSpeakerSelector.kt`
 - 工具：`FileTools.kt`、`TaskTools.kt`、`DatabaseQueryTool.kt`、`ShellTools.kt`、`PythonTools.kt`、`CalculatorTool.kt`、`WebFetchTool.kt`、`MingliTool.kt`、`MingliGuideTool.kt`、`PythonBridge.kt`、`JsBridge.kt`、`SystemPromptAssembler.kt`、`SkillAutoTriggerTransformer.kt`
 - 宏/斜杠：`MacroEngine.kt`
-- 前端卡模式：`ui/pages/chat/FrontendCardChatView.kt` + `app/src/main/assets/frontend-card/`（index.html / app.js / markdown.js）
+- WebView 消息区模式：`ui/pages/chat/WebChatSurface.kt` + `WebCardShared.kt` + `app/src/main/assets/webui/`（index.html / app.js / markdown.js / compat.js）。早期版本的 `FrontendCardChatView.kt` 与 `assets/frontend-card/` 已在 `68920fd62` 重写时删除，**不要因为看到旧文档就把它们找回来**。上游这两处都没有，冲突不适用；改外观相关设置时两处要一起改（Compose 侧 `buildAppearanceJson` 下发字段，前端 `applyAppearance` 落 CSS 变量）
 - 设置拆分页：`SettingHuaDengCompatPage.kt`、`SettingTtsPlaybackPage.kt`
 - 服务：`service/GenerationForegroundService.kt`
 
