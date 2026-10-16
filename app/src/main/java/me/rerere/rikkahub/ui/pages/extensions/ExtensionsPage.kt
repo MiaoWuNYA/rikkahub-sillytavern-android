@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.AiCloud01
 import me.rerere.rikkahub.R
-import me.rerere.hugeicons.stroke.Book03
 import me.rerere.hugeicons.stroke.File02
 import me.rerere.hugeicons.stroke.Folder01
 import me.rerere.hugeicons.stroke.Puzzle
@@ -63,12 +62,6 @@ fun ExtensionsPage() {
                         leadingContent = { CardGroupIcon(HugeIcons.Zap, containerColor = containerColor, contentColor = contentColor) },
                         headlineContent = { Text(stringResource(R.string.assistant_page_quick_messages)) },
                         supportingContent = { Text(stringResource(R.string.extensions_page_quick_messages_desc)) },
-                    )
-                    item(
-                        onClick = { navController.navigate(Screen.Prompts) },
-                        leadingContent = { CardGroupIcon(HugeIcons.Book03, containerColor = containerColor, contentColor = contentColor) },
-                        headlineContent = { Text(stringResource(R.string.extensions_page_prompts)) },
-                        supportingContent = { Text(stringResource(R.string.extensions_page_prompts_desc)) },
                     )
                     item(
                         onClick = { navController.navigate(Screen.Skills) },

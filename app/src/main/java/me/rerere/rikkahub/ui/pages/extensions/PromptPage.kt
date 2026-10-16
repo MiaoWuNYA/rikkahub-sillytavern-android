@@ -204,7 +204,7 @@ fun PromptPage(vm: PromptVM = koinViewModel()) {
                             vm.updateSettings { latest -> latest.copy(lorebooks = newLorebooks) }
                         },
                         settings = settings,
-                        onSettingsUpdate = { updated -> vm.updateSettings { updated } }
+                        onSettingsUpdate = { fn -> vm.updateSettings(fn) }
                     )
                 }
             }
@@ -643,7 +643,7 @@ private fun LorebookTab(
     lorebooks: List<Lorebook>,
     onUpdate: (List<Lorebook>) -> Unit,
     settings: Settings,
-    onSettingsUpdate: (Settings) -> Unit,
+    onSettingsUpdate: ((Settings) -> Settings) -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(true) }
     val lazyListState = rememberLazyListState()
@@ -704,7 +704,7 @@ private fun LorebookTab(
                     } else {
                         settings.regexGroups + RegexGroup(name = name, source = RegexGroupSource.PRESET, regexes = regexes)
                     }
-                    onSettingsUpdate(settings.copy(regexGroups = groups))
+                    onSettingsUpdate { it.copy(regexGroups = groups) }
                 }
                 toaster.show(importSuccessMsg)
             }.onFailure { error ->
@@ -785,7 +785,7 @@ private fun LorebookTab(
                         }
                         IntTextField(
                             value = settings.worldInfoDepth,
-                            onValueChange = { onSettingsUpdate(settings.copy(worldInfoDepth = it.coerceIn(0, 1000))) },
+                            onValueChange = { v -> onSettingsUpdate { it.copy(worldInfoDepth = v.coerceIn(0, 1000)) } },
                             modifier = Modifier.width(84.dp),
                         )
                     }
@@ -806,7 +806,7 @@ private fun LorebookTab(
                         }
                         IntTextField(
                             value = settings.worldInfoBudget,
-                            onValueChange = { onSettingsUpdate(settings.copy(worldInfoBudget = it.coerceIn(0, 100))) },
+                            onValueChange = { v -> onSettingsUpdate { it.copy(worldInfoBudget = v.coerceIn(0, 100)) } },
                             modifier = Modifier.width(84.dp),
                         )
                     }
@@ -827,7 +827,7 @@ private fun LorebookTab(
                         }
                         IntTextField(
                             value = settings.worldInfoBudgetCap,
-                            onValueChange = { onSettingsUpdate(settings.copy(worldInfoBudgetCap = it.coerceIn(0, 100000))) },
+                            onValueChange = { v -> onSettingsUpdate { it.copy(worldInfoBudgetCap = v.coerceIn(0, 100000)) } },
                             modifier = Modifier.width(84.dp),
                         )
                     }
@@ -848,7 +848,7 @@ private fun LorebookTab(
                         }
                         IntTextField(
                             value = settings.worldInfoMinActivations,
-                            onValueChange = { onSettingsUpdate(settings.copy(worldInfoMinActivations = it.coerceIn(0, 50))) },
+                            onValueChange = { v -> onSettingsUpdate { it.copy(worldInfoMinActivations = v.coerceIn(0, 50)) } },
                             modifier = Modifier.width(84.dp),
                         )
                     }
@@ -870,7 +870,7 @@ private fun LorebookTab(
                             }
                             IntTextField(
                                 value = settings.worldInfoMinActivationsDepthMax,
-                                onValueChange = { onSettingsUpdate(settings.copy(worldInfoMinActivationsDepthMax = it.coerceIn(0, 1000))) },
+                                onValueChange = { v -> onSettingsUpdate { it.copy(worldInfoMinActivationsDepthMax = v.coerceIn(0, 1000)) } },
                                 modifier = Modifier.width(84.dp),
                             )
                         }
@@ -892,7 +892,7 @@ private fun LorebookTab(
                         }
                         Switch(
                             checked = settings.worldInfoRecursive,
-                            onCheckedChange = { onSettingsUpdate(settings.copy(worldInfoRecursive = it)) },
+                            onCheckedChange = { v -> onSettingsUpdate { it.copy(worldInfoRecursive = v) } },
                         )
                     }
                 }
@@ -913,7 +913,7 @@ private fun LorebookTab(
                             }
                             IntTextField(
                                 value = settings.worldInfoMaxRecursionSteps,
-                                onValueChange = { onSettingsUpdate(settings.copy(worldInfoMaxRecursionSteps = it.coerceIn(0, 20))) },
+                                onValueChange = { v -> onSettingsUpdate { it.copy(worldInfoMaxRecursionSteps = v.coerceIn(0, 20)) } },
                                 modifier = Modifier.width(84.dp),
                             )
                         }
@@ -937,7 +937,7 @@ private fun LorebookTab(
                         Spacer(modifier = Modifier.height(4.dp))
                         InsertionStrategySelector(
                             selected = settings.worldInfoCharacterStrategy,
-                            onSelect = { onSettingsUpdate(settings.copy(worldInfoCharacterStrategy = it)) },
+                            onSelect = { v -> onSettingsUpdate { it.copy(worldInfoCharacterStrategy = v) } },
                         )
                     }
                 }
@@ -957,7 +957,7 @@ private fun LorebookTab(
                         }
                         Switch(
                             checked = settings.worldInfoOverflowAlert,
-                            onCheckedChange = { onSettingsUpdate(settings.copy(worldInfoOverflowAlert = it)) },
+                            onCheckedChange = { v -> onSettingsUpdate { it.copy(worldInfoOverflowAlert = v) } },
                         )
                     }
                 }
@@ -977,7 +977,7 @@ private fun LorebookTab(
                         }
                         Switch(
                             checked = settings.worldInfoUseGroupScoring,
-                            onCheckedChange = { onSettingsUpdate(settings.copy(worldInfoUseGroupScoring = it)) },
+                            onCheckedChange = { v -> onSettingsUpdate { it.copy(worldInfoUseGroupScoring = v) } },
                         )
                     }
                 }
@@ -998,7 +998,7 @@ private fun LorebookTab(
                         }
                         Switch(
                             checked = settings.vectorStorageEnabled,
-                            onCheckedChange = { onSettingsUpdate(settings.copy(vectorStorageEnabled = it)) },
+                            onCheckedChange = { v -> onSettingsUpdate { it.copy(vectorStorageEnabled = v) } },
                         )
                     }
                 }
@@ -1021,7 +1021,7 @@ private fun LorebookTab(
                                 modelId = settings.vectorStorageModelId,
                                 providers = settings.providers,
                                 type = ModelType.EMBEDDING,
-                                onSelect = { onSettingsUpdate(settings.copy(vectorStorageModelId = it.id)) },
+                                onSelect = { v -> onSettingsUpdate { it.copy(vectorStorageModelId = v.id) } },
                             )
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -1038,7 +1038,7 @@ private fun LorebookTab(
                                 }
                                 IntTextField(
                                     value = settings.vectorStorageScanDepth,
-                                    onValueChange = { onSettingsUpdate(settings.copy(vectorStorageScanDepth = it.coerceIn(1, 100))) },
+                                    onValueChange = { v -> onSettingsUpdate { it.copy(vectorStorageScanDepth = v.coerceIn(1, 100)) } },
                                     modifier = Modifier.width(84.dp),
                                 )
                             }
@@ -1054,7 +1054,7 @@ private fun LorebookTab(
                                 )
                                 Slider(
                                     value = settings.vectorStorageThreshold,
-                                    onValueChange = { onSettingsUpdate(settings.copy(vectorStorageThreshold = (it * 100).roundToInt() / 100f)) },
+                                    onValueChange = { v -> onSettingsUpdate { it.copy(vectorStorageThreshold = (v * 100).roundToInt() / 100f) } },
                                     valueRange = 0.05f..0.95f,
                                     steps = 17,
                                 )

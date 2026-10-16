@@ -84,7 +84,7 @@ fun PersonaPage() {
                         headlineContent = {
                             Text(
                                 text = if (active != null) stringResource(R.string.persona_page_current, active.name) else stringResource(R.string.persona_page_inactive),
-                                style = MaterialTheme.typography.titleSmall,
+                                style = MaterialTheme.typography.titleSmallEmphasized,
                             )
                         },
                         supportingContent = {
@@ -158,8 +158,7 @@ fun PersonaPage() {
                             headlineContent = {
                                 Text(
                                     text = persona.name.ifBlank { stringResource(R.string.persona_page_unnamed) },
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Medium,
+                                    style = MaterialTheme.typography.titleSmallEmphasized,
                                 )
                             },
                             supportingContent = {
@@ -244,7 +243,7 @@ fun PersonaPage() {
 
             // 新建按钮
             item {
-                OutlinedButton(
+                FilledTonalButton(
                     onClick = { showCreate = true },
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(stringResource(R.string.persona_page_create)) }

@@ -247,6 +247,7 @@ private fun AuthorNoteEntryRow(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
     ) {
         Row(

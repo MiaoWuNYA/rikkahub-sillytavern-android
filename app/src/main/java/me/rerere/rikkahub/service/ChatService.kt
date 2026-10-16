@@ -1561,7 +1561,7 @@ class ChatService(
             }
             val rollingSummaryMessageCount = rollingSummary?.coveredMessageCount(generationMessages) ?: 0
             val rollingThresholdTokens = automaticRollingContextThreshold(
-                enabled = assistant.enableRollingContextCompression && settings.huadengSettings.enableRollingContextCompression,
+                enabled = assistant.enableRollingContextCompression,
                 configuredThresholdTokens = assistant.rollingContextCompressionThresholdTokens,
                 modelContextWindowTokens = model.contextWindowTokens,
                 maxOutputTokens = assistant.maxTokens,
@@ -1721,7 +1721,7 @@ class ChatService(
                     if (settings.huadengSettings.jevJudgeTool) {
                         add(createJudgeTool(jevClient))
                     }
-                    if (settings.huadengSettings.enableSubAgent) {
+                    if (assistant.localTools.contains(LocalToolOption.SubAgent)) {
                         add(
                             createSubAgentTool(
                                 hub = subAgentHub,
@@ -2445,7 +2445,7 @@ class ChatService(
         settings: Settings,
         processingStatus: MutableStateFlow<String?>,
     ): RollingContextSummary? {
-        if (!assistant.enableRollingContextCompression || !settings.huadengSettings.enableRollingContextCompression) return null
+        if (!assistant.enableRollingContextCompression) return null
         val thresholdTokens = automaticRollingContextThreshold(
             enabled = true,
             configuredThresholdTokens = assistant.rollingContextCompressionThresholdTokens,

@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -33,6 +34,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -41,7 +43,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -52,6 +54,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -68,6 +71,7 @@ import me.rerere.hugeicons.stroke.Reload
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.plugin.model.PluginFolder
 import me.rerere.rikkahub.plugin.model.PluginInfo
+import me.rerere.rikkahub.ui.theme.CustomColors
 import org.koin.androidx.compose.koinViewModel
 
 private const val TAG = "PluginManagePage"
@@ -91,6 +95,7 @@ fun PluginManagePage(
     val operationState by viewModel.operationState.collectAsState()
     val pendingImport by viewModel.pendingImport.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     val importSuccessMessage = stringResource(R.string.plugin_import_success)
     val importFailedTemplate = stringResource(R.string.plugin_import_failed)
@@ -206,8 +211,10 @@ fun PluginManagePage(
     }
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = CustomColors.topBarColors.containerColor,
         topBar = {
-            TopAppBar(
+            LargeFlexibleTopAppBar(
                 title = { Text(stringResource(R.string.plugin_page_title)) },
                 actions = {
                     if (hasStoragePermission.value) {
@@ -215,7 +222,9 @@ fun PluginManagePage(
                             Icon(imageVector = HugeIcons.Reload, contentDescription = stringResource(R.string.plugin_page_refresh))
                         }
                     }
-                }
+                },
+                scrollBehavior = scrollBehavior,
+                colors = CustomColors.topBarColors,
             )
         },
         floatingActionButton = {
@@ -346,6 +355,7 @@ private fun PluginFolderContent(
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f)
                 )
@@ -410,8 +420,9 @@ private fun PluginFolderContent(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        containerColor = CustomColors.listItemColors.containerColor
                     )
                 ) {
                     Column(
@@ -454,7 +465,9 @@ private fun FolderCard(
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
-            )
+            ),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
     ) {
         Row(
             modifier = Modifier
@@ -496,7 +509,12 @@ internal fun PluginCard(
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
-    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -511,7 +529,7 @@ internal fun PluginCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = plugin.manifest.name,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMediumEmphasized,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

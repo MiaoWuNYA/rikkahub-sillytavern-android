@@ -42,6 +42,7 @@ import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.delay
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
+import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.db.entity.CoupleCommentEntity
 import me.rerere.rikkahub.data.db.entity.CoupleDiaryEntity
@@ -49,6 +50,7 @@ import me.rerere.rikkahub.data.db.entity.CoupleDiaryFolderEntity
 import me.rerere.rikkahub.data.db.entity.CouplePostEntity
 import me.rerere.rikkahub.data.db.entity.CoupleRelationshipEntity
 import me.rerere.rikkahub.ui.components.nav.BackButton
+import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.theme.CustomColors
 import androidx.compose.ui.res.stringResource
@@ -77,18 +79,28 @@ fun CoupleSpacePage(vm: CoupleVM = koinViewModel()) {
     ) { padding ->
         if (relationship == null || partner == null) {
             LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                item { Text(stringResource(R.string.couple_space_pick_partner), style = MaterialTheme.typography.headlineSmall) }
+                item { Text(stringResource(R.string.couple_space_pick_partner), style = MaterialTheme.typography.headlineSmallEmphasized) }
                 item { Text(stringResource(R.string.couple_space_pick_partner_desc)) }
-                items(settings.assistants) { assistant ->
-                    Card(
-                        onClick = { pendingPartnerId = assistant.id.toString() },
-                        colors = CardDefaults.cardColors(containerColor = CustomColors.listItemColors.containerColor),
-                        shape = RoundedCornerShape(20.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text(assistant.name.ifBlank { stringResource(R.string.couple_space_unnamed_assistant) }, style = MaterialTheme.typography.titleMedium)
-                            Text(stringResource(R.string.couple_space_set_as_partner))
+                item {
+                    CardGroup {
+                        settings.assistants.forEach { assistant ->
+                            item(
+                                onClick = { pendingPartnerId = assistant.id.toString() },
+                                headlineContent = {
+                                    Text(
+                                        assistant.name.ifBlank { stringResource(R.string.couple_space_unnamed_assistant) },
+                                        style = MaterialTheme.typography.titleSmallEmphasized,
+                                    )
+                                },
+                                supportingContent = { Text(stringResource(R.string.couple_space_set_as_partner)) },
+                                trailingContent = {
+                                    Icon(
+                                        HugeIcons.ArrowRight01,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                },
+                            )
                         }
                     }
                 }
