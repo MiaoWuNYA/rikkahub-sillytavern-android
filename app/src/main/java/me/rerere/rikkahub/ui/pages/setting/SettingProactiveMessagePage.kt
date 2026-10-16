@@ -5,10 +5,12 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
@@ -17,7 +19,6 @@ import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -38,6 +39,7 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.RiskConfirmDialog
+import me.rerere.rikkahub.ui.components.ui.switchItem
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.data.datastore.ProactiveMessageSetting
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
@@ -54,6 +56,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Row
 import me.rerere.rikkahub.data.service.ProactiveMessageLog
 import me.rerere.rikkahub.utils.writeClipboardText
+import me.rerere.rikkahub.utils.plus
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Icon
 import androidx.compose.foundation.clickable
@@ -84,6 +87,38 @@ fun SettingProactiveMessagePage(
     var showProactiveRiskDialog by remember { mutableStateOf(false) }
     var showLogDialog by remember { mutableStateOf(false) }
     val proactive = settings.proactiveMessageSetting
+
+    // 发送目标（助手 / 对话）与其它选项并进同一组列表，避免每行各自成一个圆角卡片
+    val untitledConversation = stringResource(R.string.proactive_untitled_conversation)
+    val currentAssistantId = settings.getCurrentAssistant().id.toString()
+    val assistantIdForEffective = proactive.assistantId
+        .takeIf { it.isNotBlank() }
+        ?.let { runCatching { Uuid.parse(it) }.getOrNull() }
+        ?: settings.getCurrentAssistant().id
+    val assistantLabel = settings.assistants
+        .firstOrNull { it.id.toString() == proactive.assistantId.ifBlank { currentAssistantId } }
+        ?.name
+        ?: stringResource(R.string.proactive_use_current_assistant)
+    var assistantPickerExpanded by remember { mutableStateOf(false) }
+    var conversationPickerExpanded by remember { mutableStateOf(false) }
+    var conversations by remember(assistantIdForEffective) {
+        mutableStateOf<List<Triple<String, String, Long>>>(emptyList())
+    }
+    var conversationLoadFailed by remember(assistantIdForEffective) { mutableStateOf(false) }
+    LaunchedEffect(assistantIdForEffective) {
+        try {
+            conversations = conversationRepository
+                .getRecentConversationTitles(assistantIdForEffective, limit = 50)
+                .map { Triple(it.id, it.title.ifBlank { untitledConversation }, it.updateAt) }
+            conversationLoadFailed = false
+        } catch (e: Exception) {
+            Log.e("ProactiveSetting", "Failed to load conversations", e)
+            conversations = emptyList()
+            conversationLoadFailed = true
+        }
+    }
+    val conversationLabel = conversations.firstOrNull { it.first == proactive.conversationId }?.second
+        ?: stringResource(R.string.proactive_conversation_auto)
 
     // 日志内容随对话框打开时重新取，避免看到打开那一刻的旧快照
     val logText = remember(showLogDialog) {
@@ -139,47 +174,43 @@ fun SettingProactiveMessagePage(
         }
     ) { padding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = padding + PaddingValues(8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
-                CardGroup {
-                    item(
-                        headlineContent = { Text(stringResource(R.string.proactive_enable)) },
-                        supportingContent = { Text(stringResource(R.string.proactive_enable_desc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = proactive.enabled,
-                                onCheckedChange = { enabled ->
-                                    if (enabled) {
-                                        showProactiveRiskDialog = true
-                                    } else {
-                                        val newSetting = proactive.copy(enabled = false)
-                                        vm.updateSettings { it.copy(proactiveMessageSetting = newSetting) }
-                                        ProactiveMessageService.cancel(context)
-                                    }
-                                }
-                            )
-                        }
-                    )
-                }
-            }
-
-            if (proactive.enabled) {
-                item {
-                    // 下次触发时间：每秒刷新（原来 10 秒一跳，秒数看起来是卡住的）
-                    var nextTime by remember { mutableStateOf(ProactiveMessageService.getNextTriggerTime(context)) }
-                    var nowTick by remember { mutableStateOf(System.currentTimeMillis()) }
-                    LaunchedEffect(proactive) {
-                        while (true) {
+                // 下次触发时间：每秒刷新（原来 10 秒一跳，秒数看起来是卡住的）
+                var nextTime by remember { mutableStateOf(ProactiveMessageService.getNextTriggerTime(context)) }
+                var nowTick by remember { mutableStateOf(System.currentTimeMillis()) }
+                LaunchedEffect(proactive) {
+                    while (true) {
+                        if (proactive.enabled) {
                             val t = System.currentTimeMillis()
                             nowTick = t
                             nextTime = ProactiveMessageService.getNextTriggerTime(context)
-                            kotlinx.coroutines.delay(1000L)
                         }
+                        kotlinx.coroutines.delay(1000L)
                     }
-                    CardGroup {
+                }
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.proactive_section_trigger)) },
+                ) {
+                    switchItem(
+                        checked = proactive.enabled,
+                        onCheckedChange = { enabled ->
+                            if (enabled) {
+                                showProactiveRiskDialog = true
+                            } else {
+                                val newSetting = proactive.copy(enabled = false)
+                                vm.updateSettings { it.copy(proactiveMessageSetting = newSetting) }
+                                ProactiveMessageService.cancel(context)
+                            }
+                        },
+                        headlineContent = { Text(stringResource(R.string.proactive_enable)) },
+                        supportingContent = { Text(stringResource(R.string.proactive_enable_desc)) },
+                    )
+                    if (proactive.enabled) {
                         item(
                             headlineContent = { Text(stringResource(R.string.proactive_next_trigger)) },
                             supportingContent = {
@@ -200,14 +231,17 @@ fun SettingProactiveMessagePage(
                                 } else {
                                     Text(stringResource(R.string.proactive_waiting_schedule))
                                 }
-                            }
+                            },
                         )
                     }
                 }
             }
 
             item {
-                CardGroup {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.proactive_section_interval)) },
+                ) {
                     item(
                         headlineContent = { Text(stringResource(R.string.proactive_min_interval)) },
                         supportingContent = {
@@ -232,87 +266,49 @@ fun SettingProactiveMessagePage(
             }
 
             item {
-                val assistants = settings.assistants
-                val current = settings.getCurrentAssistant()
-                AssistantPicker(
-                    assistants = assistants.map { it.id.toString() to it.name },
-                    selectedId = proactive.assistantId.ifBlank { current.id.toString() },
-                    onSelect = { applySetting(proactive.copy(assistantId = it)) },
-                )
-            }
-
-            // 对话选择器**不放在 if (proactive.enabled) 里**。
-            //
-            // 它是配置项，不是运行状态——和上面的助手选择器同级。之前把它
-            // 塞在开关判断里，而开关默认是关的，于是用户一进设置页只看得到
-            // 「使用助手」，看不到「发送到的对话」，表现就是「能选助手、
-            // 选不了对话」。真正依赖开关键运行时状态的只有「下次触发时间」。
-            item {
-                // 这里的助手既要用来**列对话**，也要在选中对话时**一起写回设置**。
-                //
-                // 之前只用来列表，而 proactive.assistantId 一直是空串，于是
-                // 触发时（ProactiveMessageTriggerService 里）会 fallback 到
-                // 「当时的当前助手」。如果那和你选对话时看到的助手不是同一个，
-                // 归属校验就会判定不符而拒绝，然后退回「最近的对话」——
-                // 表现就是「无论选哪个对话，都发到最近那个」。
-                val assistantIdForEffective = proactive.assistantId
-                    .takeIf { it.isNotBlank() }
-                    ?.let { runCatching { Uuid.parse(it) }.getOrNull() }
-                    ?: settings.getCurrentAssistant().id
-                val assistantIdForList = assistantIdForEffective
-                val untitled = stringResource(R.string.proactive_untitled_conversation)
-
-                // key 带上助手：切换助手时要重置成空列表，否则会短暂显示
-                // 上一个助手的对话。记住加载失败的异常而不是吞成空列表，
-                // 不然「列表为空」和「加载失败」在界面上完全一样。
-                var conversations by remember(assistantIdForList) {
-                    mutableStateOf<List<Triple<String, String, Long>>>(emptyList())
-                }
-                var loadFailed by remember(assistantIdForList) { mutableStateOf(false) }
-                LaunchedEffect(assistantIdForList) {
-                    try {
-                        // 用轻量投影：只取 id/title/updateAt。
-                        // getRecentConversations 会为每个会话全量反序列化所有
-                        // 消息节点，而这里只用得到标题和时间，50 条会白读很多。
-                        conversations = conversationRepository
-                            .getRecentConversationTitles(assistantIdForList, limit = 50)
-                            .map { Triple(it.id, it.title.ifBlank { untitled }, it.updateAt) }
-                        loadFailed = false
-                    } catch (e: Exception) {
-                        Log.e("ProactiveSetting", "Failed to load conversations", e)
-                        conversations = emptyList()
-                        loadFailed = true
-                    }
-                }
-
-                ConversationPicker(
-                    conversations = conversations,
-                    selectedId = proactive.conversationId,
-                    loadFailed = loadFailed,
-                    onSelect = { picked ->
-                        // 一并把助手写回。只写 conversationId 的话，触发时
-                        // 仍会去猜助手，猜错就退回最近对话——选项等于没生效。
-                        applySetting(
-                            proactive.copy(
-                                conversationId = picked,
-                                assistantId = assistantIdForEffective.toString(),
-                            )
-                        )
-                    },
-                )
-            }
-
-            item {
-                CardGroup {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.proactive_section_target)) },
+                ) {
                     item(
+                        headlineContent = { Text(stringResource(R.string.proactive_use_assistant)) },
+                        supportingContent = { Text(assistantLabel) },
+                        onClick = { assistantPickerExpanded = true },
+                    )
+                    // 对话选择器不依赖开关键：它是配置项，不是运行状态。
+                    item(
+                        headlineContent = { Text(stringResource(R.string.proactive_conversation)) },
+                        supportingContent = {
+                            Column {
+                                Text(conversationLabel)
+                                if (conversationLoadFailed) {
+                                    Text(
+                                        text = stringResource(R.string.proactive_conversation_load_failed),
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                } else if (conversations.isEmpty()) {
+                                    Text(
+                                        text = stringResource(R.string.proactive_conversation_empty),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        },
+                        onClick = { conversationPickerExpanded = true },
+                    )
+                }
+            }
+
+            item {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.proactive_section_force_jump)) },
+                ) {
+                    switchItem(
+                        checked = proactive.allowForceJump,
+                        onCheckedChange = { applySetting(proactive.copy(allowForceJump = it)) },
                         headlineContent = { Text(stringResource(R.string.proactive_force_jump)) },
                         supportingContent = { Text(stringResource(R.string.proactive_force_jump_desc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = proactive.allowForceJump,
-                                onCheckedChange = { applySetting(proactive.copy(allowForceJump = it)) }
-                            )
-                        }
                     )
                     if (proactive.allowForceJump) {
                         item(
@@ -330,10 +326,15 @@ fun SettingProactiveMessagePage(
                 }
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                item {
-                    val hasExactAlarm = ProactiveMessageWorker.canScheduleExactAlarms(context)
-                    CardGroup {
+            item {
+                val hasExactAlarm = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                    ProactiveMessageWorker.canScheduleExactAlarms(context)
+                val isIgnoringBattery = ProactiveMessageWorker.isIgnoringBatteryOptimizations(context)
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.proactive_section_system)) },
+                ) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         item(
                             headlineContent = { Text(stringResource(R.string.proactive_exact_alarm)) },
                             supportingContent = {
@@ -355,24 +356,19 @@ fun SettingProactiveMessagePage(
                                         context.startActivity(intent)
                                     }
                                 }
-                            } else null
+                            } else null,
                         )
                     }
-                }
-            }
-            item {
-                val isIgnoring = ProactiveMessageWorker.isIgnoringBatteryOptimizations(context)
-                CardGroup {
                     item(
                         headlineContent = { Text(stringResource(R.string.proactive_battery_optimization)) },
                         supportingContent = {
-                            if (isIgnoring) {
+                            if (isIgnoringBattery) {
                                 Text(stringResource(R.string.proactive_battery_ignored))
                             } else {
                                 Text(stringResource(R.string.proactive_battery_not_ignored))
                             }
                         },
-                        onClick = if (!isIgnoring) {
+                        onClick = if (!isIgnoringBattery) {
                             {
                                 try {
                                     val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
@@ -384,12 +380,16 @@ fun SettingProactiveMessagePage(
                                     context.startActivity(intent)
                                 }
                             }
-                        } else null
+                        } else null,
                     )
                 }
             }
+
             item {
-                CardGroup {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.proactive_section_diagnostics)) },
+                ) {
                     item(
                         headlineContent = { Text(stringResource(R.string.proactive_log_title)) },
                         supportingContent = { Text(stringResource(R.string.proactive_log_desc)) },
@@ -397,8 +397,9 @@ fun SettingProactiveMessagePage(
                     )
                 }
             }
+
             item {
-                CardGroup {
+                CardGroup(modifier = Modifier.padding(horizontal = 8.dp)) {
                     item(
                         headlineContent = { Text(stringResource(R.string.proactive_section_about)) },
                         supportingContent = { Text(stringResource(R.string.proactive_about_desc)) },
@@ -406,6 +407,94 @@ fun SettingProactiveMessagePage(
                 }
             }
         }
+    }
+
+    if (assistantPickerExpanded) {
+        AlertDialog(
+            onDismissRequest = { assistantPickerExpanded = false },
+            title = { Text(stringResource(R.string.proactive_use_assistant)) },
+            text = {
+                LazyColumn {
+                    item {
+                        PickerRow(
+                            label = stringResource(R.string.proactive_use_current_assistant),
+                            selected = proactive.assistantId.isBlank(),
+                            onClick = {
+                                applySetting(proactive.copy(assistantId = ""))
+                                assistantPickerExpanded = false
+                            },
+                        )
+                    }
+                    items(settings.assistants.size) { i ->
+                        val assistant = settings.assistants[i]
+                        PickerRow(
+                            label = assistant.name.ifBlank { stringResource(R.string.proactive_unnamed) },
+                            selected = proactive.assistantId.isNotBlank() &&
+                                assistant.id.toString() == proactive.assistantId,
+                            onClick = {
+                                applySetting(proactive.copy(assistantId = assistant.id.toString()))
+                                assistantPickerExpanded = false
+                            },
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { assistantPickerExpanded = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            },
+        )
+    }
+
+    if (conversationPickerExpanded) {
+        AlertDialog(
+            onDismissRequest = { conversationPickerExpanded = false },
+            title = { Text(stringResource(R.string.proactive_conversation)) },
+            text = {
+                LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
+                    item {
+                        PickerRow(
+                            label = stringResource(R.string.proactive_conversation_auto),
+                            selected = proactive.conversationId.isBlank(),
+                            onClick = {
+                                applySetting(
+                                    proactive.copy(
+                                        conversationId = "",
+                                        assistantId = assistantIdForEffective.toString(),
+                                    )
+                                )
+                                conversationPickerExpanded = false
+                            },
+                        )
+                    }
+                    items(conversations.size) { i ->
+                        val (id, title, updateAt) = conversations[i]
+                        PickerRow(
+                            label = title,
+                            secondary = if (updateAt > 0) java.text.SimpleDateFormat(
+                                "yyyy-MM-dd HH:mm", java.util.Locale.getDefault()
+                            ).format(java.util.Date(updateAt)) else null,
+                            selected = id == proactive.conversationId,
+                            onClick = {
+                                applySetting(
+                                    proactive.copy(
+                                        conversationId = id,
+                                        assistantId = assistantIdForEffective.toString(),
+                                    )
+                                )
+                                conversationPickerExpanded = false
+                            },
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { conversationPickerExpanded = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            },
+        )
     }
 }
 
@@ -456,153 +545,6 @@ private fun IntervalField(
         singleLine = true,
         modifier = Modifier.padding(top = 8.dp),
     )
-}
-
-@Composable
-private fun AssistantPicker(
-    assistants: List<Pair<String, String>>,
-    selectedId: String,
-    onSelect: (String) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val selectedName = assistants.firstOrNull { it.first == selectedId }?.second
-        ?: stringResource(R.string.proactive_use_current_assistant)
-
-    CardGroup {
-        item(
-            headlineContent = { Text(stringResource(R.string.proactive_use_assistant)) },
-            supportingContent = { Text(selectedName) },
-            onClick = { expanded = true },
-        )
-    }
-
-    if (expanded) {
-        AlertDialog(
-            onDismissRequest = { expanded = false },
-            title = { Text(stringResource(R.string.proactive_use_assistant)) },
-            text = {
-                LazyColumn {
-                    item {
-                        PickerRow(
-                            label = stringResource(R.string.proactive_use_current_assistant),
-                            selected = selectedId.isBlank(),
-                            onClick = {
-                                onSelect("")
-                                expanded = false
-                            },
-                        )
-                    }
-                    items(assistants.size) { i ->
-                        val (id, name) = assistants[i]
-                        PickerRow(
-                            label = name.ifBlank { stringResource(R.string.proactive_unnamed) },
-                            selected = id == selectedId,
-                            onClick = {
-                                onSelect(id)
-                                expanded = false
-                            },
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { expanded = false }) {
-                    Text(stringResource(android.R.string.cancel))
-                }
-            },
-        )
-    }
-}
-
-@Composable
-private fun ConversationPicker(
-    conversations: List<Triple<String, String, Long>>,
-    selectedId: String,
-    loadFailed: Boolean,
-    onSelect: (String) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val selectedName = conversations.firstOrNull { it.first == selectedId }?.second
-        ?: stringResource(R.string.proactive_conversation_auto)
-
-    CardGroup {
-        item(
-            headlineContent = { Text(stringResource(R.string.proactive_conversation)) },
-            supportingContent = {
-                Column {
-                    Text(selectedName)
-                    // 加载失败必须说出来。之前异常被 getOrDefault 吞成空列表，
-                    // 弹窗里只剩一个「自动」选项，看起来就是个坏掉的功能。
-                    if (loadFailed) {
-                        Text(
-                            text = stringResource(R.string.proactive_conversation_load_failed),
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    } else if (conversations.isEmpty()) {
-                        Text(
-                            text = stringResource(R.string.proactive_conversation_empty),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            },
-            onClick = { expanded = true },
-        )
-    }
-
-    if (expanded) {
-        AlertDialog(
-            onDismissRequest = { expanded = false },
-            title = { Text(stringResource(R.string.proactive_conversation)) },
-            text = {
-                // 固定高度上限：LazyColumn 在 AlertDialog 的 text 槽里没有
-                // 高度约束时会撑满可用空间，50 条对话把弹窗顶到屏幕最大高度，
-                // 而且和 dialog 自身的滚动嵌套，滑动手感发涩。
-                // 用 ListItem 而不是 TextButton。
-                //
-                // TextButton 在 Material 3 Expressive 下默认是全圆角胶囊。
-                // 把每个候选项都做成 TextButton，视觉上就是「一列各自独立的
-                // 药丸按钮」——可它们本是同一组里的选项，应该是一列连续的
-                // 行，而不是十几个各带大圆角的按钮叠在一起。
-                //
-                // ListItem 是列表项的标准形态：整行可点、没有独立圆角，
-                // 选中态用尾部对勾表示，和设置页其它条目观感一致。
-                LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
-                    item {
-                        PickerRow(
-                            label = stringResource(R.string.proactive_conversation_auto),
-                            selected = selectedId.isBlank(),
-                            onClick = {
-                                onSelect("")
-                                expanded = false
-                            },
-                        )
-                    }
-                    items(conversations.size) { i ->
-                        val (id, title, updateAt) = conversations[i]
-                        PickerRow(
-                            label = title,
-                            // 标题为空或重名时补上时间：多个未命名对话在列表里
-                            // 长得一模一样，不加时间根本没法区分该选哪个
-                            secondary = if (updateAt > 0) java.text.SimpleDateFormat(
-                                "yyyy-MM-dd HH:mm", java.util.Locale.getDefault()
-                            ).format(java.util.Date(updateAt)) else null,
-                            selected = id == selectedId,
-                            onClick = {
-                                onSelect(id)
-                                expanded = false
-                            },
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { expanded = false }) {
-                    Text(stringResource(android.R.string.cancel))
-                }
-            },
-        )
-    }
 }
 
 /**

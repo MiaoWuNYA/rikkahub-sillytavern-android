@@ -416,6 +416,7 @@ class ProactiveMessageRunner(
                     model = model,
                     temperature = assistant.temperature,
                     topP = assistant.topP,
+                    topK = assistant.topK,
                     maxTokens = assistant.maxTokens,
                     tools = tools,
                     reasoningLevel = assistant.reasoningLevel,

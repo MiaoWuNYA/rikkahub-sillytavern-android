@@ -462,6 +462,7 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
                 params.temperature
             )
             if (params.topP != null) put("top_p", params.topP)
+            if (params.topK != null) put("top_k", params.topK)
 
             put("stream", stream)
 

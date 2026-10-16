@@ -19,12 +19,14 @@ import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.model.GroupChat
 import me.rerere.rikkahub.data.model.GroupActivationStrategy
 import me.rerere.rikkahub.data.model.GroupGenerationMode
+import me.rerere.rikkahub.ui.components.ai.ExtensionEmptyState
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.UIAvatar
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.ArrowRight01
+import me.rerere.hugeicons.stroke.UserGroup
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.theme.CustomColors
@@ -59,18 +61,12 @@ fun GroupChatListPage() {
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
     ) { innerPadding ->
         if (settings.groupChats.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("👥", style = MaterialTheme.typography.headlineLarge)
-                    Spacer(Modifier.height(8.dp))
-                    Text(stringResource(R.string.group_chat_empty), style = MaterialTheme.typography.bodyLarge)
-                    Text(stringResource(R.string.group_chat_empty_hint), style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
+            ExtensionEmptyState(
+                message = stringResource(R.string.group_chat_empty),
+                description = stringResource(R.string.group_chat_empty_hint),
+                icon = HugeIcons.UserGroup,
+                modifier = Modifier.padding(innerPadding),
+            )
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp),

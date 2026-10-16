@@ -367,6 +367,50 @@ internal fun AssistantBasicContent(
                 }
             }
             formItem(
+                headlineContent = { Text(stringResource(R.string.assistant_page_top_k)) },
+                supportingContent = { Text(stringResource(R.string.assistant_page_top_k_warning)) },
+                trailingContent = {
+                    Switch(
+                        checked = assistant.topK != null,
+                        onCheckedChange = { enabled ->
+                            onUpdate(
+                                assistant.copy(
+                                    topK = if (enabled) 40 else null
+                                )
+                            )
+                        }
+                    )
+                }
+            ) {
+                AnimatedVisibility(visible = assistant.topK != null) {
+                    var topKInput by remember(assistant.id) {
+                        mutableStateOf(assistant.topK.toString())
+                    }
+                    val topKValue = topKInput.toIntOrNull()
+                    OutlinedTextField(
+                        value = topKInput,
+                        onValueChange = { value ->
+                            val digits = value.filter { it.isDigit() }
+                            topKInput = digits
+                            digits.toIntOrNull()?.takeIf { it in 1..200 }?.let { topK ->
+                                onUpdate(
+                                    assistant.copy(
+                                        topK = topK
+                                    )
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        isError = topKValue == null || topKValue !in 1..200,
+                        supportingText = {
+                            Text("1 - 200")
+                        }
+                    )
+                }
+            }
+            formItem(
                 headlineContent = { Text(stringResource(R.string.assistant_page_context_message_limit)) },
                 supportingContent = { Text(stringResource(R.string.assistant_page_context_message_limit_desc)) },
             ) {

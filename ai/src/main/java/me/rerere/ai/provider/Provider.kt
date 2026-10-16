@@ -69,6 +69,7 @@ data class TextGenerationParams(
     val model: Model,
     val temperature: Float? = null,
     val topP: Float? = null,
+    val topK: Int? = null,
     val maxTokens: Int? = null,
     val tools: List<Tool> = emptyList(),
     val reasoningLevel: ReasoningLevel = ReasoningLevel.OFF,
