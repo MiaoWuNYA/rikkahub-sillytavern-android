@@ -222,8 +222,12 @@ internal fun buildMessage(
 ): JsonObject {
     val isUser = message.role == MessageRole.USER
     val textParts = message.parts.filterIsInstance<UIMessagePart.Text>()
-    val reasoning = message.parts.filterIsInstance<UIMessagePart.Reasoning>()
-        .joinToString("\n") { it.reasoning }
+    val reasoningParts = message.parts.filterIsInstance<UIMessagePart.Reasoning>()
+    val reasoning = reasoningParts.joinToString("\n") { it.reasoning }
+    // 对齐原生 ChatMessageReasoningStep 的「思考了 X 秒」：未结束用当前时刻估算
+    val reasoningSeconds = reasoningParts.sumOf {
+        ((it.finishedAt ?: kotlin.time.Clock.System.now()) - it.createdAt).inWholeMilliseconds
+    } / 1000.0
     val tools = message.parts.filterIsInstance<UIMessagePart.Tool>()
     // 附件类 part 也要进页面：图片、音视频、文档
     val attachments = message.parts.filter {
@@ -349,6 +353,7 @@ internal fun buildMessage(
         put("avatar", avatar)
         put("time", message.createdAt.toJavaLocalDateTime().toMessageTimeString())
         if (reasoning.isNotBlank()) put("reasoning", reasoning)
+        if (reasoning.isNotBlank()) put("reasoningSeconds", reasoningSeconds)
         put("blocks", blocks)
         put("text", textParts.joinToString("\n") { it.text })
         // 消息操作排与元信息行需要的附带数据

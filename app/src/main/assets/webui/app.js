@@ -801,7 +801,7 @@
   function blocksOf(msg) {
     var desc = [];
     if (msg.reasoning && state.appearance.showThinking !== false) {
-      desc.push({ kind: 'reasoning', text: String(msg.reasoning) });
+      desc.push({ kind: 'reasoning', text: String(msg.reasoning), seconds: Number(msg.reasoningSeconds) || 0 });
     }
     var blocks = msg.blocks || [];
     if (!blocks.length && String(msg.text || '').trim()) blocks = [{ type: 'text', text: msg.text }];
@@ -943,6 +943,55 @@
     '<path d="m6 9 6 6 6-6"></path></svg>';
   var TOOL_ICON = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M14.7 6.3a4 4 0 0 0 5 5L21 21H3l1.3-9.7a4 4 0 0 0 5-5Z"></path></svg>';
+  // 对齐原生 ToolUIRenderer：搜索用放大镜、网页用地球
+  var SEARCH_ICON = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>';
+  var GLOBE_ICON = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<circle cx="12" cy="12" r="9"></circle><path d="M3 12h18"></path>' +
+    '<path d="M12 3c2.5 2.4 3.8 5.6 3.8 9s-1.3 6.6-3.8 9c-2.5-2.4-3.8-5.6-3.8-9S9.5 5.4 12 3Z"></path></svg>';
+
+  function safeJson(text) {
+    try { return JSON.parse(String(text == null ? '' : text)); } catch (e) { return null; }
+  }
+
+  // 工具步骤图标：按工具名挑，未登记的原生也走通用图标
+  function toolIcon(step) {
+    var n = String(step.name || '').toLowerCase();
+    if (n.indexOf('search') >= 0) return SEARCH_ICON;
+    if (n === 'scrape_web' || n === 'web_fetch' || n === 'open_url' || n === 'download_file') return GLOBE_ICON;
+    return TOOL_ICON;
+  }
+
+  // 步骤标题：网页类对齐原生 ToolUIRenderer 的标题（搜索带查询词），其余用中文工具名
+  function toolLabel(step) {
+    var n = String(step.name || '').toLowerCase();
+    var args = safeJson(step.input) || {};
+    if (n === 'search_web' || n === 'web_search' || n === 'search') {
+      return '搜索网页: ' + (args.query || '');
+    }
+    if (n === 'scrape_web') return '抓取网页';
+    return step.text || '工具调用';
+  }
+
+  // 步骤右侧附注：搜索给结果数、网页类给域名（对齐原生 Summary）
+  function toolExtra(step) {
+    var n = String(step.name || '').toLowerCase();
+    if (n.indexOf('search') >= 0) {
+      var out = safeJson(step.output);
+      var items = out && out.items;
+      return items && items.length ? ('共 ' + items.length + ' 条结果') : '';
+    }
+    if (n === 'scrape_web' || n === 'web_fetch' || n === 'open_url' || n === 'download_file') {
+      var url = (safeJson(step.input) || {}).url || '';
+      if (!url) return '';
+      try { return new URL(url).host; } catch (e) { return url; }
+    }
+    return '';
+  }
+
+  function formatSeconds(value) {
+    return Number(value || 0).toFixed(1);
+  }
 
   // 工具卡：中文名与参数、结果都由原生给，页面只管摆位置
   function prettyJson(text) {
@@ -964,27 +1013,40 @@
     return box;
   }
 
-  // 思考卡：一张卡里按顺序摆思考文本与工具步骤，标题给中文工具名或「思考过程」
+  // 思考卡：对齐原生 ChainOfThought——步骤过多时顶部给「再显示 N 步 / 收起」，折叠只留末尾两步
   function thinkKey(desc) {
     return (desc.steps || []).map(function (s) {
       return s.kind === 'reasoning'
-        ? 'r\u0000' + s.text
-        : 't\u0000' + s.text + '\u0000' + (s.running === true ? '1' : '0');
+        ? 'r\u0000' + s.text + '\u0000' + (s.seconds || 0)
+        : 't\u0000' + s.text + '\u0000' + (s.running === true ? '1' : '0') + '\u0000' + (s.input || '');
     }).join('\u0001');
   }
 
+  // 推理步骤内容默认展开态：流式按 showThinkingContent 预览，落定后按 autoCloseThinking
+  function reasoningExpanded(step, streaming) {
+    if (!step || step.kind !== 'reasoning') return false;
+    if (streaming) return state.appearance.showThinking !== false;
+    return state.appearance.autoCloseThinking === false;
+  }
+
   function updateThinkStep(node, step) {
+    var head = node.querySelector('.think-step-head');
+    if (!head) return;
     if (step.kind === 'reasoning') {
+      var label = head.querySelector('.step-label');
+      if (label) label.textContent = '思考了 ' + formatSeconds(step.seconds) + ' 秒';
       if (node._text !== step.text) {
         node._text = step.text;
-        node.querySelector('.think-text').textContent = step.text;
+        var text = node.querySelector('.think-text');
+        if (text) text.textContent = step.text;
       }
       return;
     }
-    var head = node.querySelector('.think-step-head');
-    if (head) head.classList.toggle('running', step.running === true);
-    var label = node.querySelector('.step-label');
-    if (label) label.textContent = step.text || '工具调用';
+    head.classList.toggle('running', step.running === true);
+    var label = head.querySelector('.step-label');
+    if (label) label.textContent = toolLabel(step);
+    var extra = head.querySelector('.step-extra');
+    if (extra) extra.textContent = toolExtra(step);
     var key = (step.input || '') + '\u0000' + (step.output || '');
     if (node._body !== key) {
       node._body = key;
@@ -995,46 +1057,63 @@
     }
   }
 
-  function thinkStepNode(step) {
+  function thinkStepNode(step, expanded) {
     var box = document.createElement('div');
     box.className = 'think-step';
     box.dataset.stepKind = step.kind;
     if (step.kind === 'reasoning') {
-      var text = document.createElement('div');
-      text.className = 'think-text';
-      text.textContent = step.text;
-      box._text = step.text;
-      box.appendChild(text);
-      return box;
+      box.innerHTML = '<div class="think-step-head">' + REASONING_ICON +
+        '<span class="step-label"></span>' + ARROW_ICON + '</div>' +
+        '<div class="think-step-body"><div class="think-text"></div></div>';
+    } else {
+      box.innerHTML = '<div class="think-step-head">' + toolIcon(step) +
+        '<span class="ico tool-dot"><i></i><i></i><i></i></span>' +
+        '<span class="step-label"></span><span class="step-extra"></span>' + ARROW_ICON + '</div>' +
+        '<div class="think-step-body"></div>';
+      // 没有参数也没有结果的步骤不可展开
+      if (!step.input && !step.output) box.classList.add('no-content');
     }
-    box.innerHTML = '<div class="think-step-head">' + TOOL_ICON +
-      '<span class="ico tool-dot"><i></i><i></i><i></i></span>' +
-      '<span class="step-label"></span></div><div class="think-step-body"></div>';
+    box._expanded = expanded === true;
+    box.classList.toggle('expanded', box._expanded);
+    box.querySelector('.think-step-head').addEventListener('click', function () {
+      if (box.classList.contains('no-content')) return;
+      box._expanded = !box._expanded;
+      box.classList.toggle('expanded', box._expanded);
+    });
     updateThinkStep(box, step);
     return box;
   }
 
-  function paintThink(node, desc) {
+  function paintThink(node, desc, streaming) {
+    node._desc = desc;
     var steps = desc.steps || [];
-    var label = node.querySelector('.think-label');
-    var single = steps.length === 1 && steps[0].kind === 'tool';
-    if (label) label.textContent = single ? (steps[0].text || '工具调用') : '思考过程';
-    var head = node.querySelector('.think-head');
-    if (head) {
-      head.classList.toggle('running', steps.some(function (s) { return s.kind === 'tool' && s.running === true; }));
+    var canCollapse = steps.length > 2;
+    var showAll = !!node._expanded || !canCollapse;
+    var start = showAll ? 0 : steps.length - 2;
+    var visible = steps.slice(start);
+    var running = steps.some(function (s) { return s.kind === 'tool' && s.running === true; });
+    var more = node.querySelector('.think-more');
+    if (more) {
+      more.hidden = !canCollapse;
+      more.classList.toggle('expanded', !!node._expanded);
+      var moreLabel = more.querySelector('.think-more-label');
+      if (moreLabel) moreLabel.textContent = node._expanded ? '收起' : ('再显示 ' + (steps.length - 2) + ' 步');
     }
     var body = node.querySelector('.think-body');
-    if (body) {
-      for (var i = 0; i < steps.length; i++) {
-        var cur = body.children[i];
-        if (cur && cur.dataset.stepKind === steps[i].kind) updateThinkStep(cur, steps[i]);
-        else {
-          var fresh = thinkStepNode(steps[i]);
-          if (cur) body.replaceChild(fresh, cur); else body.appendChild(fresh);
-        }
+    if (!body) { node._text = thinkKey(desc); return; }
+    for (var i = 0; i < visible.length; i++) {
+      var fullIdx = start + i;
+      var cur = body.children[i];
+      if (cur && cur._stepIndex === fullIdx && cur.dataset.stepKind === visible[i].kind) {
+        updateThinkStep(cur, visible[i]);
+      } else {
+        var fresh = thinkStepNode(visible[i], reasoningExpanded(visible[i], streaming));
+        fresh._stepIndex = fullIdx;
+        if (cur) body.replaceChild(fresh, cur); else body.appendChild(fresh);
       }
-      for (var j = body.children.length - 1; j >= steps.length; j--) body.removeChild(body.children[j]);
     }
+    for (var j = body.children.length - 1; j >= visible.length; j--) body.removeChild(body.children[j]);
+    body.classList.toggle('running', running);
     node._text = thinkKey(desc);
   }
 
@@ -1046,15 +1125,21 @@
       return attach;
     }
     if (desc.kind === 'think') {
-      var card = document.createElement('details');
+      var card = document.createElement('div');
       card.className = 'blk blk-think';
       card.dataset.kind = 'think';
-      card.innerHTML = '<summary class="think-head">' + REASONING_ICON +
-        '<span class="think-label"></span>' + ARROW_ICON + '</summary>' +
+      card._streaming = streaming;
+      // 流式中全部铺开；落定后若开自动收起则折回末尾两步
+      card._expanded = streaming ? true : (state.appearance.autoCloseThinking === false);
+      card.innerHTML = '<button type="button" class="think-more" hidden>' + ARROW_ICON +
+        '<span class="think-more-label"></span></button>' +
         '<div class="think-body"></div>';
-      // 原生语义：流式中先露一小段，落定后按 autoCloseThinking 收起
-      card.open = !!streaming && state.appearance.autoCloseThinking !== false;
-      paintThink(card, desc);
+      card.querySelector('.think-more').addEventListener('click', function () {
+        card._expanded = !card._expanded;
+        paintThink(card, card._desc, card._streaming);
+        followBottom();
+      });
+      paintThink(card, desc, streaming);
       return card;
     }
     if (desc.kind === 'card') {
@@ -1117,10 +1202,18 @@
     }
     if (desc.kind === 'attach') return node;
     if (desc.kind === 'think') {
-      if (node._text !== thinkKey(desc)) paintThink(node, desc);
-      // 流式结束且开了自动收起：折起来（原生 autoCloseThinking 语义）
-      if (!streaming && node.open && state.appearance.autoCloseThinking !== false) node.open = false;
-      if (!streaming && state.appearance.autoCloseThinking === false) node.open = true;
+      var changed = node._text !== thinkKey(desc);
+      var streamChanged = node._streaming !== streaming;
+      if (changed || streamChanged) {
+        node._streaming = streaming;
+        if (streamChanged) {
+          // 流式结束：整卡与推理内容都按 autoCloseThinking 折起
+          node._expanded = !(!streaming && state.appearance.autoCloseThinking !== false);
+          var body = node.querySelector('.think-body');
+          if (body) body.textContent = '';
+        }
+        paintThink(node, desc, streaming);
+      }
       return node;
     }
     if (desc.kind === 'translation') {

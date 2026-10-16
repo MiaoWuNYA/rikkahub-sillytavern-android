@@ -57,6 +57,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -542,6 +545,7 @@ private fun ChatPageContent(
                     bigScreen = bigScreen,
                     drawerState = drawerState,
                     previewMode = previewMode,
+                    frontendCardMode = frontendCardPreferredNow,
                     onNewChat = {
                         navigateToChatPage(navController)
                     },
@@ -1344,6 +1348,7 @@ private fun TopBar(
     bigScreen: Boolean,
     drawerState: DrawerState,
     previewMode: Boolean,
+    frontendCardMode: Boolean = false,
     onNewChat: () -> Unit,
     onClickMenu: () -> Unit,
     onUpdateTitle: (String) -> Unit,
@@ -1356,7 +1361,25 @@ private fun TopBar(
         onUpdateTitle(it)
     }
 
+    // 前端卡（WebView）模式：消息区在 WebView 里，原生 ChatList 的顶部渐隐不生效，
+    // 顶部会完全透明、标题压在背景图上不可读。这里补一层按主题背景色的渐变遮罩——
+    // 只做普通矩形绘制，不采样 WebView 硬件层（叠加采样正是闪退的来源）。
+    val scrimColor = MaterialTheme.colorScheme.background
+    val topScrimModifier = if (frontendCardMode) {
+        Modifier.drawWithCache {
+            val scrimHeight = size.height + 24.dp.toPx()
+            val brush = Brush.verticalGradient(
+                0f to scrimColor,
+                0.6f to scrimColor.copy(alpha = 0.85f),
+                1f to scrimColor.copy(alpha = 0f),
+                startY = 0f,
+                endY = scrimHeight,
+            )
+            onDrawBehind { drawRect(brush, size = Size(size.width, scrimHeight)) }
+        }
+    } else Modifier
     TopAppBar(
+        modifier = topScrimModifier,
         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
         navigationIcon = {
             if (!bigScreen) {

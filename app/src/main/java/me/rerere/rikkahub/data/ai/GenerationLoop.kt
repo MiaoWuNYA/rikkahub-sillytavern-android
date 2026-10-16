@@ -946,6 +946,7 @@ class GenerationLoop(
             model = model,
             temperature = assistant.temperature,
             topP = assistant.topP,
+            topK = assistant.topK,
             maxTokens = maxTokensOverride ?: assistant.maxTokens,
             tools = tools,
             reasoningLevel = assistant.reasoningLevel,

@@ -17,6 +17,7 @@ import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -252,6 +253,17 @@ fun TavernRegexPage(vm: SettingVM = koinViewModel()) {
                         },
                         trailingContent = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (group.regexes.isNotEmpty()) {
+                                    Switch(
+                                        checked = group.regexes.all { it.enabled },
+                                        onCheckedChange = { enabled ->
+                                            updateGroupRegexes(
+                                                group.id,
+                                                group.regexes.map { it.copy(enabled = enabled) },
+                                            )
+                                        },
+                                    )
+                                }
                                 ItemActionMenu(
                                     actions = buildList {
                                         add(
@@ -351,11 +363,24 @@ fun TavernRegexPage(vm: SettingVM = koinViewModel()) {
                             Text(stringResource(R.string.tavern_regex_card_count, card.regexes.size))
                         },
                         trailingContent = {
-                            Icon(
-                                imageVector = HugeIcons.ArrowDown01,
-                                contentDescription = null,
-                                modifier = Modifier.rotate(if (expanded) 180f else 0f),
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (card.regexes.isNotEmpty()) {
+                                    Switch(
+                                        checked = card.regexes.all { it.enabled },
+                                        onCheckedChange = { enabled ->
+                                            applyRegexes(
+                                                card.id,
+                                                card.regexes.map { it.copy(enabled = enabled) },
+                                            )
+                                        },
+                                    )
+                                }
+                                Icon(
+                                    imageVector = HugeIcons.ArrowDown01,
+                                    contentDescription = null,
+                                    modifier = Modifier.rotate(if (expanded) 180f else 0f),
+                                )
+                            }
                         },
                     )
                     if (expanded) {

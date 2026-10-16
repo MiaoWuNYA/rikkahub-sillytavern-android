@@ -255,6 +255,7 @@ class ChatCompletionsAPI(
             if (isModelAllowTemperature(params.model)) {
                 if (params.temperature != null) put("temperature", params.temperature)
                 if (params.topP != null) put("top_p", params.topP)
+                if (params.topK != null) put("top_k", params.topK)
             }
             if (params.maxTokens != null) put("max_tokens", params.maxTokens)
 

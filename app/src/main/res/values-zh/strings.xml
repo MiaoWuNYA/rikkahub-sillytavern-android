@@ -169,7 +169,7 @@
   <string name="assistant_page_tab_request">自定义请求</string>
   <string name="assistant_page_tags">标签</string>
   <string name="assistant_page_temperature">温度</string>
-  <string name="assistant_page_temperature_warning">通常为 1。对于推理模型不建议修改。</string>
+  <string name="assistant_page_temperature_warning">更遵循剧本 → 更天马行空</string>
   <string name="assistant_page_template_preview">预览:</string>
   <string name="assistant_page_template_variable_date">日期</string>
   <string name="assistant_page_template_variable_message">内容</string>
@@ -180,9 +180,11 @@
   <string name="assistant_page_time_reminder">时间提醒</string>
   <string name="assistant_page_time_reminder_desc">在间隔较大的消息前自动插入时间提醒，帮助 AI 理解对话间隔</string>
   <string name="assistant_page_title">助手与角色卡</string>
+  <string name="assistant_page_top_k">Top K</string>
+  <string name="assistant_page_top_k_warning">对话风格固定 → 对话风格多变</string>
   <string name="assistant_page_top_p">Top P</string>
   <string name="assistant_page_top_p_value">Top P: %s</string>
-  <string name="assistant_page_top_p_warning">请不要修改此值, 除非你知道自己在做什么</string>
+  <string name="assistant_page_top_p_warning">性格单一 → 性格多面</string>
   <string name="assistant_page_use_assistant_avatar">使用角色卡头像</string>
   <string name="assistant_page_use_assistant_avatar_desc">在聊天中使用角色卡头像和名字而不是模型头像和名字</string>
   <string name="audio">音频</string>
@@ -692,7 +694,7 @@
   <string name="huadeng_tool_result_truncation_desc">工具输出超过 32KB 时自动截断并保存到文件。关闭后工具结果不截断，完整内容保留在消息历史中（若中转站导致工具调用异常，可尝试关闭)</string>
   <string name="huadeng_sub_agent">子 agent</string>
   <string name="huadeng_sub_agent_desc">允许 AI 把子任务派给独立的子 agent 执行（不产生会话历史），完成后取回结果</string>
-  <string name="huadeng_frontend_card_mode">前端兼容模式</string>
+  <string name="huadeng_frontend_card_mode">华灯前端内核</string>
   <string name="huadeng_frontend_card_mode_desc">自动识别开场白或世界书中的网页，也可按角色卡强制开启或关闭</string>
   <string name="huadeng_frontend_card_auto_switched">已自动切换前端模式</string>
   <string name="huadeng_frontend_card_slash_unsupported">前端卡命令 %1$s 暂未支持</string>
@@ -1202,6 +1204,12 @@
   <string name="proactive_next_trigger">下次触发时间</string>
   <string name="proactive_next_trigger_time">%1$s（剩余 %2$d分%3$d秒）</string>
   <string name="proactive_section_about">说明</string>
+  <string name="proactive_section_diagnostics">诊断</string>
+  <string name="proactive_section_force_jump">强制跳转</string>
+  <string name="proactive_section_interval">触发间隔</string>
+  <string name="proactive_section_system">后台权限</string>
+  <string name="proactive_section_target">发送目标</string>
+  <string name="proactive_section_trigger">触发</string>
   <string name="proactive_title">主动消息</string>
   <string name="proactive_unnamed">未命名</string>
   <string name="proactive_untitled_conversation">未命名对话</string>
@@ -3161,7 +3169,7 @@
   <string name="weixin_bot_scan_prompt">请用微信扫码</string>
   <string name="weixin_bot_unnamed">未命名</string>
   <string name="huadeng_frontend_card_mode_auto">自动识别（开场白或世界书含网页时切换）</string>
-  <string name="huadeng_frontend_card_mode_always">总是使用前端兼容模式</string>
+  <string name="huadeng_frontend_card_mode_always">总是使用华灯前端内核</string>
   <string name="huadeng_frontend_card_mode_never">总是使用原生界面</string>
   <string name="setting_page_huadeng_compat">兼容与辅助</string>
   <string name="setting_provider_page_context_length">上下文长度</string>

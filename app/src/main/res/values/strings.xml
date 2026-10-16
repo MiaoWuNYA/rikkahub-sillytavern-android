@@ -169,7 +169,7 @@
   <string name="assistant_page_tab_request">Custom Request</string>
   <string name="assistant_page_tags">Tags</string>
   <string name="assistant_page_temperature">Temperature</string>
-  <string name="assistant_page_temperature_warning">Usually 1. Not recommended to change for reasoning models.</string>
+  <string name="assistant_page_temperature_warning">Follows the script more → More imaginative</string>
   <string name="assistant_page_template_preview">Preview:</string>
   <string name="assistant_page_template_variable_date">Date</string>
   <string name="assistant_page_template_variable_message">Content</string>
@@ -180,9 +180,11 @@
   <string name="assistant_page_time_reminder">Time Reminder</string>
   <string name="assistant_page_time_reminder_desc">Automatically inject time reminders before messages with large time gaps to help AI understand conversation intervals</string>
   <string name="assistant_page_title">Assistants &amp; Character Cards</string>
+  <string name="assistant_page_top_k">Top K</string>
+  <string name="assistant_page_top_k_warning">Fixed dialogue style → Varied dialogue style</string>
   <string name="assistant_page_top_p">Top P</string>
   <string name="assistant_page_top_p_value">Top P: %s</string>
-  <string name="assistant_page_top_p_warning">Please don\'t modify this value unless you know what you\'re doing</string>
+  <string name="assistant_page_top_p_warning">Single-faceted personality → Multi-faceted personality</string>
   <string name="assistant_page_use_assistant_avatar">Use Character Card Avatar</string>
   <string name="assistant_page_use_assistant_avatar_desc">Use character card avatar and name instead of model avatar and name in chats</string>
   <string name="audio">Audio</string>
@@ -693,7 +695,7 @@
   <string name="huadeng_tool_result_truncation_desc">Tool output over 32 KB is truncated and saved to a file. Turn off to keep full tool results in message history (try this if tool calls misbehave through a proxy)</string>
   <string name="huadeng_sub_agent">Sub-Agent</string>
   <string name="huadeng_sub_agent_desc">Let the AI delegate subtasks to an independent sub-agent (no conversation history) and take back the result</string>
-  <string name="huadeng_frontend_card_mode">Frontend compatibility</string>
+  <string name="huadeng_frontend_card_mode">Huadeng Frontend Kernel</string>
   <string name="huadeng_frontend_card_mode_desc">Detects pages in the greeting or world info; can also be forced per character card</string>
   <string name="huadeng_frontend_card_auto_switched">Frontend mode switched on automatically</string>
   <string name="huadeng_frontend_card_slash_unsupported">Frontend card command %1$s is not supported yet</string>
@@ -1207,6 +1209,12 @@
   <string name="proactive_next_trigger">Next Trigger Time</string>
   <string name="proactive_next_trigger_time">%1$s (in %2$dm%3$ds)</string>
   <string name="proactive_section_about">About</string>
+  <string name="proactive_section_diagnostics">Diagnostics</string>
+  <string name="proactive_section_force_jump">Force Jump</string>
+  <string name="proactive_section_interval">Trigger Interval</string>
+  <string name="proactive_section_system">Background Access</string>
+  <string name="proactive_section_target">Send Target</string>
+  <string name="proactive_section_trigger">Trigger</string>
   <string name="proactive_title">Proactive Messages</string>
   <string name="proactive_unnamed">Unnamed</string>
   <string name="proactive_untitled_conversation">Untitled</string>
@@ -3161,7 +3169,7 @@
   <string name="weixin_bot_scan_login">Scan to Login</string>
   <string name="weixin_bot_unknown">Unknown</string>
   <string name="huadeng_frontend_card_mode_auto">Auto (detect web pages in greeting or world info)</string>
-  <string name="huadeng_frontend_card_mode_always">Always use frontend compatibility mode</string>
+  <string name="huadeng_frontend_card_mode_always">Always use the Huadeng frontend kernel</string>
   <string name="huadeng_frontend_card_mode_never">Always use the native interface</string>
   <string name="setting_page_huadeng_compat">Compatibility &amp; helpers</string>
   <string name="setting_provider_page_context_length">Context Length</string>

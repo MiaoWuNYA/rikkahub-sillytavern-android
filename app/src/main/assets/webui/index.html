@@ -62,7 +62,8 @@
   html, body {
     height: 100%; margin: 0; padding: 0;
     overflow: hidden;
-    background: var(--md-surface);
+    /* 透明：把背景交给原生 AssistantBackground，角色卡自定义背景/渐变背景才能透出 */
+    background: transparent;
     color: var(--md-on-surface);
     word-break: break-word;
     overscroll-behavior: none;
@@ -74,11 +75,6 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
     touch-action: pan-y;
-    background-color: var(--chat-bg, transparent);
-    background-image: var(--chat-bg-image, none);
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
   }
   /* 与原生 ChatList 的 contentPadding 同规格：左右 16dp、顶 16dp + 标题栏、底 48dp + 输入栏 */
   #list {
@@ -211,46 +207,61 @@
   .gen-dots i:nth-child(3) { animation-delay: .3s; }
   @keyframes genPulse { 0%, 100% { opacity: .25; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-2px); } }
 
-  /* —— 思考链：连续的思考与工具步骤收在同一张卡（原生 ChainOfThought）—— */
-  details.blk-think {
+  /* —— 思考链：对齐原生 ChainOfThought，卡片常显，步骤多时顶部给「再显示 N 步」—— */
+  .blk-think {
     width: 100%;
     background: var(--md-reasoning-bg, var(--md-surface-container-high));
     border-radius: var(--think-radius);
     padding: var(--think-pad-y) var(--think-pad-x);
   }
-  .think-head {
-    display: flex; align-items: center; gap: 8px;
-    min-height: 32px; padding: 8px 0;
-    position: relative; overflow: hidden;
-    color: var(--md-secondary); font-size: 14px; line-height: 20px;
-    cursor: pointer; list-style: none;
+  .think-more {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    margin: 0; padding: 4px 0; border: 0; background: none;
+    color: var(--md-primary); font: inherit; font-size: 12px; line-height: 16px;
+    text-align: left; cursor: pointer;
   }
-  .think-head::-webkit-details-marker { display: none; }
-  .think-head .ico { flex: 0 0 16px; width: 16px; height: 16px; }
-  .think-head .think-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .think-head .arrow { margin-left: auto; flex: 0 0 16px; width: 16px; height: 16px; transition: transform .18s; }
-  details[open] > .think-head .arrow { transform: rotate(180deg); }
-  .think-body { margin: 0 0 8px var(--think-indent); }
-  .think-step + .think-step { margin-top: 10px; }
-  .think-text {
-    font-size: 12px; line-height: 16px;
-    white-space: pre-wrap; overflow-wrap: anywhere;
-    color: var(--md-reasoning-color, var(--md-on-surface-variant));
+  .think-more[hidden] { display: none; }
+  .think-more .arrow { flex: 0 0 16px; width: 16px; height: 16px; transition: transform .18s; }
+  .think-more.expanded .arrow { transform: rotate(180deg); }
+  .think-more .think-more-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .think-body { position: relative; }
+  /* 时间线，与原生 x=12dp 的连线对应（图标背景遮住穿过的一段） */
+  .think-body::before {
+    content: ''; position: absolute; left: 8px; top: 20px; bottom: 20px;
+    width: 1px; background: var(--md-outline-variant, rgba(128, 128, 128, .3));
   }
+  .think-step { position: relative; }
   .think-step-head {
     display: flex; align-items: center; gap: 8px;
+    min-height: 24px; padding: 8px 0;
     position: relative; overflow: hidden;
     color: var(--md-secondary); font-size: 13px; line-height: 18px;
   }
-  .think-step-head .ico { flex: 0 0 16px; width: 16px; height: 16px; }
-  .think-step-head .step-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .think-step:not(.no-content) > .think-step-head { cursor: pointer; }
+  .think-step-head .ico {
+    flex: 0 0 16px; width: 16px; height: 16px;
+    position: relative; z-index: 1;
+    background: var(--md-reasoning-bg, var(--md-surface-container-high));
+  }
+  .think-step-head .step-label { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .think-step-head .step-extra { flex: 0 0 auto; margin-left: 2px; opacity: .8; font-size: 12px; }
+  .think-step-head .arrow {
+    margin-left: auto; flex: 0 0 16px; width: 16px; height: 16px;
+    opacity: .7; transition: transform .18s;
+  }
+  .think-step.expanded > .think-step-head .arrow { transform: rotate(180deg); }
+  .think-step.no-content > .think-step-head .arrow { display: none; }
   .think-step-body {
-    margin: 4px 0 0 24px;
-    font-family: ui-monospace, "Noto Sans Mono CJK SC", monospace;
+    margin: 0 0 8px 32px;
     font-size: 12px; line-height: 16px;
     color: var(--md-on-surface-variant);
   }
+  .think-step:not(.expanded) > .think-step-body { display: none; }
   .think-step-body:empty { display: none; }
+  .think-text {
+    white-space: pre-wrap; overflow-wrap: anywhere;
+    color: var(--md-reasoning-color, var(--md-on-surface-variant));
+  }
   /* 运行中的工具步骤：图标换三点并扫光，对齐原生 DotLoading + shimmer */
   .think-step-head .tool-dot { display: none; }
   .think-step-head.running .tool-dot { display: inline-flex; flex: 0 0 auto; width: auto; align-items: center; gap: 3px; }
@@ -259,7 +270,7 @@
   .tool-dot i:nth-child(2) { animation-delay: .15s; }
   .tool-dot i:nth-child(3) { animation-delay: .3s; }
   @keyframes toolDot { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
-  .think-head.running::after, .think-step-head.running::after {
+  .think-step-head.running::after {
     content: ''; position: absolute; inset: 0; pointer-events: none;
     background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, .18) 50%, transparent 70%);
     background-size: 220% 100%;
@@ -268,6 +279,7 @@
   @keyframes toolShimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
   .tool-section + .tool-section { margin-top: 8px; }
   .tool-section .tool-cap { font-size: 11px; line-height: 16px; opacity: .7; margin-bottom: 2px; }
+  .tool-section .tool-cap, .tool-section .tool-val { font-family: ui-monospace, "Noto Sans Mono CJK SC", monospace; }
   .tool-section .tool-val { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow-y: auto; }
 
   /* —— 技术统计行（ChatMessageNerdLine：labelSmall + secondary α.5）—— */
@@ -302,7 +314,6 @@
 
   /* —— 多分支切换条：图标 16dp + 8dp 内边距（触区 32dp），页码 bodySmall —— */
   .swipes { display: flex; align-items: center; gap: 8px; padding: 0 2px; }
-  .row.user .swipes { flex-direction: row-reverse; }
   .swipe-btn {
     appearance: none; -webkit-appearance: none; border: 0; background: transparent;
     color: var(--md-on-surface-variant); font: inherit; font-size: 16px; line-height: 1;
