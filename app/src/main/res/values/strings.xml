@@ -209,6 +209,8 @@
   <string name="backup_page_delete_failed">Delete failed: %s</string>
   <string name="backup_page_delete_success">Delete successful</string>
   <string name="backup_page_export_desc">Export app data to a file</string>
+  <string name="backup_page_export_upstream">Export for Official Rikkahub</string>
+  <string name="backup_page_export_upstream_desc">Export a backup the official Rikkahub can import; data of this fork\'s exclusive features is dropped</string>
   <string name="backup_page_exporting">Exporting...</string>
   <string name="backup_page_files">Files</string>
   <string name="backup_page_import_chatbox_desc">Import ChatBox provider configurations and full chat history</string>

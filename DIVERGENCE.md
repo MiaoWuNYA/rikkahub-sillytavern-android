@@ -100,6 +100,7 @@
 | `data/db/AppDatabase.kt` | 版本 26；本地实体增减（知识库实体已删）、DAO 增删 |
 | `data/db/migrations/Migration_20_21.kt` ~ `25_26.kt` | 本地新增/修改；其中 20_21/22_23 曾建知识库表，25_26 删除。**迁移链不可删**，否则升级崩溃 |
 | `data/db/dao/MessageNodeDAO.kt` | +3，小改 |
+| `data/sync/UpstreamCompat.kt` | 上游兼容导出：pin 的是官方发布版 2.5.6 的 schema（v25，`app/schemas/.../25.json` 的版本号与 identityHash）；官方发新版后同步更新这里 |
 
 ### F. 路由 / DI / Web
 
@@ -120,6 +121,7 @@ Web 相关只有小改（`web/routes/ConversationRoutes.kt` +47/-25、`SettingsR
 - WebView 消息区模式：`ui/pages/chat/WebChatSurface.kt` + `WebCardShared.kt` + `app/src/main/assets/webui/`（index.html / app.js / markdown.js / compat.js）。早期版本的 `FrontendCardChatView.kt` 与 `assets/frontend-card/` 已在 `68920fd62` 重写时删除，**不要因为看到旧文档就把它们找回来**。上游这两处都没有，冲突不适用；改外观相关设置时两处要一起改（Compose 侧 `buildAppearanceJson` 下发字段，前端 `applyAppearance` 落 CSS 变量）
 - 设置拆分页：`SettingHuaDengCompatPage.kt`、`SettingTtsPlaybackPage.kt`
 - 服务：`service/GenerationForegroundService.kt`
+- 备份：`data/sync/UpstreamCompat.kt`（备份页「导出上游兼容备份」，对齐官方发布版 2.5.6：settings.json 只留上游顶层字段，多态对象按上游序列化名白名单过滤——本地新增的工具/子类会自动丢弃，注入位置与豆包 TTS 换成上游写法；数据库降到 v25 并改写 identityHash，按白名单删表删列、补出上游独有的 MemoryEntity）。官方发新版本后同步更新里面的版本号、identityHash 与各类白名单
 
 合并时这些文件直接保留本地版本即可。
 

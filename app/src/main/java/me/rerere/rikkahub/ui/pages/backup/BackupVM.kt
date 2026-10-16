@@ -16,6 +16,7 @@ import me.rerere.rikkahub.data.datastore.WebDavConfig
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.files.saveUploadFromBytes
 import me.rerere.rikkahub.data.repository.ConversationRepository
+import me.rerere.rikkahub.data.sync.BackupManager
 import me.rerere.rikkahub.data.sync.importer.ChatboxImporter
 import me.rerere.rikkahub.data.sync.importer.CherryStudioProviderImporter
 import me.rerere.rikkahub.data.sync.webdav.WebDavBackupItem
@@ -33,6 +34,7 @@ class BackupVM(
     private val s3Sync: S3Sync,
     private val conversationRepository: ConversationRepository,
     private val filesManager: FilesManager,
+    private val backupManager: BackupManager,
 ) : ViewModel() {
     val settings = settingsStore.settingsFlow.stateIn(
         scope = viewModelScope,
@@ -96,6 +98,17 @@ class BackupVM(
     suspend fun exportToFile(): File {
         val file = webDavSync.prepareBackupFile(
             settings.value.webDavConfig.copy(items = localBackupItems.value)
+        )
+        recordBackupTime()
+        return file
+    }
+
+    /** 导出上游 rikkahub 能直接导入的备份，本地独有数据会被丢弃。 */
+    suspend fun exportUpstreamToFile(): File {
+        val file = backupManager.createBackup(
+            includeDatabase = WebDavConfig.BackupItem.DATABASE in localBackupItems.value,
+            includeFiles = WebDavConfig.BackupItem.FILES in localBackupItems.value,
+            upstreamCompatible = true,
         )
         recordBackupTime()
         return file
