@@ -109,7 +109,7 @@ import me.rerere.rikkahub.data.datastore.BackgroundEffectType
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.getQuickMessagesOfAssistant
 import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.data.files.SkillManager
+import me.rerere.rikkahub.data.skills.SkillManager
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.ThemeIconSet
 import me.rerere.rikkahub.data.model.Conversation

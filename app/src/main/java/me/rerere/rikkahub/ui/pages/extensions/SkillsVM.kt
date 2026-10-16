@@ -12,10 +12,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import me.rerere.rikkahub.data.files.SkillFrontmatterParser
-import me.rerere.rikkahub.data.files.SkillManager
-import me.rerere.rikkahub.data.files.SkillMetadata
-import me.rerere.rikkahub.data.files.SkillRegistry
+import me.rerere.rikkahub.data.skills.SkillFrontmatterParser
+import me.rerere.rikkahub.data.skills.SkillManager
+import me.rerere.rikkahub.data.skills.SkillMetadata
+import me.rerere.rikkahub.data.skills.SkillRegistry
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import java.util.LinkedHashMap
 import org.json.JSONArray

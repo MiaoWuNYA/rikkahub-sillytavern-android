@@ -9,13 +9,19 @@
 |---|---|
 | 本地分支 | `huadeng` |
 | 上游 | `rikkahub/master`（github.com/rikkahub/rikkahub，最上游） |
-| 最近合入 | `rikkahub/master`（2026-10-14 合入 16 提交：MCP 详情页 / Toaster 替换 sonner / 翻译页 MD3 改版+翻译历史 / 引号高亮开关 / 自动标题开关 / 模型上下文长度 / 工作区复制路径 / PagerTab 改 Composable label） |
-| 本次冲突 | 28 个文件，全部人工解决；数据库 v31→v32 手写迁移（新增 `translation_history` 表，`Migration_31_32`） |
+| 最近合入 | `rikkahub/master`（2026-10-16 合入 3 提交：data 包重组拆出 skills/合并 remote、OpenAI 流式 null 行容错、Wan 系列图标匹配） |
+| 本次冲突 | 6 个文件，全部人工解决；无数据库迁移 |
 | 领先提交数 | 约 1920+ |
 | 上游文件被本地修改 | 约 100 个（含重命名） |
 | 本地独有文件 | 约 50 个 |
 
-### 本次（2026-10-14）合并的固定约定
+### 本次（2026-10-16）合并的固定约定
+
+- **`data` 包重组（上游 fffa6e82e）已全量接受**：`data.files.Skill*` → `data.skills`、`data.files.RemoteFileStore`/`data.network.*` → `data.remote`、`data.api.*` → `data.remote`、`data.favorite.*` → `data.repository`、`data.export.ExportHooks` → `ui.hooks`、`data.provider.WorkspaceDocumentsProvider` → `service`。
+- **本地独有的技能域文件必须跟着上游走**：`data/files/PluginManifest.kt`、`data/files/SkillRegistry.kt` 同属技能域，已一并迁到 `data/skills/`。`SkillManager` 在 `data.skills` 内同包裸调用 `parsePluginManifest`/`listCommands`/`parseMcpJson`，留旧包会编译失败。新增技能相关文件一律放 `data.skills/`。
+- **`.data.files` 现在只剩 `FilesManager`/`FileUtils`/`MediaCreationFiles`**：`FileFolders` 仍在此包，`data.skills` 反向 import 它，不要把它一起搬走。
+- **`ui/pages/extensions/skills/*` 保持删除**：本地已把技能页重写到 `ui/pages/extensions/`（`SkillsPage`/`SkillsVM`/`SkillDetailPage`/`SkillDetailVM`），上游对这些文件的改动不回收。本期上游只改了包名 import，同样丢弃。
+- **上游 `OpenAI` 流式容错（240deb5fe）已收**：`ChatCompletionsStreamDecoder` 改用 `me.rerere.common.http.jsonObjectOrNull`/`jsonArrayOrNull`，本地同步改用同一套扩展，不要再引入 `kotlinx.serialization.json.jsonObject` 强转（中转混入 `data: null` 会崩）。
 
 - **依赖**：上游删掉了 `sonner` 与 `lucide`。本地全量迁移到上游自研 `me.rerere.ui.toast.Toaster`（`ToasterState` / `ToastType` / `rememberToasterState`），`sonner` 不再引入；`lucide` 本地仍有 5 个页面在用，故在 `gradle/libs.versions.toml` 与 `app/build.gradle.kts` 保留 `lucide-icons`。
 - **数据库**：上游把这轮新表算成 v30 且用 `AutoMigration(20→30)`，本地 20→31 是手写迁移链，**不要**把上游的 `AutoMigration(20,21)…(29,30)` 加进 `autoMigrations`（会与 `DataSourceModule` 的 `addMigrations` 重复定义）。上游新增表一律在后接一个手写迁移；本次即 `Migration_31_32`。

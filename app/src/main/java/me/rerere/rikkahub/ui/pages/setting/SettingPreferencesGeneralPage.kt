@@ -34,7 +34,7 @@ import me.rerere.rikkahub.ui.components.ui.permission.PermissionNotification
 import me.rerere.rikkahub.ui.components.ui.permission.rememberPermissionState
 import androidx.compose.material3.AlertDialog
 import me.rerere.rikkahub.BuildConfig
-import me.rerere.rikkahub.data.network.toProxyOrNull
+import me.rerere.rikkahub.data.remote.toProxyOrNull
 import okhttp3.OkHttpClient
 import org.koin.compose.koinInject
 import androidx.compose.runtime.rememberCoroutineScope

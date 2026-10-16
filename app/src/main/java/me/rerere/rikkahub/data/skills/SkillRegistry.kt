@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.files
+package me.rerere.rikkahub.data.skills
 
 /**
  * 内置 Skill 注册表 — 提供官方 marketplace 入口和搜索

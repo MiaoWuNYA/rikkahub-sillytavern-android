@@ -79,7 +79,7 @@ import me.rerere.hugeicons.stroke.Book01
 import me.rerere.hugeicons.stroke.Search01
 import me.rerere.hugeicons.stroke.Zap
 import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.data.files.SkillMetadata
+import me.rerere.rikkahub.data.skills.SkillMetadata
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.ui.components.RikkaConfirmDialog

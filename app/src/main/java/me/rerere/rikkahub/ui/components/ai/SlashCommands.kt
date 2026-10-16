@@ -2,7 +2,7 @@ package me.rerere.rikkahub.ui.components.ai
 
 import android.content.Context
 
-import me.rerere.rikkahub.data.files.CommandFile
+import me.rerere.rikkahub.data.skills.CommandFile
 import me.rerere.rikkahub.R
 
 /**
@@ -392,7 +392,7 @@ fun varSlashCommands(context: Context): List<SlashCommand> = listOf(
  * 从已启用的 skills 中收集所有 commands 和 user-invocable skills 作为斜杠命令
  */
 fun collectSlashCommands(
-    enabledSkills: List<me.rerere.rikkahub.data.files.SkillMetadata>,
+    enabledSkills: List<me.rerere.rikkahub.data.skills.SkillMetadata>,
     context: Context,
 ): List<SlashCommand> {
     val commands = enabledSkills.flatMap { skill ->

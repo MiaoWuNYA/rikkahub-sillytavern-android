@@ -101,7 +101,7 @@ import me.rerere.rikkahub.data.ai.tools.createTaskTools
 import me.rerere.rikkahub.data.ai.tools.createConversationTools
 import me.rerere.rikkahub.data.ai.tools.ChatToolFactory
 import me.rerere.rikkahub.data.ai.tools.InvalidMcpServerNamesException
-import me.rerere.rikkahub.data.files.SkillManager
+import me.rerere.rikkahub.data.skills.SkillManager
 import me.rerere.rikkahub.data.ai.transformers.Base64ImageToLocalFileTransformer
 import me.rerere.rikkahub.data.ai.context.RollingContextSummary
 import me.rerere.rikkahub.data.ai.context.automaticRollingContextThreshold

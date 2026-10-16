@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.files
+package me.rerere.rikkahub.data.skills
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json

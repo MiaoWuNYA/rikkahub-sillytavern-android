@@ -24,10 +24,10 @@ import me.rerere.rikkahub.data.ai.MemoryConsolidationScheduler
 import me.rerere.rikkahub.data.ai.MemoryConsolidator
 import me.rerere.rikkahub.data.ai.TranslationHandler
 import me.rerere.rikkahub.data.ai.transformers.TemplateTransformer
-import me.rerere.rikkahub.data.api.RikkaHubAPI
-import me.rerere.rikkahub.data.api.SponsorAPI
+import me.rerere.rikkahub.data.remote.RikkaHubAPI
+import me.rerere.rikkahub.data.remote.SponsorAPI
 import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.files.RemoteFileStore
+import me.rerere.rikkahub.data.remote.RemoteFileStore
 import me.rerere.rikkahub.data.sync.BackupManager
 import androidx.sqlite.db.SupportSQLiteDatabase
 import me.rerere.rikkahub.data.db.AppDatabaseFactory
@@ -54,9 +54,9 @@ import me.rerere.rikkahub.data.db.migrations.Migration_29_30
 import me.rerere.rikkahub.data.db.migrations.Migration_30_31
 import me.rerere.rikkahub.data.db.migrations.Migration_31_32
 import me.rerere.rikkahub.data.ai.mcp.McpManager
-import me.rerere.rikkahub.data.network.SettingsProxySelector
-import me.rerere.rikkahub.data.network.SettingsProxyAuthenticator
-import me.rerere.rikkahub.data.network.SettingsSocks5Authenticator
+import me.rerere.rikkahub.data.remote.SettingsProxySelector
+import me.rerere.rikkahub.data.remote.SettingsProxyAuthenticator
+import me.rerere.rikkahub.data.remote.SettingsSocks5Authenticator
 import me.rerere.rikkahub.data.sync.webdav.WebDavSync
 import me.rerere.search.SearchService
 import me.rerere.rikkahub.data.sync.S3Sync
