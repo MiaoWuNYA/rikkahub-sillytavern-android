@@ -57,6 +57,9 @@
     --md-inline-code-radius: 6px;
     --md-code-radius: 12px;
     --md-quote-accent: 3px;
+
+    /* 代码块：12px/16px 为基准，乘以 codeBlockFontSizeRatio */
+    --code-font-scale: 1;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
@@ -416,14 +419,14 @@
   pre > code {
     display: block; overflow-x: auto;
     background: none; padding: 8px 12px;
-    font-size: 12px; line-height: 16px; border-radius: 0;
+    font-size: calc(12px * var(--code-font-scale)); line-height: calc(16px * var(--code-font-scale)); border-radius: 0;
   }
   body.code-wrap pre > code { white-space: pre-wrap; word-break: break-word; }
-  pre.collapsed > code { max-height: calc(16px * 10); overflow: hidden; }
+  pre.collapsed > code { max-height: calc(16px * var(--code-font-scale) * 10); overflow: hidden; }
   pre > .expand {
     appearance: none; border: 0; width: 100%; padding: 6px;
     background: var(--md-surface-container-highest); color: var(--md-primary);
-    font: inherit; font-size: 12px; cursor: pointer;
+    font: inherit; font-size: calc(12px * var(--code-font-scale)); cursor: pointer;
   }
   table { border-collapse: collapse; max-width: 100%; display: block; overflow-x: auto; margin: var(--block-gap) 0; }
   th, td { border: 1px solid var(--md-outline-variant); padding: 6px 10px; }

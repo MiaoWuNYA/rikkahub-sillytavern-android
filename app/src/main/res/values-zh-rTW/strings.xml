@@ -1510,6 +1510,8 @@
   <string name="setting_display_page_code_block_auto_collapse_title">程式碼區塊自動摺疊</string>
   <string name="setting_display_page_code_block_auto_wrap_desc">自動換行程式碼區塊中的長行</string>
   <string name="setting_display_page_code_block_auto_wrap_title">程式碼區塊自動換行</string>
+  <string name="setting_display_page_code_block_font_size_preview">val text = \"RikkaHub\"\nprintln(text.uppercase())</string>
+  <string name="setting_display_page_code_block_font_size_title">程式碼區塊字體大小</string>
   <string name="setting_display_page_create_new_conversation_on_start_desc">當應用程式啟動時，自動建立一個新的對話</string>
   <string name="setting_display_page_create_new_conversation_on_start_title">啟動時新建對話</string>
   <string name="setting_display_page_enable_auto_scroll_desc">AI 正在產生內容時，自動捲動至底部</string>

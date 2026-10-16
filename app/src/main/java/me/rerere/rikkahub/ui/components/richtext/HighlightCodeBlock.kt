@@ -96,6 +96,8 @@ fun HighlightCodeBlock(
         fontSize = 12.sp,
         lineHeight = 16.sp,
     ),
+    // 设置页预览用：拖到一半时 LocalSettings 还没落盘，直接传当前值避免滞后
+    fontScaleOverride: Float? = null,
 ) {
     // 有 WebView 存活时，输入栏的模糊/玻璃效果必须让位
     TrackWebViewPresence()
@@ -118,6 +120,18 @@ fun HighlightCodeBlock(
     }
     val autoWrap = settings.displaySetting.codeBlockAutoWrap
     val showLineNumbers = settings.displaySetting.showLineNumbers
+    val codeBlockFontScale = fontScaleOverride ?: settings.displaySetting.codeBlockFontSizeRatio
+    // 代码块字号独立于正文缩放，未调过比例时保持原有的 12sp/16sp
+    val textStyle = LocalTextStyle.current.merge(style).let { base ->
+        if (codeBlockFontScale == 1f) {
+            base
+        } else {
+            base.copy(
+                fontSize = if (base.fontSize.isSp) base.fontSize * codeBlockFontScale else base.fontSize,
+                lineHeight = if (base.lineHeight.isSp) base.lineHeight * codeBlockFontScale else base.lineHeight,
+            )
+        }
+    }
 
     val createDocumentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("*/*")
@@ -182,7 +196,6 @@ fun HighlightCodeBlock(
                     )
                 }
                 else -> {
-                    val textStyle = LocalTextStyle.current.merge(style)
                     val codeLines = remember(code) { code.lines() }
                     val collapsedCode = remember(codeLines) { codeLines.take(COLLAPSE_LINES).joinToString("\n") }
                     val displayCode = if (isExpanded) code else collapsedCode
