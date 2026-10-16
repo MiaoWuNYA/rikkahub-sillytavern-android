@@ -786,6 +786,8 @@
   <string name="setting_display_page_code_block_auto_collapse_title">الطي التلقائي لكتل التعليمات البرمجية</string>
   <string name="setting_display_page_code_block_auto_wrap_desc">التفاف الأسطر الطويلة تلقائيًا في كتل التعليمات البرمجية</string>
   <string name="setting_display_page_code_block_auto_wrap_title">التفاف كتل التعليمات البرمجية تلقائيًا</string>
+  <string name="setting_display_page_code_block_font_size_preview">val text = \"RikkaHub\"\nprintln(text.uppercase())</string>
+  <string name="setting_display_page_code_block_font_size_title">حجم خط كتلة التعليمات البرمجية</string>
   <string name="setting_display_page_create_new_conversation_on_start_desc">إنشاء محادثة جديدة عند بدء التطبيق</string>
   <string name="setting_display_page_create_new_conversation_on_start_title">دردشة جديدة عند التشغيل</string>
   <string name="setting_display_page_custom_font_import">استيراد خط مخصص</string>

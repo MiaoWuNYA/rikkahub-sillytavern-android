@@ -441,6 +441,7 @@ internal fun buildAppearanceJson(
         put("autoCloseThinking", kotlinx.serialization.json.JsonPrimitive(display.autoCloseThinking))
         put("codeWrap", kotlinx.serialization.json.JsonPrimitive(display.codeBlockAutoWrap))
         put("codeCollapse", kotlinx.serialization.json.JsonPrimitive(display.codeBlockAutoCollapse))
+        put("codeFontScale", kotlinx.serialization.json.JsonPrimitive(display.codeBlockFontSizeRatio))
         put("lineNumbers", kotlinx.serialization.json.JsonPrimitive(display.showLineNumbers))
         put("latex", kotlinx.serialization.json.JsonPrimitive(display.enableLatexRendering))
 

@@ -1510,6 +1510,8 @@
   <string name="setting_display_page_code_block_auto_collapse_title">コードブロックの自動折りたたみ</string>
   <string name="setting_display_page_code_block_auto_wrap_desc">コードブロック内の長い行を自動的に折り返す</string>
   <string name="setting_display_page_code_block_auto_wrap_title">コードブロックの自動折り返し</string>
+  <string name="setting_display_page_code_block_font_size_preview">val text = \"RikkaHub\"\nprintln(text.uppercase())</string>
+  <string name="setting_display_page_code_block_font_size_title">コードブロックのフォントサイズ</string>
   <string name="setting_display_page_create_new_conversation_on_start_desc">アプリ起動時に新しい会話を自動作成する</string>
   <string name="setting_display_page_create_new_conversation_on_start_title">起動時に新しいチャット</string>
   <string name="setting_display_page_enable_auto_scroll_desc">AIがコンテンツを生成中に自動で下までスクロールする</string>

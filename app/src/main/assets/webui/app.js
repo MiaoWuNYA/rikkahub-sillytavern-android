@@ -327,6 +327,7 @@
 
     setVar('--bubble-radius', px(a.bubbleRadius, '16px'));
     setVar('--font-scale', a.fontSizeRatio == null ? null : String(a.fontSizeRatio));
+    setVar('--code-font-scale', a.codeFontScale == null ? null : String(a.codeFontScale));
     setVar('--bubble-border-width', px(a.borderWidth, '0px'));
     setVar('--bubble-image-size', a.imageSize === 'cover' ? 'cover' : 'contain');
     if (a.primaryColor) setVar('--md-primary', a.primaryColor);

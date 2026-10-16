@@ -74,6 +74,7 @@ import me.rerere.rikkahub.data.datastore.DisplaySetting
 import me.rerere.rikkahub.data.files.FileFolders
 import me.rerere.rikkahub.data.files.FileUtils
 import me.rerere.rikkahub.ui.components.nav.BackButton
+import me.rerere.rikkahub.ui.components.richtext.HighlightCodeBlock
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.CardGroupValue
@@ -412,6 +413,28 @@ internal fun SettingPreferencesUIContent(vm: SettingVM, contentPadding: PaddingV
                                 )
                             )
                         }
+                    }
+                    formItem(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_code_block_font_size_title)) },
+                        trailingContent = { CardGroupValue("${(displaySetting.codeBlockFontSizeRatio * 100).roundToInt()}%") },
+                    ) {
+                        Slider(
+                            value = displaySetting.codeBlockFontSizeRatio,
+                            onValueChange = {
+                                updateDisplaySetting(displaySetting.copy(codeBlockFontSizeRatio = it))
+                            },
+                            valueRange = 0.5f..2f,
+                            // 0.1 步进，档位落在整数百分比上（0.7f * 100 直接取整会掉到 69）
+                            steps = 14,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        HighlightCodeBlock(
+                            code = stringResource(R.string.setting_display_page_code_block_font_size_preview),
+                            language = "kotlin",
+                            modifier = Modifier.fillMaxWidth(),
+                            completeCodeBlock = false,
+                            fontScaleOverride = displaySetting.codeBlockFontSizeRatio,
+                        )
                     }
                     switchItem(
                         checked = displaySetting.enableTextColor,

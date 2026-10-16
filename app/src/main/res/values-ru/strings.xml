@@ -1510,6 +1510,8 @@
   <string name="setting_display_page_code_block_auto_collapse_title">Автосворачивание блоков кода</string>
   <string name="setting_display_page_code_block_auto_wrap_desc">Автоматически переносить длинные строки в блоках кода</string>
   <string name="setting_display_page_code_block_auto_wrap_title">Автоперенос блоков кода</string>
+  <string name="setting_display_page_code_block_font_size_preview">val text = \"RikkaHub\"\nprintln(text.uppercase())</string>
+  <string name="setting_display_page_code_block_font_size_title">Размер шрифта блока кода</string>
   <string name="setting_display_page_create_new_conversation_on_start_desc">Создавать новый диалог при запуске приложения</string>
   <string name="setting_display_page_create_new_conversation_on_start_title">Новый чат при запуске</string>
   <string name="setting_display_page_enable_auto_scroll_desc">Автоматически прокручивать вниз при генерации контента ИИ</string>
