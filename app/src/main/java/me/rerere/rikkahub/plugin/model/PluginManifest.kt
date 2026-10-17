@@ -107,7 +107,10 @@ data class PluginFrontendScript(
     val enabled: Boolean = true,
     val info: String = "",
     val buttons: List<PluginFrontendButton> = emptyList(),
-)
+) {
+    /** 用于持久化开关的稳定标识。 */
+    fun scriptKey(): String = id.ifBlank { entry }
+}
 
 /** 前端脚本按钮，保留字段供脚本查询。 */
 @Serializable

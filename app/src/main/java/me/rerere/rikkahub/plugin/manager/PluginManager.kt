@@ -54,13 +54,13 @@ class PluginManager(
         awaitInitialization()
         val payload = _plugins.value.filter { it.isEnabled }.flatMap { info ->
             info.manifest.frontend?.scripts.orEmpty()
-                .filter { it.enabled && it.entry.isNotBlank() }
+                .filter { it.enabled && it.entry.isNotBlank() && it.scriptKey() !in info.disabledFrontendScripts }
                 .mapNotNull { script ->
                     val file = File(info.directory, script.entry)
                     if (!file.isFile || file.length() > MAX_FRONTEND_SCRIPT_BYTES) return@mapNotNull null
                     runCatching {
                         PluginFrontendPayload(
-                            id = info.manifest.id + "::" + script.id.ifBlank { script.entry },
+                            id = info.manifest.id + "::" + script.scriptKey(),
                             pluginId = info.manifest.id,
                             pluginName = info.manifest.name,
                             name = script.name.ifBlank { file.nameWithoutExtension },
@@ -117,7 +117,13 @@ class PluginManager(
                 val savedConfig = repository.getPluginConfig(plugin.manifest.id)
                 val isEnabled = repository.isPluginEnabled(plugin.manifest.id)
                 val folderId = assignments[plugin.manifest.id]
-                plugin.copy(config = savedConfig, isEnabled = isEnabled, folderId = folderId)
+                val disabledScripts = repository.getDisabledFrontendScripts(plugin.manifest.id)
+                plugin.copy(
+                    config = savedConfig,
+                    isEnabled = isEnabled,
+                    folderId = folderId,
+                    disabledFrontendScripts = disabledScripts,
+                )
             }
             _plugins.value = pluginsWithConfig
             pluginsWithConfig.filter { it.isEnabled }.forEach { plugin ->
@@ -250,6 +256,18 @@ class PluginManager(
             if (plugin?.isEnabled == true) {
                 loader.unloadPlugin(pluginId)
                 loadPlugin(plugin.copy(config = config))
+            }
+        }
+    }
+
+    /** 单独启用/停用某个前端脚本（不重新加载插件，只在下次下发时生效）。 */
+    suspend fun setFrontendScriptEnabled(pluginId: String, scriptKey: String, enabled: Boolean) {
+        withContext(Dispatchers.IO) {
+            repository.setFrontendScriptEnabled(pluginId, scriptKey, enabled)
+            updatePluginState(pluginId) { info ->
+                val next = info.disabledFrontendScripts.toMutableSet()
+                if (enabled) next.remove(scriptKey) else next.add(scriptKey)
+                info.copy(disabledFrontendScripts = next)
             }
         }
     }

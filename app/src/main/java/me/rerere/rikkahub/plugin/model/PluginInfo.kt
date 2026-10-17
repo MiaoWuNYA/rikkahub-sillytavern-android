@@ -36,6 +36,11 @@ data class PluginInfo(
      * 所属文件夹 ID（逻辑分组，null 表示未分组）
      */
     val folderId: String? = null,
+
+    /**
+     * 被用户单独停用的前端脚本 id 集合（script.id 或 script.entry）
+     */
+    val disabledFrontendScripts: Set<String> = emptySet(),
 ) {
     /**
      * 获取配置值，如果不存在则返回默认值

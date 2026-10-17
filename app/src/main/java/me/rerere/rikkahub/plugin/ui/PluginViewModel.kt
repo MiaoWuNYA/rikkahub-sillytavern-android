@@ -156,6 +156,15 @@ class PluginViewModel(
     }
 
     /**
+     * 单独启用/停用某个前端脚本
+     */
+    fun setFrontendScriptEnabled(pluginId: String, scriptKey: String, enabled: Boolean) {
+        viewModelScope.launch {
+            pluginManager.setFrontendScriptEnabled(pluginId, scriptKey, enabled)
+        }
+    }
+
+    /**
      * 详情页数据卡片。
      *
      * 卡片内容是插件自己算的（比如今日卡路里），打开详情页时拉一次。失败一律当作
