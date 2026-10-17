@@ -151,6 +151,7 @@ import me.rerere.rikkahub.ui.pages.setting.SettingWebPage
 import me.rerere.rikkahub.ui.pages.setting.SettingWeixinBotPage
 import me.rerere.rikkahub.ui.pages.setting.SettingHuaDengCompatPage
 import me.rerere.rikkahub.ui.pages.setting.SettingHuaDengPage
+import me.rerere.rikkahub.ui.pages.setting.SettingTavernHelperPage
 import me.rerere.rikkahub.ui.pages.setting.SettingTavernPage
 import me.rerere.rikkahub.ui.pages.setting.TavernRegexPage
 import me.rerere.rikkahub.ui.pages.setting.SettingJevPage

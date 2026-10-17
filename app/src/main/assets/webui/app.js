@@ -1898,19 +1898,87 @@
   // —— 前端插件运行环境：页面级 TavernHelper 与事件总线 ——
   var TAVERN_EVENTS = {
     APP_READY: 'app_ready',
-    CHAT_CHANGED: 'chat_id_changed',
+    EXTRAS_CONNECTED: 'extras_connected',
+    MESSAGE_SWIPED: 'message_swiped',
     MESSAGE_SENT: 'message_sent',
     MESSAGE_RECEIVED: 'message_received',
     MESSAGE_EDITED: 'message_edited',
     MESSAGE_DELETED: 'message_deleted',
     MESSAGE_UPDATED: 'message_updated',
-    MESSAGE_SWIPED: 'message_swiped',
+    MESSAGE_FILE_EMBEDDED: 'message_file_embedded',
+    MESSAGE_REASONING_EDITED: 'message_reasoning_edited',
+    MESSAGE_REASONING_DELETED: 'message_reasoning_deleted',
+    MESSAGE_SWIPE_DELETED: 'message_swipe_deleted',
+    MORE_MESSAGES_LOADED: 'more_messages_loaded',
+    IMPERSONATE_READY: 'impersonate_ready',
+    CHAT_CHANGED: 'chat_id_changed',
+    GENERATION_AFTER_COMMANDS: 'GENERATION_AFTER_COMMANDS',
+    GENERATION_STARTED: 'generation_started',
+    GENERATION_STOPPED: 'generation_stopped',
+    GENERATION_ENDED: 'generation_ended',
+    SD_PROMPT_PROCESSING: 'sd_prompt_processing',
+    EXTENSIONS_FIRST_LOAD: 'extensions_first_load',
+    EXTENSION_SETTINGS_LOADED: 'extension_settings_loaded',
+    SETTINGS_LOADED: 'settings_loaded',
+    SETTINGS_UPDATED: 'settings_updated',
+    MOVABLE_PANELS_RESET: 'movable_panels_reset',
+    SETTINGS_LOADED_BEFORE: 'settings_loaded_before',
+    SETTINGS_LOADED_AFTER: 'settings_loaded_after',
+    CHATCOMPLETION_SOURCE_CHANGED: 'chatcompletion_source_changed',
+    CHATCOMPLETION_MODEL_CHANGED: 'chatcompletion_model_changed',
+    OAI_PRESET_CHANGED_BEFORE: 'oai_preset_changed_before',
+    OAI_PRESET_CHANGED_AFTER: 'oai_preset_changed_after',
+    OAI_PRESET_EXPORT_READY: 'oai_preset_export_ready',
+    OAI_PRESET_IMPORT_READY: 'oai_preset_import_ready',
+    WORLDINFO_SETTINGS_UPDATED: 'worldinfo_settings_updated',
+    WORLDINFO_UPDATED: 'worldinfo_updated',
+    CHARACTER_EDITOR_OPENED: 'character_editor_opened',
+    CHARACTER_EDITED: 'character_edited',
+    CHARACTER_PAGE_LOADED: 'character_page_loaded',
     USER_MESSAGE_RENDERED: 'user_message_rendered',
     CHARACTER_MESSAGE_RENDERED: 'character_message_rendered',
-    GENERATION_STARTED: 'generation_started',
-    GENERATION_ENDED: 'generation_ended',
+    FORCE_SET_BACKGROUND: 'force_set_background',
+    CHAT_DELETED: 'chat_deleted',
+    CHAT_CREATED: 'chat_created',
+    GENERATE_BEFORE_COMBINE_PROMPTS: 'generate_before_combine_prompts',
+    GENERATE_AFTER_COMBINE_PROMPTS: 'generate_after_combine_prompts',
+    GENERATE_AFTER_DATA: 'generate_after_data',
+    WORLD_INFO_ACTIVATED: 'world_info_activated',
+    TEXT_COMPLETION_SETTINGS_READY: 'text_completion_settings_ready',
+    CHAT_COMPLETION_SETTINGS_READY: 'chat_completion_settings_ready',
+    CHAT_COMPLETION_PROMPT_READY: 'chat_completion_prompt_ready',
+    CHARACTER_FIRST_MESSAGE_SELECTED: 'character_first_message_selected',
+    CHARACTER_DELETED: 'characterDeleted',
+    CHARACTER_DUPLICATED: 'character_duplicated',
+    CHARACTER_RENAMED: 'character_renamed',
+    CHARACTER_RENAMED_IN_PAST_CHAT: 'character_renamed_in_past_chat',
+    SMOOTH_STREAM_TOKEN_RECEIVED: 'stream_token_received',
     STREAM_TOKEN_RECEIVED: 'stream_token_received',
-    MORE_MESSAGES_LOADED: 'more_messages_loaded',
+    STREAM_REASONING_DONE: 'stream_reasoning_done',
+    FILE_ATTACHMENT_DELETED: 'file_attachment_deleted',
+    WORLDINFO_FORCE_ACTIVATE: 'worldinfo_force_activate',
+    OPEN_CHARACTER_LIBRARY: 'open_character_library',
+    ONLINE_STATUS_CHANGED: 'online_status_changed',
+    IMAGE_SWIPED: 'image_swiped',
+    CONNECTION_PROFILE_LOADED: 'connection_profile_loaded',
+    CONNECTION_PROFILE_CREATED: 'connection_profile_created',
+    CONNECTION_PROFILE_DELETED: 'connection_profile_deleted',
+    CONNECTION_PROFILE_UPDATED: 'connection_profile_updated',
+    TOOL_CALLS_PERFORMED: 'tool_calls_performed',
+    TOOL_CALLS_RENDERED: 'tool_calls_rendered',
+    CHARACTER_MANAGEMENT_DROPDOWN: 'charManagementDropdown',
+    SECRET_WRITTEN: 'secret_written',
+    SECRET_DELETED: 'secret_deleted',
+    SECRET_ROTATED: 'secret_rotated',
+    SECRET_EDITED: 'secret_edited',
+    PRESET_CHANGED: 'preset_changed',
+    PRESET_DELETED: 'preset_deleted',
+    PRESET_RENAMED: 'preset_renamed',
+    PRESET_RENAMED_BEFORE: 'preset_renamed_before',
+    MAIN_API_CHANGED: 'main_api_changed',
+    WORLDINFO_ENTRIES_LOADED: 'worldinfo_entries_loaded',
+    WORLDINFO_SCAN_DONE: 'worldinfo_scan_done',
+    MEDIA_ATTACHMENT_DELETED: 'media_attachment_deleted',
   };
   var IFRAME_EVENTS = {
     MESSAGE_IFRAME_RENDER_STARTED: 'message_iframe_render_started',
@@ -1944,6 +2012,12 @@
     for (var i = 0; i < snapshot.length; i++) {
       try { snapshot[i].apply(window, args || []); } catch (e) { /* 单个监听器失败不影响其余 */ }
     }
+  }
+
+  // eventOn 系列返回句柄：既是原监听器（可传给 eventRemoveListener），也带 stop()
+  function makeEventHandle(name, listener) {
+    try { listener.stop = function () { offPageEvent(name, listener); }; } catch (e) { /* 忽略 */ }
+    return listener;
   }
 
   // 原生事件名（大写）→ 酒馆事件名（大写）→ 渲染别名
@@ -2179,15 +2253,34 @@
     triggerSlash: function (cmd) { return window.webui.request('triggerSlash', cmd == null ? '' : String(cmd)); },
     substituteMacros: function (text) { return macroSubstitute(text); },
     formatAsTavernRegexedString: function (text) { return String(text == null ? '' : text); },
-    eventOn: onPageEvent,
+    eventOn: function (name, listener) { return makeEventHandle(name, onPageEvent(name, listener)); },
     eventOnce: function (name, listener) {
       var wrap = function () { offPageEvent(name, wrap); return listener.apply(window, arguments); };
-      return onPageEvent(name, wrap);
+      return makeEventHandle(name, onPageEvent(name, wrap));
+    },
+    eventMakeLast: function (name, listener) {
+      offPageEvent(name, listener);
+      (pageListeners[name] = pageListeners[name] || []).push(listener);
+      return makeEventHandle(name, listener);
+    },
+    eventMakeFirst: function (name, listener) {
+      offPageEvent(name, listener);
+      var arr = pageListeners[name] = pageListeners[name] || [];
+      arr.unshift(listener);
+      return makeEventHandle(name, listener);
     },
     eventOff: offPageEvent,
     eventRemoveListener: offPageEvent,
-    eventEmit: function (name) { emitPageEvent(name, Array.prototype.slice.call(arguments, 1)); },
-    emitEvent: function (name) { emitPageEvent(name, Array.prototype.slice.call(arguments, 1)); },
+    eventClearEvent: function (name) { delete pageListeners[name]; },
+    eventClearListener: function (listener) {
+      Object.keys(pageListeners).forEach(function (name) {
+        pageListeners[name] = pageListeners[name].filter(function (fn) { return fn !== listener; });
+      });
+    },
+    eventClearAll: function () { pageListeners = {}; },
+    eventEmit: function (name) { emitPageEvent(name, Array.prototype.slice.call(arguments, 1)); return Promise.resolve(); },
+    eventEmitAndWait: function (name) { emitPageEvent(name, Array.prototype.slice.call(arguments, 1)); return Promise.resolve(); },
+    emitEvent: function (name) { emitPageEvent(name, Array.prototype.slice.call(arguments, 1)); return Promise.resolve(); },
     waitGlobalInitialized: function (name, timeout) {
       var limit = Number(timeout) > 0 ? Number(timeout) : 10000;
       return new Promise(function (resolve) {
@@ -2216,7 +2309,9 @@
     'registerMacroLike', 'unregisterMacroLike', 'getTavernHelperVersion', 'getTavernVersion',
     'getChatMessages', 'setChatMessages', 'createChatMessages',
     'deleteChatMessages', 'getLastMessageId', 'sendMessage', 'triggerSlash', 'substituteMacros',
-    'formatAsTavernRegexedString', 'eventOn', 'eventOnce', 'eventOff', 'eventEmit', 'emitEvent',
+    'formatAsTavernRegexedString', 'eventOn', 'eventOnce', 'eventMakeLast', 'eventMakeFirst',
+    'eventOff', 'eventRemoveListener', 'eventClearEvent', 'eventClearListener', 'eventClearAll',
+    'eventEmit', 'eventEmitAndWait', 'emitEvent',
     'waitGlobalInitialized', 'getScriptId', 'getScriptName', 'getScriptInfo'
   ].forEach(function (fn) { if (typeof window[fn] !== 'function') window[fn] = tavernApi[fn]; });
   window.tavern_events = window.tavern_events || TAVERN_EVENTS;
