@@ -3,6 +3,7 @@ package me.rerere.rikkahub.plugin
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import me.rerere.rikkahub.plugin.model.PluginManifest
+import me.rerere.rikkahub.plugin.model.SillyTavernManifest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -124,6 +125,20 @@ class PluginManifestParserTest {
         assertEquals(1, scripts.size)
         assertEquals("scripts/status.js", scripts[0].entry)
         assertTrue(scripts[0].enabled)
+    }
+
+    @Test
+    fun `sillytavern manifest maps to frontend plugin`() {
+        val content = """
+            { "display_name": "酒馆助手", "js": "dist/index.js", "author": "KAKAA",
+              "version": "4.11.3", "homePage": "https://example.com" }
+        """.trimIndent()
+        val st = json.decodeFromString(SillyTavernManifest.serializer(), content)
+        val manifest = st.toPluginManifest("fallback")
+        assertEquals("酒馆助手", manifest.name)
+        assertEquals("", manifest.entry)
+        assertEquals("dist/index.js", manifest.frontend?.scripts?.first()?.entry)
+        assertEquals("4.11.3", manifest.version)
     }
 
     @Test

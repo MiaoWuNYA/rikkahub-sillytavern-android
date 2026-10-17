@@ -4,8 +4,10 @@ import android.content.Context
 import android.net.Uri
 import android.os.Environment
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import me.rerere.rikkahub.plugin.model.PluginInfo
 import me.rerere.rikkahub.plugin.model.PluginManifest
+import me.rerere.rikkahub.plugin.model.SillyTavernManifest
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipInputStream
@@ -72,7 +74,7 @@ class PluginScanner(
 
         return try {
             val content = manifestFile.readText()
-            val manifest = json.decodeFromString(PluginManifest.serializer(), content)
+            val manifest = parseManifest(content, pluginDir.name)
 
             // 完整性校验：若存在 .integrity 文件则验证，失败则禁用并标记错误
             val integrityFile = File(pluginDir, ".integrity")
@@ -137,7 +139,7 @@ class PluginScanner(
                     return Result.failure(IllegalArgumentException("manifest.json not found"))
                 }
 
-            val manifest = json.decodeFromString(PluginManifest.serializer(), manifestFile.readText())
+            val manifest = parseManifest(manifestFile.readText(), manifestFile.parentFile?.name ?: "st_extension")
 
             // 预览阶段保留 tempFile 和 tempDir，供后续 completeImport 使用
             Result.success(manifest to tempDir)
@@ -215,6 +217,20 @@ class PluginScanner(
      */
     fun getPluginDir(pluginId: String): File {
         return File(pluginsDir, pluginId)
+    }
+
+    /**
+     * 解析 manifest：本仓库格式用严格解析；酒馆助手那类前端扩展按 SillyTavern 格式映射成前端插件。
+     */
+    private fun parseManifest(content: String, fallbackId: String): PluginManifest {
+        val obj = json.parseToJsonElement(content) as? JsonObject
+        val isSillyTavern = obj != null &&
+            (obj.containsKey("display_name") || (obj.containsKey("js") && !obj.containsKey("name")))
+        return if (isSillyTavern) {
+            json.decodeFromString(SillyTavernManifest.serializer(), content).toPluginManifest(fallbackId)
+        } else {
+            json.decodeFromString(PluginManifest.serializer(), content)
+        }
     }
 
     /**
