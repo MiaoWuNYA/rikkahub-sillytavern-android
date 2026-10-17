@@ -85,7 +85,11 @@ internal fun Settings.withoutInvalidReferences(): Settings {
                 // 过滤掉不存在的快捷消息 ID
                 quickMessageIds = assistant.quickMessageIds.filter { id ->
                     id in validQuickMessageIds
-                }.toSet()
+                }.toSet(),
+                // 上下文滚动压缩入口已移除，无法再手动关闭，对所有助手统一停用
+                enableRollingContextCompression = false,
+                // 跨窗口近期记忆（允许助手读取近期生活流）入口已移除，统一停用
+                enableCrossWindowMemory = false,
             )
         },
         ttsProviders = settings.ttsProviders.distinctBy { it.id },

@@ -132,7 +132,6 @@ import me.rerere.rikkahub.ui.pages.setting.SettingPreferencesNetworkPage
 import me.rerere.rikkahub.ui.pages.setting.SettingPreferencesUIPage
 import me.rerere.rikkahub.ui.pages.setting.SettingThemePage
 import me.rerere.rikkahub.ui.pages.setting.SettingDisplayColorPage
-import me.rerere.rikkahub.ui.pages.setting.SettingMemoryPage
 import me.rerere.rikkahub.ui.pages.setting.SettingDonatePage
 import me.rerere.rikkahub.ui.pages.setting.SettingFilesPage
 import me.rerere.rikkahub.ui.pages.setting.SettingMcpDetailPage
@@ -557,10 +556,6 @@ class RouteActivity : ComponentActivity() {
                                 SettingDisplayColorPage()
                             }
 
-                            entry<Screen.SettingMemory> {
-                                SettingMemoryPage()
-                            }
-
                             entry<Screen.SettingPreferences> {
                                 SettingPreferencesPage()
                             }
@@ -942,9 +937,6 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingDisplayColor : Screen
-
-    @Serializable
-    data object SettingMemory : Screen
 
     @Serializable
     data object SettingPreferences : Screen

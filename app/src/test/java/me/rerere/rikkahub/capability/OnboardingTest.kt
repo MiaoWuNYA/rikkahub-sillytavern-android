@@ -251,7 +251,7 @@ class OnboardingTest {
     fun `extras are clickable and lead somewhere real`() {
         // 原来只有文字说明，用户看完得自己去找入口——而「去哪儿找」
         // 恰恰是新人最卡的地方。说到哪就要能点到哪。
-        listOf("Screen.Assistant", "Screen.Extensions", "Screen.SettingSearch", "Screen.SettingMemory")
+        listOf("Screen.Assistant", "Screen.Extensions", "Screen.SettingSearch")
             .forEach { target ->
                 assertTrue("可选项应能跳到 $target", page.contains(target))
             }
