@@ -710,6 +710,17 @@
     '    createPersona: function(name, persona){ var p = parentApi(); return (p && p.createPersona) ? p.createPersona(name, persona) : Promise.resolve(false); },',
     '    createOrReplacePersona: function(name, persona){ var p = parentApi(); return (p && p.createOrReplacePersona) ? p.createOrReplacePersona(name, persona) : Promise.resolve(false); },',
     '    deletePersona: function(id){ var p = parentApi(); return (p && p.deletePersona) ? p.deletePersona(id) : Promise.resolve(false); },',
+    '    getCharacterNames: function(){ var p = parentApi(); return (p && p.getCharacterNames) ? p.getCharacterNames() : []; },',
+    '    getCharacterIds: function(){ var p = parentApi(); return (p && p.getCharacterIds) ? p.getCharacterIds() : []; },',
+    '    getCurrentCharacterName: function(){ var p = parentApi(); return (p && p.getCurrentCharacterName) ? p.getCurrentCharacterName() : null; },',
+    '    getCurrentCharacterId: function(){ var p = parentApi(); return (p && p.getCurrentCharacterId) ? p.getCurrentCharacterId() : null; },',
+    '    getCharAvatarPath: function(id){ var p = parentApi(); return (p && p.getCharAvatarPath) ? p.getCharAvatarPath(id) : null; },',
+    '    getCharacter: function(id){ var p = parentApi(); return (p && p.getCharacter) ? p.getCharacter(id) : Promise.reject(new Error("no character")); },',
+    '    replaceCharacter: function(id, c){ var p = parentApi(); return (p && p.replaceCharacter) ? p.replaceCharacter(id, c) : Promise.resolve(); },',
+    '    updateCharacterWith: function(id, fn){ var p = parentApi(); return (p && p.updateCharacterWith) ? p.updateCharacterWith(id, fn) : Promise.resolve({}); },',
+    '    createCharacter: function(id, c){ var p = parentApi(); return (p && p.createCharacter) ? p.createCharacter(id, c) : Promise.resolve(false); },',
+    '    createOrReplaceCharacter: function(id, c){ var p = parentApi(); return (p && p.createOrReplaceCharacter) ? p.createOrReplaceCharacter(id, c) : Promise.resolve(false); },',
+    '    deleteCharacter: function(id){ var p = parentApi(); return (p && p.deleteCharacter) ? p.deleteCharacter(id) : Promise.resolve(false); },',
     '    eventOn: function(){ return function(){}; },',
     '    eventOnce: function(){ return function(){}; },',
     '    eventEmit: function(name, payload){ post("event", JSON.stringify({name: name, payload: payload})); },',
@@ -2219,6 +2230,13 @@
     return window.webui.request('persona', JSON.stringify(payload));
   }
 
+  function characterRequest(op, data) {
+    var payload = {};
+    if (data) Object.keys(data).forEach(function (k) { payload[k] = data[k]; });
+    payload.op = op;
+    return window.webui.request('character', JSON.stringify(payload));
+  }
+
   // 把 uid 按脚下标补齐；酒馆世界里 uid 只在世界书内部有意义
   function normalizeWorldbookEntries(list) {
     var arr = Array.isArray(list) ? list : [];
@@ -2454,6 +2472,53 @@
       return personaRequest('delete', { id: String(persona_id == null ? 'current' : persona_id) })
         .then(function (r) { return r === true || r === 'true'; });
     },
+    // ---- 角色卡 ----
+    getCharacterNames: function () { return syncCall('getCharacterNames', '') || []; },
+    getCharacterIds: function () { return syncCall('getCharacterIds', '') || []; },
+    getCurrentCharacterName: function () { return syncCall('getCurrentCharacterName', ''); },
+    getCurrentCharacterId: function () { return syncCall('getCurrentCharacterId', ''); },
+    getCharAvatarPath: function (character_name_or_id) {
+      return syncCall('getCharAvatarPath', JSON.stringify(character_name_or_id == null ? 'current' : String(character_name_or_id)));
+    },
+    getCharacter: function (character_name_or_id) {
+      var data = syncCall('getCharacter', JSON.stringify(character_name_or_id == null ? 'current' : String(character_name_or_id)));
+      if (data == null) return Promise.reject(new Error('角色卡不存在: ' + character_name_or_id));
+      return Promise.resolve(data);
+    },
+    replaceCharacter: function (character_name_or_id, character) {
+      return characterRequest('set', {
+        id: String(character_name_or_id == null ? 'current' : character_name_or_id),
+        character: character || {},
+      }).then(function () { return undefined; });
+    },
+    updateCharacterWith: function (character_name_or_id, updater) {
+      return tavernApi.getCharacter(character_name_or_id).then(function (current) {
+        return Promise.resolve(updater(current)).then(function (next) {
+          return characterRequest('set', {
+            id: String(character_name_or_id == null ? 'current' : character_name_or_id),
+            character: next,
+          }).then(function () { return next; });
+        });
+      });
+    },
+    createCharacter: function (character_name_or_id, character) {
+      return characterRequest('create', { name: String(character_name_or_id), character: character || {} })
+        .then(function (r) { return r === true || r === 'true'; });
+    },
+    createOrReplaceCharacter: function (character_name_or_id, character) {
+      var names = tavernApi.getCharacterNames();
+      var ids = tavernApi.getCharacterIds();
+      if (names.indexOf(String(character_name_or_id)) >= 0 || ids.indexOf(String(character_name_or_id)) >= 0) {
+        return characterRequest('set', { id: String(character_name_or_id), character: character || {} })
+          .then(function () { return false; });
+      }
+      return characterRequest('create', { name: String(character_name_or_id), character: character || {} })
+        .then(function () { return true; });
+    },
+    deleteCharacter: function (character_name_or_id) {
+      return characterRequest('delete', { id: String(character_name_or_id == null ? 'current' : character_name_or_id) })
+        .then(function (r) { return r === true || r === 'true'; });
+    },
     sendMessage: function (text) { native('send', text == null ? '' : String(text)); return Promise.resolve(); },
     triggerSlash: function (cmd) { return window.webui.request('triggerSlash', cmd == null ? '' : String(cmd)); },
     substituteMacros: function (text) { return macroSubstitute(text); },
@@ -2525,6 +2590,9 @@
     'getPersonaNames', 'getPersonaIds', 'getCurrentPersonaName', 'getCurrentPersonaId',
     'getPersonaAvatarPath', 'getPersona', 'replacePersona', 'updatePersonaWith',
     'createPersona', 'createOrReplacePersona', 'deletePersona',
+    'getCharacterNames', 'getCharacterIds', 'getCurrentCharacterName', 'getCurrentCharacterId',
+    'getCharAvatarPath', 'getCharacter', 'replaceCharacter', 'updateCharacterWith',
+    'createCharacter', 'createOrReplaceCharacter', 'deleteCharacter',
     'waitGlobalInitialized', 'getScriptId', 'getScriptName', 'getScriptInfo'
   ].forEach(function (fn) { if (typeof window[fn] !== 'function') window[fn] = tavernApi[fn]; });
   window.tavern_events = window.tavern_events || TAVERN_EVENTS;

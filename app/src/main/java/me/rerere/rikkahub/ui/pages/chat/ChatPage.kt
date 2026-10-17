@@ -1214,6 +1214,66 @@ private fun ChatPageContent(
                             done(result)
                         }.onFailure { done("false") }
                     },
+                    onCharacter = { payload, done ->
+                        runCatching {
+                            val obj = kotlinx.serialization.json.Json.parseToJsonElement(payload)
+                                as? kotlinx.serialization.json.JsonObject
+                            val op = obj?.get("op")?.toString()?.trim('"').orEmpty()
+                            fun resolveCharacter(key: String): me.rerere.rikkahub.data.model.Assistant? {
+                                val k = key.trim()
+                                return when {
+                                    k.isBlank() || k == "current" -> chatAssistant
+                                    else -> setting.assistants.find { it.name == k }
+                                        ?: setting.assistants.find { it.id.toString() == k }
+                                }
+                            }
+                            val result = when (op) {
+                                "set" -> {
+                                    val id = obj?.get("id")?.toString()?.trim('"').orEmpty()
+                                    val target = resolveCharacter(id)
+                                    val partial = obj?.get("character") as? kotlinx.serialization.json.JsonObject
+                                    if (target == null || partial == null) {
+                                        "false"
+                                    } else {
+                                        val updated = applyCharacterJson(target, partial)
+                                        vm.updateSettings { s ->
+                                            s.copy(assistants = s.assistants.map { if (it.id == target.id) updated else it })
+                                        }
+                                        "true"
+                                    }
+                                }
+
+                                "create" -> {
+                                    val name = obj?.get("name")?.toString()?.trim('"').orEmpty()
+                                    val partial = obj?.get("character") as? kotlinx.serialization.json.JsonObject
+                                    if (name.isBlank() || setting.assistants.any { it.name == name }) {
+                                        "false"
+                                    } else {
+                                        val created = applyCharacterJson(
+                                            me.rerere.rikkahub.data.model.Assistant(name = name),
+                                            partial ?: kotlinx.serialization.json.JsonObject(emptyMap()),
+                                        )
+                                        vm.updateSettings { s -> s.copy(assistants = s.assistants + created) }
+                                        "true"
+                                    }
+                                }
+
+                                "delete" -> {
+                                    val id = obj?.get("id")?.toString()?.trim('"').orEmpty()
+                                    val target = resolveCharacter(id)
+                                    if (target == null) {
+                                        "false"
+                                    } else {
+                                        vm.updateSettings { s -> s.copy(assistants = s.assistants.filterNot { it.id == target.id }) }
+                                        "true"
+                                    }
+                                }
+
+                                else -> "false"
+                            }
+                            done(result)
+                        }.onFailure { done("false") }
+                    },
                     onClipboard = { text ->
                         runCatching {                            val clip = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                             clip.setPrimaryClip(android.content.ClipData.newPlainText("card", text))
