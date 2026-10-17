@@ -64,6 +64,8 @@ fun WebChatSurface(
     onSaveVariables: (String) -> Unit = {},
     // 前端插件脚本（仅本模式下发），json 数组，含脚本源码
     frontendScriptsJson: String = "[]",
+    // 酒馆助手兼容渲染设置
+    helperSettingsJson: String = "{}",
     onSetVariables: (String) -> Unit = {},
     onSubstituteMacros: (suspend (String) -> String)? = null,
     onMessagesJson: () -> String = { "[]" },
@@ -371,6 +373,11 @@ fun WebChatSurface(
     LaunchedEffect(frontendScriptsJson, ready) {
         if (!ready) return@LaunchedEffect
         webViewRef?.evaluateJavascript("window.webui.setPlugins(${quoteJs(frontendScriptsJson)});", null)
+    }
+
+    LaunchedEffect(helperSettingsJson, ready) {
+        if (!ready) return@LaunchedEffect
+        webViewRef?.evaluateJavascript("window.webui.setHelperSettings(${quoteJs(helperSettingsJson)});", null)
     }
 
     LaunchedEffect(appearanceJson, ready) {
