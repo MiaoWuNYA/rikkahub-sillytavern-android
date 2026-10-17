@@ -82,6 +82,7 @@ fun WebChatSurface(
     onClipboard: (String) -> Unit = {},
     onHttpRequest: (String, (String) -> Unit) -> Unit = { _, done -> done("{}") },
     onSelectSwipe: (String) -> Unit = {},
+    onWorldbook: (String, (String) -> Unit) -> Unit = { _, done -> done("null") },
     modifier: Modifier = Modifier,
 ) {
     // 有 WebView 存活时，输入栏的模糊/玻璃效果必须让位
@@ -252,6 +253,33 @@ fun WebChatSurface(
             when (method) {
                 "getChatMessages" -> onMessagesJson()
                 "getVariables" -> variablesJson
+                "getWorldbookNames" -> {
+                    kotlinx.serialization.json.buildJsonArray {
+                        settings.lorebooks.forEach { add(kotlinx.serialization.json.JsonPrimitive(it.name)) }
+                    }.toString()
+                }
+                "getGlobalWorldbookNames" -> {
+                    kotlinx.serialization.json.buildJsonArray {
+                        settings.huadengSettings.globalWorldbookNames.forEach {
+                            add(kotlinx.serialization.json.JsonPrimitive(it))
+                        }
+                    }.toString()
+                }
+                "getCharWorldbookNames" -> {
+                    val bound = assistant.lorebookIds.mapNotNull { id -> settings.lorebooks.find { it.id == id }?.name }
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("primary", bound.firstOrNull()?.let { kotlinx.serialization.json.JsonPrimitive(it) } ?: kotlinx.serialization.json.JsonNull)
+                        put("additional", kotlinx.serialization.json.buildJsonArray {
+                            bound.drop(1).forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) }
+                        })
+                    }.toString()
+                }
+                "getChatWorldbookName" -> "null"
+                "getWorldbook" -> {
+                    val name = payload.trim().trim('"')
+                    val book = settings.lorebooks.find { it.name == name }
+                    if (book == null) "null" else lorebookEntriesToJson(book.entries).toString()
+                }
                 else -> null
             }
         }
@@ -309,6 +337,10 @@ fun WebChatSurface(
                 "triggerSlash" -> {
                     onSlash(payload)
                     bridge?.resolve(requestId, "")
+                }
+
+                "worldbook" -> {
+                    onWorldbook(payload) { result -> bridge?.resolve(requestId, result) }
                 }
 
                 else -> bridge?.resolve(requestId, "null")

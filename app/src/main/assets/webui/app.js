@@ -684,6 +684,21 @@
     '    triggerSlash: function(cmd){ var c = String(cmd == null ? "" : cmd); post("slash", c); return call("triggerSlash", c); },',
     '    substituteMacros: function(text){ return call("substituteMacros", String(text == null ? "" : text)); },',
     '    getChatMessages: function(range){ return call("getChatMessages", String(range == null ? "" : range)); },',
+    '    getWorldbookNames: function(){ var p = parentApi(); return (p && p.getWorldbookNames) ? p.getWorldbookNames() : []; },',
+    '    getGlobalWorldbookNames: function(){ var p = parentApi(); return (p && p.getGlobalWorldbookNames) ? p.getGlobalWorldbookNames() : []; },',
+    '    getCharWorldbookNames: function(){ var p = parentApi(); return (p && p.getCharWorldbookNames) ? p.getCharWorldbookNames() : {primary: null, additional: []}; },',
+    '    getChatWorldbookName: function(){ return null; },',
+    '    getWorldbook: function(name){ var p = parentApi(); return (p && p.getWorldbook) ? p.getWorldbook(name) : Promise.reject(new Error("no worldbook")); },',
+    '    replaceWorldbook: function(name, wb){ var p = parentApi(); return (p && p.replaceWorldbook) ? p.replaceWorldbook(name, wb) : Promise.resolve(); },',
+    '    updateWorldbookWith: function(name, fn){ var p = parentApi(); return (p && p.updateWorldbookWith) ? p.updateWorldbookWith(name, fn) : Promise.resolve([]); },',
+    '    createWorldbook: function(name, wb){ var p = parentApi(); return (p && p.createWorldbook) ? p.createWorldbook(name, wb) : Promise.resolve(false); },',
+    '    createOrReplaceWorldbook: function(name, wb){ var p = parentApi(); return (p && p.createOrReplaceWorldbook) ? p.createOrReplaceWorldbook(name, wb) : Promise.resolve(false); },',
+    '    deleteWorldbook: function(name){ var p = parentApi(); return (p && p.deleteWorldbook) ? p.deleteWorldbook(name) : Promise.resolve(false); },',
+    '    createWorldbookEntries: function(name, es){ var p = parentApi(); return (p && p.createWorldbookEntries) ? p.createWorldbookEntries(name, es) : Promise.resolve({worldbook: [], new_entries: []}); },',
+    '    deleteWorldbookEntries: function(name, fn){ var p = parentApi(); return (p && p.deleteWorldbookEntries) ? p.deleteWorldbookEntries(name, fn) : Promise.resolve({worldbook: [], deleted_entries: []}); },',
+    '    rebindGlobalWorldbooks: function(names){ var p = parentApi(); return (p && p.rebindGlobalWorldbooks) ? p.rebindGlobalWorldbooks(names) : Promise.resolve(); },',
+    '    rebindCharWorldbooks: function(id, wb){ var p = parentApi(); return (p && p.rebindCharWorldbooks) ? p.rebindCharWorldbooks(id, wb) : Promise.resolve(); },',
+    '    importRawWorldbook: function(name, content){ var p = parentApi(); return (p && p.importRawWorldbook) ? p.importRawWorldbook(name, content) : Promise.resolve({}); },',
     '    eventOn: function(){ return function(){}; },',
     '    eventOnce: function(){ return function(){}; },',
     '    eventEmit: function(name, payload){ post("event", JSON.stringify({name: name, payload: payload})); },',
@@ -2167,6 +2182,36 @@
     return arr.map(normalMessage).filter(function (m) { return m != null; });
   }
 
+  // 同步读原生（酒馆助手里 getWorldbookNames 这类本身是同步 API）
+  function syncCall(method, payload) {
+    try {
+      var raw = (window.rikkaNative && typeof window.rikkaNative.syncCall === 'function')
+        ? window.rikkaNative.syncCall(method, payload == null ? '' : String(payload))
+        : 'null';
+      return JSON.parse(raw);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function worldbookRequest(op, data) {
+    var payload = {};
+    if (data) Object.keys(data).forEach(function (k) { payload[k] = data[k]; });
+    payload.op = op;
+    return window.webui.request('worldbook', JSON.stringify(payload));
+  }
+
+  // 把 uid 按脚下标补齐；酒馆世界里 uid 只在世界书内部有意义
+  function normalizeWorldbookEntries(list) {
+    var arr = Array.isArray(list) ? list : [];
+    return arr.map(function (entry, index) {
+      var out = {};
+      Object.keys(entry || {}).forEach(function (k) { out[k] = entry[k]; });
+      out.uid = index;
+      return out;
+    });
+  }
+
   var tavernApi = {
     getVariables: function (option) {
       var store = scopeStore(optionScope(option)) || {};
@@ -2249,6 +2294,102 @@
       return window.webui.request('deleteChatMessages', JSON.stringify(arr));
     },
     getLastMessageId: function () { return (state.messages || []).length - 1; },
+    // ---- 世界书 ----
+    getWorldbookNames: function () { return syncCall('getWorldbookNames', '') || []; },
+    getGlobalWorldbookNames: function () { return syncCall('getGlobalWorldbookNames', '') || []; },
+    getCharWorldbookNames: function () {
+      return syncCall('getCharWorldbookNames', '') || { primary: null, additional: [] };
+    },
+    getChatWorldbookName: function () { return null; },
+    getOrCreateChatWorldbook: function (chat_name, worldbook_name) {
+      return Promise.resolve(worldbook_name || ('聊天世界书 ' + Date.now()));
+    },
+    getWorldbook: function (worldbook_name) {
+      var data = syncCall('getWorldbook', JSON.stringify(String(worldbook_name)));
+      if (data == null) return Promise.reject(new Error('世界书不存在: ' + worldbook_name));
+      return Promise.resolve(data);
+    },
+    replaceWorldbook: function (worldbook_name, worldbook) {
+      return tavernApi.getWorldbook(worldbook_name).then(function () {
+        return worldbookRequest('set', { name: String(worldbook_name), entries: normalizeWorldbookEntries(worldbook) });
+      }).then(function () { return undefined; });
+    },
+    updateWorldbookWith: function (worldbook_name, updater) {
+      return tavernApi.getWorldbook(worldbook_name).then(function (current) {
+        var result = updater(current);
+        return Promise.resolve(result).then(function (next) {
+          var normalized = normalizeWorldbookEntries(next);
+          return worldbookRequest('set', { name: String(worldbook_name), entries: normalized })
+            .then(function () { return normalized; });
+        });
+      });
+    },
+    createWorldbook: function (worldbook_name, worldbook) {
+      return worldbookRequest('set', {
+        name: String(worldbook_name),
+        entries: normalizeWorldbookEntries(worldbook),
+        createOnly: true,
+      }).then(function (r) { return r === true || r === 'true'; });
+    },
+    createOrReplaceWorldbook: function (worldbook_name, worldbook) {
+      return worldbookRequest('set', {
+        name: String(worldbook_name),
+        entries: normalizeWorldbookEntries(worldbook),
+      }).then(function (r) { return r === true || r === 'true'; });
+    },
+    deleteWorldbook: function (worldbook_name) {
+      return worldbookRequest('delete', { name: String(worldbook_name) })
+        .then(function (r) { return r === true || r === 'true'; });
+    },
+    createWorldbookEntries: function (worldbook_name, new_entries) {
+      return tavernApi.getWorldbook(worldbook_name).then(function (current) {
+        var added = normalizeWorldbookEntries(new_entries).map(function (entry, index) {
+          return Object.assign({}, entry, { uid: current.length + index });
+        });
+        var merged = current.concat(added);
+        return worldbookRequest('set', { name: String(worldbook_name), entries: merged })
+          .then(function () { return { worldbook: merged, new_entries: added }; });
+      });
+    },
+    deleteWorldbookEntries: function (worldbook_name, predicate) {
+      return tavernApi.getWorldbook(worldbook_name).then(function (current) {
+        var kept = [];
+        var removed = [];
+        current.forEach(function (entry) {
+          if (predicate(entry)) removed.push(entry); else kept.push(entry);
+        });
+        var normalized = normalizeWorldbookEntries(kept);
+        return worldbookRequest('set', { name: String(worldbook_name), entries: normalized })
+          .then(function () { return { worldbook: normalized, deleted_entries: removed }; });
+      });
+    },
+    rebindGlobalWorldbooks: function (worldbook_names) {
+      return worldbookRequest('setGlobal', { names: Array.isArray(worldbook_names) ? worldbook_names : [] })
+        .then(function () { return undefined; });
+    },
+    rebindCharWorldbooks: function (character_name_or_id, char_worldbooks) {
+      var wb = char_worldbooks || {};
+      return worldbookRequest('setChar', {
+        primary: wb.primary || null,
+        additional: Array.isArray(wb.additional) ? wb.additional : [],
+      }).then(function () { return undefined; });
+    },
+    rebindChatWorldbook: function () { return Promise.resolve(); },
+    importRawWorldbook: function (filename, content) {
+      var parsed;
+      try { parsed = JSON.parse(content); } catch (e) { parsed = null; }
+      var entries = [];
+      if (parsed && parsed.entries && !Array.isArray(parsed.entries)) {
+        entries = Object.keys(parsed.entries).map(function (key) { return parsed.entries[key]; });
+      } else if (parsed && Array.isArray(parsed.entries)) {
+        entries = parsed.entries;
+      } else if (Array.isArray(parsed)) {
+        entries = parsed;
+      }
+      return tavernApi.createOrReplaceWorldbook(filename, entries).then(function (created) {
+        return { ok: true, status: created ? 201 : 200, created: created };
+      });
+    },
     sendMessage: function (text) { native('send', text == null ? '' : String(text)); return Promise.resolve(); },
     triggerSlash: function (cmd) { return window.webui.request('triggerSlash', cmd == null ? '' : String(cmd)); },
     substituteMacros: function (text) { return macroSubstitute(text); },
@@ -2312,6 +2453,11 @@
     'formatAsTavernRegexedString', 'eventOn', 'eventOnce', 'eventMakeLast', 'eventMakeFirst',
     'eventOff', 'eventRemoveListener', 'eventClearEvent', 'eventClearListener', 'eventClearAll',
     'eventEmit', 'eventEmitAndWait', 'emitEvent',
+    'getWorldbookNames', 'getGlobalWorldbookNames', 'getCharWorldbookNames', 'getChatWorldbookName',
+    'getOrCreateChatWorldbook', 'getWorldbook', 'replaceWorldbook', 'updateWorldbookWith',
+    'createWorldbook', 'createOrReplaceWorldbook', 'deleteWorldbook', 'createWorldbookEntries',
+    'deleteWorldbookEntries', 'rebindGlobalWorldbooks', 'rebindCharWorldbooks', 'rebindChatWorldbook',
+    'importRawWorldbook',
     'waitGlobalInitialized', 'getScriptId', 'getScriptName', 'getScriptInfo'
   ].forEach(function (fn) { if (typeof window[fn] !== 'function') window[fn] = tavernApi[fn]; });
   window.tavern_events = window.tavern_events || TAVERN_EVENTS;
