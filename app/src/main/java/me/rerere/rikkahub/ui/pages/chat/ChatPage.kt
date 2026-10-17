@@ -1081,6 +1081,79 @@ private fun ChatPageContent(
                             if (node != null && index != null) vm.selectMessageNode(node.id, index)
                         }
                     },
+                    onWorldbook = { payload, done ->
+                        runCatching {
+                            val obj = kotlinx.serialization.json.Json.parseToJsonElement(payload)
+                                as? kotlinx.serialization.json.JsonObject
+                            val op = obj?.get("op")?.toString()?.trim('"').orEmpty()
+                            val name = obj?.get("name")?.toString()?.trim('"').orEmpty()
+                            val entriesJson = (obj?.get("entries") as? kotlinx.serialization.json.JsonArray)
+                            val result = when (op) {
+                                "set" -> {
+                                    val createOnly = obj?.get("createOnly")?.toString() == "true"
+                                    val existing = setting.lorebooks.find { it.name == name }
+                                    if (createOnly && existing != null) {
+                                        "false"
+                                    } else {
+                                        val entries = entriesJson?.mapNotNull { element ->
+                                            (element as? kotlinx.serialization.json.JsonObject)?.let {
+                                                jsonToLorebookEntry(it)
+                                            }
+                                        }.orEmpty()
+                                        vm.updateSettings { s ->
+                                            val book = s.lorebooks.find { it.name == name }
+                                            val updated = if (book == null) {
+                                                s.lorebooks + me.rerere.rikkahub.data.model.Lorebook(name = name, entries = entries)
+                                            } else {
+                                                s.lorebooks.map {
+                                                    if (it.name == name) it.copy(entries = entries) else it
+                                                }
+                                            }
+                                            s.copy(lorebooks = updated)
+                                        }
+                                        if (existing == null) "true" else "false"
+                                    }
+                                }
+
+                                "delete" -> {
+                                    val existed = setting.lorebooks.any { it.name == name }
+                                    if (existed) {
+                                        vm.updateSettings { s -> s.copy(lorebooks = s.lorebooks.filterNot { it.name == name }) }
+                                    }
+                                    existed.toString()
+                                }
+
+                                "setGlobal" -> {
+                                    val names = (obj?.get("names") as? kotlinx.serialization.json.JsonArray)
+                                        ?.mapNotNull { it.toString().trim('"').takeIf { text -> text.isNotBlank() } }
+                                        .orEmpty()
+                                    vm.updateSettings { s ->
+                                        s.copy(huadengSettings = s.huadengSettings.copy(globalWorldbookNames = names))
+                                    }
+                                    "true"
+                                }
+
+                                "setChar" -> {
+                                    val primary = obj?.get("primary")?.toString()?.trim('"')?.takeIf { it.isNotBlank() && it != "null" }
+                                    val additional = (obj?.get("additional") as? kotlinx.serialization.json.JsonArray)
+                                        ?.mapNotNull { it.toString().trim('"').takeIf { text -> text.isNotBlank() } }
+                                        .orEmpty()
+                                    val names = listOfNotNull(primary) + additional
+                                    val ids = names.mapNotNull { n -> setting.lorebooks.find { it.name == n }?.id }.toSet()
+                                    val assistantId = chatAssistant.id
+                                    vm.updateSettings { s ->
+                                        s.copy(assistants = s.assistants.map {
+                                            if (it.id == assistantId) it.copy(lorebookIds = ids) else it
+                                        })
+                                    }
+                                    "true"
+                                }
+
+                                else -> "false"
+                            }
+                            done(result)
+                        }.onFailure { done("false") }
+                    },
                     onClipboard = { text ->
                         runCatching {
                             val clip = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager

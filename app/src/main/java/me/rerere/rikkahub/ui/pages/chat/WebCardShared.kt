@@ -81,6 +81,11 @@ internal class RikkaNativeBridge {
         }
     }
 
+    // 同步读取入口：JS 直接拿返回值（用于酒馆助手里本身是同步的设计，如 getWorldbookNames）
+    @JavascriptInterface
+    fun syncCall(method: String, payload: String): String =
+        onSyncRequest?.invoke(method, payload) ?: "null"
+
     // 把结果回填给页面的 Promise（转义后包成 JS 字符串字面量）
     fun resolve(requestId: String, result: String) {
         if (requestId.isBlank()) return
