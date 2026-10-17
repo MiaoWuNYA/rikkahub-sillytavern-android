@@ -85,6 +85,7 @@ fun WebChatSurface(
     onWorldbook: (String, (String) -> Unit) -> Unit = { _, done -> done("null") },
     onPersona: (String, (String) -> Unit) -> Unit = { _, done -> done("null") },
     onCharacter: (String, (String) -> Unit) -> Unit = { _, done -> done("null") },
+    onPreset: (String, (String) -> Unit) -> Unit = { _, done -> done("null") },
     modifier: Modifier = Modifier,
 ) {
     // 有 WebView 存活时，输入栏的模糊/玻璃效果必须让位
@@ -340,6 +341,20 @@ fun WebChatSurface(
                 "getCharacter" -> resolveCharacter(payload)?.let {
                     assistantToCharacterJson(it, worldbookNameOf(it), characterVariables).toString()
                 } ?: "null"
+                "getPresetNames" -> kotlinx.serialization.json.buildJsonArray {
+                    settings.huadengSettings.tavernPresets.keys.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) }
+                }.toString()
+                "getLoadedPresetName" -> kotlinx.serialization.json.JsonPrimitive(
+                    settings.huadengSettings.loadedPresetName.orEmpty(),
+                ).toString()
+                "getPreset" -> {
+                    val name = payload.trim().trim('"')
+                    if (name.isBlank() || name == "in_use") {
+                        assistantToPresetJson(assistant).toString()
+                    } else {
+                        settings.huadengSettings.tavernPresets[name]?.toString() ?: "null"
+                    }
+                }
                 else -> null
             }
         }
@@ -409,6 +424,10 @@ fun WebChatSurface(
 
                 "character" -> {
                     onCharacter(payload) { result -> bridge?.resolve(requestId, result) }
+                }
+
+                "preset" -> {
+                    onPreset(payload) { result -> bridge?.resolve(requestId, result) }
                 }
 
                 else -> bridge?.resolve(requestId, "null")

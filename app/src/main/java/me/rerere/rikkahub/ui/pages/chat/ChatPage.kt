@@ -1274,6 +1274,92 @@ private fun ChatPageContent(
                             done(result)
                         }.onFailure { done("false") }
                     },
+                    onPreset = { payload, done ->
+                        runCatching {
+                            val obj = kotlinx.serialization.json.Json.parseToJsonElement(payload)
+                                as? kotlinx.serialization.json.JsonObject
+                            val op = obj?.get("op")?.toString()?.trim('"').orEmpty()
+                            val name = obj?.get("name")?.toString()?.trim('"').orEmpty()
+                            val presets = setting.huadengSettings.tavernPresets
+                            val result = when (op) {
+                                "save" -> {
+                                    val preset = obj?.get("preset") as? kotlinx.serialization.json.JsonObject
+                                    val createOnly = obj?.get("createOnly")?.toString() == "true"
+                                    val exists = presets.containsKey(name)
+                                    if (name.isBlank() || preset == null || (createOnly && exists)) {
+                                        "false"
+                                    } else {
+                                        val target = applyPresetToAssistant(chatAssistant, preset)
+                                        vm.updateSettings { s ->
+                                            s.copy(
+                                                assistants = s.assistants.map { if (it.id == target.id) target else it },
+                                                huadengSettings = s.huadengSettings.copy(
+                                                    tavernPresets = s.huadengSettings.tavernPresets + (name to preset),
+                                                    loadedPresetName = name,
+                                                ),
+                                            )
+                                        }
+                                        if (exists) "false" else "true"
+                                    }
+                                }
+
+                                "delete" -> {
+                                    if (!presets.containsKey(name)) {
+                                        "false"
+                                    } else {
+                                        vm.updateSettings { s ->
+                                            s.copy(
+                                                huadengSettings = s.huadengSettings.copy(
+                                                    tavernPresets = s.huadengSettings.tavernPresets - name,
+                                                    loadedPresetName = s.huadengSettings.loadedPresetName
+                                                        ?.takeUnless { it == name },
+                                                ),
+                                            )
+                                        }
+                                        "true"
+                                    }
+                                }
+
+                                "rename" -> {
+                                    val newName = obj?.get("newName")?.toString()?.trim('"').orEmpty()
+                                    val preset = presets[name]
+                                    if (preset == null || newName.isBlank() || presets.containsKey(newName)) {
+                                        "false"
+                                    } else {
+                                        vm.updateSettings { s ->
+                                            s.copy(
+                                                huadengSettings = s.huadengSettings.copy(
+                                                    tavernPresets = s.huadengSettings.tavernPresets - name + (newName to preset),
+                                                    loadedPresetName = s.huadengSettings.loadedPresetName
+                                                        ?.let { if (it == name) newName else it },
+                                                ),
+                                            )
+                                        }
+                                        "true"
+                                    }
+                                }
+
+                                "load" -> {
+                                    val preset = presets[name] as? kotlinx.serialization.json.JsonObject
+                                    if (preset == null) {
+                                        "false"
+                                    } else {
+                                        val target = applyPresetToAssistant(chatAssistant, preset)
+                                        vm.updateSettings { s ->
+                                            s.copy(
+                                                assistants = s.assistants.map { if (it.id == target.id) target else it },
+                                                huadengSettings = s.huadengSettings.copy(loadedPresetName = name),
+                                            )
+                                        }
+                                        "true"
+                                    }
+                                }
+
+                                else -> "false"
+                            }
+                            done(result)
+                        }.onFailure { done("false") }
+                    },
                     onClipboard = { text ->
                         runCatching {                            val clip = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                             clip.setPrimaryClip(android.content.ClipData.newPlainText("card", text))
