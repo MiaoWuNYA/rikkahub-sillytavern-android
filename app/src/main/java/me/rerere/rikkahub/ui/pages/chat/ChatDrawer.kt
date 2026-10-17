@@ -106,6 +106,7 @@ import me.rerere.rikkahub.ui.hooks.useEditState
 import me.rerere.rikkahub.ui.modifier.onClick
 import me.rerere.rikkahub.ui.theme.LocalMaterialMode
 import me.rerere.rikkahub.ui.theme.hasMaterialBorder
+import me.rerere.rikkahub.ui.theme.isGlass
 import me.rerere.rikkahub.utils.navigateToChatPage
 import me.rerere.rikkahub.utils.toDp
 import me.rerere.ui.components.Tooltip
@@ -198,8 +199,11 @@ fun ChatDrawerContent(
 
     val materialMode = LocalMaterialMode.current
     val drawerShape = DrawerDefaults.shape
-    val drawerSurfaceAlpha =
+    val drawerSurfaceAlpha = if (materialMode.isGlass) {
+        (settings.displaySetting.interfaceSurfaceOpacity / 100f * 0.6f).coerceIn(0.3f, 0.75f)
+    } else {
         (settings.displaySetting.interfaceSurfaceOpacity / 100f).coerceIn(0.6f, 1f)
+    }
     val drawerModifier = Modifier
         .width(300.dp)
         .then(

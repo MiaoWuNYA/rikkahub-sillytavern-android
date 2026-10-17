@@ -176,10 +176,16 @@ object CustomColors {
 
     val topBarColors: TopAppBarColors
         @Composable get() {
+            val glass = LocalMaterialMode.current.hasMaterialBorder
+            val container = if (glass) colorScheme.surfaceContainer.copy(alpha = 0.66f)
+            else colorScheme.surfaceContainer
             return if (!LocalDarkMode.current) TopAppBarDefaults.topAppBarColors(
-                containerColor = colorScheme.surfaceContainer,
-                scrolledContainerColor = colorScheme.surfaceContainer
-            ) else TopAppBarDefaults.topAppBarColors()
+                containerColor = container,
+                scrolledContainerColor = container
+            ) else TopAppBarDefaults.topAppBarColors(
+                containerColor = container,
+                scrolledContainerColor = container,
+            )
         }
 
     val cardColors: CardColors

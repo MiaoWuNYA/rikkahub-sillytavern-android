@@ -242,13 +242,17 @@ private fun CardGroupFormItem(
     val materialMode = LocalMaterialMode.current
     val isGlass = materialMode.isGlass
     val shape = cardGroupItemShape(index, count)
-    val interfaceAlpha =
+    val surfaceAlpha =
         (LocalDisplaySettings.current.interfaceSurfaceOpacity / 100f).coerceIn(0f, 0.95f)
     val base = CustomColors.listItemColors.containerColor
-    val containerColor = if (materialMode == DisplayMaterialMode.FLAT) base else base.copy(alpha = interfaceAlpha)
+    val containerColor = when {
+        isGlass -> base.copy(alpha = surfaceAlpha * 0.6f)
+        materialMode == DisplayMaterialMode.FLAT -> base
+        else -> base.copy(alpha = surfaceAlpha)
+    }
     val glassGradient = Brush.linearGradient(
-        0f to Color.White.copy(alpha = 0.18f),
-        0.45f to Color.White.copy(alpha = 0.08f),
+        0f to Color.White.copy(alpha = 0.30f),
+        0.4f to Color.White.copy(alpha = 0.10f),
         1f to Color.Transparent,
     )
 
@@ -317,8 +321,9 @@ private fun CardGroupListItem(
     val materialMode = LocalMaterialMode.current
     val isGlass = materialMode.isGlass
     val showBorder = materialMode.hasMaterialBorder
-    val interfaceAlpha =
+    val surfaceAlpha =
         (LocalDisplaySettings.current.interfaceSurfaceOpacity / 100f).coerceIn(0f, 0.95f)
+    val containerAlpha = if (isGlass) surfaceAlpha * 0.6f else surfaceAlpha
 
     val topCorner by animateDpAsState(
         targetValue = if (isPressed || count == 1 || isFirst) CardGroupCorner else CardGroupInnerCorner,
@@ -337,11 +342,11 @@ private fun CardGroupListItem(
     )
     val baseColors = item.colors ?: CustomColors.listItemColors
     val containerColor =
-        if (showBorder) baseColors.containerColor.copy(alpha = interfaceAlpha)
+        if (showBorder) baseColors.containerColor.copy(alpha = containerAlpha)
         else baseColors.containerColor
     val glassGradient = Brush.linearGradient(
-        0f to Color.White.copy(alpha = 0.18f),
-        0.45f to Color.White.copy(alpha = 0.08f),
+        0f to Color.White.copy(alpha = 0.30f),
+        0.4f to Color.White.copy(alpha = 0.10f),
         1f to Color.Transparent,
     )
     val glassBorder = Brush.linearGradient(
