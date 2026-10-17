@@ -736,6 +736,11 @@
     '    renamePreset: function(name, nn){ var p = parentApi(); return (p && p.renamePreset) ? p.renamePreset(name, nn) : Promise.resolve(false); },',
     '    loadPreset: function(name){ var p = parentApi(); return (p && p.loadPreset) ? p.loadPreset(name) : false; },',
     '    importRawPreset: function(name, content){ var p = parentApi(); return (p && p.importRawPreset) ? p.importRawPreset(name, content) : Promise.resolve(false); },',
+    '    getTavernRegexes: function(opt){ var p = parentApi(); return (p && p.getTavernRegexes) ? p.getTavernRegexes(opt) : []; },',
+    '    isCharacterTavernRegexesEnabled: function(){ var p = parentApi(); return (p && p.isCharacterTavernRegexesEnabled) ? p.isCharacterTavernRegexesEnabled() : true; },',
+    '    replaceTavernRegexes: function(rs, opt){ var p = parentApi(); return (p && p.replaceTavernRegexes) ? p.replaceTavernRegexes(rs, opt) : Promise.resolve(); },',
+    '    updateTavernRegexesWith: function(fn, opt){ var p = parentApi(); return (p && p.updateTavernRegexesWith) ? p.updateTavernRegexesWith(fn, opt) : Promise.resolve([]); },',
+    '    formatAsTavernRegexedString: function(t, s, d, o){ var p = parentApi(); return (p && p.formatAsTavernRegexedString) ? p.formatAsTavernRegexedString(t, s, d, o) : String(t == null ? "" : t); },',
     '    eventOn: function(){ return function(){}; },',
     '    eventOnce: function(){ return function(){}; },',
     '    eventEmit: function(name, payload){ post("event", JSON.stringify({name: name, payload: payload})); },',
@@ -2259,6 +2264,15 @@
     return window.webui.request('preset', JSON.stringify(payload));
   }
 
+  function tavernRegexRequest(option, regexes) {
+    var opt = option || { type: 'global' };
+    return window.webui.request('tavernRegex', JSON.stringify({
+      type: opt.type || 'global',
+      name: opt.name || '',
+      regexes: regexes || [],
+    }));
+  }
+
   var PRESET_SYSTEM_IDS = ['main', 'nsfw', 'jailbreak', 'enhanceDefinitions'];
   var PRESET_PLACEHOLDER_IDS = ['worldInfoBefore', 'personaDescription', 'charDescription',
     'charPersonality', 'scenario', 'worldInfoAfter', 'dialogueExamples', 'chatHistory'];
@@ -2605,10 +2619,48 @@
       var name = String(filename).replace(/\.json$/i, '');
       return presetRequest('save', { name: name, preset: parsed }).then(function () { return true; });
     },
+    // ---- 酒馆正则 ----
+    getTavernRegexes: function (option) {
+      return syncCall('getTavernRegexes', JSON.stringify(option || { type: 'global' })) || [];
+    },
+    isCharacterTavernRegexesEnabled: function () { return true; },
+    replaceTavernRegexes: function (regexes, option) {
+      return tavernRegexRequest(option, regexes).then(function () { return undefined; });
+    },
+    updateTavernRegexesWith: function (updater, option) {
+      var current = tavernApi.getTavernRegexes(option);
+      return Promise.resolve(updater(current)).then(function (next) {
+        return tavernRegexRequest(option, next).then(function () { return next; });
+      });
+    },
+    formatAsTavernRegexedString: function (text, source, destination, option) {
+      var opts = option || {};
+      var result = String(text == null ? '' : text);
+      var regexes = tavernApi.getTavernRegexes({ type: 'global' })
+        .concat(tavernApi.getTavernRegexes({ type: 'character' }));
+      try { regexes = regexes.concat(tavernApi.getTavernRegexes({ type: 'preset', name: 'in_use' })); } catch (e) {}
+      regexes.forEach(function (regex) {
+        if (!regex || regex.enabled === false) return;
+        var src = regex.source;
+        if (source && src && src[source] !== true) return;
+        var dest = regex.destination;
+        if (dest) {
+          if (destination === 'display' && dest.display === false) return;
+          if (destination === 'prompt' && dest.prompt === false) return;
+        }
+        if (opts.depth != null) {
+          if (regex.min_depth != null && opts.depth < regex.min_depth) return;
+          if (regex.max_depth != null && regex.max_depth >= 0 && opts.depth > regex.max_depth) return;
+        }
+        try {
+          result = result.replace(new RegExp(regex.find_regex, 'g'), regex.replace_string);
+        } catch (e) { /* 非法正则忽略 */ }
+      });
+      return result;
+    },
     sendMessage: function (text) { native('send', text == null ? '' : String(text)); return Promise.resolve(); },
     triggerSlash: function (cmd) { return window.webui.request('triggerSlash', cmd == null ? '' : String(cmd)); },
     substituteMacros: function (text) { return macroSubstitute(text); },
-    formatAsTavernRegexedString: function (text) { return String(text == null ? '' : text); },
     eventOn: function (name, listener) { return makeEventHandle(name, onPageEvent(name, listener)); },
     eventOnce: function (name, listener) {
       var wrap = function () { offPageEvent(name, wrap); return listener.apply(window, arguments); };
@@ -2683,6 +2735,8 @@
     'isPresetSystemPrompt', 'isPresetPlaceholderPrompt', 'replacePreset', 'updatePresetWith',
     'setPreset', 'createPreset', 'createOrReplacePreset', 'deletePreset', 'renamePreset',
     'loadPreset', 'importRawPreset',
+    'getTavernRegexes', 'isCharacterTavernRegexesEnabled', 'replaceTavernRegexes',
+    'updateTavernRegexesWith', 'formatAsTavernRegexedString',
     'waitGlobalInitialized', 'getScriptId', 'getScriptName', 'getScriptInfo'
   ].forEach(function (fn) { if (typeof window[fn] !== 'function') window[fn] = tavernApi[fn]; });
   window.tavern_events = window.tavern_events || TAVERN_EVENTS;

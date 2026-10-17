@@ -86,6 +86,7 @@ fun WebChatSurface(
     onPersona: (String, (String) -> Unit) -> Unit = { _, done -> done("null") },
     onCharacter: (String, (String) -> Unit) -> Unit = { _, done -> done("null") },
     onPreset: (String, (String) -> Unit) -> Unit = { _, done -> done("null") },
+    onTavernRegex: (String, (String) -> Unit) -> Unit = { _, done -> done("null") },
     modifier: Modifier = Modifier,
 ) {
     // 有 WebView 存活时，输入栏的模糊/玻璃效果必须让位
@@ -355,6 +356,30 @@ fun WebChatSurface(
                         settings.huadengSettings.tavernPresets[name]?.toString() ?: "null"
                     }
                 }
+                "isCharacterTavernRegexesEnabled" -> "true"
+                "getTavernRegexes" -> {
+                    val option = kotlinx.serialization.json.Json.parseToJsonElement(payload) as? kotlinx.serialization.json.JsonObject
+                    val type = option?.get("type")?.toString()?.trim('"').orEmpty()
+                    val name = option?.get("name")?.toString()?.trim('"').orEmpty()
+                    when (type) {
+                        "global" -> tavernRegexesToJson(settings.globalRegexes, "global").toString()
+                        "character" -> tavernRegexesToJson(
+                            resolveCharacter(name)?.regexes.orEmpty(),
+                            "character",
+                        ).toString()
+                        "preset" -> {
+                            val presetName = if (name.isBlank() || name == "in_use") {
+                                settings.huadengSettings.loadedPresetName.orEmpty()
+                            } else {
+                                name
+                            }
+                            val preset = settings.huadengSettings.tavernPresets[presetName] as? kotlinx.serialization.json.JsonObject
+                            val extensions = preset?.get("extensions") as? kotlinx.serialization.json.JsonObject
+                            (extensions?.get("regex_scripts") ?: kotlinx.serialization.json.buildJsonArray { }).toString()
+                        }
+                        else -> "[]"
+                    }
+                }
                 else -> null
             }
         }
@@ -428,6 +453,10 @@ fun WebChatSurface(
 
                 "preset" -> {
                     onPreset(payload) { result -> bridge?.resolve(requestId, result) }
+                }
+
+                "tavernRegex" -> {
+                    onTavernRegex(payload) { result -> bridge?.resolve(requestId, result) }
                 }
 
                 else -> bridge?.resolve(requestId, "null")

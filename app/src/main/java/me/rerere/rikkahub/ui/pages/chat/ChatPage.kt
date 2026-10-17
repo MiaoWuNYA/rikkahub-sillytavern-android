@@ -1360,6 +1360,82 @@ private fun ChatPageContent(
                             done(result)
                         }.onFailure { done("false") }
                     },
+                    onTavernRegex = { payload, done ->
+                        runCatching {
+                            val obj = kotlinx.serialization.json.Json.parseToJsonElement(payload)
+                                as? kotlinx.serialization.json.JsonObject
+                            val type = obj?.get("type")?.toString()?.trim('"').orEmpty()
+                            val name = obj?.get("name")?.toString()?.trim('"').orEmpty()
+                            val regexesJson = obj?.get("regexes") as? kotlinx.serialization.json.JsonArray
+                            val regexes = jsonToAssistantRegexes(regexesJson)
+                            val result = when (type) {
+                                "global" -> {
+                                    vm.updateSettings { s ->
+                                        val existing = s.regexGroups.find { it.name == "酒馆助手" }
+                                        val updated = if (existing == null) {
+                                            s.regexGroups + me.rerere.rikkahub.data.model.RegexGroup(
+                                                name = "酒馆助手",
+                                                regexes = regexes,
+                                            )
+                                        } else {
+                                            s.regexGroups.map { if (it.id == existing.id) it.copy(regexes = regexes) else it }
+                                        }
+                                        s.copy(regexGroups = updated)
+                                    }
+                                    "true"
+                                }
+
+                                "character" -> {
+                                    val target = setting.assistants.find { it.name == name }
+                                        ?: setting.assistants.find { it.id.toString() == name }
+                                        ?: if (name.isBlank() || name == "current") chatAssistant else null
+                                    if (target == null) {
+                                        "false"
+                                    } else {
+                                        vm.updateSettings { s ->
+                                            s.copy(assistants = s.assistants.map {
+                                                if (it.id == target.id) it.copy(regexes = regexes) else it
+                                            })
+                                        }
+                                        "true"
+                                    }
+                                }
+
+                                "preset" -> {
+                                    val presetName = if (name.isBlank() || name == "in_use") {
+                                        setting.huadengSettings.loadedPresetName.orEmpty()
+                                    } else {
+                                        name
+                                    }
+                                    val preset = setting.huadengSettings.tavernPresets[presetName]
+                                        as? kotlinx.serialization.json.JsonObject
+                                    if (preset == null || regexesJson == null) {
+                                        "false"
+                                    } else {
+                                        val extensions = (preset["extensions"] as? kotlinx.serialization.json.JsonObject)
+                                            ?: kotlinx.serialization.json.JsonObject(emptyMap())
+                                        val newExtensions = kotlinx.serialization.json.JsonObject(
+                                            extensions + ("regex_scripts" to regexesJson),
+                                        )
+                                        val newPreset = kotlinx.serialization.json.JsonObject(
+                                            preset + ("extensions" to newExtensions),
+                                        )
+                                        vm.updateSettings { s ->
+                                            s.copy(
+                                                huadengSettings = s.huadengSettings.copy(
+                                                    tavernPresets = s.huadengSettings.tavernPresets + (presetName to newPreset),
+                                                ),
+                                            )
+                                        }
+                                        "true"
+                                    }
+                                }
+
+                                else -> "false"
+                            }
+                            done(result)
+                        }.onFailure { done("false") }
+                    },
                     onClipboard = { text ->
                         runCatching {                            val clip = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                             clip.setPrimaryClip(android.content.ClipData.newPlainText("card", text))
