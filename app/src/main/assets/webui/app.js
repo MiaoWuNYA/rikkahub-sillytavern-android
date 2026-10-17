@@ -721,6 +721,21 @@
     '    createCharacter: function(id, c){ var p = parentApi(); return (p && p.createCharacter) ? p.createCharacter(id, c) : Promise.resolve(false); },',
     '    createOrReplaceCharacter: function(id, c){ var p = parentApi(); return (p && p.createOrReplaceCharacter) ? p.createOrReplaceCharacter(id, c) : Promise.resolve(false); },',
     '    deleteCharacter: function(id){ var p = parentApi(); return (p && p.deleteCharacter) ? p.deleteCharacter(id) : Promise.resolve(false); },',
+    '    getPresetNames: function(){ var p = parentApi(); return (p && p.getPresetNames) ? p.getPresetNames() : []; },',
+    '    getLoadedPresetName: function(){ var p = parentApi(); return (p && p.getLoadedPresetName) ? p.getLoadedPresetName() : ""; },',
+    '    getPreset: function(name){ var p = parentApi(); return (p && p.getPreset) ? p.getPreset(name) : {}; },',
+    '    isPresetNormalPrompt: function(pr){ var p = parentApi(); return (p && p.isPresetNormalPrompt) ? p.isPresetNormalPrompt(pr) : true; },',
+    '    isPresetSystemPrompt: function(pr){ var p = parentApi(); return (p && p.isPresetSystemPrompt) ? p.isPresetSystemPrompt(pr) : false; },',
+    '    isPresetPlaceholderPrompt: function(pr){ var p = parentApi(); return (p && p.isPresetPlaceholderPrompt) ? p.isPresetPlaceholderPrompt(pr) : false; },',
+    '    replacePreset: function(name, pr){ var p = parentApi(); return (p && p.replacePreset) ? p.replacePreset(name, pr) : Promise.resolve(); },',
+    '    updatePresetWith: function(name, fn){ var p = parentApi(); return (p && p.updatePresetWith) ? p.updatePresetWith(name, fn) : Promise.resolve(); },',
+    '    setPreset: function(name, pr){ var p = parentApi(); return (p && p.setPreset) ? p.setPreset(name, pr) : Promise.resolve(); },',
+    '    createPreset: function(name, pr){ var p = parentApi(); return (p && p.createPreset) ? p.createPreset(name, pr) : Promise.resolve(false); },',
+    '    createOrReplacePreset: function(name, pr){ var p = parentApi(); return (p && p.createOrReplacePreset) ? p.createOrReplacePreset(name, pr) : Promise.resolve(false); },',
+    '    deletePreset: function(name){ var p = parentApi(); return (p && p.deletePreset) ? p.deletePreset(name) : Promise.resolve(false); },',
+    '    renamePreset: function(name, nn){ var p = parentApi(); return (p && p.renamePreset) ? p.renamePreset(name, nn) : Promise.resolve(false); },',
+    '    loadPreset: function(name){ var p = parentApi(); return (p && p.loadPreset) ? p.loadPreset(name) : false; },',
+    '    importRawPreset: function(name, content){ var p = parentApi(); return (p && p.importRawPreset) ? p.importRawPreset(name, content) : Promise.resolve(false); },',
     '    eventOn: function(){ return function(){}; },',
     '    eventOnce: function(){ return function(){}; },',
     '    eventEmit: function(name, payload){ post("event", JSON.stringify({name: name, payload: payload})); },',
@@ -2237,6 +2252,17 @@
     return window.webui.request('character', JSON.stringify(payload));
   }
 
+  function presetRequest(op, data) {
+    var payload = {};
+    if (data) Object.keys(data).forEach(function (k) { payload[k] = data[k]; });
+    payload.op = op;
+    return window.webui.request('preset', JSON.stringify(payload));
+  }
+
+  var PRESET_SYSTEM_IDS = ['main', 'nsfw', 'jailbreak', 'enhanceDefinitions'];
+  var PRESET_PLACEHOLDER_IDS = ['worldInfoBefore', 'personaDescription', 'charDescription',
+    'charPersonality', 'scenario', 'worldInfoAfter', 'dialogueExamples', 'chatHistory'];
+
   // 把 uid 按脚下标补齐；酒馆世界里 uid 只在世界书内部有意义
   function normalizeWorldbookEntries(list) {
     var arr = Array.isArray(list) ? list : [];
@@ -2519,6 +2545,66 @@
       return characterRequest('delete', { id: String(character_name_or_id == null ? 'current' : character_name_or_id) })
         .then(function (r) { return r === true || r === 'true'; });
     },
+    // ---- 预设 ----
+    getPresetNames: function () { return syncCall('getPresetNames', '') || []; },
+    getLoadedPresetName: function () { return syncCall('getLoadedPresetName', '') || ''; },
+    getPreset: function (preset_name) {
+      var data = syncCall('getPreset', JSON.stringify(preset_name == null ? 'in_use' : String(preset_name)));
+      if (data == null) throw new Error('预设不存在: ' + preset_name);
+      return data;
+    },
+    isPresetNormalPrompt: function (prompt) {
+      return PRESET_SYSTEM_IDS.indexOf(String(prompt && prompt.id)) < 0 &&
+        PRESET_PLACEHOLDER_IDS.indexOf(String(prompt && prompt.id)) < 0;
+    },
+    isPresetSystemPrompt: function (prompt) {
+      return PRESET_SYSTEM_IDS.indexOf(String(prompt && prompt.id)) >= 0;
+    },
+    isPresetPlaceholderPrompt: function (prompt) {
+      return PRESET_PLACEHOLDER_IDS.indexOf(String(prompt && prompt.id)) >= 0;
+    },
+    replacePreset: function (preset_name, preset) {
+      var name = preset_name === 'in_use'
+        ? (tavernApi.getLoadedPresetName() || 'in_use')
+        : String(preset_name);
+      return presetRequest('save', { name: name, preset: preset || {} }).then(function () { return undefined; });
+    },
+    updatePresetWith: function (preset_name, updater) {
+      var current = tavernApi.getPreset(preset_name);
+      return Promise.resolve(updater(current)).then(function (next) {
+        return tavernApi.replacePreset(preset_name, next).then(function () { return undefined; });
+      });
+    },
+    setPreset: function (preset_name, preset) { return tavernApi.replacePreset(preset_name, preset); },
+    createPreset: function (preset_name, preset) {
+      return presetRequest('save', { name: String(preset_name), preset: preset || {}, createOnly: true })
+        .then(function (r) { return r === true || r === 'true'; });
+    },
+    createOrReplacePreset: function (preset_name, preset) {
+      return presetRequest('save', { name: String(preset_name), preset: preset || {} })
+        .then(function (r) { return r === true || r === 'true'; });
+    },
+    deletePreset: function (preset_name) {
+      return presetRequest('delete', { name: String(preset_name) })
+        .then(function (r) { return r === true || r === 'true'; });
+    },
+    renamePreset: function (preset_name, new_name) {
+      return presetRequest('rename', { name: String(preset_name), newName: String(new_name) })
+        .then(function (r) { return r === true || r === 'true'; });
+    },
+    loadPreset: function (preset_name) {
+      if (preset_name === 'in_use') return false;
+      if (tavernApi.getPresetNames().indexOf(String(preset_name)) < 0) return false;
+      presetRequest('load', { name: String(preset_name) });
+      return true;
+    },
+    importRawPreset: function (filename, content) {
+      var parsed;
+      try { parsed = JSON.parse(content); } catch (e) { parsed = null; }
+      if (parsed == null) return Promise.resolve(false);
+      var name = String(filename).replace(/\.json$/i, '');
+      return presetRequest('save', { name: name, preset: parsed }).then(function () { return true; });
+    },
     sendMessage: function (text) { native('send', text == null ? '' : String(text)); return Promise.resolve(); },
     triggerSlash: function (cmd) { return window.webui.request('triggerSlash', cmd == null ? '' : String(cmd)); },
     substituteMacros: function (text) { return macroSubstitute(text); },
@@ -2593,6 +2679,10 @@
     'getCharacterNames', 'getCharacterIds', 'getCurrentCharacterName', 'getCurrentCharacterId',
     'getCharAvatarPath', 'getCharacter', 'replaceCharacter', 'updateCharacterWith',
     'createCharacter', 'createOrReplaceCharacter', 'deleteCharacter',
+    'getPresetNames', 'getLoadedPresetName', 'getPreset', 'isPresetNormalPrompt',
+    'isPresetSystemPrompt', 'isPresetPlaceholderPrompt', 'replacePreset', 'updatePresetWith',
+    'setPreset', 'createPreset', 'createOrReplacePreset', 'deletePreset', 'renamePreset',
+    'loadPreset', 'importRawPreset',
     'waitGlobalInitialized', 'getScriptId', 'getScriptName', 'getScriptInfo'
   ].forEach(function (fn) { if (typeof window[fn] !== 'function') window[fn] = tavernApi[fn]; });
   window.tavern_events = window.tavern_events || TAVERN_EVENTS;

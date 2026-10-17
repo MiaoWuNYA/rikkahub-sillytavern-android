@@ -247,6 +247,10 @@ data class HuaDengSettings(
     val thMacroEnabled: Boolean = true,
     // 酒馆助手全局世界书（RikkaHub 无全局概念，此处仅保存酒馆脚本写入的绑定）
     val globalWorldbookNames: List<String> = emptyList(),
+    // 酒馆助手预设：整体以原始 JSON 落盘，保证脚本读写无损
+    val tavernPresets: Map<String, kotlinx.serialization.json.JsonElement> = emptyMap(),
+    // 当前从哪个预设加载而来（getLoadedPresetName）
+    val loadedPresetName: String? = null,
 
     // ---- 酒馆模式：纯净请求 ----
     // 开启后请求里只保留「角色卡（含世界书/示例消息/系统提示）+ 聊天历史 + 工具
