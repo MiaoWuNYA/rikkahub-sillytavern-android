@@ -339,8 +339,6 @@
   <string name="chat_page_select_opening">인사말 선택</string>
   <string name="chat_page_today">오늘</string>
   <string name="chat_page_yesterday">어제</string>
-  <string name="chat_size_dialog_content">현재 메시지 수: %1$d. 이로 인해 앱이 강제 종료되거나 느려질 수 있으며, 대화 데이터가 손실될 수도 있습니다. 계속 대화하려면 새 대화를 만들어 주세요.</string>
-  <string name="chat_size_dialog_title">이 대화 데이터가 너무 큽니다</string>
   <string name="citations_count">%1$d 출처</string>
   <string name="code_block_collapse">접기</string>
   <string name="code_block_copy">코드 복사</string>
@@ -1582,8 +1580,6 @@
   <string name="setting_display_page_title">디스플레이 설정</string>
   <string name="setting_display_page_tts_only_read_quoted_desc">활성화하면 TTS가 따옴표 안의 내용만 읽습니다</string>
   <string name="setting_display_page_tts_only_read_quoted_title">TTS가 인용 콘텐츠만 읽기</string>
-  <string name="setting_display_page_use_app_icon_style_loading_indicator_desc">기본 원형 로딩 표시기 대신 앱 아이콘 애니메이션을 사용합니다</string>
-  <string name="setting_display_page_use_app_icon_style_loading_indicator_title">앱 아이콘 스타일 로딩 표시기 사용</string>
   <string name="setting_display_page_volume_key_scroll_desc">볼륨 키로 페이지를 스크롤합니다. 전자 잉크 화면에 적합합니다.</string>
   <string name="setting_display_page_volume_key_scroll_ratio">스크롤 양</string>
   <string name="setting_display_page_volume_key_scroll_title">볼륨 키 페이지 스크롤</string>
@@ -1732,9 +1728,6 @@
   <string name="setting_memory_you">나</string>
   <string name="setting_model_page_chat_model">채팅 모델</string>
   <string name="setting_model_page_chat_model_desc">전역 기본 채팅 모델</string>
-  <string name="setting_model_page_compress_model">모델 압축</string>
-  <string name="setting_model_page_compress_model_desc">대화 기록 압축용 모델</string>
-  <string name="setting_model_page_compress_prompt_vars">변수: {content}, {target_tokens}, {additional_context}</string>
   <string name="setting_model_page_ocr_model">OCR 모델</string>
   <string name="setting_model_page_ocr_model_desc">이미지에서 광학 문자 인식에 사용되는 모델</string>
   <string name="setting_model_page_ocr_prompt_vars">변수: 이미지 데이터: {images}</string>
@@ -2361,7 +2354,6 @@
   <string name="setting_model_page_prompt_title">제목 생성</string>
   <string name="setting_model_page_prompt_suggestion">채팅 답변 제안</string>
   <string name="setting_model_page_prompt_ocr">OCR 인식</string>
-  <string name="setting_model_page_prompt_compress">컨텍스트 압축</string>
   <string name="setting_display_page_bubble_opacity_title">버블 불투명도</string>
   <string name="setting_provider_page_include_history_reasoning">이전 추론 내용 전송</string>
   <string name="setting_model_page_fast_model">빠른 모델</string>
@@ -2955,7 +2947,6 @@
   <string name="chat_page_compress_checkpoint_hint">이 줄 위의 메시지는 더 이상 모델로 전송되지 않으며, 이 요약이 해당 메시지를 대체합니다. 전체 기록을 다시 보내려면 요약을 삭제하세요.</string>
   <string name="chat_page_compress_blocked_generating">컨텍스트를 압축하기 전에 생성을 중지하세요</string>
   <string name="chat_page_compress_conversation_changed">압축 중에 대화가 변경되었습니다. 다시 시도해 주세요.</string>
-  <string name="chat_page_compress_pending_tools">대기 중인 도구 호출을 먼저 처리하거나, 해당 호출이 포함된 최근 메시지를 유지하세요</string>
   <string name="sketch">스케치</string>
   <string name="sketch_draw_on_image">이미지에 그리기</string>
   <string name="imggen_page_deprecated_warning">이 기능은 더 이상 사용되지 않으며 향후 버전에서 제거될 예정입니다. 대신 %1$s을(를) 사용하세요.</string>
@@ -3090,4 +3081,15 @@
   <string name="setting_display_page_enable_quote_highlight_desc">따옴표 안의 텍스트에 테마 색상을 적용하여 캐릭터 대화를 돋보이게 합니다</string>
   <string name="workspace_detail_copy_path">경로 복사</string>
   <string name="workspace_detail_path_copied">경로 복사됨</string>
+  <string name="media_creation_page_selected_count">%1$d개 선택됨</string>
+  <string name="media_creation_page_select">선택</string>
+  <string name="media_creation_page_exit_selection">선택 종료</string>
+  <string name="media_creation_page_select_all">모두 선택</string>
+  <string name="media_creation_page_deselect_all">모두 선택 해제</string>
+  <string name="media_creation_page_save">저장</string>
+  <string name="media_creation_page_saving">저장 중…</string>
+  <string name="media_creation_page_delete_selected_text">선택한 항목 %1$d개와 해당 항목의 모든 버전 및 생성된 파일이 삭제되며 복구할 수 없습니다. 아직 생성 중인 작업의 결과는 더 이상 가져오지 않습니다.</string>
+  <string name="media_creation_page_nothing_to_save">선택한 항목에 저장할 이미지나 동영상이 없습니다.</string>
+  <string name="media_creation_page_saved_files">갤러리에 파일 %1$d개를 저장했습니다</string>
+  <string name="media_creation_page_saved_files_partial">파일 %1$d개 저장됨, %2$d개 실패: %3$s</string>
 </resources>

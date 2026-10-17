@@ -350,7 +350,6 @@ enum class ConversationSortOrder {
 data class DisplaySetting(
     val userAvatar: Avatar = Avatar.Dummy,
     val userNickname: String = "",
-    val useAppIconStyleLoadingIndicator: Boolean = true,
     val showUserAvatar: Boolean = true,
     // 助手气泡默认开启。
     //
