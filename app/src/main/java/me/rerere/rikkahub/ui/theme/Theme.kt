@@ -39,6 +39,9 @@ val LocalDarkMode = compositionLocalOf { false }
 
 val LocalMaterialMode = compositionLocalOf { DisplayMaterialMode.FOLLOW_THEME }
 
+// 设置页背景图生效时置位，页面可据此让自身底色透明以露出背景图
+val LocalSettingsBackdropActive = compositionLocalOf { false }
+
 const val LIQUID_GLASS_THEME_ID = "liquid_glass"
 
 private val AMOLED_DARK_BACKGROUND = Color(0xFF000000)

@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -114,6 +115,9 @@ import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import kotlin.uuid.Uuid
 
+// 侧边栏条目统一使用更大的圆角，贴合 MD3 Expressive 观感
+private val DrawerItemShape = RoundedCornerShape(16.dp)
+
 @Composable
 fun ChatDrawerContent(
     navController: Navigator,
@@ -198,9 +202,11 @@ fun ChatDrawerContent(
     }
 
     val materialMode = LocalMaterialMode.current
-    val drawerShape = DrawerDefaults.shape
+    // 面板内侧留出更大的圆角，玻璃模式下与整体材质观感统一
+    val drawerShape = RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp)
+    // 玻璃模式下抬高底色不透明度下限，避免文字压在透出的内容上难以辨认
     val drawerSurfaceAlpha = if (materialMode.isGlass) {
-        (settings.displaySetting.interfaceSurfaceOpacity / 100f * 0.6f).coerceIn(0.3f, 0.75f)
+        (settings.displaySetting.interfaceSurfaceOpacity / 100f * 0.85f).coerceIn(0.62f, 0.95f)
     } else {
         (settings.displaySetting.interfaceSurfaceOpacity / 100f).coerceIn(0.6f, 1f)
     }
@@ -237,7 +243,11 @@ fun ChatDrawerContent(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)),
+                        .background(
+                            MaterialTheme.colorScheme.surface.copy(
+                                alpha = if (materialMode.isGlass) 0.72f else 0.55f
+                            )
+                        ),
                 )
             }
             Column(
@@ -941,7 +951,7 @@ private fun DrawerEntry(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 4.dp),
-        shape = MaterialTheme.shapes.medium,
+        shape = DrawerItemShape,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -994,7 +1004,7 @@ private fun MemoryDreamingEntry(onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 4.dp),
-        shape = MaterialTheme.shapes.medium,
+        shape = DrawerItemShape,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
         Row(

@@ -1,6 +1,8 @@
 package me.rerere.rikkahub.ui.pages.setting
 
 import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -49,7 +51,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.material3.Slider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import me.rerere.hugeicons.stroke.Delete01
+import me.rerere.rikkahub.ui.components.ui.ItemAction
+import me.rerere.rikkahub.ui.components.ui.ItemActionMenu
 import me.rerere.rikkahub.ui.components.ui.CardGroupValue
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.PagerTab
@@ -132,6 +142,24 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
     var amoledDarkMode by rememberAmoledDarkMode()
     val navController = LocalNavController.current
     val activity = LocalActivity.current
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val settingBgPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        val oldPath = settings.displaySetting.settingBackgroundImagePath
+        scope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) { importThemeImage(context, uri) }
+            }.onSuccess { path ->
+                deleteThemeFileIfOwned(context, oldPath, path)
+                vm.updateSettings {
+                    it.copy(displaySetting = it.displaySetting.copy(settingBackgroundImagePath = path))
+                }
+            }
+        }
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -337,6 +365,38 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
                                 }
                             }
                         }
+                        item(
+                            onClick = { settingBgPicker.launch("image/*") },
+                            headlineContent = { Text("设置页背景图") },
+                            supportingContent = {
+                                Text(
+                                    if (settings.displaySetting.settingBackgroundImagePath.isBlank()) "未设置"
+                                    else "已设置"
+                                )
+                            },
+                            trailingContent = {
+                                ItemActionMenu(
+                                    actions = listOf(
+                                        ItemAction(
+                                            text = "重置",
+                                            icon = HugeIcons.Delete01,
+                                            destructive = true,
+                                            enabled = settings.displaySetting.settingBackgroundImagePath.isNotBlank(),
+                                            onClick = {
+                                                deleteThemeFileIfOwned(
+                                                    context,
+                                                    settings.displaySetting.settingBackgroundImagePath,
+                                                    null,
+                                                )
+                                                vm.updateSettings {
+                                                    it.copy(displaySetting = it.displaySetting.copy(settingBackgroundImagePath = ""))
+                                                }
+                                            },
+                                        ),
+                                    )
+                                )
+                            },
+                        )
                         switchItem(
                             checked = settings.displaySetting.enableMessageGenerationHapticEffect,
                             onCheckedChange = { v ->

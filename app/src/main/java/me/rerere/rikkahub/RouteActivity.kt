@@ -48,7 +48,10 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import coil3.ImageLoader
+import coil3.compose.AsyncImage
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.gif.AnimatedImageDecoder
 import coil3.gif.GifDecoder
@@ -160,6 +163,7 @@ import me.rerere.rikkahub.ui.pages.share.handler.ShareHandlerPage
 import me.rerere.rikkahub.ui.pages.stats.StatsPage
 import me.rerere.rikkahub.ui.pages.translator.TranslatorPage
 import me.rerere.rikkahub.ui.pages.webview.WebViewPage
+import me.rerere.rikkahub.ui.theme.LocalSettingsBackdropActive
 import me.rerere.rikkahub.ui.theme.RikkahubTheme
 import me.rerere.rikkahub.utils.CrashHandler
 import me.rerere.rikkahub.utils.openUsageAccessSettings
@@ -401,12 +405,36 @@ class RouteActivity : ComponentActivity() {
                 LocalASRState provides asr,
             ) {
                 TTSController()
+                val settingBackdropPath = settings.displaySetting.settingBackgroundImagePath
+                val showSettingBackdrop = settingBackdropPath.isNotBlank() &&
+                    (backStack.lastOrNull() as? Screen)?.isSettingScreen() == true
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .semantics { testTagsAsResourceId = true }
                         .background(MaterialTheme.colorScheme.background)
                 ) {
+                    if (showSettingBackdrop) {
+                        AsyncImage(
+                            model = settingBackdropPath,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.matchParentSize(),
+                        )
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.85f)),
+                        )
+                    }
+                    CompositionLocalProvider(LocalSettingsBackdropActive provides showSettingBackdrop) {
+                        MaterialTheme(
+                            colorScheme = if (showSettingBackdrop) {
+                                MaterialTheme.colorScheme.copy(background = Color.Transparent)
+                            } else {
+                                MaterialTheme.colorScheme
+                            },
+                        ) {
                     NavDisplay(
                         backStack = backStack,
                         entryDecorators = listOf(
@@ -809,6 +837,8 @@ class RouteActivity : ComponentActivity() {
 
                         }
                     )
+                        }
+                    }
                     if (BuildConfig.DEBUG) {
                         Text(
                             text = "[开发模式]",
@@ -859,6 +889,33 @@ class RouteActivity : ComponentActivity() {
             }
         }
     }
+}
+
+// 设置页背景图只作用于设置相关路由，避免透到聊天等页面
+private fun Screen.isSettingScreen(): Boolean = when (this) {
+    Screen.Setting, Screen.Backup,
+    Screen.SettingTheme, Screen.SettingDisplayColor,
+    Screen.SettingPreferences, Screen.SettingPreferencesTheme,
+    Screen.SettingPreferencesNotification, Screen.SettingPreferencesGeneral,
+    Screen.SettingPreferencesUI, Screen.SettingPreferencesNetwork,
+    Screen.SettingProvider, Screen.SettingModels, Screen.SettingAbout,
+    Screen.SettingSearch, Screen.SettingSpeech, Screen.SettingTtsPlayback,
+    Screen.SettingMedia, Screen.SettingMcp, Screen.SettingDonate,
+    Screen.SettingFiles, Screen.SettingWeb, Screen.SettingTavern,
+    Screen.SettingTavernRegex, Screen.SettingHuaDeng, Screen.SettingHuaDengCompat,
+    Screen.SettingTavernHelper, Screen.SettingJev, Screen.SettingSecurity,
+    Screen.SettingWeixinBot, Screen.SettingQqBot, Screen.SettingProactiveMessage,
+    Screen.Persona, Screen.AuthorsNote, Screen.Extensions, Screen.QuickMessages,
+    Screen.Prompts, Screen.Skills, Screen.Plugins, Screen.Workspaces,
+    Screen.Stats -> true
+
+    is Screen.SettingProviderDetail, is Screen.SettingSearchDetail,
+    is Screen.SettingMcpDetail, is Screen.SkillDetail,
+    is Screen.PluginFolder, is Screen.PluginDetail,
+    is Screen.WorkspaceDetail, is Screen.WorkspaceTerminal,
+    is Screen.WorkspaceFileEditor -> true
+
+    else -> false
 }
 
 sealed interface Screen : NavKey {

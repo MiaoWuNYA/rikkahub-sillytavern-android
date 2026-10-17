@@ -431,6 +431,8 @@ data class DisplaySetting(
     val bubbleBackgroundSize: String = "contain",
     // 抽屉（侧边栏）背景图路径
     val drawerBackgroundPath: String = "",
+    // 设置页通用背景图路径，应用于全部设置页面
+    val settingBackgroundImagePath: String = "",
     // 聊天背景图路径（酒馆主题导入或手动设置），优先于助手背景；叠加聊天背景色遮罩
     val chatBackgroundImagePath: String = "",
     // 酒馆主题图标定制（发送栏/菜单/扩展/停止/头像框），空值 = 未导入主题图标

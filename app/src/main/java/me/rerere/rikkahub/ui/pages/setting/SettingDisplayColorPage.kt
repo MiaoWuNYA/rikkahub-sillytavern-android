@@ -818,7 +818,7 @@ private fun ColorItemTrailing(
 }
 
 /** 把选中的图片拷贝到应用私有目录，返回可长期使用的文件 URI 字符串 */
-private fun importThemeImage(context: Context, uri: Uri): String {
+internal fun importThemeImage(context: Context, uri: Uri): String {
     val imageDir = File(context.filesDir, "images/theme").apply { mkdirs() }
     val displayName = runCatching {
         context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
@@ -936,7 +936,7 @@ private fun resolveTtfOrOtfUrl(cssUrl: String): String? {
 }
 
 /** 删除被替换/重置的旧主题背景文件（仅限应用私有 images/theme 目录内的文件） */
-private fun deleteThemeFileIfOwned(context: Context, path: String?, keep: String?) {
+internal fun deleteThemeFileIfOwned(context: Context, path: String?, keep: String?) {
     if (path.isNullOrBlank() || path == keep) return
     val owned = File(context.filesDir, "images/theme").absolutePath
     val file = Uri.parse(path).path?.let(::File) ?: return
