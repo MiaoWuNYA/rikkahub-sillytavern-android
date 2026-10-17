@@ -381,8 +381,6 @@
   <string name="chat_page_voice_transcribing">جارٍ إنهاء النسخ النصي…</string>
   <string name="chat_page_voice_unsupported_asr">مزوّد ASR هذا لا يدعم تحديد نقاط نهاية الكلام من جانب الخادم. استخدم OpenAI Realtime أو DashScope أو Volcengine.</string>
   <string name="chat_page_yesterday">أمس</string>
-  <string name="chat_size_dialog_content">عدد الرسائل الحالي: %1$d. قد يؤدي هذا إلى تعطل التطبيق أو تباطؤه، أو حتى فقدان بيانات هذه المحادثة. يرجى إنشاء محادثة جديدة في أقرب وقت ممكن لمواصلة الدردشة.</string>
-  <string name="chat_size_dialog_title">حجم بيانات هذه المحادثة كبير جدًا</string>
   <string name="citations_count">%1$d استشهادات</string>
   <string name="code_block_collapse">طي</string>
   <string name="code_block_copy">نسخ الكود</string>
@@ -842,8 +840,6 @@
   <string name="setting_display_page_tts_only_read_quoted_title">قراءة TTS للمحتوى المقتبس فقط</string>
   <string name="setting_display_page_tts_read_outside_brackets_desc">عند التمكين، لن يقرأ TTS المحتوى الموجود داخل الأقواس</string>
   <string name="setting_display_page_tts_read_outside_brackets_title">تخطي TTS للمحتوى بين الأقواس</string>
-  <string name="setting_display_page_use_app_icon_style_loading_indicator_desc">استخدم أيقونة التطبيق المتحركة بدلاً من مؤشر التحميل الدائري الافتراضي</string>
-  <string name="setting_display_page_use_app_icon_style_loading_indicator_title">استخدام مؤشر تحميل بنمط أيقونة التطبيق</string>
   <string name="setting_display_page_volume_key_scroll_desc">تمرير الصفحات باستخدام مفاتيح الصوت، مثالي لشاشات الحبر الإلكتروني</string>
   <string name="setting_display_page_volume_key_scroll_ratio">مقدار التمرير</string>
   <string name="setting_display_page_volume_key_scroll_title">تمرير الصفحات بمفاتيح الصوت</string>
@@ -902,9 +898,6 @@
   <string name="setting_mcp_page_url_label">URL</string>
   <string name="setting_model_page_chat_model">نموذج الدردشة</string>
   <string name="setting_model_page_chat_model_desc">نموذج الدردشة الافتراضي العام</string>
-  <string name="setting_model_page_compress_model">نموذج الضغط</string>
-  <string name="setting_model_page_compress_model_desc">النموذج المستخدم لضغط سجل المحادثة</string>
-  <string name="setting_model_page_compress_prompt_vars">المتغيرات: {content}، {target_tokens}، {additional_context}</string>
   <string name="setting_model_page_enable_suggestion">تمكين اقتراحات الدردشة</string>
   <string name="setting_model_page_enable_auto_title">إنشاء عناوين المحادثات تلقائيًا</string>
   <string name="setting_model_page_fast_model">النموذج السريع</string>
@@ -913,7 +906,6 @@
   <string name="setting_model_page_ocr_model_desc">النموذج المستخدم للتعرّف الضوئي على الحروف في الصور</string>
   <string name="setting_model_page_ocr_prompt_vars">المتغيرات: بيانات الصورة: {images}</string>
   <string name="setting_model_page_prompt">المطالبة</string>
-  <string name="setting_model_page_prompt_compress">ضغط السياق</string>
   <string name="setting_model_page_prompt_ocr">التعرف الضوئي على الحروف</string>
   <string name="setting_model_page_prompt_suggestion">اقتراحات ردود الدردشة</string>
   <string name="setting_model_page_prompt_title">توليد العنوان</string>
@@ -1565,7 +1557,6 @@
   <string name="chat_page_compress_checkpoint_hint">الرسائل فوق هذا الخط لم تعد تُرسل إلى النموذج؛ هذا الملخص يحل محلها. احذف الملخص لإرسال السجل الكامل مرة أخرى.</string>
   <string name="chat_page_compress_blocked_generating">أوقف التوليد قبل ضغط السياق</string>
   <string name="chat_page_compress_conversation_changed">تغيّرت المحادثة أثناء الضغط. يرجى المحاولة مرة أخرى.</string>
-  <string name="chat_page_compress_pending_tools">تعامل مع استدعاءات الأدوات المعلّقة أولًا، أو احتفظ بالرسائل الحديثة التي تحتوي عليها</string>
   <string name="sketch">رسم</string>
   <string name="sketch_draw_on_image">ارسم على الصورة</string>
   <string name="imggen_page_deprecated_warning">هذه الميزة مهملة وستُزال في إصدار مستقبلي. استخدم %1$s بدلاً من ذلك</string>
@@ -1630,4 +1621,15 @@
   <string name="setting_display_page_enable_quote_highlight_desc">تلوين النص داخل علامات الاقتباس بلون السمة لإبراز حوار الشخصيات</string>
   <string name="workspace_detail_copy_path">نسخ المسار</string>
   <string name="workspace_detail_path_copied">تم نسخ المسار</string>
+  <string name="media_creation_page_selected_count">تم تحديد %1$d</string>
+  <string name="media_creation_page_select">تحديد</string>
+  <string name="media_creation_page_exit_selection">إنهاء التحديد</string>
+  <string name="media_creation_page_select_all">تحديد الكل</string>
+  <string name="media_creation_page_deselect_all">إلغاء تحديد الكل</string>
+  <string name="media_creation_page_save">حفظ</string>
+  <string name="media_creation_page_saving">جارٍ الحفظ…</string>
+  <string name="media_creation_page_delete_selected_text">سيتم حذف العناصر المحددة (%1$d) وجميع إصداراتها والملفات المولّدة لها، ولا يمكن استعادتها. لن يتم جلب نتائج المهام التي لا تزال قيد التوليد بعد الآن.</string>
+  <string name="media_creation_page_nothing_to_save">لا تحتوي العناصر المحددة على صور أو مقاطع فيديو لحفظها</string>
+  <string name="media_creation_page_saved_files">تم حفظ %1$d من الملفات في المعرض</string>
+  <string name="media_creation_page_saved_files_partial">تم حفظ %1$d من الملفات، وفشل %2$d: %3$s</string>
 </resources>

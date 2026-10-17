@@ -350,8 +350,6 @@
   <string name="chat_page_select_opening">Select opening</string>
   <string name="chat_page_today">Today</string>
   <string name="chat_page_yesterday">Yesterday</string>
-  <string name="chat_size_dialog_content">Current message count: %1$d. This may cause the application to crash or lag, or even lose this conversation data. Please create a new conversation as soon as possible to continue chatting.</string>
-  <string name="chat_size_dialog_title">This conversation data is too large</string>
   <string name="citations_count">%1$d Citations</string>
   <string name="code_block_collapse">Collapse</string>
   <string name="code_block_copy">Copy Code</string>
@@ -1710,8 +1708,6 @@
   <string name="setting_display_page_tts_only_read_quoted_title">TTS Read Quoted Content Only</string>
   <string name="setting_display_page_tts_read_outside_brackets_desc">When enabled, TTS will not read content inside brackets</string>
   <string name="setting_display_page_tts_read_outside_brackets_title">TTS Skip Bracketed Content</string>
-  <string name="setting_display_page_use_app_icon_style_loading_indicator_desc">Use the animated app icon instead of the default circular loading indicator</string>
-  <string name="setting_display_page_use_app_icon_style_loading_indicator_title">Use App Icon-Style Loading Indicator</string>
   <string name="setting_display_page_volume_key_scroll_desc">Scroll pages with volume keys, ideal for e-ink screens</string>
   <string name="setting_display_page_volume_key_scroll_ratio">Scroll Amount</string>
   <string name="setting_display_page_volume_key_scroll_title">Volume Key Page Scroll</string>
@@ -1871,13 +1867,14 @@
   <string name="setting_memory_you">You</string>
   <string name="setting_model_page_chat_model">Chat Model</string>
   <string name="setting_model_page_chat_model_desc">Global default chat model</string>
-  <string name="setting_model_page_compress_model">Compress Model</string>
   <string name="setting_model_page_fast_model">Fast Model</string>
   <string name="setting_model_page_fast_model_desc">Model used for titles, chat suggestions, and other fast or background tasks</string>
-  <string name="setting_model_page_compress_model_desc">Model for compressing conversation history</string>
-  <string name="setting_model_page_compress_prompt_vars">Variables: {content}, {target_tokens}, {additional_context}</string>
   <string name="setting_model_page_ocr_model">OCR Model</string>
   <string name="setting_model_page_ocr_model_desc">Model used for optical character recognition on images</string>
+  <string name="setting_model_page_compress_model">Compress Model</string>
+  <string name="setting_model_page_compress_model_desc">Model for compressing conversation history</string>
+  <string name="setting_model_page_compress_prompt_vars">Variables: {content}, {target_tokens}, {additional_context}</string>
+  <string name="setting_model_page_prompt_compress">Context Compression</string>
   <string name="setting_model_page_ocr_prompt_vars">Variables: Image data: {images}</string>
   <string name="setting_model_page_prompt">Prompt</string>
   <string name="setting_model_page_reset_to_default">Reset to default</string>
@@ -2585,7 +2582,6 @@
   <string name="setting_model_page_prompt_title">Title Generation</string>
   <string name="setting_model_page_prompt_suggestion">Chat Reply Suggestions</string>
   <string name="setting_model_page_prompt_ocr">OCR Recognition</string>
-  <string name="setting_model_page_prompt_compress">Context Compression</string>
   <string name="setting_display_page_bubble_opacity_title">Bubble Opacity</string>
   <string name="setting_provider_page_include_history_reasoning">Include History Reasoning</string>
   <string name="assistant_page_gradient_background">Gradient Background</string>
@@ -3099,6 +3095,9 @@
   <string name="chat_page_compress_checkpoint_title">Earlier messages compressed into a summary</string>
   <string name="chat_page_compress_checkpoint_hint">Messages above this line are no longer sent to the model; this summary replaces them. Delete the summary to send the full history again.</string>
   <string name="chat_page_compress_blocked_generating">Stop the generation before compressing the context</string>
+  <string name="chat_page_compress_nothing_to_compress">No new messages to compress since the last summary</string>
+  <string name="chat_page_compress_handle_pending_tools">Handle the pending tool calls before compressing</string>
+  <string name="chat_page_compress_tool_call_response">The model tried to call a tool instead of writing the summary. Please try again.</string>
   <string name="chat_page_compress_conversation_changed">The conversation changed during compression. Please try again.</string>
   <string name="chat_page_compress_pending_tools">Handle the pending tool calls first, or keep the recent messages that contain them</string>
   <string name="sketch">Sketch</string>
@@ -3214,4 +3213,15 @@
   <string name="setting_display_page_enable_quote_highlight_desc">Color text inside quotation marks with the theme color to make character dialogue stand out</string>
   <string name="workspace_detail_copy_path">Copy path</string>
   <string name="workspace_detail_path_copied">Path copied</string>
+  <string name="media_creation_page_selected_count">%1$d selected</string>
+  <string name="media_creation_page_select">Select</string>
+  <string name="media_creation_page_exit_selection">Exit selection</string>
+  <string name="media_creation_page_select_all">Select all</string>
+  <string name="media_creation_page_deselect_all">Deselect all</string>
+  <string name="media_creation_page_save">Save</string>
+  <string name="media_creation_page_saving">Saving…</string>
+  <string name="media_creation_page_delete_selected_text">The %1$d selected items, along with all their versions and generated files, will be deleted and can\'t be recovered. Results of tasks that are still generating will no longer be fetched.</string>
+  <string name="media_creation_page_nothing_to_save">The selected items have no images or videos to save</string>
+  <string name="media_creation_page_saved_files">Saved %1$d files to gallery</string>
+  <string name="media_creation_page_saved_files_partial">Saved %1$d files, %2$d failed: %3$s</string>
 </resources>

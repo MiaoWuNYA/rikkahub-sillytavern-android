@@ -350,8 +350,6 @@
   <string name="chat_page_select_opening">选择开场白</string>
   <string name="chat_page_today">今天</string>
   <string name="chat_page_yesterday">昨天</string>
-  <string name="chat_size_dialog_content">当前消息数：%1$d。这可能导致应用崩溃或卡顿，甚至丢失本次对话数据。请尽快新建对话以继续聊天。</string>
-  <string name="chat_size_dialog_title">此对话数据过大</string>
   <string name="citations_count">%1$d 条引用</string>
   <string name="code_block_collapse">折叠</string>
   <string name="code_block_copy">复制代码</string>
@@ -1703,8 +1701,6 @@
   <string name="setting_display_page_tts_only_read_quoted_title">TTS仅朗读引用内容</string>
   <string name="setting_display_page_tts_read_outside_brackets_desc">启用后，TTS将不朗读括号内的内容</string>
   <string name="setting_display_page_tts_read_outside_brackets_title">TTS不朗读括号内的内容</string>
-  <string name="setting_display_page_use_app_icon_style_loading_indicator_desc">使用应用图标动画替代默认的圆形加载指示器</string>
-  <string name="setting_display_page_use_app_icon_style_loading_indicator_title">使用APP图标风格的加载指示器</string>
   <string name="setting_display_page_volume_key_scroll_desc">使用音量键翻页，非常适合电子墨水屏</string>
   <string name="setting_display_page_volume_key_scroll_ratio">滚动幅度</string>
   <string name="setting_display_page_volume_key_scroll_title">音量键翻页</string>
@@ -1864,9 +1860,6 @@
   <string name="setting_memory_you">你</string>
   <string name="setting_model_page_chat_model">聊天模型</string>
   <string name="setting_model_page_chat_model_desc">全局默认的聊天模型</string>
-  <string name="setting_model_page_compress_model">压缩模型</string>
-  <string name="setting_model_page_compress_model_desc">用于压缩对话历史的模型</string>
-  <string name="setting_model_page_compress_prompt_vars">变量：{content}、{target_tokens}、{additional_context}</string>
   <string name="setting_model_page_ocr_model">OCR 模型</string>
   <string name="setting_model_page_ocr_model_desc">用于图像光学字符识别的模型</string>
   <string name="setting_model_page_ocr_prompt_vars">变量：图像数据：{images}</string>
@@ -2600,7 +2593,6 @@
   <string name="setting_model_page_prompt_title">标题生成</string>
   <string name="setting_model_page_prompt_suggestion">聊天回复建议</string>
   <string name="setting_model_page_prompt_ocr">OCR识别</string>
-  <string name="setting_model_page_prompt_compress">上下文压缩</string>
   <string name="setting_display_page_bubble_opacity_title">气泡不透明度</string>
   <string name="setting_provider_page_include_history_reasoning">回传历史思考过程</string>
   <string name="setting_model_page_fast_model">快速模型</string>
@@ -3092,7 +3084,6 @@
   <string name="chat_page_compress_checkpoint_hint">分隔线以上的消息不再发送给模型，由这份摘要代替。删除摘要即可恢复发送完整历史。</string>
   <string name="chat_page_compress_blocked_generating">请先停止生成再压缩上下文</string>
   <string name="chat_page_compress_conversation_changed">对话在压缩期间发生变化，请重试</string>
-  <string name="chat_page_compress_pending_tools">请先处理待审批的工具调用，或保留包含它的最近消息后再压缩</string>
   <string name="sketch">草图</string>
   <string name="sketch_draw_on_image">在图片上绘制</string>
   <string name="imggen_page_deprecated_warning">此功能已弃用，并将在未来版本中移除。请改用 %1$s</string>
@@ -3213,4 +3204,15 @@
   <string name="setting_display_page_enable_quote_highlight_desc">使用主题色为引号内的文本着色，让角色对话更加醒目</string>
   <string name="workspace_detail_copy_path">复制路径</string>
   <string name="workspace_detail_path_copied">路径已复制</string>
+  <string name="media_creation_page_selected_count">已选择 %1$d 项</string>
+  <string name="media_creation_page_select">多选</string>
+  <string name="media_creation_page_exit_selection">退出多选</string>
+  <string name="media_creation_page_select_all">全选</string>
+  <string name="media_creation_page_deselect_all">取消全选</string>
+  <string name="media_creation_page_save">保存</string>
+  <string name="media_creation_page_saving">保存中…</string>
+  <string name="media_creation_page_delete_selected_text">选中的 %1$d 项会连同它们的所有版本和生成的文件一起删除，无法恢复。其中还在生成的任务不会再获取结果。</string>
+  <string name="media_creation_page_nothing_to_save">选中的项里没有可以保存的图片或视频</string>
+  <string name="media_creation_page_saved_files">已保存 %1$d 个文件到相册</string>
+  <string name="media_creation_page_saved_files_partial">已保存 %1$d 个文件，%2$d 个失败：%3$s</string>
 </resources>

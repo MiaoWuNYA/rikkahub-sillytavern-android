@@ -28,6 +28,10 @@ data class UIMessage(
     // 模型名称的快照：modelId 指向的模型被删除后，靠它继续显示这条消息由谁生成
     val modelSnapshot: ModelSnapshot? = null,
     val usage: TokenUsage? = null,
+    // 模型实际生成耗时（各步从首个 chunk 到响应结束的累计），不含首 token 延迟、工具执行和审批等待
+    val generationTimeMs: Long? = null,
+    // 最后一次请求结束时的上下文占用（prompt + completion），usage 是多步累计值，不能用来看上下文大小
+    val contextTokens: Int? = null,
     val translation: String? = null,
     /**
      * 该楼层的 MVU 变量快照（`stat_data` 整棵树，JSON 文本）。
