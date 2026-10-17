@@ -320,7 +320,9 @@ internal fun SettingPreferencesGeneralContent(vm: SettingVM, contentPadding: Pad
     }
 
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .imePadding(),
             contentPadding = contentPadding + PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -426,6 +428,162 @@ internal fun SettingPreferencesGeneralContent(vm: SettingVM, contentPadding: Pad
                             )
                         }
                     }
+                }
+            }
+
+            item {
+                CardGroup {
+                    item(
+                        onClick = {
+                            selectedUpdatePauseDays = UPDATE_PAUSE_DAY_OPTIONS.first()
+                            showUpdatePauseDialog = true
+                        },
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_show_updates_title)) },
+                        supportingContent = {
+                            Text(
+                                if (updateChecksEnabled) {
+                                    stringResource(R.string.setting_update_reminder_enabled)
+                                } else {
+                                    stringResource(
+                                        R.string.setting_update_reminder_paused_until,
+                                        Instant.ofEpochMilli(displaySetting.updateCheckDisabledUntilEpochMillis).atZone(java.time.ZoneId.systemDefault()).toLocalDateTime(),
+                                    )
+                                }
+                            )
+                        },
+                        trailingContent = {
+                            Icon(HugeIcons.ArrowRight01, contentDescription = null)
+                        },
+                    )
+                    switchItem(
+                        checked = displaySetting.enableNotificationOnMessageGeneration,
+                        onCheckedChange = {
+                            if (it && !permissionState.allPermissionsGranted) {
+                                permissionState.requestPermissions()
+                            }
+                            updateDisplaySetting(displaySetting.copy(enableNotificationOnMessageGeneration = it))
+                        },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_notification_message_generated_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_notification_message_generated)) },
+                    )
+                    if (displaySetting.enableNotificationOnMessageGeneration) {
+                        switchItem(
+                            checked = displaySetting.enableLiveUpdateNotification,
+                            onCheckedChange = {
+                                updateDisplaySetting(displaySetting.copy(enableLiveUpdateNotification = it))
+                            },
+                            supportingContent = { Text(stringResource(R.string.setting_display_page_live_update_notification_desc)) },
+                            headlineContent = { Text(stringResource(R.string.setting_display_page_live_update_notification)) },
+                        )
+                    }
+                }
+            }
+
+            item {
+                CardGroup {
+                    switchItem(
+                        checked = settings.networkSetting.enableAutoRetry,
+                        onCheckedChange = { enabled ->
+                            vm.updateSettings {
+                                it.copy(
+                                    networkSetting = it.networkSetting.copy(
+                                        enableAutoRetry = enabled,
+                                    ),
+                                )
+                            }
+                        },
+                        supportingContent = {
+                            Text(stringResource(R.string.setting_page_preferences_network_auto_retry_desc))
+                        },
+                        headlineContent = {
+                            Text(stringResource(R.string.setting_page_preferences_network_auto_retry))
+                        },
+                    )
+                }
+            }
+
+            item {
+                CardGroup(
+                    title = {
+                        Text(stringResource(R.string.setting_page_preferences_network_user_agent))
+                    },
+                ) {
+                    formItem {
+                        OutlinedTextField(
+                            value = userAgent,
+                            onValueChange = ::updateUserAgent,
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text(defaultUserAgent) },
+                            supportingText = {
+                                Text(
+                                    stringResource(
+                                        R.string.setting_page_preferences_network_user_agent_desc,
+                                        defaultUserAgent,
+                                    )
+                                )
+                            },
+                            singleLine = true,
+                        )
+                        TextButton(
+                            onClick = { updateUserAgent("") },
+                            modifier = Modifier.align(Alignment.End),
+                            enabled = userAgent.isNotEmpty(),
+                        ) {
+                            Text(stringResource(R.string.setting_model_page_reset_to_default))
+                        }
+                    }
+                }
+            }
+
+            item {
+                CardGroup(
+                    title = {
+                        Text(stringResource(R.string.setting_page_preferences_network_proxy))
+                    },
+                ) {
+                    item(
+                        onClick = {
+                            proxyUrlDraft = proxyUrl
+                            proxyUsernameDraft = proxyUsername
+                            proxyPasswordDraft = proxyPassword
+                            proxyPasswordVisible = false
+                            proxyDialogVisible = true
+                        },
+                        headlineContent = {
+                            Text(stringResource(R.string.setting_page_config))
+                        },
+                        supportingContent = {
+                            Text(
+                                if (proxyUrl.isBlank()) {
+                                    stringResource(
+                                        R.string.setting_page_preferences_network_proxy_desc
+                                    )
+                                } else {
+                                    proxyUrl
+                                }
+                            )
+                        },
+                        trailingContent = {
+                            Icon(HugeIcons.ArrowRight01, contentDescription = null)
+                        },
+                    )
+                    item(
+                        headlineContent = {
+                            Text(stringResource(R.string.setting_provider_page_test_connection))
+                        },
+                        trailingContent = {
+                            FilledTonalButton(
+                                onClick = ::testProxy,
+                                enabled = proxyUrl.toProxyOrNull() != null && !proxyTesting,
+                            ) {
+                                if (proxyTesting) {
+                                    ContainedLoadingIndicator(modifier = Modifier.size(24.dp))
+                                } else {
+                                    Text(stringResource(R.string.setting_provider_page_test))
+                                }
+                            }
+                        },
+                    )
                 }
             }
 
