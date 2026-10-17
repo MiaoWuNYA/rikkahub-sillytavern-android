@@ -757,16 +757,6 @@ private fun ExtrasStep(
                         )
                     },
                 )
-                item(
-                    onClick = { onNavigate(Screen.SettingMemory) },
-                    headlineContent = { Text("设置记忆与提示词") },
-                    supportingContent = {
-                        Text(
-                            "想让 AI 记住你、或者改它的行为方式，" +
-                                "在记忆和提示词设置里调。"
-                        )
-                    },
-                )
             }
 
             // 角色扮演用户额外说一句「卡从哪来」。
