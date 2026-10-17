@@ -413,7 +413,7 @@ class ConversationRepository(
             modeInjectionIds = JsonInstant.decodeFromString(conversationEntity.modeInjectionIds),
             lorebookIds = JsonInstant.decodeFromString(conversationEntity.lorebookIds),
             workspaceCwd = conversationEntity.workspaceCwd.ifEmpty { null },
-            folderId = conversationEntity.folderId.ifEmpty { null }?.let { Uuid.parse(it) },
+            folderId = conversationEntity.folderId.toFolderUuidOrNull(),
             rollingContextSummary = conversationEntity.rollingContextSummary
                 .takeIf(String::isNotEmpty)
                 ?.let { runCatching { JsonInstant.decodeFromString<me.rerere.rikkahub.data.ai.context.RollingContextSummary>(it) }.getOrNull() },
@@ -494,7 +494,7 @@ class ConversationRepository(
             createAt = Instant.ofEpochMilli(entity.createAt),
             updateAt = Instant.ofEpochMilli(entity.updateAt),
             messageNodes = emptyList(),
-            folderId = entity.folderId.ifEmpty { null }?.let { Uuid.parse(it) },
+            folderId = entity.folderId.toFolderUuidOrNull(),
         )
     }
 

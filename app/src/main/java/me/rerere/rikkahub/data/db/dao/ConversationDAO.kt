@@ -24,7 +24,7 @@ interface ConversationDAO {
     @Query("SELECT id, assistant_id as assistantId, title, is_pinned as isPinned, create_at as createAt, update_at as updateAt, folder_id as folderId FROM conversationentity WHERE assistant_id = :assistantId ORDER BY is_pinned DESC, update_at DESC")
     fun getConversationsOfAssistantPaging(assistantId: String): PagingSource<Int, LightConversationEntity>
 
-    @Query("SELECT id, assistant_id as assistantId, title, is_pinned as isPinned, create_at as createAt, update_at as updateAt, folder_id as folderId FROM conversationentity WHERE assistant_id = :assistantId AND folder_id = '' ORDER BY is_pinned DESC, CASE WHEN :sortByCreateTime THEN create_at ELSE update_at END DESC")
+    @Query("SELECT id, assistant_id as assistantId, title, is_pinned as isPinned, create_at as createAt, update_at as updateAt, folder_id as folderId FROM conversationentity WHERE assistant_id = :assistantId AND (folder_id IS NULL OR folder_id = '' OR folder_id NOT IN (SELECT id FROM conversation_folder)) ORDER BY is_pinned DESC, CASE WHEN :sortByCreateTime THEN create_at ELSE update_at END DESC")
     fun getUnfiledConversationsOfAssistantPaging(
         assistantId: String,
         sortByCreateTime: Boolean,

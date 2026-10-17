@@ -150,6 +150,7 @@ val appModule = module {
             appScope = get(),
             chatService = get(),
             conversationRepo = get(),
+            folderRepo = get(),
             settingsStore = get(),
             filesManager = get()
         )

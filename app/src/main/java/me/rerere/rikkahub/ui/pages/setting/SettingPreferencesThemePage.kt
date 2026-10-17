@@ -246,16 +246,6 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
                         title = { Text(stringResource(R.string.setting_display_page_title)) },
                     ) {
                         switchItem(
-                            checked = settings.displaySetting.useAppIconStyleLoadingIndicator,
-                            onCheckedChange = { v ->
-                                vm.updateSettings {
-                                    it.copy(displaySetting = it.displaySetting.copy(useAppIconStyleLoadingIndicator = v))
-                                }
-                            },
-                            supportingContent = { Text(stringResource(R.string.setting_display_page_use_app_icon_style_loading_indicator_desc)) },
-                            headlineContent = { Text(stringResource(R.string.setting_display_page_use_app_icon_style_loading_indicator_title)) },
-                        )
-                        switchItem(
                             checked = settings.displaySetting.enableBlurEffect,
                             onCheckedChange = { v ->
                                 vm.updateSettings {

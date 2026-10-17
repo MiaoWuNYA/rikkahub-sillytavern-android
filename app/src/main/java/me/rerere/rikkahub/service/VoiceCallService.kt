@@ -1,4 +1,4 @@
-﻿/*
+/*
 * rikkahub-plus
  * 衍生自 RikkaHub (https://github.com/rikkahub/rikkahub)，原作者 RE
  * 本项目基于 GNU AGPL v3 开源，详见根目录 LICENSE 文件
@@ -733,7 +733,7 @@ class VoiceCallService : Service(), KoinComponent {
         return NotificationCompat.Builder(this, VOICE_CALL_NOTIFICATION_CHANNEL_ID)
             .setContentTitle(if (isVideo) "视频通话" else "语音通话")
             .setContentText(contentText)
-            .setSmallIcon(R.drawable.small_icon)
+            .setSmallIcon(R.drawable.ic_stat_rikkahub)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setContentIntent(contentIntent)
