@@ -29,7 +29,6 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.uuid.Uuid
 import kotlin.random.Random
-import kotlin.math.roundToInt
 
 /**
  * 提示词注入转换器
@@ -58,7 +57,26 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
     private class FrozenTurnInjection(
         val injections: List<PromptInjection>,
         val anchors: Map<String, String>,
+        val fingerprint: Int,
     )
+
+    // 绑定的预设/世界书（含启用状态与内容）指纹：改动后当前轮立即重算，而非等新会话
+    private fun injectionFingerprint(ctx: TransformerContext): Int {
+        val assistant = ctx.assistant
+        val settings = ctx.settings
+        var h = assistant.modeInjectionIds.hashCode()
+        h = 31 * h + assistant.lorebookIds.hashCode()
+        for (id in assistant.modeInjectionIds) {
+            val injection = settings.modeInjections.firstOrNull { it.id == id } ?: continue
+            h = 31 * h + injection.hashCode()
+        }
+        for (id in assistant.lorebookIds) {
+            val book = settings.lorebooks.firstOrNull { it.id == id } ?: continue
+            h = 31 * h + book.hashCode()
+        }
+        h = 31 * h + assistant.tavernData.hashCode()
+        return h
+    }
 
     override suspend fun transform(
         ctx: TransformerContext,
@@ -69,8 +87,9 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
         val key = "${ctx.assistant.id}:${ctx.conversationId ?: "no-conversation"}"
 
         val lastUserMsgId = messages.lastOrNull { it.role == MessageRole.USER }?.id?.toString()
+        val fingerprint = injectionFingerprint(ctx)
         val frozen = lastUserMsgId?.let { id ->
-            frozenTurnInjections[key]?.takeIf { it.first == id }?.second
+            frozenTurnInjections[key]?.takeIf { it.first == id && it.second.fingerprint == fingerprint }?.second
         }
 
         // sticky/cooldown 按用户轮推进（对齐酒馆 chat_metadata 语义）。agentic 工具循环每步
@@ -125,7 +144,7 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
                 if (frozen == null && lastUserMsgId != null) {
                     if (frozenTurnInjections.size >= MAX_FROZEN_TURNS) frozenTurnInjections.clear()
                     frozenTurnInjections[key] = lastUserMsgId to
-                        FrozenTurnInjection(resolved, anchors.toMap())
+                        FrozenTurnInjection(resolved, anchors.toMap(), fingerprint)
                 }
             },
         )
@@ -154,11 +173,7 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
 
             // 与 collectInjections 相同的书绑定过滤，只检索已绑定的书。
             // 角色卡内嵌书不在绑定列表里，单独从卡片构建（官方模型：内嵌书始终随卡生效）
-            val effectiveLorebookIds = if (ctx.assistant.allowConversationPromptInjection) {
-                ctx.conversationLorebookIds
-            } else {
-                ctx.assistant.lorebookIds
-            }
+            val effectiveLorebookIds = ctx.assistant.lorebookIds
             val vectorizedEntries = (
                 settings.lorebooks
                     .filter { it.enabled && it.id in effectiveLorebookIds }
@@ -503,16 +518,9 @@ internal fun collectInjections(
     vectorActivatedIds: Set<Uuid> = emptySet(),
 ): List<PromptInjection> {
     val injections = mutableListOf<PromptInjection>()
-    val effectiveModeInjectionIds = if (assistant.allowConversationPromptInjection) {
-        conversationModeInjectionIds
-    } else {
-        assistant.modeInjectionIds
-    }
-    val effectiveLorebookIds = if (assistant.allowConversationPromptInjection) {
-        conversationLorebookIds
-    } else {
-        assistant.lorebookIds
-    }
+    // 绑定跟随助手自身，会话级绑定已废弃（见 PreferenceStoreV4Migration）
+    val effectiveModeInjectionIds = assistant.modeInjectionIds
+    val effectiveLorebookIds = assistant.lorebookIds
 
     // 1. 获取关联的 ModeInjection
     modeInjections
@@ -583,7 +591,6 @@ internal fun collectInjections(
         var recursionContext = ""
         var skew = 0
         var currentLevel = 0
-        var overflowed = false
         var count = 0
         // 官方 scan_state：INITIAL / RECURSION / MIN_ACTIVATIONS（官方 world_info_scan_type 枚举）
         var scanState = 0 // 0=INITIAL 1=RECURSION 2=MIN_ACTIVATIONS
@@ -594,17 +601,8 @@ internal fun collectInjections(
             .distinct()
             .sorted()
             .toMutableList()
-        // 官方预算：budget = round(world_info_budget% × maxContext / 100) || 1；cap > 0 时封顶。
-        // 官方 maxContext 是模型上下文窗口大小，本地 Model 无该字段。若用当前消息 token 估算，
-        // 新/短对话的预算会极小（几百 token），条目全部溢出被丢弃，表现为世界书"随缘生效"。
-        // 兜底取 64k（现代模型主流窗口下限）：默认 25% → 16384 token 预算，
-        // 酒馆重型书（越狱+状态栏 26 条以上）的 constant 条目在 2k 预算下会把后续条目全部挤掉
-        val maxContext = maxOf(
-            estimateTokens(messages.joinToString("\n") { it.toText() }),
-            65536,
-        )
-        val budget = ((worldInfoBudget * maxContext) / 100.0).roundToInt().coerceAtLeast(1)
-            .let { if (worldInfoBudgetCap > 0 && it > worldInfoBudgetCap) worldInfoBudgetCap else it }
+        // 本地不再按官方世界书预算（world_info_budget）裁剪条目：预算会把短对话的条目全部挤掉，
+        // 表现为世界书"随缘生效"。命中的条目全部注入，预算相关参数仅作导入兼容保留。
 
         // 官方 while (scanState)：INITIAL → (RECURSION / MIN_ACTIVATIONS / 层级开放) 循环
         // max_recursion_steps 语义（官方）：只对 RECURSION 轮计数，循环开头检查 count >= 上限则停止
@@ -701,28 +699,10 @@ internal fun collectInjections(
                 globalUseGroupScoring = worldInfoUseGroupScoring,
             )
             val accepted = mutableListOf<PromptInjection.RegexInjection>()
-            var pendingIgnoreBudget = found.count { it.ignoreBudget }
-            // 官方 newContent：本轮概率已通过的条目内容（含预算溢出的，官方 += 在预算检查之前）
-            var newContentTokens = 0
-            // 角色卡内嵌世界书的条目不参与预算裁剪。
-            // 这些条目是卡的骨架：<生成格式> 教模型写 <mainbody>/<phone> 结构，
-            // <Status>/<twitter>/<bilibili>/<choice> 各自定义一块内容的格式。
-            // 它们被预算挤掉时，模型不再输出对应标签，卡内 JS 拿不到数据，
-            // 表现是「卡片只剩一个 HTML 空壳」「弹幕/选项面板显示未激活」——
-            // 用户看到的是卡坏了，根因却是一句预算裁剪。卡是用户主动导入的，
-            // 它的必需内容不应该和文风/人物生动化这类可裁条目争夺额度。
-            val characterBookEntryIds = characterEntries.mapTo(mutableSetOf()) { it.id }
             for (entry in found.sortedWith(
                 compareByDescending<PromptInjection.RegexInjection> { activeStickyEntries.containsKey(it.id) }
                     .thenByDescending { it.priority }
             )) {
-                // 官方：预算溢出后非 ignoreBudget 条目不再注入（后面还有 ignoreBudget 则跳过，否则停止）
-                // 卡内条目同样豁免：一处溢出不该连带砍掉后面定义格式的条目
-                val exemptFromOverflow = entry.ignoreBudget || entry.id in characterBookEntryIds
-                pendingIgnoreBudget -= if (exemptFromOverflow) 1 else 0
-                if (overflowed && !exemptFromOverflow) {
-                    if (pendingIgnoreBudget > 0) continue else break
-                }
                 // 官方 verifyProbability：useProbability 且 <100 才掷；sticky 免掷；失败记入 failedProbabilityChecks
                 if (entry.useProbability && entry.probability < 100 && !activeStickyEntries.containsKey(entry.id)) {
                     if (Random.nextInt(100) >= entry.probability) {
@@ -730,18 +710,6 @@ internal fun collectInjections(
                         continue
                     }
                 }
-                // 卡内条目豁免预算；外部世界书条目仍按官方预算裁剪
-                val budgetExempt = entry.ignoreBudget || entry.id in characterBookEntryIds
-                if (!budgetExempt) {
-                    // 官方预算检查：递归缓冲 token + 本轮内容 token >= 预算 → 溢出，该条目也不注入
-                    if (estimateTokens(recursionContext) + newContentTokens + estimateTokens(entry.content) >= budget) {
-                        overflowed = true
-                        if (worldInfoOverflowAlert) onOverflow()
-                        newContentTokens += estimateTokens(entry.content)
-                        continue
-                    }
-                }
-                newContentTokens += estimateTokens(entry.content)
                 accepted.add(entry)
             }
 
@@ -768,11 +736,11 @@ internal fun collectInjections(
                 currentLevel = availableLevels.removeAt(0)
             }
             // 2. 本轮有成功新条目（不含 prevent_recursion）且未溢出 → 递归扫描
-            if (nextScanState == -1 && worldInfoRecursive && !overflowed && newRecursionText.isNotBlank()) {
+            if (nextScanState == -1 && worldInfoRecursive && newRecursionText.isNotBlank()) {
                 nextScanState = 1
             }
             // 3. min_activations 扫描中且有递归缓冲 → 先递归一次（官方 buffer.hasRecurse() 分支）
-            if (nextScanState == -1 && worldInfoRecursive && !overflowed &&
+            if (nextScanState == -1 && worldInfoRecursive &&
                 scanState == 2 && recursionContext.isNotBlank()
             ) {
                 nextScanState = 1
@@ -783,7 +751,7 @@ internal fun collectInjections(
             val overMaxDepth = (worldInfoMinActivationsDepthMax > 0 &&
                 worldInfoDepth + skew > worldInfoMinActivationsDepthMax) ||
                 (worldInfoDepth + skew > nonSystemMessages.size)
-            if (nextScanState == -1 && !overflowed && minNotSatisfied && !overMaxDepth) {
+            if (nextScanState == -1 && minNotSatisfied && !overMaxDepth) {
                 nextScanState = 2
                 skew++
             }
@@ -799,7 +767,7 @@ internal fun collectInjections(
             "WorldInfo",
             "scan done: activated=${activatedEntries.size} entries, " +
                 "tokens=${activatedEntries.sumOf { estimateTokens(it.content) }} " +
-                "budget=$budget overflowed=$overflowed msgs=${messages.size}",
+                "msgs=${messages.size}",
         )
     }
 
