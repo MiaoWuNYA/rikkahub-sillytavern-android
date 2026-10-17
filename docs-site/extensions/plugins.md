@@ -64,6 +64,8 @@ title: 插件：QuickJS 沙箱扩展
 
 `TavernHelper` 与 `SillyTavern` 互为别名。事件名与酒馆一致（`message_received`、`character_message_rendered`、`generation_started` 等）。
 
+也可以直接把酒馆助手的扩展 ZIP 拖进来：manifest 用的是 `display_name` / `js` 这类字段时，会按 SillyTavern 扩展自动映射成前端插件（`display_name` → 插件名，`js` → 前端脚本）。
+
 ::: warning
 前端脚本与酒馆助手一样是第三方代码，能访问聊天数据与网络。请只导入可信来源。
 :::
