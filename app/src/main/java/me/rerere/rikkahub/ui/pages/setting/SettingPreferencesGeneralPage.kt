@@ -432,7 +432,9 @@ internal fun SettingPreferencesGeneralContent(vm: SettingVM, contentPadding: Pad
             }
 
             item {
-                CardGroup {
+                CardGroup(
+                    title = { Text(stringResource(R.string.setting_page_preferences_notification)) },
+                ) {
                     item(
                         onClick = {
                             selectedUpdatePauseDays = UPDATE_PAUSE_DAY_OPTIONS.first()
@@ -480,7 +482,9 @@ internal fun SettingPreferencesGeneralContent(vm: SettingVM, contentPadding: Pad
             }
 
             item {
-                CardGroup {
+                CardGroup(
+                    title = { Text(stringResource(R.string.setting_page_preferences_network)) },
+                ) {
                     switchItem(
                         checked = settings.networkSetting.enableAutoRetry,
                         onCheckedChange = { enabled ->
@@ -499,16 +503,9 @@ internal fun SettingPreferencesGeneralContent(vm: SettingVM, contentPadding: Pad
                             Text(stringResource(R.string.setting_page_preferences_network_auto_retry))
                         },
                     )
-                }
-            }
-
-            item {
-                CardGroup(
-                    title = {
-                        Text(stringResource(R.string.setting_page_preferences_network_user_agent))
-                    },
-                ) {
-                    formItem {
+                    formItem(
+                        headlineContent = { Text(stringResource(R.string.setting_page_preferences_network_user_agent)) },
+                    ) {
                         OutlinedTextField(
                             value = userAgent,
                             onValueChange = ::updateUserAgent,
@@ -532,15 +529,6 @@ internal fun SettingPreferencesGeneralContent(vm: SettingVM, contentPadding: Pad
                             Text(stringResource(R.string.setting_model_page_reset_to_default))
                         }
                     }
-                }
-            }
-
-            item {
-                CardGroup(
-                    title = {
-                        Text(stringResource(R.string.setting_page_preferences_network_proxy))
-                    },
-                ) {
                     item(
                         onClick = {
                             proxyUrlDraft = proxyUrl
@@ -550,7 +538,7 @@ internal fun SettingPreferencesGeneralContent(vm: SettingVM, contentPadding: Pad
                             proxyDialogVisible = true
                         },
                         headlineContent = {
-                            Text(stringResource(R.string.setting_page_config))
+                            Text(stringResource(R.string.setting_page_preferences_network_proxy))
                         },
                         supportingContent = {
                             Text(
