@@ -2079,8 +2079,12 @@
     return {
       message_id: o.message_id,
       mes: o.mes != null ? o.mes : (o.message != null ? o.message : ''),
+      message: o.message != null ? o.message : (o.mes != null ? o.mes : ''),
       is_user: o.is_user === true || o.role === 'user',
+      role: o.role,
       name: o.name,
+      data: o.data,
+      is_hidden: o.is_hidden,
     };
   }
 
