@@ -654,6 +654,10 @@ class RouteActivity : ComponentActivity() {
                                 SettingHuaDengCompatPage()
                             }
 
+                            entry<Screen.SettingTavernHelper> {
+                                SettingTavernHelperPage()
+                            }
+
                             entry<Screen.SettingJev> {
                                 SettingJevPage()
                             }
@@ -1009,6 +1013,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingHuaDengCompat : Screen
+
+    @Serializable
+    data object SettingTavernHelper : Screen
 
     @Serializable
     data object SettingJev : Screen

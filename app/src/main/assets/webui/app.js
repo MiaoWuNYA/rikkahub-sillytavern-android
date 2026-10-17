@@ -103,6 +103,8 @@
     libs: {},
     cardStyle: '',
     appearance: {},
+    // 酒馆助手兼容渲染设置：codeCollapse 为 null 时回退到 appearance.codeCollapse
+    helper: { renderEnabled: true, allowStreaming: false, codeCollapse: null, useBlobUrl: false, macroEnabled: true },
     labels: {},
     // 原生 TTS 是单例：朗读中所有助手行的朗读按钮一起切到停止态
     speaking: false,
@@ -786,7 +788,17 @@
     var load = function (target) {
       var html = cardDocHtml(target, target.ctx || {});
       frame.dataset.cardDoc = html;
-      // srcdoc 同步解析且不产生导航，卡片脚本只执行一次；document.write + about:blank 会把脚本跑两遍
+      // 可选：blob URL 便于调试；默认 srcdoc 同步解析且不产生导航，卡片脚本只执行一次
+      if (state.helper && state.helper.useBlobUrl) {
+        try {
+          if (frame._blobUrl) URL.revokeObjectURL(frame._blobUrl);
+          frame._blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+          frame.removeAttribute('srcdoc');
+          frame.src = frame._blobUrl;
+          return;
+        } catch (e) { /* 退化回 srcdoc */ }
+      }
+      frame.removeAttribute('src');
       frame.srcdoc = html;
     };
     frame._ripple = function (nextKey, nextDesc) {
@@ -799,7 +811,10 @@
   }
 
   // —— 消息正文：把一条消息摊平成有序块序列，再与现有 DOM 逐位对齐 ——
-  function blocksOf(msg) {
+  function blocksOf(msg, streaming) {
+    var helper = state.helper || {};
+    // 渲染器关闭，或流式期间未允许流式渲染时，前端卡退化成普通 html 代码块
+    var cardsAsText = helper.renderEnabled === false || (streaming === true && helper.allowStreaming !== true);
     var desc = [];
     if (msg.reasoning && state.appearance.showThinking !== false) {
       desc.push({ kind: 'reasoning', text: String(msg.reasoning), seconds: Number(msg.reasoningSeconds) || 0 });
@@ -809,6 +824,10 @@
     blocks.forEach(function (block) {
       if (!block) return;
       if (block.type === 'card') {
+        if (cardsAsText) {
+          desc.push({ kind: 'text', text: '```html\n' + (block.html == null ? '' : String(block.html)) + '\n```' });
+          return;
+        }
         desc.push({
           kind: 'card',
           key: String(msg.id) + ':' + (block.index || 0),
@@ -917,9 +936,25 @@
     var a = state.appearance || {};
     return window.RikkaMarkdown.render(text, {
       lineNumbers: a.lineNumbers === true,
-      collapse: a.codeCollapse === true,
+      collapse: collapseMode(),
       colors: textColors()
     });
+  }
+
+  // 代码折叠模式：helper 三态优先，未设置时回退到外观布尔开关
+  function collapseMode() {
+    var mode = state.helper && state.helper.codeCollapse;
+    if (mode === 'all') return true;
+    if (mode === 'none') return false;
+    if (mode === 'frontend_only') return 'frontend';
+    return (state.appearance || {}).codeCollapse === true;
+  }
+
+  // 宏替换：酒馆助手设置关掉时原样返回，不再请求原生展开 {{...}}
+  function macroSubstitute(text) {
+    var value = text == null ? '' : String(text);
+    if (state.helper && state.helper.macroEnabled === false) return value;
+    return window.webui.request('substituteMacros', value);
   }
 
   // 渲染键带上影响输出结构的开关，设置变了才重渲染
@@ -933,7 +968,8 @@
   function renderKey(text) {
     var a = state.appearance || {};
     var c = textColors();
-    return String(text) + '\u0000' + (a.lineNumbers === true ? 'n' : '') + (a.codeCollapse === true ? 'c' : '') +
+    var cm = collapseMode();
+    return String(text) + '\u0000' + (a.lineNumbers === true ? 'n' : '') + (cm === true ? 'c' : (cm === 'frontend' ? 'f' : '')) +
       '\u0000' + (c ? (c.quote || '') + '|' + (c.bracket || '') : '-');
   }
 
@@ -1241,7 +1277,7 @@
 
   // 把块序列铺进 body：同 kind（卡片还要求 key 相同）的节点原地复用
   function patchBody(body, msg, streaming) {
-    var want = blocksOf(msg);
+    var want = blocksOf(msg, streaming);
     var children = [];
     for (var c = 0; c < body.children.length; c++) {
       if (body.children[c].classList.contains('blk')) children.push(body.children[c]);
@@ -1915,7 +1951,7 @@
     getLastMessageId: function () { return (state.messages || []).length - 1; },
     sendMessage: function (text) { native('send', text == null ? '' : String(text)); return Promise.resolve(); },
     triggerSlash: function (cmd) { return window.webui.request('triggerSlash', cmd == null ? '' : String(cmd)); },
-    substituteMacros: function (text) { return window.webui.request('substituteMacros', text == null ? '' : String(text)); },
+    substituteMacros: function (text) { return macroSubstitute(text); },
     formatAsTavernRegexedString: function (text) { return String(text == null ? '' : text); },
     eventOn: onPageEvent,
     eventOnce: function (name, listener) {
@@ -1990,7 +2026,7 @@
         setTimeout(function () { if (hostPending[rid]) { hostPending[rid] = null; resolve(null); } }, 8000);
       });
     },
-    substituteMacros: function (text) { return window.webui.request('substituteMacros', text == null ? '' : String(text)); },
+    substituteMacros: function (text) { return macroSubstitute(text); },
     getChatMessages: function (range) { return window.webui.request('getChatMessages', range == null ? '' : String(range)); },
     triggerSlash: function (cmd) { native('slash', cmd == null ? '' : String(cmd)); return Promise.resolve(); },
     sendMessage: function (text) { native('send', text == null ? '' : String(text)); return Promise.resolve(); },
@@ -2021,6 +2057,13 @@
       if (area.bottom != null) root.style.setProperty('--safe-bottom', area.bottom + 'px');
     },
     setAppearance: function (json) { applyAppearance(parse(json)); },
+    setHelperSettings: function (json) {
+      var payload = parse(json);
+      if (!payload) return;
+      state.helper = payload;
+      // 折叠模式 / 渲染器 / 流式会改变块结构，整表重渲染
+      schedule(function () { renderAll(); });
+    },
     setTheme: function (json) { applyTheme(parse(json)); },
 
     // 前端插件脚本：只在前端模式由原生下发，按 id 增量注入

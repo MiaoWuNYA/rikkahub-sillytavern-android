@@ -233,6 +233,18 @@ data class HuaDengSettings(
     // 系统提示词转义：将系统消息中的 < > 转为 HTML 实体
     val enableSystemPromptEscape: Boolean = false,
 
+    // ---- 酒馆助手兼容 · 前端卡渲染 ----
+    // 启用渲染器：关掉后前端 HTML 代码块只当普通代码块显示，不再起 iframe
+    val thRenderEnabled: Boolean = true,
+    // 允许流式渲染：流式输出过程中就渲染前端卡（部分界面可能渲染异常）
+    val thAllowStreaming: Boolean = false,
+    // 代码折叠：none / frontend_only / all
+    val thCodeCollapse: String = "frontend_only",
+    // Blob URL 渲染：用 blob: URL 而非 srcdoc 装载卡片，便于调试
+    val thUseBlobUrl: Boolean = false,
+    // 宏替换：前端脚本 substituteMacros 是否展开 {{...}} 宏
+    val thMacroEnabled: Boolean = true,
+
     // ---- 酒馆模式：纯净请求 ----
     // 开启后请求里只保留「角色卡（含世界书/示例消息/系统提示）+ 聊天历史 + 工具
     // 其余一律不发：插件提示词、记忆检索、跨窗口生活流、模板宏、工作空间提醒
