@@ -979,7 +979,11 @@ private fun ChatPageContent(
                             items.forEach { element ->
                                 val obj = element as? kotlinx.serialization.json.JsonObject ?: return@forEach
                                 val index = (obj["message_id"]?.toString()?.trim('"'))?.toIntOrNull() ?: return@forEach
-                                val text = obj["mes"]?.toString()?.trim('"') ?: return@forEach
+                                val text = obj["mes"]?.takeIf { it !is kotlinx.serialization.json.JsonNull }
+                                    ?.toString()?.trim('"')
+                                    ?: obj["message"]?.takeIf { it !is kotlinx.serialization.json.JsonNull }
+                                        ?.toString()?.trim('"')
+                                    ?: return@forEach
                                 val target = list.getOrNull(index)
                                 if (target != null && target.parts.filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>().joinToString("\n") { it.text } != text) {
                                     vm.handleMessageEdit(listOf(me.rerere.ai.ui.UIMessagePart.Text(text)), target.id)
@@ -994,11 +998,18 @@ private fun ChatPageContent(
                                 ?: return@runCatching
                             items.forEach { element ->
                                 val obj = element as? kotlinx.serialization.json.JsonObject ?: return@forEach
-                                val text = obj["mes"]?.toString()?.trim('"') ?: return@forEach
-                                val isUser = obj["is_user"]?.toString() == "true"
+                                val text = obj["mes"]?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.toString()?.trim('"')
+                                    ?: obj["message"]?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.toString()?.trim('"')
+                                    ?: return@forEach
+                                val roleStr = obj["role"]?.toString()?.trim('"')
+                                val isUser = obj["is_user"]?.toString() == "true" || roleStr == "user"
                                 val name = obj["name"]?.toString()?.trim('"')?.takeIf { it.isNotBlank() && it != "null" }
                                 vm.handleInsertMessage(
-                                    role = if (isUser) MessageRole.USER else MessageRole.ASSISTANT,
+                                    role = when {
+                                        roleStr == "system" -> MessageRole.SYSTEM
+                                        isUser -> MessageRole.USER
+                                        else -> MessageRole.ASSISTANT
+                                    },
                                     text = text,
                                     name = name,
                                 )
@@ -1156,9 +1167,16 @@ private fun ChatPageContent(
                                     kotlinx.serialization.json.buildJsonObject {
                                         put("message_id", JsonPrimitive(index))
                                         put("name", JsonPrimitive(message.role.name))
-                                        put("role", JsonPrimitive(if (message.role == MessageRole.USER) "user" else "assistant"))
+                                        val roleName = when (message.role) {
+                                            MessageRole.USER -> "user"
+                                            MessageRole.SYSTEM -> "system"
+                                            else -> "assistant"
+                                        }
+                                        put("role", JsonPrimitive(roleName))
                                         put("is_user", JsonPrimitive(message.role == MessageRole.USER))
                                         put("is_system", JsonPrimitive(message.role == MessageRole.SYSTEM))
+                                        put("is_hidden", JsonPrimitive(false))
+                                        put("extra", kotlinx.serialization.json.buildJsonObject { })
                                         val text = message.parts
                                             .filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>()
                                             .joinToString("\n") { it.text }
