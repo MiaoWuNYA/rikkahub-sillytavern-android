@@ -20,6 +20,7 @@ import me.rerere.ai.provider.ModelType
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.findModelById
 import me.rerere.rikkahub.data.repository.ConversationRepository
+import me.rerere.rikkahub.data.repository.FolderRepository
 import me.rerere.rikkahub.service.ChatService
 import me.rerere.rikkahub.web.BadRequestException
 import me.rerere.rikkahub.web.NotFoundException
@@ -32,6 +33,7 @@ import me.rerere.rikkahub.web.dto.ErrorEvent
 import me.rerere.rikkahub.web.dto.ForkConversationRequest
 import me.rerere.rikkahub.web.dto.ForkConversationResponse
 import me.rerere.rikkahub.web.dto.MoveConversationRequest
+import me.rerere.rikkahub.web.dto.MoveConversationToFolderRequest
 import me.rerere.rikkahub.web.dto.PagedResult
 import me.rerere.rikkahub.web.dto.RegenerateRequest
 import me.rerere.rikkahub.web.dto.SelectMessageNodeRequest
@@ -50,6 +52,7 @@ import kotlin.uuid.Uuid
 fun Route.conversationRoutes(
     chatService: ChatService,
     conversationRepo: ConversationRepository,
+    folderRepo: FolderRepository,
     settingsStore: SettingsStore
 ) {
     route("/conversations") {
@@ -312,6 +315,27 @@ fun Route.conversationRoutes(
                 ?: throw NotFoundException("Conversation not found")
 
             chatService.saveConversation(uuid, conversation.copy(assistantId = targetAssistantId))
+            call.respond(HttpStatusCode.OK, mapOf("status" to "updated"))
+        }
+
+        // POST /api/conversations/{id}/folder - Move conversation to a folder (null = unfiled)
+        post("/{id}/folder") {
+            val uuid = call.parameters["id"].toUuid("conversation id")
+            val request = call.receive<MoveConversationToFolderRequest>()
+
+            val conversation = conversationRepo.getConversationById(uuid)
+                ?: throw NotFoundException("Conversation not found")
+
+            val targetFolderId = request.folderId?.takeIf { it.isNotBlank() }?.toUuid("folder id")
+            if (targetFolderId != null) {
+                val folder = folderRepo.getFolderById(targetFolderId)
+                    ?: throw NotFoundException("Folder not found")
+                if (folder.assistantId != conversation.assistantId) {
+                    throw BadRequestException("Folder belongs to another assistant")
+                }
+            }
+
+            chatService.moveConversationToFolder(uuid, targetFolderId)
             call.respond(HttpStatusCode.OK, mapOf("status" to "updated"))
         }
 

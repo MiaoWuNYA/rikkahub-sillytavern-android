@@ -34,6 +34,8 @@ Material 3 look (cards with dividers, plain forms).
 - **document**: Document parsing module for handling PDF, DOCX, PPTX, and EPUB files
 - **highlight**: Code syntax highlighting implementation
 - **material3**: Material color utility extensions used by the app UI
+- **mediagen**: Media generation provider abstraction (image/video) used by the media creation feature
+- **oauth**: OAuth authorization helpers (loopback callback server, launcher, foreground service)
 - **ui**: Reusable Compose UI components that do not depend on app logic
 - **search**: Search functionality SDK for multiple providers (Exa, Tavily, Zhipu, Bing, Brave, SearXNG, and others)
 - **speech**: Speech module for TTS and ASR implementations
@@ -70,13 +72,15 @@ Material 3 look (cards with dividers, plain forms).
 
 - **Frontend Card Mode**: When a conversation's assistant was imported from a card containing HTML
   frontend cards, the chat message area is rendered by a single WebView
-  (`ui/pages/chat/FrontendCardChatView.kt` + `app/src/main/assets/frontend-card/`) instead of the
-  Compose `ChatList`; the top bar and chat input stay native. The card iframes get a thin
-  TavernHelper-style bridge (slash commands, sendMessage, variables) and the page only displays text
-  already processed by the native pipeline (regex, macros, context assembly). Non-frontend
-  conversations keep the original per-message embedded rendering. (
-  app/src/main/java/me/rerere/rikkahub/ui/pages/chat/FrontendCardChatView.kt,
-  app/src/main/assets/frontend-card/)
+  (`ui/pages/chat/WebChatSurface.kt`, page loaded from `app/src/main/assets/webui/index.html`) instead of the
+  Compose `ChatList`; the top bar and chat input stay native. Mode resolution lives in
+  `ui/pages/chat/ChatPage.kt` (`resolveFrontendCardMode` + `FrontendCardMode.AUTO/ALWAYS/NEVER`, stored on the
+  assistant). The page gets a thin TavernHelper-style bridge (slash commands, sendMessage, variables,
+  message read/write) and only displays text already processed by the native pipeline (regex, macros, context
+  assembly). Non-frontend conversations keep the original per-message embedded rendering. (
+  app/src/main/java/me/rerere/rikkahub/ui/pages/chat/WebChatSurface.kt,
+  app/src/main/java/me/rerere/rikkahub/data/model/Assistant.kt,
+  app/src/main/assets/webui/)
 
 - **Message Transformer**: A pipeline mechanism for transforming messages before sending to AI providers (
   InputMessageTransformer) or after receiving responses (OutputMessageTransformer). Transformers can modify message
