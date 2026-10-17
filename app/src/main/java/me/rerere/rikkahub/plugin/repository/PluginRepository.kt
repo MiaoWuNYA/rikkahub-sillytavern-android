@@ -99,6 +99,35 @@ class PluginRepository(
         context.dataStore.edit { prefs ->
             prefs.remove(booleanPreferencesKey("plugin_enabled_$pluginId"))
             prefs.remove(stringPreferencesKey("plugin_config_$pluginId"))
+            prefs.remove(stringPreferencesKey("plugin_frontend_disabled_$pluginId"))
+        }
+    }
+
+    // ==================== 前端脚本开关 ====================
+
+    /**
+     * 获取被单独停用的前端脚本 id 集合
+     */
+    suspend fun getDisabledFrontendScripts(pluginId: String): Set<String> {
+        return context.dataStore.data.map { prefs ->
+            val key = stringPreferencesKey("plugin_frontend_disabled_$pluginId")
+            val jsonStr = prefs[key] ?: "[]"
+            try {
+                json.decodeFromString<Set<String>>(jsonStr)
+            } catch (e: Exception) {
+                emptySet()
+            }
+        }.first()
+    }
+
+    /**
+     * 单独启用/停用某个前端脚本
+     */
+    suspend fun setFrontendScriptEnabled(pluginId: String, scriptKey: String, enabled: Boolean) {
+        val current = getDisabledFrontendScripts(pluginId).toMutableSet()
+        if (enabled) current.remove(scriptKey) else current.add(scriptKey)
+        context.dataStore.edit { prefs ->
+            prefs[stringPreferencesKey("plugin_frontend_disabled_$pluginId")] = json.encodeToString(current)
         }
     }
 

@@ -179,7 +179,13 @@ fun PluginDetailPage(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 frontendScripts.forEach { script ->
-                    FrontendScriptItem(script, plugin.directory)
+                    val scriptKey = script.scriptKey()
+                    FrontendScriptItem(
+                        script = script,
+                        directory = plugin.directory,
+                        checked = script.enabled && scriptKey !in plugin.disabledFrontendScripts,
+                        onToggle = { viewModel.setFrontendScriptEnabled(pluginId, scriptKey, it) },
+                    )
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -395,42 +401,53 @@ private fun ToolItem(tool: PluginToolDefinition) {
 }
 
 @Composable
-private fun FrontendScriptItem(script: PluginFrontendScript, directory: java.io.File) {
+private fun FrontendScriptItem(
+    script: PluginFrontendScript,
+    directory: java.io.File,
+    checked: Boolean,
+    onToggle: (Boolean) -> Unit,
+) {
     val oversize = remember(script.entry, directory) {
         val file = java.io.File(directory, script.entry)
         file.isFile && file.length() > me.rerere.rikkahub.plugin.manager.PluginManager.MAX_FRONTEND_SCRIPT_BYTES
     }
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-        Text(
-            text = script.name.ifBlank { script.entry },
-            style = MaterialTheme.typography.bodyLarge
-        )
-        Text(
-            text = script.entry,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        if (script.info.isNotBlank()) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = script.info,
-                style = MaterialTheme.typography.bodyMedium,
+                text = script.name.ifBlank { script.entry },
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
+                text = script.entry,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (script.info.isNotBlank()) {
+                Text(
+                    text = script.info,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (!script.enabled) {
+                Text(
+                    text = stringResource(R.string.plugin_frontend_script_disabled),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+            if (oversize) {
+                Text(
+                    text = stringResource(R.string.plugin_frontend_script_oversize),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
         }
-        if (!script.enabled) {
-            Text(
-                text = stringResource(R.string.plugin_frontend_script_disabled),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error
-            )
-        }
-        if (oversize) {
-            Text(
-                text = stringResource(R.string.plugin_frontend_script_oversize),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error
-            )
-        }
+        Switch(checked = checked, onCheckedChange = onToggle)
     }
 }
 
