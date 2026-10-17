@@ -461,6 +461,13 @@ private fun ChatPageContent(
     val frontendCardPreferredNow = remember(setting, conversation) {
         resolveFrontendCardMode(setting, conversation)
     }
+    // 前端插件只在前端 WebView 模式生效：脚本随启用状态变化重新下发
+    val pluginManager: me.rerere.rikkahub.plugin.manager.PluginManager = koinInject()
+    val pluginList by pluginManager.plugins.collectAsStateWithLifecycle()
+    var frontendScriptsJson by remember { mutableStateOf("[]") }
+    LaunchedEffect(frontendCardPreferredNow, pluginList) {
+        frontendScriptsJson = if (frontendCardPreferredNow) pluginManager.buildFrontendScriptsJson() else "[]"
+    }
     // WebView 里点消息 → 用原生对话框做操作，功能与原生列表一致
     var webActionIndex by remember { mutableStateOf<Int?>(null) }
     var webCopyMessage by remember { mutableStateOf<UIMessage?>(null) }
@@ -935,6 +942,20 @@ private fun ChatPageContent(
                         val parsed = parseVariablesJson(json)
                         vm.updateSettings { it.copy(huadengSettings = it.huadengSettings.copy(webviewVariables = parsed)) }
                     },
+                    frontendScriptsJson = frontendScriptsJson,
+                    onSetVariables = { payload ->
+                        runCatching {
+                            val obj = kotlinx.serialization.json.Json.parseToJsonElement(payload)
+                                as? kotlinx.serialization.json.JsonObject ?: return@runCatching
+                            val scope = obj["scope"]?.toString()?.trim('"')?.takeIf { it.isNotBlank() } ?: "local"
+                            val vars = obj["vars"] as? kotlinx.serialization.json.JsonObject ?: return@runCatching
+                            val flat = vars.mapValues { (_, v) -> v.toString().trim('"') }
+                            vm.updateSettings { s ->
+                                val current = s.huadengSettings.webviewVariables
+                                s.copy(huadengSettings = s.huadengSettings.copy(webviewVariables = current + (scope to flat)))
+                            }
+                        }
+                    },
                     // 卡片改消息：按脚下标定位到真实消息，走既有编辑/插入/删除路径，
                     onSetChatMessages = { payload ->
                         runCatching {
@@ -1125,13 +1146,12 @@ private fun ChatPageContent(
                                         put("role", JsonPrimitive(if (message.role == MessageRole.USER) "user" else "assistant"))
                                         put("is_user", JsonPrimitive(message.role == MessageRole.USER))
                                         put("is_system", JsonPrimitive(message.role == MessageRole.SYSTEM))
-                                        put(
-                                            "mes",
-                                            JsonPrimitive(
-                                                message.parts.filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>()
-                                                    .joinToString("\n") { it.text },
-                                            ),
-                                        )
+                                        val text = message.parts
+                                            .filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>()
+                                            .joinToString("\n") { it.text }
+                                        put("mes", JsonPrimitive(text))
+                                        // 酒馆脚本读 mes，也常用 message；两个都给
+                                        put("message", JsonPrimitive(text))
                                     },
                                 )
                             }

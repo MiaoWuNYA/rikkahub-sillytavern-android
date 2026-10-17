@@ -62,6 +62,9 @@ fun WebChatSurface(
     onInsertSymbol: (String) -> Unit,
     variablesJson: String = "{}",
     onSaveVariables: (String) -> Unit = {},
+    // 前端插件脚本（仅本模式下发），json 数组，含脚本源码
+    frontendScriptsJson: String = "[]",
+    onSetVariables: (String) -> Unit = {},
     onSubstituteMacros: (suspend (String) -> String)? = null,
     onMessagesJson: () -> String = { "[]" },
     nodes: List<me.rerere.rikkahub.data.model.MessageNode> = emptyList(),
@@ -296,6 +299,11 @@ fun WebChatSurface(
                     bridge?.resolve(requestId, payload)
                 }
 
+                "setVariables" -> {
+                    onSetVariables(payload)
+                    bridge?.resolve(requestId, "null")
+                }
+
                 "triggerSlash" -> {
                     onSlash(payload)
                     bridge?.resolve(requestId, "")
@@ -357,6 +365,12 @@ fun WebChatSurface(
     LaunchedEffect(safeAreaJson, ready) {
         if (!ready) return@LaunchedEffect
         webViewRef?.evaluateJavascript("window.webui.setSafeArea(${quoteJs(safeAreaJson)});", null)
+    }
+
+    // 前端插件脚本：仅在本模式下发，页面按 id 去重后增量注入
+    LaunchedEffect(frontendScriptsJson, ready) {
+        if (!ready) return@LaunchedEffect
+        webViewRef?.evaluateJavascript("window.webui.setPlugins(${quoteJs(frontendScriptsJson)});", null)
     }
 
     LaunchedEffect(appearanceJson, ready) {

@@ -1144,6 +1144,7 @@
   <string name="plugin_detail_config">Plugin config</string>
   <string name="plugin_detail_folder">Folder</string>
   <string name="plugin_detail_folder_hint">Tap to move the plugin to another folder</string>
+  <string name="plugin_detail_frontend">Frontend scripts (webview mode only)</string>
   <string name="plugin_detail_not_found">Plugin not found</string>
   <string name="plugin_detail_path">Plugin path</string>
   <string name="plugin_detail_save_config">Save config</string>

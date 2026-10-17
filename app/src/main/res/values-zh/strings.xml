@@ -1139,6 +1139,7 @@
   <string name="plugin_detail_config">插件配置</string>
   <string name="plugin_detail_folder">所属文件夹</string>
   <string name="plugin_detail_folder_hint">点击选择文件夹，移动插件到其他分组</string>
+  <string name="plugin_detail_frontend">前端脚本（仅前端模式生效）</string>
   <string name="plugin_detail_not_found">插件不存在</string>
   <string name="plugin_detail_path">插件路径</string>
   <string name="plugin_detail_save_config">保存配置</string>
