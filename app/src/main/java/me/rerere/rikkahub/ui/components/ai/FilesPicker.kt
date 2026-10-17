@@ -252,13 +252,8 @@ internal fun FilesPicker(
                     }
 
                     // Extensions (Quick Messages + Prompt Injections + Skills)
-                    // 允许会话级绑定时按会话上的注入/Lorebook 计数
-                    val modeAndLorebookCount =
-                        if (assistant.allowConversationPromptInjection) {
-                            conversation.modeInjectionIds.size + conversation.lorebookIds.size
-                        } else {
-                            assistant.modeInjectionIds.size + assistant.lorebookIds.size
-                        }
+                    // 绑定跟随助手自身
+                    val modeAndLorebookCount = assistant.modeInjectionIds.size + assistant.lorebookIds.size
                     val activeCount =
                         assistant.quickMessageIds.size +
                             modeAndLorebookCount +
