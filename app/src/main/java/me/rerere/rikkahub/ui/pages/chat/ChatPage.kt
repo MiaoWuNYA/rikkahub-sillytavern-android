@@ -962,10 +962,10 @@ private fun ChatPageContent(
                                 as? kotlinx.serialization.json.JsonObject ?: return@runCatching
                             val scope = obj["scope"]?.toString()?.trim('"')?.takeIf { it.isNotBlank() } ?: "local"
                             val vars = obj["vars"] as? kotlinx.serialization.json.JsonObject ?: return@runCatching
-                            val flat = vars.mapValues { (_, v) -> v.toString().trim('"') }
+                            val stored = vars.toMap()
                             vm.updateSettings { s ->
                                 val current = s.huadengSettings.webviewVariables
-                                s.copy(huadengSettings = s.huadengSettings.copy(webviewVariables = current + (scope to flat)))
+                                s.copy(huadengSettings = s.huadengSettings.copy(webviewVariables = current + (scope to stored)))
                             }
                         }
                     },
@@ -1618,23 +1618,16 @@ private fun buildVariablesJson(settings: Settings): String {
     val scopes = settings.huadengSettings.webviewVariables
     return kotlinx.serialization.json.buildJsonObject {
         scopes.forEach { (scope, vars) ->
-            put(
-                scope,
-                kotlinx.serialization.json.buildJsonObject {
-                    vars.forEach { (k, v) -> put(k, JsonPrimitive(v)) }
-                },
-            )
+            put(scope, kotlinx.serialization.json.JsonObject(vars))
         }
     }.toString()
 }
 
-// 页面回传的变量域快照，转成可持久化的结构
-private fun parseVariablesJson(json: String): Map<String, Map<String, String>> = runCatching {
+// 页面回传的变量域快照，转成可持久化的结构（保留原始 JSON 类型）
+private fun parseVariablesJson(json: String): Map<String, Map<String, kotlinx.serialization.json.JsonElement>> = runCatching {
     val obj = kotlinx.serialization.json.Json.parseToJsonElement(json) as? kotlinx.serialization.json.JsonObject
         ?: return emptyMap()
     obj.mapValues { (_, value) ->
-        (value as? kotlinx.serialization.json.JsonObject)
-            ?.mapValues { (_, v) -> v.toString().trim('"') }
-            .orEmpty()
+        (value as? kotlinx.serialization.json.JsonObject)?.toMap().orEmpty()
     }
 }.getOrDefault(emptyMap())

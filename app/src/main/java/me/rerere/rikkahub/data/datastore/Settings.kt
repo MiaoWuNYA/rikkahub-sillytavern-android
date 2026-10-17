@@ -216,8 +216,9 @@ data class HuaDengSettings(
     val enableCleanMode: Boolean = false,
     // 工具结果截断：关闭后工具输出不再截断（默认截断超过 32KB 的输出）
     val enableToolResultTruncation: Boolean = true,
-    // 页面与前端卡的变量域（local / global），由页面托管、App 落盘
-    val webviewVariables: Map<String, Map<String, String>> = emptyMap(),
+    // 页面与前端卡的变量域（local / global / message / …），由页面托管、App 落盘
+    // 用 JsonElement 保留嵌套对象/数组/数字/布尔，避免被拍平成字符串
+    val webviewVariables: Map<String, Map<String, kotlinx.serialization.json.JsonElement>> = emptyMap(),
     // 本地 OCR 兜底：未配置 OCR 模型（或远程识别失败）时
     // 离线识别图片文字。不联网、不上传图片。关掉则回到旧行为——直接给模型
     // 一个 "[Image]" 占位符，图片内容等于不可见。

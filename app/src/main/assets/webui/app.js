@@ -111,6 +111,8 @@
     ttsAvailable: true,
   };
   var variables = loadVariables();
+  // 除 local/global/message 外的变量域（character/preset/script/extension…），按名字独立存放
+  var extraVariables = {};
   var globalVariables = {};
   var messageVariables = {};
   // 外壳版本：setLibs 或 cardStyle 变化时自增，用来把已装配的卡片按新外壳重装一次
@@ -503,12 +505,13 @@
 
   function saveVariables() {
     try { localStorage.setItem('rikka.card.vars.local', JSON.stringify(variables)); } catch (e) { /* 忽略 */ }
-    requestNative('saveVariables', JSON.stringify(variables));
+    requestNative('setVariables', JSON.stringify({ scope: 'local', vars: variables }));
   }
 
   function pushVarsToCards() {
     var frames = document.querySelectorAll('iframe');
     var scopes = { local: variables, global: globalVariables, message: messageVariables };
+    Object.keys(extraVariables).forEach(function (k) { scopes[k] = extraVariables[k]; });
     Object.keys(scopes).forEach(function (scope) {
       var json = JSON.stringify(scopes[scope] || {});
       for (var i = 0; i < frames.length; i++) {
@@ -637,14 +640,46 @@
     '    });',
     '  };',
     '  window.__rikkaResolve = function(id, value){ var f = pending[id]; if (f) { pending[id] = null; f(value); } };',
+    '  var parentApi = function(){ try { return window.parent && window.parent.TavernHelper; } catch (e) { return null; } };',
     '  var api = {',
     '    getMessageId: function(){ return MID; },',
-    '    getVariables: function(scope){ return call("getVariables", String(scope == null ? "local" : scope)); },',
-    '    setVariables: function(vars, scope){',
+    '    getVariables: function(option){',
+    '      var p = parentApi(); if (p && p.getVariables) return p.getVariables(option);',
+    '      return call("getVariables", typeof option === "string" ? option : JSON.stringify(option || {}));',
+    '    },',
+    '    setVariables: function(vars, option){',
+    '      var p = parentApi(); if (p && p.replaceVariables) return p.replaceVariables(vars, option);',
     '      var v = vars;',
     '      if (typeof v === "string") { try { v = JSON.parse(v); } catch (e) { v = {}; } }',
-    '      return call("setVariables", JSON.stringify({scope: scope || "local", vars: v || {}}));',
+    '      return call("setVariables", JSON.stringify({scope: option || "local", vars: v || {}}));',
     '    },',
+    '    replaceVariables: function(vars, option){ return api.setVariables(vars, option); },',
+    '    insertOrAssignVariables: function(vars, option){',
+    '      var p = parentApi(); if (p && p.insertOrAssignVariables) return p.insertOrAssignVariables(vars, option);',
+    '      return undefined;',
+    '    },',
+    '    insertVariables: function(vars, option){',
+    '      var p = parentApi(); if (p && p.insertVariables) return p.insertVariables(vars, option);',
+    '      return undefined;',
+    '    },',
+    '    updateVariablesWith: function(updater, option){',
+    '      var p = parentApi(); if (p && p.updateVariablesWith) return p.updateVariablesWith(updater, option);',
+    '      return undefined;',
+    '    },',
+    '    deleteVariable: function(path, option){',
+    '      var p = parentApi(); if (p && p.deleteVariable) return p.deleteVariable(path, option);',
+    '      return undefined;',
+    '    },',
+    '    registerVariableSchema: function(schema, option){',
+    '      var p = parentApi(); if (p && p.registerVariableSchema) return p.registerVariableSchema(schema, option);',
+    '    },',
+    '    registerMacroLike: function(regex, replace){',
+    '      var p = parentApi(); if (p && p.registerMacroLike) return p.registerMacroLike(regex, replace);',
+    '      return { unregister: function(){} };',
+    '    },',
+    '    getTavernHelperVersion: function(){ var p = parentApi(); return (p && p.getTavernHelperVersion) ? p.getTavernHelperVersion() : "4.11.3"; },',
+    '    getTavernVersion: function(){ var p = parentApi(); return (p && p.getTavernVersion) ? p.getTavernVersion() : "1.12.14"; },',
+    '    getLastMessageId: function(){ var p = parentApi(); return (p && p.getLastMessageId) ? p.getLastMessageId() : MID; },',
     '    sendMessage: function(text){ post("send", String(text == null ? "" : text)); return Promise.resolve(); },',
     '    triggerSlash: function(cmd){ var c = String(cmd == null ? "" : cmd); post("slash", c); return call("triggerSlash", c); },',
     '    substituteMacros: function(text){ return call("substituteMacros", String(text == null ? "" : text)); },',
@@ -954,7 +989,94 @@
   function macroSubstitute(text) {
     var value = text == null ? '' : String(text);
     if (state.helper && state.helper.macroEnabled === false) return value;
+    value = expandVariableMacros(value);
+    value = expandRegisteredMacros(value);
     return window.webui.request('substituteMacros', value);
+  }
+
+  function unregisterMacroLike(regex) {
+    registeredMacros = registeredMacros.filter(function (e) { return e.regex !== regex; });
+  }
+
+  // 忽略以 $ 开头的键（酒馆助手约定：$ 前缀不发给 AI）
+  function stripDollar(value) {
+    if (Array.isArray(value)) return value.map(stripDollar);
+    if (value && typeof value === 'object') {
+      var out = {};
+      Object.keys(value).forEach(function (k) {
+        if (k.charAt(0) === '$') return;
+        out[k] = stripDollar(value[k]);
+      });
+      return out;
+    }
+    return value;
+  }
+
+  function yamlScalar(value, quoted) {
+    if (value == null) return 'null';
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    var s = String(value);
+    if (quoted) return JSON.stringify(s);
+    if (s === '' || /[:#\-?\[\]{}&*!|>'"%@`]/.test(s) || /^\s|\s$/.test(s) ||
+      /^(true|false|null|~|-?\d+)$/.test(s)) {
+      return JSON.stringify(s);
+    }
+    return s;
+  }
+
+  // 极简 YAML 序列化，够酒馆助手变量宏用
+  function toYaml(value, indent, quoted) {
+    indent = indent || '';
+    if (value == null || typeof value !== 'object') return yamlScalar(value, quoted);
+    if (Array.isArray(value)) {
+      if (!value.length) return '[]';
+      return '\n' + value.map(function (v) {
+        if (v && typeof v === 'object') {
+          var inner = toYaml(v, indent + '  ', quoted);
+          return indent + '-' + (inner.charAt(0) === '\n' ? inner : ' ' + inner);
+        }
+        return indent + '- ' + yamlScalar(v, quoted);
+      }).join('\n');
+    }
+    var keys = Object.keys(value);
+    if (!keys.length) return '{}';
+    return '\n' + keys.map(function (k) {
+      var v = value[k];
+      if (v && typeof v === 'object') {
+        var inner = toYaml(v, indent + '  ', quoted);
+        return indent + yamlScalar(k) + ':' + (inner.charAt(0) === '\n' ? inner : ' ' + inner);
+      }
+      return indent + yamlScalar(k) + ': ' + yamlScalar(v, quoted);
+    }).join('\n');
+  }
+
+  var VARIABLE_MACRO_RE =
+    /\{\{\s*(get|format)_(global|preset|character|chat|message)_variable(_quoted)?::([^}\n]*)\}\}/g;
+
+  // 酒馆助手内置变量宏：从页面变量域取值（聊天宏对应 chat=local）
+  function expandVariableMacros(text) {
+    if (text.indexOf('_variable::') < 0) return text;
+    return text.replace(VARIABLE_MACRO_RE, function (full, mode, kind, quoted, path) {
+      var scope = kind === 'chat' ? 'local' : kind;
+      var value = deepGet(scopeStore(scope) || {}, String(path).trim());
+      if (value === undefined) return full;
+      var clean = stripDollar(value);
+      if (mode === 'get') return JSON.stringify(clean);
+      return toYaml(clean, '', quoted === '_quoted').replace(/^\n+/, '').replace(/\s+$/, '');
+    });
+  }
+
+  function expandRegisteredMacros(text) {
+    registeredMacros.forEach(function (entry) {
+      try {
+        text = text.replace(entry.regex, function (match) {
+          var rest = Array.prototype.slice.call(arguments, 1);
+          var captures = rest.slice(0, rest.length - 2);
+          return entry.replace({}, match, captures[0], captures[1], captures[2]);
+        });
+      } catch (e) { /* 单个宏失败不影响其余 */ }
+    });
+    return text;
   }
 
   // 渲染键带上影响输出结构的开关，设置变了才重渲染
@@ -1858,30 +1980,97 @@
     if (iframeAlias) emitPageEvent(iframeAlias, args);
   }
 
-  function scopeName(scope) {
-    var s = String(scope == null ? 'local' : scope).toLowerCase();
-    return s === 'global' || s === 'message' ? s : 'local';
+  function normScope(scope) {
+    var s = String(scope == null ? '' : scope).toLowerCase();
+    if (s === '' || s === 'chat' || s === 'local') return 'local';
+    return s;
+  }
+
+  // 酒馆助手 VariableOption：{type, message_id?, script_id?, extension_id?}
+  function optionScope(option) {
+    if (option && typeof option === 'object') {
+      var s = normScope(option.type);
+      if (s === 'script' && option.script_id) return 'script:' + option.script_id;
+      if (s === 'extension' && option.extension_id) return 'extension:' + option.extension_id;
+      return s;
+    }
+    return normScope(option);
   }
 
   function scopeStore(scope) {
-    var s = scopeName(scope);
+    var s = normScope(scope);
     if (s === 'global') return globalVariables;
     if (s === 'message') return messageVariables;
-    return variables;
+    if (s === 'local') return variables;
+    return extraVariables[s] || {};
   }
 
   function applyScope(scope, obj) {
-    var s = scopeName(scope);
+    var s = normScope(scope);
     var next = obj && typeof obj === 'object' ? obj : {};
     if (s === 'global') globalVariables = next;
     else if (s === 'message') messageVariables = next;
-    else {
+    else if (s === 'local') {
       variables = next;
       try { localStorage.setItem('rikka.card.vars.local', JSON.stringify(variables)); } catch (e) { /* 忽略 */ }
+    } else {
+      extraVariables[s] = next;
     }
     pushVarsToCards();
     requestNative('setVariables', JSON.stringify({ scope: s, vars: next }));
   }
+
+  // —— 点路径读写（对齐 lodash 的 "a.b.c" 语义）——
+  function pathParts(path) {
+    return String(path == null ? '' : path).split('.').filter(function (p) { return p !== ''; });
+  }
+
+  function deepGet(obj, path) {
+    var parts = pathParts(path);
+    var cur = obj;
+    for (var i = 0; i < parts.length; i++) {
+      if (cur == null || typeof cur !== 'object') return undefined;
+      cur = cur[parts[i]];
+    }
+    return cur;
+  }
+
+  function deepSet(obj, path, value) {
+    var parts = pathParts(path);
+    if (!parts.length) return obj;
+    var cur = obj;
+    for (var i = 0; i < parts.length - 1; i++) {
+      var k = parts[i];
+      if (cur[k] == null || typeof cur[k] !== 'object') cur[k] = {};
+      cur = cur[k];
+    }
+    cur[parts[parts.length - 1]] = value;
+    return obj;
+  }
+
+  function deepUnset(obj, path) {
+    var parts = pathParts(path);
+    if (!parts.length) return false;
+    var cur = obj;
+    for (var i = 0; i < parts.length - 1; i++) {
+      if (cur == null || typeof cur !== 'object') return false;
+      cur = cur[parts[i]];
+    }
+    var last = parts[parts.length - 1];
+    if (cur != null && typeof cur === 'object' && Object.prototype.hasOwnProperty.call(cur, last)) {
+      delete cur[last];
+      return true;
+    }
+    return false;
+  }
+
+  // 酒馆助手/酒馆版本：脚本常用它做能力判断，探测时回一个较新的酒馆助手版本
+  var TAVERN_HELPER_VERSION = '4.11.3';
+  var TAVERN_VERSION = '1.12.14';
+  // 注册的助手宏正则与替换，参与 substituteMacros
+  var registeredMacros = [];
+  // 变量结构注册表（仅用于变量管理器 UI 校验，当前只记录不校验）
+  var variableSchemas = {};
 
   function normalMessage(raw) {
     if (raw == null) return null;
@@ -1901,42 +2090,75 @@
   }
 
   var tavernApi = {
-    getVariables: function (scope) {
-      var store = scopeStore(scope) || {};
-      var copy = {};
-      Object.keys(store).forEach(function (k) { copy[k] = store[k]; });
-      return copy;
+    getVariables: function (option) {
+      var store = scopeStore(optionScope(option)) || {};
+      return JSON.parse(JSON.stringify(store));
     },
-    replaceVariables: function (vars, scope) { applyScope(scope, vars); return true; },
-    insertOrAssignVariables: function (vars, scope) {
-      var store = scopeStore(scope);
-      var next = {};
-      Object.keys(store || {}).forEach(function (k) { next[k] = store[k]; });
-      Object.keys(vars || {}).forEach(function (k) { next[k] = vars[k]; });
-      applyScope(scope, next);
-      return true;
+    replaceVariables: function (vars, option) {
+      applyScope(optionScope(option), vars);
+      return JSON.parse(JSON.stringify(vars || {}));
     },
-    // 卡片桥沿用 setVariables 这个叫法，语义与 replaceVariables 相同
-    setVariables: function (vars, scope) { applyScope(scope, vars); return true; },
-    getVariable: function (key, scope) {
-      var store = scopeStore(scope) || {};
-      return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : undefined;
+    updateVariablesWith: function (updater, option) {
+      var scope = optionScope(option);
+      var current = scopeStore(scope) || {};
+      var result = typeof updater === 'function' ? updater(JSON.parse(JSON.stringify(current))) : current;
+      if (result && typeof result.then === 'function') {
+        return result.then(function (next) { applyScope(scope, next); return next; });
+      }
+      applyScope(scope, result);
+      return result;
     },
-    setVariable: function (key, value, scope) {
+    insertOrAssignVariables: function (vars, option) {
+      var scope = optionScope(option);
       var store = scopeStore(scope) || {};
       var next = {};
       Object.keys(store).forEach(function (k) { next[k] = store[k]; });
-      next[key] = value;
+      Object.keys(vars || {}).forEach(function (k) { next[k] = vars[k]; });
       applyScope(scope, next);
-      return true;
+      return JSON.parse(JSON.stringify(next));
     },
-    deleteVariable: function (key, scope) {
+    insertVariables: function (vars, option) {
+      var scope = optionScope(option);
       var store = scopeStore(scope) || {};
       var next = {};
-      Object.keys(store).forEach(function (k) { if (k !== key) next[k] = store[k]; });
+      Object.keys(store).forEach(function (k) { next[k] = store[k]; });
+      Object.keys(vars || {}).forEach(function (k) {
+        if (!Object.prototype.hasOwnProperty.call(next, k)) next[k] = vars[k];
+      });
+      applyScope(scope, next);
+      return JSON.parse(JSON.stringify(next));
+    },
+    // 卡片桥沿用 setVariables 这个叫法，语义与 replaceVariables 相同
+    setVariables: function (vars, option) { applyScope(optionScope(option), vars); return true; },
+    getVariable: function (key, option) {
+      var store = scopeStore(optionScope(option)) || {};
+      return deepGet(store, key);
+    },
+    setVariable: function (key, value, option) {
+      var scope = optionScope(option);
+      var next = JSON.parse(JSON.stringify(scopeStore(scope) || {}));
+      deepSet(next, key, value);
       applyScope(scope, next);
       return true;
     },
+    deleteVariable: function (path, option) {
+      var scope = optionScope(option);
+      var next = JSON.parse(JSON.stringify(scopeStore(scope) || {}));
+      var occurred = deepUnset(next, path);
+      applyScope(scope, next);
+      return { variables: next, delete_occurred: occurred };
+    },
+    registerVariableSchema: function (schema, option) {
+      variableSchemas[optionScope(option)] = schema;
+    },
+    registerMacroLike: function (regex, replace) {
+      var entry = { regex: regex, replace: replace };
+      registeredMacros.push(entry);
+      return { unregister: function () { unregisterMacroLike(regex); } };
+    },
+    unregisterMacroLike: function (regex) { unregisterMacroLike(regex); },
+    getTavernHelperVersion: function () { return TAVERN_HELPER_VERSION; },
+    getTavernVersion: function () { return TAVERN_VERSION; },
     getChatMessages: function (range) { return window.webui.request('getChatMessages', range == null ? '' : String(range)); },
     setChatMessages: function (messages, options) {
       return window.webui.request('setChatMessages', JSON.stringify(normalMessages(messages)));
@@ -1985,8 +2207,10 @@
   window.TavernHelper = window.TavernHelper || tavernApi;
   window.SillyTavern = window.SillyTavern || tavernApi;
   // 脚本常直接调用这些全局函数，一并挂到 window
-  ['getVariables', 'replaceVariables', 'insertOrAssignVariables', 'setVariables', 'getVariable',
-    'setVariable', 'deleteVariable', 'getChatMessages', 'setChatMessages', 'createChatMessages',
+  ['getVariables', 'replaceVariables', 'updateVariablesWith', 'insertOrAssignVariables', 'insertVariables',
+    'setVariables', 'getVariable', 'setVariable', 'deleteVariable', 'registerVariableSchema',
+    'registerMacroLike', 'unregisterMacroLike', 'getTavernHelperVersion', 'getTavernVersion',
+    'getChatMessages', 'setChatMessages', 'createChatMessages',
     'deleteChatMessages', 'getLastMessageId', 'sendMessage', 'triggerSlash', 'substituteMacros',
     'formatAsTavernRegexedString', 'eventOn', 'eventOnce', 'eventOff', 'eventEmit', 'emitEvent',
     'waitGlobalInitialized', 'getScriptId', 'getScriptName', 'getScriptInfo'
@@ -2086,10 +2310,12 @@
     setVariables: function (json) {
       var payload = parse(json) || {};
       Object.keys(payload).forEach(function (scope) {
+        var s = normScope(scope);
         var vars = payload[scope] || {};
-        if (scope === 'local') variables = vars;
-        else if (scope === 'global') globalVariables = vars;
-        else if (scope === 'message') messageVariables = vars;
+        if (s === 'local') variables = vars;
+        else if (s === 'global') globalVariables = vars;
+        else if (s === 'message') messageVariables = vars;
+        else extraVariables[s] = vars;
       });
       pushVarsToCards();
     },
@@ -2248,7 +2474,7 @@
     else if (data.__rikka === 'vars') {
       try {
         var parsed = JSON.parse(payload);
-        if (parsed && typeof parsed === 'object') { variables = parsed; saveVariables(); }
+        if (parsed && typeof parsed === 'object') { applyScope('local', parsed); }
       } catch (e) { /* 忽略坏数据 */ }
     }
   }, false);
