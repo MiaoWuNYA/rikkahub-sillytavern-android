@@ -83,6 +83,7 @@ fun WebChatSurface(
     onHttpRequest: (String, (String) -> Unit) -> Unit = { _, done -> done("{}") },
     onSelectSwipe: (String) -> Unit = {},
     onWorldbook: (String, (String) -> Unit) -> Unit = { _, done -> done("null") },
+    onPersona: (String, (String) -> Unit) -> Unit = { _, done -> done("null") },
     modifier: Modifier = Modifier,
 ) {
     // 有 WebView 存活时，输入栏的模糊/玻璃效果必须让位
@@ -250,6 +251,14 @@ fun WebChatSurface(
 
     LaunchedEffect(bridge, variablesJson, messages, assistant, settings, modelName) {
         bridge?.onSyncRequest = { method, payload ->
+            val resolvePersona: (String) -> me.rerere.rikkahub.data.model.Persona? = { raw ->
+                val key = raw.trim().trim('"')
+                when {
+                    key.isBlank() || key == "current" -> settings.personas.find { it.id == settings.activePersonaId }
+                    else -> settings.personas.find { it.name == key }
+                        ?: settings.personas.find { it.id.toString() == key }
+                }
+            }
             when (method) {
                 "getChatMessages" -> onMessagesJson()
                 "getVariables" -> variablesJson
@@ -280,6 +289,25 @@ fun WebChatSurface(
                     val book = settings.lorebooks.find { it.name == name }
                     if (book == null) "null" else lorebookEntriesToJson(book.entries).toString()
                 }
+                "getPersonaNames" -> kotlinx.serialization.json.buildJsonArray {
+                    settings.personas.forEach { add(kotlinx.serialization.json.JsonPrimitive(it.name)) }
+                }.toString()
+                "getPersonaIds" -> kotlinx.serialization.json.buildJsonArray {
+                    settings.personas.forEach { add(kotlinx.serialization.json.JsonPrimitive(it.id.toString())) }
+                }.toString()
+                "getCurrentPersonaName" -> {
+                    val persona = settings.personas.find { it.id == settings.activePersonaId }
+                    persona?.let { kotlinx.serialization.json.JsonPrimitive(it.name).toString() } ?: "null"
+                }
+                "getCurrentPersonaId" -> {
+                    settings.activePersonaId?.let { kotlinx.serialization.json.JsonPrimitive(it.toString()).toString() } ?: "null"
+                }
+                "getPersonaAvatarPath" -> {
+                    val persona = resolvePersona(payload)
+                    val path = persona?.let { me.rerere.rikkahub.ui.pages.chat.personaToJson(it)["avatar"] }
+                    path?.takeIf { it.toString() != "\"\"" }?.toString() ?: "null"
+                }
+                "getPersona" -> resolvePersona(payload)?.let { personaToJson(it).toString() } ?: "null"
                 else -> null
             }
         }
@@ -341,6 +369,10 @@ fun WebChatSurface(
 
                 "worldbook" -> {
                     onWorldbook(payload) { result -> bridge?.resolve(requestId, result) }
+                }
+
+                "persona" -> {
+                    onPersona(payload) { result -> bridge?.resolve(requestId, result) }
                 }
 
                 else -> bridge?.resolve(requestId, "null")
