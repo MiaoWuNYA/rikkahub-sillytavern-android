@@ -20,7 +20,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import kotlinx.serialization.Serializable
+import me.rerere.rikkahub.data.datastore.DisplayMaterialMode
 import me.rerere.rikkahub.ui.components.ui.toComposeColor
+import me.rerere.rikkahub.ui.context.LocalDisplaySettings
 import me.rerere.rikkahub.ui.hooks.rememberAmoledDarkMode
 import me.rerere.rikkahub.ui.hooks.rememberCurrentColorMode
 import me.rerere.rikkahub.ui.hooks.rememberUserSettingsState
@@ -34,6 +36,10 @@ private val ExtendDarkColors = darkExtendColors()
 val LocalExtendColors = compositionLocalOf { ExtendLightColors }
 
 val LocalDarkMode = compositionLocalOf { false }
+
+val LocalMaterialMode = compositionLocalOf { DisplayMaterialMode.FOLLOW_THEME }
+
+const val LIQUID_GLASS_THEME_ID = "liquid_glass"
 
 private val AMOLED_DARK_BACKGROUND = Color(0xFF000000)
 
@@ -66,6 +72,14 @@ fun RikkahubTheme(
         systemDark
     }
     val amoledDarkMode by rememberAmoledDarkMode()
+
+    val materialMode = when (settings.displaySetting.materialMode) {
+        DisplayMaterialMode.FOLLOW_THEME ->
+            if (settings.themeId == LIQUID_GLASS_THEME_ID) DisplayMaterialMode.GLASS
+            else DisplayMaterialMode.FLAT
+
+        else -> settings.displaySetting.materialMode
+    }
 
     val colorScheme = when {
         settings.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
@@ -142,6 +156,8 @@ fun RikkahubTheme(
     CompositionLocalProvider(
         LocalDarkMode provides darkTheme,
         LocalExtendColors provides extendColors,
+        LocalMaterialMode provides materialMode,
+        LocalDisplaySettings provides settings.displaySetting,
         // LocalOverscrollFactory provides null
     ) {
         MaterialExpressiveTheme(

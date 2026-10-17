@@ -301,6 +301,23 @@ enum class BackgroundEffectType {
     GLASS,
 }
 
+// 界面材质模式：液态玻璃（GLASS）与半透明（TRANSLUCENT）两种玻璃观感，
+// FOLLOW_THEME 跟随主题（主题为 liquid_glass 时用 GLASS，否则 FLAT）
+@Serializable
+enum class DisplayMaterialMode {
+    @SerialName("follow_theme")
+    FOLLOW_THEME,
+
+    @SerialName("flat")
+    FLAT,
+
+    @SerialName("translucent")
+    TRANSLUCENT,
+
+    @SerialName("glass")
+    GLASS,
+}
+
 @Serializable
 enum class ConversationSortOrder {
     @SerialName("update_time")
@@ -356,6 +373,10 @@ data class DisplaySetting(
     val backgroundEffectType: BackgroundEffectType = BackgroundEffectType.BLUR,
     // 输入框模糊/玻璃的不透明度（0.1~1.0），太低会影响正文可读性
     val inputEffectAlpha: Float = 0.3f,
+    // 界面材质模式（液态玻璃自由开关）
+    val materialMode: DisplayMaterialMode = DisplayMaterialMode.FOLLOW_THEME,
+    // 界面材质底色不透明度（0~95 百分比），数值越低越透
+    val interfaceSurfaceOpacity: Float = 82f,
     val chatFontFamily: ChatFontFamily = ChatFontFamily.DEFAULT,
     val chatCustomFontPath: String = "",
     val chatCustomFontName: String = "",

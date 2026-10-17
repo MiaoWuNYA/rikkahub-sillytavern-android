@@ -89,6 +89,11 @@ import me.rerere.rikkahub.ui.context.LocalSettings
 import me.rerere.rikkahub.ui.components.message.extractVideoCallArchiveSessionId
 import me.rerere.rikkahub.ui.components.message.VideoCallArchiveCard
 import me.rerere.rikkahub.ui.theme.LocalChatFontFamily
+import me.rerere.rikkahub.ui.theme.LocalMaterialMode
+import me.rerere.rikkahub.ui.theme.isGlass
+import me.rerere.rikkahub.ui.theme.isTranslucent
+import me.rerere.rikkahub.ui.theme.liquidGlassFill
+import me.rerere.rikkahub.ui.theme.liquidGlassHighlight
 import me.rerere.rikkahub.ui.theme.rememberChatFontFamily
 import me.rerere.rikkahub.utils.JsonInstant
 import me.rerere.rikkahub.utils.openUrl
@@ -437,6 +442,13 @@ private fun MessagePartsBlock(
                     is UIMessagePart.Text -> {
                         val textContent = @Composable {
                             if (role == MessageRole.USER) {
+                                val materialMode = LocalMaterialMode.current
+                                val isGlassBubble = materialMode.isGlass
+                                val userBubbleColor = customBubbleColor(
+                                    custom = settings.displaySetting.userBubbleColor,
+                                    fallback = MaterialTheme.colorScheme.primaryContainer,
+                                    alpha = settings.displaySetting.bubbleOpacity,
+                                )
                                 Surface(
                                     modifier = Modifier
                                         .animateContentSize()
@@ -448,11 +460,11 @@ private fun MessagePartsBlock(
                                             cornerRadius = settings.displaySetting.bubbleCornerRadius,
                                         ),
                                     shape = RoundedCornerShape(settings.displaySetting.bubbleCornerRadius.dp),
-                                    color = customBubbleColor(
-                                        custom = settings.displaySetting.userBubbleColor,
-                                        fallback = MaterialTheme.colorScheme.primaryContainer,
-                                        alpha = settings.displaySetting.bubbleOpacity,
-                                    ),
+                                    color = when {
+                                        isGlassBubble -> Color.Transparent
+                                        materialMode.isTranslucent -> userBubbleColor.copy(alpha = userBubbleColor.alpha * 0.72f)
+                                        else -> userBubbleColor
+                                    },
                                     onClick = { onUserMessageClick?.invoke() },
                                 ) {
                                     Box {
@@ -470,6 +482,26 @@ private fun MessagePartsBlock(
                                             ),
                                             modifier = Modifier.matchParentSize(),
                                         )
+                                        if (isGlassBubble) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .matchParentSize()
+                                                    .liquidGlassFill(
+                                                        tint = customBubbleColor(
+                                                            custom = settings.displaySetting.userBubbleColor,
+                                                            fallback = MaterialTheme.colorScheme.primaryContainer,
+                                                            alpha = 1f,
+                                                        )
+                                                    )
+                                                    .liquidGlassHighlight()
+                                            )
+                                        } else if (materialMode.isTranslucent) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .matchParentSize()
+                                                    .liquidGlassHighlight(intensity = 0.6f)
+                                            )
+                                        }
                                         Column(modifier = Modifier.padding(8.dp)) {
                                             MarkdownBlock(
                                                 content = applyVisualRegexes(part.text, AssistantAffectScope.USER),
@@ -478,13 +510,20 @@ private fun MessagePartsBlock(
                                                 cardMessagesJson = cardMessagesJson,
                                                 // 生成中的半截 HTML 不交给 WebView，
                                                 // 否则会渲染出残缺网页、观感像卡死
-                                                                                                isStreaming = isStreamingMessage,
+                                                                                                                isStreaming = isStreamingMessage,
                                             )
                                         }
                                     }
                                 }
                             } else {
                                 if (settings.displaySetting.showAssistantBubble) {
+                                    val materialMode = LocalMaterialMode.current
+                                    val isGlassBubble = materialMode.isGlass
+                                    val assistantBubbleColor = customBubbleColor(
+                                        custom = settings.displaySetting.assistantBubbleColor,
+                                        fallback = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        alpha = settings.displaySetting.bubbleOpacity,
+                                    )
                                     Surface(
                                         modifier = Modifier
                                             .animateContentSize()
@@ -496,11 +535,11 @@ private fun MessagePartsBlock(
                                                 cornerRadius = settings.displaySetting.bubbleCornerRadius,
                                             ),
                                         shape = RoundedCornerShape(settings.displaySetting.bubbleCornerRadius.dp),
-                                        color = customBubbleColor(
-                                            custom = settings.displaySetting.assistantBubbleColor,
-                                            fallback = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                            alpha = settings.displaySetting.bubbleOpacity,
-                                        ),
+                                        color = when {
+                                            isGlassBubble -> Color.Transparent
+                                            materialMode.isTranslucent -> assistantBubbleColor.copy(alpha = assistantBubbleColor.alpha * 0.72f)
+                                            else -> assistantBubbleColor
+                                        },
                                     ) {
                                         Box {
                                             BubbleBackgroundImage(
@@ -517,6 +556,26 @@ private fun MessagePartsBlock(
                                                 ),
                                                 modifier = Modifier.matchParentSize(),
                                             )
+                                            if (isGlassBubble) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .matchParentSize()
+                                                        .liquidGlassFill(
+                                                            tint = customBubbleColor(
+                                                                custom = settings.displaySetting.assistantBubbleColor,
+                                                                fallback = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                                                alpha = 1f,
+                                                            )
+                                                        )
+                                                        .liquidGlassHighlight()
+                                                )
+                                            } else if (materialMode.isTranslucent) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .matchParentSize()
+                                                        .liquidGlassHighlight(intensity = 0.6f)
+                                                )
+                                            }
                                             Column(modifier = Modifier.padding(8.dp)) {
                                                 MarkdownBlock(
                                                     content = applyVisualRegexes(part.text, AssistantAffectScope.ASSISTANT),

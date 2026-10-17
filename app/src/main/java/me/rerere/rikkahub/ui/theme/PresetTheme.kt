@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import me.rerere.rikkahub.ui.theme.presets.AutumnThemePreset
 import me.rerere.rikkahub.ui.theme.presets.BlackThemePreset
 import me.rerere.rikkahub.ui.theme.presets.ClaudeThemePreset
+import me.rerere.rikkahub.ui.theme.presets.LiquidGlassThemePreset
 import me.rerere.rikkahub.ui.theme.presets.MinimalThemePreset
 import me.rerere.rikkahub.ui.theme.presets.OceanThemePreset
 import me.rerere.rikkahub.ui.theme.presets.SakuraThemePreset
@@ -30,6 +31,7 @@ val PresetThemes by lazy {
         BlackThemePreset,
         MinimalThemePreset,
         ClaudeThemePreset,
+        LiquidGlassThemePreset,
     )
 }
 

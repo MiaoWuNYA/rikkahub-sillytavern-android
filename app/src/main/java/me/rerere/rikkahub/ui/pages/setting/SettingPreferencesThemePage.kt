@@ -38,6 +38,7 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.data.datastore.BackgroundEffectType
+import me.rerere.rikkahub.data.datastore.DisplayMaterialMode
 import me.rerere.rikkahub.ui.components.ui.ConnectedChoiceButtons
 import me.rerere.rikkahub.ui.components.ui.ConnectedChoiceLabel
 import me.rerere.rikkahub.ui.theme.ColorMode
@@ -275,6 +276,65 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
                                     steps = 8,
                                     modifier = Modifier.fillMaxWidth(),
                                 )
+                            }
+                        }
+                        formItem(
+                            headlineContent = { Text("界面材质") },
+                            supportingContent = { Text("液态玻璃：半透明玻璃质感，可跟随主题或手动指定") },
+                        ) {
+                            ConnectedChoiceButtons(
+                                options = DisplayMaterialMode.entries,
+                                selected = settings.displaySetting.materialMode,
+                                onSelect = { mode ->
+                                    vm.updateSettings {
+                                        it.copy(displaySetting = it.displaySetting.copy(materialMode = mode))
+                                    }
+                                },
+                            ) { mode, selected ->
+                                ConnectedChoiceLabel(
+                                    text = when (mode) {
+                                        DisplayMaterialMode.FOLLOW_THEME -> "跟随主题"
+                                        DisplayMaterialMode.FLAT -> "关闭"
+                                        DisplayMaterialMode.TRANSLUCENT -> "半透明"
+                                        DisplayMaterialMode.GLASS -> "液态玻璃"
+                                    },
+                                    selected = selected,
+                                )
+                            }
+                        }
+                        val materialMode = settings.displaySetting.materialMode
+                        if (materialMode == DisplayMaterialMode.TRANSLUCENT ||
+                            materialMode == DisplayMaterialMode.GLASS
+                        ) {
+                            formItem(
+                                headlineContent = { Text("材质不透明度") },
+                                supportingContent = { Text("数值越低越透") },
+                            ) {
+                                var surfaceAlpha by remember(settings.displaySetting.interfaceSurfaceOpacity) {
+                                    mutableStateOf(settings.displaySetting.interfaceSurfaceOpacity)
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Slider(
+                                        value = surfaceAlpha,
+                                        onValueChange = { surfaceAlpha = it },
+                                        onValueChangeFinished = {
+                                            vm.updateSettings {
+                                                it.copy(
+                                                    displaySetting = it.displaySetting.copy(
+                                                        interfaceSurfaceOpacity = surfaceAlpha
+                                                    )
+                                                )
+                                            }
+                                        },
+                                        valueRange = 0f..95f,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    Text("${surfaceAlpha.roundToInt()}%")
+                                }
                             }
                         }
                         switchItem(
