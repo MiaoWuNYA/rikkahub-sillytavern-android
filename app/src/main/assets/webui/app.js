@@ -1737,6 +1737,243 @@
 
   window.addEventListener('resize', followBottom, false);
 
+  // —— 前端插件运行环境：页面级 TavernHelper 与事件总线 ——
+  var TAVERN_EVENTS = {
+    APP_READY: 'app_ready',
+    CHAT_CHANGED: 'chat_id_changed',
+    MESSAGE_SENT: 'message_sent',
+    MESSAGE_RECEIVED: 'message_received',
+    MESSAGE_EDITED: 'message_edited',
+    MESSAGE_DELETED: 'message_deleted',
+    MESSAGE_UPDATED: 'message_updated',
+    MESSAGE_SWIPED: 'message_swiped',
+    USER_MESSAGE_RENDERED: 'user_message_rendered',
+    CHARACTER_MESSAGE_RENDERED: 'character_message_rendered',
+    GENERATION_STARTED: 'generation_started',
+    GENERATION_ENDED: 'generation_ended',
+    STREAM_TOKEN_RECEIVED: 'stream_token_received',
+    MORE_MESSAGES_LOADED: 'more_messages_loaded',
+  };
+  var IFRAME_EVENTS = {
+    MESSAGE_IFRAME_RENDER_STARTED: 'message_iframe_render_started',
+    MESSAGE_IFRAME_RENDER_ENDED: 'message_iframe_render_ended',
+    GENERATION_STARTED: 'js_generation_started',
+    GENERATION_REQUESTED: 'js_generation_requested',
+    GENERATION_ENDED: 'js_generation_ended',
+    STREAM_TOKEN_RECEIVED_FULLY: 'js_stream_token_received_fully',
+    STREAM_TOKEN_RECEIVED_INCREMENTALLY: 'js_stream_token_received_incrementally',
+  };
+
+  var pageListeners = {};
+
+  function onPageEvent(name, listener) {
+    if (typeof listener !== 'function' || !name) return listener;
+    (pageListeners[name] = pageListeners[name] || []).push(listener);
+    return listener;
+  }
+
+  function offPageEvent(name, listener) {
+    var arr = pageListeners[name];
+    if (!arr) return;
+    if (!listener) { delete pageListeners[name]; return; }
+    pageListeners[name] = arr.filter(function (fn) { return fn !== listener; });
+  }
+
+  function emitPageEvent(name, args) {
+    var arr = pageListeners[name];
+    if (!arr || !arr.length) return;
+    var snapshot = arr.slice();
+    for (var i = 0; i < snapshot.length; i++) {
+      try { snapshot[i].apply(window, args || []); } catch (e) { /* 单个监听器失败不影响其余 */ }
+    }
+  }
+
+  // 原生事件名（大写）→ 酒馆事件名（大写）→ 渲染别名
+  var EVENT_ALIAS = {
+    GENERATION_STARTED: TAVERN_EVENTS.GENERATION_STARTED,
+    GENERATION_ENDED: TAVERN_EVENTS.GENERATION_ENDED,
+    MESSAGE_RECEIVED: TAVERN_EVENTS.MESSAGE_RECEIVED,
+    MESSAGE_SENT: TAVERN_EVENTS.MESSAGE_SENT,
+    MESSAGE_UPDATED: TAVERN_EVENTS.MESSAGE_UPDATED,
+    MESSAGE_DELETED: TAVERN_EVENTS.MESSAGE_DELETED,
+  };
+  var RENDER_ALIAS = {
+    message_received: TAVERN_EVENTS.CHARACTER_MESSAGE_RENDERED,
+    message_sent: TAVERN_EVENTS.USER_MESSAGE_RENDERED,
+  };
+  var IFRAME_ALIAS = {
+    GENERATION_STARTED: IFRAME_EVENTS.GENERATION_STARTED,
+    GENERATION_ENDED: IFRAME_EVENTS.GENERATION_ENDED,
+  };
+
+  // 原生事件 → 页面脚本与卡片 iframe
+  function dispatchPageEvent(name, payloadJson) {
+    var args;
+    try { args = typeof payloadJson === 'string' ? JSON.parse(payloadJson) : payloadJson; } catch (e) { args = []; }
+    if (!Array.isArray(args)) args = [args];
+    emitPageEvent(name, args);
+    var alias = EVENT_ALIAS[name];
+    if (alias) {
+      emitPageEvent(alias, args);
+      var render = RENDER_ALIAS[alias];
+      if (render) emitPageEvent(render, args);
+    }
+    var iframeAlias = IFRAME_ALIAS[name];
+    if (iframeAlias) emitPageEvent(iframeAlias, args);
+  }
+
+  function scopeName(scope) {
+    var s = String(scope == null ? 'local' : scope).toLowerCase();
+    return s === 'global' || s === 'message' ? s : 'local';
+  }
+
+  function scopeStore(scope) {
+    var s = scopeName(scope);
+    if (s === 'global') return globalVariables;
+    if (s === 'message') return messageVariables;
+    return variables;
+  }
+
+  function applyScope(scope, obj) {
+    var s = scopeName(scope);
+    var next = obj && typeof obj === 'object' ? obj : {};
+    if (s === 'global') globalVariables = next;
+    else if (s === 'message') messageVariables = next;
+    else {
+      variables = next;
+      try { localStorage.setItem('rikka.card.vars.local', JSON.stringify(variables)); } catch (e) { /* 忽略 */ }
+    }
+    pushVarsToCards();
+    requestNative('setVariables', JSON.stringify({ scope: s, vars: next }));
+  }
+
+  function normalMessage(raw) {
+    if (raw == null) return null;
+    if (typeof raw === 'string') return { mes: raw, is_user: false };
+    var o = raw;
+    return {
+      message_id: o.message_id,
+      mes: o.mes != null ? o.mes : (o.message != null ? o.message : ''),
+      is_user: o.is_user === true || o.role === 'user',
+      name: o.name,
+    };
+  }
+
+  function normalMessages(list) {
+    var arr = Array.isArray(list) ? list : [list];
+    return arr.map(normalMessage).filter(function (m) { return m != null; });
+  }
+
+  var tavernApi = {
+    getVariables: function (scope) {
+      var store = scopeStore(scope) || {};
+      var copy = {};
+      Object.keys(store).forEach(function (k) { copy[k] = store[k]; });
+      return copy;
+    },
+    replaceVariables: function (vars, scope) { applyScope(scope, vars); return true; },
+    insertOrAssignVariables: function (vars, scope) {
+      var store = scopeStore(scope);
+      var next = {};
+      Object.keys(store || {}).forEach(function (k) { next[k] = store[k]; });
+      Object.keys(vars || {}).forEach(function (k) { next[k] = vars[k]; });
+      applyScope(scope, next);
+      return true;
+    },
+    // 卡片桥沿用 setVariables 这个叫法，语义与 replaceVariables 相同
+    setVariables: function (vars, scope) { applyScope(scope, vars); return true; },
+    getVariable: function (key, scope) {
+      var store = scopeStore(scope) || {};
+      return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : undefined;
+    },
+    setVariable: function (key, value, scope) {
+      var store = scopeStore(scope) || {};
+      var next = {};
+      Object.keys(store).forEach(function (k) { next[k] = store[k]; });
+      next[key] = value;
+      applyScope(scope, next);
+      return true;
+    },
+    deleteVariable: function (key, scope) {
+      var store = scopeStore(scope) || {};
+      var next = {};
+      Object.keys(store).forEach(function (k) { if (k !== key) next[k] = store[k]; });
+      applyScope(scope, next);
+      return true;
+    },
+    getChatMessages: function (range) { return window.webui.request('getChatMessages', range == null ? '' : String(range)); },
+    setChatMessages: function (messages, options) {
+      return window.webui.request('setChatMessages', JSON.stringify(normalMessages(messages)));
+    },
+    createChatMessages: function (messages, options) {
+      return window.webui.request('createChatMessages', JSON.stringify(normalMessages(messages)));
+    },
+    deleteChatMessages: function (ids) {
+      var arr = Array.isArray(ids) ? ids : [ids];
+      return window.webui.request('deleteChatMessages', JSON.stringify(arr));
+    },
+    getLastMessageId: function () { return (state.messages || []).length - 1; },
+    sendMessage: function (text) { native('send', text == null ? '' : String(text)); return Promise.resolve(); },
+    triggerSlash: function (cmd) { return window.webui.request('triggerSlash', cmd == null ? '' : String(cmd)); },
+    substituteMacros: function (text) { return window.webui.request('substituteMacros', text == null ? '' : String(text)); },
+    formatAsTavernRegexedString: function (text) { return String(text == null ? '' : text); },
+    eventOn: onPageEvent,
+    eventOnce: function (name, listener) {
+      var wrap = function () { offPageEvent(name, wrap); return listener.apply(window, arguments); };
+      return onPageEvent(name, wrap);
+    },
+    eventOff: offPageEvent,
+    eventRemoveListener: offPageEvent,
+    eventEmit: function (name) { emitPageEvent(name, Array.prototype.slice.call(arguments, 1)); },
+    emitEvent: function (name) { emitPageEvent(name, Array.prototype.slice.call(arguments, 1)); },
+    waitGlobalInitialized: function (name, timeout) {
+      var limit = Number(timeout) > 0 ? Number(timeout) : 10000;
+      return new Promise(function (resolve) {
+        var started = Date.now();
+        (function poll() {
+          if (window[name] !== undefined) { resolve(window[name]); return; }
+          if (Date.now() - started >= limit) { resolve(undefined); return; }
+          setTimeout(poll, 50);
+        })();
+      });
+    },
+    getScriptId: function () { return window.__rikkaPlugin ? window.__rikkaPlugin.id : ''; },
+    getScriptName: function () { return window.__rikkaPlugin ? window.__rikkaPlugin.name : ''; },
+    getScriptInfo: function () { return window.__rikkaPlugin ? window.__rikkaPlugin.info : ''; },
+    get charName() { return state.macros && state.macros.char ? state.macros.char : ''; },
+    get userName() { return state.macros && state.macros.user ? state.macros.user : ''; },
+    tavern_events: TAVERN_EVENTS,
+    iframe_events: IFRAME_EVENTS,
+  };
+
+  window.TavernHelper = window.TavernHelper || tavernApi;
+  window.SillyTavern = window.SillyTavern || tavernApi;
+  // 脚本常直接调用这些全局函数，一并挂到 window
+  ['getVariables', 'replaceVariables', 'insertOrAssignVariables', 'setVariables', 'getVariable',
+    'setVariable', 'deleteVariable', 'getChatMessages', 'setChatMessages', 'createChatMessages',
+    'deleteChatMessages', 'getLastMessageId', 'sendMessage', 'triggerSlash', 'substituteMacros',
+    'formatAsTavernRegexedString', 'eventOn', 'eventOnce', 'eventOff', 'eventEmit', 'emitEvent',
+    'waitGlobalInitialized', 'getScriptId', 'getScriptName', 'getScriptInfo'
+  ].forEach(function (fn) { if (typeof window[fn] !== 'function') window[fn] = tavernApi[fn]; });
+  window.tavern_events = window.tavern_events || TAVERN_EVENTS;
+  window.iframe_events = window.iframe_events || IFRAME_EVENTS;
+
+  // 前端插件脚本：按 id 去重，注入时暴露当前脚本身份
+  var loadedScriptIds = {};
+  function injectPluginScript(script) {
+    if (!script || !script.id || loadedScriptIds[script.id]) return;
+    loadedScriptIds[script.id] = true;
+    var header =
+      'window.__rikkaPlugin=' + JSON.stringify({
+        id: script.id,
+        name: script.name || '',
+        info: script.info || '',
+        pluginId: script.pluginId || '',
+        pluginName: script.pluginName || '',
+      }) + ';\n';
+    injectScript('(function(){\n' + header + String(script.source == null ? '' : script.source) + '\n})();');
+  }
+
   // —— 原生侧接口 ——
   var hostPending = {};
   window.webui = {
@@ -1783,9 +2020,16 @@
       if (area.top != null) root.style.setProperty('--safe-top', area.top + 'px');
       if (area.bottom != null) root.style.setProperty('--safe-bottom', area.bottom + 'px');
     },
-
     setAppearance: function (json) { applyAppearance(parse(json)); },
     setTheme: function (json) { applyTheme(parse(json)); },
+
+    // 前端插件脚本：只在前端模式由原生下发，按 id 增量注入
+    setPlugins: function (json) {
+      var payload = parse(json);
+      if (!payload) return;
+      var scripts = Array.isArray(payload) ? payload : (payload.scripts || []);
+      scripts.forEach(injectPluginScript);
+    },
 
     // 朗读状态：与原生那排按钮共用同一个 TTS 单例
     setSpeaking: function (json) {
@@ -1822,8 +2066,9 @@
       });
     },
 
-    // 原生事件 → 页面 → 所有卡片
+    // 原生事件 → 页面脚本 → 所有卡片
     emitEvent: function (name, payloadJson) {
+      dispatchPageEvent(name, payloadJson);
       var frames = document.querySelectorAll('iframe');
       for (var i = 0; i < frames.length; i++) {
         try {

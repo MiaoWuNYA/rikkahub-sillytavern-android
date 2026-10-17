@@ -32,8 +32,42 @@ title: 插件：QuickJS 沙箱扩展
 - **AI 工具**：manifest 声明的 `tools` 自动注册（统一 `plugin_` 前缀），AI 按需调用；
 - **系统提示词注入**：`systemPrompt` 直接注入；`sections` 模式每段配一个开关，支持 `file:` 外置文件与 `enc:` AES-256-GCM 加密文件；
 - **详情页数据卡片**：声明 `detailCard` 后，插件详情页渲染实时状态卡片；
+- **前端脚本**：声明 `frontend.scripts` 后，脚本只在**前端卡专属模式**的 WebView 里运行，接入酒馆助手同名的 `TavernHelper` / `SillyTavern` 接口（见下）；
 - **配置表单**：文本 / 密码 / 开关 / 下拉 / 模型选择，配置以 `config` 注入沙箱；
 - **dataStore**：每插件独立键值存储，`set` / `get` / `del` / `list`。
+
+## 前端插件（酒馆助手脚本）
+
+声明 `frontend.scripts` 的插件只在前端 WebView 模式生效（普通原生消息区不会执行），用于兼容 JS-Slash-Runner 那类改变聊天界面的脚本。纯前端插件可以省略 `entry`。
+
+```json
+{
+  "id": "com.example.status",
+  "name": "状态栏",
+  "frontend": {
+    "scripts": [
+      { "name": "状态栏", "entry": "scripts/status.js", "enabled": true, "info": "显示 HP/MP" }
+    ]
+  }
+}
+```
+
+脚本里可直接使用与酒馆助手同名的接口：
+
+| 分类 | 接口 |
+| --- | --- |
+| 变量 | `getVariables` `replaceVariables` `insertOrAssignVariables` `getVariable` `setVariable` `deleteVariable` |
+| 消息 | `getChatMessages` `setChatMessages` `createChatMessages` `deleteChatMessages` `getLastMessageId` |
+| 生成 | `sendMessage` `triggerSlash` `substituteMacros` |
+| 事件 | `eventOn` `eventOnce` `eventOff` `eventEmit`，常量 `tavern_events` / `iframe_events` |
+| 脚本 | `getScriptId` `getScriptName` `getScriptInfo` `waitGlobalInitialized` |
+
+`TavernHelper` 与 `SillyTavern` 互为别名。事件名与酒馆一致（`message_received`、`character_message_rendered`、`generation_started` 等）。
+
+::: warning
+前端脚本与酒馆助手一样是第三方代码，能访问聊天数据与网络。请只导入可信来源。
+:::
+
 
 ## 沙箱能力
 

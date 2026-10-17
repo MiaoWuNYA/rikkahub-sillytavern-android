@@ -71,7 +71,7 @@ class PluginLoader(
             }
 
             val entryFile = pluginInfo.getEntryFile()
-            if (!entryFile.exists()) {
+            if (pluginInfo.manifest.entry.isNotBlank() && !entryFile.exists()) {
                 return@withContext Result.failure(
                     IllegalStateException("Entry file not found: ${pluginInfo.manifest.entry}")
                 )
@@ -87,7 +87,10 @@ class PluginLoader(
             val resolvedConfig = resolveModelConfig(pluginInfo)
             sandbox.injectConfig(resolvedConfig)
 
-            sandbox.evaluateFile(entryFile)
+            // 纯前端插件没有入口文件，不加载 QuickJS 工具
+            if (pluginInfo.manifest.entry.isNotBlank()) {
+                sandbox.evaluateFile(entryFile)
+            }
 
             val loadedPlugin = LoadedPlugin(
                 info = pluginInfo,

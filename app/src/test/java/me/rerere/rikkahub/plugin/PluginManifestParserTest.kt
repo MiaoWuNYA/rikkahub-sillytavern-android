@@ -102,6 +102,31 @@ class PluginManifestParserTest {
     }
 
     @Test
+    fun `parse frontend-only manifest`() {
+        val content = """
+            {
+              "id": "com.example.frontend",
+              "name": "前端插件",
+              "description": "d",
+              "version": "1.0.0",
+              "author": "a",
+              "icon": "🧩",
+              "frontend": {
+                "scripts": [
+                  { "name": "状态栏", "entry": "scripts/status.js", "enabled": true, "info": "状态" }
+                ]
+              }
+            }
+        """.trimIndent()
+        val manifest = json.decodeFromString(PluginManifest.serializer(), content)
+        assertEquals("", manifest.entry)
+        val scripts = manifest.frontend?.scripts.orEmpty()
+        assertEquals(1, scripts.size)
+        assertEquals("scripts/status.js", scripts[0].entry)
+        assertTrue(scripts[0].enabled)
+    }
+
+    @Test
     fun `missing required field throws`() {
         val content = """
             {

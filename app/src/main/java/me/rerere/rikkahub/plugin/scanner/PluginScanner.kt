@@ -166,7 +166,7 @@ class PluginScanner(
                 }
 
             val entryFile = File(manifestFile.parentFile, manifest.entry)
-            if (!entryFile.exists()) {
+            if (manifest.entry.isNotBlank() && !entryFile.exists()) {
                 tempDir.deleteRecursively()
                 return Result.failure(IllegalArgumentException("entry file not found: ${manifest.entry}"))
             }

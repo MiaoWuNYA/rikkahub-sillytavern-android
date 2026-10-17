@@ -60,6 +60,7 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.plugin.model.PluginConfigField
 import me.rerere.rikkahub.plugin.model.PluginFolder
+import me.rerere.rikkahub.plugin.model.PluginFrontendScript
 import me.rerere.rikkahub.plugin.model.PluginInfo
 import me.rerere.rikkahub.plugin.model.PluginToolDefinition
 import me.rerere.rikkahub.ui.components.ai.ModelSelector
@@ -164,6 +165,16 @@ fun PluginDetailPage(
                 Text(text = stringResource(R.string.plugin_detail_tools), style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
                 plugin.manifest.tools.forEach { tool -> ToolItem(tool) }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+
+            val frontendScripts = plugin.manifest.frontend?.scripts.orEmpty()
+            if (frontendScripts.isNotEmpty()) {
+                Text(text = stringResource(R.string.plugin_detail_frontend), style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                frontendScripts.forEach { script ->
+                    FrontendScriptItem(script)
+                }
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
@@ -371,6 +382,23 @@ private fun ToolItem(tool: PluginToolDefinition) {
                     tool.parameters.joinToString { it.name }
                 ),
                 style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun FrontendScriptItem(script: PluginFrontendScript) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Text(
+            text = script.name.ifBlank { script.entry },
+            style = MaterialTheme.typography.bodyLarge
+        )
+        if (script.info.isNotBlank()) {
+            Text(
+                text = script.info,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

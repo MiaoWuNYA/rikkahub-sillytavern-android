@@ -43,10 +43,8 @@ data class PluginManifest(
      */
     val icon: String,
 
-    /**
-     * 入口文件路径，相对于插件目录
-     */
-    val entry: String,
+    /** 入口文件路径（相对插件目录），纯前端插件可省略 */
+    val entry: String = "",
 
     /**
      * 插件提供的工具列表
@@ -89,6 +87,33 @@ data class PluginManifest(
      * items / note 都可省略。函数抛错或超时只是不显示卡片，不影响插件使用。
      */
     val detailCard: String? = null,
+
+    /** 前端脚本：仅在前端 WebView 模式注入，兼容酒馆助手那类插件 */
+    val frontend: PluginFrontend? = null,
+)
+
+/** 前端插件定义，仅在前端 WebView 模式生效。 */
+@Serializable
+data class PluginFrontend(
+    val scripts: List<PluginFrontendScript> = emptyList(),
+)
+
+/** 前端脚本：entry 相对插件目录，按声明顺序注入。 */
+@Serializable
+data class PluginFrontendScript(
+    val name: String = "",
+    val entry: String,
+    val id: String = "",
+    val enabled: Boolean = true,
+    val info: String = "",
+    val buttons: List<PluginFrontendButton> = emptyList(),
+)
+
+/** 前端脚本按钮，保留字段供脚本查询。 */
+@Serializable
+data class PluginFrontendButton(
+    val name: String,
+    val visible: Boolean = true,
 )
 
 /**
