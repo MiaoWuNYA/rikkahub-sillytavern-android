@@ -76,21 +76,6 @@ class PluginScanner(
             val content = manifestFile.readText()
             val manifest = parseManifest(content, pluginDir.name)
 
-            // 完整性校验：若存在 .integrity 文件则验证，失败则禁用并标记错误
-            val integrityFile = File(pluginDir, ".integrity")
-            if (integrityFile.exists()) {
-                val stored = integrityFile.readText().trim()
-                val current = computePluginChecksum(pluginDir)
-                if (stored != current) {
-                    return PluginInfo(
-                        manifest = manifest,
-                        directory = pluginDir,
-                        isEnabled = false,
-                        loadError = "integrity check failed",
-                    )
-                }
-            }
-
             PluginInfo(
                 manifest = manifest,
                 directory = pluginDir,
@@ -186,12 +171,6 @@ class PluginScanner(
             android.util.Log.i("PluginScanner", "completeImport: copied ${copiedFiles?.size ?: 0} files to ${pluginDir.absolutePath}")
             copiedFiles?.forEach { f -> android.util.Log.i("PluginScanner", "  - ${f.name} (${f.length()} bytes)") }
 
-            // 写入完整性校验和
-            runCatching {
-                val checksum = computePluginChecksum(pluginDir)
-                File(pluginDir, ".integrity").writeText(checksum)
-            }
-
             loadPluginInfo(pluginDir)?.let { Result.success(it) }
                 ?: Result.failure(IllegalStateException("cannot load plugin info"))
         } catch (e: Exception) {
@@ -277,20 +256,5 @@ class PluginScanner(
             ?.asSequence()
             ?.map { subdir -> File(subdir, MANIFEST_FILE) }
             ?.firstOrNull { it.exists() }
-    }
-
-    /**
-     * 计算插件目录的 SHA-256 校验和（排除 .integrity 文件本身，稳定排序）
-     */
-    private fun computePluginChecksum(dir: File): String {
-        val digest = java.security.MessageDigest.getInstance("SHA-256")
-        dir.walkTopDown()
-            .filter { it.isFile && it.name != ".integrity" }
-            .sortedBy { it.relativeTo(dir).path.replace('\\', '/') }
-            .forEach { file ->
-                digest.update(file.relativeTo(dir).path.replace('\\', '/').toByteArray(Charsets.UTF_8))
-                digest.update(file.readBytes())
-            }
-        return digest.digest().joinToString("") { "%02x".format(it) }
     }
 }
