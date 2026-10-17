@@ -177,8 +177,12 @@ object CustomColors {
     val topBarColors: TopAppBarColors
         @Composable get() {
             val glass = LocalMaterialMode.current.hasMaterialBorder
-            val container = if (glass) colorScheme.surfaceContainer.copy(alpha = 0.66f)
-            else colorScheme.surfaceContainer
+            val container = when {
+                // 设置页背景图生效时整体透明，露出背景图
+                LocalSettingsBackdropActive.current -> Color.Transparent
+                glass -> colorScheme.surfaceContainer.copy(alpha = 0.66f)
+                else -> colorScheme.surfaceContainer
+            }
             return if (!LocalDarkMode.current) TopAppBarDefaults.topAppBarColors(
                 containerColor = container,
                 scrolledContainerColor = container
