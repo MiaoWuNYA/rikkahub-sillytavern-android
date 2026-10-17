@@ -133,6 +133,8 @@ import me.rerere.rikkahub.ui.components.ui.permission.rememberPermissionState
 import me.rerere.rikkahub.ui.context.LocalASRState
 import me.rerere.rikkahub.ui.context.LocalSettings
 import me.rerere.rikkahub.ui.context.LocalToaster
+import me.rerere.rikkahub.ui.theme.LocalMaterialMode
+import me.rerere.rikkahub.ui.theme.isGlass
 import me.rerere.rikkahub.ui.hooks.ChatInputState
 import me.rerere.rikkahub.utils.SoundEffectPlayer
 import org.koin.compose.koinInject
@@ -346,6 +348,7 @@ fun ChatInput(
             )
             // 只要当前有 WebView 存活（内嵌卡片、代码块、Mermaid、界面模式），
             val webViewLive = hasFrontendCard || me.rerere.rikkahub.ui.components.richtext.WebViewPresence.active
+            val materialGlass = LocalMaterialMode.current.isGlass
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -364,6 +367,7 @@ fun ChatInput(
                 color = when {
                     // 有 WebView 在时不给透明底（同上）
                     webViewLive -> containerColor
+                    materialGlass -> Color.Transparent
                     !settings.displaySetting.enableBlurEffect -> containerColor
                     settings.displaySetting.backgroundEffectType == BackgroundEffectType.BLUR ->
                         containerColor.copy(alpha = settings.displaySetting.inputEffectAlpha.coerceIn(0.1f, 1f))

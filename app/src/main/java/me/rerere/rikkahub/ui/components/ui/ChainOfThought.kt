@@ -33,7 +33,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -47,6 +49,8 @@ import me.rerere.hugeicons.stroke.ArrowUp01
 import me.rerere.hugeicons.stroke.Search01
 import me.rerere.hugeicons.stroke.Sparkles
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.ui.theme.LocalMaterialMode
+import me.rerere.rikkahub.ui.theme.isGlass
 
 private val LocalCardColor = staticCompositionLocalOf { Color.White }
 
@@ -80,6 +84,47 @@ fun <T> ChainOfThought(
     val canCollapse = steps.size > collapsedVisibleCount
     val shouldFillCollapseControlWidth = expanded || !collapsedAdaptiveWidth
 
+    val isGlass = LocalMaterialMode.current.isGlass
+    val surfaceTint = MaterialTheme.colorScheme.surface
+    val highlightColor = MaterialTheme.colorScheme.onSurface
+    val glassModifier = if (isGlass) {
+        Modifier.drawWithCache {
+            val topGlowHeight = size.height * 0.24f
+            val highlightInset = 14.dp.toPx()
+            val highlightY = 0.75.dp.toPx()
+            onDrawBehind {
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            surfaceTint.copy(alpha = 0.075f),
+                            surfaceTint.copy(alpha = 0.025f),
+                            Color.Transparent,
+                        ),
+                        start = Offset.Zero,
+                        end = Offset(size.width, size.height),
+                    )
+                )
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            highlightColor.copy(alpha = 0.045f),
+                            Color.Transparent,
+                        ),
+                        endY = topGlowHeight,
+                    )
+                )
+                drawLine(
+                    color = highlightColor.copy(alpha = 0.16f),
+                    start = Offset(highlightInset, highlightY),
+                    end = Offset(size.width - highlightInset, highlightY),
+                    strokeWidth = 0.75.dp.toPx(),
+                )
+            }
+        }
+    } else {
+        Modifier
+    }
+
     CompositionLocalProvider(
         LocalCardColor provides cardColors.containerColor
     ) {
@@ -90,6 +135,7 @@ fun <T> ChainOfThought(
         ) {
             Column(
                 modifier = Modifier
+                    .then(glassModifier)
                     .padding(horizontal = 12.dp, vertical = 4.dp)
                     .animateContentSize(
                         animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()

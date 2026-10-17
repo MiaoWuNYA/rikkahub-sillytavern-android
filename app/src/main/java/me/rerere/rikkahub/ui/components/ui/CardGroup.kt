@@ -2,7 +2,9 @@ package me.rerere.rikkahub.ui.components.ui
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -39,13 +41,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
+import me.rerere.rikkahub.data.datastore.DisplayMaterialMode
+import me.rerere.rikkahub.ui.context.LocalDisplaySettings
 import me.rerere.rikkahub.ui.theme.CustomColors
+import me.rerere.rikkahub.ui.theme.LocalMaterialMode
+import me.rerere.rikkahub.ui.theme.hasMaterialBorder
+import me.rerere.rikkahub.ui.theme.isGlass
 
 private val CardGroupCorner = 20.dp
 private val CardGroupItemSpacing = 2.dp
@@ -231,10 +239,34 @@ private fun CardGroupFormItem(
     count: Int,
     index: Int,
 ) {
+    val materialMode = LocalMaterialMode.current
+    val isGlass = materialMode.isGlass
+    val shape = cardGroupItemShape(index, count)
+    val interfaceAlpha =
+        (LocalDisplaySettings.current.interfaceSurfaceOpacity / 100f).coerceIn(0f, 0.95f)
+    val base = CustomColors.listItemColors.containerColor
+    val containerColor = if (materialMode == DisplayMaterialMode.FLAT) base else base.copy(alpha = interfaceAlpha)
+    val glassGradient = Brush.linearGradient(
+        0f to Color.White.copy(alpha = 0.18f),
+        0.45f to Color.White.copy(alpha = 0.08f),
+        1f to Color.Transparent,
+    )
+
     Surface(
-        modifier = item.modifier.fillMaxWidth(),
-        shape = cardGroupItemShape(index, count),
-        color = CustomColors.listItemColors.containerColor,
+        modifier = item.modifier
+            .fillMaxWidth()
+            .then(
+                if (isGlass) {
+                    Modifier
+                        .background(color = containerColor, shape = shape)
+                        .background(brush = glassGradient, shape = shape)
+                } else Modifier
+            ),
+        shape = shape,
+        color = if (isGlass) Color.Transparent else containerColor,
+        border = if (materialMode.hasMaterialBorder) {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f))
+        } else null,
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -282,6 +314,12 @@ private fun CardGroupListItem(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
+    val materialMode = LocalMaterialMode.current
+    val isGlass = materialMode.isGlass
+    val showBorder = materialMode.hasMaterialBorder
+    val interfaceAlpha =
+        (LocalDisplaySettings.current.interfaceSurfaceOpacity / 100f).coerceIn(0f, 0.95f)
+
     val topCorner by animateDpAsState(
         targetValue = if (isPressed || count == 1 || isFirst) CardGroupCorner else CardGroupInnerCorner,
         animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
@@ -291,17 +329,49 @@ private fun CardGroupListItem(
         animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
     )
 
+    val dynamicShape = RoundedCornerShape(
+        topStart = topCorner,
+        topEnd = topCorner,
+        bottomStart = bottomCorner,
+        bottomEnd = bottomCorner,
+    )
+    val baseColors = item.colors ?: CustomColors.listItemColors
+    val containerColor =
+        if (showBorder) baseColors.containerColor.copy(alpha = interfaceAlpha)
+        else baseColors.containerColor
+    val glassGradient = Brush.linearGradient(
+        0f to Color.White.copy(alpha = 0.18f),
+        0.45f to Color.White.copy(alpha = 0.08f),
+        1f to Color.Transparent,
+    )
+    val glassBorder = Brush.linearGradient(
+        0f to Color.White.copy(alpha = 0.42f),
+        0.5f to MaterialTheme.colorScheme.onSurface.copy(alpha = 0.20f),
+        1f to Color.White.copy(alpha = 0.09f),
+    )
+
     ListItem(
         headlineContent = item.headlineContent ?: {},
         modifier = item.modifier
             .fillMaxWidth()
-            .clip(
-                RoundedCornerShape(
-                    topStart = topCorner,
-                    topEnd = topCorner,
-                    bottomStart = bottomCorner,
-                    bottomEnd = bottomCorner,
-                )
+            .clip(dynamicShape)
+            .then(
+                if (isGlass) {
+                    Modifier
+                        .background(color = containerColor, shape = dynamicShape)
+                        .background(brush = glassGradient, shape = dynamicShape)
+                } else Modifier
+            )
+            .then(
+                when {
+                    isGlass -> Modifier.border(BorderStroke(1.dp, glassBorder), dynamicShape)
+                    showBorder -> Modifier.border(
+                        BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)),
+                        dynamicShape,
+                    )
+
+                    else -> Modifier
+                }
             )
             .then(
                 if (item.onClick != null) {
@@ -316,7 +386,7 @@ private fun CardGroupListItem(
         supportingContent = item.supportingContent,
         leadingContent = item.leadingContent,
         trailingContent = item.trailingContent,
-        colors = item.colors ?: CustomColors.listItemColors,
+        colors = baseColors.copy(containerColor = if (isGlass) Color.Transparent else containerColor),
     )
 }
 

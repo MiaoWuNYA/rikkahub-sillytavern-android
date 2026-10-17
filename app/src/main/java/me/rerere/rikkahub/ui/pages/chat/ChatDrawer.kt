@@ -1,6 +1,8 @@
 package me.rerere.rikkahub.ui.pages.chat
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -8,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -23,6 +26,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.DrawerDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalDrawerSheet
@@ -43,12 +47,14 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
+import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -98,6 +104,8 @@ import me.rerere.rikkahub.ui.hooks.readBooleanPreference
 import me.rerere.rikkahub.ui.hooks.rememberIsPlayStoreVersion
 import me.rerere.rikkahub.ui.hooks.useEditState
 import me.rerere.rikkahub.ui.modifier.onClick
+import me.rerere.rikkahub.ui.theme.LocalMaterialMode
+import me.rerere.rikkahub.ui.theme.hasMaterialBorder
 import me.rerere.rikkahub.utils.navigateToChatPage
 import me.rerere.rikkahub.utils.toDp
 import me.rerere.ui.components.Tooltip
@@ -188,13 +196,50 @@ fun ChatDrawerContent(
         }
     }
 
+    val materialMode = LocalMaterialMode.current
+    val drawerShape = DrawerDefaults.shape
+    val drawerSurfaceAlpha =
+        (settings.displaySetting.interfaceSurfaceOpacity / 100f).coerceIn(0.6f, 1f)
+    val drawerModifier = Modifier
+        .width(300.dp)
+        .then(
+            if (materialMode.hasMaterialBorder) {
+                Modifier.border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f),
+                    shape = drawerShape,
+                )
+            } else Modifier
+        )
+
     ModalDrawerSheet(
-        modifier = Modifier.width(300.dp)
+        modifier = drawerModifier,
+        drawerShape = drawerShape,
+        drawerContainerColor = if (materialMode.hasMaterialBorder) {
+            DrawerDefaults.modalContainerColor.copy(alpha = drawerSurfaceAlpha)
+        } else {
+            DrawerDefaults.modalContainerColor
+        },
     ) {
-        Column(
-            modifier = Modifier.padding(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // 侧边栏背景图：铺满抽屉，再叠一层主题色遮罩保证前景文字可读
+            if (settings.displaySetting.drawerBackgroundPath.isNotBlank()) {
+                AsyncImage(
+                    model = settings.displaySetting.drawerBackgroundPath,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize(),
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)),
+                )
+            }
+            Column(
+                modifier = Modifier.padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
             if (updateChecksEnabled && !isPlayStore) {
                 UpdateCard(vm)
             }
@@ -484,6 +529,7 @@ fun ChatDrawerContent(
                     },
                 )
             }
+        }
         }
     }
 
