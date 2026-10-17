@@ -21,8 +21,6 @@ import dev.chrisbanes.haze.glass.material3.Material3
 import me.rerere.rikkahub.data.datastore.BackgroundEffectType
 import me.rerere.rikkahub.data.datastore.DisplaySetting
 import me.rerere.rikkahub.ui.theme.LocalDarkMode
-import me.rerere.rikkahub.ui.theme.LocalMaterialMode
-import me.rerere.rikkahub.ui.theme.isGlass
 
 // 输入框容器的背景效果（模糊或玻璃），未开启时原样返回。
 @Composable
@@ -32,11 +30,9 @@ internal fun Modifier.chatInputHaze(
     containerColor: Color,
     shape: RoundedCornerShape,
 ): Modifier {
-    val materialGlass = LocalMaterialMode.current.isGlass
-    if (!displaySetting.enableBlurEffect && !materialGlass) return this
-    val effectType = if (materialGlass) BackgroundEffectType.GLASS else displaySetting.backgroundEffectType
+    if (!displaySetting.enableBlurEffect) return this
     // 版本门禁：haze-glass 内部走 RuntimeShader（API 33
-    return when (effectType) {
+    return when (displaySetting.backgroundEffectType) {
         BackgroundEffectType.BLUR -> if (Build.VERSION.SDK_INT >= 31) hazeBlur(
             input = HazeInput.Sources(hazeState),
             style = HazeBlurStyle.Material3 {
