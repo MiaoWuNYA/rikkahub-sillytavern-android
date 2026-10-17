@@ -84,10 +84,10 @@ fun Modifier.liquidGlassFill(tint: Color, intensity: Float = 1f): Modifier = dra
     val center = Offset(size.width / 2f, size.height / 2f)
     val fill = Brush.radialGradient(
         colorStops = arrayOf(
-            0f to tint.copy(alpha = 0.82f * intensity),
-            0.55f to tint.copy(alpha = 0.80f * intensity),
-            0.82f to tint.copy(alpha = 0.56f * intensity),
-            1f to tint.copy(alpha = 0.40f * intensity),
+            0f to tint.copy(alpha = 0.62f * intensity),
+            0.55f to tint.copy(alpha = 0.58f * intensity),
+            0.82f to tint.copy(alpha = 0.38f * intensity),
+            1f to tint.copy(alpha = 0.22f * intensity),
         ),
         center = center,
         radius = center.getDistance(),
