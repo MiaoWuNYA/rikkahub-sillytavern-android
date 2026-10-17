@@ -1140,6 +1140,9 @@
   <string name="plugin_detail_folder">所属文件夹</string>
   <string name="plugin_detail_folder_hint">点击选择文件夹，移动插件到其他分组</string>
   <string name="plugin_detail_frontend">前端脚本（仅前端模式生效）</string>
+  <string name="plugin_frontend_hint">仅在前端卡模式的聊天里运行；关闭上方插件开关即可停用脚本。</string>
+  <string name="plugin_frontend_script_disabled">已停用</string>
+  <string name="plugin_frontend_script_oversize">脚本过大，不会注入</string>
   <string name="plugin_detail_not_found">插件不存在</string>
   <string name="plugin_detail_path">插件路径</string>
   <string name="plugin_detail_save_config">保存配置</string>

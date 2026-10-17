@@ -32,6 +32,11 @@ class PluginManager(
     private val loader: PluginLoader,
     private val repository: PluginRepository,
 ) {
+    companion object {
+        /** 单个前端脚本体积上限：整包扩展动辄数 MB，注入 WebView 会卡死页面。 */
+        const val MAX_FRONTEND_SCRIPT_BYTES = 1024 * 1024
+    }
+
     /**
      * 调用插件导出的函数（详情页数据卡片用）。
      * 转发到 loader，让 UI 层不必直接依赖 loader。
@@ -52,7 +57,7 @@ class PluginManager(
                 .filter { it.enabled && it.entry.isNotBlank() }
                 .mapNotNull { script ->
                     val file = File(info.directory, script.entry)
-                    if (!file.isFile) return@mapNotNull null
+                    if (!file.isFile || file.length() > MAX_FRONTEND_SCRIPT_BYTES) return@mapNotNull null
                     runCatching {
                         PluginFrontendPayload(
                             id = info.manifest.id + "::" + script.id.ifBlank { script.entry },
@@ -103,7 +108,7 @@ class PluginManager(
         initializationDeferred.await()
     }
 
-    suspend fun refreshPlugins() {
+    suspend fun refreshPlugins() = withContext(Dispatchers.IO) {
         _isLoading.value = true
         try {
             val scannedPlugins = scanner.scanPlugins()
@@ -162,81 +167,90 @@ class PluginManager(
      * 确认导入插件（在 previewPlugin 后调用）
      */
     suspend fun confirmImport(manifest: PluginManifest, tempDir: File): Result<PluginInfo> {
-        return try {
-            val result = scanner.completeImport(manifest, tempDir)
-            result.fold(
-                onSuccess = { pluginInfo ->
-                    repository.savePlugin(pluginInfo)
-                    loadPlugin(pluginInfo)
-                    refreshPlugins()
-                    Result.success(pluginInfo)
-                },
-                onFailure = { error -> Result.failure(error) }
-            )
-        } catch (e: Exception) {
-            Result.failure(e)
+        return withContext(Dispatchers.IO) {
+            try {
+                val result = scanner.completeImport(manifest, tempDir)
+                result.fold(
+                    onSuccess = { pluginInfo ->
+                        repository.savePlugin(pluginInfo)
+                        loadPlugin(pluginInfo)
+                        refreshPlugins()
+                        Result.success(pluginInfo)
+                    },
+                    onFailure = { error -> Result.failure(error) }
+                )
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
         }
     }
 
     suspend fun importPlugin(uri: Uri, folderId: String? = null): Result<PluginInfo> {
-        return try {
-            val result = scanner.previewFromZip(uri).fold(
-                onSuccess = { (manifest, tempDir) ->
-                    scanner.completeImport(manifest, tempDir)
-                },
-                onFailure = { error -> Result.failure(error) }
-            )
-            result.fold(
-                onSuccess = { pluginInfo ->
-                    repository.savePlugin(pluginInfo)
-                    if (folderId != null) {
-                        repository.setPluginFolder(pluginInfo.manifest.id, folderId)
-                    }
-                    loadPlugin(pluginInfo)
-                    refreshPlugins()
-                    Result.success(pluginInfo)
-                },
-                onFailure = { error -> Result.failure(error) }
-            )
-        } catch (e: Exception) {
-            Result.failure(e)
+        return withContext(Dispatchers.IO) {
+            try {
+                val result = scanner.previewFromZip(uri).fold(
+                    onSuccess = { (manifest, tempDir) ->
+                        scanner.completeImport(manifest, tempDir)
+                    },
+                    onFailure = { error -> Result.failure(error) }
+                )
+                result.fold(
+                    onSuccess = { pluginInfo ->
+                        repository.savePlugin(pluginInfo)
+                        if (folderId != null) {
+                            repository.setPluginFolder(pluginInfo.manifest.id, folderId)
+                        }
+                        loadPlugin(pluginInfo)
+                        refreshPlugins()
+                        Result.success(pluginInfo)
+                    },
+                    onFailure = { error -> Result.failure(error) }
+                )
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
         }
     }
 
     suspend fun deletePlugin(pluginId: String): Boolean {
-        return try {
-            loader.unloadPlugin(pluginId)
-            val deleted = scanner.deletePlugin(pluginId)
-            repository.removePlugin(pluginId)
-            repository.setPluginFolder(pluginId, null)
-            refreshPlugins()
-            deleted
-        } catch (e: Exception) {
-            false
+        return withContext(Dispatchers.IO) {
+            try {
+                loader.unloadPlugin(pluginId)
+                val deleted = scanner.deletePlugin(pluginId)
+                repository.removePlugin(pluginId)
+                repository.setPluginFolder(pluginId, null)
+                refreshPlugins()
+                deleted
+            } catch (e: Exception) {
+                false
+            }
         }
     }
 
     suspend fun togglePlugin(pluginId: String, enabled: Boolean) {
-        val plugin = _plugins.value.find { it.manifest.id == pluginId } ?: return
-        if (enabled) {
-            // 重新加载插件（先清除错误状态）
-            val pluginToLoad = plugin.copy(isEnabled = true, loadError = null)
-            loader.unloadPlugin(pluginId)
-            loadPlugin(pluginToLoad)
-        } else {
-            loader.unloadPlugin(pluginId)
+        withContext(Dispatchers.IO) {
+            val plugin = _plugins.value.find { it.manifest.id == pluginId } ?: return@withContext
+            if (enabled) {
+                val pluginToLoad = plugin.copy(isEnabled = true, loadError = null)
+                loader.unloadPlugin(pluginId)
+                loadPlugin(pluginToLoad)
+            } else {
+                loader.unloadPlugin(pluginId)
+            }
+            repository.setPluginEnabled(pluginId, enabled)
+            updatePluginState(pluginId) { it.copy(isEnabled = enabled, loadError = null) }
         }
-        repository.setPluginEnabled(pluginId, enabled)
-        updatePluginState(pluginId) { it.copy(isEnabled = enabled, loadError = null) }
     }
 
     suspend fun updatePluginConfig(pluginId: String, config: Map<String, JsonElement>) {
-        repository.savePluginConfig(pluginId, config)
-        updatePluginState(pluginId) { it.copy(config = config) }
-        val plugin = _plugins.value.find { it.manifest.id == pluginId }
-        if (plugin?.isEnabled == true) {
-            loader.unloadPlugin(pluginId)
-            loadPlugin(plugin.copy(config = config))
+        withContext(Dispatchers.IO) {
+            repository.savePluginConfig(pluginId, config)
+            updatePluginState(pluginId) { it.copy(config = config) }
+            val plugin = _plugins.value.find { it.manifest.id == pluginId }
+            if (plugin?.isEnabled == true) {
+                loader.unloadPlugin(pluginId)
+                loadPlugin(plugin.copy(config = config))
+            }
         }
     }
 
