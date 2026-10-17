@@ -1154,9 +1154,68 @@ private fun ChatPageContent(
                             done(result)
                         }.onFailure { done("false") }
                     },
-                    onClipboard = { text ->
+                    onPersona = { payload, done ->
                         runCatching {
-                            val clip = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                            val obj = kotlinx.serialization.json.Json.parseToJsonElement(payload)
+                                as? kotlinx.serialization.json.JsonObject
+                            val op = obj?.get("op")?.toString()?.trim('"').orEmpty()
+                            fun resolvePersona(key: String): me.rerere.rikkahub.data.model.Persona? {
+                                val k = key.trim()
+                                return when {
+                                    k.isBlank() || k == "current" -> setting.personas.find { it.id == setting.activePersonaId }
+                                    else -> setting.personas.find { it.name == k }
+                                        ?: setting.personas.find { it.id.toString() == k }
+                                }
+                            }
+                            val result = when (op) {
+                                "set" -> {
+                                    val id = obj?.get("id")?.toString()?.trim('"').orEmpty()
+                                    val target = resolvePersona(id)
+                                    val partial = obj?.get("persona") as? kotlinx.serialization.json.JsonObject
+                                    if (target == null || partial == null) {
+                                        "false"
+                                    } else {
+                                        val merged = jsonToPersona(partial, target)
+                                        vm.updateSettings { s ->
+                                            s.copy(personas = s.personas.map { if (it.id == target.id) merged else it })
+                                        }
+                                        "true"
+                                    }
+                                }
+
+                                "create" -> {
+                                    val name = obj?.get("name")?.toString()?.trim('"').orEmpty()
+                                    val partial = obj?.get("persona") as? kotlinx.serialization.json.JsonObject
+                                    if (name.isBlank() || setting.personas.any { it.name == name }) {
+                                        "false"
+                                    } else {
+                                        val persona = jsonToPersona(
+                                            partial ?: kotlinx.serialization.json.JsonObject(emptyMap()),
+                                            me.rerere.rikkahub.data.model.Persona(name = name),
+                                        )
+                                        vm.updateSettings { s -> s.copy(personas = s.personas + persona) }
+                                        "true"
+                                    }
+                                }
+
+                                "delete" -> {
+                                    val id = obj?.get("id")?.toString()?.trim('"').orEmpty()
+                                    val target = resolvePersona(id)
+                                    if (target == null) {
+                                        "false"
+                                    } else {
+                                        vm.updateSettings { s -> s.copy(personas = s.personas.filterNot { it.id == target.id }) }
+                                        "true"
+                                    }
+                                }
+
+                                else -> "false"
+                            }
+                            done(result)
+                        }.onFailure { done("false") }
+                    },
+                    onClipboard = { text ->
+                        runCatching {                            val clip = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                             clip.setPrimaryClip(android.content.ClipData.newPlainText("card", text))
                         }
                     },

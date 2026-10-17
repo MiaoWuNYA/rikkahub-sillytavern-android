@@ -699,6 +699,17 @@
     '    rebindGlobalWorldbooks: function(names){ var p = parentApi(); return (p && p.rebindGlobalWorldbooks) ? p.rebindGlobalWorldbooks(names) : Promise.resolve(); },',
     '    rebindCharWorldbooks: function(id, wb){ var p = parentApi(); return (p && p.rebindCharWorldbooks) ? p.rebindCharWorldbooks(id, wb) : Promise.resolve(); },',
     '    importRawWorldbook: function(name, content){ var p = parentApi(); return (p && p.importRawWorldbook) ? p.importRawWorldbook(name, content) : Promise.resolve({}); },',
+    '    getPersonaNames: function(){ var p = parentApi(); return (p && p.getPersonaNames) ? p.getPersonaNames() : []; },',
+    '    getPersonaIds: function(){ var p = parentApi(); return (p && p.getPersonaIds) ? p.getPersonaIds() : []; },',
+    '    getCurrentPersonaName: function(){ var p = parentApi(); return (p && p.getCurrentPersonaName) ? p.getCurrentPersonaName() : null; },',
+    '    getCurrentPersonaId: function(){ var p = parentApi(); return (p && p.getCurrentPersonaId) ? p.getCurrentPersonaId() : null; },',
+    '    getPersonaAvatarPath: function(id){ var p = parentApi(); return (p && p.getPersonaAvatarPath) ? p.getPersonaAvatarPath(id) : null; },',
+    '    getPersona: function(id){ var p = parentApi(); return (p && p.getPersona) ? p.getPersona(id) : {}; },',
+    '    replacePersona: function(id, persona){ var p = parentApi(); return (p && p.replacePersona) ? p.replacePersona(id, persona) : Promise.resolve(); },',
+    '    updatePersonaWith: function(id, fn){ var p = parentApi(); return (p && p.updatePersonaWith) ? p.updatePersonaWith(id, fn) : Promise.resolve({}); },',
+    '    createPersona: function(name, persona){ var p = parentApi(); return (p && p.createPersona) ? p.createPersona(name, persona) : Promise.resolve(false); },',
+    '    createOrReplacePersona: function(name, persona){ var p = parentApi(); return (p && p.createOrReplacePersona) ? p.createOrReplacePersona(name, persona) : Promise.resolve(false); },',
+    '    deletePersona: function(id){ var p = parentApi(); return (p && p.deletePersona) ? p.deletePersona(id) : Promise.resolve(false); },',
     '    eventOn: function(){ return function(){}; },',
     '    eventOnce: function(){ return function(){}; },',
     '    eventEmit: function(name, payload){ post("event", JSON.stringify({name: name, payload: payload})); },',
@@ -2201,6 +2212,13 @@
     return window.webui.request('worldbook', JSON.stringify(payload));
   }
 
+  function personaRequest(op, data) {
+    var payload = {};
+    if (data) Object.keys(data).forEach(function (k) { payload[k] = data[k]; });
+    payload.op = op;
+    return window.webui.request('persona', JSON.stringify(payload));
+  }
+
   // 把 uid 按脚下标补齐；酒馆世界里 uid 只在世界书内部有意义
   function normalizeWorldbookEntries(list) {
     var arr = Array.isArray(list) ? list : [];
@@ -2390,6 +2408,52 @@
         return { ok: true, status: created ? 201 : 200, created: created };
       });
     },
+    // ---- 用户人设 ----
+    getPersonaNames: function () { return syncCall('getPersonaNames', '') || []; },
+    getPersonaIds: function () { return syncCall('getPersonaIds', '') || []; },
+    getCurrentPersonaName: function () { return syncCall('getCurrentPersonaName', ''); },
+    getCurrentPersonaId: function () { return syncCall('getCurrentPersonaId', ''); },
+    getPersonaAvatarPath: function (persona_id) {
+      return syncCall('getPersonaAvatarPath', JSON.stringify(persona_id == null ? 'current' : String(persona_id)));
+    },
+    getPersona: function (persona_id) {
+      var data = syncCall('getPersona', JSON.stringify(persona_id == null ? 'current' : String(persona_id)));
+      if (data == null) throw new Error('用户人设不存在: ' + persona_id);
+      return data;
+    },
+    replacePersona: function (persona_id, persona) {
+      return personaRequest('set', {
+        id: String(persona_id == null ? 'current' : persona_id),
+        persona: persona || {},
+      }).then(function () { return undefined; });
+    },
+    updatePersonaWith: function (persona_id, updater) {
+      var current = tavernApi.getPersona(persona_id);
+      var result = updater(current);
+      return Promise.resolve(result).then(function (next) {
+        return personaRequest('set', {
+          id: String(persona_id == null ? 'current' : persona_id),
+          persona: next,
+        }).then(function () { return next; });
+      });
+    },
+    createPersona: function (persona_name, persona) {
+      return personaRequest('create', { name: String(persona_name), persona: persona || {} })
+        .then(function (r) { return r === true || r === 'true'; });
+    },
+    createOrReplacePersona: function (persona_name, persona) {
+      var names = tavernApi.getPersonaNames();
+      if (names.indexOf(String(persona_name)) >= 0 || tavernApi.getPersonaIds().indexOf(String(persona_name)) >= 0) {
+        return personaRequest('set', { id: String(persona_name), persona: persona || {} })
+          .then(function () { return false; });
+      }
+      return personaRequest('create', { name: String(persona_name), persona: persona || {} })
+        .then(function () { return true; });
+    },
+    deletePersona: function (persona_id) {
+      return personaRequest('delete', { id: String(persona_id == null ? 'current' : persona_id) })
+        .then(function (r) { return r === true || r === 'true'; });
+    },
     sendMessage: function (text) { native('send', text == null ? '' : String(text)); return Promise.resolve(); },
     triggerSlash: function (cmd) { return window.webui.request('triggerSlash', cmd == null ? '' : String(cmd)); },
     substituteMacros: function (text) { return macroSubstitute(text); },
@@ -2458,6 +2522,9 @@
     'createWorldbook', 'createOrReplaceWorldbook', 'deleteWorldbook', 'createWorldbookEntries',
     'deleteWorldbookEntries', 'rebindGlobalWorldbooks', 'rebindCharWorldbooks', 'rebindChatWorldbook',
     'importRawWorldbook',
+    'getPersonaNames', 'getPersonaIds', 'getCurrentPersonaName', 'getCurrentPersonaId',
+    'getPersonaAvatarPath', 'getPersona', 'replacePersona', 'updatePersonaWith',
+    'createPersona', 'createOrReplacePersona', 'deletePersona',
     'waitGlobalInitialized', 'getScriptId', 'getScriptName', 'getScriptInfo'
   ].forEach(function (fn) { if (typeof window[fn] !== 'function') window[fn] = tavernApi[fn]; });
   window.tavern_events = window.tavern_events || TAVERN_EVENTS;
