@@ -2845,10 +2845,15 @@ class ChatService(
      * 避免后续整对象保存把旧 folderId 覆盖回去。
      */
     suspend fun moveConversationToFolder(conversationId: Uuid, folderId: Uuid?) {
-        if (sessionManager.get(conversationId) != null) {
+        val hadSession = sessionManager.get(conversationId) != null
+        if (hadSession) {
             updateConversationState(conversationId) { it.copy(folderId = folderId) }
         }
         conversationRepo.updateConversationFolderId(conversationId, folderId)
+        // 写库期间页面可能刚好打开了这个会话，加载时读到的可能是旧值，再同步一次内存
+        if (!hadSession && sessionManager.get(conversationId) != null) {
+            updateConversationState(conversationId) { it.copy(folderId = folderId) }
+        }
     }
 
     /**
