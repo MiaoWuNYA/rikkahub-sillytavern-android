@@ -18,6 +18,7 @@ import me.rerere.rikkahub.plugin.model.PluginFolder
 import me.rerere.rikkahub.plugin.model.PluginFrontendPayload
 import me.rerere.rikkahub.plugin.model.PluginInfo
 import me.rerere.rikkahub.plugin.model.PluginManifest
+import me.rerere.rikkahub.plugin.provider.PluginProviderRegistry
 import me.rerere.rikkahub.plugin.repository.PluginRepository
 import me.rerere.rikkahub.plugin.scanner.PluginScanner
 import java.io.File
@@ -31,6 +32,7 @@ class PluginManager(
     private val scanner: PluginScanner,
     private val loader: PluginLoader,
     private val repository: PluginRepository,
+    private val providerRegistry: PluginProviderRegistry? = null,
 ) {
     companion object {
         /** 单个前端脚本体积上限：整包扩展动辄数 MB，注入 WebView 会卡死页面。 */
@@ -126,6 +128,8 @@ class PluginManager(
                 )
             }
             _plugins.value = pluginsWithConfig
+            // 插件声明的供应商跟着插件生命周期走：这里一次同步覆盖导入、卸载、启用与停用
+            providerRegistry?.sync(pluginsWithConfig)
             pluginsWithConfig.filter { it.isEnabled }.forEach { plugin ->
                 if (loader.getLoadedPlugin(plugin.manifest.id) == null) {
                     loadPlugin(plugin)
@@ -245,6 +249,8 @@ class PluginManager(
             }
             repository.setPluginEnabled(pluginId, enabled)
             updatePluginState(pluginId) { it.copy(isEnabled = enabled, loadError = null) }
+            // 停用的插件不再提供供应商，启用的重新挂上
+            providerRegistry?.sync(_plugins.value)
         }
     }
 
@@ -257,6 +263,8 @@ class PluginManager(
                 loader.unloadPlugin(pluginId)
                 loadPlugin(plugin.copy(config = config))
             }
+            // 声明里的 ${config.x} 可能正是代理、密钥，配置一改供应商就得跟着刷新
+            providerRegistry?.sync(_plugins.value)
         }
     }
 

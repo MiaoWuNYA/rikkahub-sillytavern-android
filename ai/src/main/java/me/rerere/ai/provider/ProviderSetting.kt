@@ -69,6 +69,8 @@ sealed class ProviderSetting {
         var useResponseApi: Boolean = false,
         var includeHistoryReasoning: Boolean = true,
         var responsesPath: String = "/responses",
+        // 由插件声明的供应商：值为插件 ID，插件卸载/停用后连同模型一起移除；用户自建的供应商为 null
+        var pluginId: String? = null,
     ) : ProviderSetting() {
         override fun addModel(model: Model): ProviderSetting {
             return copy(models = models + model)
@@ -260,3 +262,6 @@ sealed class ProviderSetting {
         }
     }
 }
+
+/** 声明该供应商的插件 ID；用户自建的供应商返回 null。 */
+fun ProviderSetting.pluginOwner(): String? = (this as? ProviderSetting.OpenAI)?.pluginId
