@@ -51,6 +51,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -222,38 +223,16 @@ fun ChatDrawerContent(
             } else Modifier
         )
 
-    ModalDrawerSheet(
-        modifier = drawerModifier,
-        drawerShape = drawerShape,
-        drawerContainerColor = if (materialMode.hasMaterialBorder) {
-            DrawerDefaults.modalContainerColor.copy(alpha = drawerSurfaceAlpha)
-        } else {
-            DrawerDefaults.modalContainerColor
-        },
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            // 侧边栏背景图：铺满抽屉，再叠一层主题色遮罩保证前景文字可读
-            if (settings.displaySetting.drawerBackgroundPath.isNotBlank()) {
-                AsyncImage(
-                    model = settings.displaySetting.drawerBackgroundPath,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.matchParentSize(),
-                )
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(
-                            MaterialTheme.colorScheme.surface.copy(
-                                alpha = if (materialMode.isGlass) 0.72f else 0.55f
-                            )
-                        ),
-                )
-            }
-            Column(
-                modifier = Modifier.padding(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
+    // 矮屏（如手表、横屏手机）上顶部固定会把会话列表挤没，改为跟随列表一起滚动
+    val windowHeight = LocalWindowInfo.current.containerDpSize.height
+    val scrollableHeader = windowHeight < 640.dp
+
+    // 抽屉顶部：更新/备份提醒、用户信息、常用入口和文件夹栏
+    val drawerHeader: @Composable () -> Unit = {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             if (updateChecksEnabled && !isPlayStore) {
                 UpdateCard(vm)
             }
@@ -354,12 +333,51 @@ fun ChatDrawerContent(
                     },
                 )
             }
+        }
+    }
+
+    ModalDrawerSheet(
+        modifier = drawerModifier,
+        drawerShape = drawerShape,
+        drawerContainerColor = if (materialMode.hasMaterialBorder) {
+            DrawerDefaults.modalContainerColor.copy(alpha = drawerSurfaceAlpha)
+        } else {
+            DrawerDefaults.modalContainerColor
+        },
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // 侧边栏背景图：铺满抽屉，再叠一层主题色遮罩保证前景文字可读
+            if (settings.displaySetting.drawerBackgroundPath.isNotBlank()) {
+                AsyncImage(
+                    model = settings.displaySetting.drawerBackgroundPath,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize(),
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(
+                            MaterialTheme.colorScheme.surface.copy(
+                                alpha = if (materialMode.isGlass) 0.72f else 0.55f
+                            )
+                        ),
+                )
+            }
+            Column(
+                modifier = Modifier.padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+            if (!scrollableHeader) {
+                drawerHeader()
+            }
 
             ConversationList(
                 current = current,
                 conversations = conversations,
                 conversationJobs = conversationJobs.keys,
                 listState = conversationListState,
+                header = if (scrollableHeader) drawerHeader else null,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
