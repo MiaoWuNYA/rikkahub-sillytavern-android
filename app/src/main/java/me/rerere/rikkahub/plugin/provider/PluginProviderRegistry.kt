@@ -69,15 +69,31 @@ object PluginProviderSpecs {
             .map { it.withConfig(plugin) }
     }
 
-    private val configRef = Regex("""\$\{config\.([A-Za-z0-9_]+)}""")
+    private const val CONFIG_PREFIX = "\${config."
 
-    /** 声明里的 ${config.x} 用插件配置值替换，用户改代理、密钥不必改插件。 */
+    /**
+     * 声明里的 ${config.x} 用插件配置值替换，用户改代理、密钥不必改插件。
+     *
+     * 不用正则：`}` 在 Android 的 ICU 里是必须转义的元字符（JDK 却放过裸写），
+     * 同一条模式两边行为不一致，手写扫描没有这个坑。
+     */
     private fun PluginProviderSpec.withConfig(plugin: PluginInfo): PluginProviderSpec {
-        fun sub(value: String): String = if ("${'$'}{config." !in value) value else {
-            configRef.replace(value) { match ->
-                val element = plugin.getConfigValue(match.groupValues[1])
-                (element as? JsonPrimitive)?.contentOrNull ?: ""
+        fun sub(value: String): String {
+            if (CONFIG_PREFIX !in value) return value
+            val out = StringBuilder(value.length)
+            var cursor = 0
+            while (cursor < value.length) {
+                val start = value.indexOf(CONFIG_PREFIX, cursor)
+                if (start < 0) break
+                val end = value.indexOf('}', start + CONFIG_PREFIX.length)
+                if (end < 0) break
+                out.append(value, cursor, start)
+                val key = value.substring(start + CONFIG_PREFIX.length, end)
+                out.append((plugin.getConfigValue(key) as? JsonPrimitive)?.contentOrNull ?: "")
+                cursor = end + 1
             }
+            out.append(value, cursor, value.length)
+            return out.toString()
         }
 
         return copy(
@@ -135,15 +151,19 @@ class PluginProviderRegistry(
 
     /** 把当前启用的插件声明的供应商同步进设置；不在声明里的插件供应商会被清掉。 */
     suspend fun sync(plugins: List<PluginInfo>) = withContext(Dispatchers.IO) {
-        val declared = plugins.filter { it.isEnabled }.flatMap { info ->
-            PluginProviderSpecs.parse(info).map { info to it }
-        }
-        proxiesByProvider = declared.associate { (info, spec) ->
-            providerUuid(info.manifest.id, spec.id) to spec.proxyList()
-        }
-        val desired = declared.map { (info, spec) -> info.toProviderSetting(spec) }
-        settingsStore.update { settings -> settings.withPluginProviders(desired) }
-        Log.i(TAG, "sync: ${declared.size} plugin provider(s) from ${plugins.count { it.isEnabled }} plugin(s)")
+        runCatching {
+            val declared = plugins.filter { it.isEnabled }.flatMap { info ->
+                runCatching { PluginProviderSpecs.parse(info).map { info to it } }
+                    .onFailure { Log.e(TAG, "Plugin ${info.manifest.id}: 供应商声明不可用", it) }
+                    .getOrDefault(emptyList())
+            }
+            proxiesByProvider = declared.associate { (info, spec) ->
+                providerUuid(info.manifest.id, spec.id) to spec.proxyList()
+            }
+            val desired = declared.map { (info, spec) -> info.toProviderSetting(spec) }
+            settingsStore.update { settings -> settings.withPluginProviders(desired) }
+            Log.i(TAG, "sync: ${declared.size} plugin provider(s) from ${plugins.count { it.isEnabled }} plugin(s)")
+        }.onFailure { Log.e(TAG, "同步插件供应商失败", it) }
     }
 
     override fun resolve(setting: ProviderSetting): Provider<*>? {
