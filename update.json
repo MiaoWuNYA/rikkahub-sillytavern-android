@@ -1,12 +1,12 @@
 {
-  "version": "2.5.9",
-  "publishedAt": "2026-10-17T20:28:20Z",
-  "changelog": "本次更新修了亿个Bug，兼容了许多角色卡，增加了前端兼容性\n\n欢迎加入软件反馈/RP欢乐QQ交流群1129035651，新群欢迎来聊天，反馈问题可以更快回复\n\n修复了：\n1. 软件公告烦人频率的问题\n2. 每次导入角色卡多导入一个默认助手的bug\n3. 打开输入法后屏幕尺寸发生变化导致的前端卡乱跳\n4. 世界书启用/未启用显示失灵\n5. 部分卡片表格无法显示的问题\n6. 部分卡片转码失败的问题\n7. 软件无法压缩的问题\n8. 无法关闭深度思考的问题\n9. 上下文滚动压缩失效的问题\n\n增添了：\n1. 世界书内部显示，更方便的看到世界书条目\n2. 导演备注多选（感谢 shark12bee 的 PR#8）\n3. 兼容风月AI酒馆卡格式\n4. 兼容春水AI酒馆卡格式\n5. 兼容一些不知名AI站点的酒馆卡格式\n\n────────────\n\nThis release fixes a huge number of bugs, adds compatibility with many character cards, and improves frontend card support.\n\nWelcome to the feedback / RP QQ group 1129035651 — new members are always welcome, and bug reports get faster replies there.\n\nFixed:\n1. Announcement appearing too often\n2. An extra default assistant being created on every card import\n3. Frontend cards jumping around when the keyboard changed the screen size\n4. World book enable/disable toggles not showing correctly\n\nAdded:\n1. World book entry list view, so entries are easier to see\n2. Multiple Author's Notes (thanks to shark12bee's PR#8)\n3. Compatibility with Fengyue AI tavern cards\n4. Compatibility with Chunshui AI tavern cards\n5. Compatibility with tavern cards from various lesser-known AI sites\n\nAlso fixed: tables in some cards not rendering, encoding failures on some cards, context compression failing, the reasoning toggle not turning off deep thinking, and rolling context compression not working.",
+  "version": "3.0.0",
+  "publishedAt": "2026-10-18T12:13:57Z",
+  "changelog": "本次更新紧跟上游 3.0.0，添加了各种美化功能以及 RP 中可能用到的各种工具，增添了华灯前端内核，更兼容了大量的前端卡，修复了已知的亿种 Bug。\n\n欢迎加入软件反馈/RP 欢乐 QQ 交流群 [【Rikkahub·华灯】（点击一键加群）](http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=XXbZtPG3SrT0QoGtn-19_rChhGgfCzh7&authKey=ww4WCnqfe%2BoKe68oaNW897iGbxMivTPwcfCoYhUYeHN40Bv2QGmyx8hco7Cxw6mO&noverify=0&group_code=1129035651)，新群欢迎来聊，反馈问题可以更快回复，群里可享高速下载，以及有更兼容前端和更小白友好的内测加强版本，领取免费公益模型，欢迎加群体验。\n\n## 版本特性\n\n1. 增加了快速添加符号的功能\n2. 增加了括号着色的功能\n3. 增加了自定义所有按钮的功能，你可以把主页上的任何按钮给隐藏掉了\n4. 全面调整了原版软件设置的逻辑性，现在各个地方的设置更明了了\n5. 追上游全新 MD3 风格界面，适配华灯设置新界面\n6. 全新华灯前端内核模式，可以更好的展示前端卡\n7. 修复了导入预设时，正则表达式不会导入的问题\n8. 增加了关闭标题生成的功能\n9. 增加了透明输入栏的功能\n10. 跟随上游添加了媒体创作功能（可关闭），画板等功能\n11. 调整了主动信息界面的 Bug\n12. 各种可能的闪退问题？\n13. 增加了代码块字体大小调节的功能\n14. 增加了导出上游备份的功能，可回退上游版本\n15. 增加了透明玻璃效果\n16. 修复了通知和网络，在设置里无法设置的问题\n17. 尝试修复了长文自动压缩的问题\n18. 修复了新手引导里已经删除的记忆页面\n19. 修复了侧边栏背景问题\n20. 彻底修复了世界书和预设偶发无法注入、掉注入、开了不注入的问题\n21. 输入框透明失效的问题\n22. 数据备份迁移失败的问题\n23. 增加了设置功能背景的设置，修复了玻璃模式的部分问题\n24. 优化完善的插件功能\n25. 其他上游的各种更新，以及已知的问题",
   "downloads": [
     {
       "name": "rikkahub-plus-arm64-v8a.apk",
-      "url": "https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/download/v2.5.9-huadeng/rikkahub-plus-arm64-v8a.apk",
-      "size": "约 104 MB"
+      "url": "https://github.com/MiaoWuNYA/rikkahub-sillytavern-android/releases/download/v3.0.0-huadeng/rikkahub-plus-arm64-v8a.apk",
+      "size": "约 106 MB"
     }
   ]
 }
