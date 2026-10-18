@@ -24,6 +24,8 @@ Material 3 look (cards with dividers, plain forms).
 ./gradlew assembleDebug          # 构建 Debug APK
 ./gradlew test                   # 运行所有模块的 JVM 单元测试
 ./gradlew lint                   # 运行 Android Lint
+python3 tools/generate_db_schema.py --check   # 校验 AppDatabaseSchema.kt / AppDatabaseLegacyMigrations.kt 与 schema JSON 一致
+python3 tools/verify_db_migrations.py         # 用 sqlite3 验证任意旧版本都能升到最新版
 ```
 
 ## Module Structure

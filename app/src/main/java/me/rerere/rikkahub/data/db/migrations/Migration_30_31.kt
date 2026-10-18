@@ -20,9 +20,12 @@ val Migration_30_31 = object : Migration(30, 31) {
         )
 
         val memories = linkedMapOf<String, MutableList<String>>()
-        db.query("SELECT assistant_id, content FROM MemoryEntity ORDER BY id").use { cursor ->
-            while (cursor.moveToNext()) {
-                memories.getOrPut(cursor.getString(0)) { mutableListOf() }.add(cursor.getString(1))
+        // 恢复上游 rikkahub 的备份时这张表可能已经不存在，缺表就跳过数据迁移
+        if (db.hasTable("MemoryEntity")) {
+            db.query("SELECT assistant_id, content FROM MemoryEntity ORDER BY id").use { cursor ->
+                while (cursor.moveToNext()) {
+                    memories.getOrPut(cursor.getString(0)) { mutableListOf() }.add(cursor.getString(1))
+                }
             }
         }
         val now = System.currentTimeMillis()

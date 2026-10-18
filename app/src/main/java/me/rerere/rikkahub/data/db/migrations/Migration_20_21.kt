@@ -4,10 +4,29 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
- * 从版本20升级到21：添加知识库表 + FTS5
+ * 从版本20升级到21：添加知识库表 + FTS5，以及 workspaces 表
  */
 val Migration_20_21 = object : Migration(20, 21) {
     override fun migrate(db: SupportSQLiteDatabase) {
+        // workspaces 表：上游 v21 通过 AutoMigration(20,21) 建出来的，手写迁移漏了这一步，
+        // 会让 v20 升上来的库一直缺表（v23 之后才被 23→24 的 CREATE TABLE IF NOT EXISTS 补上）
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS `workspaces` (
+                `id` TEXT NOT NULL,
+                `name` TEXT NOT NULL,
+                `root` TEXT NOT NULL,
+                `shell_enabled` INTEGER NOT NULL,
+                `shell_status` TEXT NOT NULL,
+                `created_at` INTEGER NOT NULL,
+                `updated_at` INTEGER NOT NULL,
+                `last_access_at` INTEGER,
+                `tool_approvals` TEXT NOT NULL DEFAULT '{}',
+                PRIMARY KEY(`id`)
+            )
+        """.trimIndent())
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_workspaces_root` ON `workspaces`(`root`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_workspaces_updated_at` ON `workspaces`(`updated_at`)")
+
         // 知识源
         db.execSQL("""
             CREATE TABLE IF NOT EXISTS `knowledge_sources` (
