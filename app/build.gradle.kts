@@ -197,21 +197,9 @@ android {
         applicationId = "me.rerere.rikkahub.huadeng"
         minSdk = 26
         targetSdk = 37
-        // 版本号 2.5.8。
-        //
-        // 从 2.5.7.1 改回三段，是为了绕开 UpdateChecker 的一个判定缺陷：
-        // isNewerMainVersion 只循环「本地有几段」那么多次，于是本地 2.5.7
-        // （三段）永远读不到远端 2.5.7.1 的第四段，判定为「没有新版」。
-        // 装了 2.5.7 的用户收不到 2.5.7.1 的更新提示。
-        //
-        // 三段版本号在现有逻辑下是可靠区间，趁用户量还小先退回去，
-        // 判定缺陷本身留待后续单独修（修它要同时改 isNightly 的
-        // 「多一段就是每日构建」那条规则，影响面比换个版本号大）。
-        //
-        // versionCode 保持递增：235 -> 236。系统按它判断能否覆盖安装，
-        // 只升版本名而版本码不动的话，装了 2.5.7.1 的用户会装不上。
-        versionCode = 237
-        versionName = "2.5.9"
+        // 跟随上游 3.0.0；versionCode 在本地线（237）上递增，保证覆盖安装
+        versionCode = 238
+        versionName = "3.0.0"
 
         // 插件解密密钥的派生因子之一：由签名口令做 HMAC，口令只存在于
         // local.properties / CI secrets，不写入 APK 明文。APK 内只保留 HMAC 结果，
