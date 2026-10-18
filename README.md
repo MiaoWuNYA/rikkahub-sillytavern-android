@@ -17,7 +17,7 @@
 
 </div>
 
-> **A deeply customized fork of [RikkaHub](https://github.com/rikkahub/rikkahub)** (merged with upstream v2.5.6, plus 2150+ commits of additions), natively implemented in Kotlin + Jetpack Compose.
+> **A deeply customized fork of [RikkaHub](https://github.com/rikkahub/rikkahub)** (merged with upstream v3.0.0, plus 2150+ commits of additions), natively implemented in Kotlin + Jetpack Compose.
 >
 > - **Just want a good AI chat app**: plug in any API and start talking — multi-provider, streaming, voice calls, plugin tools, memory, cache savings. No "tavern" concepts required.
 > - **Migrating from desktop SillyTavern**: character cards, lorebooks, presets, regex and themes import losslessly with official semantics — no Termux, no Node.js.
