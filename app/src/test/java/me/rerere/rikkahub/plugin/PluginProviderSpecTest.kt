@@ -98,6 +98,56 @@ class PluginProviderSpecTest {
     }
 
     @Test
+    fun `config placeholder without a value becomes empty`() {
+        val spec = PluginProviderSpecs.parse(plugin(inlineProviders())).single()
+
+        assertEquals(listOf(""), spec.proxies.map { it.url })
+        assertTrue(spec.proxyList().isEmpty())
+    }
+
+    @Test
+    fun `unknown config keys resolve to empty and the rest of the string survives`() {
+        val providers = buildJsonArray {
+            add(
+                buildJsonObject {
+                    put("id", "zen")
+                    put("name", "Zen")
+                    put("baseUrl", "https://\${config.host}/\${config.missing}/v1")
+                    put("headers", buildJsonArray {
+                        add(buildJsonObject { put("name", "x-a"); put("value", "pre-\${config.token}-post") })
+                    })
+                }
+            )
+        }
+        val config = mapOf(
+            "host" to JsonPrimitive("opencode.ai"),
+            "token" to JsonPrimitive("abc"),
+        )
+
+        val spec = PluginProviderSpecs.parse(plugin(providers, config)).single()
+
+        assertEquals("https://opencode.ai//v1", spec.baseUrl)
+        assertEquals("pre-abc-post", spec.headers.single().value)
+    }
+
+    @Test
+    fun `unterminated placeholder is left untouched`() {
+        val providers = buildJsonArray {
+            add(
+                buildJsonObject {
+                    put("id", "zen")
+                    put("name", "Zen")
+                    put("baseUrl", "https://opencode.ai/\${config.host")
+                }
+            )
+        }
+
+        val spec = PluginProviderSpecs.parse(plugin(providers)).single()
+
+        assertEquals("https://opencode.ai/\${config.host", spec.baseUrl)
+    }
+
+    @Test
     fun `provider and model ids stay stable across parses`() {
         val first = plugin(inlineProviders()).toProviderSetting(PluginProviderSpecs.parse(plugin(inlineProviders())).single())
         val second = plugin(inlineProviders()).toProviderSetting(PluginProviderSpecs.parse(plugin(inlineProviders())).single())
