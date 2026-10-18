@@ -5,12 +5,12 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import me.rerere.ai.core.MessageRole
+import me.rerere.ai.core.ReasoningLevel
 import me.rerere.ai.provider.CustomBody
 import me.rerere.ai.provider.CustomHeader
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessageAnnotation
 import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.core.ReasoningLevel
 import me.rerere.rikkahub.data.ai.tools.LocalToolOption
 import me.rerere.rikkahub.utils.SimpleCache
 import java.util.concurrent.TimeUnit
@@ -52,6 +52,7 @@ data class Assistant(
     val enableRollingContextCompression: Boolean = false,
     // 触发压缩的 token 阈值；0 表示按模型上下文窗口自动计算
     val rollingContextCompressionThresholdTokens: Int = 0,
+    val autoConsolidateMemory: Boolean = true, // 对话停下来后在后台自动整理记忆; 关闭后只能手动整理
     val enableRecentChatsReference: Boolean = false,
     val messageTemplate: String = "{{ message }}",
     val contextTemplate: String = DEFAULT_CONTEXT_TEMPLATE, // 上下文组装模板（ADF风格）
@@ -514,10 +515,10 @@ private object VariableLookbehind {
 @Serializable
 enum class InjectionPosition {
     @SerialName("before_system_prompt")
-    BEFORE_SYSTEM_PROMPT,   // 系统提示词之前
+    BEFORE_SYSTEM_PROMPT, // 系统提示词之前
 
     @SerialName("after_system_prompt")
-    AFTER_SYSTEM_PROMPT,    // 系统提示词之后（最常用）
+    AFTER_SYSTEM_PROMPT, // 系统提示词之后（最常用）
 
     @SerialName("before_character")
     BEFORE_CHARACTER,       // 角色卡信息之前（酒馆 before_char）
@@ -529,10 +530,10 @@ enum class InjectionPosition {
     ANTAGONIZE,             // 对抗位：角色卡与对话之间（酒馆 antagonize）
 
     @SerialName("top_of_chat")
-    TOP_OF_CHAT,            // 对话最开头（第一条用户消息之前）
+    TOP_OF_CHAT, // 对话最开头（第一条用户消息之前）
 
     @SerialName("bottom_of_chat")
-    BOTTOM_OF_CHAT,         // 最新消息之前（当前用户输入之前）
+    BOTTOM_OF_CHAT, // 最新消息之前（当前用户输入之前）
 
     @SerialName("after_dialog")
     AFTER_DIALOG,           // 最近一条 AI 回复之后（酒馆 after_dialog）
@@ -564,8 +565,8 @@ sealed class PromptInjection {
     abstract val priority: Int
     abstract val position: InjectionPosition
     abstract val content: String
-    abstract val injectDepth: Int  // 当 position 为 AT_DEPTH 时使用，表示从最新消息往前数的位置
-    abstract val role: MessageRole  // 注入角色：USER 或 ASSISTANT
+    abstract val injectDepth: Int // 当 position 为 AT_DEPTH 时使用，表示从最新消息往前数的位置
+    abstract val role: MessageRole // 注入角色：USER 或 ASSISTANT
 
     /**
      * 模式注入 - 基于开关状态触发
