@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import me.rerere.ui.toast.ToastType
 import me.rerere.ai.provider.ClaudePromptCacheTtl
 import me.rerere.ai.provider.ProviderSetting
+import me.rerere.ai.provider.pluginOwner
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.DEFAULT_PROVIDERS
 import me.rerere.hugeicons.HugeIcons
@@ -81,10 +82,27 @@ fun ProviderConfigure(
         }
 
         when (provider) {
-            is ProviderSetting.OpenAI -> ProviderConfigureOpenAI(provider, onEdit)
+            // 插件带来的供应商：地址、密钥、路径都归插件管，界面上不露出来
+            is ProviderSetting.OpenAI -> if (provider.pluginOwner() != null) {
+                ProviderConfigurePlugin(provider, onEdit)
+            } else {
+                ProviderConfigureOpenAI(provider, onEdit)
+            }
+
             is ProviderSetting.Google -> ProviderConfigureGoogle(provider, onEdit)
             is ProviderSetting.Claude -> ProviderConfigureClaude(provider, onEdit)
         }
+    }
+}
+
+/** 插件供应商只留一个名字可改，其余字段都由插件声明。 */
+@Composable
+private fun ProviderConfigurePlugin(
+    provider: ProviderSetting,
+    onEdit: (provider: ProviderSetting) -> Unit
+) {
+    CardGroup {
+        nameItem(provider, onEdit)
     }
 }
 

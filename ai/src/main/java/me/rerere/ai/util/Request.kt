@@ -48,11 +48,14 @@ fun Request.Builder.configureReferHeaders(url: String): Request.Builder {
 }
 
 fun Request.Builder.configureSessionHeaders(url: String, sessionId: String?): Request.Builder = apply {
-    if (sessionId != null) {
-        header("X-Session-ID", sessionId)
-        if (url.toHttpUrl().host == "opencode.ai") {
-            header("x-opencode-session", sessionId)
-        }
+    if (sessionId == null) return@apply
+    // 供应商自己声明的同名头优先：这里的注入只是没配头时的兜底。
+    // 反过来的话，把请求伪装成官方客户端的那类自定义会话头会被会话 UUID 覆盖掉，
+    // 上游一眼就认出来源不对。
+    val declared = runCatching { build().headers }.getOrDefault(Headers.EMPTY)
+    if (declared["X-Session-ID"] == null) header("X-Session-ID", sessionId)
+    if (url.toHttpUrl().host == "opencode.ai" && declared["x-opencode-session"] == null) {
+        header("x-opencode-session", sessionId)
     }
 }
 

@@ -90,6 +90,7 @@ import me.rerere.ai.provider.ModelAbility
 import me.rerere.ai.provider.ModelType
 import me.rerere.ai.provider.ProviderManager
 import me.rerere.ai.provider.ProviderSetting
+import me.rerere.ai.provider.pluginOwner
 import me.rerere.ai.provider.TextGenerationParams
 import me.rerere.ai.registry.ModelRegistry
 import me.rerere.ai.ui.UIMessage
@@ -322,7 +323,8 @@ private fun SettingProviderConfigPage(
                 }
             )
 
-            if (internalProvider is ProviderSetting.OpenAI) {
+            // 插件带来的供应商不露余额配置：查询地址与取值路径都由插件声明
+            if (internalProvider is ProviderSetting.OpenAI && internalProvider.pluginOwner() == null) {
                 SettingProviderBalanceOption(
                     provider = internalProvider,
                     balanceOption = internalProvider.balanceOption,
@@ -451,12 +453,21 @@ private fun SettingProviderAdvancedPage(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        CustomHeaders(
-            headers = provider.customHeaders,
-            onUpdate = { headers ->
-                onEdit(provider.copyProvider(customHeaders = headers))
-            }
-        )
+        if (provider.pluginOwner() != null) {
+            // 插件带来的供应商：请求头由插件声明，不在这里展示
+            Text(
+                text = "该供应商由插件提供，地址、密钥与请求头都由插件管理。",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            CustomHeaders(
+                headers = provider.customHeaders,
+                onUpdate = { headers ->
+                    onEdit(provider.copyProvider(customHeaders = headers))
+                }
+            )
+        }
     }
 }
 
