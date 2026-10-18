@@ -7,11 +7,26 @@ import me.rerere.ai.provider.providers.openai.OpenAIProvider
 import okhttp3.OkHttpClient
 
 /**
+ * 宿主为特定供应商提供专用实例的钩子（例如插件供应商要带自己的代理）。
+ * 返回 null 表示交给默认实现。
+ */
+fun interface ProviderResolver {
+    fun resolve(setting: ProviderSetting): Provider<*>?
+}
+
+/**
  * Provider管理器，负责注册和获取Provider实例
  */
 class ProviderManager(client: OkHttpClient, context: Context) {
     // 存储已注册的Provider实例
     private val providers = mutableMapOf<String, Provider<*>>()
+
+    /**
+     * 宿主为特定供应商提供专用实例的钩子（插件供应商要带自己的代理），
+     * 返回 null 表示交给默认实现。由宿主在启动装配时注入。
+     */
+    @Volatile
+    var resolver: ProviderResolver? = null
 
     init {
         // 注册默认Provider
@@ -47,6 +62,10 @@ class ProviderManager(client: OkHttpClient, context: Context) {
      * @return Provider实例，如果不存在则返回null
      */
     fun <T : ProviderSetting> getProviderByType(setting: T): Provider<T> {
+        resolver?.resolve(setting)?.let { resolved ->
+            @Suppress("UNCHECKED_CAST")
+            return resolved as Provider<T>
+        }
         @Suppress("UNCHECKED_CAST")
         return when (setting) {
             is ProviderSetting.OpenAI -> getProvider("openai")

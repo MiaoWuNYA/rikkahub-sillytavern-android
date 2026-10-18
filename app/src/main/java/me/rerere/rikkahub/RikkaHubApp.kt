@@ -120,6 +120,10 @@ class RikkaHubApp : Application() {
         QuickJSLoader.init()
         trace("quickjs done")
 
+        // 插件声明的供应商要随启动就位，顺带清掉已被外部删掉的插件留下的供应商
+        runCatching { get<me.rerere.rikkahub.plugin.manager.PluginManager>() }
+            .onFailure { Log.e(TAG, "plugin manager init failed", it) }
+
         // delete temp files
         deleteTempFiles()
         trace("tempfiles done")

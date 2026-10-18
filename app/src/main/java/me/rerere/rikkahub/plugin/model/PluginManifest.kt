@@ -88,6 +88,14 @@ data class PluginManifest(
      */
     val detailCard: String? = null,
 
+    /**
+     * 插件声明的供应商（可选）。
+     *
+     * 支持内联 JSON 数组，也支持 "file:" 明文引用、"enc:" 加密引用（文件内容是 JSON 数组）。
+     * 声明后，插件启用时这些供应商（含模型）会出现在「供应商」设置里，插件停用/卸载时移除。
+     */
+    val providers: JsonElement? = null,
+
     /** 前端脚本：仅在前端 WebView 模式注入，兼容酒馆助手那类插件 */
     val frontend: PluginFrontend? = null,
 )

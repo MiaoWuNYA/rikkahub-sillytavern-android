@@ -67,6 +67,7 @@ import io.github.g00fy2.quickie.QRResult
 import io.github.g00fy2.quickie.ScanQRCode
 import kotlin.uuid.Uuid
 import me.rerere.ai.provider.ProviderSetting
+import me.rerere.ai.provider.pluginOwner
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.ArrowRight01
@@ -690,6 +691,12 @@ private fun ProviderItem(
                             Text(stringResource(R.string.setting_provider_page_discount_tag))
                         }
                     }
+                    // 插件带来的供应商：跟着插件走，卸载插件就消失
+                    provider.pluginOwner()?.let {
+                        Tag(type = TagType.INFO) {
+                            Text("插件提供")
+                        }
+                    }
                 }
             }
             ItemActionMenu(
@@ -698,7 +705,7 @@ private fun ProviderItem(
                         text = stringResource(R.string.delete),
                         icon = HugeIcons.Delete01,
                         destructive = true,
-                        enabled = !provider.builtIn,
+                        enabled = !provider.builtIn && provider.pluginOwner() == null,
                         onClick = onDelete,
                     ),
                 )
