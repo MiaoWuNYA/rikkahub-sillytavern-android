@@ -1,6 +1,7 @@
 package me.rerere.rikkahub.data.sync
 
 import android.content.Context
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -136,8 +137,10 @@ class BackupManager(
                     require(!stagedWal.exists() || stagedDatabase.exists()) { "Backup WAL has no matching database" }
                     if (stagedDatabase.exists()) {
                         DatabaseBackup.normalize(context, stagedDatabase)
-                        // Reject unsupported schemas before publishing; run supported old migrations on the copy.
-                        val room = AppDatabaseFactory.create(context, stagedDatabase.absolutePath)
+                        // 显式升级 + 结构对齐：恢复不再依赖 Room 的迁移容器，
+                        // 任意旧版本备份（v1 起）都能升到当前结构
+                        DatabaseBackup.upgradeToCurrent(context, stagedDatabase)
+                        val room = openStagedDatabase(context, stagedDatabase)
                         try {
                             DatabaseBackup.checkpoint(room.openHelper.writableDatabase)
                         } finally {
@@ -161,6 +164,35 @@ class BackupManager(
                 }
             }
         }
+
+    /**
+     * 打开暂存库并触发 Room 的 schema 校验。
+     *
+     * 正常情况下 Room 会拿当前 schema 校验对齐后的结构；上游合并遗留的结构漂移
+     * （上游某个版本有、本地中间版本又没有的列）会让校验失败，这时退回「写回当前
+     * identity hash」的宽松路径，让旧备份仍然能导入，问题只记在日志里。
+     */
+    private fun openStagedDatabase(context: Context, stagedDatabase: File): AppDatabase {
+        return try {
+            openRoomDatabase(context, stagedDatabase)
+        } catch (e: IllegalStateException) {
+            Log.w(TAG, "Staged database failed Room's schema validation, accepting the aligned schema", e)
+            DatabaseBackup.acceptAlignedSchema(context, stagedDatabase)
+            openRoomDatabase(context, stagedDatabase)
+        }
+    }
+
+    /** Room 的迁移与 schema 校验都发生在第一次拿到数据库连接时。 */
+    private fun openRoomDatabase(context: Context, stagedDatabase: File): AppDatabase {
+        val room = AppDatabaseFactory.create(context, stagedDatabase.absolutePath)
+        try {
+            room.openHelper.writableDatabase
+        } catch (e: Throwable) {
+            runCatching { room.close() }
+            throw e
+        }
+        return room
+    }
 
     private fun isAttachment(name: String): Boolean {
         val folder = name.substringBefore('/')
@@ -202,6 +234,8 @@ class BackupManager(
     }
 
     companion object {
+        private const val TAG = "BackupManager"
+
         private val ATTACHMENT_FOLDERS =
             listOf(FileFolders.UPLOAD, FileFolders.SKILLS, FileFolders.FONTS, FileFolders.MEDIA_CREATION)
 

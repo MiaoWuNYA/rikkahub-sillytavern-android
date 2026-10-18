@@ -16,6 +16,8 @@ val Migration_6_7 = object : Migration(6, 7) {
         DatabaseMigrationTracker.onMigrationStart(6, 7)
         db.beginTransaction()
         try {
+            // 上一次迁移失败可能留下中间表，先清掉再重建
+            db.execSQL("DROP TABLE IF EXISTS ConversationEntity_new")
             // 创建新表结构（不包含messages列）
             db.execSQL(
                 """
@@ -36,6 +38,7 @@ val Migration_6_7 = object : Migration(6, 7) {
             val cursor =
                 db.query("SELECT id, assistant_id, title, messages, usage, create_at, update_at, truncate_index FROM ConversationEntity")
             val updates = mutableListOf<Array<Any?>>()
+            var skipped = 0
 
             while (cursor.moveToNext()) {
                 val id = cursor.getString(0)
@@ -71,8 +74,10 @@ val Migration_6_7 = object : Migration(6, 7) {
                         )
                     )
                 } catch (e: Exception) {
-                    // 如果解析失败，可能已经是新格式或者数据损坏，跳过
-                    error("Failed to migrate messages for conversation $id: ${e.message}")
+                    // 单条会话解析不了（旧格式变了或数据损坏）不该让整次迁移、整次备份恢复失败：
+                    // 跳过这一条并记录，其余数据照常搬过去
+                    Log.w(TAG, "migrate: skip conversation $id, messages can't be parsed", e)
+                    skipped++
                 }
             }
             cursor.close()
@@ -93,7 +98,7 @@ val Migration_6_7 = object : Migration(6, 7) {
 
             db.setTransactionSuccessful()
 
-            Log.i(TAG, "migrate: migrate from 6 to 7 success (${updates.size} conversations updated)")
+            Log.i(TAG, "migrate: migrate from 6 to 7 success (${updates.size} conversations updated, $skipped skipped)")
         } finally {
             db.endTransaction()
             DatabaseMigrationTracker.onMigrationEnd()

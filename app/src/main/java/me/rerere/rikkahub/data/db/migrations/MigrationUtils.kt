@@ -101,12 +101,15 @@ internal fun migratePartsArray(partsElement: JsonArray): JsonArray {
  * Safe ADD COLUMN — checks PRAGMA table_info before executing.
  * Prevents "duplicate column name" crashes when restoring backups from newer versions
  * that already contain the column. SQLite has no native ADD COLUMN IF NOT EXISTS.
+ *
+ * 表不存在时直接跳过：残缺备份缺的表交给恢复流程的结构对齐补齐，而不是让整次迁移崩掉。
  */
 internal fun SupportSQLiteDatabase.addColumnIfNotExists(
     table: String,
     column: String,
     definition: String,
 ) {
+    if (!hasTable(table)) return
     query("PRAGMA table_info($table)").use { cursor ->
         val nameIndex = cursor.getColumnIndex("name")
         while (cursor.moveToNext()) {
@@ -115,3 +118,30 @@ internal fun SupportSQLiteDatabase.addColumnIfNotExists(
     }
     execSQL("ALTER TABLE `$table` ADD COLUMN `$column` $definition")
 }
+
+/**
+ * Safe DROP COLUMN — 表或列不存在时跳过。
+ *
+ * 合并上游时容易漏掉「上游通过 AutoMigration 删列」的步骤，留着这些列会让
+ * 表结构与当前实体对不上（NOT NULL 且无默认值的列还会让后续插入直接失败）。
+ */
+internal fun SupportSQLiteDatabase.dropColumnIfNotExists(table: String, column: String) {
+    if (!hasTable(table)) return
+    var exists = false
+    query("PRAGMA table_info(`$table`)").use { cursor ->
+        val nameIndex = cursor.getColumnIndex("name")
+        while (cursor.moveToNext()) {
+            if (cursor.getString(nameIndex) == column) {
+                exists = true
+                break
+            }
+        }
+    }
+    if (!exists) return
+    runCatching { execSQL("ALTER TABLE `$table` DROP COLUMN `$column`") }
+}
+
+internal fun SupportSQLiteDatabase.hasTable(table: String): Boolean =
+    query("SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = ?", arrayOf(table)).use { cursor ->
+        cursor.moveToFirst() && cursor.getInt(0) > 0
+    }
