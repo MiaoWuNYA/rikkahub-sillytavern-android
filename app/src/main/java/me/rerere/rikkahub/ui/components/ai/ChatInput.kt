@@ -42,6 +42,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.HorizontalDivider
@@ -716,6 +717,8 @@ private fun TextInputRow(
         }
     }
 
+    var isEditingReasoning by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -733,6 +736,11 @@ private fun TextInputRow(
                 ) {
                     Text(text = stringResource(R.string.editing))
                     Spacer(Modifier.weight(1f))
+                    if (state.editingReasoning != null) {
+                        TextButton(onClick = { isEditingReasoning = true }) {
+                            Text(stringResource(R.string.chat_input_edit_reasoning))
+                        }
+                    }
                     Icon(
                         imageVector = HugeIcons.Cancel01,
                         contentDescription = stringResource(R.string.cancel_edit),
@@ -1083,8 +1091,17 @@ private fun TextInputRow(
             } else null,
         )
         if (isFullScreen) {
-            FullScreenEditor(state = state) {
+            FullScreenEditor(
+                textState = state.textContent,
+                placeholder = stringResource(R.string.chat_input_placeholder),
+            ) {
                 isFullScreen = false
+            }
+        }
+        val reasoningState = state.editingReasoning
+        if (isEditingReasoning && reasoningState != null) {
+            FullScreenEditor(textState = reasoningState, placeholder = stringResource(R.string.chat_input_reasoning_placeholder)) {
+                isEditingReasoning = false
             }
         }
     }
@@ -1651,7 +1668,9 @@ private fun QuickMessageButton(
 
 @Composable
 private fun FullScreenEditor(
-    state: ChatInputState, onDone: () -> Unit
+    textState: TextFieldState,
+    placeholder: String,
+    onDone: () -> Unit
 ) {
     BasicAlertDialog(
         onDismissRequest = {
@@ -1690,13 +1709,13 @@ private fun FullScreenEditor(
                         }
                     }
                     TextField(
-                        state = state.textContent,
+                        state = textState,
                         modifier = Modifier
                             .padding(bottom = 2.dp)
                             .fillMaxSize(),
                         shape = RoundedCornerShape(32.dp),
                         placeholder = {
-                            Text(stringResource(R.string.chat_input_placeholder))
+                            Text(placeholder)
                         },
                         keyboardOptions = KeyboardOptions(
                             capitalization = KeyboardCapitalization.Sentences,

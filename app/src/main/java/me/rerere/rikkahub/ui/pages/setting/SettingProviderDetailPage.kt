@@ -1563,6 +1563,7 @@ private fun ProviderOverrideSettings(
                     ) {
                         ProviderConfigure(
                             provider = internalProvider,
+                            allowTypeSwitch = true,
                             onEdit = { internalProvider = it }
                         )
                     }
