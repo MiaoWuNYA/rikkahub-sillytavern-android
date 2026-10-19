@@ -465,6 +465,7 @@ private fun MessagePartsBlock(
                                 )
                                 Surface(
                                     modifier = Modifier
+                                        .padding(start = 24.dp)
                                         .animateContentSize()
                                         .themeBubbleBorder(
                                             color = settings.displaySetting.bubbleBorderColor,
@@ -755,7 +756,7 @@ private fun ChatMessageBubble(
                 },
             )
             // MarkdownBlock 自带 4dp 的水平内边距
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = 10.dp, vertical = 10.dp),
     ) {
         CompositionLocalProvider(LocalContentColor provides contentColor) { content() }
     }
