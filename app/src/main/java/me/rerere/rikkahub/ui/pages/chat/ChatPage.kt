@@ -495,6 +495,8 @@ private fun ChatPageContent(
     var webTranslateMessage by remember { mutableStateOf<UIMessage?>(null) }
     var webEditIndex by remember { mutableStateOf<Int?>(null) }
     var webEditText by remember { mutableStateOf("") }
+    // 消息预览里点某条后，等预览关闭再让 WebView 滚到对应消息
+    var webScrollToMessageId by remember { mutableStateOf<String?>(null) }
 
     // WebView 模式下的展示用消息：与原生渲染同一套展示层转换（消息正则
     var displayMessages by remember { mutableStateOf(conversation.currentMessages) }
@@ -523,6 +525,20 @@ private fun ChatPageContent(
         }
     }
 
+    // 压缩后页面只展示检查点及其后的消息，旧记录由摘要替代
+    val webHiddenPrefixCount = remember(conversation.messageNodes) {
+        conversation.messageNodes.compressedPrefixSize()
+    }
+    val webVisibleNodes = remember(conversation.messageNodes, webHiddenPrefixCount) {
+        conversation.messageNodes.drop(webHiddenPrefixCount)
+    }
+    val webVisibleMessages = remember(displayMessages, webHiddenPrefixCount) {
+        displayMessages.drop(webHiddenPrefixCount.coerceAtMost(displayMessages.size))
+    }
+    val webRawVisibleMessages = remember(conversation.currentMessages, webHiddenPrefixCount) {
+        conversation.currentMessages.drop(webHiddenPrefixCount)
+    }
+
     // 原生事件总线：把生成与消息变化按酒馆事件名推给页面与卡片
     val webEvents = remember { MutableSharedFlow<WebUiEvent>(extraBufferCapacity = 64) }
     var lastEventKey by remember { mutableStateOf<String?>(null) }
@@ -536,20 +552,23 @@ private fun ChatPageContent(
         val previouslyLoading = previous.endsWith("|true")
         val nowLoading = loadingJob != null
         val previousCount = previous.substringBefore("|").split(",").count { it.isNotBlank() }
+        // 事件下标与页面拿到的可见消息保持一致（压缩前的消息已隐藏）
+        val visibleStart = webHiddenPrefixCount.coerceAtMost(list.size)
+        val visibleLastIndex = list.lastIndex - visibleStart
         if (!previouslyLoading && nowLoading) {
             webEvents.tryEmit(WebUiEvent("GENERATION_STARTED", "[]"))
         }
         if (previouslyLoading && !nowLoading) {
-            webEvents.tryEmit(WebUiEvent("GENERATION_ENDED", "[${list.lastIndex}]"))
-            webEvents.tryEmit(WebUiEvent("MESSAGE_RECEIVED", "[${list.lastIndex}]"))
+            webEvents.tryEmit(WebUiEvent("GENERATION_ENDED", "[${visibleLastIndex}]"))
+            webEvents.tryEmit(WebUiEvent("MESSAGE_RECEIVED", "[${visibleLastIndex}]"))
         }
         if (list.size > previousCount && !nowLoading) {
-            webEvents.tryEmit(WebUiEvent("MESSAGE_SENT", "[${list.lastIndex}]"))
+            webEvents.tryEmit(WebUiEvent("MESSAGE_SENT", "[${visibleLastIndex}]"))
         }
         if (list.size < previousCount) {
-            webEvents.tryEmit(WebUiEvent("MESSAGE_DELETED", "[${list.size}]"))
+            webEvents.tryEmit(WebUiEvent("MESSAGE_DELETED", "[${list.size - visibleStart}]"))
         } else if (list.size == previousCount && !nowLoading && !previouslyLoading) {
-            webEvents.tryEmit(WebUiEvent("MESSAGE_UPDATED", "[${list.lastIndex}]"))
+            webEvents.tryEmit(WebUiEvent("MESSAGE_UPDATED", "[${visibleLastIndex}]"))
         }
     }
 
@@ -926,9 +945,12 @@ private fun ChatPageContent(
             if (frontendCardMode) {
                 // 前端卡专属模式：整块消息区交给单个 WebView，标题栏与输入栏保持原生
                 val uriHandler = LocalUriHandler.current
+                Box(modifier = Modifier.fillMaxSize()) {
                 WebChatSurface(
-                    messages = displayMessages,
-                    nodes = conversation.messageNodes,
+                    messages = webVisibleMessages,
+                    nodes = webVisibleNodes,
+                    scrollToMessageId = webScrollToMessageId,
+                    onScrollToMessageConsumed = { webScrollToMessageId = null },
                     assistant = chatAssistant,
                     settings = setting,
                     streaming = loadingJob != null,
@@ -984,7 +1006,7 @@ private fun ChatPageContent(
                                     ?: obj["message"]?.takeIf { it !is kotlinx.serialization.json.JsonNull }
                                         ?.toString()?.trim('"')
                                     ?: return@forEach
-                                val target = list.getOrNull(index)
+                                val target = list.getOrNull(index + webHiddenPrefixCount)
                                 if (target != null && target.parts.filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>().joinToString("\n") { it.text } != text) {
                                     vm.handleMessageEdit(listOf(me.rerere.ai.ui.UIMessagePart.Text(text)), target.id)
                                 }
@@ -1024,7 +1046,7 @@ private fun ChatPageContent(
                                 ?: return@runCatching
                             ids.forEach { element ->
                                 val index = element.toString().trim('"').toIntOrNull() ?: return@forEach
-                                list.getOrNull(index)?.let { vm.deleteMessage(it) }
+                                list.getOrNull(index + webHiddenPrefixCount)?.let { vm.deleteMessage(it) }
                             }
                         }
                     },
@@ -1516,7 +1538,7 @@ private fun ChatPageContent(
                     safeAreaBottom = innerPadding.calculateBottomPadding(),
                     onMessagesJson = {
                         kotlinx.serialization.json.buildJsonArray {
-                            conversation.currentMessages.forEachIndexed { index, message ->
+                            webRawVisibleMessages.forEachIndexed { index, message ->
                                 add(
                                     kotlinx.serialization.json.buildJsonObject {
                                         put("message_id", JsonPrimitive(index))
@@ -1569,6 +1591,24 @@ private fun ChatPageContent(
                     // 铺满全屏：原生标题栏与输入栏由 Scaffold 覆盖在其上
                     modifier = Modifier.fillMaxSize(),
                 )
+                if (previewMode) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background,
+                    ) {
+                        ChatListPreview(
+                            innerPadding = innerPadding,
+                            conversation = conversation,
+                            settings = setting,
+                            hazeState = hazeState,
+                            onJumpToMessage = { index ->
+                                previewMode = false
+                                webScrollToMessageId = webVisibleNodes.getOrNull(index)?.currentMessage?.id?.toString()
+                            },
+                        )
+                    }
+                }
+                }
             } else {
             ChatList(
                 innerPadding = innerPadding,

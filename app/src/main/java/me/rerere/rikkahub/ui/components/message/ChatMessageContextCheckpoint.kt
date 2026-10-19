@@ -36,10 +36,7 @@ import me.rerere.hugeicons.stroke.Package01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 
-/**
- * 压缩检查点：分隔线上方的消息仍可查看，但不再发送给模型，由这里的摘要代替。
- * 默认折叠，避免长摘要打断历史消息的阅读。
- */
+/** 压缩检查点：摘要替代其上方已压缩的历史消息，默认展开。 */
 @Composable
 fun ChatMessageContextCheckpoint(
     message: UIMessage,
@@ -47,7 +44,7 @@ fun ChatMessageContextCheckpoint(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
+    var expanded by rememberSaveable { mutableStateOf(true) }
 
     Column(
         modifier = modifier.fillMaxWidth(),

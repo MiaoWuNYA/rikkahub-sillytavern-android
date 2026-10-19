@@ -2936,6 +2936,20 @@
     setToolbar: function (json) { /* 工具条由原生输入栏提供，页面不再渲染 */ },
 
     scrollToBottom: function () { stick = true; scrollToBottomNow(true); },
+
+    scrollToMessage: function (id) {
+      schedule(function () {
+        var row = rowById(id);
+        if (!row) return;
+        stick = false;
+        var top = row.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - 12;
+        programmaticUntil = Date.now() + 80;
+        scroller.scrollTop = Math.max(0, top);
+        stick = nearBottom();
+        updateJump();
+      });
+    },
+
     getVariables: function () { return JSON.stringify(variables); }
   };
 
