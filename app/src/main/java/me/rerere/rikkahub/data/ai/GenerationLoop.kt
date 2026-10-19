@@ -959,7 +959,7 @@ class GenerationLoop(
                 addAll(model.customBodies)
             },
             sessionId = conversationId?.toString(),
-            systemPromptInChat = assistant.enableAntiEmptyResponse || settings.huadengSettings.enableAntiEmptyResponse,
+            systemPromptInChat = settings.huadengSettings.enableAntiEmptyResponse,
             enableProxyFix = assistant.enableProxyFix || settings.huadengSettings.enableProxyFix,
             // 酒馆模式：强制关闭深度思考。注意不是传 reasoning_effort="none"——
             // 实测部分中转站只要收到该字段就会开启思考链（服务端真实推理，但流式
@@ -1019,7 +1019,7 @@ class GenerationLoop(
                             messages = messages.fixProxyPromotedReply()
                         }
                         // 防空回复：无文本、无工具调用的空回复自动微扰重试（Gemini 常见）
-                        if ((assistant.enableAntiEmptyResponse || settings.huadengSettings.enableAntiEmptyResponse) &&
+                        if (settings.huadengSettings.enableAntiEmptyResponse &&
                             emptyRetryCount < MAX_EMPTY_RESPONSE_RETRIES &&
                             messages.lastOrNull().isBlankAssistantReply()
                         ) {
@@ -1064,7 +1064,7 @@ class GenerationLoop(
                         )
                     }
                     messages = baseMessages.handleTextGenerationResult(result = result, model = model)
-                    if ((assistant.enableAntiEmptyResponse || settings.huadengSettings.enableAntiEmptyResponse) &&
+                    if (settings.huadengSettings.enableAntiEmptyResponse &&
                         emptyRetryCount < MAX_EMPTY_RESPONSE_RETRIES &&
                         messages.lastOrNull().isBlankAssistantReply()
                     ) {

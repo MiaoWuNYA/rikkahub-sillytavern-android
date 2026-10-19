@@ -70,6 +70,9 @@ fun WebChatSurface(
     onSubstituteMacros: (suspend (String) -> String)? = null,
     onMessagesJson: () -> String = { "[]" },
     nodes: List<me.rerere.rikkahub.data.model.MessageNode> = emptyList(),
+    // 消息预览跳转：按消息 id 让页面滚动到对应行
+    scrollToMessageId: String? = null,
+    onScrollToMessageConsumed: () -> Unit = {},
     events: kotlinx.coroutines.flow.SharedFlow<WebUiEvent>? = null,
     // 被原生标题栏与输入栏遮住的区域：页面据此让出上下留白（WebView 本身铺满全
     safeAreaTop: androidx.compose.ui.unit.Dp = 0.dp,
@@ -462,6 +465,13 @@ fun WebChatSurface(
                 else -> bridge?.resolve(requestId, "null")
             }
         }
+    }
+
+    LaunchedEffect(ready, scrollToMessageId) {
+        val id = scrollToMessageId ?: return@LaunchedEffect
+        if (!ready) return@LaunchedEffect
+        webViewRef?.evaluateJavascript("window.webui.scrollToMessage(${quoteJs(id)});", null)
+        onScrollToMessageConsumed()
     }
 
     LaunchedEffect(ready, stateKey) {

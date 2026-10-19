@@ -11,7 +11,6 @@ import me.rerere.hugeicons.stroke.Search01
 import me.rerere.hugeicons.stroke.Cancel01
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -125,6 +124,10 @@ import me.rerere.rikkahub.ui.components.richtext.CardHostContext
 private const val TAG = "ChatList"
 private const val LoadingIndicatorKey = "LoadingIndicator"
 private const val ScrollBottomKey = "ScrollBottomKey"
+
+/** 最后一个压缩检查点之前（含检查点）的消息数量，0 表示未压缩。 */
+internal fun List<MessageNode>.compressedPrefixSize(): Int =
+    indexOfLast { it.currentMessage.isContextCheckpoint }.coerceAtLeast(0)
 
 @Composable
 fun ChatList(
@@ -318,7 +321,6 @@ fun ChatList(
                 settings = settings,
                 hazeState = hazeState,
                 onJumpToMessage = onJumpToMessage,
-                animatedVisibilityScope = this@AnimatedContent,
             )
         } else {
             ChatListNormal(
@@ -341,7 +343,6 @@ fun ChatList(
                 onClickSuggestion = onClickSuggestion,
                 onTranslate = onTranslate,
                 onClearTranslation = onClearTranslation,
-                animatedVisibilityScope = this@AnimatedContent,
                 onToolApproval = onToolApproval,
                 onToolAnswer = onToolAnswer,
                 onToggleFavorite = onToggleFavorite,
@@ -393,7 +394,6 @@ private fun ChatListNormal(
     onClickSuggestion: (String) -> Unit,
     onTranslate: ((UIMessage, java.util.Locale) -> Unit)?,
     onClearTranslation: (UIMessage) -> Unit,
-    animatedVisibilityScope: AnimatedVisibilityScope,
     onToolApproval: ((toolCallId: String, approved: Boolean, reason: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onToggleFavorite: ((MessageNode) -> Unit)? = null,
@@ -460,6 +460,15 @@ private fun ChatListNormal(
             .associateBy { it.id }
     }
     val lastMessageIndex = conversation.messageNodes.lastIndex
+    // 压缩后只渲染最后一个检查点及其后的消息，旧记录由摘要替代
+    val hiddenPrefixCount = remember(conversation.messageNodes) {
+        conversation.messageNodes.compressedPrefixSize()
+    }
+    val visibleNodes = if (hiddenPrefixCount > 0) {
+        conversation.messageNodes.drop(hiddenPrefixCount)
+    } else {
+        conversation.messageNodes
+    }
 
     Box(
         modifier = Modifier
@@ -511,9 +520,10 @@ private fun ChatListNormal(
                     .hazeSource(state = hazeState),
             ) {
             itemsIndexed(
-                items = conversation.messageNodes,
+                items = visibleNodes,
                 key = { index, item -> item.id },
-            ) { index, node ->
+            ) { visibleIndex, node ->
+                val index = hiddenPrefixCount + visibleIndex
                 Column {
                     ListSelectableItem(
                         key = node.id,
@@ -803,24 +813,24 @@ private fun buildHighlightedText(
 }
 
 @Composable
-private fun ChatListPreview(
+internal fun ChatListPreview(
     innerPadding: PaddingValues,
     conversation: Conversation,
     settings: Settings,
     hazeState: HazeState,
-    animatedVisibilityScope: AnimatedVisibilityScope,
     onJumpToMessage: (Int) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
 
-    // 过滤消息，同时保留原始 index 避免后续 O(n) indexOf 查找
-    val filteredMessages = remember(conversation.messageNodes, searchQuery) {
-        if (searchQuery.isBlank()) {
-            conversation.messageNodes.mapIndexed { index, node -> index to node }
-        } else {
-            conversation.messageNodes.mapIndexed { index, node -> index to node }
-                .filter { (_, node) -> node.currentMessage.toText().contains(searchQuery, ignoreCase = true) }
-        }
+    // 只列出压缩检查点之后的可见消息，index 与列表位置保持一致
+    val visibleNodes = remember(conversation.messageNodes) {
+        conversation.messageNodes.drop(conversation.messageNodes.compressedPrefixSize())
+    }
+    val filteredMessages = remember(visibleNodes, searchQuery) {
+        visibleNodes.mapIndexed { index, node -> index to node }
+            .filter { (_, node) ->
+                searchQuery.isBlank() || node.currentMessage.toText().contains(searchQuery, ignoreCase = true)
+            }
     }
 
     Column(

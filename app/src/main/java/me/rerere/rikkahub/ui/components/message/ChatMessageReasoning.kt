@@ -130,7 +130,19 @@ private fun ReasoningContent(
     fadeHeight: Float,
     loading: Boolean,
 ) {
-    val settings = LocalSettings.current
+    val reasoningRegexes = LocalSettings.current.allRegexesOf(assistant)
+    // 流式期间不跑正则：每个 chunk 都全量替换会拖慢重组，生成结束后再处理一次
+    val displayReasoning = remember(reasoning.reasoning, reasoningRegexes, loading) {
+        if (loading) {
+            reasoning.reasoning
+        } else {
+            reasoning.reasoning.replaceRegexes(
+                regexes = reasoningRegexes,
+                scope = AssistantAffectScope.ASSISTANT,
+                visual = true,
+            )
+        }
+    }
     val isPreview = expandState == ReasoningCardState.Preview
     val reasoningTextStyle = MaterialTheme.typography.bodySmall.copy(
         fontFamily = LocalTextStyle.current.fontFamily,
@@ -171,11 +183,7 @@ private fun ReasoningContent(
     ) {
         val reasoningContent = @Composable {
             MarkdownBlock(
-                content = reasoning.reasoning.replaceRegexes(
-                    regexes = settings.allRegexesOf(assistant),
-                    scope = AssistantAffectScope.ASSISTANT,
-                    visual = true,
-                ),
+                content = displayReasoning,
                 style = reasoningTextStyle,
                 modifier = Modifier.fillMaxSize(),
             )
