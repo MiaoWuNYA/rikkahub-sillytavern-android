@@ -3,6 +3,7 @@ package me.rerere.rikkahub.ui.pages.chat
 import android.annotation.SuppressLint
 import android.graphics.Color as AndroidColor
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,8 +29,13 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.ui.components.richtext.TrackWebViewPresence
+import me.rerere.ui.webview.WEB_VIEW_ASSET_URL
+import me.rerere.ui.webview.WEB_VIEW_BASE_URL
+import me.rerere.ui.webview.WebViewLocalAssets
 
-private const val WEBUI_URL = "file:///android_asset/webui/index.html"
+// 页面走虚拟域名而不是 file://：同源 https 才能用 ES module、相对路径 import 和同源 fetch，
+// 卡片脚本里的 localStorage 也不再落进不透明源；资源由 WebViewLocalAssets 从 assets 映射
+private const val WEBUI_URL = "$WEB_VIEW_ASSET_URL/webui/index.html"
 
 // 原生 → 页面的事件（酒馆事件名 + 参数 JSON 数组）
 data class WebUiEvent(val name: String, val payloadJson: String)
@@ -219,15 +225,24 @@ fun WebChatSurface(
                 // 便于真机排查渲染问题
                 android.webkit.WebView.setWebContentsDebuggingEnabled(true)
                 this.settings.domStorageEnabled = true
-                this.settings.allowFileAccess = true
+                // 资源全部经 WebViewLocalAssets 从 assets 取，页面不需要也不该直接读本地文件
+                this.settings.allowFileAccess = false
                 this.settings.mediaPlaybackRequiresUserGesture = false
                 webViewClient = object : WebViewClient() {
+                    override fun shouldInterceptRequest(
+                        view: WebView,
+                        request: WebResourceRequest,
+                    ): WebResourceResponse? = WebViewLocalAssets.intercept(
+                        view.context.applicationContext,
+                        request.url,
+                    ) ?: super.shouldInterceptRequest(view, request)
+
                     override fun shouldOverrideUrlLoading(
                         view: WebView,
                         request: WebResourceRequest,
                     ): Boolean {
                         val url = request.url.toString()
-                        if (url.startsWith("file:///android_asset/") || url.startsWith("about:")) return false
+                        if (url.startsWith(WEB_VIEW_BASE_URL) || url.startsWith("about:")) return false
                         bridge?.onOpenLink?.invoke(url)
                         return true
                     }
