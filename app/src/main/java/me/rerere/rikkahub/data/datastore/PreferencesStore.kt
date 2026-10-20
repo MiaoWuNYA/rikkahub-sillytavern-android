@@ -211,6 +211,8 @@ class SettingsStore internal constructor(
 
         // 统计
         val LAUNCH_COUNT = intPreferencesKey("launch_count")
+        // 启动次数触发的备份提醒：用户勾选「不再提醒」后永久关闭
+        val BACKUP_LAUNCH_REMINDER_DISABLED = booleanPreferencesKey("backup_launch_reminder_disabled")
         val FILE_RETENTION_DAYS = intPreferencesKey("file_retention_days")
         val ENABLE_WEB_SEARCH = booleanPreferencesKey("enable_web_search")
 
@@ -290,6 +292,15 @@ class SettingsStore internal constructor(
     val launchCountFlow: Flow<Int> = preferencesFlow
         .map { preferences -> preferences[LAUNCH_COUNT] ?: 0 }
         .distinctUntilChanged()
+
+    /** 「不再提醒备份」开关，勾选后不再弹启动次数触发的备份提醒 */
+    val backupLaunchReminderDisabledFlow: Flow<Boolean> = preferencesFlow
+        .map { preferences -> preferences[BACKUP_LAUNCH_REMINDER_DISABLED] ?: false }
+        .distinctUntilChanged()
+
+    suspend fun setBackupLaunchReminderDisabled(disabled: Boolean) {
+        dataStore.edit { preferences -> preferences[BACKUP_LAUNCH_REMINDER_DISABLED] = disabled }
+    }
 
     /**
      * 基于最新的设置做修改，返回时修改已经落盘。

@@ -236,6 +236,11 @@
   <string name="backup_page_reminder_never_backed_up">Never backed up</string>
   <string name="backup_page_reminder_no_record">No backup time recorded</string>
   <string name="backup_page_reminder_title">Backup Reminder</string>
+  <string name="backup_launch_reminder_title">Back Up Your Data</string>
+  <string name="backup_launch_reminder_message">You have opened the app %1$d times. Back up your data to another folder so it survives a reinstall or a lost device.</string>
+  <string name="backup_launch_reminder_dont_remind">Don\'t remind me again</string>
+  <string name="backup_launch_reminder_got_it">Got it</string>
+  <string name="backup_launch_reminder_backup_now">Back up now</string>
   <string name="backup_page_restart_app">Restart App</string>
   <string name="backup_page_restart_desc">The app needs to restart for the changes to take effect.</string>
   <string name="backup_page_restore">Restore</string>
@@ -677,6 +682,7 @@
   <string name="history_page_unpin">Unpin</string>
   <string name="html_block_fullscreen">Open HTML card in full screen</string>
   <string name="html_card_collapse">Collapse web card</string>
+  <string name="html_card_script_error">Card script failed; content may be incomplete</string>
   <string name="html_card_expand">Web card — tap to view</string>
   <string name="huadeng_clean_mode">Clean Mode</string>
   <string name="huadeng_clean_mode_desc">Hides the Couple Space, Life Space and other entertainment entries, and stops registering their AI tools. Simpler UI and fewer tokens per request</string>
