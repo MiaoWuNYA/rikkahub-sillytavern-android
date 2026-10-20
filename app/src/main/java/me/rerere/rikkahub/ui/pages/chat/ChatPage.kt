@@ -478,18 +478,6 @@ private fun ChatPageContent(
     LaunchedEffect(frontendCardPreferredNow, pluginList) {
         frontendScriptsJson = if (frontendCardPreferredNow) pluginManager.buildFrontendScriptsJson() else "[]"
     }
-    // 酒馆助手兼容渲染设置，随设置变化重新下发
-    val helperSettingsJson = remember(setting.huadengSettings) {
-        val h = setting.huadengSettings
-        buildString {
-            append("{\"renderEnabled\":").append(h.thRenderEnabled)
-            append(",\"allowStreaming\":").append(h.thAllowStreaming)
-            append(",\"codeCollapse\":\"").append(h.thCodeCollapse).append('"')
-            append(",\"useBlobUrl\":").append(h.thUseBlobUrl)
-            append(",\"macroEnabled\":").append(h.thMacroEnabled)
-            append('}')
-        }
-    }
     // WebView 里点消息 → 用原生对话框做操作，功能与原生列表一致
     var webActionIndex by remember { mutableStateOf<Int?>(null) }
     var webCopyMessage by remember { mutableStateOf<UIMessage?>(null) }
@@ -1005,7 +993,6 @@ private fun ChatPageContent(
                         vm.updateSettings { it.copy(huadengSettings = it.huadengSettings.copy(webviewVariables = parsed)) }
                     },
                     frontendScriptsJson = frontendScriptsJson,
-                    helperSettingsJson = helperSettingsJson,
                     onSetVariables = { payload ->
                         runCatching {
                             val obj = kotlinx.serialization.json.Json.parseToJsonElement(payload)

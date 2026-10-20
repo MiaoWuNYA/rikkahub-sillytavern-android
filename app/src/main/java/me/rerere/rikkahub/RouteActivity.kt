@@ -156,7 +156,6 @@ import me.rerere.rikkahub.ui.pages.setting.SettingWebPage
 import me.rerere.rikkahub.ui.pages.setting.SettingWeixinBotPage
 import me.rerere.rikkahub.ui.pages.setting.SettingHuaDengCompatPage
 import me.rerere.rikkahub.ui.pages.setting.SettingHuaDengPage
-import me.rerere.rikkahub.ui.pages.setting.SettingTavernHelperPage
 import me.rerere.rikkahub.ui.pages.setting.SettingTavernPage
 import me.rerere.rikkahub.ui.pages.setting.TavernRegexPage
 import me.rerere.rikkahub.ui.pages.setting.SettingJevPage
@@ -692,10 +691,6 @@ class RouteActivity : ComponentActivity() {
                                 SettingHuaDengCompatPage()
                             }
 
-                            entry<Screen.SettingTavernHelper> {
-                                SettingTavernHelperPage()
-                            }
-
                             entry<Screen.SettingJev> {
                                 SettingJevPage()
                             }
@@ -952,7 +947,7 @@ private fun Screen.isSettingScreen(): Boolean = when (this) {
     Screen.SettingMedia, Screen.SettingMcp, Screen.SettingDonate,
     Screen.SettingFiles, Screen.SettingWeb, Screen.SettingTavern,
     Screen.SettingTavernRegex, Screen.SettingHuaDeng, Screen.SettingHuaDengCompat,
-    Screen.SettingTavernHelper, Screen.SettingJev, Screen.SettingSecurity,
+    Screen.SettingJev, Screen.SettingSecurity,
     Screen.SettingWeixinBot, Screen.SettingQqBot, Screen.SettingProactiveMessage,
     Screen.Persona, Screen.AuthorsNote, Screen.Extensions, Screen.QuickMessages,
     Screen.Prompts, Screen.Skills, Screen.Plugins, Screen.Workspaces,
@@ -1120,9 +1115,6 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingHuaDengCompat : Screen
-
-    @Serializable
-    data object SettingTavernHelper : Screen
 
     @Serializable
     data object SettingJev : Screen

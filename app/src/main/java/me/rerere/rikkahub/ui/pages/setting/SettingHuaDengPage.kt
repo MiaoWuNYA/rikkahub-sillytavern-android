@@ -121,13 +121,6 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                         trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
                     )
                     item(
-                        onClick = { navController.navigate(Screen.SettingTavernHelper) },
-                        leadingContent = { CardGroupIcon(HugeIcons.Settings03) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_tavern_helper_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_tavern_helper)) },
-                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
-                    )
-                    item(
                         onClick = { navController.navigate(Screen.SettingSecurity) },
                         leadingContent = { CardGroupIcon(HugeIcons.Shield01) },
                         supportingContent = { Text(stringResource(R.string.setting_page_security_desc)) },

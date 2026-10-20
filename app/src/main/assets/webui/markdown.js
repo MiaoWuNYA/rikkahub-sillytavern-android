@@ -146,8 +146,6 @@
     '<rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h8"></path></svg>';
 
   var COLLAPSE_LINES = 10;
-  // 仅折叠「前端」代码块时认这些语言标签
-  var FRONTEND_LANG_RE = /^(html?|xml|svg|vue|svelte)$/i;
 
   /** 围栏代码块：外框 + 语言标签 + 复制按钮（对齐 HighlightCodeBlock） */
   function codeBlock(code, lang, opts) {
@@ -160,9 +158,7 @@
     } else {
       body = escapeHtml(code);
     }
-    var mode = opts && opts.collapse;
-    var wantCollapse = mode === true || (mode === 'frontend' && FRONTEND_LANG_RE.test(lang || ''));
-    var collapsed = wantCollapse && lines.length > COLLAPSE_LINES;
+    var collapsed = !!(opts && opts.collapse) && lines.length > COLLAPSE_LINES;
     return '<pre' + (collapsed ? ' class="collapsed"' : '') + '>' +
       '<div class="code-head">' +
       '<span class="lang">' + escapeHtml(lang || '') + '</span>' +

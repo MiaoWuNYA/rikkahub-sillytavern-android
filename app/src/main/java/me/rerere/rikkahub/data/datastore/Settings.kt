@@ -234,17 +234,6 @@ data class HuaDengSettings(
     // 系统提示词转义：将系统消息中的 < > 转为 HTML 实体
     val enableSystemPromptEscape: Boolean = false,
 
-    // ---- 酒馆助手兼容 · 前端卡渲染 ----
-    // 启用渲染器：关掉后前端 HTML 代码块只当普通代码块显示，不再起 iframe
-    val thRenderEnabled: Boolean = true,
-    // 允许流式渲染：流式输出过程中就渲染前端卡（部分界面可能渲染异常）
-    val thAllowStreaming: Boolean = false,
-    // 代码折叠：none / frontend_only / all
-    val thCodeCollapse: String = "frontend_only",
-    // Blob URL 渲染：用 blob: URL 而非 srcdoc 装载卡片，便于调试
-    val thUseBlobUrl: Boolean = false,
-    // 宏替换：前端脚本 substituteMacros 是否展开 {{...}} 宏
-    val thMacroEnabled: Boolean = true,
     // 酒馆助手全局世界书（RikkaHub 无全局概念，此处仅保存酒馆脚本写入的绑定）
     val globalWorldbookNames: List<String> = emptyList(),
     // 酒馆助手预设：整体以原始 JSON 落盘，保证脚本读写无损
