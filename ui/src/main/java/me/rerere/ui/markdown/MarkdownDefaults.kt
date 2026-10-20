@@ -54,6 +54,8 @@ data class MarkdownTheme(
     val dividerColor: Color,
     /** 正文里引号（"…"、“…”、「…」、『…』）括起来的文字的样式，为 null 时不高亮 */
     val quotedText: SpanStyle? = null,
+    /** 斜体/强调（*em*、<em>、<i>）的着色样式，为 null 时只保留斜体字形 */
+    val emphasis: SpanStyle? = null,
 )
 
 /** 嵌在文本流里的自定义内容，按 [placeholder] 的尺寸占位 */

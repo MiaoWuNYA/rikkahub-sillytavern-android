@@ -370,6 +370,9 @@
     setVar('--md-mark-color', a.mdMarkColor);
     setVar('--md-reasoning-color', a.mdReasoningColor);
     setVar('--md-reasoning-radius', px(a.mdReasoningRadius, null));
+    setVar('--md-emphasis-bg', a.mdEmphasisBg || undefined);
+    setVar('--md-emphasis-color', a.mdEmphasisColor || undefined);
+    setVar('--md-emphasis-radius', px(a.mdEmphasisRadius, null));
 
     body.classList.toggle('hide-ai-bubble', a.showAssistantBubble === false);
     body.classList.toggle('bubble-image-overlay', a.imageOverlay === true);
