@@ -25,6 +25,7 @@
 
 - **依赖**：上游删掉了 `sonner` 与 `lucide`。本地全量迁移到上游自研 `me.rerere.ui.toast.Toaster`（`ToasterState` / `ToastType` / `rememberToasterState`），`sonner` 不再引入；`lucide` 本地仍有 5 个页面在用，故在 `gradle/libs.versions.toml` 与 `app/build.gradle.kts` 保留 `lucide-icons`。
 - **数据库**：上游把这轮新表算成 v30 且用 `AutoMigration(20→30)`，本地 20→31 是手写迁移链，**不要**把上游的 `AutoMigration(20,21)…(29,30)` 加进 `autoMigrations`（会与 `DataSourceModule` 的 `addMigrations` 重复定义）。上游新增表一律在后接一个手写迁移；本次即 `Migration_31_32`。
+- **上游库「同版本号、不同结构」是固定风险**：上游 v26 起就有 `media_creation_*` / `memory_file` / `memory_consolidation` / `translation_history` 与 `ConversationEntity.config`，本地同版本号还没有；用户从官方 APK 覆盖安装时迁移链必须能收拢。两条硬约定：① 迁移里的 `ADD COLUMN` 一律用 `addColumnIfNotExists`，裸 `ALTER TABLE ... ADD COLUMN` 在上游库上会 `duplicate column name` 崩库（`config` 已经崩过一次，见 `Migration_30_31`）；② 链尾迁移末尾调用 `DatabaseSchemaReconciler.reconcile` 做结构收敛，补上游缺的列与情侣空间表，新增版本时链尾也要带上。回归靠 `python3 tools/verify_db_migrations.py`（含上游 v26~v31 起点）与 `AppDatabaseMigrationsTest`。
 - **`TTSProviderSetting.Volcengine` 本地已改名 `Doubao`**：上游文件里出现 `TTSProviderSetting.Volcengine` 的地方取上游版本后必须改回 `Doubao`（`SettingSpeechPage.kt`、`TTSProviderConfigure.kt`）。`ASRProviderSetting.Volcengine` 未改名，保持原样。
 - **`PagerTab` 接口**：上游把 `label` 改成 `@Composable get(): String`。本地新增的 Tab 枚举要用 `@param:StringRes private val labelRes: Int` + `override val label: String @Composable get() = stringResource(labelRes)`。
 - **不要丢功能**：上一轮合并曾把「工作区长按多选导出」丢掉（`WorkspaceDetailPage.kt` + `WorkspaceDetailVM.kt` 成对回退）。此后凡 `WorkspaceDetail*` 冲突，`theirs` 侧带 `prepareBatchExport`/`exportFilesToDirectory`/`exportResult` 一律收下。
