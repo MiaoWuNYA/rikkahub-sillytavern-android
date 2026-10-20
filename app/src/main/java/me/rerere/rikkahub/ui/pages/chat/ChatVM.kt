@@ -252,6 +252,24 @@ class ChatVM(
     }
 
     /**
+     * MVU 变量按楼层写回：状态栏是逐楼快照，变量必须挂在消息上，
+     * 卡片被回收重组后才能恢复当轮状态。
+     */
+    fun updateMessageMvu(messageId: String, dataJson: String) {
+        val id = runCatching { Uuid.parse(messageId) }.getOrNull() ?: return
+        chatService.updateConversationState(_conversationId) { conv ->
+            conv.copy(
+                messageNodes = conv.messageNodes.map { node ->
+                    if (node.messages.none { it.id == id }) node
+                    else node.copy(messages = node.messages.map { m ->
+                        if (m.id == id) m.copy(mvuData = dataJson) else m
+                    })
+                },
+            )
+        }
+    }
+
+    /**
      * 插入指定角色消息（/sys、/sendas，不触发生成）
      */
     fun handleInsertMessage(role: MessageRole, text: String, name: String? = null, at: Int? = null) {

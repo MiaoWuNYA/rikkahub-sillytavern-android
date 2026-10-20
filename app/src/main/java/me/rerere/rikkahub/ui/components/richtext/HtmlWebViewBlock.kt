@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -114,6 +115,8 @@ fun HtmlWebViewBlock(
     val density = LocalDensity.current
     val colorScheme = MaterialTheme.colorScheme
     val context = LocalContext.current
+    // 屏幕高度(css px)：卡里的 100vh / --TH-viewport-height 需要一个稳定的视口基准
+    val screenHeightDp = LocalConfiguration.current.screenHeightDp.coerceAtLeast(480)
 
     val markedJs = remember {
         runCatching {
@@ -144,23 +147,25 @@ fun HtmlWebViewBlock(
     val hostShim = remember(cardHost) {
         if (cardHost == null) "" else cardHostShim()
     }
-    val inlinePage = remember(html, colorScheme, markedJs, hostShim) {
+    val inlinePage = remember(html, colorScheme, markedJs, hostShim, screenHeightDp) {
         buildCardPage(
             html = html,
             textColor = colorScheme.onSurface,
             markedJs = markedJs,
             backgroundColor = null,
             hostShim = hostShim,
+            viewportHeightPx = screenHeightDp,
         )
     }
     // 全屏页用不透明背景：全屏 WebView 默认白底，深色主题下浅色文字会看不清
-    val fullscreenPage = remember(html, colorScheme, markedJs, hostShim) {
+    val fullscreenPage = remember(html, colorScheme, markedJs, hostShim, screenHeightDp) {
         buildCardPage(
             html = html,
             textColor = colorScheme.onSurface,
             markedJs = markedJs,
             backgroundColor = colorScheme.surface,
             hostShim = hostShim,
+            viewportHeightPx = screenHeightDp,
         )
     }
 
@@ -681,12 +686,13 @@ internal fun buildCardPage(
     markedJs: String,
     backgroundColor: androidx.compose.ui.graphics.Color?,
     hostShim: String = "",
+    viewportHeightPx: Int = 0,
 ): String {
     val normalized = normalizeNewlines(html).trimCardEdges()
     return if (isFullHtmlDocument(normalized)) {
-        buildCardDocumentPage(normalized, textColor, backgroundColor, hostShim)
+        buildCardDocumentPage(normalized, textColor, backgroundColor, hostShim, viewportHeightPx)
     } else {
-        buildFragmentPage(normalized, textColor, markedJs, backgroundColor, hostShim)
+        buildFragmentPage(normalized, textColor, markedJs, backgroundColor, hostShim, viewportHeightPx)
     }
 }
 
@@ -694,6 +700,7 @@ internal fun buildCardPage(
 private fun cardBaseCss(
     textColor: androidx.compose.ui.graphics.Color,
     backgroundColor: androidx.compose.ui.graphics.Color?,
+    viewportHeightPx: Int = 0,
 ): String {
     val textCss = String.format("#%06X", textColor.toArgb() and 0xFFFFFF)
     val bgCss = if (backgroundColor != null) {
@@ -701,8 +708,16 @@ private fun cardBaseCss(
     } else {
         "transparent"
     }
+    // WebView 自身高度跟着内容长，卡里的 100vh 会跟着塌陷；
+    // 手机 UI 类卡需要钉在屏幕高度上的视口基准
+    val viewportVar = if (viewportHeightPx > 0) {
+        ":root { --TH-viewport-height: ${viewportHeightPx}px; --app-viewport-height: ${viewportHeightPx}px; }"
+    } else {
+        ""
+    }
     return """
   html, body { margin: 0; padding: 0; background: $bgCss; }
+  $viewportVar
   body { color: $textCss; font-family: sans-serif; word-break: break-word; overflow-x: hidden; }
   #$CARD_ROOT_ID { position: relative; overflow-x: hidden; width: 100%; box-sizing: border-box; }
   #$CARD_ROOT_ID * { max-width: 100%; box-sizing: border-box; }
@@ -819,10 +834,11 @@ internal fun buildCardDocumentPage(
     textColor: androidx.compose.ui.graphics.Color,
     backgroundColor: androidx.compose.ui.graphics.Color?,
     hostShim: String = "",
+    viewportHeightPx: Int = 0,
 ): String {
     val parsed = parseCardDocument(doc)
     val scopedCss = scopeCardCss(parsed.styleCss)
-    val baseCss = cardBaseCss(textColor, backgroundColor)
+    val baseCss = cardBaseCss(textColor, backgroundColor, viewportHeightPx)
     val bodyB64 = parsed.bodyHtml.base64Encode()
     val headB64 = parsed.headHtml.base64Encode()
     val cssB64 = scopedCss.base64Encode()
@@ -940,9 +956,10 @@ internal fun buildFragmentPage(
     markedJs: String,
     backgroundColor: androidx.compose.ui.graphics.Color?,
     hostShim: String = "",
+    viewportHeightPx: Int = 0,
 ): String {
     val b64 = html.base64Encode()
-    val baseCss = cardBaseCss(textColor, backgroundColor)
+    val baseCss = cardBaseCss(textColor, backgroundColor, viewportHeightPx)
     val markedTag = if (markedJs.isNotBlank()) {
         // marked.min.js 源码不含字面量 "</script>"，可安全内联
         "<script>\n$markedJs\n</script>"

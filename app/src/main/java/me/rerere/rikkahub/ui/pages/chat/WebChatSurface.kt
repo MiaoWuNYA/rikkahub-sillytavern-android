@@ -28,6 +28,7 @@ import me.rerere.ai.ui.UIMessage
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.Assistant
+import me.rerere.rikkahub.ui.components.richtext.MvuStore
 import me.rerere.rikkahub.ui.components.richtext.TrackWebViewPresence
 import me.rerere.ui.webview.WEB_VIEW_ASSET_URL
 import me.rerere.ui.webview.WEB_VIEW_BASE_URL
@@ -91,6 +92,8 @@ fun WebChatSurface(
     onClipboard: (String) -> Unit = {},
     onHttpRequest: (String, (String) -> Unit) -> Unit = { _, done -> done("{}") },
     onSelectSwipe: (String) -> Unit = {},
+    // MVU 变量写回：卡里的 Mvu.replaceMvuData 按楼层落到消息上
+    onUpdateMvu: (messageId: String, dataJson: String) -> Unit = { _, _ -> },
     onWorldbook: (String, (String) -> Unit) -> Unit = { _, done -> done("null") },
     onPersona: (String, (String) -> Unit) -> Unit = { _, done -> done("null") },
     onCharacter: (String, (String) -> Unit) -> Unit = { _, done -> done("null") },
@@ -105,6 +108,17 @@ fun WebChatSurface(
     val iconCache = remember(assetsManager) { mutableMapOf<String, String?>() }
     val iconText: (String) -> String? = { path ->
         if (iconCache.containsKey(path)) iconCache[path] else readCardIcon(assetsManager, path).also { iconCache[path] = it }
+    }
+    // MVU 初始变量树：世界书 [initvar] 的 YAML。楼层还没有写回过变量时,
+    // Mvu.getMvuData 用它兜底,状态栏卡不至于拿到一棵空树
+    val mvuInitVarsJson = remember(assistant, settings) {
+        val userName = settings.displaySetting.userNickname.ifBlank { "user" }
+        val entries = settings.lorebooks
+            .filter { it.id in assistant.lorebookIds }
+            .asSequence()
+            .flatMap { it.entries.asSequence() }
+            .map { it.name to it.content }
+        MvuStore.encode(MvuStore.wrap(MvuStore.fromLorebook(entries, userName))) ?: "{}"
     }
     val placeholder = stringResource(R.string.chat_input_placeholder)
     val labels = WebLabels(stringResource(R.string.translating), stringResource(R.string.translation_text))
@@ -298,6 +312,13 @@ fun WebChatSurface(
             when (method) {
                 "getChatMessages" -> onMessagesJson()
                 "getVariables" -> variablesJson
+                "getMvuData" -> {
+                    val id = payload.trim().trim('"')
+                    val msg = nodes.asSequence()
+                        .flatMap { it.messages.asSequence() }
+                        .firstOrNull { it.id.toString() == id }
+                    msg?.mvuData?.takeIf { it.isNotBlank() } ?: mvuInitVarsJson
+                }
                 "getWorldbookNames" -> {
                     kotlinx.serialization.json.buildJsonArray {
                         settings.lorebooks.forEach { add(kotlinx.serialization.json.JsonPrimitive(it.name)) }
@@ -431,6 +452,18 @@ fun WebChatSurface(
                     bridge?.resolve(requestId, "null")
                 }
 
+                "replaceMvuData" -> {
+                    runCatching {
+                        val obj = kotlinx.serialization.json.Json.parseToJsonElement(payload)
+                            as? kotlinx.serialization.json.JsonObject ?: return@runCatching
+                        val id = (obj["message_id"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+                            ?: return@runCatching
+                        val data = obj["data"] ?: return@runCatching
+                        onUpdateMvu(id, data.toString())
+                    }
+                    bridge?.resolve(requestId, "null")
+                }
+
                 "httpRequest" -> {
                     onHttpRequest(payload) { result ->
                         bridge?.resolve(requestId, result)
@@ -523,6 +556,9 @@ fun WebChatSurface(
                 listOf(
                     "jquery" to "lib/jquery.min.js",
                     "toastr" to "lib/toastr.min.js",
+                    // 内置完整版 lodash 与 Vue 3 运行时：手机 UI 卡的组件几乎都是 Vue 应用
+                    "lodash" to "lib/lodash.min.js",
+                    "vue" to "lib/vue.runtime.global.prod.js",
                     // 运行环境补丁：卡片与页面都用它补齐旧 WebView 缺失的标准方法
                     "compat" to "webui/compat.js",
                 ).forEach { (name, path) ->

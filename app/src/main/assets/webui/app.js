@@ -767,6 +767,33 @@
     '  window.sendMessage = window.sendMessage || api.sendMessage;',
     '  window.eventOn = window.eventOn || api.eventOn;',
     '  window.getMessageId = window.getMessageId || api.getMessageId;',
+    '  // MVU 变量框架的最小可用环境：状态栏卡的 Mvu.getMvuData/replaceMvuData 直接同步读楼层数据，',
+    '  // 没有这一层时这类卡会在第一步就 ReferenceError，整块状态栏渲染不出来',
+    '  window.Mvu = window.Mvu || (function(){',
+    '    var ls = {};',
+    '    var events = {',
+    '      on: function(t, f){ (ls[t] = ls[t] || []).push(f); return f; },',
+    '      once: function(t, f){ var g = function(){ events.removeListener(t, g); f.apply(null, arguments); }; return events.on(t, g); },',
+    '      removeListener: function(t, f){ var a = ls[t]; if (a) { var i = a.indexOf(f); if (i >= 0) a.splice(i, 1); } },',
+    '      emit: function(t){ var a = ls[t]; if (!a) return; var args = [].slice.call(arguments, 1); a.slice().forEach(function(f){ try { f.apply(null, args); } catch (e) {} }); },',
+    '    };',
+    '    return {',
+    '      events: events,',
+    '      getMvuData: function(muid){',
+    '        var p = parentApi(); if (p && p.getMvuData) return p.getMvuData(muid);',
+    '        try {',
+    '          var raw = window.parent.rikkaNative.syncCall("getMvuData", String(muid == null ? MID : muid));',
+    '          return JSON.parse(raw || "{}");',
+    '        } catch (e) { return {}; }',
+    '      },',
+    '      replaceMvuData: function(data, muid){',
+    '        return call("replaceMvuData", JSON.stringify({message_id: (muid == null ? MID : muid), data: (data == null ? {} : data)}));',
+    '      },',
+    '      getVariables: api.getVariables,',
+    '      replaceVariables: api.replaceVariables,',
+    '      insertOrAssignVariables: api.insertOrAssignVariables,',
+    '    };',
+    '  })();',
     '  window.messageFormat = window.messageFormat || { getMessageId: function(){ return MID; } };',
     '  window.__rikkaEmit = function(name, argsJson){',
     '    try {',
@@ -839,6 +866,15 @@
     return { head: parts.head, body: parts.body, style: '', prepared: false };
   }
 
+  // 卡片里的视口高度基准：iframe 自身的高度跟着内容长，拿它当 100vh 会让
+  // 手机 UI 类卡塌陷成一条；必须钉在外层页面的可视高度上
+  function viewportHeightPx() {
+    var h = 0;
+    try { h = (window.parent && window.parent.innerHeight) || 0; } catch (e) { h = 0; }
+    if (!h) { try { h = window.innerHeight || 0; } catch (e) { h = 0; } }
+    return Math.max(320, h || 640);
+  }
+
   function cardDocHtml(desc, ctx) {
     var parts = cardParts(desc);
     var body = expandMacros(decodeEscapedInlineTags(normalizeCharaTags(parts.body)));
@@ -855,15 +891,18 @@
     return '<!DOCTYPE html><html><head><meta charset="utf-8">' +
       '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
       '<style>' + CARD_SHELL_CSS +
-      ':root{--TH-viewport-height:' + Math.max(320, window.innerHeight || 640) + 'px;}' +
+      ':root{--TH-viewport-height:' + viewportHeightPx() + 'px;--app-viewport-height:' + viewportHeightPx() + 'px;}' +
       '</style>' +
       // 卡片样式必须各自独立成 <style>：嵌在外层 <style> 里只是纯文本，规则与变量全废
       (cardCss ? '<style data-rikka="card-style">' + cardCss + '</style>' : '') +
       // 运行环境排在最前：卡片的 jQuery/lodash 与卡片脚本都可能在首帧用到这些 API
       inlineScript(compat) +
       (libs.jquery ? inlineScript(libs.jquery) : '') +
+      // 内置完整版 lodash 优先：手机 UI 卡常用到精简版没有的方法
+      (libs.lodash ? inlineScript(libs.lodash) : inlineScript(LODASH_LITE)) +
       (libs.toastr ? inlineScript(libs.toastr) : '') +
-      inlineScript(LODASH_LITE) +
+      // Vue 3 运行时：大量前端卡的小组件是 Vue 应用
+      (libs.vue ? inlineScript(libs.vue) : '') +
       inlineScript(buildCardBridge(ctx.messageId, ctx.cardIndex, ctx.charName, ctx.userName)) +
       inlineScript(CARD_FORM_GUARD) +
       inlineScript(CARD_HEIGHT_SCRIPT) +
