@@ -3,10 +3,12 @@ package me.rerere.rikkahub.ui.components.richtext
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color as AndroidColor
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.JavascriptInterface
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
@@ -34,6 +36,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.Dialog
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -129,6 +132,11 @@ fun HtmlWebViewBlock(
             }
         }
     }
+    // 渲染进程崩溃后同一个 WebView 实例不可再用，递增它触发重组换一个新实例，
+    // 卡片按同一份 inlinePage 重新加载，用户看到的是自动恢复而不是永久白屏
+    var rendererEpoch by remember(html) { mutableIntStateOf(0) }
+    // 卡片脚本错误只提示一次：脚本循环报错时逐条弹提示会把界面刷爆
+    val cardErrorNotified = remember(html) { java.util.concurrent.atomic.AtomicBoolean(false) }
 
     // 宿主 API 垫片：只有真的能生成注入时，才把 generate/eventOn 暴露给卡。
     // 没有宿主能力却注入 shim，卡会拿到一个永远失败的假接口，
@@ -235,91 +243,121 @@ fun HtmlWebViewBlock(
                     }
                 )
         ) {
-            AndroidView(
-                factory = { ctx ->
-                    CardWebView(ctx).apply {
-                        cardWebViewRef.view = this
-                        // MATCH_PARENT 高度：与 AndroidView 的 fillMaxSize 一致，
-                        // 让 WebView 视口等于卡片高度而不是文档高度（否则内部无可滚区间）。
-                        layoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                        )
-                        settings.javaScriptEnabled = true
-                        settings.domStorageEnabled = true
-                        settings.allowContentAccess = true
-                        settings.loadWithOverviewMode = false
-                        settings.useWideViewPort = false
-                        setBackgroundColor(AndroidColor.TRANSPARENT)
-                        addJavascriptInterface(HeightBridge(applyHeight), "rikkaHost")
-                        // 宿主桥挂在同一个 rikkaHost 上：高度上报已在用这个对象名，
-                        // 分开注册会互相覆盖，所以两者合并成一个接口对象。
-                        hostBridge?.let { addJavascriptInterface(it, "rikkaHostGen") }
-                        isLongClickable = false
-                        webViewClient = object : WebViewClient() {
-                            override fun shouldInterceptRequest(
-                                view: WebView,
-                                request: WebResourceRequest,
-                            ): WebResourceResponse? = WebViewLocalAssets.intercept(
-                                view.context.applicationContext,
-                                request.url,
-                            ) ?: super.shouldInterceptRequest(view, request)
+            // epoch 变化即渲染进程崩溃过一次，这里整体换新 WebView 实例重建
+            key(rendererEpoch) {
+                AndroidView(
+                    factory = { ctx ->
+                        CardWebView(ctx).apply {
+                            cardWebViewRef.view = this
+                            // MATCH_PARENT 高度：与 AndroidView 的 fillMaxSize 一致，
+                            // 让 WebView 视口等于卡片高度而不是文档高度（否则内部无可滚区间）。
+                            layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                            )
+                            settings.javaScriptEnabled = true
+                            settings.domStorageEnabled = true
+                            settings.allowContentAccess = true
+                            settings.loadWithOverviewMode = false
+                            settings.useWideViewPort = false
+                            setBackgroundColor(AndroidColor.TRANSPARENT)
+                            addJavascriptInterface(
+                                HeightBridge(
+                                    onHeight = applyHeight,
+                                    onError = { message ->
+                                        Log.w(TAG, "card script error: $message")
+                                        if (cardErrorNotified.compareAndSet(false, true)) {
+                                            hostScope.launch {
+                                                toaster.show(
+                                                    context.getString(R.string.html_card_script_error),
+                                                    type = ToastType.Warning,
+                                                )
+                                            }
+                                        }
+                                    },
+                                ),
+                                "rikkaHost",
+                            )
+                            // 宿主桥挂在同一个 rikkaHost 上：高度上报已在用这个对象名，
+                            // 分开注册会互相覆盖，所以两者合并成一个接口对象。
+                            hostBridge?.let { addJavascriptInterface(it, "rikkaHostGen") }
+                            isLongClickable = false
+                            webViewClient = object : WebViewClient() {
+                                override fun shouldInterceptRequest(
+                                    view: WebView,
+                                    request: WebResourceRequest,
+                                ): WebResourceResponse? = WebViewLocalAssets.intercept(
+                                    view.context.applicationContext,
+                                    request.url,
+                                ) ?: super.shouldInterceptRequest(view, request)
 
-                            override fun onPageFinished(view: WebView, url: String?) {
-                                super.onPageFinished(view, url)
-                                // 图片/字体异步加载会继续撑高内容，轮询兜底；
-                                // 高频窗口结束后接一段低频复查，覆盖脚本延迟渲染
-                                pollContentHeight(view) { h -> applyHeight(h) }
-                                pollContentHeightSlow(view) { h -> applyHeight(h) }
+                                // 卡片脚本把渲染器搞挂时，同一个 WebView 实例已经不可用：
+                                // 返回 true 表示自行处理，并换一个新实例把这张卡重载回来
+                                override fun onRenderProcessGone(
+                                    view: WebView,
+                                    detail: RenderProcessGoneDetail,
+                                ): Boolean {
+                                    Log.w(TAG, "card renderer gone (crashed=${detail.didCrash()}), rebuilding")
+                                    rendererEpoch += 1
+                                    return true
+                                }
+
+                                override fun onPageFinished(view: WebView, url: String?) {
+                                    super.onPageFinished(view, url)
+                                    // 图片/字体异步加载会继续撑高内容，轮询兜底；
+                                    // 高频窗口结束后接一段低频复查，覆盖脚本延迟渲染
+                                    pollContentHeight(view) { h -> applyHeight(h) }
+                                    pollContentHeightSlow(view) { h -> applyHeight(h) }
+                                }
                             }
                         }
-                    }
-                },
-                update = { webView ->
-                    // 保留引用，供全屏/边界判定使用
-                    cardWebViewRef.view = webView
-                    if (webView.tag != inlinePage) {
-                        webView.tag = inlinePage
-                        webView.loadDataWithBaseURL(
-                            WEB_VIEW_BASE_URL,
-                            inlinePage,
-                            "text/html",
-                            "utf-8",
-                            null,
-                        )
-                    }
-                },
-                // onReset 非空即启用 item 复用：卡片滑出视口不再销毁 WebView，
-                // 回到视口时同一条消息 inlinePage 相同、不会重载——
-                // 否则每次发送/删除消息列表一变，历史卡片全部白闪重载
-                onReset = { it.stopLoading() },
-                onRelease = {
-                    it.stopLoading()
-                    it.removeAllViews()
-                    it.destroy()
-                },
-                // 高度必须填满外层 Box，不能用 wrap_content。
-                //
-                // 之前是 WRAP_CONTENT：WebView 会按文档完整高度（可能几千 px）自我测量，
-                // 而外层 Box 只有 maxHeight 那么高。结果是 WebView 认为"整个文档都在可视区里"，
-                // scrollY 恒为 0、内部没有任何可滚区间；外层又只是裁剪，也不滚动。
-                // 用户看到的就是"消息里的网页怎么划都不动"。
-                // 改成 matchParentSize 后 WebView 视口 = Box 高度，超长内容由它自己滚动。
-                // 手势归属由 CardWebView.onTouchEvent 里的
-                // requestDisallowInterceptTouchEvent 仲裁：卡片能滚时禁止外层拦截，
-                // 滚到边界再放行，因此不会出现"界面抢网页滑动"。
-                modifier = Modifier.fillMaxSize(),
-            )
-
-            // 上报前显示占位，避免空白卡片
-            if (contentHeight == 0) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(20.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    },
+                    update = { webView ->
+                        // 保留引用，供全屏/边界判定使用
+                        cardWebViewRef.view = webView
+                        if (webView.tag != inlinePage) {
+                            webView.tag = inlinePage
+                            webView.loadDataWithBaseURL(
+                                WEB_VIEW_BASE_URL,
+                                inlinePage,
+                                "text/html",
+                                "utf-8",
+                                null,
+                            )
+                        }
+                    },
+                    // onReset 非空即启用 item 复用：卡片滑出视口不再销毁 WebView，
+                    // 回到视口时同一条消息 inlinePage 相同、不会重载——
+                    // 否则每次发送/删除消息列表一变，历史卡片全部白闪重载
+                    onReset = { it.stopLoading() },
+                    onRelease = {
+                        it.stopLoading()
+                        it.removeAllViews()
+                        it.destroy()
+                    },
+                    // 高度必须填满外层 Box，不能用 wrap_content。
+                    //
+                    // 之前是 WRAP_CONTENT：WebView 会按文档完整高度（可能几千 px）自我测量，
+                    // 而外层 Box 只有 maxHeight 那么高。结果是 WebView 认为"整个文档都在可视区里"，
+                    // scrollY 恒为 0、内部没有任何可滚区间；外层又只是裁剪，也不滚动。
+                    // 用户看到的就是"消息里的网页怎么划都不动"。
+                    // 改成 matchParentSize 后 WebView 视口 = Box 高度，超长内容由它自己滚动。
+                    // 手势归属由 CardWebView.onTouchEvent 里的
+                    // requestDisallowInterceptTouchEvent 仲裁：卡片能滚时禁止外层拦截，
+                    // 滚到边界再放行，因此不会出现"界面抢网页滑动"。
+                    modifier = Modifier.fillMaxSize(),
                 )
+
+                // 上报前显示占位，避免空白卡片
+                if (contentHeight == 0) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
 
@@ -566,6 +604,8 @@ private class CardWebView(context: Context) : WebView(context) {
     }
 }
 
+private const val TAG = "HtmlWebViewBlock"
+
 private const val HEIGHT_JS =
     "(function(){return Math.max(document.documentElement.scrollHeight,document.body?document.body.scrollHeight:0);})()"
 
@@ -611,10 +651,19 @@ private fun pollContentHeightSlow(
     }, 1000)
 }
 
-private class HeightBridge(private val onHeight: (Int) -> Unit) {
+private class HeightBridge(
+    private val onHeight: (Int) -> Unit,
+    private val onError: (String) -> Unit = {},
+) {
     @JavascriptInterface
     fun reportHeight(height: Int) {
         onHeight(height)
+    }
+
+    // 卡片脚本抛错时由页面脚本回传：不接这一手，用户只看到半截卡片或白屏，无从判断原因
+    @JavascriptInterface
+    fun reportError(message: String) {
+        onError(message)
     }
 }
 
@@ -739,6 +788,22 @@ private fun heightReportScript(extraDelays: String = "1500, 4000"): String = """
   }
   // 卡片内部自身滚动时也要复查高度（内层容器展开/折叠会改变内容高度）
   window.addEventListener('scroll', function(){ report(); }, true);
+  // 脚本错误回传原生：卡片半截或白屏时，日志与提示里至少能看到真实原因。
+  // 用 addEventListener 而不是覆盖 window.onerror —— 卡片自己可能也在用 onerror。
+  function reportError(text) {
+    try {
+      if (window.rikkaHost && window.rikkaHost.reportError) window.rikkaHost.reportError(String(text));
+    } catch (e) {}
+  }
+  window.addEventListener('error', function (e) {
+    if (!e) return;
+    var where = e.filename ? (' @' + e.filename + ':' + (e.lineno || 0)) : '';
+    reportError((e.message || 'script error') + where);
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    var r = e && e.reason;
+    reportError('unhandled rejection: ' + ((r && r.message) ? r.message : String(r)));
+  });
 })();
 </script>
 """

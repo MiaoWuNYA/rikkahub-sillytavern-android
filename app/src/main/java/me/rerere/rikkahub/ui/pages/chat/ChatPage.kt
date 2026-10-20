@@ -550,16 +550,20 @@ private fun ChatPageContent(
     // 原生事件总线：把生成与消息变化按酒馆事件名推给页面与卡片
     val webEvents = remember { MutableSharedFlow<WebUiEvent>(extraBufferCapacity = 64) }
     var lastEventKey by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(conversation.currentMessages, loadingJob != null) {
+    LaunchedEffect(conversation.messageNodes, loadingJob != null) {
         val list = conversation.currentMessages
-        val key = list.joinToString(",") { it.id.toString() } + "|" + (loadingJob != null)
+        // 签名带上分支下标：重 roll 只换选中分支、条数不变，光看消息 id 分不出与编辑的区别
+        val branches = conversation.messageNodes.joinToString(",") { "${it.id}:${it.selectIndex}" }
+        val key = list.joinToString(",") { it.id.toString() } + "|" + branches + "|" + (loadingJob != null)
         if (lastEventKey == key) return@LaunchedEffect
         val previous = lastEventKey
         lastEventKey = key
         if (previous == null) return@LaunchedEffect
+        val previousIds = previous.substringBefore("|")
+        val previousBranches = previous.substringAfter("|").substringBeforeLast("|")
         val previouslyLoading = previous.endsWith("|true")
         val nowLoading = loadingJob != null
-        val previousCount = previous.substringBefore("|").split(",").count { it.isNotBlank() }
+        val previousCount = previousIds.split(",").count { it.isNotBlank() }
         // 事件下标与页面拿到的可见消息保持一致（压缩前的消息已隐藏）
         val visibleStart = webHiddenPrefixCount.coerceAtMost(list.size)
         val visibleLastIndex = list.lastIndex - visibleStart
@@ -576,7 +580,21 @@ private fun ChatPageContent(
         if (list.size < previousCount) {
             webEvents.tryEmit(WebUiEvent("MESSAGE_DELETED", "[${list.size - visibleStart}]"))
         } else if (list.size == previousCount && !nowLoading && !previouslyLoading) {
-            webEvents.tryEmit(WebUiEvent("MESSAGE_UPDATED", "[${visibleLastIndex}]"))
+            val currentIds = list.map { it.id.toString() }
+            val previousIdList = previousIds.split(",")
+            // 第一个换掉的位置就是被重 roll / 切分支的那条消息
+            val changedIndex = currentIds.indices.firstOrNull { i ->
+                i >= previousIdList.size || currentIds[i] != previousIdList[i]
+            }
+            when {
+                // 条数不变而选中的消息换了 → 重 roll / 切分支，不是编辑。
+                // 参数按酒馆语义给消息 id，而不是下标
+                changedIndex != null -> webEvents.tryEmit(
+                    WebUiEvent("MESSAGE_SWIPED", "[\"${currentIds[changedIndex]}\"]"),
+                )
+                branches != previousBranches -> webEvents.tryEmit(WebUiEvent("MESSAGE_SWIPED", "[${visibleLastIndex}]"))
+                else -> webEvents.tryEmit(WebUiEvent("MESSAGE_UPDATED", "[${visibleLastIndex}]"))
+            }
         }
     }
 
