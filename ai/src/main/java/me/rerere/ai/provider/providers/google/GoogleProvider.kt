@@ -380,7 +380,10 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                     add(JsonPrimitive("IMAGE"))
                 })
             }
-            if (params.model.abilities.contains(ModelAbility.REASONING) && !params.disableReasoning) {
+            if (params.model.abilities.contains(ModelAbility.REASONING)) {
+                // 酒馆模式强制关闭与档位 OFF 等效：省略 thinkingConfig 时 Gemini 会沿用
+                // 服务端默认（思考照开），必须显式下发关闭参数
+                val level = if (params.disableReasoning) ReasoningLevel.OFF else params.reasoningLevel
                 put("thinkingConfig", buildJsonObject {
                     put("includeThoughts", true)
 
@@ -390,7 +393,7 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                         ModelRegistry.GEMINI_3_SERIES.match(modelId = params.model.modelId) ||
                             ModelRegistry.GEMINI_4.match(modelId = params.model.modelId)
 
-                    when (params.reasoningLevel) {
+                    when (level) {
                         ReasoningLevel.AUTO -> {} // 自动模式，不设置参数
 
                         ReasoningLevel.OFF -> {

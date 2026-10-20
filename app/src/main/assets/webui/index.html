@@ -434,7 +434,7 @@
   a { color: var(--md-primary); text-decoration: none; }
   hr { border: 0; border-top: 1px solid var(--md-outline-variant); margin: var(--block-gap) 0; }
   mark { background: var(--md-mark-bg, rgba(255, 235, 59, .4)); color: var(--md-mark-color, inherit); border-radius: 3px; }
-  em, i { color: var(--italics-color, inherit); }
+  em, i { color: var(--md-emphasis-color, var(--italics-color, inherit)); background: var(--md-emphasis-bg, transparent); border-radius: var(--md-emphasis-radius, 0); }
   /* 卡片与模型常用 <span style> 上色；引号与括号另配色（enableTextColor 控制） */
   u { text-decoration-color: var(--underline-color, currentColor); }
   .chara-tag { font-weight: inherit; }

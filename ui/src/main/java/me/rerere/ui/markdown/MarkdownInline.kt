@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.isUnspecified
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
@@ -17,6 +18,7 @@ import androidx.compose.ui.text.LinkInteractionListener
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.TextUnit
@@ -85,13 +87,22 @@ private class InlineTextBuilder(
     private fun append(node: MarkdownInline) {
         when (node) {
             is MarkdownInline.Text -> appendText(node.text)
-            is MarkdownInline.Styled -> builder.withStyle(node.style) { append(node.children) }
+            is MarkdownInline.Styled -> builder.withStyle(node.style.withEmphasis(context.theme.emphasis)) { append(node.children) }
             is MarkdownInline.Code -> builder.withStyle(context.theme.inlineCode) { append(node.code) }
             is MarkdownInline.Link -> appendLink(node)
             is MarkdownInline.Math -> appendMath(node)
             // 图片在分段时已经被拆出去单独渲染，走到这里只剩替代文本可用
             is MarkdownInline.Image -> builder.append(node.alt.orEmpty())
         }
+    }
+
+    /** 斜体节点叠上主题的强调色；节点自身带色（如 <em style="color:…">）时以节点为准 */
+    private fun SpanStyle.withEmphasis(emphasis: SpanStyle?): SpanStyle {
+        if (emphasis == null || fontStyle != FontStyle.Italic) return this
+        return copy(
+            color = if (color.isUnspecified) emphasis.color else color,
+            background = if (background.isUnspecified) emphasis.background else background,
+        )
     }
 
     private fun appendText(text: String) {

@@ -61,6 +61,7 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Copy01
 import me.rerere.hugeicons.stroke.Download04
 import me.rerere.rikkahub.data.datastore.Settings
+import me.rerere.rikkahub.data.model.parseCssColor
 import me.rerere.rikkahub.data.repository.WorkspaceRepository
 import me.rerere.rikkahub.ui.context.LocalSettings
 import me.rerere.rikkahub.ui.context.LocalWorkspaceId
@@ -294,7 +295,16 @@ fun MarkdownBlock(
     val density = LocalDensity.current
     val quoteColor = MaterialTheme.colorScheme.tertiary
     val defaultTheme = MarkdownDefaults.theme(style)
-    val theme = remember(defaultTheme, fontSize, density, enableQuoteHighlight, quoteColor) {
+    // 斜体着色：主题导入的 emphasis 样式优先，其次用户设置的斜体颜色，最后回退默认灰（与 WebView 渲染一致）
+    val emphasis = remember(settings.themeMarkdownStyle, settings.italicsColor) {
+        SpanStyle(
+            color = settings.themeMarkdownStyle.emphasisColor
+                ?: parseCssColor(settings.italicsColor)?.let { Color(it) }
+                ?: Color(0xFF919191),
+            background = settings.themeMarkdownStyle.emphasisBackground ?: Color.Unspecified,
+        )
+    }
+    val theme = remember(defaultTheme, fontSize, density, enableQuoteHighlight, quoteColor, emphasis) {
         defaultTheme.copy(
             inlineCode = defaultTheme.inlineCode.copy(
                 fontFamily = JetbrainsMono,
@@ -303,6 +313,7 @@ fun MarkdownBlock(
             // 段落间距跟随字号，调整字体大小时保持比例
             blockSpacing = if (fontSize.isSp) with(density) { fontSize.toDp() } else defaultTheme.blockSpacing,
             quotedText = SpanStyle(color = quoteColor).takeIf { enableQuoteHighlight },
+            emphasis = emphasis,
         )
     }
 

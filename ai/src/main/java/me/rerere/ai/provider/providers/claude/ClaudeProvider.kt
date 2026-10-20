@@ -476,7 +476,9 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
             // Anthropic 新 API: adaptive 模式 + output_config.effort 控制强度
             // 旧的 type=enabled + budget_tokens 在 Opus 4.7+ 上已不支持
             if (params.model.abilities.contains(ModelAbility.REASONING)) {
-                when (params.reasoningLevel) {
+                // 酒馆模式强制关闭与档位 OFF 等效：省略 thinking 时 Anthropic 沿用默认（思考照开）
+                val level = if (params.disableReasoning) ReasoningLevel.OFF else params.reasoningLevel
+                when (level) {
                     ReasoningLevel.OFF -> {
                         put("thinking", buildJsonObject { put("type", "disabled") })
                     }

@@ -256,17 +256,21 @@ internal class InteractionsAPI(
         // safety_settings 只在 Vertex 上可用，Gemini API 的 Interactions 会直接拒绝该参数
     }.mergeCustomBody(params.customBody)
 
-    // Interactions API 只接受 thinking_level，没有 thinkingBudget
-    private fun thinkingLevel(params: TextGenerationParams): String? = when (params.reasoningLevel) {
-        ReasoningLevel.AUTO -> null
-        ReasoningLevel.OFF -> {
-            val supportsMinimal = ModelRegistry.GEMINI_3_SERIES.match(modelId = params.model.modelId) ||
-                ModelRegistry.GEMINI_4.match(modelId = params.model.modelId)
-            if (supportsMinimal) "minimal" else "low"
+    // Interactions API 只接受 thinking_level，没有 thinkingBudget。
+    // 酒馆模式强制关闭与档位 OFF 等效：省略 thinking_level 时 Gemini 会沿用默认（思考照开）
+    private fun thinkingLevel(params: TextGenerationParams): String? {
+        val level = if (params.disableReasoning) ReasoningLevel.OFF else params.reasoningLevel
+        return when (level) {
+            ReasoningLevel.AUTO -> null
+            ReasoningLevel.OFF -> {
+                val supportsMinimal = ModelRegistry.GEMINI_3_SERIES.match(modelId = params.model.modelId) ||
+                    ModelRegistry.GEMINI_4.match(modelId = params.model.modelId)
+                if (supportsMinimal) "minimal" else "low"
+            }
+            ReasoningLevel.LOW -> "low"
+            ReasoningLevel.MEDIUM -> "medium"
+            else -> "high" // HIGH, XHIGH, MAX
         }
-        ReasoningLevel.LOW -> "low"
-        ReasoningLevel.MEDIUM -> "medium"
-        else -> "high" // HIGH, XHIGH, MAX
     }
 
     internal fun buildInput(messages: List<UIMessage>): JsonArray = buildJsonArray {
