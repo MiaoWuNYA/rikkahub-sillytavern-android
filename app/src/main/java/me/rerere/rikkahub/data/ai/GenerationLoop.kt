@@ -40,6 +40,7 @@ import me.rerere.rikkahub.data.ai.transformers.InputMessageTransformer
 import me.rerere.rikkahub.data.ai.transformers.MessageTransformer
 import me.rerere.rikkahub.data.ai.transformers.OutputMessageTransformer
 import me.rerere.rikkahub.data.ai.transformers.RegexOutputTransformer
+import me.rerere.rikkahub.data.ai.transformers.applyStreamingRegexTail
 import me.rerere.rikkahub.data.ai.transformers.findSafeInsertIndex
 import me.rerere.rikkahub.data.files.FileFolders
 import me.rerere.rikkahub.data.ai.transformers.onGenerationFinish
@@ -330,7 +331,7 @@ class GenerationLoop(
         buildRecentChatsPrompt(assistant, conversationRepo, excludeConversationId = conversationId)
     } else ""
 
-    // 流式期间不跑正则：每个 chunk 对整段历史重算会卡，生成结束后统一应用
+    // 流式期间正则改由 applyStreamingRegexTail 只跑正在生成的最后一条，避免整段历史逐 chunk 重算
     val streamingTransformers = outputTransformers.filterNot { it is RegexOutputTransformer }
 
     for (stepIndex in 0 until maxSteps) {
@@ -369,6 +370,10 @@ class GenerationLoop(
                                     settings = settings,
                                     conversationId = conversationId,
                                     workspaceCwd = workspaceCwd,
+                                ).applyStreamingRegexTail(
+                                    assistant = assistant,
+                                    conversationId = conversationId,
+                                    globalRegexes = settings.globalRegexes,
                                 )
                             )
                         )
