@@ -104,6 +104,15 @@ interface ConversationDAO {
     @Query("UPDATE conversationentity SET rolling_context_summary = :summary WHERE id = :id")
     suspend fun updateRollingContextSummary(id: String, summary: String)
 
+    @Query("UPDATE conversationentity SET title = :title WHERE id = :id")
+    suspend fun updateTitle(id: String, title: String)
+
+    @Query("UPDATE conversationentity SET custom_system_prompt = :customSystemPrompt WHERE id = :id")
+    suspend fun updateCustomSystemPrompt(id: String, customSystemPrompt: String)
+
+    @Query("UPDATE conversationentity SET suggestions = :chatSuggestions WHERE id = :id")
+    suspend fun updateChatSuggestions(id: String, chatSuggestions: String)
+
     @Query("UPDATE conversationentity SET config = :config, mode_injection_ids = :modeInjectionIds, lorebook_ids = :lorebookIds, workspace_cwd = :workspaceCwd WHERE id = :id")
     suspend fun updateConfig(
         id: String,

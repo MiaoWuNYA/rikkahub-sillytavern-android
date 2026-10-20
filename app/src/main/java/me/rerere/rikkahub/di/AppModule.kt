@@ -95,6 +95,7 @@ val appModule = module {
 
     single {
         ChatToolFactory(
+            context = get(),
             memoryRepository = get(),
             conversationRepository = get(),
             localTools = get(),

@@ -2,6 +2,7 @@ package me.rerere.rikkahub.ui.pages.chat
 
 import android.net.Uri
 import me.rerere.ai.provider.ModelAbility
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -171,6 +172,13 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
     val assistant by vm.assistant.collectAsStateWithLifecycle()
     val errors by vm.errors.collectAsStateWithLifecycle()
     val context = LocalContext.current
+
+    // 新会话发出第一条消息前，跟随抽屉当前选中的文件夹（#2133）
+    val drawerVm: ChatDrawerVM = koinViewModel(viewModelStoreOwner = LocalContext.current as ComponentActivity)
+    val selectedFolderId by drawerVm.selectedFolderId.collectAsStateWithLifecycle()
+    LaunchedEffect(selectedFolderId) {
+        vm.updateDraftFolder(selectedFolderId)
+    }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val softwareKeyboardController = LocalSoftwareKeyboardController.current
@@ -1745,10 +1753,7 @@ private fun ChatFilesPickerSheet(
             mcpManager = vm.mcpManager,
             onCompressContext = vm::handleCompressContext,
             onUpdateAssistant = vm::updateAssistant,
-            onUpdateConversation = {
-                vm.updateConversation(it)
-                vm.saveConversationAsync()
-            },
+            onUpdateWorkspaceCwd = vm::updateWorkspaceCwd,
             showCompressDialog = showCompressDialog,
             onShowCompressDialogChange = { showCompressDialog = it },
             onDismiss = { dismissAll() },

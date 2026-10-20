@@ -124,6 +124,20 @@ fun CompressContextDialog(
                         modifier = Modifier.fillMaxWidth(),
                         maxLines = 4,
                     )
+
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        OutlinedNumberInput(
+                            value = keepRecentMessages,
+                            onValueChange = { keepRecentMessages = it.coerceAtLeast(0) },
+                            label = stringResource(R.string.chat_page_compress_keep_recent),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Text(
+                            text = stringResource(R.string.chat_page_compress_keep_recent_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         },

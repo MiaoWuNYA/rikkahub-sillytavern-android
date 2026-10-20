@@ -228,6 +228,8 @@ class PluginLoader(
                             baseUrl = provider.baseUrl
                             apiKey = provider.apiKey
                         }
+                        // 订阅类账号靠登录拿凭据，没有能交给插件的 baseUrl/apiKey
+                        is ProviderSetting.Account -> return@forEach
                     }
 
                     config[field.name] = JsonPrimitive(model.modelId)

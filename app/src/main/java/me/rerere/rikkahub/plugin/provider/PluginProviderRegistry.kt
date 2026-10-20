@@ -8,7 +8,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import me.rerere.ai.provider.BalanceOption
+import me.rerere.ai.provider.QuotaQuery
 import me.rerere.ai.provider.CustomBody
 import me.rerere.ai.provider.CustomHeader
 import me.rerere.ai.provider.Model
@@ -225,9 +225,14 @@ internal fun PluginInfo.toProviderSetting(spec: PluginProviderSpec) = ProviderSe
     enabled = true,
     name = spec.name.ifBlank { manifest.name },
     models = spec.models.map { it.toModel(manifest.id, spec.id) },
-    balanceOption = BalanceOption(
+    quotaQuery = QuotaQuery(
         enabled = spec.balanceApiPath.isNotBlank(),
-        apiPath = spec.balanceApiPath,
+        url = if (spec.balanceApiPath.startsWith("http")) {
+            spec.balanceApiPath
+        } else {
+            "{{baseUrl}}${spec.balanceApiPath}"
+        },
+        headers = listOf(CustomHeader("Authorization", "Bearer {{apiKey}}")),
         resultPath = spec.balanceResultPath.ifBlank { "data.total_usage" },
     ),
     customHeaders = spec.headers.filter { it.name.isNotBlank() }

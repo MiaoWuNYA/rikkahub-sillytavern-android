@@ -38,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -53,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonElement
+import kotlinx.coroutines.delay
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -117,6 +119,11 @@ import me.rerere.rikkahub.utils.JsonInstantPretty
 import me.rerere.rikkahub.utils.jsonPrimitiveOrNull
 import me.rerere.rikkahub.utils.openUrl
 import org.koin.compose.koinInject
+import me.rerere.ui.components.DotLoading
+import kotlin.time.Clock
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.DurationUnit
 
 private object ToolNames {
     const val MEMORY = "memory_tool"
@@ -268,6 +275,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
         null
     }
     val images = tool.output.filterIsInstance<UIMessagePart.Image>()
+    val duration = rememberToolDuration(tool, loading)
 
     val title = when (tool.toolName) {
         ToolNames.MEMORY -> when (memoryAction) {
@@ -500,6 +508,15 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                         )
                     }
                 }
+            }
+        } else if (duration != null && duration >= 100.milliseconds) {
+            {
+                Text(
+                    text = duration.toString(DurationUnit.SECONDS, 1),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.shimmer(isLoading = loading),
+                )
             }
         } else {
             null
@@ -1008,6 +1025,28 @@ private fun GenericToolPreview(
                 }
             }
         }
+    }
+}
+
+/**
+ * 工具执行耗时；执行中随时间刷新，没有计时（拒绝、问答、旧消息）时为 null
+ */
+@Composable
+private fun rememberToolDuration(tool: UIMessagePart.Tool, loading: Boolean): Duration? {
+    val startedAt = tool.startedAt
+    val finishedAt = tool.finishedAt
+    val running = loading && startedAt != null && finishedAt == null
+    val now by produceState(Clock.System.now(), running) {
+        while (running) {
+            value = Clock.System.now()
+            delay(100)
+        }
+    }
+    return when {
+        startedAt == null -> null
+        finishedAt != null -> finishedAt - startedAt
+        running -> now - startedAt
+        else -> null
     }
 }
 

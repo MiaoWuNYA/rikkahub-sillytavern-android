@@ -161,7 +161,7 @@ fun RikkahubTheme(
         LocalExtendColors provides extendColors,
         LocalMaterialMode provides materialMode,
         LocalDisplaySettings provides settings.displaySetting,
-        // LocalOverscrollFactory provides null
+        LocalOverscrollFactory provides null,
     ) {
         MaterialExpressiveTheme(
             colorScheme = finalColorScheme,

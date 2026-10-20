@@ -15,6 +15,9 @@ import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.common.cache.LruCache
 import me.rerere.common.cache.SingleFileCacheStore
+import me.rerere.rikkahub.data.ai.UsageRecorder
+import me.rerere.rikkahub.data.ai.UsageSource
+import me.rerere.rikkahub.data.ai.UsageTag
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.findModelById
 import me.rerere.rikkahub.data.datastore.findProvider
@@ -117,7 +120,7 @@ object OcrTransformer : InputMessageTransformer, KoinComponent {
         val content = runCatching { recognizeRemotely(settings, part) }.getOrNull()
             ?.takeIf { it.isNotBlank() }
             ?: "[An image was sent, but no vision model is configured. " +
-                "Set one in Settings -> Model -> OCR model to let the assistant read images.]" 
+                "Set one in Settings -> Model -> OCR model to let the assistant read images.]"
         Log.i(TAG, "performOcr: $content")
         val ocrResult = """
             <image_file_ocr>
@@ -144,7 +147,10 @@ object OcrTransformer : InputMessageTransformer, KoinComponent {
     ): String? {
         val model = settings.findModelById(settings.ocrModelId) ?: return null
         val providerSetting = model.findProvider(settings.providers) ?: return null
-        val provider = get<ProviderManager>().getProviderByType(providerSetting)
+        val provider = get<UsageRecorder>().wrap(
+            get<ProviderManager>().getProviderByType(providerSetting),
+            UsageTag(UsageSource.OCR),
+        )
         val result = provider.generateText(
             providerSetting = providerSetting,
             messages = listOf(

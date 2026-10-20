@@ -464,6 +464,19 @@ def hw_31_32(conn):
     align_to_target(conn)
 
 
+def hw_32_33(conn):
+    """对应 Kotlin 的 Migration_32_33：上游的 usage_record 用量流水表 + 结构收敛。"""
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS `usage_record` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
+        "`created_at` INTEGER NOT NULL, `source` TEXT NOT NULL, `provider_id` TEXT, `model_id` TEXT, "
+        "`model_name` TEXT, `assistant_id` TEXT, `conversation_id` TEXT, "
+        "`prompt_tokens` INTEGER NOT NULL, `completion_tokens` INTEGER NOT NULL, "
+        "`cached_tokens` INTEGER NOT NULL)"
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS `index_usage_record_created_at` ON `usage_record` (`created_at`)")
+    align_to_target(conn)
+
+
 HANDWRITTEN = {
     (6, 7): hw_6_7,
     (11, 12): hw_11_12,
@@ -482,6 +495,7 @@ HANDWRITTEN = {
     (29, 30): hw_29_30,
     (30, 31): hw_30_31,
     (31, 32): hw_31_32,
+    (32, 33): hw_32_33,
 }
 
 

@@ -227,6 +227,15 @@ fun String.replaceRegexes(
     depth: Int = 0, // 官方酒馆深度语义：1 = 最新一条消息；0/未知 = 不按深度过滤
 ): String = replaceRegexes(assistant?.regexes.orEmpty(), scope, visual, depth)
 
+/** 对用户输入的文本应用助手作用于用户消息的正则替换 */
+fun List<UIMessagePart>.replaceUserRegexes(assistant: Assistant): List<UIMessagePart> = map { part ->
+    if (part is UIMessagePart.Text) {
+        part.copy(text = part.text.replaceRegexes(assistant, AssistantAffectScope.USER, visual = false))
+    } else {
+        part
+    }
+}
+
 /** 对一组正则依次应用（角色卡正则 + 全局正则合并后走这里） */
 fun String.replaceRegexes(
     regexes: List<AssistantRegex>,

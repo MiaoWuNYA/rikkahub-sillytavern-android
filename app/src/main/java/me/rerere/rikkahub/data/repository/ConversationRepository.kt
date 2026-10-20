@@ -462,6 +462,22 @@ class ConversationRepository(
         )
     }
 
+    suspend fun updateTitle(conversationId: Uuid, title: String) {
+        conversationDAO.updateTitle(conversationId.toString(), title)
+        messageFtsManager.updateTitle(conversationId.toString(), title)
+    }
+
+    suspend fun updateCustomSystemPrompt(conversationId: Uuid, customSystemPrompt: String?) {
+        conversationDAO.updateCustomSystemPrompt(conversationId.toString(), customSystemPrompt ?: "")
+    }
+
+    suspend fun updateChatSuggestions(conversationId: Uuid, chatSuggestions: List<String>) {
+        conversationDAO.updateChatSuggestions(
+            id = conversationId.toString(),
+            chatSuggestions = JsonInstant.encodeToString(chatSuggestions),
+        )
+    }
+
     /**
      * 单列更新会话的文件夹归属，folderId 为 null 表示移出文件夹（未归类）。
      */

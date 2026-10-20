@@ -98,6 +98,26 @@ data class Conversation(
         )
     }
 
+    /**
+     * 写入一条消息：[nodeId] 节点里已有同 id 的消息就原地替换（不改变选中的分支），否则作为新分支加入并选中；
+     * 节点不存在时追加到末尾。按节点 id 而不是下标定位，生成期间别的节点被增删、分支被切换，回复也不会写错位置。
+     */
+    fun upsertMessage(nodeId: Uuid, message: UIMessage): Conversation {
+        // 生成中的回复几乎总在最后一个节点
+        val index = messageNodes.indexOfLast { it.id == nodeId }
+        if (index == -1) {
+            return copy(messageNodes = messageNodes + MessageNode(id = nodeId, messages = listOf(message)))
+        }
+        val node = messageNodes[index]
+        val existing = node.messages.indexOfFirst { it.id == message.id }
+        val updated = if (existing == -1) {
+            node.copy(messages = node.messages + message, selectIndex = node.messages.size)
+        } else {
+            node.copy(messages = node.messages.toMutableList().also { it[existing] = message })
+        }
+        return copy(messageNodes = messageNodes.toMutableList().also { it[index] = updated })
+    }
+
     companion object {
         fun ofId(
             id: Uuid,
@@ -122,7 +142,9 @@ data class MessageNode(
     val isFavorite: Boolean = false,
 ) {
     val currentMessage get() = if (messages.isEmpty() || selectIndex !in messages.indices) {
-        throw IllegalStateException("MessageNode has no valid current message: messages.size=${messages.size}, selectIndex=$selectIndex")
+        throw IllegalStateException(
+            "MessageNode has no valid current message: messages.size=${messages.size}, selectIndex=$selectIndex"
+        )
     } else {
         messages[selectIndex]
     }
@@ -150,8 +172,38 @@ fun Conversation.lastContextTokens(): Int? {
     val message = messages.lastOrNull { it.role == MessageRole.ASSISTANT } ?: return null
     val checkpoint = messages.lastOrNull { it.isContextCheckpoint }
     if (checkpoint != null && checkpoint.createdAt > message.createdAt) return null
-    // 旧消息没有 contextTokens，那时的 usage 只保留最后一步，可以直接用
-    return message.contextTokens ?: message.usage?.let { it.promptTokens + it.completionTokens }
+    return message.contextTokens()
+}
+
+/** 在 [afterNodeId] 节点之后插入压缩检查点；该节点已不存在时返回 null。 */
+internal fun Conversation.insertContextCheckpoint(afterNodeId: Uuid, summary: String): Conversation? {
+    val index = messageNodes.indexOfFirst { it.id == afterNodeId }
+    if (index == -1) return null
+    val checkpoint = UIMessage.user(summary).copy(isContextCheckpoint = true).toMessageNode()
+    return copy(
+        messageNodes =
+        messageNodes.subList(0, index + 1) + checkpoint + messageNodes.subList(index + 1, messageNodes.size),
+    )
+}
+
+/** 有工具调用在等待用户审批：这一轮还没结束，排队的消息要等审批完成后再发 */
+internal val Conversation.isAwaitingToolApproval: Boolean
+    get() = currentMessages.any { message -> message.getTools().any { it.isPending } }
+
+/**
+ * 去掉还有未执行、又没法继续执行的工具调用的消息（比如还在等待审批），这样的消息发给模型会被拒绝。
+ * 已经批准、拒绝或回答过的工具调用之后会继续执行，保留。只处理下标小于 [untilNode] 的节点。
+ */
+internal fun Conversation.withoutUnresumableToolCalls(untilNode: Int = messageNodes.size): Conversation {
+    val nodes = messageNodes.mapIndexedNotNull { index, node ->
+        if (index >= untilNode) return@mapIndexedNotNull node
+        val unexecuted = node.currentMessage.getTools().filter { !it.isExecuted }
+        if (unexecuted.isEmpty() || unexecuted.any { it.canResumeExecution }) return@mapIndexedNotNull node
+        val messages = node.messages.filter { it.id != node.currentMessage.id }
+        if (messages.isEmpty()) return@mapIndexedNotNull null
+        node.copy(messages = messages, selectIndex = (node.selectIndex - 1).coerceIn(messages.indices))
+    }
+    return if (nodes == messageNodes) this else copy(messageNodes = nodes)
 }
 
 fun UIMessage.toMessageNode(): MessageNode {
@@ -198,5 +250,18 @@ internal fun List<UIMessagePart>.localFileUrls(): Set<String> = buildSet {
             else -> null
         }
         if (url?.startsWith("file://") == true) add(url)
+    }
+}
+
+/** 替换本地附件的地址，覆盖范围与 [localFileUrls] 一致，包含工具结果中的嵌套附件。 */
+internal fun UIMessagePart.mapLocalFileUrls(transform: (String) -> String): UIMessagePart {
+    fun String.mapped() = if (startsWith("file://")) transform(this) else this
+    return when (this) {
+        is UIMessagePart.Image -> copy(url = url.mapped())
+        is UIMessagePart.Document -> copy(url = url.mapped())
+        is UIMessagePart.Video -> copy(url = url.mapped())
+        is UIMessagePart.Audio -> copy(url = url.mapped())
+        is UIMessagePart.Tool -> copy(output = output.map { it.mapLocalFileUrls(transform) })
+        else -> this
     }
 }

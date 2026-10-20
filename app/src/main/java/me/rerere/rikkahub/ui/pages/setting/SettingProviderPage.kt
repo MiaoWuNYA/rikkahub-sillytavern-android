@@ -46,10 +46,12 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -129,6 +131,26 @@ fun SettingProviderPage(vm: SettingVM = koinViewModel()) {
         }
     }
 
+    // 设置是异步写入的，等新提供商真正出现在列表里再滚过去；新建时会跳详情页，所以要能跨页面保存
+    var pendingScrollId by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(pendingScrollId, filteredProviders) {
+        val id = pendingScrollId ?: return@LaunchedEffect
+        val index = filteredProviders.indexOfFirst { it.id.toString() == id }
+        if (index >= 0) {
+            lazyListState.animateScrollToItem(index)
+            pendingScrollId = null
+        }
+    }
+
+    fun addProvider(provider: ProviderSetting) {
+        // 搜索词可能把新提供商过滤掉
+        searchQuery = ""
+        pendingScrollId = provider.id.toString()
+        vm.updateSettings { latest ->
+            latest.copy(providers = listOf(provider) + latest.providers)
+        }
+    }
+
     Scaffold(
         topBar = {
             LargeFlexibleTopAppBar(
@@ -140,25 +162,13 @@ fun SettingProviderPage(vm: SettingVM = koinViewModel()) {
                 },
                 actions = {
                     RecommendProviderButton { provider ->
-                        vm.updateSettings {
-                            it.copy(
-                                providers = listOf(provider.copyProvider(Uuid.random())) + it.providers
-                            )
-                        }
+                        addProvider(provider.copyProvider(Uuid.random()))
                     }
                     ImportProviderButton {
-                        vm.updateSettings { latest ->
-                            latest.copy(
-                                providers = listOf(it.copyProvider(Uuid.random())) + latest.providers
-                            )
-                        }
+                        addProvider(it.copyProvider(Uuid.random()))
                     }
                     AddButton { provider ->
-                        vm.updateSettings { latest ->
-                            latest.copy(
-                                providers = listOf(provider) + latest.providers
-                            )
-                        }
+                        addProvider(provider)
                         navController.navigate(Screen.SettingProviderDetail(providerId = provider.id.toString()))
                     }
                 },
@@ -563,7 +573,13 @@ private fun handleImageQRCode(
 private fun AddButton(onAdd: (ProviderSetting) -> Unit) {
     var showSheet by remember { mutableStateOf(false) }
     val templates = remember {
-        listOf(ProviderSetting.OpenAI(), ProviderSetting.Google(), ProviderSetting.Claude())
+        listOf(
+            ProviderSetting.OpenAI(),
+            ProviderSetting.Google(),
+            ProviderSetting.Claude(),
+            ProviderSetting.ChatGPT(),
+            ProviderSetting.Grok(),
+        )
     }
 
     IconButton(
@@ -609,12 +625,13 @@ private fun AddButton(onAdd: (ProviderSetting) -> Unit) {
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
+                                val typeName = template.typeName()
                                 AutoAIIcon(
-                                    name = template.name,
+                                    name = typeName,
                                     modifier = Modifier.size(40.dp)
                                 )
                                 Text(
-                                    text = template.name,
+                                    text = typeName,
                                     style = MaterialTheme.typography.titleMediumEmphasized,
                                     modifier = Modifier.weight(1f),
                                 )
@@ -626,6 +643,16 @@ private fun AddButton(onAdd: (ProviderSetting) -> Unit) {
             }
         }
     }
+}
+
+// 类型的显示名，和用户可改的 ProviderSetting.name 分开
+@Composable
+private fun ProviderSetting.typeName(): String = when (this) {
+    is ProviderSetting.OpenAI -> "OpenAI"
+    is ProviderSetting.Google -> "Google"
+    is ProviderSetting.Claude -> "Claude"
+    is ProviderSetting.ChatGPT -> stringResource(R.string.setting_provider_page_type_subscription, "ChatGPT")
+    is ProviderSetting.Grok -> stringResource(R.string.setting_provider_page_type_subscription, "Grok")
 }
 
 @Composable
