@@ -85,6 +85,15 @@ import kotlin.math.roundToInt
 /** 卡片未完成首次测量时的最小高度，避免高度上报前的塌陷与闪烁。 */
 private val CARD_MIN_HEIGHT = 80.dp
 
+/**
+ * 卡片高度上限（dp 空间，JS 上报的 CSS px 与 dp 一一对应）。
+ *
+ * 上限不是排版偏好，是显存红线：全高内联让 WebView 高度等于内容高度，
+ * 1080 宽的屏上 4800px 高的卡片单个就要吃掉十几 MB 的绘制瓦片，
+ * 复用池里几个叠起来就顶爆显存，随后渲染线程崩在 GLFunctorDrawable。
+ */
+private const val MAX_CARD_HEIGHT_DP = 1600
+
 
 /**
  * 渲染消息中的 HTML 卡片。
@@ -125,10 +134,16 @@ fun HtmlWebViewBlock(
     var contentHeight by remember(html) { mutableIntStateOf(0) }
     // 高度接受器：允许双向修正（卡内切换 tab / 折叠面板会真的变矮），
     // 但忽略 2px 内的抖动，避免图片加载/动画导致列表反复跳动。
+    //
+    // 必须有上限：WebView 高度直接决定 GPU 瓦片显存占用，全高内联遇到超长卡片
+    // 会把显存顶爆——日志里是 tile memory limits exceeded，紧接着渲染线程拿不到
+    // 绘制表面，直接 SIGSEGV 崩在 GLFunctorDrawable。超过上限后卡片改为卡内滚动，
+    // 宁可多一个滚动体也不能崩。
     val applyHeight: (Int) -> Unit = remember(html) {
         { h ->
-            if (h > 0 && kotlin.math.abs(h - contentHeight) > 2) {
-                contentHeight = h
+            val clamped = h.coerceIn(0, MAX_CARD_HEIGHT_DP)
+            if (clamped > 0 && kotlin.math.abs(clamped - contentHeight) > 2) {
+                contentHeight = clamped
             }
         }
     }
