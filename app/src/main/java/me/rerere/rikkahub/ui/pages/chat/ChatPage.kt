@@ -1129,6 +1129,9 @@ private fun ChatPageContent(
                             if (node != null && index != null) vm.selectMessageNode(node.id, index)
                         }
                     },
+                    onUpdateMvu = { messageId, dataJson ->
+                        vm.updateMessageMvu(messageId, dataJson)
+                    },
                     onWorldbook = { payload, done ->
                         runCatching {
                             val obj = kotlinx.serialization.json.Json.parseToJsonElement(payload)
