@@ -193,6 +193,12 @@ class ChatVM(
         }
     }
 
+    fun updateWorkspaceCwd(workspaceCwd: String?) {
+        viewModelScope.launch {
+            chatService.updateWorkspaceCwd(_conversationId, workspaceCwd)
+        }
+    }
+
     // 设置聊天模型
     fun setChatModel(model: Model) {
         viewModelScope.launch {
@@ -287,6 +293,11 @@ class ChatVM(
 
     suspend fun forkMessage(message: UIMessage): Conversation {
         return chatService.forkConversationAtMessage(_conversationId, message.id)
+    }
+
+    // 新会话发出第一条消息前跟随抽屉里选中的文件夹
+    suspend fun updateDraftFolder(folderId: Uuid?) {
+        chatService.updateDraftConversationFolder(_conversationId, folderId)
     }
 
     // 切换备选回复（swipe）

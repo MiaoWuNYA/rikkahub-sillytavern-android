@@ -2830,6 +2830,15 @@ class ChatService(
         )
     }
 
+    /** 会话内切换工作目录（不影响助手的默认工作区） */
+    suspend fun updateWorkspaceCwd(conversationId: Uuid, workspaceCwd: String?) {
+        updateConversationMetadata(
+            conversationId = conversationId,
+            update = { it.copy(workspaceCwd = workspaceCwd) },
+            persist = { conversationRepo.updateConversationConfig(it) },
+        )
+    }
+
     suspend fun moveConversationToAssistant(conversationId: Uuid, assistantId: Uuid) {
         updateConversationMetadata(
             conversationId = conversationId,
@@ -2837,6 +2846,19 @@ class ChatService(
             update = { it.copy(assistantId = assistantId, folderId = null) },
             persist = { conversationRepo.updateConversationAssistant(conversationId, it.assistantId) },
         )
+    }
+
+    /**
+     * 还没开始的新会话跟随抽屉里选中的文件夹，首次落库时归入；已经落库的会话不受影响，
+     * 移动走 [moveConversationToFolder]。文件夹必须属于该会话的助手，否则不归入。
+     */
+    suspend fun updateDraftConversationFolder(conversationId: Uuid, folderId: Uuid?) {
+        val folder = folderId?.let { folderRepository.getFolderById(it) }
+        if (conversationRepo.getConversationById(conversationId) != null) return
+        updateConversationState(conversationId) { latest ->
+            val target = folder?.takeIf { it.assistantId == latest.assistantId }?.id
+            if (latest.folderId == target) latest else latest.copy(folderId = target)
+        }
     }
 
     /**

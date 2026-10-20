@@ -79,7 +79,7 @@ private fun createSettingsDataStore(context: Context): DataStore<Preferences> {
             PreferenceStoreV2Migration(),
             PreferenceStoreV3Migration(),
             PreferenceStoreV4Migration(),
-            PreferenceStoreV5Migration()
+            PreferenceStoreV5Migration(),
         ),
         produceFile = { file },
     )

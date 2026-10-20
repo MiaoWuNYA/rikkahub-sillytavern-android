@@ -9,19 +9,30 @@
 |---|---|
 | 本地分支 | `huadeng` |
 | 上游 | `rikkahub/master`（github.com/rikkahub/rikkahub，最上游） |
-| 最近合入 | `rikkahub/master`（2026-10-16 合入 3 提交：data 包重组拆出 skills/合并 remote、OpenAI 流式 null 行容错、Wan 系列图标匹配） |
-| 本次冲突 | 6 个文件，全部人工解决；无数据库迁移 |
-| 领先提交数 | 约 1920+ |
+| 最近合入 | `rikkahub/master`（2026-10-20 合入 42 提交：用量流水表与统计页、oauth 订阅登录、工具耗时、额度查询、上游库迁移收敛等） |
+| 本次冲突 | 76 个文件，全部人工解决；数据库升到 v33（`Migration_32_33`） |
+| 领先提交数 | 约 1930+ |
 | 上游文件被本地修改 | 约 100 个（含重命名） |
 | 本地独有文件 | 约 50 个 |
 
-### 本次（2026-10-16）合并的固定约定
+### 本次（2026-10-20）合并的固定约定
 
+- **生成链架构保持本地（上游大重构整项放弃）**：上游 3.0/3.1 把会话内存态、生成循环、工具审批全部重写（`9c5331d4a` 删 `GenerationLoop` 拆 `ChatRequestFactory`、`e10e10433` 拆出 `ai/agent` 包、`e342909ac` 拆 `ConversationMetaGenerator`、`ConversationSession` 改成 `ConversationStore` + `lastWritten` 体系）。这套重构与本地的酒馆压缩、跨窗口记忆、插件工具、JEV、情侣空间深度交织，**冲突量过大，按"重写底层即放弃该项"处理**：`ChatService.kt`、`ConversationSession.kt`、`ConversationSessionManager.kt`、`GenerationLoop.kt` 一律取本地版本；上游 `ChatRequestFactory.kt`、`ConversationFork.kt`、`ConversationMessages.kt`、`FakeConversationStore.kt` 等只服务新架构的文件不参与，相关测试保持本地版本。
+- **`ai/agent` 包已收但生成链不用**：`ai/src/main/java/me/rerere/ai/agent/`（`AgentLoop`/`AgentRequest`/`runAgent`）是自包含的通用循环，`MemoryConsolidator` 已切到 `runAgent`（上游版本比本地 `GenerationLoop.generateText` 更完整，含自动做梦分区扫描）。app 侧主生成链仍走本地 `GenerationLoop`，不要为了让主链也用 `runAgent` 而改架构。
+- **上游把仓库操作搬进 `ChatService` 的调用点一律回退本地**：`AssistantVM.kt`、`HistoryVM.kt`、`ViewModelModule.kt`、`web/routes/ConversationRoutes.kt` 回退到本地版本（本地走 `ConversationRepository`）。`ConversationRoutes.kt` 保留上游的 `updateDraftConversationFolder` 调用。
+- **`balanceOption` 全量迁移到 `quotaQuery`（上游体系）**：`ProviderSetting` 新增 `ApiKey`/`Account` 中间密封类，`OpenAI`/`Google`/`Claude` 继承 `ApiKey`，`ChatGPT`/`Grok` 继承 `Account`。本地的 `BalanceOption`/`ProviderBalanceText`/`SettingProviderBalanceOption` 与 `OpenAIProvider.getBalance` 已删除，改由 `QuotaQuery` + `QuotaQueryRunner` + `ProviderQuotaText` 承担（功能超集：可自定义 URL/headers/resultPath）。`PreferenceStoreV5Migration` 融合两边：既清物化世界书，也把 `balanceOption` 转成 `quotaQuery`。插件声明的供应商仍不露额度配置（`pluginOwner() == null` 判断保留）。
+- **上游新增表一律后接手写迁移，且链尾收敛**：本轮上游在**它自己的 v31** 塞进了 `usage_record`（与本地 v31 含义冲突），本地把它落成 `Migration_32_33`（v32 → v33）+ `app/schemas/.../33.json`。Kotlin 迁移用 `CREATE TABLE IF NOT EXISTS`，末尾调 `DatabaseSchemaReconciler.reconcile`；`tools/verify_db_migrations.py` 的 `HANDWRITTEN` 必须同步加 `(32, 33): hw_32_33`，否则上游 v32 起点校验会失败（本次已踩）。
+- **`spotless` 已接入但 ratchet 基准改为 `rikkahub/master`**：上游用 `ratchetFrom("origin/master")`，本地 `origin` 是自己的 fork、没有 `origin/master`，直接照抄会让 spotless 任务失败。`gradle/libs.versions.toml` 里 `spotless`/`ktlint` 版本与插件条目取自上游，`lucide-icons` 必须保留（本地 5 个页面在用）。
+- **统计页收上游**：`StatsPage.kt`/`StatsVM.kt` 走上游的 `usage_record` 流水（趋势/排行/来源 + 热力图按请求数），本地旧的 `MessageNodeDAO.getTokenStats`/`getMessageCountPerDay` 与 `MessageTokenStats`/`MessageDayCount` 已删除，不要再恢复。
+- **自动合并会静默吃掉本地代码，必须逐文件核对**：git 对"上游删除、本地未改该行"一律接受删除。本轮被吃掉的包括 `Conversation.getMessageNodeByMessage`、`ConversationRepository.deleteConversationOfAssistant`、`ChatService` 构造的 `memoryRepository`、`DataSourceModule` 的 `GenerationLoop` import、`strings.xml` 的 `setting_display_page_auto_play_tts_desc`、`ChatInput`/`HeroAnimation` 的重复声明。**合并后必须跑一次"符号丢失扫描"**（对比 HEAD 与工作区的声明清单）再编译。
+- **TTS 改名守则继续生效**：上游文件里出现 `TTSProviderSetting.Volcengine` 的地方取上游版本后必须改回 `Doubao`；`ASRProviderSetting.Volcengine`、`MediaGenerationProviderSetting.Volcengine` 保持原样。
 - **`data` 包重组（上游 fffa6e82e）已全量接受**：`data.files.Skill*` → `data.skills`、`data.files.RemoteFileStore`/`data.network.*` → `data.remote`、`data.api.*` → `data.remote`、`data.favorite.*` → `data.repository`、`data.export.ExportHooks` → `ui.hooks`、`data.provider.WorkspaceDocumentsProvider` → `service`。
 - **本地独有的技能域文件必须跟着上游走**：`data/files/PluginManifest.kt`、`data/files/SkillRegistry.kt` 同属技能域，已一并迁到 `data/skills/`。`SkillManager` 在 `data.skills` 内同包裸调用 `parsePluginManifest`/`listCommands`/`parseMcpJson`，留旧包会编译失败。新增技能相关文件一律放 `data.skills/`。
 - **`.data.files` 现在只剩 `FilesManager`/`FileUtils`/`MediaCreationFiles`**：`FileFolders` 仍在此包，`data.skills` 反向 import 它，不要把它一起搬走。
 - **`ui/pages/extensions/skills/*` 保持删除**：本地已把技能页重写到 `ui/pages/extensions/`（`SkillsPage`/`SkillsVM`/`SkillDetailPage`/`SkillDetailVM`），上游对这些文件的改动不回收。本期上游只改了包名 import，同样丢弃。
 - **上游 `OpenAI` 流式容错（240deb5fe）已收**：`ChatCompletionsStreamDecoder` 改用 `me.rerere.common.http.jsonObjectOrNull`/`jsonArrayOrNull`，本地同步改用同一套扩展，不要再引入 `kotlinx.serialization.json.jsonObject` 强转（中转混入 `data: null` 会崩）。
+
+### 上一轮（2026-10-16）合并的固定约定
 
 - **依赖**：上游删掉了 `sonner` 与 `lucide`。本地全量迁移到上游自研 `me.rerere.ui.toast.Toaster`（`ToasterState` / `ToastType` / `rememberToasterState`），`sonner` 不再引入；`lucide` 本地仍有 5 个页面在用，故在 `gradle/libs.versions.toml` 与 `app/build.gradle.kts` 保留 `lucide-icons`。
 - **数据库**：上游把这轮新表算成 v30 且用 `AutoMigration(20→30)`，本地 20→31 是手写迁移链，**不要**把上游的 `AutoMigration(20,21)…(29,30)` 加进 `autoMigrations`（会与 `DataSourceModule` 的 `addMigrations` 重复定义）。上游新增表一律在后接一个手写迁移；本次即 `Migration_31_32`。

@@ -30,8 +30,10 @@ data class UIMessage(
     val usage: TokenUsage? = null,
     // 模型实际生成耗时（各步从首个 chunk 到响应结束的累计），不含首 token 延迟、工具执行和审批等待
     val generationTimeMs: Long? = null,
-    // 最后一次请求结束时的上下文占用（prompt + completion），usage 是多步累计值，不能用来看上下文大小
-    val contextTokens: Int? = null,
+    // 最后一次请求自己的 usage；usage 是多步累计值，看上下文占用和缓存命中要用这个
+    val lastUsage: TokenUsage? = null,
+    // 这条消息累计请求了多少次模型（多轮工具调用共用同一条消息）
+    val stepCount: Int? = null,
     val translation: String? = null,
     /**
      * 该楼层的 MVU 变量快照（`stat_data` 整棵树，JSON 文本）。
@@ -88,6 +90,16 @@ data class UIMessage(
     fun hasBase64Part(): Boolean = parts.any {
         it is UIMessagePart.Image && it.url.startsWith("data:")
     }
+
+    /**
+     * 最后一次请求的 usage
+     *
+     * 没有 [lastUsage] 的旧消息退回用 [usage]：多步消息的 usage 是累计值，会比实际偏大。
+     */
+    fun lastRequestUsage(): TokenUsage? = lastUsage ?: usage
+
+    /** 最后一次请求结束时的上下文占用（prompt + completion） */
+    fun contextTokens(): Int? = lastRequestUsage()?.let { it.promptTokens + it.completionTokens }
 
     /**
      * 用快照还原出一个只用于展示名称和图标的 [Model]
@@ -161,7 +173,7 @@ fun List<UIMessagePart>.isEmptyUIMessage(): Boolean {
             is UIMessagePart.Audio -> message.url.isBlank()
             is UIMessagePart.Tool,
             is UIMessagePart.ServerTool,
-                -> false
+            -> false
             else -> true
         }
     }
@@ -502,8 +514,12 @@ fun <T> List<T>.migrateToolNodes(
                                                 )
                                             )
                                         )
-                                    } else part
-                                } else part
+                                    } else {
+                                        part
+                                    }
+                                } else {
+                                    part
+                                }
                             }
 
                             is UIMessagePart.ToolCall -> {

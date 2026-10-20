@@ -35,6 +35,7 @@ internal object AppDatabaseMigrations {
         Migration_29_30,
         Migration_30_31,
         Migration_31_32,
+        Migration_32_33,
     )
 
     /** 显式链能覆盖的最低版本。 */

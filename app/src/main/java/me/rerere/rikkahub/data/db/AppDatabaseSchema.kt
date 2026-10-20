@@ -1,16 +1,16 @@
 package me.rerere.rikkahub.data.db
 
 /**
- * 由 tools/generate_db_schema.py 从 app/schemas/.../32.json 生成，请勿手改。
+ * 由 tools/generate_db_schema.py 从 app/schemas/.../33.json 生成，请勿手改。
  *
  * 恢复旧备份时用它把暂存库的结构对齐到当前版本：迁移链只保证「能升上来的库」结构正确，
  * 上游备份或脏库仍可能缺表缺列，对齐之后 Room 的 schema 校验才会通过。
  */
 internal object AppDatabaseSchema {
-    const val VERSION = 32
+    const val VERSION = 33
 
     /** Room 为这个版本生成的 identity hash，结构对齐后写回 room_master_table。 */
-    const val IDENTITY_HASH = "612fc587a5fd9019feeb1b991a30e61d"
+    const val IDENTITY_HASH = "500db313414dc3e55f1da6c8c085806e"
 
     class Table(
         val name: String,
@@ -331,6 +331,26 @@ internal object AppDatabaseSchema {
             ),
             indices = listOf(
                 "index_translation_history_create_at" to "CREATE INDEX IF NOT EXISTS `index_translation_history_create_at` ON `translation_history` (`create_at`)",
+            ),
+        ),
+        Table(
+            name = "usage_record",
+            createSql = "CREATE TABLE IF NOT EXISTS `usage_record` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `created_at` INTEGER NOT NULL, `source` TEXT NOT NULL, `provider_id` TEXT, `model_id` TEXT, `model_name` TEXT, `assistant_id` TEXT, `conversation_id` TEXT, `prompt_tokens` INTEGER NOT NULL, `completion_tokens` INTEGER NOT NULL, `cached_tokens` INTEGER NOT NULL)",
+            columns = listOf(
+                "id" to "INTEGER NOT NULL",
+                "created_at" to "INTEGER NOT NULL",
+                "source" to "TEXT NOT NULL",
+                "provider_id" to "TEXT",
+                "model_id" to "TEXT",
+                "model_name" to "TEXT",
+                "assistant_id" to "TEXT",
+                "conversation_id" to "TEXT",
+                "prompt_tokens" to "INTEGER NOT NULL",
+                "completion_tokens" to "INTEGER NOT NULL",
+                "cached_tokens" to "INTEGER NOT NULL",
+            ),
+            indices = listOf(
+                "index_usage_record_created_at" to "CREATE INDEX IF NOT EXISTS `index_usage_record_created_at` ON `usage_record` (`created_at`)",
             ),
         ),
     )
