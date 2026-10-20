@@ -1499,7 +1499,10 @@ class ChatService(
             updateConversation(conversationId, initialConversation.copy(chatSuggestions = emptyList()))
 
             // memory tool
-            if (!model.abilities.contains(ModelAbility.TOOL)) {
+            // 酒馆模式且不保留工具：请求里没有任何工具，能力告警与 MCP 校验都不适用
+            val tavernToolFree = settings.huadengSettings.enableTavernMode &&
+                !settings.huadengSettings.tavernModeKeepTools
+            if (!tavernToolFree && !model.abilities.contains(ModelAbility.TOOL)) {
                 if (useExternalWebSearch || mcpManager.getAllAvailableTools(assistant).isNotEmpty()) {
                     addError(
                         IllegalStateException(context.getString(R.string.tools_warning)),
@@ -1514,8 +1517,9 @@ class ChatService(
             val conversation = getConversationFlow(conversationId).value
 
             // 预构建工具列表只为提前校验（非法 MCP 服务名在此抛错暂停队列）；
-            // 实际请求的工具列表在生成时另行构建，此处的结果不使用
-            try {
+            // 实际请求的工具列表在生成时另行构建，此处的结果不使用。
+            // 酒馆模式不注册 MCP 工具，该校验跳过，否则纯净模式会被 MCP 配置拖停队列
+            if (!settings.huadengSettings.enableTavernMode) try {
                 chatToolFactory.createTools(
                     settings = settings,
                     assistant = assistant,
@@ -2169,12 +2173,12 @@ class ChatService(
         settings: Settings,
         useExternalWebSearch: Boolean,
     ): List<Tool> = buildList {
-        // 插件工具一律保留：插件是用户主动安装的能力（可携带自己的提示词与工具），
+        // 关闭「保留工具」后退化为纯文本模型，请求中不含任何工具（插件工具一并去掉）
+        if (!settings.huadengSettings.tavernModeKeepTools) return@buildList
+
+        // 插件工具保留：插件是用户主动安装的能力（可携带自己的提示词与工具），
         // 属于用户明确要用的东西，与 App 自带工作流不同，酒馆模式下不裁剪
         addAll(pluginToolProvider.getTools())
-
-        // 关闭「保留工具」后退化为纯文本模型，请求中不含任何工具
-        if (!settings.huadengSettings.tavernModeKeepTools) return@buildList
 
         // 只留与聊天/创作直接相关、且不注入额外上下文的基础工具
         if (assistant.localTools.contains(LocalToolOption.FileTools)) {
@@ -2217,23 +2221,26 @@ class ChatService(
         }
         var result = ""
 
-        // MCP 工具：对齐上游校验服务器名（仅字母数字），非法名直接报错返回
+        // MCP 工具：对齐上游校验服务器名（仅字母数字），非法名直接报错返回。
+        // 酒馆模式不注册 MCP 工具，跳过校验
         val mcpTools = mcpManager.getAllAvailableTools(assistant)
-        val invalidMcpNames = mcpTools
-            .map { it.second }
-            .distinct()
-            .filter { name -> name.isEmpty() || !name.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' } }
-        if (invalidMcpNames.isNotEmpty()) {
-            addError(
-                error = IllegalStateException(
-                    context.getString(
-                        R.string.error_mcp_invalid_server_name,
-                        invalidMcpNames.joinToString(", ")
-                    )
-                ),
-                conversationId = conversationId,
-            )
-            return ""
+        if (!settings.huadengSettings.enableTavernMode) {
+            val invalidMcpNames = mcpTools
+                .map { it.second }
+                .distinct()
+                .filter { name -> name.isEmpty() || !name.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' } }
+            if (invalidMcpNames.isNotEmpty()) {
+                addError(
+                    error = IllegalStateException(
+                        context.getString(
+                            R.string.error_mcp_invalid_server_name,
+                            invalidMcpNames.joinToString(", ")
+                        )
+                    ),
+                    conversationId = conversationId,
+                )
+                return ""
+            }
         }
 
         generationLoop.generateText(
