@@ -7,7 +7,7 @@
 ```bash
 pnpm install   # 首次
 pnpm dev       # 本地开发 http://localhost:5173
-pnpm build     # 构建纯静态产物 → .vitepress/dist/
+pnpm build     # 构建纯静态产物 → ../site/docs/（见 .vitepress/config.mts 的 outDir）
 pnpm preview   # 本地预览构建产物 http://localhost:4173
 ```
 
