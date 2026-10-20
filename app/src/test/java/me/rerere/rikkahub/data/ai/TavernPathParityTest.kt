@@ -68,9 +68,20 @@ class TavernPathParityTest {
 
     @Test
     fun `memory tools are stripped in tavern mode at the shared choke point`() {
+        // 酒馆模式在公共叠加点收窄工具面：保留工具时只留白名单，
+        // 不保留时整组清空——记忆工具不在白名单里，同样被剔除
         assertTrue(
-            "酒馆模式必须在公共叠加点整组剔除记忆工具（tools 已含上游注册的 memory_*）",
-            source.contains("""removeAll { it.name.startsWith("memory_") }"""),
+            "酒馆模式必须在公共叠加点按白名单收窄工具（retainAll isTavernBaseTool）",
+            source.contains("""retainAll { it.name.isTavernBaseTool() }"""),
         )
+        assertTrue(
+            "酒馆模式不保留工具时必须在公共叠加点整组清空（clear）",
+            Regex("""\} else \{\s*clear\(\)\s*\}""").containsMatchIn(source),
+        )
+        val whitelist = source
+            .substringAfter("private fun String.isTavernBaseTool(): Boolean", "")
+            .substringBefore("}")
+        assertTrue("找不到酒馆工具白名单定义", whitelist.isNotEmpty())
+        assertTrue("酒馆工具白名单里不允许出现记忆工具", !whitelist.contains("memory_"))
     }
 }

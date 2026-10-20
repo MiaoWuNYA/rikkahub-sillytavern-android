@@ -295,11 +295,16 @@ class GenerationLoop(
     // ── 预构建：tools + systemPrompt（循环不变，移到外面）──
     val toolsInternal = buildList {
         Log.i(TAG, "generateInternal: build tools($assistant)")
-        // 酒馆模式：记忆工具整组剔除——记忆是 App 自带工作流，不属于酒馆的
-        // 纯净上下文构成；tools 参数来自多条路径，本层是公共叠加点，必须兜底。
+        // 酒馆模式：本层是全部生成路径的公共叠加点，必须兜底裁剪。
+        // 不保留工具时整组清空；保留时只留酒馆基础工具面（插件 + 文件/搜索/抓取/计算器），
+        // 记忆、技能、MCP、工作空间等 App 工作流工具一律不进请求。
         addAll(tools)
         if (settings.huadengSettings.enableTavernMode) {
-            removeAll { it.name.startsWith("memory_") }
+            if (settings.huadengSettings.tavernModeKeepTools) {
+                retainAll { it.name.isTavernBaseTool() }
+            } else {
+                clear()
+            }
         }
         // 便于核对酒馆模式的实际工具面：把最终注册的工具名列出来。
         // 排查「记忆工具为何还在」这类问题时，这一行直接给出答案。
@@ -947,8 +952,16 @@ class GenerationLoop(
         PromptDebugCache.store(conversationId, escapedMessages)
 
         var messages: List<UIMessage> = messages
+        // 酒馆模式且不保留工具：模型级内置工具（搜索/URL 上下文等）同样不进请求
+        val requestModel = if (settings.huadengSettings.enableTavernMode &&
+            !settings.huadengSettings.tavernModeKeepTools
+        ) {
+            model.copy(tools = emptySet())
+        } else {
+            model
+        }
         val params = TextGenerationParams(
-            model = model,
+            model = requestModel,
             temperature = assistant.temperature,
             topP = assistant.topP,
             topK = assistant.topK,
@@ -1538,3 +1551,12 @@ private fun cleanDsmlFromText(text: String): String {
  */
 private fun String.escapeXmlTags(): String =
     this.replace("<", "&lt;").replace(">", "&gt;")
+
+/** 酒馆模式保留工具面：插件工具 + 文件/搜索/抓取/计算器，其余一律不算 */
+private fun String.isTavernBaseTool(): Boolean =
+    startsWith("plugin_") ||
+        startsWith("search_") ||
+        startsWith("scrape_") ||
+        this == "file" ||
+        this == "web_fetch" ||
+        this == "calculator"
