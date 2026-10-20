@@ -391,6 +391,7 @@ def hw_29_30(conn):
 
 def hw_30_31(conn):
     add_column(conn, "ConversationEntity", "config", "TEXT NOT NULL DEFAULT ''")
+    add_column(conn, "ConversationEntity", "rolling_context_summary", "TEXT NOT NULL DEFAULT ''")
     conn.execute(
         "CREATE TABLE IF NOT EXISTS `memory_file` (`assistant_id` TEXT NOT NULL, `path` TEXT NOT NULL, "
         "`content` TEXT NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`assistant_id`, `path`))"
@@ -434,6 +435,23 @@ def hw_30_31(conn):
     )
 
 
+def align_to_target(conn):
+    """对应 Kotlin 的 DatabaseSchemaReconciler.reconcile：把结构对齐到当前 schema。
+
+    链尾迁移会调用它，用来收拢「上游同版本号、不同结构」的库：缺表补表、缺列补列、
+    多余的列删掉。
+    """
+    entities = {entity["tableName"]: entity for entity in tools.load(TARGET)["entities"]}
+    tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    for name, entity in entities.items():
+        if name in tables:
+            rebuild_table(conn, name, TARGET)
+        else:
+            conn.execute(tools.create_sql(entity))
+            for index in entity.get("indices", []):
+                conn.execute(tools.index_sql(entity, index))
+
+
 def hw_31_32(conn):
     conn.execute(
         "CREATE TABLE IF NOT EXISTS `translation_history` (`id` TEXT NOT NULL, `source_text` TEXT NOT NULL, "
@@ -443,6 +461,7 @@ def hw_31_32(conn):
     conn.execute(
         "CREATE INDEX IF NOT EXISTS `index_translation_history_create_at` ON `translation_history` (`create_at`)"
     )
+    align_to_target(conn)
 
 
 HANDWRITTEN = {
@@ -464,6 +483,118 @@ HANDWRITTEN = {
     (30, 31): hw_30_31,
     (31, 32): hw_31_32,
 }
+
+
+# ------------------------------------------------- 上游库（rikkahub 官方版）升级路径
+#
+# fork 合并造成「同版本号、不同结构」：上游 rikkahub 的 v26~v30 库与本仓库同名版本结构
+# 并不一致（上游有 config / media_creation_* / memory_file / memory_consolidation /
+# translation_history，但没有本地自研的 rolling_context_summary）。用户从上游 APK 覆盖
+# 安装到本仓库时，迁移链必须把这些缺口补齐，否则要么 duplicate column 崩库，要么
+# Room 校验失败。下面的分叉点由逐版本比对上游 schema JSON 与本地 schema JSON 得到。
+UPSTREAM_START = 26
+
+UPSTREAM_EXTRA_TABLES = {
+    26: ("media_creation_session", "media_creation_node", "media_creation_record"),
+    28: ("memory_file",),
+    29: ("memory_consolidation",),
+    30: ("translation_history",),
+}
+
+
+def create_upstream_base(conn, version):
+    """按上游 rikkahub 的结构建 vN 库（表定义与本地一致，只调整分叉点）。"""
+    create_base(conn, version)
+    entities = {entity["tableName"]: entity for entity in tools.load(TARGET)["entities"]}
+    for start, tables in UPSTREAM_EXTRA_TABLES.items():
+        if version < start:
+            continue
+        for table in tables:
+            entity = entities[table]
+            conn.execute(tools.create_sql(entity))
+            for index in entity.get("indices", []):
+                conn.execute(tools.index_sql(entity, index))
+    if version >= 26:
+        add_column(conn, "workspaces", "shell_compatibility_mode", "INTEGER NOT NULL DEFAULT 0")
+    if version >= 27:
+        add_column(conn, "ConversationEntity", "config", "TEXT NOT NULL DEFAULT ''")
+        conn.execute("DROP TABLE IF EXISTS `MemoryEntity`")
+    if version >= 28:
+        # 滚动压缩摘要列是本地自研的，上游任何版本都没有
+        drop_column(conn, "ConversationEntity", "rolling_context_summary")
+    conn.commit()
+
+
+def run_upstream(version):
+    conn = sqlite3.connect(":memory:")
+    create_upstream_base(conn, version)
+    for _, to, step, _ in chain(version):
+        if callable(step):
+            step(conn)
+        else:
+            for statement in step:
+                conn.execute(statement)
+        conn.execute(f"PRAGMA user_version = {to}")
+        conn.commit()
+    return compare(conn, TARGET)
+
+
+def check_upstream_paths():
+    failures = 0
+    for version in range(UPSTREAM_START, TARGET):
+        problems = run_upstream(version)
+        if problems:
+            failures += 1
+            print(f"[FAIL] 上游 v{version} → v{TARGET}")
+            for problem in problems[:12]:
+                print("   -", problem)
+        else:
+            print(f"[ OK ] 上游 v{version} → v{TARGET}")
+    return failures
+
+
+# ---------------------------------------------------------------- Kotlin 侧静态检查
+
+MIGRATIONS_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "app", "src", "main", "java", "me", "rerere", "rikkahub", "data", "db", "migrations",
+)
+
+# 守卫可以写在若干行之前（比如先 if (!hasColumn(...)) 再 ALTER）
+GUARD_WINDOW = 15
+
+
+def check_raw_add_column():
+    """迁移里的裸 ADD COLUMN 会在「库里已有该列」时 duplicate column 崩库。
+
+    上游库同版本号却已含该列是最常见的触发场景（config 就这么崩过），所以每条
+    ADD COLUMN 之前必须有 hasColumn / addColumnIfNotExists 守卫。
+    AppDatabaseLegacyMigrations 是 v1→v20 的结构 diff 数据，上游同版本一致，不在此列。
+    """
+    offenders = []
+    for name in sorted(os.listdir(MIGRATIONS_DIR)):
+        if not (name.startswith("Migration_") and name.endswith(".kt")):
+            continue
+        with open(os.path.join(MIGRATIONS_DIR, name), encoding="utf-8") as handle:
+            lines = handle.readlines()
+        code = [
+            "" if line.strip().startswith(("//", "*", "/*")) else line
+            for line in lines
+        ]
+        for index, line in enumerate(code):
+            if "ADD COLUMN" not in line.upper():
+                continue
+            window = "".join(code[max(0, index - GUARD_WINDOW):index + 1])
+            if "addColumnIfNotExists(" in window or "hasColumn(" in window:
+                continue
+            offenders.append(f"{name}:{index + 1}: {lines[index].strip()}")
+    if offenders:
+        print("[FAIL] 迁移里的 ADD COLUMN 缺少幂等守卫：")
+        for offender in offenders:
+            print("   -", offender)
+        return len(offenders)
+    print("[ OK ] 迁移里的 ADD COLUMN 都有幂等守卫")
+    return 0
 
 
 def chain(from_version):
@@ -523,10 +654,21 @@ def main():
         for to, kind, items in drift:
             print(f"   [drift] v{to}（{kind}）：{'; '.join(items[:4])}")
     print()
-    if failures:
-        print(f"{failures}/{TARGET - 1} 个起点失败")
+
+    upstream_failures = check_upstream_paths()
+    print()
+    raw_failures = check_raw_add_column()
+    print()
+
+    if failures or upstream_failures or raw_failures:
+        if failures:
+            print(f"{failures}/{TARGET - 1} 个起点失败")
+        if upstream_failures:
+            print(f"{upstream_failures}/{TARGET - UPSTREAM_START} 个上游起点失败")
+        if raw_failures:
+            print(f"{raw_failures} 处 ADD COLUMN 缺少幂等守卫")
         return 1
-    print(f"全部 {TARGET - 1} 个起点都能升到 v{TARGET}")
+    print(f"全部 {TARGET - 1} 个起点与 {TARGET - UPSTREAM_START} 个上游起点都能升到 v{TARGET}")
     return 0
 
 

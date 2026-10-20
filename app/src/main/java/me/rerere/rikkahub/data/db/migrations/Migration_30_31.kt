@@ -9,10 +9,17 @@ import me.rerere.rikkahub.data.model.MemoryFile
  * - ConversationEntity 增加 config 快照列
  * - MemoryEntity 逐条记忆迁到 memory_file 后删表
  * - 新增 memory_consolidation / media_creation 三表
+ *
+ * 这里同时也是「上游 rikkahub 库 → 本仓库」的收敛点：上游与本仓库版本号同源但结构分叉
+ * （上游 v27 起就有 config、没有本仓库自研的 rolling_context_summary），任何上游库
+ * 升到本版都会经过这段迁移，所以两个列都用幂等写入，缺哪个补哪个。
  */
 val Migration_30_31 = object : Migration(30, 31) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("ALTER TABLE ConversationEntity ADD COLUMN config TEXT NOT NULL DEFAULT ''")
+        // 上游 v27~v30 的库已经有 config，裸 ADD COLUMN 会 duplicate column 崩库
+        db.addColumnIfNotExists("ConversationEntity", "config", "TEXT NOT NULL DEFAULT ''")
+        // 本仓库的 rolling_context_summary 由 27→28 添加，上游 v28 起的库不会经过那段迁移
+        db.addColumnIfNotExists("ConversationEntity", "rolling_context_summary", "TEXT NOT NULL DEFAULT ''")
 
         db.execSQL(
             "CREATE TABLE IF NOT EXISTS `memory_file` (`assistant_id` TEXT NOT NULL, `path` TEXT NOT NULL, " +

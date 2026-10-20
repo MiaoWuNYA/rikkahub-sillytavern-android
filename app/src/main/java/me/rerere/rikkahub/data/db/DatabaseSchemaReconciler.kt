@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.data.db
 
+import android.util.Log
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
@@ -10,14 +11,18 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * 和当前生成代码比对，对不上就直接抛错，所以对齐必须在交给 Room 之前做完。
  *
  * 只做加法为主的对齐：缺表补表、缺列补列、多余的索引和列删掉；不重建已有表，避免误伤数据。
+ * 除了备份恢复（BackupManager.stageRestore），链尾迁移也会调用它来收拢上游库。
  */
 internal object DatabaseSchemaReconciler {
+    private const val TAG = "DatabaseSchemaReconciler"
+
     fun reconcile(db: SupportSQLiteDatabase) {
         val existingTables = db.query("SELECT name FROM sqlite_master WHERE type = 'table'").use { cursor ->
             buildList { while (cursor.moveToNext()) cursor.getString(0)?.let { add(it) } }
         }
         for (table in AppDatabaseSchema.TABLES) {
             if (table.name !in existingTables) {
+                Log.i(TAG, "补建表 ${table.name}")
                 db.execSQL(table.createSql)
                 for ((_, sql) in table.indices) db.execSQL(sql)
                 continue
@@ -48,6 +53,8 @@ internal object DatabaseSchemaReconciler {
             // SQLite 不给已有表补 NOT NULL 且无默认值的列，这种库只能留给 Room 报明确的 schema 错误
             if (definition.contains("NOT NULL") && !definition.contains("DEFAULT")) continue
             runCatching { db.execSQL("ALTER TABLE `${table.name}` ADD COLUMN `$name` $definition") }
+                .onSuccess { Log.i(TAG, "补列 ${table.name}.$name") }
+                .onFailure { Log.w(TAG, "补列失败 ${table.name}.$name", it) }
         }
     }
 
@@ -57,6 +64,8 @@ internal object DatabaseSchemaReconciler {
             if (name in expected) continue
             // 主键列和有约束的列删不掉，失败就保持原样，由 Room 的校验给出结论
             runCatching { db.execSQL("ALTER TABLE `${table.name}` DROP COLUMN `$name`") }
+                .onSuccess { Log.i(TAG, "删列 ${table.name}.$name") }
+                .onFailure { Log.w(TAG, "删列失败 ${table.name}.$name", it) }
         }
     }
 

@@ -90,15 +90,63 @@ class AppDatabaseMigrationsTest {
         assertEquals("AppDatabaseSchema.kt 没跟上 @Database 的版本", declared, AppDatabaseSchema.VERSION)
     }
 
-    private fun readSource(relative: String): String {
+    /**
+     * 链尾迁移同时是「上游库收敛点」：迁移链按版本号推进，覆盖不了上游 rikkahub
+     * 同版本号、不同结构的库（上游 v31 有 config 却没有本地自研的 rolling_context_summary
+     * 与情侣空间表）。新增版本时忘了在链尾对齐结构，上游用户升级就会崩在 Room 的校验上。
+     */
+    @Test
+    fun `链尾迁移做结构收敛`() {
+        val target = AppDatabaseSchema.VERSION
+        val source = readSource("src/main/java/me/rerere/rikkahub/data/db/migrations/Migration_${target - 1}_$target.kt")
+        assertTrue(
+            "链尾迁移 Migration_${target - 1}_$target 没有调用 DatabaseSchemaReconciler.reconcile",
+            source.contains("DatabaseSchemaReconciler.reconcile"),
+        )
+    }
+
+    /**
+     * 迁移里的裸 ADD COLUMN 会在「库里已经有该列」时 duplicate column 崩库。
+     * 上游 rikkahub 同版本号却已含 config 列，就是这么炸的（Migration_30_31），
+     * 所以每条 ADD COLUMN 前必须有 hasColumn / addColumnIfNotExists 守卫。
+     * AppDatabaseLegacyMigrations 是 v1→v20 的结构 diff 数据，上游同版本一致，不在检查范围。
+     */
+    @Test
+    fun `迁移里的 ADD COLUMN 都有幂等守卫`() {
+        val directory = resolveSource("src/main/java/me/rerere/rikkahub/data/db/migrations")
+        val offenders = mutableListOf<String>()
+        val files = directory.listFiles { file -> file.name.startsWith("Migration_") && file.name.endsWith(".kt") }
+        for (file in files.orEmpty()) {
+            val code = file.readLines().map { line ->
+                val trimmed = line.trimStart()
+                if (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*")) "" else line
+            }
+            code.forEachIndexed { index, line ->
+                if (!line.uppercase().contains("ADD COLUMN")) return@forEachIndexed
+                val window = code.subList(maxOf(0, index - GUARD_WINDOW), index + 1).joinToString("\n")
+                if (window.contains("addColumnIfNotExists(") || window.contains("hasColumn(")) return@forEachIndexed
+                offenders += "${file.name}:${index + 1}"
+            }
+        }
+        assertTrue("这些 ADD COLUMN 缺少幂等守卫：$offenders", offenders.isEmpty())
+    }
+
+    private fun readSource(relative: String): String = resolveSource(relative).readText()
+
+    private fun resolveSource(relative: String): File {
         val cwd = File(System.getProperty("user.dir") ?: ".")
         val roots = listOf(cwd, cwd.parentFile, cwd.parentFile?.parentFile).filterNotNull()
         for (root in roots) {
             for (candidate in listOf(File(root, relative), File(root, "app/$relative"))) {
-                if (candidate.exists()) return candidate.readText()
+                if (candidate.exists()) return candidate
             }
         }
         error("找不到源码文件 $relative")
+    }
+
+    private companion object {
+        /** 守卫可以写在若干行之前（先 if (!hasColumn(...)) 再 ALTER） */
+        const val GUARD_WINDOW = 15
     }
 
     private fun assertPathIsContinuous(from: Int, to: Int, path: List<Migration>) {
