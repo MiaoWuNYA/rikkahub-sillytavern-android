@@ -236,6 +236,11 @@
   <string name="backup_page_reminder_never_backed_up">从未备份</string>
   <string name="backup_page_reminder_no_record">未记录备份时间</string>
   <string name="backup_page_reminder_title">备份提醒</string>
+  <string name="backup_launch_reminder_title">备份一下数据吧</string>
+  <string name="backup_launch_reminder_message">你已经打开软件 %1$d 次了，建议把当前数据备份到其他文件夹，重装或换机时才不会丢。</string>
+  <string name="backup_launch_reminder_dont_remind">不再提醒</string>
+  <string name="backup_launch_reminder_got_it">知道了</string>
+  <string name="backup_launch_reminder_backup_now">立即备份</string>
   <string name="backup_page_restart_app">重启应用</string>
   <string name="backup_page_restart_desc">应用需要重启以使设置生效。</string>
   <string name="backup_page_restore">恢复</string>
@@ -676,6 +681,7 @@
   <string name="history_page_unpin">取消置顶</string>
   <string name="html_block_fullscreen">查看完整网页</string>
   <string name="html_card_collapse">收起网页卡片</string>
+  <string name="html_card_script_error">卡片脚本执行出错，内容可能不完整</string>
   <string name="html_card_expand">网页卡片 · 点击查看</string>
   <string name="huadeng_clean_mode">清爽简洁模式</string>
   <string name="huadeng_clean_mode_desc">开启后隐藏情侣空间、生活空间等娱乐功能入口，并且不再向 AI 注册对应工具，界面更简洁、上下文更省 token</string>

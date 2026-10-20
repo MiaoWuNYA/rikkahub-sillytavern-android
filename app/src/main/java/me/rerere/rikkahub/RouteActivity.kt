@@ -71,6 +71,8 @@ import me.rerere.rikkahub.data.event.AppEventBus
 import me.rerere.rikkahub.data.repository.MediaCreationRepository
 import me.rerere.rikkahub.service.MediaCreationForegroundService
 import me.rerere.rikkahub.ui.activity.SafeModeActivity
+import me.rerere.rikkahub.ui.components.ui.BACKUP_REMINDER_LAUNCH_INTERVAL
+import me.rerere.rikkahub.ui.components.ui.BackupLaunchReminderDialog
 import me.rerere.rikkahub.ui.components.ui.TTSController
 import me.rerere.rikkahub.ui.context.LocalASRState
 import me.rerere.rikkahub.ui.context.LocalNavController
@@ -176,6 +178,8 @@ import me.rerere.rikkahub.ui.pages.onboarding.OnboardingPage
 import me.rerere.rikkahub.ui.pages.onboarding.OnboardingState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.flow.first
 import androidx.compose.ui.platform.LocalContext
@@ -890,10 +894,50 @@ class RouteActivity : ComponentActivity() {
                         state = toastState,
                         modifier = Modifier.align(Alignment.TopCenter),
                     )
+
+                    BackupLaunchReminderHost(
+                        onNavigateToBackup = { backStack.add(Screen.Backup) },
+                    )
                 }
             }
         }
     }
+}
+
+/**
+ * 启动次数触发的备份提醒宿主。
+ *
+ * 只在「第 N 次启动」这种整数倍节点上弹一次：第 1 次启动不弹，
+ * 第 15、30、45… 次才弹；勾过「不再提醒」后永久关闭。
+ * 同一次进程里弹过就不再弹，避免读盘后 launchCount 变化导致重复弹出。
+ */
+@Composable
+private fun BackupLaunchReminderHost(onNavigateToBackup: () -> Unit) {
+    val settingsStore = koinInject<SettingsStore>()
+    val scope = rememberCoroutineScope()
+    val launchCount by settingsStore.launchCountFlow.collectAsStateWithLifecycle(initialValue = 0)
+    val disabled by settingsStore.backupLaunchReminderDisabledFlow
+        .collectAsStateWithLifecycle(initialValue = false)
+    var shown by rememberSaveable { mutableStateOf(false) }
+
+    val due = !disabled && !shown &&
+        launchCount >= BACKUP_REMINDER_LAUNCH_INTERVAL &&
+        launchCount % BACKUP_REMINDER_LAUNCH_INTERVAL == 0
+    if (!due) return
+
+    val rememberChoice: (Boolean) -> Unit = { dontRemindAgain ->
+        shown = true
+        if (dontRemindAgain) scope.launch { settingsStore.setBackupLaunchReminderDisabled(true) }
+    }
+
+    BackupLaunchReminderDialog(
+        launchCount = launchCount,
+        onDismiss = rememberChoice,
+        onBackupNow = { dontRemindAgain ->
+            rememberChoice(dontRemindAgain)
+            onNavigateToBackup()
+        },
+    )
 }
 
 // 设置页背景图只作用于设置相关路由，避免透到聊天等页面
