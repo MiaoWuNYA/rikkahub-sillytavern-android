@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 import kotlinx.datetime.toJavaLocalDateTime
 import me.rerere.ai.core.TokenUsage
@@ -116,9 +117,15 @@ fun ChatMessageNerdLine(
                         icon = { StatsIcon(HugeIcons.Upload02, stringResource(R.string.chat_message_usage_input)) },
                         content = {
                             Text(text = "${stats.lastUsage.promptTokens.formatNumber()} tokens")
+                            // Cached tokens（DeepSeek prompt_cache_hit_tokens 等）；总量有效时附带命中率
                             val cached = stats.lastUsage.cachedTokens
                             if (cached > 0) {
-                                Text(text = "(${cached.formatNumber()} cached)")
+                                val hitRate = if (stats.lastUsage.promptTokens > 0) {
+                                    " / ${(cached * 100f / stats.lastUsage.promptTokens).roundToInt()}%"
+                                } else {
+                                    ""
+                                }
+                                Text(text = "(${cached.formatNumber()} cached$hitRate)")
                             }
                         }
                     )
