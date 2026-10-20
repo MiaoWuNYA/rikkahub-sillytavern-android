@@ -71,8 +71,6 @@ fun WebChatSurface(
     onSaveVariables: (String) -> Unit = {},
     // 前端插件脚本（仅本模式下发），json 数组，含脚本源码
     frontendScriptsJson: String = "[]",
-    // 酒馆助手兼容渲染设置
-    helperSettingsJson: String = "{}",
     onSetVariables: (String) -> Unit = {},
     onSubstituteMacros: (suspend (String) -> String)? = null,
     onMessagesJson: () -> String = { "[]" },
@@ -280,6 +278,16 @@ fun WebChatSurface(
             if (url.isNullOrEmpty() || url == "about:blank" || url.startsWith("chrome-error")) {
                 view.loadUrl(WEBUI_URL)
             }
+        },
+        // 页面离开时必须销毁：不销毁的 WebView 会一直留在渲染线程上，
+        // 反复进出聊天页既漏内存，也容易在销毁时机上崩在渲染线程
+        onRelease = { view ->
+            (view.parent as? android.view.ViewGroup)?.removeView(view)
+            bridge = null
+            webViewRef = null
+            view.stopLoading()
+            view.removeAllViews()
+            view.destroy()
         },
     )
 
@@ -556,9 +564,6 @@ fun WebChatSurface(
                 listOf(
                     "jquery" to "lib/jquery.min.js",
                     "toastr" to "lib/toastr.min.js",
-                    // 内置完整版 lodash 与 Vue 3 运行时：手机 UI 卡的组件几乎都是 Vue 应用
-                    "lodash" to "lib/lodash.min.js",
-                    "vue" to "lib/vue.runtime.global.prod.js",
                     // 运行环境补丁：卡片与页面都用它补齐旧 WebView 缺失的标准方法
                     "compat" to "webui/compat.js",
                 ).forEach { (name, path) ->
@@ -582,11 +587,6 @@ fun WebChatSurface(
     LaunchedEffect(frontendScriptsJson, ready) {
         if (!ready) return@LaunchedEffect
         webViewRef?.evaluateJavascript("window.webui.setPlugins(${quoteJs(frontendScriptsJson)});", null)
-    }
-
-    LaunchedEffect(helperSettingsJson, ready) {
-        if (!ready) return@LaunchedEffect
-        webViewRef?.evaluateJavascript("window.webui.setHelperSettings(${quoteJs(helperSettingsJson)});", null)
     }
 
     LaunchedEffect(appearanceJson, ready) {
