@@ -56,6 +56,16 @@ internal fun List<UIMessage>.replaceRegexesForDisplay(
 
 // 提示词层：结果会写回会话，markdownOnly 的正则（前端卡 HTML）必须跳过
 
+// 流式期间只处理正在生成的最后一条：历史已被写回正则结果，逐 chunk 全量重跑卡顿且会二次替换
+internal fun List<UIMessage>.applyStreamingRegexTail(
+    assistant: Assistant,
+    conversationId: Uuid?,
+    globalRegexes: List<AssistantRegex> = emptyList(),
+): List<UIMessage> {
+    val last = lastOrNull()?.takeIf { it.role == MessageRole.ASSISTANT } ?: return this
+    return dropLast(1) + listOf(last).replaceRegexesForDisplay(assistant, conversationId, visual = false, globalRegexes)
+}
+
 object RegexOutputTransformer : OutputMessageTransformer, KoinComponent {
     override suspend fun visualTransform(
         ctx: TransformerContext,
