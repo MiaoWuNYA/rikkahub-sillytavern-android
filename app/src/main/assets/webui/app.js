@@ -1498,7 +1498,7 @@
   }
 
   // 把块序列铺进 body：同 kind（卡片还要求 key 相同）的节点原地复用
-  function patchBody(body, msg) {
+  function patchBody(body, msg, streaming) {
     var want = blocksOf(msg);
     var children = [];
     for (var c = 0; c < body.children.length; c++) {
