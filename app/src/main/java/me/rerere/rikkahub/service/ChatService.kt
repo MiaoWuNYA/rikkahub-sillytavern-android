@@ -580,7 +580,6 @@ class ChatService(
                     assistantId = assistant.id,
                     newConversation = true
                 )
-                // 草稿阶段的改动（抽屉里选中的文件夹）可能已经写进内存，新建时继承下来
                 val draftFolderId = session.state.value.folderId
                 // 合并开场白：几条开场白是同一条消息的多个 swipe，而不是几条独立消息
                 if (assistant.mergeGreetings && presetMessages.size > 1) {
@@ -2867,9 +2866,7 @@ class ChatService(
     suspend fun updateDraftConversationFolder(conversationId: Uuid, folderId: Uuid?) {
         val folder = folderId?.let { folderRepository.getFolderById(it) }
         if (conversationRepo.getConversationById(conversationId) != null) return
-        // 必须走 updateDraftState：updateConversationState 会把还没初始化的会话标记成
-        // 已初始化，抢在 ensureInitialized 之前跑会让它整段跳过——新会话既没有开场白，
-        // 也丢掉了 newConversation 标记，多开场白选择器不再弹出
+        // 走 updateDraftState：普通状态更新会把未初始化的会话标记成已初始化，开场白插不进来
         sessionManager.getOrCreate(conversationId).updateDraftState { latest ->
             val target = folder?.takeIf { it.assistantId == latest.assistantId }?.id
             if (latest.folderId == target) latest else latest.copy(folderId = target)

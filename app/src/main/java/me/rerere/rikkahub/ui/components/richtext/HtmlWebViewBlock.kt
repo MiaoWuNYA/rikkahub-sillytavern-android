@@ -85,15 +85,6 @@ import kotlin.math.roundToInt
 /** 卡片未完成首次测量时的最小高度，避免高度上报前的塌陷与闪烁。 */
 private val CARD_MIN_HEIGHT = 80.dp
 
-/**
- * 卡片高度上限（dp 空间，JS 上报的 CSS px 与 dp 一一对应）。
- *
- * 上限不是排版偏好，是显存红线：全高内联让 WebView 高度等于内容高度，
- * 1080 宽的屏上 4800px 高的卡片单个就要吃掉十几 MB 的绘制瓦片，
- * 复用池里几个叠起来就顶爆显存，随后渲染线程崩在 GLFunctorDrawable。
- */
-private const val MAX_CARD_HEIGHT_DP = 1600
-
 
 /**
  * 渲染消息中的 HTML 卡片。
@@ -132,18 +123,11 @@ fun HtmlWebViewBlock(
 
     // JS 上报的内容高度（CSS px ≈ Compose dp）；0 表示尚未上报
     var contentHeight by remember(html) { mutableIntStateOf(0) }
-    // 高度接受器：允许双向修正（卡内切换 tab / 折叠面板会真的变矮），
-    // 但忽略 2px 内的抖动，避免图片加载/动画导致列表反复跳动。
-    //
-    // 必须有上限：WebView 高度直接决定 GPU 瓦片显存占用，全高内联遇到超长卡片
-    // 会把显存顶爆——日志里是 tile memory limits exceeded，紧接着渲染线程拿不到
-    // 绘制表面，直接 SIGSEGV 崩在 GLFunctorDrawable。超过上限后卡片改为卡内滚动，
-    // 宁可多一个滚动体也不能崩。
+    // 允许双向修正但忽略 2px 抖动，避免图片加载/动画让列表反复跳动
     val applyHeight: (Int) -> Unit = remember(html) {
         { h ->
-            val clamped = h.coerceIn(0, MAX_CARD_HEIGHT_DP)
-            if (clamped > 0 && kotlin.math.abs(clamped - contentHeight) > 2) {
-                contentHeight = clamped
+            if (h > 0 && kotlin.math.abs(h - contentHeight) > 2) {
+                contentHeight = h
             }
         }
     }
@@ -341,14 +325,10 @@ fun HtmlWebViewBlock(
                             )
                         }
                     },
-                    // onReset 非空即启用 item 复用：卡片滑出视口不再销毁 WebView，
-                    // 回到视口时同一条消息 inlinePage 相同、不会重载——
-                    // 否则每次发送/删除消息列表一变，历史卡片全部白闪重载
-                    onReset = { it.stopLoading() },
+                    // 不启用 item 复用：滑出视口的 WebView 必须销毁，GLFunctor 残留
+                    // 在渲染层后与新卡片并存会崩（2.5.8 无复用无此崩溃）
                     onRelease = {
-                        // 先把自己从父容器摘掉再销毁：removeAllViews 清的是 WebView 的子视图，
-                        // 它自己还挂在视图树上，渲染线程仍会拿已失效的绘制表面继续画，
-                        // 部分机型直接 SIGSEGV 崩在 RenderThread（GLFunctorDrawable）
+                        // 先从父容器摘除再销毁，否则渲染线程仍持有失效绘制表面
                         (it.parent as? ViewGroup)?.removeView(it)
                         it.stopLoading()
                         it.removeAllViews()

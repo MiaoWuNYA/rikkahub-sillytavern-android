@@ -8,13 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.uuid.Uuid
 
-/**
- * 新会话在初始化前被外部改动的语义。
- *
- * 会话页面刚打开时，跟随抽屉文件夹的草稿更新可能抢在 [ConversationSession.initialize]
- * 之前跑完。那时如果把它当成普通更新，会话会被标记成已初始化，initialize 整段跳过，
- * 开场白（含多开场白选择）就再也插不进来。
- */
+// 新会话在初始化前被外部改动时，初始化必须仍然生效
 class ConversationSessionDraftTest {
 
     @Test

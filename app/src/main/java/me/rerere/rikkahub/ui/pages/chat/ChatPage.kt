@@ -173,9 +173,7 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
     val errors by vm.errors.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    // 新会话发出第一条消息前，跟随抽屉当前选中的文件夹（#2133）。
-    // 必须等会话初始化完成（assistantId 落到真实助手）再判一次：会话刚建起时
-    // assistantId 还是默认值，那时归入的文件夹会被过滤掉
+    // 新会话发出首条消息前跟随抽屉选中的文件夹；等初始化落到真实助手后再判一次
     val drawerVm: ChatDrawerVM = koinViewModel(viewModelStoreOwner = LocalContext.current as ComponentActivity)
     val selectedFolderId by drawerVm.selectedFolderId.collectAsStateWithLifecycle()
     LaunchedEffect(selectedFolderId, conversation.newConversation, conversation.assistantId) {
