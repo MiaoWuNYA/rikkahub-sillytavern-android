@@ -279,8 +279,7 @@ fun WebChatSurface(
                 view.loadUrl(WEBUI_URL)
             }
         },
-        // 页面离开时必须销毁：不销毁的 WebView 会一直留在渲染线程上，
-        // 反复进出聊天页既漏内存，也容易在销毁时机上崩在渲染线程
+        // 页面离开即销毁，避免 WebView 残留在渲染层
         onRelease = { view ->
             (view.parent as? android.view.ViewGroup)?.removeView(view)
             bridge = null

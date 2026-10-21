@@ -72,14 +72,7 @@ class ConversationSession(
         initialized = true
     }
 
-    /**
-     * 更新尚未落库的新会话的草稿字段（例如跟随抽屉选中的文件夹）。
-     *
-     * 未初始化时**只改内存、不置 [initialized]**：新会话页面刚打开时，
-     * 外部改动可能抢在 [initialize] 之前跑完，一旦这里把会话标记成已初始化，
-     * initialize 的 `if (initialized) return` 会整段跳过，开场白（含多开场白
-     * 选择）就再也插不进来。已初始化的会话走正常路径。
-     */
+    // 未初始化时只改内存不置初始化标记，否则 initialize 整段跳过、开场白插不进来
     fun updateDraftState(transform: (Conversation) -> Conversation) {
         synchronized(this) {
             if (initialized) updateConversation(transform(_state.value))

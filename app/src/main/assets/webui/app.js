@@ -597,8 +597,6 @@
     '    scheduled = false;',
     '    var h = contentHeight();',
     '    if (h <= 0) return;',
-    // 高度上限：WebView/页面为卡片分配绘制瓦片，超长卡片会把显存顶爆
-    '    if (h > 1600) h = 1600;',
     '    if (Math.abs(h - last) > 1) {',
     '      last = h;',
     '      try { if (window.frameElement) window.frameElement.style.height = h + "px"; } catch (e) {}',
@@ -900,46 +898,6 @@
       body + '</body></html>';
   }
 
-  // 卡片装载调度。
-  //
-  // 页面总高度是所有卡片高度之和，全部同时活着会把 GPU 瓦片显存顶爆——日志里
-  // 是 tile memory limits exceeded，紧接着渲染线程拿不到绘制表面，直接崩在
-  // GLFunctorDrawable。所以只在接近视口时装载 iframe，离开后卸载，高度用上一次
-  // 测到的值占位（高度本来就写在 frame.style 上，卸载不会丢）。
-  var cardObserver = null;
-  var CARD_ROOT_MARGIN = '1600px 0px 1600px 0px';
-
-  function cardObserverInstance() {
-    if (cardObserver) return cardObserver;
-    if (typeof IntersectionObserver === 'undefined') return null;
-    cardObserver = new IntersectionObserver(function (entries) {
-      for (var i = 0; i < entries.length; i++) {
-        var entry = entries[i];
-        var frame = entry.target;
-        if (entry.isIntersecting) {
-          if (!frame.getAttribute('srcdoc') && frame.dataset.cardDoc) frame.srcdoc = frame.dataset.cardDoc;
-        } else if (frame.getAttribute('srcdoc')) {
-          if (frame.style.height) frame.dataset.cardHeight = frame.style.height;
-          frame.removeAttribute('srcdoc');
-        }
-      }
-    }, { rootMargin: CARD_ROOT_MARGIN });
-    return cardObserver;
-  }
-
-  function mountCardFrame(frame) {
-    var observer = cardObserverInstance();
-    if (!observer) {
-      if (frame.dataset.cardDoc) frame.srcdoc = frame.dataset.cardDoc;
-      return;
-    }
-    observer.observe(frame);
-  }
-
-  function unmountCardFrame(frame) {
-    if (cardObserver) cardObserver.unobserve(frame);
-  }
-
   function cardFrame(key, desc) {
     var frame = document.createElement('iframe');
     frame.className = 'card-frame';
@@ -950,10 +908,8 @@
     var load = function (target) {
       var html = cardDocHtml(target, target.ctx || {});
       frame.dataset.cardDoc = html;
-      // 卸载过的卡片记得自己多高，重新装上时不跳
-      if (frame.dataset.cardHeight) frame.style.height = frame.dataset.cardHeight;
       // srcdoc 同步解析且不产生导航，卡片脚本只执行一次；document.write + about:blank 会把脚本跑两遍
-      mountCardFrame(frame);
+      frame.srcdoc = html;
     };
     frame._ripple = function (nextKey, nextDesc) {
       if (nextKey) frame.dataset.cardKey = nextKey;
@@ -1519,11 +1475,7 @@
       }
     }
     for (var j = children.length - 1; j >= want.length; j--) {
-      if (children[j].parentNode === body) {
-        var gone = children[j].querySelector('iframe.card-frame');
-        if (gone) unmountCardFrame(gone);
-        body.removeChild(children[j]);
-      }
+      if (children[j].parentNode === body) body.removeChild(children[j]);
     }
   }
 
