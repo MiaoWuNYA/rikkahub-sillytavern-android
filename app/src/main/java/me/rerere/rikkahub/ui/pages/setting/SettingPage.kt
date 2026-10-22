@@ -289,13 +289,13 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                             me.rerere.rikkahub.data.service.AnnouncementManager.reset(context)
                             Toast.makeText(
                                 context,
-                                "公告已重置，下次启动会重新显示",
+                                stringResource(R.string.setting_page_announcement_reset_toast),
                                 Toast.LENGTH_SHORT,
                             ).show()
                         },
                         leadingContent = { CardGroupIcon(HugeIcons.Clapping01, containerColor = containerColor, contentColor = contentColor) },
-                        headlineContent = { Text("公告") },
-                        supportingContent = { Text("重置「不再提示」，下次启动重新显示") },
+                        headlineContent = { Text(stringResource(R.string.setting_page_announcement)) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_announcement_desc)) },
                     )
                     // 允许重看引导。
                     //
@@ -305,8 +305,8 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                     item(
                         onClick = { navController.navigate(Screen.Onboarding) },
                         leadingContent = { CardGroupIcon(HugeIcons.Clapping01, containerColor = containerColor, contentColor = contentColor) },
-                        supportingContent = { Text("重新看一遍新手引导") },
-                        headlineContent = { Text("新手引导") },
+                        supportingContent = { Text(stringResource(R.string.setting_page_onboarding_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_onboarding)) },
                     )
                     item(
                         onClick = { navController.navigate(Screen.SettingAbout) },
@@ -414,14 +414,13 @@ private fun ProviderConfigWarningCard(onClick: () -> Unit) {
 }
 
 private data class QQGroup(
-    val name: String,
-    val key: String? = null,
     val number: String? = null,
+    val key: String? = null,
     val icon: ImageVector = TencentQQIcon,
 )
 
 private val QQ_GROUPS = listOf(
-    QQGroup("华灯反馈群", number = "1129035651"),
+    QQGroup("1129035651"),
 )
 
 @Composable
@@ -439,7 +438,7 @@ private fun QQGroupBottomSheet(onDismiss: () -> Unit) {
                     onClick = {
                         if (group.number != null) {
                             context.writeClipboardText(group.number)
-                            Toast.makeText(context, "群号已复制", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.setting_page_feedback_group_copied), Toast.LENGTH_SHORT).show()
                         } else {
                             context.joinQQGroup(group.key)
                         }
@@ -456,7 +455,7 @@ private fun QQGroupBottomSheet(onDismiss: () -> Unit) {
                         )
                     },
                 ) {
-                    Text(group.name)
+                    Text(stringResource(R.string.setting_page_feedback_group))
                 }
             }
         }

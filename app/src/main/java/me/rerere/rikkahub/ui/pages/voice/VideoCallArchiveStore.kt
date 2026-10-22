@@ -1,6 +1,7 @@
 package me.rerere.rikkahub.ui.pages.voice
 
 import android.content.Context
+import me.rerere.rikkahub.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -280,12 +281,12 @@ object VideoCallArchiveRuntime : KoinComponent {
         val minutes = durationSeconds / 60L
         val seconds = durationSeconds % 60L
         val turns = archive.messages.count { it.role == "user" }
-        val duration = if (minutes > 0) "${minutes}分${seconds}秒" else "${seconds}秒"
+        val duration = if (minutes > 0) appContext.getString(R.string.video_call_archive_duration_minutes, minutes, seconds) else appContext.getString(R.string.video_call_archive_duration_seconds, seconds)
         return buildString {
-            append("📹 视频通话记录")
+            append(appContext.getString(R.string.video_call_archive_title))
             if (archive.assistantName.isNotBlank()) append(" · ${archive.assistantName}")
-            append("\n通话时长：$duration · $turns 回合")
-            append("\n完整通话已存档")
+            append("\n" + appContext.getString(R.string.video_call_archive_summary, duration, turns))
+            append("\n" + appContext.getString(R.string.video_call_archive_saved))
             append("\n$ARCHIVE_MARKER_PREFIX${archive.id}]")
         }
     }

@@ -165,7 +165,7 @@ internal fun SettingDisplayColorContent(vm: SettingVM, contentPadding: PaddingVa
                 val text = withContext(Dispatchers.IO) {
                     context.contentResolver.openInputStream(uri)?.use { stream ->
                         stream.readBytes().toString(Charsets.UTF_8)
-                    } ?: error("无法读取所选文件")
+                    } ?: error(context.getString(R.string.setting_display_color_read_file_failed))
                 }
                 parseSillyTavernTheme(text)
             }.onSuccess { theme ->
@@ -830,7 +830,7 @@ internal fun importThemeImage(context: Context, uri: Uri): String {
     val targetFile = File(imageDir, "theme_img_${System.currentTimeMillis()}.$extension")
     context.contentResolver.openInputStream(uri)?.use { input ->
         targetFile.outputStream().use { output -> input.copyTo(output) }
-    } ?: error("无法读取所选图片")
+    } ?: error(context.getString(R.string.setting_display_color_read_image_failed))
     return Uri.fromFile(targetFile).toString()
 }
 
@@ -838,17 +838,17 @@ internal fun importThemeImage(context: Context, uri: Uri): String {
 private class ThemeFileBytes(val bytes: ByteArray, val extension: String)
 
 /** 下载 http(s) URL / 解码 data URI，扩展名优先取 URL 路径上的，其次 Content-Type / MIME */
-private fun fetchThemeFile(url: String): ThemeFileBytes {
+private fun fetchThemeFile(context: Context, url: String): ThemeFileBytes {
     if (url.startsWith("data:", ignoreCase = true)) {
         val marker = ";base64,"
         val idx = url.indexOf(marker, ignoreCase = true)
-        require(idx > 0) { "不支持的 data URI" }
+        require(idx > 0) { context.getString(R.string.setting_display_color_unsupported_data_uri) }
         val mime = url.substringAfter("data:", "").substringBefore(";").lowercase()
         val bytes = android.util.Base64.decode(url.substring(idx + marker.length), android.util.Base64.DEFAULT)
         val extension = mime.substringAfter('/', "").filter { it.isLetterOrDigit() }.takeIf { it.length in 2..5 } ?: ""
         return ThemeFileBytes(bytes, extension)
     }
-    require(url.startsWith("http://") || url.startsWith("https://")) { "不支持的资源地址" }
+    require(url.startsWith("http://") || url.startsWith("https://")) { context.getString(R.string.setting_display_color_unsupported_resource_url) }
     val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
@@ -875,8 +875,8 @@ private fun fetchThemeFile(url: String): ThemeFileBytes {
 
 /** 把酒馆主题里的背景图（http URL 或 data URI）保存到应用私有目录，返回文件 URI */
 private fun storeThemeBackground(context: Context, url: String, kind: String = "bg"): String {
-    val fetched = fetchThemeFile(url)
-    check(fetched.bytes.size <= 25_000_000) { "背景图过大（>25MB）" }
+    val fetched = fetchThemeFile(context, url)
+    check(fetched.bytes.size <= 25_000_000) { context.getString(R.string.setting_display_color_background_too_large) }
     val imageDir = File(context.filesDir, "images/theme").apply { mkdirs() }
     val targetFile = File(imageDir, "theme_${kind}_${System.currentTimeMillis()}.${fetched.extension.ifBlank { "png" }}")
     targetFile.writeBytes(fetched.bytes)
@@ -893,21 +893,21 @@ private fun storeThemeFont(context: Context, font: ThemeFont): String {
     // Typeface.createFromFile 不支持 woff2、项目也没有 woff2 解码器，
     // 因此这种情况明确放弃，让外层保持用户原有字体，而不是制造一个坏文件。
     val url = if (font.isRemoteCss) {
-        resolveTtfOrOtfUrl(font.url)
-            ?: throw IllegalArgumentException("该主题字体只提供 woff2，系统无法加载")
+        resolveTtfOrOtfUrl(context, font.url)
+            ?: throw IllegalArgumentException(context.getString(R.string.setting_display_color_woff2_unsupported))
     } else {
         font.url
     }
 
-    val fetched = fetchThemeFile(url)
-    check(fetched.bytes.size <= 30_000_000) { "字体文件过大（>30MB）" }
+    val fetched = fetchThemeFile(context, url)
+    check(fetched.bytes.size <= 30_000_000) { context.getString(R.string.setting_display_color_font_too_large) }
     val fontDir = File(context.filesDir, FileFolders.FONTS).apply { mkdirs() }
     val targetFile = File(fontDir, "theme_font_${System.currentTimeMillis()}.${fetched.extension.ifBlank { "ttf" }}")
     targetFile.writeBytes(fetched.bytes)
     runCatching { android.graphics.Typeface.createFromFile(targetFile) }
         .onFailure {
             targetFile.delete()
-            throw IllegalArgumentException("字体文件无法被系统加载", it)
+            throw IllegalArgumentException(context.getString(R.string.setting_display_color_font_load_failed), it)
         }
     return "${FileFolders.FONTS}/${targetFile.name}"
 }
@@ -919,8 +919,8 @@ private fun storeThemeFont(context: Context, font: ThemeFont): String {
  * url("./y.ttf") format("truetype")` —— 只要其中任一项是 ttf/otf 就能用。
  * 找不到返回 null（调用方据此放弃，不做降级猜测）。
  */
-private fun resolveTtfOrOtfUrl(cssUrl: String): String? {
-    val css = runCatching { fetchThemeFile(cssUrl).bytes.toString(Charsets.UTF_8) }
+private fun resolveTtfOrOtfUrl(context: Context, cssUrl: String): String? {
+    val css = runCatching { fetchThemeFile(context, cssUrl).bytes.toString(Charsets.UTF_8) }
         .getOrNull() ?: return null
     val face = Regex("""@font-face\s*\{([^}]*)\}""", RegexOption.IGNORE_CASE)
     for (m in face.findAll(css)) {

@@ -1,5 +1,7 @@
 package me.rerere.rikkahub.ui.components.message.tools
 
+import java.util.Locale
+
 /**
  * 工具显示名：把内部英文工具名映射为中文雅称，仅用于 UI 展示（工具调用气泡、
  * 生成状态等），不改变发送给模型的实际工具名。
@@ -103,6 +105,17 @@ private val prefixNames = mapOf(
 )
 
 fun toolDisplayName(toolName: String): String {
+    if (!Locale.getDefault().language.startsWith("zh")) {
+        val raw = if (toolName.startsWith("mcp__")) {
+            toolName.substringAfter("mcp__", "").substringAfter("__", "")
+        } else {
+            toolName
+        }
+        return raw.split('_')
+            .filter { it.isNotEmpty() }
+            .joinToString(" ") { part -> part.replaceFirstChar { it.uppercase() } }
+            .ifBlank { toolName }
+    }
     exactNames[toolName]?.let { return it }
     // MCP 工具名为 mcp__服务名__工具名：剥离服务前缀后用工具本名再查一次映射
     if (toolName.startsWith("mcp__")) {

@@ -371,7 +371,7 @@ private fun GreetingSelectorCard(
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "开场白",
+                    text = stringResource(R.string.assistant_detail_greeting),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -380,7 +380,7 @@ private fun GreetingSelectorCard(
                     text = if (currentGreeting.isNotBlank())
                         currentGreeting.replace("\n", " ").take(80) +
                             (if (currentGreeting.length > 80) "..." else "")
-                    else "未选择 · ${allGreetings.size}个可选",
+                    else stringResource(R.string.assistant_detail_greeting_none, allGreetings.size),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -392,7 +392,7 @@ private fun GreetingSelectorCard(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
-                    text = "切换",
+                    text = stringResource(R.string.assistant_detail_switch),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -446,7 +446,7 @@ private fun GreetingPickerSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "选择开场白",
+                    text = stringResource(R.string.assistant_detail_select_greeting),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -519,7 +519,7 @@ private fun GreetingPickerSheet(
                         if (isSelected) {
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                text = "当前",
+                                text = stringResource(R.string.assistant_detail_current),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.primary,
@@ -533,7 +533,7 @@ private fun GreetingPickerSheet(
             item {
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "点击开场白即可使用，新建对话时将以此开场",
+                    text = stringResource(R.string.assistant_detail_greeting_hint),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -682,10 +682,10 @@ private fun doPngExportInternal(
         try {
             val json = CardExporter.buildV3CardJson(assistant)
             val pngBytes = CardExporter.embedCardToPng(imageUri, context, json)
-                ?: error("嵌入PNG失败，请确认选择的图片是PNG格式")
+                ?: error(context.getString(R.string.assistant_detail_export_png_error))
             val fileName = "RikkaHub_${assistant.name.replace(" ", "_")}_${System.currentTimeMillis()}.png"
             saveToDownloads(context, fileName, "image/png", pngBytes)
-            toaster.show("已导出 PNG: Download/$fileName")
+            toaster.show(context.getString(R.string.assistant_detail_export_png_success, fileName))
         } catch (e: Exception) {
             toaster.show(context.getString(R.string.tavern_export_failed, e.message.orEmpty()))
         }
@@ -741,7 +741,7 @@ private suspend fun saveToDownloads(context: Context, fileName: String, mimeType
                 context.contentResolver.openOutputStream(it)?.use { output ->
                     output.write(data)
                 }
-            } ?: error("无法创建下载文件")
+            } ?: error(context.getString(R.string.assistant_detail_download_file_error))
         } else {
             val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             val file = java.io.File(downloadsDir, fileName)

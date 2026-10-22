@@ -36,6 +36,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -57,6 +58,7 @@ import androidx.core.net.toUri
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import me.rerere.rikkahub.R
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Copy01
 import me.rerere.hugeicons.stroke.Download04
@@ -508,7 +510,7 @@ private fun TableCard(table: MarkdownBlock.Table) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "表格",
+                text = stringResource(R.string.markdown_table),
                 fontSize = 12.sp,
                 lineHeight = 12.sp,
                 fontWeight = FontWeight.SemiBold,

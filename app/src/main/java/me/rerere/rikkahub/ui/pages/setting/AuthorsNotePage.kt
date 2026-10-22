@@ -66,7 +66,7 @@ fun AuthorsNotePage() {
         containerColor = CustomColors.topBarColors.containerColor,
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text("Author's Note · 导演备注") },
+                title = { Text(stringResource(R.string.authors_note_title)) },
                 navigationIcon = { BackButton() },
                 scrollBehavior = scrollBehavior,
                 colors = CustomColors.topBarColors,
@@ -85,11 +85,11 @@ fun AuthorsNotePage() {
             CardGroup {
                 item(
                     headlineContent = {
-                        Text("启用导演备注", style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(R.string.authors_note_enable), style = MaterialTheme.typography.titleSmall)
                     },
                     supportingContent = {
                         Text(
-                            "总开关关闭时，下面所有条目都不会注入",
+                            stringResource(R.string.authors_note_enable_desc),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -112,22 +112,22 @@ fun AuthorsNotePage() {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("自定义与旧版备注", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                Text(stringResource(R.string.authors_note_custom_section), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                 TextButton(
                     onClick = {
                         editingBuiltin = false
                         editingEntry = AuthorNoteEntry(
                             id = "custom:${Uuid.random()}",
-                            name = "自定义导演备注",
+                            name = stringResource(R.string.authors_note_custom_default_name),
                         )
                     },
-                ) { Text("新增") }
+                ) { Text(stringResource(R.string.authors_note_add)) }
             }
 
             val customEntries = entries.filterNot { it.id.startsWith(BUILTIN_AUTHOR_NOTE_PREFIX) }
             if (customEntries.isEmpty()) {
                 Text(
-                    "暂无自定义备注",
+                    stringResource(R.string.authors_note_empty),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -155,12 +155,12 @@ fun AuthorsNotePage() {
             }
 
             Text(
-                "内置快速预设（${authorsNotePresets.size}）",
+                stringResource(R.string.authors_note_builtin_presets, authorsNotePresets.size),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Medium,
             )
             Text(
-                "每个预设独立开关；启用第二个不会覆盖已启用的预设。",
+                stringResource(R.string.authors_note_presets_desc),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -257,14 +257,14 @@ private fun AuthorNoteEntryRow(
         ) {
             Switch(checked = entry.enabled, onCheckedChange = onEnabledChange)
             Column(modifier = Modifier.weight(1f)) {
-                Text(entry.name.ifBlank { "未命名导演备注" }, style = MaterialTheme.typography.bodyMedium)
+                Text(entry.name.ifBlank { stringResource(R.string.authors_note_unnamed) }, style = MaterialTheme.typography.bodyMedium)
                 Text(
                     authorNoteSummary(entry),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            TextButton(onClick = onEdit) { Text("编辑") }
+            TextButton(onClick = onEdit) { Text(stringResource(R.string.authors_note_edit)) }
         }
     }
 }
@@ -291,7 +291,7 @@ private fun AuthorNoteEntryDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (builtin) "编辑预设参数" else "编辑导演备注") },
+        title = { Text(stringResource(if (builtin) R.string.authors_note_edit_preset_title else R.string.authors_note_edit_title)) },
         text = {
             Column(
                 modifier = Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()),
@@ -302,14 +302,14 @@ private fun AuthorNoteEntryDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("单独启用")
+                    Text(stringResource(R.string.authors_note_enable_individually))
                     Switch(checked = enabled, onCheckedChange = { enabled = it })
                 }
                 OutlinedTextField(
                     value = name,
                     onValueChange = { if (!builtin) name = it },
                     readOnly = builtin,
-                    label = { Text("名称") },
+                    label = { Text(stringResource(R.string.authors_note_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -318,13 +318,13 @@ private fun AuthorNoteEntryDialog(
                     value = content,
                     onValueChange = { if (!builtin) content = it },
                     readOnly = builtin,
-                    label = { Text("内容") },
+                    label = { Text(stringResource(R.string.authors_note_content)) },
                     minLines = if (builtin) 3 else 5,
                     maxLines = 10,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                 )
-                Text("注入位置（Position）", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.authors_note_position_title), style = MaterialTheme.typography.titleSmall)
                 AuthorNotePosition.entries.forEach { option ->
                     FilterChip(
                         modifier = Modifier.fillMaxWidth(),
@@ -347,7 +347,7 @@ private fun AuthorNoteEntryDialog(
                         value = depthText,
                         onValueChange = { depthText = it.filter(Char::isDigit) },
                         label = { Text("Depth（0–9999）") },
-                        supportingText = { Text("官方范围 0–9999；0 = 对话最末尾") },
+                        supportingText = { Text(stringResource(R.string.authors_note_depth_hint)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         isError = depth == null || depth !in 0..9999,
@@ -355,7 +355,7 @@ private fun AuthorNoteEntryDialog(
                     shape = RoundedCornerShape(16.dp),
                     )
                 }
-                Text("注入角色（Role）", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.authors_note_role_title), style = MaterialTheme.typography.titleSmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(MessageRole.SYSTEM, MessageRole.USER, MessageRole.ASSISTANT).forEach { option ->
                         FilterChip(
@@ -366,16 +366,16 @@ private fun AuthorNoteEntryDialog(
                     }
                 }
                 Text(
-                    "以什么角色注入备注内容（三个位置均生效）",
+                    stringResource(R.string.authors_note_role_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    "间隔（Interval）",
+                    stringResource(R.string.authors_note_interval_title),
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Text(
-                    "按当前对话的用户消息条数计数（0 = 关闭，1 = 每次注入）",
+                    stringResource(R.string.authors_note_interval_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -386,10 +386,10 @@ private fun AuthorNoteEntryDialog(
                     supportingText = {
                         Text(
                             when (interval) {
-                                0 -> "不注入"
-                                1 -> "每次注入"
-                                null -> "请输入数字"
-                                else -> "每 $interval 条真实用户消息注入一次"
+                                0 -> stringResource(R.string.authors_note_interval_off)
+                                1 -> stringResource(R.string.authors_note_interval_every)
+                                null -> stringResource(R.string.authors_note_interval_enter_number)
+                                else -> stringResource(R.string.authors_note_interval_every_n, interval)
                             }
                         )
                     },
@@ -401,7 +401,7 @@ private fun AuthorNoteEntryDialog(
                 )
                 if (onDelete != null) {
                     Spacer(Modifier.height(4.dp))
-                    TextButton(onClick = onDelete) { Text("删除这条备注") }
+                    TextButton(onClick = onDelete) { Text(stringResource(R.string.authors_note_delete)) }
                 }
             }
         },
@@ -421,9 +421,9 @@ private fun AuthorNoteEntryDialog(
                         )
                     )
                 },
-            ) { Text("保存") }
+            ) { Text(stringResource(R.string.authors_note_save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.authors_note_cancel)) } },
     )
 }
 
@@ -431,34 +431,41 @@ private const val BUILTIN_AUTHOR_NOTE_PREFIX = "builtin:"
 
 private fun builtinAuthorNoteId(label: String): String = "$BUILTIN_AUTHOR_NOTE_PREFIX$label"
 
-private fun authorNoteSummary(entry: AuthorNoteEntry): String = buildString {
-    append(authorNotePositionLabel(entry.position))
-    if (entry.position == AuthorNotePosition.IN_CHAT) append(" · Depth ${entry.depth}")
-    append(" · ${authorNoteRoleLabel(entry.role)}")
-    append(
-        when (entry.interval) {
-            0 -> " · 已按间隔关闭"
-            1 -> " · 每次"
-            else -> " · 每 ${entry.interval} 条用户消息"
-        }
-    )
+@Composable
+private fun authorNoteSummary(entry: AuthorNoteEntry): String {
+    val position = authorNotePositionLabel(entry.position)
+    val role = authorNoteRoleLabel(entry.role)
+    val interval = when (entry.interval) {
+        0 -> stringResource(R.string.authors_note_summary_interval_off)
+        1 -> stringResource(R.string.authors_note_summary_every)
+        else -> stringResource(R.string.authors_note_summary_every_n, entry.interval)
+    }
+    return buildString {
+        append(position)
+        if (entry.position == AuthorNotePosition.IN_CHAT) append(" · Depth ${entry.depth}")
+        append(" · $role")
+        append(interval)
+    }
 }
 
+@Composable
 private fun authorNotePositionLabel(position: AuthorNotePosition): String = when (position) {
-    AuthorNotePosition.BEFORE_PROMPT -> "主提示词/场景之前（Before Main Prompt / Story String）"
-    AuthorNotePosition.IN_PROMPT -> "主提示词/场景之后（After Main Prompt / Story String）"
-    AuthorNotePosition.IN_CHAT -> "聊天内指定深度（In-chat @ Depth）"
+    AuthorNotePosition.BEFORE_PROMPT -> stringResource(R.string.authors_note_position_before_prompt)
+    AuthorNotePosition.IN_PROMPT -> stringResource(R.string.authors_note_position_in_prompt)
+    AuthorNotePosition.IN_CHAT -> stringResource(R.string.authors_note_position_in_chat)
 }
 
+@Composable
 private fun authorNotePositionDescription(position: AuthorNotePosition): String = when (position) {
-    AuthorNotePosition.BEFORE_PROMPT -> "位于角色设定之前，影响整段上下文"
-    AuthorNotePosition.IN_PROMPT -> "紧跟角色设定，位于示例消息之前"
-    AuthorNotePosition.IN_CHAT -> "按下方深度插入对话历史（官方默认）"
+    AuthorNotePosition.BEFORE_PROMPT -> stringResource(R.string.authors_note_position_before_prompt_desc)
+    AuthorNotePosition.IN_PROMPT -> stringResource(R.string.authors_note_position_in_prompt_desc)
+    AuthorNotePosition.IN_CHAT -> stringResource(R.string.authors_note_position_in_chat_desc)
 }
 
+@Composable
 private fun authorNoteRoleLabel(role: MessageRole): String = when (role) {
-    MessageRole.SYSTEM -> "系统"
-    MessageRole.USER -> "用户"
-    MessageRole.ASSISTANT -> "角色"
+    MessageRole.SYSTEM -> stringResource(R.string.authors_note_role_system)
+    MessageRole.USER -> stringResource(R.string.authors_note_role_user)
+    MessageRole.ASSISTANT -> stringResource(R.string.authors_note_role_assistant)
     else -> role.name
 }

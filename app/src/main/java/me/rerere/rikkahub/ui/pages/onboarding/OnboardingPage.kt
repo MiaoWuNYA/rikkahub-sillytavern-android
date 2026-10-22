@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -60,6 +61,7 @@ import android.widget.Toast
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
+import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.Switch
@@ -186,7 +188,7 @@ private fun WelcomeStep(
     }
 
     StepScaffold(
-        skipLabel = "我自己配，别烦我",
+        skipLabel = stringResource(R.string.onboarding_skip_configure),
         onSkip = onSkipAll,
     ) {
         Column(
@@ -198,12 +200,12 @@ private fun WelcomeStep(
             Spacer(Modifier.height(32.dp))
 
             Text(
-                text = "先问一句",
+                text = stringResource(R.string.onboarding_welcome_title),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "你以前用过类似的 App 吗？这决定我接下来要不要带你走一遍。",
+                text = stringResource(R.string.onboarding_welcome_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -215,14 +217,14 @@ private fun WelcomeStep(
             // 刻意做成整块可点的大卡片而不是小选项：大按钮让界面看起来
             // 更简单，也更好点。用户在这一屏只需要做一个决定。
             BigChoiceButton(
-                title = "我是老用户",
-                subtitle = "我有备份文件，导入就完事",
+                title = stringResource(R.string.onboarding_old_user_title),
+                subtitle = stringResource(R.string.onboarding_old_user_subtitle),
                 accent = true,
                 onClick = onRestore,
             )
             BigChoiceButton(
-                title = "我是新用户",
-                subtitle = "第一次用，带我走一遍",
+                title = stringResource(R.string.onboarding_new_user_title),
+                subtitle = stringResource(R.string.onboarding_new_user_subtitle),
                 accent = false,
                 onClick = onNewUser,
             )
@@ -242,7 +244,7 @@ private fun WelcomeStep(
                                 // 跳不过去就退回给用户一条能走的路，不要静默失败
                                 Toast.makeText(
                                     context,
-                                    "打不开原版，请手动打开它导出备份",
+                                    stringResource(R.string.onboarding_open_original_failed),
                                     Toast.LENGTH_LONG,
                                 ).show()
                             }
@@ -300,27 +302,27 @@ private fun RestoreStep(
         RestartRequiredDialog(onRestart = { exitProcess(0) })
     }
 
-    StepScaffold(onBack = onBack, skipLabel = "跳过，我自己配") {
+    StepScaffold(onBack = onBack, skipLabel = stringResource(R.string.onboarding_restore_skip)) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Spacer(Modifier.height(32.dp))
             Text(
-                text = "把你的东西搬过来",
+                text = stringResource(R.string.onboarding_restore_title),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "选一个备份文件（.zip）。角色卡、对话、设置全都回来，" +
+                text = stringResource(R.string.onboarding_restore_desc_prefix) +
                     // 这里用 AnnotatedString 而不是 Markdown：
                     // 引导页的 Text 不解析 Markdown，写 ** 只会原样显示成星号。
                     buildAnnotatedString {
-                        append("连模型配置一起——")
+                        append(stringResource(R.string.onboarding_restore_desc_emphasis))
                         withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
-                            append("导入之后你什么都不用再配")
+                            append(stringResource(R.string.onboarding_restore_desc_emphasis_2))
                         }
-                        append("。")
+                        append(stringResource(R.string.onboarding_restore_desc_suffix))
                     },
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -343,11 +345,11 @@ private fun RestoreStep(
                         color = LocalContentColor.current,
                     )
                     Spacer(Modifier.width(12.dp))
-                    Text("正在恢复…")
+                    Text(stringResource(R.string.onboarding_restoring))
                 } else {
                     Icon(Lucide.Upload, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(12.dp))
-                    Text("选择备份文件", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.onboarding_choose_backup_file), style = MaterialTheme.typography.titleMedium)
                 }
             }
 
@@ -360,7 +362,7 @@ private fun RestoreStep(
                 ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
-                            "恢复没成功",
+                            stringResource(R.string.onboarding_restore_failed),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onErrorContainer,
                         )
@@ -370,7 +372,7 @@ private fun RestoreStep(
                             color = MaterialTheme.colorScheme.onErrorContainer,
                         )
                         Text(
-                            "确认一下选的是本 App 导出的备份文件。原来的数据没有被动过。",
+                            stringResource(R.string.onboarding_restore_failed_hint),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onErrorContainer,
                         )
@@ -380,7 +382,7 @@ private fun RestoreStep(
 
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "没有备份？返回上一步，我带你从零配一遍，大概两分钟。",
+                text = stringResource(R.string.onboarding_restore_no_backup),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -400,17 +402,17 @@ private fun RestoreStep(
 private fun RestartRequiredDialog(onRestart: () -> Unit) {
     androidx.compose.material3.AlertDialog(
         onDismissRequest = {},
-        title = { Text("好了，重启一下就完成") },
+        title = { Text(stringResource(R.string.onboarding_restart_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("你的角色卡、对话、设置都已经就位。")
+                Text(stringResource(R.string.onboarding_restart_body))
                 Text(
                     buildAnnotatedString {
-                        append("App 需要重启一次来完成切换。这样做是为了保证数据是")
+                        append(stringResource(R.string.onboarding_restart_body_prefix))
                         withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
-                            append("整体替换")
+                            append(stringResource(R.string.onboarding_restart_body_emphasis))
                         }
-                        append("的，不会出现一半新的一半旧的情况。")
+                        append(stringResource(R.string.onboarding_restart_body_suffix))
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -418,7 +420,7 @@ private fun RestartRequiredDialog(onRestart: () -> Unit) {
             }
         },
         confirmButton = {
-            Button(onClick = onRestart) { Text("立即重启") }
+            Button(onClick = onRestart) { Text(stringResource(R.string.onboarding_restart_now)) }
         },
     )
 }
@@ -439,7 +441,7 @@ private fun ProviderStep(
 
     StepScaffold(
         onBack = onBack,
-        skipLabel = "先跳过",
+        skipLabel = stringResource(R.string.onboarding_provider_skip),
         onSkip = onDone,
     ) {
         Column(
@@ -450,13 +452,12 @@ private fun ProviderStep(
         ) {
             Spacer(Modifier.height(20.dp))
             Text(
-                text = "选个提供商吧",
+                text = stringResource(R.string.onboarding_provider_title),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "这一步决定你的 AI 由谁来跑。选一个，去它那儿拿个 Key 粘进来就行" +
-                    "——地址我帮你填好，不用管。",
+                text = stringResource(R.string.onboarding_provider_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -476,13 +477,12 @@ private fun ProviderStep(
                 ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
-                            "配好了，能用了！",
+                            stringResource(R.string.onboarding_provider_ok_title),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
                         Text(
-                            "我已经帮你把探测到的模型全部导入，并标好了各自的能力，" +
-                                "顺手选了一个当默认。进去直接就能聊。",
+                            stringResource(R.string.onboarding_provider_ok_desc),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
@@ -495,7 +495,7 @@ private fun ProviderStep(
                         .height(52.dp),
                     shape = RoundedCornerShape(14.dp),
                 ) {
-                    Text("下一步", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.onboarding_next), style = MaterialTheme.typography.titleMedium)
                 }
                 Spacer(Modifier.height(4.dp))
             }
@@ -519,7 +519,7 @@ private fun ProviderStep(
                     expandedId = if (expandedId == CUSTOM_ID) null else CUSTOM_ID
                     apiKey = ""
                 },
-                onSubmit = { vm.saveAndTest(buildCustomProvider(customName, customBaseUrl, apiKey)) },
+                onSubmit = { vm.saveAndTest(buildCustomProvider(customName, customBaseUrl, apiKey, stringResource(R.string.onboarding_custom_default_name))) },
             )
 
             if (expandedId != null && expandedId != CUSTOM_ID) {
@@ -602,7 +602,7 @@ private fun ProviderCard(
                     value = apiKey,
                     onValueChange = onApiKeyChange,
                     label = { Text("API Key") },
-                    placeholder = { Text("粘到这里") },
+                    placeholder = { Text(stringResource(R.string.onboarding_paste_here)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(),
@@ -620,11 +620,11 @@ private fun ProviderCard(
                             color = LocalContentColor.current,
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("测试中…")
+                        Text(stringResource(R.string.onboarding_testing))
                     } else {
                         Icon(Lucide.Sparkles, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("测试一下")
+                        Text(stringResource(R.string.onboarding_test))
                     }
                 }
 
@@ -646,7 +646,7 @@ private fun ExtrasStep(
 ) {
     StepScaffold(
         onBack = onBack,
-        skipLabel = "知道了，开始用",
+        skipLabel = stringResource(R.string.onboarding_extras_skip),
         onSkip = onFinish,
         skipHighlighted = true,
     ) {
@@ -658,17 +658,17 @@ private fun ExtrasStep(
         ) {
             Spacer(Modifier.height(24.dp))
             Text(
-                text = "能聊了。还有几样，想弄就弄",
+                text = stringResource(R.string.onboarding_extras_title),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
                 text = buildAnnotatedString {
-                    append("这些")
+                    append(stringResource(R.string.onboarding_extras_desc_prefix))
                     withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
-                        append("都不是必须的")
+                        append(stringResource(R.string.onboarding_extras_desc_emphasis))
                     }
-                    append("，随时可以回来弄。现在就进去聊也完全没问题。")
+                    append(stringResource(R.string.onboarding_extras_desc_suffix))
                 },
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -700,14 +700,12 @@ private fun ExtrasStep(
                 ) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
-                            "开启酒馆模式",
+                            stringResource(R.string.onboarding_tavern_title),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onTertiaryContainer,
                         )
                         Text(
-                            "开启后角色卡的工具将被关闭，请求只保留角色卡与聊天历史。" +
-                                "这样能有效精简提示词、减少模型的安全拦截策略。" +
-                                "需要工具时可以随时在设置里单独打开。",
+                            stringResource(R.string.onboarding_tavern_desc),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onTertiaryContainer,
                         )
@@ -729,31 +727,28 @@ private fun ExtrasStep(
             CardGroup {
                 item(
                     onClick = { onNavigate(Screen.Assistant) },
-                    headlineContent = { Text("导入角色卡") },
+                    headlineContent = { Text(stringResource(R.string.onboarding_import_card_title)) },
                     supportingContent = {
                         Text(
-                            "角色卡是一个 .png 文件。去角色卡页点右上角的导入，" +
-                                "选中那个文件就会变成一个角色卡的设定。"
+                            stringResource(R.string.onboarding_import_card_desc)
                         )
                     },
                 )
                 item(
                     onClick = { onNavigate(Screen.Extensions) },
-                    headlineContent = { Text("导入世界书 / 预设 / 正则") },
+                    headlineContent = { Text(stringResource(R.string.onboarding_import_ext_title)) },
                     supportingContent = {
                         Text(
-                            "这三样都在扩展页。导入后会自动挂到会话上，" +
-                                "不用再手动一个个开。"
+                            stringResource(R.string.onboarding_import_ext_desc)
                         )
                     },
                 )
                 item(
                     onClick = { onNavigate(Screen.SettingSearch) },
-                    headlineContent = { Text("开启联网搜索") },
+                    headlineContent = { Text(stringResource(R.string.onboarding_enable_search_title)) },
                     supportingContent = {
                         Text(
-                            "在搜索设置里选一个搜索服务并填 Key，" +
-                                "之后 AI 就能查实时信息了。"
+                            stringResource(R.string.onboarding_enable_search_desc)
                         )
                     },
                 )
@@ -771,13 +766,12 @@ private fun ExtrasStep(
                 ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
-                            "角色卡去哪儿找？",
+                            stringResource(R.string.onboarding_card_source_title),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                         )
                         Text(
-                            "一般在类脑、Discord 频道或者作者主页。拿到的是 .png 文件，" +
-                                "在角色卡页的导入里选它就可以了。",
+                            stringResource(R.string.onboarding_card_source_desc),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                         )
@@ -827,7 +821,7 @@ private fun StepScaffold(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (onBack != null) {
-                TextButton(onClick = onBack) { Text("← 返回") }
+                TextButton(onClick = onBack) { Text(stringResource(R.string.onboarding_back)) }
             }
             Spacer(Modifier.weight(1f))
             if (onSkip != null) {
@@ -944,7 +938,7 @@ private fun OriginalImportRow(
                     else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    if (installed) "检测到已安装原版 RikkaHub" else "没检测到原版 RikkaHub",
+                    if (installed) stringResource(R.string.onboarding_original_detected) else stringResource(R.string.onboarding_original_not_detected),
                     style = MaterialTheme.typography.titleSmall,
                     color = if (installed) MaterialTheme.colorScheme.onSecondaryContainer
                     else MaterialTheme.colorScheme.onSurface,
@@ -954,20 +948,19 @@ private fun OriginalImportRow(
             if (installed) {
                 Text(
                     // 说清两步，别让用户在两个 App 之间来回猜
-                    "App 之间不能直接读对方的数据（系统限制），所以请这样搬：" +
-                        "① 在原版里导出一次备份 → ② 回到这里选「我是老用户」，选中那个文件。",
+                    stringResource(R.string.onboarding_original_explain),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (onLaunchOriginal != null) {
-                        Button(onClick = onLaunchOriginal) { Text("打开原版去导出") }
+                        Button(onClick = onLaunchOriginal) { Text(stringResource(R.string.onboarding_open_original_export)) }
                     }
-                    TextButton(onClick = onUseBackup) { Text("我已经有备份了") }
+                    TextButton(onClick = onUseBackup) { Text(stringResource(R.string.onboarding_already_have_backup)) }
                 }
             } else {
                 Text(
-                    "如果你有备份文件（不管来自哪个版本），选上面的「我是老用户」就能导入。",
+                    stringResource(R.string.onboarding_no_backup_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1024,9 +1017,9 @@ private fun CustomProviderCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("自定义 API", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.onboarding_custom_api), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "用自己的中转站或自建服务",
+                        stringResource(R.string.onboarding_custom_api_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1043,7 +1036,7 @@ private fun CustomProviderCard(
                 OutlinedTextField(
                     value = baseUrl,
                     onValueChange = onBaseUrlChange,
-                    label = { Text("接口地址") },
+                    label = { Text(stringResource(R.string.onboarding_base_url)) },
                     placeholder = { Text("https://example.com/v1") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
@@ -1051,8 +1044,8 @@ private fun CustomProviderCard(
                 OutlinedTextField(
                     value = name,
                     onValueChange = onNameChange,
-                    label = { Text("名称（可留空）") },
-                    placeholder = { Text("随便起个名字") },
+                    label = { Text(stringResource(R.string.onboarding_name_optional)) },
+                    placeholder = { Text(stringResource(R.string.onboarding_name_placeholder)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -1060,7 +1053,7 @@ private fun CustomProviderCard(
                     value = apiKey,
                     onValueChange = onApiKeyChange,
                     label = { Text("API Key") },
-                    placeholder = { Text("粘到这里") },
+                    placeholder = { Text(stringResource(R.string.onboarding_paste_here)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(),
@@ -1079,11 +1072,11 @@ private fun CustomProviderCard(
                             color = LocalContentColor.current,
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("测试中…")
+                        Text(stringResource(R.string.onboarding_testing))
                     } else {
                         Icon(Lucide.Sparkles, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("测试一下")
+                        Text(stringResource(R.string.onboarding_test))
                     }
                 }
 
@@ -1127,7 +1120,7 @@ private fun TestResultBlock(testResult: OnboardingVM.TestResult) {
                 tint = MaterialTheme.colorScheme.primary,
             )
             Text(
-                "连接正常，发现 ${testResult.modelCount} 个模型",
+                stringResource(R.string.onboarding_connection_ok_models, testResult.modelCount),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -1142,11 +1135,12 @@ private fun buildCustomProvider(
     name: String,
     baseUrl: String,
     apiKey: String,
+    defaultName: String,
 ): me.rerere.ai.provider.ProviderSetting.OpenAI =
     me.rerere.ai.provider.ProviderSetting.OpenAI(
         // 固定 ID：用户在引导里反复展开收起时，认的是同一条
         id = kotlin.uuid.Uuid.parse("11111111-2222-3333-4444-555555555555"),
-        name = name.ifBlank { "自定义" },
+        name = name.ifBlank { defaultName },
         baseUrl = baseUrl.trim().trimEnd('/'),
         apiKey = apiKey.trim(),
         enabled = true,

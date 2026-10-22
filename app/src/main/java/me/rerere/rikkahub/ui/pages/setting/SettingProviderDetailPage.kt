@@ -462,7 +462,7 @@ private fun SettingProviderAdvancedPage(
         if (provider.pluginOwner() != null) {
             // 插件带来的供应商：请求头由插件声明，不在这里展示
             Text(
-                text = "该供应商由插件提供，地址、密钥与请求头都由插件管理。",
+                text = stringResource(R.string.setting_provider_plugin_managed),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

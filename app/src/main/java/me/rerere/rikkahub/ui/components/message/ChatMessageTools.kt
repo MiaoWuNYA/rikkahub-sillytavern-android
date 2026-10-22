@@ -317,11 +317,11 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                 ?: arguments.getStringContent("path") ?: ""
             val contentBytes = rawInput.length
             if (tool.isExecuted) {
-                "写入 $path (${formatToolSize(contentBytes.toLong())})"
+                stringResource(R.string.tool_write_path, path, formatToolSize(contentBytes.toLong()))
             } else if (path.isNotBlank()) {
-                "写入 $path (已接收 ${formatToolSize(contentBytes.toLong())}...)"
+                stringResource(R.string.tool_write_receiving, path, formatToolSize(contentBytes.toLong()))
             } else {
-                "写入文件中..."
+                stringResource(R.string.tool_write_progress)
             }
         }
 
@@ -332,9 +332,9 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
             if (tool.isExecuted) {
                 val outputSize = tool.output.filterIsInstance<UIMessagePart.Text>()
                     .sumOf { it.text.length }
-                "读取 $path (${formatToolSize(outputSize.toLong())})"
+                stringResource(R.string.tool_read_path, path, formatToolSize(outputSize.toLong()))
             } else {
-                "读取 $path"
+                stringResource(R.string.tool_read_path_short, path)
             }
         }
 
@@ -342,7 +342,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
             val rawInput = tool.input
             val dir = extractToolField(rawInput, "dir")
                 ?: arguments.getStringContent("dir") ?: ""
-            if (dir.isNotBlank()) "列出 $dir" else "列出 Download/"
+            if (dir.isNotBlank()) stringResource(R.string.tool_list_dir, dir) else stringResource(R.string.tool_list_download)
         }
 
         ToolNames.FILE_COPY -> {
@@ -351,8 +351,8 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                 ?: arguments.getStringContent("source") ?: ""
             val dst = extractToolField(rawInput, "destination")
                 ?: arguments.getStringContent("destination") ?: ""
-            if (src.isNotBlank() && dst.isNotBlank()) "复制 $src → $dst"
-            else "复制文件..."
+            if (src.isNotBlank() && dst.isNotBlank()) stringResource(R.string.tool_copy, src, dst)
+            else stringResource(R.string.tool_copy_progress)
         }
 
         ToolNames.FILE_MOVE -> {
@@ -361,16 +361,16 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                 ?: arguments.getStringContent("source") ?: ""
             val dst = extractToolField(rawInput, "destination")
                 ?: arguments.getStringContent("destination") ?: ""
-            if (src.isNotBlank() && dst.isNotBlank()) "移动 $src → $dst"
-            else "移动文件..."
+            if (src.isNotBlank() && dst.isNotBlank()) stringResource(R.string.tool_move, src, dst)
+            else stringResource(R.string.tool_move_progress)
         }
 
         ToolNames.FILE_MKDIR -> {
             val rawInput = tool.input
             val path = extractToolField(rawInput, "path")
                 ?: arguments.getStringContent("path") ?: ""
-            if (path.isNotBlank()) "新建目录 $path"
-            else "新建目录..."
+            if (path.isNotBlank()) stringResource(R.string.tool_mkdir, path)
+            else stringResource(R.string.tool_mkdir_progress)
         }
 
         ToolNames.EXECUTE_COMMAND -> {
@@ -385,7 +385,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
             } else if (display.isNotBlank()) {
                 "$$display"
             } else {
-                "执行命令..."
+                stringResource(R.string.tool_execute_progress)
             }
         }
 
@@ -396,11 +396,11 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
             if (tool.isExecuted) {
                 val size = content?.jsonObject?.get("size")?.jsonPrimitive?.longOrNull
                 val sizeStr = if (size != null) " (${formatToolSize(size)})" else ""
-                "分享 $path$sizeStr"
+                stringResource(R.string.tool_share, path, sizeStr)
             } else if (path.isNotBlank()) {
-                "分享 $path"
+                stringResource(R.string.tool_share_path, path)
             } else {
-                "分享文件..."
+                stringResource(R.string.tool_share_progress)
             }
         }
 
@@ -680,7 +680,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                         val sizeStr = if (size != null) " (${formatToolSize(size)})" else ""
                         if (path.isNotBlank()) {
                             Text(
-                                text = "已分享 $path$sizeStr",
+                                text = stringResource(R.string.tool_shared, path, sizeStr),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary,
                             )

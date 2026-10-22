@@ -38,13 +38,13 @@ import java.util.concurrent.TimeUnit
 
 // 分区标题/提示同时用于 UI 显示与持久化数据标识（加载时按 tag 迁移分类），
 // 必须保持字面量稳定，不随语言切换。
-private enum class LifeSection(val title: String, val emoji: String, val hint: String) {
-    HOME("今日", "🏡", "今天的状态、安排与共同生活"),
-    STATUS("周期与身体", "🌸", "记录经期、周期、身体状态、心情与精力"),
-    MEMO("备忘录", "📝", "把想法、待办和两个人的小计划好好收起来"),
-    CALENDAR("日历提醒", "📅", "把计划和纪念日加入系统日历"),
-    MUSIC("一起听", "🎵", "导入歌曲、一起听歌并留下共同音乐记忆"),
-    READING("共读书架", "📖", "记录书籍、进度、书签和共同想法"),
+private enum class LifeSection(val title: String, val emoji: String, val hint: String, val titleRes: Int, val hintRes: Int) {
+    HOME("今日", "🏡", "今天的状态、安排与共同生活", R.string.life_hub_today_title, R.string.life_hub_today_desc),
+    STATUS("周期与身体", "🌸", "记录经期、周期、身体状态、心情与精力", R.string.life_hub_cycle_title, R.string.life_hub_cycle_desc),
+    MEMO("备忘录", "📝", "把想法、待办和两个人的小计划好好收起来", R.string.life_hub_memo_title, R.string.life_hub_memo_desc),
+    CALENDAR("日历提醒", "📅", "把计划和纪念日加入系统日历", R.string.life_hub_calendar_title, R.string.life_hub_calendar_desc),
+    MUSIC("一起听", "🎵", "导入歌曲、一起听歌并留下共同音乐记忆", R.string.life_hub_music_title, R.string.life_hub_music_desc),
+    READING("共读书架", "📖", "记录书籍、进度、书签和共同想法", R.string.life_hub_reading_title, R.string.life_hub_reading_desc),
 }
 
 private data class LifeEntry(
@@ -63,6 +63,7 @@ private data class LifeEntry(
 private data class MemoCategory(
     val id: String,
     val label: String,
+    val labelRes: Int,
     val emoji: String,
     val background: Color,
     val accent: Color,
@@ -72,11 +73,11 @@ private data class MemoCategory(
 // 备忘分类名持久化在 SharedPreferences 中（memoCategory id 与 tag 迁移都依赖字面量），
 // 必须保持字面量稳定，不随语言切换。
 private val memoCategories = listOf(
-    MemoCategory("life", "生活", "🏡", Color(0xFFFFF8EE), Color(0xFFB98653), Color(0xFFFFEBD4)),
-    MemoCategory("todo", "待办", "⏰", Color(0xFFFFF0E6), Color(0xFFC77B52), Color(0xFFFFDFC9)),
-    MemoCategory("idea", "灵感", "💡", Color(0xFFF4EFFB), Color(0xFF8066A5), Color(0xFFE8DCF8)),
-    MemoCategory("together", "我们的", "💕", Color(0xFFFFEEF4), Color(0xFFC16683), Color(0xFFFFD8E5)),
-    MemoCategory("ai", "TA 的", "🐰", Color(0xFFEDF5FC), Color(0xFF6286A3), Color(0xFFDCECF8)),
+    MemoCategory("life", "生活", R.string.life_tab_today, "🏡", Color(0xFFFFF8EE), Color(0xFFB98653), Color(0xFFFFEBD4)),
+    MemoCategory("todo", "待办", R.string.life_tab_todo, "⏰", Color(0xFFFFF0E6), Color(0xFFC77B52), Color(0xFFFFDFC9)),
+    MemoCategory("idea", "灵感", R.string.life_tab_ideas, "💡", Color(0xFFF4EFFB), Color(0xFF8066A5), Color(0xFFE8DCF8)),
+    MemoCategory("together", "我们的", R.string.life_tab_ours, "💕", Color(0xFFFFEEF4), Color(0xFFC16683), Color(0xFFFFD8E5)),
+    MemoCategory("ai", "TA 的", R.string.life_tab_theirs, "🐰", Color(0xFFEDF5FC), Color(0xFF6286A3), Color(0xFFDCECF8)),
 )
 
 private fun memoCategory(id: String): MemoCategory =
@@ -101,11 +102,11 @@ fun LifeHubPage() {
 
     val bookImporter = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
-            val name = uri.lastPathSegment?.substringAfterLast('/') ?: "导入的小说"
+            val name = uri.lastPathSegment?.substringAfterLast('/') ?: context.getString(R.string.life_imported_novel)
             val preview = runCatching {
                 context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText().take(800) }
             }.getOrNull().orEmpty()
-            saveAll(entries + LifeEntry(section = LifeSection.READING, title = name, detail = preview, tag = "刚刚导入"))
+            saveAll(entries + LifeEntry(section = LifeSection.READING, title = name, detail = preview, tag = context.getString(R.string.life_just_imported)))
             section = LifeSection.READING
         }
     }
@@ -144,7 +145,7 @@ fun LifeHubPage() {
                     Tab(
                         selected = section == item,
                         onClick = { section = item },
-                        text = { Text(item.emoji + " " + item.title) },
+                        text = { Text(item.emoji + " " + stringResource(item.titleRes)) },
                     )
                 }
             }
@@ -181,8 +182,8 @@ fun LifeHubPage() {
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text(section.emoji + " " + section.title, style = MaterialTheme.typography.headlineSmall)
-                                Text(section.hint, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(section.emoji + " " + stringResource(section.titleRes), style = MaterialTheme.typography.headlineSmall)
+                                Text(stringResource(section.hintRes), color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -201,8 +202,8 @@ fun LifeHubPage() {
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
                                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                    Text(destination.emoji + " " + destination.title, style = MaterialTheme.typography.titleLarge)
-                                    Text(latest?.title ?: destination.hint, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(destination.emoji + " " + stringResource(destination.titleRes), style = MaterialTheme.typography.titleLarge)
+                                    Text(latest?.title ?: stringResource(destination.hintRes), color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -364,7 +365,7 @@ private fun MemoBoard(
                     FilterChip(
                         selected = categoryFilter == category.id,
                         onClick = { categoryFilter = if (categoryFilter == category.id) null else category.id },
-                        label = { Text("${category.emoji} ${category.label}") },
+                        label = { Text("${category.emoji} ${stringResource(category.labelRes)}") },
                         shape = RoundedCornerShape(18.dp),
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = category.soft,
@@ -554,7 +555,7 @@ private fun MemoCard(
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(category.label, style = MaterialTheme.typography.labelMedium, color = category.accent)
+                        Text(stringResource(category.labelRes), style = MaterialTheme.typography.labelMedium, color = category.accent)
                         if (entry.pinned) Text(stringResource(R.string.life_memo_pinned_tag), style = MaterialTheme.typography.labelSmall, color = category.accent)
                     }
                     Text(
@@ -702,7 +703,7 @@ private fun MemoEditorDialog(
                         FilterChip(
                             selected = category == item.id,
                             onClick = { category = item.id },
-                            label = { Text("${item.emoji} ${item.label}") },
+                            label = { Text("${item.emoji} ${stringResource(item.labelRes)}") },
                             shape = RoundedCornerShape(18.dp),
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = item.soft,
@@ -820,7 +821,7 @@ private fun AddLifeEntryDialog(
     }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.life_entry_add_title, section.title)) },
+        title = { Text(stringResource(R.string.life_entry_add_title, stringResource(section.titleRes))) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(title, { title = it }, label = { Text(labels.first) }, modifier = Modifier.fillMaxWidth())

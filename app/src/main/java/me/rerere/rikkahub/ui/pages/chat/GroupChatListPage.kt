@@ -99,7 +99,7 @@ fun GroupChatListPage() {
                                 }
                             }
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(gc.name.ifBlank { "未命名群聊" },
+                                Text(gc.name.ifBlank { stringResource(R.string.group_unnamed) },
                                     style = MaterialTheme.typography.titleMediumEmphasized)
                                 Text(
                                     stringResource(R.string.group_member_subtitle, members.size, members.take(3).joinToString { it.name }),
@@ -188,7 +188,7 @@ fun GroupChatListPage() {
                         steps = 29,
                     )
 
-                    Text(stringResource(R.string.group_auto_reply_rounds, if (autoRounds <= 0) "无上限" else autoRounds.toString()), style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.group_auto_reply_rounds, if (autoRounds <= 0) stringResource(R.string.group_unlimited) else autoRounds.toString()), style = MaterialTheme.typography.labelMedium)
                     Slider(
                         value = autoRounds.toFloat(),
                         onValueChange = { autoRounds = it.toInt() },
@@ -210,7 +210,7 @@ fun GroupChatListPage() {
                                     else selectedIds + a.id
                                 },
                                 headlineContent = {
-                                    Text(a.name.ifBlank { "(未命名)" }, style = MaterialTheme.typography.bodyMedium)
+                                    Text(a.name.ifBlank { stringResource(R.string.group_unnamed_member) }, style = MaterialTheme.typography.bodyMedium)
                                 },
                                 trailingContent = {
                                     Checkbox(

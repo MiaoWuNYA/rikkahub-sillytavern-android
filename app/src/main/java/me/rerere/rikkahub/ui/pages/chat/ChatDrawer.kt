@@ -539,10 +539,10 @@ fun ChatDrawerContent(
 
                 DrawerAction(
                     icon = {
-                        Icon(HugeIcons.ChartColumn, "统计数据")
+                        Icon(HugeIcons.ChartColumn, stringResource(R.string.chat_drawer_stats))
                     },
                     label = {
-                        Text("统计数据")
+                        Text(stringResource(R.string.chat_drawer_stats))
                     },
                     onClick = {
                         navController.navigate(Screen.Stats)

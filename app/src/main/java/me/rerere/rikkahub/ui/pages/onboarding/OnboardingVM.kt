@@ -15,6 +15,7 @@ import me.rerere.ai.provider.ProviderManager
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
+import me.rerere.rikkahub.R
 import me.rerere.ai.provider.Modality
 import me.rerere.ai.registry.ModelRegistry
 import me.rerere.ai.provider.ModelAbility
@@ -34,7 +35,12 @@ class OnboardingVM(
     private val settingsStore: SettingsStore,
     private val providerManager: ProviderManager,
     private val backupVM: me.rerere.rikkahub.ui.pages.backup.BackupVM,
+    context: Context,
 ) : ViewModel() {
+
+    private val appContext = context.applicationContext
+
+    private fun str(resId: Int, vararg args: Any): String = appContext.getString(resId, *args)
 
     private companion object {
         const val TAG = "Onboarding"
@@ -92,9 +98,8 @@ class OnboardingVM(
             }.onFailure {
                 Log.e(TAG, "Failed to persist provider", it)
                 _testResult.value = TestResult.Failed(
-                    message = "保存失败了：${it.message ?: it::class.simpleName}",
-                    hint = "这是本地存储的问题，不是你的配置错。重试一次；如果一直这样，" +
-                        "可以点右下角先跳过，进去以后在设置里配。",
+                    message = str(R.string.onboarding_save_failed, it.message ?: it::class.simpleName ?: ""),
+                    hint = str(R.string.onboarding_save_failed_hint),
                 )
                 return@launch
             }
@@ -123,8 +128,8 @@ class OnboardingVM(
                 if (models.isEmpty()) {
                     // 连上了但一个模型都没有——多半是 key 有效但没开通任何模型
                     TestResult.Failed(
-                        message = "连接成功，但这个账号下一个模型都没有。",
-                        hint = "去服务商后台看看是不是还没开通模型，或者余额为零。",
+                        message = str(R.string.onboarding_no_models),
+                        hint = str(R.string.onboarding_no_models_hint),
                     )
                 } else {
                     TestResult.Ok(models.size)
@@ -135,33 +140,33 @@ class OnboardingVM(
                 when {
                     raw.contains("401") || raw.contains("unauthorized") || raw.contains("invalid api key") ->
                         TestResult.Failed(
-                            message = "Key 没通过验证。",
-                            hint = "多半是复制时多带了空格，或者粘成了别的东西。回去重新复制一次完整的 Key 试试。",
+                            message = str(R.string.onboarding_invalid_key),
+                            hint = str(R.string.onboarding_invalid_key_hint),
                         )
 
                     raw.contains("404") || raw.contains("not found") ->
                         TestResult.Failed(
-                            message = "接口地址不对。",
-                            hint = "换一个服务商，或者去服务商官网确认接口地址。",
+                            message = str(R.string.onboarding_bad_endpoint),
+                            hint = str(R.string.onboarding_bad_endpoint_hint),
                         )
 
                     raw.contains("429") || raw.contains("quota") || raw.contains("insufficient") ->
                         TestResult.Failed(
-                            message = "额度不够了。",
-                            hint = "Key 本身是对的，但账号没余额。去服务商那边充值后重试。",
+                            message = str(R.string.onboarding_quota),
+                            hint = str(R.string.onboarding_quota_hint),
                         )
 
                     raw.contains("timeout") || raw.contains("unable to resolve host") ||
                         raw.contains("failed to connect") || raw.contains("socket") ->
                         TestResult.Failed(
-                            message = "连不上服务器。",
-                            hint = "检查网络；如果用了代理，确认它是通的。也可能是这家服务商此刻不稳定。",
+                            message = str(R.string.onboarding_unreachable),
+                            hint = str(R.string.onboarding_unreachable_hint),
                         )
 
                     else ->
                         TestResult.Failed(
-                            message = e.message ?: "未知错误",
-                            hint = "如果反复失败，先换一个服务商试试——不同服务商的可用性差别很大。",
+                            message = e.message ?: str(R.string.onboarding_unknown_error),
+                            hint = str(R.string.onboarding_unknown_error_hint),
                         )
                 }
             },
@@ -292,7 +297,7 @@ class OnboardingVM(
                 onDone()
             }.onFailure { e ->
                 Log.e(TAG, "Restore failed", e)
-                _restoreError.value = e.message ?: "恢复失败：${e::class.simpleName}"
+                _restoreError.value = e.message ?: str(R.string.onboarding_restore_failed_message, e::class.simpleName ?: "")
             }
             _restoring.value = false
         }

@@ -24,12 +24,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import me.rerere.ui.toast.ToastType
 import kotlinx.coroutines.launch
+import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.repository.WorkspaceRepository
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.context.LocalToaster
@@ -51,6 +54,7 @@ fun WorkspaceFileEditorPage(
     area: WorkspaceStorageArea,
     path: String,
 ) {
+    val context = LocalContext.current
     val repository = koinInject<WorkspaceRepository>()
     val toaster = LocalToaster.current
     val scope = rememberCoroutineScope()
@@ -76,7 +80,7 @@ fun WorkspaceFileEditorPage(
             textState.setTextAndPlaceCursorAtEnd(content)
             loading = false
         }.onFailure {
-            loadError = it.message ?: "读取文件失败"
+            loadError = it.message ?: context.getString(R.string.workspace_file_load_failed)
             loading = false
         }
     }
@@ -95,7 +99,7 @@ fun WorkspaceFileEditorPage(
                 actions = {
                     if (supportsPreview && !loading && loadError == null) {
                         TextButton(onClick = { showPreview = !showPreview }) {
-                            Text(if (showPreview) "源码" else "预览")
+                            Text(stringResource(if (showPreview) R.string.workspace_editor_source else R.string.workspace_editor_preview))
                         }
                     }
                     if (editable && !loading && loadError == null) {
@@ -112,9 +116,9 @@ fun WorkspaceFileEditorPage(
                                             overwrite = true,
                                         )
                                     }.onSuccess {
-                                        toaster.show("已保存", type = ToastType.Success)
+                                        toaster.show(context.getString(R.string.workspace_file_saved), type = ToastType.Success)
                                     }.onFailure {
-                                        toaster.show(it.message ?: "保存失败", type = ToastType.Error)
+                                        toaster.show(it.message ?: context.getString(R.string.workspace_file_save_failed), type = ToastType.Error)
                                     }
                                     saving = false
                                 }

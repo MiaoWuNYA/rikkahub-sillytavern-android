@@ -613,7 +613,7 @@ private fun ChatPageContent(
                             activeId == null || activeId == conversation.id.toString() -> {
                                 navController.navigate(Screen.VoiceCall(conversation.id.toString()))
                             }
-                            else -> toaster.show("当前有通话进行中，请先挂断", type = ToastType.Warning)
+                            else -> toaster.show(stringResource(R.string.chat_call_in_progress), type = ToastType.Warning)
                         }
                     },
                     onVideoCall = {
@@ -621,7 +621,7 @@ private fun ChatPageContent(
                         if (activeId == null || activeId == conversation.id.toString()) {
                             navController.navigate(Screen.VideoCall(conversation.id.toString()))
                         } else {
-                            toaster.show("当前有通话进行中，请先挂断", type = ToastType.Warning)
+                            toaster.show(stringResource(R.string.chat_call_in_progress), type = ToastType.Warning)
                         }
                     },
                 )
@@ -1409,10 +1409,10 @@ private fun ChatPageContent(
                             val result = when (type) {
                                 "global" -> {
                                     vm.updateSettings { s ->
-                                        val existing = s.regexGroups.find { it.name == "酒馆助手" }
+                                        val existing = s.regexGroups.find { it.name == stringResource(R.string.chat_tavern_assistant) }
                                         val updated = if (existing == null) {
                                             s.regexGroups + me.rerere.rikkahub.data.model.RegexGroup(
-                                                name = "酒馆助手",
+                                                name = stringResource(R.string.chat_tavern_assistant),
                                                 regexes = regexes,
                                             )
                                         } else {
@@ -1889,10 +1889,10 @@ private fun TopBar(
             val asrReady = settings.getSelectedASRProvider() != null
             if (ttsReady && asrReady) {
                 IconButton(onClick = onVideoCall) {
-                    Icon(HugeIcons.Video01, contentDescription = "视频通话")
+                    Icon(HugeIcons.Video01, contentDescription = stringResource(R.string.chat_video_call))
                 }
                 IconButton(onClick = onVoiceCall) {
-                    Icon(HugeIcons.Telephone, contentDescription = "语音通话")
+                    Icon(HugeIcons.Telephone, contentDescription = stringResource(R.string.chat_voice_call))
                 }
             }
             if (!settings.displaySetting.hideTopBarListButton) {
