@@ -1,5 +1,7 @@
 package me.rerere.rikkahub.ui.components.richtext
 
+import me.rerere.rikkahub.utils.l10n
+
 // 状态栏 emoji 字段行（连续 3 行以上）转 GFM 两列表格；条件苛刻防误伤
 private fun statusDecor(ch: Char, next: Char?): Boolean {
     val code = ch.code
@@ -47,7 +49,7 @@ internal fun convertStatusBlocksToTables(content: String): String {
     fun flush() {
         if (block.size >= 3) {
             // GFM 表格前面必须是空行，否则整段不会被解析成表格
-            out.append("\n| 字段 | 值 |\n| --- | --- |\n")
+            out.append("\n| " + l10n("字段", "Field") + " | " + l10n("值", "Value") + " |\n| --- | --- |\n")
             block.forEach { (f, v) ->
                 out.append("| ").append(f).append(" | ").append(v.ifEmpty { " " }).append(" |\n")
             }

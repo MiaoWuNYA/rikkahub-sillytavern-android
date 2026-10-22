@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import me.rerere.rikkahub.utils.l10n
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
@@ -81,7 +82,7 @@ class DebugVM(
             .sortedByDescending { it.value }
         if (missing.isEmpty()) return 0
         val recovered = missing.mapIndexed { index, (id, _) ->
-            Assistant(id = id, name = "恢复的角色卡 ${index + 1}")
+            Assistant(id = id, name = l10n("恢复的角色卡 ${index + 1}", "Recovered card ${index + 1}"))
         }
         settingsStore.update { it.copy(assistants = it.assistants + recovered) }
         return recovered.size

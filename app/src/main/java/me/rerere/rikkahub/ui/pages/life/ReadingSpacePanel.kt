@@ -29,6 +29,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.util.UUID
+import me.rerere.rikkahub.utils.l10n
 import me.rerere.rikkahub.R
 
 private const val READING_PREFS = "tumin_reading_space"
@@ -288,7 +289,7 @@ private fun ReadingRoom(
     var showMarks by remember { mutableStateOf(false) }
     var showMemories by remember { mutableStateOf(false) }
     var selectedParagraph by remember { mutableStateOf<Pair<Int, String>?>(null) }
-    val chapter = chapters.getOrNull(chapterIndex) ?: ReadingChapter("正文", "")
+    val chapter = chapters.getOrNull(chapterIndex) ?: ReadingChapter(l10n("正文", "Text"), "")
     val paragraphs = remember(chapterIndex, chapter.body) { splitParagraphs(chapter.body) }
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = book.paragraphIndex.coerceIn(0, (paragraphs.size - 1).coerceAtLeast(0)))
 
@@ -589,7 +590,7 @@ private fun ReadingMemoriesDialog(
 private fun importTxtBook(context: Context, uri: Uri): ReadingBook {
     val displayName = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
         if (cursor.moveToFirst()) cursor.getString(0) else null
-    } ?: "导入的小说.txt"
+    } ?: l10n("导入的小说.txt", "Imported novel.txt")
     val id = UUID.randomUUID().toString()
     val dir = File(context.filesDir, "reading/books").apply { mkdirs() }
     val target = File(dir, "$id.txt")
@@ -599,14 +600,14 @@ private fun importTxtBook(context: Context, uri: Uri): ReadingBook {
     if (target.length() == 0L) error(context.getString(R.string.life_reading_error_empty))
     return ReadingBook(
         id = id,
-        title = displayName.substringBeforeLast('.').ifBlank { "未命名小说" },
+        title = displayName.substringBeforeLast('.').ifBlank { l10n("未命名小说", "Untitled Novel") },
         filePath = target.absolutePath,
     )
 }
 
 private fun loadBookChapters(book: ReadingBook): List<ReadingChapter> {
     val text = runCatching { File(book.filePath).readText() }.getOrDefault("")
-    if (text.isBlank()) return listOf(ReadingChapter("正文", "这本书暂时读不到内容。"))
+    if (text.isBlank()) return listOf(ReadingChapter(l10n("正文", "Text"), l10n("这本书暂时读不到内容。", "This book has no readable content right now.")))
     val pattern = Regex("(?m)^\\s*((?:第[0-9一二三四五六七八九十百千万两〇零]+[章节回卷篇部])|(?:Chapter\\s+\\d+)|(?:CHAPTER\\s+\\d+)).*$")
     val matches = pattern.findAll(text).toList()
     if (matches.size >= 2) {
@@ -614,13 +615,13 @@ private fun loadBookChapters(book: ReadingBook): List<ReadingChapter> {
             val start = match.range.first
             val end = matches.getOrNull(index + 1)?.range?.first ?: text.length
             val block = text.substring(start, end).trim()
-            val title = block.lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { "第 ${index + 1} 章" }
+            val title = block.lineSequence().firstOrNull()?.trim().orEmpty().ifBlank { l10n("第 ${index + 1} 章", "Chapter ${index + 1}") }
             val body = block.substringAfter('\n', "").trim().ifBlank { block }
             ReadingChapter(title, body)
         }
     }
     val chunkSize = 12000
-    return text.chunked(chunkSize).mapIndexed { index, chunk -> ReadingChapter(if (index == 0) "正文" else "正文 ${index + 1}", chunk.trim()) }
+    return text.chunked(chunkSize).mapIndexed { index, chunk -> ReadingChapter(if (index == 0) l10n("正文", "Text") else l10n("正文 ${index + 1}", "Text ${index + 1}"), chunk.trim()) }
 }
 
 private fun splitParagraphs(body: String): List<String> {

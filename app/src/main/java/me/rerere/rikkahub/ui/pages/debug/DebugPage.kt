@@ -43,6 +43,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import me.rerere.rikkahub.utils.l10n
 import me.rerere.ui.toast.ToastType
 import kotlinx.coroutines.launch
 import me.rerere.common.android.Logging
@@ -314,23 +315,23 @@ private fun RecoveryPage(vm: DebugVM) {
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            "扫描聊天记录中引用的角色卡，为设置中缺失的角色卡创建占位角色卡，使对应聊天记录重新可见。角色卡的其他配置无法恢复。",
+            l10n("扫描聊天记录中引用的角色卡，为设置中缺失的角色卡创建占位角色卡，使对应聊天记录重新可见。角色卡的其他配置无法恢复。", "Scan character cards referenced in chat history and create placeholders for cards missing from settings so the related chats become visible again. Other card settings cannot be restored."),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Text("设置中的角色卡数: ${settings.assistants.size}")
-        Text("聊天记录中的角色卡数: ${conversationAssistants?.size?.toString() ?: "..."}")
-        Text("缺失的角色卡数: ${missing?.size?.toString() ?: "..."}")
+        Text(l10n("设置中的角色卡数: ${settings.assistants.size}", "Character cards in settings: ${settings.assistants.size}"))
+        Text(l10n("聊天记录中的角色卡数: ${conversationAssistants?.size?.toString() ?: "..."}", "Character cards in chat history: ${conversationAssistants?.size?.toString() ?: "..."}"))
+        Text(l10n("缺失的角色卡数: ${missing?.size?.toString() ?: "..."}", "Missing character cards: ${missing?.size?.toString() ?: "..."}"))
         missing?.forEach { (id, count) ->
             Text(
-                "$id ($count 个对话)",
+                l10n("$id ($count 个对话)", "$id ($count chats)"),
                 style = MaterialTheme.typography.bodySmall,
                 fontFamily = JetbrainsMono,
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = { vm.scanConversationAssistants() }) {
-                Text("重新扫描")
+                Text(l10n("重新扫描", "Rescan"))
             }
             Button(
                 enabled = !recovering && !settings.init && !missing.isNullOrEmpty(),
@@ -340,19 +341,19 @@ private fun RecoveryPage(vm: DebugVM) {
                         runCatching { vm.recoverAssistantsFromConversations() }
                             .onSuccess { count ->
                                 when (count) {
-                                    null -> toaster.show("设置尚未加载", type = ToastType.Error)
-                                    0 -> toaster.show("没有需要恢复的角色卡")
-                                    else -> toaster.show("已恢复 $count 个角色卡", type = ToastType.Success)
+                                    null -> toaster.show(l10n("设置尚未加载", "Settings have not loaded yet"), type = ToastType.Error)
+                                    0 -> toaster.show(l10n("没有需要恢复的角色卡", "No character cards need recovery"))
+                                    else -> toaster.show(l10n("已恢复 $count 个角色卡", "Recovered $count character cards"), type = ToastType.Success)
                                 }
                             }
                             .onFailure {
-                                toaster.show("恢复失败: ${it.message}", type = ToastType.Error)
+                                toaster.show(l10n("恢复失败: ${it.message}", "Recovery failed: ${it.message}"), type = ToastType.Error)
                             }
                         recovering = false
                     }
                 }
             ) {
-                Text("恢复")
+                Text(l10n("恢复", "Recover"))
             }
         }
     }

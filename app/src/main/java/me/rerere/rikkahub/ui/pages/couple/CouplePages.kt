@@ -40,6 +40,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.delay
+import me.rerere.rikkahub.utils.l10n
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.ArrowRight01
@@ -615,7 +616,7 @@ fun CoupleDiaryPage(vm: CoupleVM = koinViewModel()) {
         folderMatch && queryMatch && modeMatch
     }
     val timelineGroups = remember(filteredEntries) {
-        val formatter = SimpleDateFormat("yyyy年MM月", Locale.getDefault())
+        val formatter = SimpleDateFormat(l10n("yyyy年MM月", "MMMM yyyy"), Locale.getDefault())
         filteredEntries.groupBy { formatter.format(Date(it.entryDate)) }
     }
     val bookmarkedCount = entries.count { it.bookmarked }

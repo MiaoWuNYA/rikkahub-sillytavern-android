@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import me.rerere.rikkahub.utils.l10n
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.CardGroupScope
@@ -48,7 +49,7 @@ fun TTSProviderConfigure(
                         is TTSProviderSetting.Step -> "Step"
                         is TTSProviderSetting.ElevenLabs -> "ElevenLabs"
                         is TTSProviderSetting.FishAudio -> "Fish Audio"
-                        is TTSProviderSetting.Doubao -> "火山引擎"
+                        is TTSProviderSetting.Doubao -> l10n("火山引擎", "Volcano Engine")
                     },
                     options = TTSProviderSetting.Types,
                     readOnly = true,
@@ -65,7 +66,7 @@ fun TTSProviderConfigure(
                             TTSProviderSetting.MiMo::class -> "MiMo"
                             TTSProviderSetting.ElevenLabs::class -> "ElevenLabs"
                             TTSProviderSetting.FishAudio::class -> "Fish Audio"
-                            TTSProviderSetting.Doubao::class -> "火山引擎"
+                            TTSProviderSetting.Doubao::class -> l10n("火山引擎", "Volcano Engine")
                             TTSProviderSetting.Step::class -> "Step"
                             else -> providerClass.simpleName ?: "Unknown"
                         }
