@@ -36,6 +36,7 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
+import me.rerere.rikkahub.utils.l10n
 
 // context/settingsStore 允许为 null：仅供纯 JVM 单元测试构造（真实管线始终传入非空值）
 data class PlaceholderCtx(
@@ -142,13 +143,13 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
         }
 
         // 角色卡字段（用于世界书注入内容）
-        placeholder("description", { Text("角色描述") }) {
+        placeholder("description", { Text(l10n("角色描述", "Character description")) }) {
             it.assistant.tavernData?.description ?: ""
         }
-        placeholder("personality", { Text("角色性格") }) {
+        placeholder("personality", { Text(l10n("角色性格", "Character personality")) }) {
             it.assistant.tavernData?.personality ?: ""
         }
-        placeholder("scenario", { Text("角色场景") }) {
+        placeholder("scenario", { Text(l10n("角色场景", "Character scenario")) }) {
             it.assistant.tavernData?.scenario ?: ""
         }
 
@@ -186,7 +187,7 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
             it.groupMembers()
         }
         // 官方 macro-env-macros.js：charIfNotGroup 是 group 的别名（单聊=角色名，群聊=成员列表）
-        placeholder("charIfNotGroup", { Text("角色名或群成员(官方别名)") }) {
+        placeholder("charIfNotGroup", { Text(l10n("角色名或群成员(官方别名)", "Character name or group members (official alias)")) }) {
             it.groupMembers()
         }
 
@@ -219,10 +220,10 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
             }
             val diff = now - instant
             when {
-                diff < 1.minutes -> "刚刚"
-                diff < 60.minutes -> "${diff.inWholeMinutes} 分钟前"
-                diff < 24.hours -> "${diff.inWholeHours} 小时前"
-                else -> "${diff.inWholeDays} 天前"
+                diff < 1.minutes -> l10n("刚刚", "just now")
+                diff < 60.minutes -> l10n("${diff.inWholeMinutes} 分钟前", "${diff.inWholeMinutes} minutes ago")
+                diff < 24.hours -> l10n("${diff.inWholeHours} 小时前", "${diff.inWholeHours} hours ago")
+                else -> l10n("${diff.inWholeDays} 天前", "${diff.inWholeDays} days ago")
             }
         }
 
@@ -242,44 +243,44 @@ object DefaultPlaceholderProvider : PlaceholderProvider {
             it.assistant.tavernData?.postHistoryInstructions ?: ""
         }
         // 官方新宏名（别名，与上面旧名同值，不替换现有宏）
-        placeholder("charDescription", { Text("角色描述(官方别名)") }) {
+        placeholder("charDescription", { Text(l10n("角色描述(官方别名)", "Character description (official alias)")) }) {
             it.assistant.tavernData?.description ?: ""
         }
-        placeholder("charPersonality", { Text("角色性格(官方别名)") }) {
+        placeholder("charPersonality", { Text(l10n("角色性格(官方别名)", "Character personality (official alias)")) }) {
             it.assistant.tavernData?.personality ?: ""
         }
-        placeholder("charScenario", { Text("角色场景(官方别名)") }) {
+        placeholder("charScenario", { Text(l10n("角色场景(官方别名)", "Character scenario (official alias)")) }) {
             it.assistant.tavernData?.scenario ?: ""
         }
-        placeholder("charFirstMessage", { Text("开场白(官方别名)") }) {
+        placeholder("charFirstMessage", { Text(l10n("开场白(官方别名)", "First message (official alias)")) }) {
             it.assistant.tavernData?.firstMessage ?: ""
         }
-        placeholder("charCreatorNotes", { Text("作者备注(官方别名)") }) {
+        placeholder("charCreatorNotes", { Text(l10n("作者备注(官方别名)", "Creator notes (official alias)")) }) {
             it.assistant.tavernData?.creatorNotes ?: ""
         }
-        placeholder("systemPrompt", { Text("系统提示词(官方别名)") }) {
+        placeholder("systemPrompt", { Text(l10n("系统提示词(官方别名)", "System prompt (official alias)")) }) {
             it.assistant.tavernData?.systemPrompt ?: ""
         }
-        placeholder("jailbreak", { Text("历史后指令(官方别名)") }) {
+        placeholder("jailbreak", { Text(l10n("历史后指令(官方别名)", "Post-history instructions (official alias)")) }) {
             it.assistant.tavernData?.postHistoryInstructions ?: ""
         }
-        placeholder("charDepthPrompt", { Text("角色深度提示") }) {
+        placeholder("charDepthPrompt", { Text(l10n("角色深度提示", "Character depth prompt")) }) {
             it.assistant.tavernData?.depthPrompt ?: ""
         }
-        placeholder("mesExamplesRaw", { Text("示例对话原文") }) {
+        placeholder("mesExamplesRaw", { Text(l10n("示例对话原文", "Example messages (raw)")) }) {
             it.assistant.tavernData?.mesExample ?: ""
         }
-        placeholder("model", { Text("当前模型") }) {
+        placeholder("model", { Text(l10n("当前模型", "Current model")) }) {
             it.model.displayName
         }
-        placeholder("weekday", { Text("星期几") }) {
+        placeholder("weekday", { Text(l10n("星期几", "Weekday")) }) {
             // 官方 macro-time-macros.js：{{weekday}} = moment 'dddd'，跟随应用语言
             DateTimeFormatter.ofPattern("EEEE").withLocale(Locale.getDefault()).format(LocalDate.now())
         }
-        placeholder("isodate", { Text("ISO日期") }) {
+        placeholder("isodate", { Text(l10n("ISO日期", "ISO date")) }) {
             LocalDate.now().toString()
         }
-        placeholder("isotime", { Text("ISO时间") }) {
+        placeholder("isotime", { Text(l10n("ISO时间", "ISO time")) }) {
             // 官方 macro-time-macros.js：{{isotime}} = HH:mm
             cacheFriendlyNow(it.assistant.cacheFriendlyTimeMacros).format(DateTimeFormatter.ofPattern("HH:mm"))
         }

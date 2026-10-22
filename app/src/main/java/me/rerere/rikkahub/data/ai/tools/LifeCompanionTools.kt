@@ -17,6 +17,7 @@ import me.rerere.rikkahub.data.repository.CoupleRepository
 import me.rerere.rikkahub.ui.pages.life.MusicPlaybackSession
 import org.json.JSONArray
 import org.json.JSONObject
+import me.rerere.rikkahub.utils.l10n
 
 private fun lifeToolError(message: String) = listOf(
     UIMessagePart.Text(buildJsonObject {
@@ -36,8 +37,8 @@ private suspend fun requireBoundRelationship(
     repository: CoupleRepository,
     assistantId: String,
 ): me.rerere.rikkahub.data.db.entity.CoupleRelationshipEntity {
-    val relationship = repository.relationship.first() ?: error("还没有建立情侣空间")
-    if (relationship.assistantId != assistantId) error("当前角色不是这个情侣空间绑定的角色")
+    val relationship = repository.relationship.first() ?: error(l10n("还没有建立情侣空间", "Couple space has not been set up yet"))
+    if (relationship.assistantId != assistantId) error(l10n("当前角色不是这个情侣空间绑定的角色", "The current character is not linked to this couple space"))
     return relationship
 }
 

@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
+import me.rerere.rikkahub.utils.l10n
 
 /**
  * 前端角色卡的宿主桥。
@@ -102,7 +103,7 @@ class CardHostBridge(
      */
     @JavascriptInterface
     fun poll(id: String): String {
-        val d = pending[id] ?: return "err:\u0000请求不存在"
+        val d = pending[id] ?: return "err:\u0000" + l10n("请求不存在", "Request not found")
         if (!d.isCompleted) return ""
         pending.remove(id)
         // 必须区分成功与失败：失败时 getCompleted() 会抛异常，
@@ -168,7 +169,7 @@ class CardHostBridge(
 
         if (text.isBlank() && !hiddenOnly) {
             pending.remove(id)
-            deferred.completeExceptionally(IllegalArgumentException("开场白正文为空"))
+            deferred.completeExceptionally(IllegalArgumentException(l10n("开场白正文为空", "Greeting text is empty")))
             return id
         }
 

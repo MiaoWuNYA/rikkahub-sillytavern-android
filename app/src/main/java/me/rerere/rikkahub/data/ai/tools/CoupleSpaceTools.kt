@@ -11,15 +11,16 @@ import me.rerere.ai.core.InputSchema
 import me.rerere.ai.core.Tool
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.repository.CoupleRepository
+import me.rerere.rikkahub.utils.l10n
 
 private suspend fun resolveCoupleRelationship(
     repository: CoupleRepository,
     assistantId: String,
 ): Result<me.rerere.rikkahub.data.db.entity.CoupleRelationshipEntity> = runCatching {
     val relationship = repository.relationship.first()
-        ?: error("还没有建立情侣空间")
+        ?: error(l10n("还没有建立情侣空间", "Couple space has not been set up yet"))
     if (relationship.assistantId != assistantId) {
-        error("当前角色不是这个情侣空间绑定的角色")
+        error(l10n("当前角色不是这个情侣空间绑定的角色", "The current character is not linked to this couple space"))
     }
     relationship
 }

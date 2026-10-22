@@ -8,6 +8,7 @@ import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 import kotlin.random.Random
+import me.rerere.rikkahub.utils.l10n
 
 /**
  * 宏引擎 2.0 兼容实现（对齐 SillyTavern Macro 2.0 用户可见语义）。
@@ -940,9 +941,9 @@ class MacroEngine(
             .replace("A", "a")
             .replace("dddd", "EEEE")
             .replace("ddd", "EEE")
-            .replace("LLLL", "yyyy年M月d日 EEEE")
-            .replace("LLL", "yyyy年M月d日")
-            .replace("LL", "yyyy年M月d日")
+            .replace("LLLL", l10n("yyyy年M月d日 EEEE", "EEEE, MMM d, yyyy"))
+            .replace("LLL", l10n("yyyy年M月d日", "MMM d, yyyy"))
+            .replace("LL", l10n("yyyy年M月d日", "MMM d, yyyy"))
         return try {
             // 精确到秒的实时时间在 agentic 循环每步都不同（改写前缀打断缓存）；
             // 冻结为本轮首步的时间点（cacheFriendlyTimeMacros 开启时已对齐 5 分钟）
@@ -976,12 +977,12 @@ class MacroEngine(
         val b = parseTime(right) ?: return ""
         val diff = Duration.between(a, b).abs()
         return when {
-            diff.toDays() >= 365 -> "${diff.toDays() / 365}年"
-            diff.toDays() >= 30 -> "${diff.toDays() / 30}个月"
-            diff.toDays() >= 1 -> "${diff.toDays()}天"
-            diff.toHours() >= 1 -> "${diff.toHours()}小时"
-            diff.toMinutes() >= 1 -> "${diff.toMinutes()}分钟"
-            else -> "${diff.seconds}秒"
+            diff.toDays() >= 365 -> l10n("${diff.toDays() / 365}年", "${diff.toDays() / 365}y")
+            diff.toDays() >= 30 -> l10n("${diff.toDays() / 30}个月", "${diff.toDays() / 30}mo")
+            diff.toDays() >= 1 -> l10n("${diff.toDays()}天", "${diff.toDays()}d")
+            diff.toHours() >= 1 -> l10n("${diff.toHours()}小时", "${diff.toHours()}h")
+            diff.toMinutes() >= 1 -> l10n("${diff.toMinutes()}分钟", "${diff.toMinutes()}m")
+            else -> l10n("${diff.seconds}秒", "${diff.seconds}s")
         }
     }
 
@@ -1027,36 +1028,36 @@ class MacroEngine(
     companion object {
         /** 引擎 2.0 宏目录：界面宏列表与本实现共用，新增/删除宏时在此登记即可自动显示 */
         val macroCatalog: List<MacroEntry> = listOf(
-            MacroEntry("setvar::变量名::值", "设置本对话变量", "变量"),
-            MacroEntry("getvar::变量名", "读取本对话变量", "变量"),
-            MacroEntry("incvar::变量名", "变量+1", "变量"),
-            MacroEntry("decvar::变量名", "变量-1", "变量"),
-            MacroEntry("addvar::变量名::值", "变量加值", "变量"),
-            MacroEntry("hasvar::变量名", "判断变量是否存在", "变量"),
-            MacroEntry("flushvar::变量名", "删除变量", "变量"),
-            MacroEntry("setglobalvar::变量名::值", "设置全局变量", "变量"),
-            MacroEntry("getglobalvar::变量名", "读取全局变量", "变量"),
-            MacroEntry(".变量名", "变量简写读取", "变量"),
-            MacroEntry(".变量名++", "变量简写自增", "变量"),
-            MacroEntry("if::条件::内容", "条件分支（可用{{else}}）", "条件"),
-            MacroEntry("// 注释", "注释（不发送）", "随机与工具"),
-            MacroEntry("pick::A::B::C", "稳定随机选一", "随机与工具"),
-            MacroEntry("roll::2d6+1", "掷骰子", "随机与工具"),
-            MacroEntry("random::A::B::C", "随机选一（缓存友好时按消息稳定）", "随机与工具"),
-            MacroEntry("space::N", "N个空格", "随机与工具"),
-            MacroEntry("newline::N", "N个换行", "随机与工具"),
-            MacroEntry("noop", "空", "随机与工具"),
-            MacroEntry("reverse::文本", "反转文本", "随机与工具"),
-            MacroEntry("allChatRange", "消息范围", "随机与工具"),
-            MacroEntry("groupNotMuted", "群聊未禁言成员", "随机与工具"),
-            MacroEntry("notChar", "除自己外成员", "随机与工具"),
-            MacroEntry("isMobile", "是否手机端", "随机与工具"),
-            MacroEntry("lastGenerationType", "上次生成类型", "随机与工具"),
-            MacroEntry("maxResponse", "最大回复token", "随机与工具"),
-            MacroEntry("greeting::N", "第N条开场白", "随机与工具"),
-            MacroEntry("time::UTC+8", "指定时区时间", "时间"),
-            MacroEntry("datetimeformat::yyyy-MM-dd HH:mm", "自定义时间格式", "时间"),
-            MacroEntry("timeDiff::时间A::时间B", "时间差", "时间"),
+            MacroEntry("setvar::变量名::值", l10n("设置本对话变量", "Set a conversation variable"), l10n("变量", "Variables")),
+            MacroEntry("getvar::变量名", l10n("读取本对话变量", "Read a conversation variable"), l10n("变量", "Variables")),
+            MacroEntry("incvar::变量名", l10n("变量+1", "Increment variable"), l10n("变量", "Variables")),
+            MacroEntry("decvar::变量名", l10n("变量-1", "Decrement variable"), l10n("变量", "Variables")),
+            MacroEntry("addvar::变量名::值", l10n("变量加值", "Add to variable"), l10n("变量", "Variables")),
+            MacroEntry("hasvar::变量名", l10n("判断变量是否存在", "Check whether a variable exists"), l10n("变量", "Variables")),
+            MacroEntry("flushvar::变量名", l10n("删除变量", "Delete variable"), l10n("变量", "Variables")),
+            MacroEntry("setglobalvar::变量名::值", l10n("设置全局变量", "Set a global variable"), l10n("变量", "Variables")),
+            MacroEntry("getglobalvar::变量名", l10n("读取全局变量", "Read a global variable"), l10n("变量", "Variables")),
+            MacroEntry(".变量名", l10n("变量简写读取", "Shorthand variable read"), l10n("变量", "Variables")),
+            MacroEntry(".变量名++", l10n("变量简写自增", "Shorthand variable increment"), l10n("变量", "Variables")),
+            MacroEntry("if::条件::内容", l10n("条件分支（可用{{else}}）", "Conditional branch (supports {{else}})"), l10n("条件", "Conditionals")),
+            MacroEntry("// 注释", l10n("注释（不发送）", "Comment (not sent)"), l10n("随机与工具", "Random & Utilities")),
+            MacroEntry("pick::A::B::C", l10n("稳定随机选一", "Stable random pick"), l10n("随机与工具", "Random & Utilities")),
+            MacroEntry("roll::2d6+1", l10n("掷骰子", "Roll dice"), l10n("随机与工具", "Random & Utilities")),
+            MacroEntry("random::A::B::C", l10n("随机选一（缓存友好时按消息稳定）", "Random pick (stable per message in cache-friendly mode)"), l10n("随机与工具", "Random & Utilities")),
+            MacroEntry("space::N", l10n("N个空格", "N spaces"), l10n("随机与工具", "Random & Utilities")),
+            MacroEntry("newline::N", l10n("N个换行", "N newlines"), l10n("随机与工具", "Random & Utilities")),
+            MacroEntry("noop", l10n("空", "Empty"), l10n("随机与工具", "Random & Utilities")),
+            MacroEntry("reverse::文本", l10n("反转文本", "Reverse text"), l10n("随机与工具", "Random & Utilities")),
+            MacroEntry("allChatRange", l10n("消息范围", "Message range"), l10n("随机与工具", "Random & Utilities")),
+            MacroEntry("groupNotMuted", l10n("群聊未禁言成员", "Unmuted group members"), l10n("随机与工具", "Random & Utilities")),
+            MacroEntry("notChar", l10n("除自己外成员", "Members other than self"), l10n("随机与工具", "Random & Utilities")),
+            MacroEntry("isMobile", l10n("是否手机端", "Whether on mobile"), l10n("随机与工具", "Random & Utilities")),
+            MacroEntry("lastGenerationType", l10n("上次生成类型", "Last generation type"), l10n("随机与工具", "Random & Utilities")),
+            MacroEntry("maxResponse", l10n("最大回复token", "Max response tokens"), l10n("随机与工具", "Random & Utilities")),
+            MacroEntry("greeting::N", l10n("第N条开场白", "Nth greeting"), l10n("随机与工具", "Random & Utilities")),
+            MacroEntry("time::UTC+8", l10n("指定时区时间", "Time in a given timezone"), l10n("时间", "Time")),
+            MacroEntry("datetimeformat::yyyy-MM-dd HH:mm", l10n("自定义时间格式", "Custom time format"), l10n("时间", "Time")),
+            MacroEntry("timeDiff::时间A::时间B", l10n("时间差", "Time difference"), l10n("时间", "Time")),
         )
 
         private const val MAX_DEPTH = 32

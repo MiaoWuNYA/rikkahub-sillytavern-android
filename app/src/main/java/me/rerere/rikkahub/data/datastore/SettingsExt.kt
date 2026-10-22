@@ -9,6 +9,7 @@ import me.rerere.rikkahub.data.model.AuthorNoteEntry
 import me.rerere.rikkahub.data.model.LEGACY_AUTHOR_NOTE_ENTRY_ID
 import me.rerere.tts.provider.TTSProviderSetting
 import kotlin.uuid.Uuid
+import me.rerere.rikkahub.utils.l10n
 
 /**
  * 旧设置/旧备份兼容层。
@@ -22,7 +23,7 @@ fun Settings.authorNoteEntriesOrLegacy(): List<AuthorNoteEntry> {
     return listOf(
         AuthorNoteEntry(
             id = LEGACY_AUTHOR_NOTE_ENTRY_ID,
-            name = "旧版自定义导演备注",
+            name = l10n("旧版自定义导演备注", "Legacy custom Author's Note"),
             content = authorNote,
             enabled = true,
             position = authorNotePosition,

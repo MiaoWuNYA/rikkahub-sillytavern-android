@@ -12,6 +12,7 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import me.rerere.rikkahub.data.datastore.DisplaySetting
+import me.rerere.rikkahub.utils.l10n
 
 /**
  * 酒馆（SillyTavern）UI 主题的结构化表示。
@@ -131,7 +132,7 @@ private val NUMERIC_THEME_FIELDS = setOf("font_scale", "blur_strength", "chat_wi
 fun parseSillyTavernTheme(json: String): SillyTavernTheme {
     val element = ThemeJson.parseToJsonElement(json)
     val obj = element as? JsonObject
-        ?: throw IllegalArgumentException("不是有效的主题文件（顶层不是 JSON 对象）")
+        ?: throw IllegalArgumentException(l10n("不是有效的主题文件（顶层不是 JSON 对象）", "Not a valid theme file (top level is not a JSON object)"))
     val normalized = JsonObject(obj.map { (key, value) ->
         if (key in NUMERIC_THEME_FIELDS) {
             val primitive = runCatching { value.jsonPrimitive }.getOrNull()
@@ -144,7 +145,7 @@ fun parseSillyTavernTheme(json: String): SillyTavernTheme {
     return runCatching {
         ThemeJson.decodeFromJsonElement<SillyTavernTheme>(normalized)
     }.getOrElse {
-        throw IllegalArgumentException("主题字段类型无法识别：${it.message.orEmpty()}")
+        throw IllegalArgumentException(l10n("主题字段类型无法识别：${it.message.orEmpty()}", "Unrecognized theme field type: ${it.message.orEmpty()}"))
     }
 }
 
@@ -216,7 +217,7 @@ private fun argb(a: Int, r: Int, g: Int, b: Int): Long {
         or b.coerceIn(0, 255).toLong())
 }
 
-private fun Char.hexToByte(): Int = Character.digit(this, 16).also { require(it >= 0) { "非法 hex 字符: $this" } }
+private fun Char.hexToByte(): Int = Character.digit(this, 16).also { require(it >= 0) { l10n("非法 hex 字符: $this", "Invalid hex character: $this") } }
 
 /** 解析单个 RGB 通道：支持 0-255 整数与百分比 */
 private fun parseCssChannel(token: String): Int? {

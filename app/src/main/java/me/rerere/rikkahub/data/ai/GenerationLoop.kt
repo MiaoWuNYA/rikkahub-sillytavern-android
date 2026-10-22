@@ -68,6 +68,7 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
+import me.rerere.rikkahub.utils.l10n
 
 /**
  * 本轮是否注册记忆工具（memory_tool）。
@@ -146,21 +147,21 @@ class GenerationLoop(
         var messages: List<UIMessage> = messages
 
     fun describeTool(name: String): String = when {
-        name.startsWith("execute_python") -> "🔧 Python → 正在执行代码..."
-        name.startsWith("execute_command") -> "🔧 Shell → 正在执行命令..."
-        name == "file" -> "🔧 文件 → 正在操作..."
-        name.startsWith("database_") -> "🔧 数据库 → 正在查询..."
-        name.startsWith("search_web") || name.startsWith("scrape_") -> "🔧 搜索 → 正在搜索..."
-        name.startsWith("use_skill") -> "🔧 知识 → 正在读取..."
-        name.startsWith("clipboard") -> "🔧 剪贴板 → 正在操作..."
-        name.startsWith("get_time") -> "🔧 时间 → 获取中..."
-        name.startsWith("text_to_speech") -> "🔧 语音 → 正在朗读..."
-        name.startsWith("present_file") -> "🔧 文件 → 正在分享..."
-        name.startsWith("eval_javascript") -> "🔧 JS → 正在执行..."
-        name.startsWith("memory_") -> "🔧 记忆 → 正在处理..."
-        name == "delegate_agent" -> "🤖 子 agent → 已派发到后台..."
-        name == "check_subagent" -> "🤖 子 agent → 正在取回结果..."
-            else -> "🔧 $name → 正在处理..."
+        name.startsWith("execute_python") -> l10n("🔧 Python → 正在执行代码...", "🔧 Python → Running code...")
+        name.startsWith("execute_command") -> l10n("🔧 Shell → 正在执行命令...", "🔧 Shell → Running command...")
+        name == "file" -> l10n("🔧 文件 → 正在操作...", "🔧 Files → Working...")
+        name.startsWith("database_") -> l10n("🔧 数据库 → 正在查询...", "🔧 Database → Querying...")
+        name.startsWith("search_web") || name.startsWith("scrape_") -> l10n("🔧 搜索 → 正在搜索...", "🔧 Search → Searching...")
+        name.startsWith("use_skill") -> l10n("🔧 知识 → 正在读取...", "🔧 Knowledge → Reading...")
+        name.startsWith("clipboard") -> l10n("🔧 剪贴板 → 正在操作...", "🔧 Clipboard → Working...")
+        name.startsWith("get_time") -> l10n("🔧 时间 → 获取中...", "🔧 Time → Fetching...")
+        name.startsWith("text_to_speech") -> l10n("🔧 语音 → 正在朗读...", "🔧 Speech → Speaking...")
+        name.startsWith("present_file") -> l10n("🔧 文件 → 正在分享...", "🔧 Files → Sharing...")
+        name.startsWith("eval_javascript") -> l10n("🔧 JS → 正在执行...", "🔧 JS → Running...")
+        name.startsWith("memory_") -> l10n("🔧 记忆 → 正在处理...", "🔧 Memory → Processing...")
+        name == "delegate_agent" -> l10n("🤖 子 agent → 已派发到后台...", "🤖 Sub-agent → Dispatched to background...")
+        name == "check_subagent" -> l10n("🤖 子 agent → 正在取回结果...", "🤖 Sub-agent → Fetching result...")
+            else -> l10n("🔧 $name → 正在处理...", "🔧 $name → Working...")
     }
 
     /**

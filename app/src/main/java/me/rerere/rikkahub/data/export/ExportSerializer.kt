@@ -28,6 +28,7 @@ import me.rerere.rikkahub.ui.pages.assistant.detail.mapTavernRole
 import me.rerere.rikkahub.utils.toLocalString
 import java.time.LocalDateTime
 import kotlin.uuid.Uuid
+import me.rerere.rikkahub.utils.l10n
 
 @Serializable
 data class ExportData(
@@ -249,7 +250,7 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
             Lorebook(
                 id = Uuid.random(),
                 name = fileName ?: LocalDateTime.now().toLocalString(),
-                description = "SillyTavern 预设导入",
+                description = l10n("SillyTavern 预设导入", "SillyTavern preset import"),
                 enabled = true,
                 entries = entries,
             )
@@ -394,7 +395,7 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
     private fun throwSillyTavernRegexScriptError(json: String): Lorebook? {
         val obj = runCatching { ExportSerializer.DefaultJson.parseToJsonElement(json) }.getOrNull() as? JsonObject
         if (obj != null && obj.containsKey("scriptName") && obj.containsKey("findRegex")) {
-            throw IllegalArgumentException("检测到酒馆正则脚本，请在 角色卡详情 → 消息正则 区域导入")
+            throw IllegalArgumentException(l10n("检测到酒馆正则脚本，请在 角色卡详情 → 消息正则 区域导入", "SillyTavern regex scripts detected. Import them from Character Card Details → Message Regex."))
         }
         return null
     }
