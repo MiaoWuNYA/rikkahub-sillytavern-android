@@ -48,6 +48,7 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.androidx.workmanager.koin.workManagerFactory
 import org.koin.core.context.startKoin
+import me.rerere.rikkahub.utils.l10n
 
 private const val TAG = "RikkaHubApp"
 
@@ -85,7 +86,7 @@ class RikkaHubApp : Application() {
             }
         } catch (e: RestoreFailedException) {
             Log.e(TAG, "Backup restore rolled back", e)
-            Toast.makeText(this, "备份恢复失败，已保留原数据。请重新导入备份。", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, l10n("备份恢复失败，已保留原数据。请重新导入备份。", "Backup restore failed. Your original data was kept; please import the backup again."), Toast.LENGTH_LONG).show()
         }
         trace("koin config")
         startKoin {
@@ -329,7 +330,7 @@ class RikkaHubApp : Application() {
 
         val voiceCallChannel = NotificationChannelCompat
             .Builder(VOICE_CALL_NOTIFICATION_CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_LOW)
-            .setName("语音通话")
+            .setName(l10n("语音通话", "Voice call"))
             .setVibrationEnabled(false)
             .setShowBadge(false)
             .build()

@@ -18,6 +18,7 @@ import com.google.zxing.RGBLuminanceSource
 import com.google.zxing.common.HybridBinarizer
 import android.util.Base64
 import java.nio.charset.StandardCharsets
+import me.rerere.rikkahub.utils.l10n
 
 /**
  * 图片处理工具类
@@ -304,7 +305,7 @@ object ImageUtils {
      */
     fun getTavernCharacterMeta(context: Context, uri: Uri): Result<String> = runCatching {
         val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-            ?: error("无法读取图片文件")
+            ?: error(l10n("无法读取图片文件", "Unable to read image file"))
         getTavernCharacterMetaFromBytes(bytes).getOrThrow()
     }
 
@@ -362,7 +363,7 @@ object ImageUtils {
             return Result.success(charaResult)
         }
 
-        error("未找到有效的角色卡数据，请确认图片是酒馆角色卡PNG")
+        error(l10n("未找到有效的角色卡数据，请确认图片是酒馆角色卡PNG", "No valid character card data found. Make sure the image is a SillyTavern character card PNG."))
     }
 
     /** 读取4字节大端整数（PNG chunk length） */
