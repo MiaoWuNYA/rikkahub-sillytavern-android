@@ -11,6 +11,7 @@ import androidx.compose.ui.text.withStyle
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.ai.provider.QuotaQuery
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.utils.l10n
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import kotlin.uuid.Uuid
 
@@ -33,7 +34,7 @@ val DEFAULT_PROVIDERS = listOf(
     ),
             ProviderSetting.OpenAI(
         id = Uuid.parse("56a94d29-c88b-41c5-8e09-38a7612d6cf8"),
-        name = "硅基流动",
+        name = l10n("硅基流动", "SiliconFlow"),
         baseUrl = "https://api.siliconflow.cn/v1",
         apiKey = "",
         builtIn = true,
@@ -60,7 +61,7 @@ val DEFAULT_PROVIDERS = listOf(
     ),
     ProviderSetting.OpenAI(
         id = Uuid.parse("d6c4d8c6-3f62-4ca9-a6f3-7ade6b15ecc3"),
-        name = "月之暗面",
+        name = l10n("月之暗面", "Moonshot"),
         baseUrl = "https://api.moonshot.cn/v1",
         apiKey = "",
         enabled = true,
@@ -93,16 +94,16 @@ val DEFAULT_PROVIDERS = listOf(
         description = {
             Text(
                 text = buildAnnotatedString {
-                    append("OrcaRouter 聚合多家大模型的 OpenAI 兼容网关")
+                    append(l10n("OrcaRouter 聚合多家大模型的 OpenAI 兼容网关", "OrcaRouter is an OpenAI-compatible gateway aggregating major LLMs"))
                     appendLine()
-                    append("官网：")
+                    append(l10n("官网：", "Website: "))
                     withLink(LinkAnnotation.Url("https://www.orcarouter.ai")) {
                         withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
                             append("https://www.orcarouter.ai")
                         }
                     }
                     appendLine()
-                    append("文档：")
+                    append(l10n("文档：", "Docs: "))
                     withLink(LinkAnnotation.Url("https://docs.orcarouter.ai")) {
                         withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
                             append("https://docs.orcarouter.ai")
@@ -112,7 +113,7 @@ val DEFAULT_PROVIDERS = listOf(
             )
         },
         shortDescription = {
-            Text("OpenAI 兼容聚合网关")
+            Text(l10n("OpenAI 兼容聚合网关", "OpenAI-compatible gateway"))
         },
     ),
     ProviderSetting.OpenAI(
@@ -130,23 +131,23 @@ val DEFAULT_PROVIDERS = listOf(
     ),
     ProviderSetting.OpenAI(
         id = Uuid.parse("da020a90-f7b3-4c29-b90e-c511a0630630"),
-        name = "小马算力",
+        name = l10n("小马算力", "TokenPony"),
         baseUrl = "https://api.tokenpony.cn/v1",
         apiKey = "",
         enabled = false,
         builtIn = true,
         description = {
             MarkdownBlock(
-                content = """
-                    小马算力是一家提供国产模型的API网关服务，使用统一接口接入多种模型
-                    官网: [tokenpony.cn](https://www.tokenpony.cn/79clb)
-                """.trimIndent()
+                content = l10n(
+                    "小马算力是一家提供国产模型的API网关服务，使用统一接口接入多种模型\n官网: [tokenpony.cn](https://www.tokenpony.cn/79clb)",
+                    "TokenPony is an API gateway for Chinese models, exposing many models through a unified interface.\nWebsite: [tokenpony.cn](https://www.tokenpony.cn/79clb)",
+                )
             )
         }
     ),
     ProviderSetting.OpenAI(
         id = Uuid.parse("f76cae46-069a-4334-ab8e-224e4979e58c"),
-        name = "阿里云百炼",
+        name = l10n("阿里云百炼", "Alibaba Cloud Bailian"),
         baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1",
         apiKey = "",
         enabled = false,
@@ -154,7 +155,7 @@ val DEFAULT_PROVIDERS = listOf(
     ),
     ProviderSetting.OpenAI(
         id = Uuid.parse("3dfd6f9b-f9d9-417f-80c1-ff8d77184191"),
-        name = "火山引擎",
+        name = l10n("火山引擎", "Volcano Engine"),
         baseUrl = "https://ark.cn-beijing.volces.com/api/v3",
         apiKey = "",
         enabled = false,
@@ -162,7 +163,7 @@ val DEFAULT_PROVIDERS = listOf(
     ),
     ProviderSetting.OpenAI(
         id = Uuid.parse("3bc40dc1-b11a-46fa-863b-6306971223be"),
-        name = "智谱AI开放平台",
+        name = l10n("智谱AI开放平台", "Zhipu AI"),
         baseUrl = "https://open.bigmodel.cn/api/paas/v4",
         apiKey = "",
         enabled = false,
@@ -170,7 +171,7 @@ val DEFAULT_PROVIDERS = listOf(
     ),
     ProviderSetting.OpenAI(
         id = Uuid.parse("f4f8870e-82d3-495b-9b64-d58e508b3b2c"),
-        name = "阶跃星辰",
+        name = l10n("阶跃星辰", "StepFun"),
         baseUrl = "https://api.stepfun.com/v1",
         apiKey = "",
         enabled = false,
@@ -186,7 +187,7 @@ val DEFAULT_PROVIDERS = listOf(
         description = {
             Text(
                 text = buildAnnotatedString {
-                    append("企业级AI服务, 官网：")
+                    append(l10n("企业级AI服务, 官网：", "Enterprise AI services, website: "))
                     withLink(LinkAnnotation.Url("https://302.ai/")) {
                         withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
                             append("https://302.ai/")
@@ -198,7 +199,7 @@ val DEFAULT_PROVIDERS = listOf(
     ),
     ProviderSetting.OpenAI(
         id = Uuid.parse("ef5d149b-8e34-404b-818c-6ec242e5c3c5"),
-        name = "腾讯Hunyuan",
+        name = l10n("腾讯Hunyuan", "Tencent Hunyuan"),
         baseUrl = "https://tokenhub.tencentmaas.com/v1",
         apiKey = "",
         enabled = false,

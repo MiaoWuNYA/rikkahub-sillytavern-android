@@ -26,6 +26,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.utils.l10n
 
 private data class LifeCalendarEvent(
     val id: Long = System.currentTimeMillis(),
@@ -501,7 +502,7 @@ private fun loadCalendarEvents(context: Context): List<LifeCalendarEvent> = runC
                 add(
                     LifeCalendarEvent(
                         id = item.optLong("id", created),
-                        title = item.optString("title", "日程"),
+                        title = item.optString("title", l10n("日程", "Schedule")),
                         detail = item.optString("detail"),
                         eventAt = created,
                         category = when (item.optString("tag")) {

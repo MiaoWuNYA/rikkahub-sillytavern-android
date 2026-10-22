@@ -6,6 +6,7 @@ import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.core.content.edit
+import me.rerere.rikkahub.utils.l10n
 
 private const val TAG = "CrashHandler"
 private const val PREFS_NAME = "crash_handler"
@@ -21,7 +22,7 @@ object CrashHandler {
             Log.e(TAG, "Uncaught exception on thread ${thread.name}", throwable)
             markCrashed(appContext, thread, throwable)
             Handler(Looper.getMainLooper()).post {
-                Toast.makeText(appContext, "崩溃: ${throwable.javaClass.simpleName}: ${throwable.message?.take(100)}", Toast.LENGTH_LONG).show()
+                Toast.makeText(appContext, l10n("崩溃: ${throwable.javaClass.simpleName}: ${throwable.message?.take(100)}", "Crash: ${throwable.javaClass.simpleName}: ${throwable.message?.take(100)}"), Toast.LENGTH_LONG).show()
             }
             Thread.sleep(3000)
             defaultHandler?.uncaughtException(thread, throwable)

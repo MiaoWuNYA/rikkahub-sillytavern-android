@@ -47,6 +47,7 @@ import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.TavernBookEntry
 import me.rerere.rikkahub.data.model.TavernEmbeddedBook
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.utils.l10n
 import me.rerere.ui.components.FormItem
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.IntTextField
@@ -85,11 +86,11 @@ fun TavernCharacterCard(
     onExport: (() -> Unit)? = null,
 ) {
     val tav = assistant.tavernData ?: return
-    val displayName = tav.name.ifBlank { assistant.name.ifBlank { "角色卡" } }
+    val displayName = tav.name.ifBlank { assistant.name.ifBlank { l10n("角色卡", "Character Card") } }
     val subParts = buildList {
         add(tav.spec.removePrefix("chara_card_").uppercase())
-        if (tav.embeddedBook != null) add("世界书 ${tav.embeddedBook!!.entries.size} 条")
-        if (tav.alternateGreetings.isNotEmpty()) add("开场白 ${1 + tav.alternateGreetings.size} 个")
+        if (tav.embeddedBook != null) add(l10n("世界书 ${tav.embeddedBook!!.entries.size} 条", "World Book: ${tav.embeddedBook!!.entries.size} entries"))
+        if (tav.alternateGreetings.isNotEmpty()) add(l10n("开场白 ${1 + tav.alternateGreetings.size} 个", "Greetings: ${1 + tav.alternateGreetings.size}"))
     }
     val subInfo = subParts.joinToString(" · ")
     var expanded by remember { mutableStateOf(false) }
@@ -197,7 +198,7 @@ fun TavernCharacterCard(
                     ) {
                         Icon(
                             HugeIcons.Share01,
-                            contentDescription = "导出角色卡",
+                            contentDescription = l10n("导出角色卡", "Export character card"),
                             modifier = Modifier.size(16.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -282,7 +283,7 @@ fun TavernCharacterCard(
                                     })
                                 }
                                 tav.groupOnlyGreetings.forEachIndexed { i, greeting ->
-                                    add(FieldSpec("群聊G${i + 1}", greeting) { v ->
+                                    add(FieldSpec(l10n("群聊G${i + 1}", "Group G${i + 1}"), greeting) { v ->
                                         val newGreetings = tav.groupOnlyGreetings.toMutableList().apply { set(i, v) }
                                         onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(groupOnlyGreetings = newGreetings)))
                                     })
@@ -293,7 +294,7 @@ fun TavernCharacterCard(
 
                     // 内嵌世界书
                     tav.embeddedBook?.let { book ->
-                        SectionTitle("世界书")
+                        SectionTitle(l10n("世界书", "World Book"))
                         EmbeddedBookSummary(
                             book = book,
                             settings = settings,
@@ -346,7 +347,7 @@ fun TavernCharacterCard(
                     // 资源文件列表
                     if (tav.assets.isNotEmpty()) {
                         Text(
-                            text = "资源文件(Assets)",
+                            text = l10n("资源文件", "Assets"),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
@@ -369,7 +370,7 @@ fun TavernCharacterCard(
                                     },
                                     headlineContent = {
                                         Text(
-                                            text = asset.name.ifBlank { asset.type.ifBlank { "未命名资源" } },
+                                            text = asset.name.ifBlank { asset.type.ifBlank { l10n("未命名资源", "Unnamed asset") } },
                                             style = MaterialTheme.typography.titleSmall,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
@@ -378,7 +379,7 @@ fun TavernCharacterCard(
                                     supportingContent = {
                                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                             Text(
-                                                text = "类型(Type): ${asset.type.ifBlank { "-" }} · 扩展(Ext): ${asset.ext.ifBlank { "-" }}",
+                                                text = l10n("类型: ${asset.type.ifBlank { "-" }} · 扩展: ${asset.ext.ifBlank { "-" }}", "Type: ${asset.type.ifBlank { "-" }} · Ext: ${asset.ext.ifBlank { "-" }}"),
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
@@ -877,7 +878,7 @@ private fun EmbeddedBookSummary(
                                 onClick = { groupSettingsTarget = Pair(groupName, groupEntries) },
                                 modifier = Modifier.size(24.dp),
                             ) {
-                                Icon(HugeIcons.Tools, "组设置",
+                                Icon(HugeIcons.Tools, l10n("组设置", "Group settings"),
                                     modifier = Modifier.size(14.dp),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
@@ -1072,14 +1073,14 @@ private fun EmbeddedGroupSettingsDialog(
             // 插入位置
             CardGroup(title = { Text(stringResource(R.string.prompt_page_insertion_position)) }) {
                 listOf(
-                    "角色卡前(Before Char)",
-                    "角色卡后(After Char)",
-                    "作者备注前(AN Top)",
-                    "作者备注后(AN Bottom)",
-                    "指定深度(@Depth)",
-                    "示例消息前(EM Top)",
-                    "示例消息后(EM Bottom)",
-                    "出口(Outlet, 暂不支持)",
+                    l10n("角色卡前", "Before Character"),
+                    l10n("角色卡后", "After Character"),
+                    l10n("作者备注前", "Before Author's Note"),
+                    l10n("作者备注后", "After Author's Note"),
+                    l10n("指定深度", "At Depth"),
+                    l10n("示例消息前", "Before Example Messages"),
+                    l10n("示例消息后", "After Example Messages"),
+                    l10n("出口（暂不支持）", "Outlet (not supported)"),
                 ).forEachIndexed { i, label ->
                     item(
                         onClick = { position = i },
@@ -1155,10 +1156,10 @@ private fun EmbeddedGroupSettingsDialog(
             CardGroup(title = { Text(stringResource(R.string.prompt_page_selective_logic)) }) {
                 listOf(
                     // 官方 world-info.js：0=AND_ANY 1=NOT_ALL 2=NOT_ANY 3=AND_ALL
-                    "任一副键匹配(AND_ANY)" to 0,
-                    "全部副键匹配(AND_ALL)" to 3,
-                    "副键非全部匹配(NOT_ALL)" to 1,
-                    "副键均不匹配(NOT_ANY)" to 2,
+                    l10n("任一副键匹配", "ANY match") to 0,
+                    l10n("全部副键匹配", "ALL match") to 3,
+                    l10n("副键非全部匹配", "NOT ALL match") to 1,
+                    l10n("副键均不匹配", "NOT ANY match") to 2,
                 ).forEach { (label, value) ->
                     item(
                         onClick = { selectiveLogic = value },
@@ -1374,7 +1375,7 @@ private fun CollapsibleEntryCard(
                         Column(modifier = Modifier.weight(1f)) {
                             if (entry.keys.isNotEmpty()) {
                                 Text(
-                                    text = "触发词(Keywords)：${entry.keys.take(4).joinToString(" · ")}" +
+                                    text = l10n("触发词：${entry.keys.take(4).joinToString(" · ")}", "Keywords: ${entry.keys.take(4).joinToString(" · ")}") +
                                         if (entry.keys.size > 4) " +${entry.keys.size - 4}" else "",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.primary,
@@ -1496,7 +1497,7 @@ private fun EntryEditor(
                 overflow = TextOverflow.Ellipsis,
             )
             IconButton(onClick = onCollapse, modifier = Modifier.size(28.dp)) {
-                Icon(HugeIcons.ArrowRight01, contentDescription = "收起",
+                Icon(HugeIcons.ArrowRight01, contentDescription = l10n("收起", "Collapse"),
                     modifier = Modifier.size(16.dp).graphicsLayer { rotationZ = 90f })
             }
         }
@@ -1584,14 +1585,14 @@ private fun EntryEditor(
         // 插入位置
         CardGroup(title = { Text(stringResource(R.string.prompt_page_insertion_position)) }) {
             val posOptions = listOf(
-                "角色卡前(Before Char)",
-                "角色卡后(After Char)",
-                "作者备注前(AN Top)",
-                "作者备注后(AN Bottom)",
-                "指定深度(@Depth)",
-                "示例消息前(EM Top)",
-                "示例消息后(EM Bottom)",
-                "出口(Outlet, 暂不支持)",
+                l10n("角色卡前", "Before Character"),
+                l10n("角色卡后", "After Character"),
+                l10n("作者备注前", "Before Author's Note"),
+                l10n("作者备注后", "After Author's Note"),
+                l10n("指定深度", "At Depth"),
+                l10n("示例消息前", "Before Example Messages"),
+                l10n("示例消息后", "After Example Messages"),
+                l10n("出口（暂不支持）", "Outlet (not supported)"),
             )
             posOptions.forEachIndexed { i, label ->
                 item(
@@ -1625,7 +1626,7 @@ private fun EntryEditor(
             Icon(HugeIcons.ArrowRight01, null, modifier = Modifier.size(14.dp).graphicsLayer { rotationZ = advRotation },
                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(6.dp))
-            Text(if (showAdvanced) "收起高级设置" else "展开高级设置",
+            Text(if (showAdvanced) l10n("收起高级设置", "Hide advanced settings") else l10n("展开高级设置", "Show advanced settings"),
                  style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (showAdvanced) {
@@ -1742,9 +1743,9 @@ private fun EntryEditor(
                 }
                 CardGroup(title = { Text(stringResource(R.string.prompt_page_injection_role)) }) {
                     val roleLabels = listOf(
-                        "system" to "系统(System)",
-                        "user" to "用户(User)",
-                        "assistant" to "角色(Assistant)",
+                        "system" to l10n("系统", "System"),
+                        "user" to l10n("用户", "User"),
+                        "assistant" to l10n("角色", "Assistant"),
                     )
                     roleLabels.forEach { (value, label) ->
                         item(
@@ -1759,10 +1760,10 @@ private fun EntryEditor(
                 CardGroup(title = { Text(stringResource(R.string.prompt_page_selective_logic)) }) {
                     val logicLabels = listOf(
                         // 官方 world-info.js：0=AND_ANY 1=NOT_ALL 2=NOT_ANY 3=AND_ALL
-                        "任一副键匹配(AND_ANY)" to 0,
-                        "全部副键匹配(AND_ALL)" to 3,
-                        "副键非全部匹配(NOT_ALL)" to 1,
-                        "副键均不匹配(NOT_ANY)" to 2,
+                        l10n("任一副键匹配", "ANY match") to 0,
+                        l10n("全部副键匹配", "ALL match") to 3,
+                        l10n("副键非全部匹配", "NOT ALL match") to 1,
+                        l10n("副键均不匹配", "NOT ANY match") to 2,
                     )
                     logicLabels.forEach { (label, value) ->
                         item(

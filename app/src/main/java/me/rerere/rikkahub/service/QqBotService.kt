@@ -52,6 +52,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.Uuid
+import me.rerere.rikkahub.utils.l10n
 
 /**
  * QQ Bot 后台 WebSocket 服务.
@@ -414,7 +415,7 @@ class QqBotService : Service(), KoinComponent {
                 chatService.generationDoneFlow.first { it == conversationId }
             }
             if (success == null) {
-                return "（思考超时，请稍后再试）"
+                return l10n("（思考超时，请稍后再试）", "(Thinking timed out. Please try again later.)")
             }
 
             val conversation = chatService.getConversationFlow(conversationId).value
@@ -423,7 +424,7 @@ class QqBotService : Service(), KoinComponent {
                 ?.filterIsInstance<UIMessagePart.Text>()
                 ?.joinToString("\n") { it.text }
                 ?.trim()
-            return replyText?.takeIf { it.isNotBlank() } ?: "（无回复）"
+            return replyText?.takeIf { it.isNotBlank() } ?: l10n("（无回复）", "(No reply)")
         } finally {
             chatService.removeConversationReference(conversationId)
         }

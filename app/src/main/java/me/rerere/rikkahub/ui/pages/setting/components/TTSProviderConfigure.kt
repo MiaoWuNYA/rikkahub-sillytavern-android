@@ -969,8 +969,8 @@ private fun CardGroupScope.fishAudioTTSItems(
 
     // Model (下拉选择框 + 文本输入框，完全同 ElevenLabs 格式)
     val models = listOf(
-        "s2.1-pro" to "S2.1-Pro (推荐)",
-        "s2.1-pro-free" to "S2.1-Pro Free (免费)",
+        "s2.1-pro" to l10n("S2.1-Pro (推荐)", "S2.1-Pro (Recommended)"),
+        "s2.1-pro-free" to l10n("S2.1-Pro Free (免费)", "S2.1-Pro Free"),
         "s2-pro" to "S2-Pro",
         "s1" to "S1"
     )
@@ -1075,10 +1075,10 @@ private fun CardGroupScope.stepTTSItems(
 
     // Model
     val models = listOf(
-        "step-tts-mini" to "step-tts-mini (轻量, 便宜)",
-        "step-tts-vivid" to "step-tts-vivid (情感丰富)",
-        "stepaudio-2.5-tts" to "stepaudio-2.5-tts (语境感知, 支持 instruction)",
-        "step-tts-2" to "step-tts-2 (上一代)",
+        "step-tts-mini" to l10n("step-tts-mini (轻量, 便宜)", "step-tts-mini (Lightweight, low cost)"),
+        "step-tts-vivid" to l10n("step-tts-vivid (情感丰富)", "step-tts-vivid (Expressive)"),
+        "stepaudio-2.5-tts" to l10n("stepaudio-2.5-tts (语境感知, 支持 instruction)", "stepaudio-2.5-tts (Context-aware, supports instruction)"),
+        "step-tts-2" to l10n("step-tts-2 (上一代)", "step-tts-2 (Previous generation)"),
     )
 
     formItem(
@@ -1103,37 +1103,37 @@ private fun CardGroupScope.stepTTSItems(
     // 部分常用 voice-id, 完整列表见官方开发指南
     // https://platform.stepfun.com/docs/zh/guides/developer/tts
     val voices = listOf(
-        "elegantgentle-female" to "气质温婉 (elegantgentle-female)",
-        "livelybreezy-female" to "活力轻快 (livelybreezy-female)",
-        "energeticconfident-female" to "活力自信 (energeticconfident-female)",
-        "jingdiannvsheng" to "经典女声 (jingdiannvsheng)",
-        "wenroushunv" to "温柔熟女 (wenroushunv)",
-        "tianmeinvsheng" to "甜美女声 (tianmeinvsheng)",
-        "qingchunshaonv" to "清纯少女 (qingchunshaonv)",
-        "wenrounvsheng" to "温柔女声 (wenrounvsheng)",
-        "ruanmengnvsheng" to "软萌女生 (ruanmengnvsheng)",
-        "youyanvsheng" to "优雅女生 (youyanvsheng)",
-        "lengyanyujie" to "冷艳御姐 (lengyanyujie)",
-        "shuangkuaijiejie" to "爽快姐姐 (shuangkuaijiejie)",
-        "wenjingxuejie" to "文静学姐 (wenjingxuejie)",
-        "linjiajiejie" to "邻家姐姐 (linjiajiejie)",
-        "linjiameimei" to "邻家妹妹 (linjiameimei)",
-        "zhixingjiejie" to "知性姐姐 (zhixingjiejie)",
-        "cixingnansheng" to "磁性男声 (cixingnansheng)",
-        "wenrounansheng" to "温柔男声 (wenrounansheng)",
-        "yuanqinansheng" to "元气男声 (yuanqinansheng)",
-        "zhengpaiqingnian" to "正派青年 (zhengpaiqingnian)",
-        "ruyananshi" to "儒雅男士 (ruyananshi)",
-        "boyinnansheng" to "播音男声 (boyinnansheng)",
-        "shenchennanyin" to "深沉男音 (shenchennanyin)",
-        "shuangkuainansheng" to "爽快男声 (shuangkuainansheng)",
-        "ganliannvsheng" to "干练女声 (ganliannvsheng)",
-        "qinhenvsheng" to "亲切女声 (qinhenvsheng)",
-        "huolinvsheng" to "活力女声 (huolinvsheng)",
-        "jilingshaonv" to "机灵少女 (jilingshaonv)",
-        "yuanqishaonv" to "元气少女 (yuanqishaonv)",
-        "wenrougongzi" to "温柔公子 (wenrougongzi)",
-        "qingniandaxuesheng" to "青年大学生 (qingniandaxuesheng)",
+        "elegantgentle-female" to l10n("气质温婉 (elegantgentle-female)", "Elegant & Gentle (elegantgentle-female)"),
+        "livelybreezy-female" to l10n("活力轻快 (livelybreezy-female)", "Lively & Breezy (livelybreezy-female)"),
+        "energeticconfident-female" to l10n("活力自信 (energeticconfident-female)", "Energetic & Confident (energeticconfident-female)"),
+        "jingdiannvsheng" to l10n("经典女声 (jingdiannvsheng)", "Classic Female (jingdiannvsheng)"),
+        "wenroushunv" to l10n("温柔熟女 (wenroushunv)", "Gentle Mature Female (wenroushunv)"),
+        "tianmeinvsheng" to l10n("甜美女声 (tianmeinvsheng)", "Sweet Female (tianmeinvsheng)"),
+        "qingchunshaonv" to l10n("清纯少女 (qingchunshaonv)", "Pure Young Girl (qingchunshaonv)"),
+        "wenrounvsheng" to l10n("温柔女声 (wenrounvsheng)", "Gentle Female (wenrounvsheng)"),
+        "ruanmengnvsheng" to l10n("软萌女生 (ruanmengnvsheng)", "Soft & Cute Girl (ruanmengnvsheng)"),
+        "youyanvsheng" to l10n("优雅女生 (youyanvsheng)", "Elegant Girl (youyanvsheng)"),
+        "lengyanyujie" to l10n("冷艳御姐 (lengyanyujie)", "Cool & Alluring Woman (lengyanyujie)"),
+        "shuangkuaijiejie" to l10n("爽快姐姐 (shuangkuaijiejie)", "Frank Big Sister (shuangkuaijiejie)"),
+        "wenjingxuejie" to l10n("文静学姐 (wenjingxuejie)", "Quiet Senior (wenjingxuejie)"),
+        "linjiajiejie" to l10n("邻家姐姐 (linjiajiejie)", "Girl Next Door (Older) (linjiajiejie)"),
+        "linjiameimei" to l10n("邻家妹妹 (linjiameimei)", "Girl Next Door (Younger) (linjiameimei)"),
+        "zhixingjiejie" to l10n("知性姐姐 (zhixingjiejie)", "Intellectual Sister (zhixingjiejie)"),
+        "cixingnansheng" to l10n("磁性男声 (cixingnansheng)", "Magnetic Male (cixingnansheng)"),
+        "wenrounansheng" to l10n("温柔男声 (wenrounansheng)", "Gentle Male (wenrounansheng)"),
+        "yuanqinansheng" to l10n("元气男声 (yuanqinansheng)", "Energetic Male (yuanqinansheng)"),
+        "zhengpaiqingnian" to l10n("正派青年 (zhengpaiqingnian)", "Upright Young Man (zhengpaiqingnian)"),
+        "ruyananshi" to l10n("儒雅男士 (ruyananshi)", "Refined Gentleman (ruyananshi)"),
+        "boyinnansheng" to l10n("播音男声 (boyinnansheng)", "Broadcaster Male (boyinnansheng)"),
+        "shenchennanyin" to l10n("深沉男音 (shenchennanyin)", "Deep Male (shenchennanyin)"),
+        "shuangkuainansheng" to l10n("爽快男声 (shuangkuainansheng)", "Frank Male (shuangkuainansheng)"),
+        "ganliannvsheng" to l10n("干练女声 (ganliannvsheng)", "Capable Female (ganliannvsheng)"),
+        "qinhenvsheng" to l10n("亲切女声 (qinhenvsheng)", "Friendly Female (qinhenvsheng)"),
+        "huolinvsheng" to l10n("活力女声 (huolinvsheng)", "Lively Female (huolinvsheng)"),
+        "jilingshaonv" to l10n("机灵少女 (jilingshaonv)", "Clever Girl (jilingshaonv)"),
+        "yuanqishaonv" to l10n("元气少女 (yuanqishaonv)", "Energetic Girl (yuanqishaonv)"),
+        "wenrougongzi" to l10n("温柔公子 (wenrougongzi)", "Gentle Young Master (wenrougongzi)"),
+        "qingniandaxuesheng" to l10n("青年大学生 (qingniandaxuesheng)", "Young College Student (qingniandaxuesheng)"),
     )
 
     formItem(
@@ -1306,20 +1306,20 @@ private fun CardGroupScope.doubaoTTSItems(
     // Speaker (音色)
     // 2.0 音色 (_uranus/_saturn_bigtts) 配 seed-tts-2.0, 1.0 音色 (_mars_bigtts) 配 seed-tts-1.0
     val speakers = listOf(
-        "zh_male_kuailexiaodong_uranus_bigtts" to "快乐小东 2.0 (豆包同款)",
-        "zh_female_cancan_uranus_bigtts" to "灿灿 2.0",
-        "zh_female_tianmeitaozi_uranus_bigtts" to "甜美桃子 2.0",
-        "zh_female_tianmeixiaoyuan_uranus_bigtts" to "甜美小媛 2.0",
-        "zh_female_qingxinnvsheng_uranus_bigtts" to "清新女声 2.0",
-        "zh_female_gaolengyujie_uranus_bigtts" to "高冷御姐 2.0",
-        "zh_female_shuangkuaisisi_uranus_bigtts" to "爽快思思 2.0",
-        "zh_female_sajiaoxuemei_uranus_bigtts" to "撒娇学妹 2.0",
-        "zh_female_qiaopinv_uranus_bigtts" to "俏皮贫女 2.0",
-        "zh_female_popo_uranus_bigtts" to "婆婆 2.0",
-        "zh_female_peiqi_uranus_bigtts" to "佩琪 2.0",
+        "zh_male_kuailexiaodong_uranus_bigtts" to l10n("快乐小东 2.0 (豆包同款)", "Happy Xiaodong 2.0 (Doubao voice)"),
+        "zh_female_cancan_uranus_bigtts" to l10n("灿灿 2.0", "Cancan 2.0"),
+        "zh_female_tianmeitaozi_uranus_bigtts" to l10n("甜美桃子 2.0", "Sweet Peach 2.0"),
+        "zh_female_tianmeixiaoyuan_uranus_bigtts" to l10n("甜美小媛 2.0", "Sweet Xiaoyuan 2.0"),
+        "zh_female_qingxinnvsheng_uranus_bigtts" to l10n("清新女声 2.0", "Fresh Female 2.0"),
+        "zh_female_gaolengyujie_uranus_bigtts" to l10n("高冷御姐 2.0", "Aloof Woman 2.0"),
+        "zh_female_shuangkuaisisi_uranus_bigtts" to l10n("爽快思思 2.0", "Frank Sisi 2.0"),
+        "zh_female_sajiaoxuemei_uranus_bigtts" to l10n("撒娇学妹 2.0", "Coquettish Junior 2.0"),
+        "zh_female_qiaopinv_uranus_bigtts" to l10n("俏皮贫女 2.0", "Playful Chatty Girl 2.0"),
+        "zh_female_popo_uranus_bigtts" to l10n("婆婆 2.0", "Grandma 2.0"),
+        "zh_female_peiqi_uranus_bigtts" to l10n("佩琪 2.0", "Peiqi 2.0"),
         "zh_female_sophie_uranus_bigtts" to "Sofie 2.0",
-        "zh_female_jitangnv_uranus_bigtts" to "鸡汤女 2.0",
-        "zh_female_mizai_saturn_bigtts" to "米仔 2.0",
+        "zh_female_jitangnv_uranus_bigtts" to l10n("鸡汤女 2.0", "Chicken Soup Lady 2.0"),
+        "zh_female_mizai_saturn_bigtts" to l10n("米仔 2.0", "Mizai 2.0"),
         // 1.0 音色 (_mars_bigtts) 需把 Resource ID 改成 seed-tts-1.0 后手动输入，预设不再列出，
         // 避免与默认 seed-tts-2.0 混用报 55000000
     )

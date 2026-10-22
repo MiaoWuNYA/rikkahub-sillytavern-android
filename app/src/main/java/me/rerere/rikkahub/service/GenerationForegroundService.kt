@@ -9,6 +9,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import me.rerere.rikkahub.CHAT_GENERATION_FOREGROUND_CHANNEL_ID
+import me.rerere.rikkahub.utils.l10n
 
 /**
  * 前台 Service — 后台生成时保持进程存活。
@@ -27,7 +28,7 @@ class GenerationForegroundService : Service() {
         private const val NOTIFICATION_ID = 3001
     }
 
-    private var title: String = "正在生成回复"
+    private var title: String = l10n("正在生成回复", "Generating reply")
     private var text: String = ""
     private var conversationId: String = ""
 
@@ -47,7 +48,7 @@ class GenerationForegroundService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
-                title = intent.getStringExtra(EXTRA_TITLE) ?: "正在生成回复"
+                title = intent.getStringExtra(EXTRA_TITLE) ?: l10n("正在生成回复", "Generating reply")
                 conversationId = intent.getStringExtra(EXTRA_CONVERSATION_ID) ?: ""
                 updateNotification()
             }
@@ -69,7 +70,7 @@ class GenerationForegroundService : Service() {
         }
         return NotificationCompat.Builder(this, CHAT_GENERATION_FOREGROUND_CHANNEL_ID)
             .setContentTitle(title)
-            .setContentText(text.ifEmpty { "生成中..." })
+            .setContentText(text.ifEmpty { l10n("生成中...", "Generating...") })
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

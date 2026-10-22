@@ -182,6 +182,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.flow.first
 import androidx.compose.ui.platform.LocalContext
+import me.rerere.rikkahub.utils.l10n
 
 private const val TAG = "RouteActivity"
 private const val ACTION_TRANSLATE = "me.rerere.rikkahub.action.TRANSLATE"
@@ -845,7 +846,7 @@ class RouteActivity : ComponentActivity() {
                     }
                     if (BuildConfig.DEBUG) {
                         Text(
-                            text = "[开发模式]",
+                            text = l10n("[开发模式]", "[Developer mode]"),
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
                                 .padding(top = 4.dp),

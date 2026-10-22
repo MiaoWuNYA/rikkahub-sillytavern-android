@@ -164,6 +164,9 @@ private fun FeatureCard(emoji: String, title: String, subtitle: String, onClick:
 // 日记默认分类名，持久化在数据库里，必须保持字面量稳定（不随语言切换）
 private const val couple_journal_default_folder = "全部心事"
 
+private fun journalFolderLabel(name: String): String =
+    if (name == couple_journal_default_folder) l10n("全部心事", "All Thoughts") else name
+
 private enum class SpaceFilter { ALL, USER, AI }
 
 @Composable
@@ -667,7 +670,7 @@ fun CoupleDiaryPage(vm: CoupleVM = koinViewModel()) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     LazyRow(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(horizontal = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(folders) { folder ->
-                            FilterChip(selected = selectedFolder == folder, onClick = { selectedFolder = folder }, label = { Text(folder) })
+                            FilterChip(selected = selectedFolder == folder, onClick = { selectedFolder = folder }, label = { Text(journalFolderLabel(folder)) })
                         }
                     }
                     Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp), horizontalArrangement = Arrangement.End) {
@@ -954,7 +957,7 @@ private fun JournalCard(
                 Text(formatDate(entry.entryDate), style = MaterialTheme.typography.bodySmall, color = paper.text.copy(alpha = 0.68f))
                 Text(entry.content.replace("\n", " ").take(120) + if (entry.content.length > 120) "…" else "", style = MaterialTheme.typography.bodyMedium, color = paper.text.copy(alpha = 0.78f))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("${paper.ornament} ${entry.folder ?: couple_journal_default_folder}", style = MaterialTheme.typography.labelMedium, color = paper.accent)
+                    Text("${paper.ornament} ${journalFolderLabel(entry.folder ?: couple_journal_default_folder)}", style = MaterialTheme.typography.labelMedium, color = paper.accent)
                     if (entry.bookmarked) Text(stringResource(R.string.couple_journal_treasured_page), style = MaterialTheme.typography.labelMedium, color = paper.accent)
                     if (!entry.reply.isNullOrBlank()) Text(stringResource(R.string.couple_journal_replied, partnerName), style = MaterialTheme.typography.labelMedium, color = paper.accent)
                     else Text(stringResource(R.string.couple_journal_no_reply), style = MaterialTheme.typography.labelMedium, color = paper.text.copy(alpha = 0.58f))
@@ -988,7 +991,7 @@ private fun JournalEditorDialog(
                 Text(stringResource(R.string.couple_journal_label_category), style = MaterialTheme.typography.labelLarge)
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     existingFolders.forEach { name ->
-                        FilterChip(selected = folder == name, onClick = { folder = name; customFolder = "" }, label = { Text(name) })
+                        FilterChip(selected = folder == name, onClick = { folder = name; customFolder = "" }, label = { Text(journalFolderLabel(name)) })
                     }
                 }
                 OutlinedTextField(value = customFolder, onValueChange = { customFolder = it; if (it.isNotBlank()) folder = it.trim() }, modifier = Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.couple_journal_label_new_category)) }, singleLine = true)
@@ -1045,7 +1048,7 @@ private fun JournalFolderManagerDialog(
         title = { Text(stringResource(R.string.couple_journal_manage_title)) },
         text = {
             Column(Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(R.string.couple_journal_manage_desc, couple_journal_default_folder), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.couple_journal_manage_desc, journalFolderLabel(couple_journal_default_folder)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(newFolder, { newFolder = it }, modifier = Modifier.weight(1f), label = { Text(stringResource(R.string.couple_journal_new_category)) }, singleLine = true)
                     FilledTonalButton(enabled = newFolder.isNotBlank(), onClick = { onAdd(newFolder); newFolder = "" }) { Text(stringResource(R.string.couple_journal_create)) }
@@ -1060,7 +1063,7 @@ private fun JournalFolderManagerDialog(
                         }
                     } else {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Text(folder.name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                            Text(journalFolderLabel(folder.name), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
                             TextButton(onClick = { editingId = folder.id; editingName = folder.name }) { Text(stringResource(R.string.couple_journal_rename)) }
                             TextButton(onClick = { onDelete(folder) }) { Text(stringResource(R.string.delete)) }
                         }
@@ -1127,7 +1130,7 @@ private fun JournalReaderDialog(
                                 }
                             }
                             Text(entry.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = paper.text)
-                            Text("${formatDate(entry.entryDate)} · ${entry.folder ?: couple_journal_default_folder} · ${stringResource(paper.nameRes)}", style = MaterialTheme.typography.bodySmall, color = paper.text.copy(alpha = 0.62f))
+                            Text("${formatDate(entry.entryDate)} · ${journalFolderLabel(entry.folder ?: couple_journal_default_folder)} · ${stringResource(paper.nameRes)}", style = MaterialTheme.typography.bodySmall, color = paper.text.copy(alpha = 0.62f))
                             HorizontalDivider(color = paper.accent.copy(alpha = 0.3f))
                             Text(entry.content, style = MaterialTheme.typography.bodyLarge, color = paper.text)
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {

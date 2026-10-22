@@ -26,6 +26,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import me.rerere.rikkahub.utils.l10n
 
 /** 本定制版的仓库。GitHub Release 是权威来源，仓库根目录的 update.json 是兜底快照。 */
 private const val REPO = "MiaoWuNYA/rikkahub-sillytavern-android"
@@ -326,7 +327,7 @@ class UpdateChecker(
         val request = DownloadManager.Request(url.toUri()).apply {
             // 设置下载时通知栏的标题和描述
             setTitle(name)
-            setDescription("正在下载更新包...")
+            setDescription(l10n("正在下载更新包...", "Downloading update..."))
             // 下载完成后通知栏可见
             setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             // 允许在移动网络和WiFi下下载

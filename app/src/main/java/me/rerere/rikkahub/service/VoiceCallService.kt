@@ -51,6 +51,7 @@ import okhttp3.OkHttpClient
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.uuid.Uuid
+import me.rerere.rikkahub.utils.l10n
 
 private const val TAG = "VoiceCallService"
 
@@ -222,12 +223,12 @@ class VoiceCallService : Service(), KoinComponent {
                     asr.state.collect { asrState ->
                         updateAmplitudes(asrState.amplitudes)
                         if (asrState.status == me.rerere.asr.ASRStatus.Error) {
-                            val message = asrState.errorMessage ?: "语音识别发生未知错误"
+                            val message = asrState.errorMessage ?: l10n("语音识别发生未知错误", "Unknown speech recognition error")
                             Log.e(TAG, "ASR 底层报错, conversationId=$conversationId, msg=$message")
                             _uiState.update {
                                 it.copy(
                                     status = VoiceCallStatus.Error,
-                                    errorMessage = "语音识别错误: $message",
+                                    errorMessage = l10n("语音识别错误: $message", "Speech recognition error: $message"),
                                 )
                             }
                         }
@@ -239,7 +240,7 @@ class VoiceCallService : Service(), KoinComponent {
                 _uiState.update {
                     it.copy(
                         status = VoiceCallStatus.Error,
-                        errorMessage = "初始化失败: ${e.message}",
+                        errorMessage = l10n("初始化失败: ${e.message}", "Initialization failed: ${e.message}"),
                     )
                 }
             }
@@ -285,7 +286,7 @@ class VoiceCallService : Service(), KoinComponent {
             _uiState.update { it.copy(isSpeakerEnabled = enabled) }
         }.onFailure {
             Log.e(TAG, "切换扬声器失败, enabled=$enabled", it)
-            _uiState.update { state -> state.copy(errorMessage = "音频输出切换失败: ${it.message}") }
+            _uiState.update { state -> state.copy(errorMessage = l10n("音频输出切换失败: ${it.message}", "Failed to switch audio output: ${it.message}")) }
         }
     }
 
@@ -323,7 +324,7 @@ class VoiceCallService : Service(), KoinComponent {
         } catch (e: Exception) {
             Log.e(TAG, "启动 ASR 失败, conversationId=$conversationId", e)
             _uiState.update {
-                it.copy(status = VoiceCallStatus.Error, errorMessage = "麦克风启动失败: ${e.message}")
+                it.copy(status = VoiceCallStatus.Error, errorMessage = l10n("麦克风启动失败: ${e.message}", "Failed to start microphone: ${e.message}"))
             }
             return
         }
@@ -429,7 +430,7 @@ class VoiceCallService : Service(), KoinComponent {
         } catch (e: Exception) {
             Log.e(TAG, "发送消息失败, conversationId=$conversationId", e)
             _uiState.update {
-                it.copy(status = VoiceCallStatus.Error, errorMessage = "发送失败: ${e.message}")
+                it.copy(status = VoiceCallStatus.Error, errorMessage = l10n("发送失败: ${e.message}", "Failed to send: ${e.message}"))
             }
         }
     }
@@ -486,7 +487,7 @@ class VoiceCallService : Service(), KoinComponent {
                 _uiState.update {
                     it.copy(
                         status = VoiceCallStatus.Error,
-                        errorMessage = error.error.message ?: "AI 回复生成失败",
+                        errorMessage = error.error.message ?: l10n("AI 回复生成失败", "Failed to generate AI reply"),
                     )
                 }
             }
@@ -625,7 +626,7 @@ class VoiceCallService : Service(), KoinComponent {
             asr.start { transcript -> _uiState.update { it.copy(userTranscript = transcript) } }
         }.onFailure {
             Log.e(TAG, "ASR 自动恢复失败", it)
-            _uiState.update { state -> state.copy(errorMessage = "麦克风恢复失败: ${it.message}") }
+            _uiState.update { state -> state.copy(errorMessage = l10n("麦克风恢复失败: ${it.message}", "Failed to restore microphone: ${it.message}")) }
         }
     }
 
@@ -645,7 +646,7 @@ class VoiceCallService : Service(), KoinComponent {
             if (!targetMuted) isMuted = true
             Log.e(TAG, "切换静音状态失败, targetMuted=$targetMuted", e)
             _uiState.update {
-                it.copy(isMuted = isMuted, errorMessage = "麦克风切换失败: ${e.message}")
+                it.copy(isMuted = isMuted, errorMessage = l10n("麦克风切换失败: ${e.message}", "Failed to switch microphone: ${e.message}"))
             }
         }
     }
@@ -700,11 +701,11 @@ class VoiceCallService : Service(), KoinComponent {
 
     private fun buildNotification(state: VoiceCallUiState): android.app.Notification {
         val contentText = when (state.status) {
-            VoiceCallStatus.Listening -> "正在聆听..."
-            VoiceCallStatus.Processing -> "正在思考..."
-            VoiceCallStatus.Speaking -> "正在说话..."
-            VoiceCallStatus.Error -> state.errorMessage ?: "通话出错"
-            VoiceCallStatus.Idle -> "通话中"
+            VoiceCallStatus.Listening -> l10n("正在聆听...", "Listening...")
+            VoiceCallStatus.Processing -> l10n("正在思考...", "Thinking...")
+            VoiceCallStatus.Speaking -> l10n("正在说话...", "Speaking...")
+            VoiceCallStatus.Error -> state.errorMessage ?: l10n("通话出错", "Call error")
+            VoiceCallStatus.Idle -> l10n("通话中", "In call")
         }
         val isVideo = callSurface == VoiceCallSurface.Video
         val returnExtra = if (isVideo) {
@@ -731,13 +732,13 @@ class VoiceCallService : Service(), KoinComponent {
         )
 
         return NotificationCompat.Builder(this, VOICE_CALL_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle(if (isVideo) "视频通话" else "语音通话")
+            .setContentTitle(if (isVideo) l10n("视频通话", "Video call") else l10n("语音通话", "Voice call"))
             .setContentText(contentText)
             .setSmallIcon(R.drawable.ic_stat_rikkahub)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setContentIntent(contentIntent)
-            .addAction(0, "挂断", hangUpIntent)
+            .addAction(0, l10n("挂断", "Hang up"), hangUpIntent)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .build()
     }
