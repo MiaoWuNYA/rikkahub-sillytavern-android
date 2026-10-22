@@ -18,6 +18,7 @@ import me.rerere.rikkahub.data.datastore.SettingsStore
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.minutes
 import kotlin.uuid.Uuid
+import me.rerere.rikkahub.utils.l10n
 
 private const val TAG = "McpOAuthCoordinator"
 private const val TOKEN_REFRESH_LEEWAY_MS = 60_000L
@@ -144,12 +145,12 @@ internal class McpOAuthCoordinator(
             .getOrNull()
         val issuer = protectedResource?.authorizationServers?.firstOrNull()
             ?: McpOAuthDiscoveryClient.serverOrigin(serverUrl)
-            ?: error("无法确定授权服务器")
+            ?: error(l10n("无法确定授权服务器", "Unable to determine the authorization server"))
         val metadata = discoveryClient.discoverAuthorizationServer(issuer)
         val authorizationEndpoint = metadata.authorizationEndpoint
-            ?: error("授权服务器缺少 authorization_endpoint")
+            ?: error(l10n("授权服务器缺少 authorization_endpoint", "Authorization server is missing authorization_endpoint"))
         val tokenEndpoint = metadata.tokenEndpoint
-            ?: error("授权服务器缺少 token_endpoint")
+            ?: error(l10n("授权服务器缺少 token_endpoint", "Authorization server is missing token_endpoint"))
         val scope = config.commonOptions.oauth?.scope
             ?: protectedResource?.scopesSupported?.joinToString(" ")
             ?: metadata.scopesSupported?.joinToString(" ")
@@ -176,7 +177,7 @@ internal class McpOAuthCoordinator(
             }
             if (clientId.isNullOrBlank()) {
                 val registrationEndpoint = metadata.registrationEndpoint
-                    ?: error("授权服务器不支持动态注册，且未预配置 client_id")
+                    ?: error(l10n("授权服务器不支持动态注册，且未预配置 client_id", "Authorization server does not support dynamic registration and no client_id is configured"))
                 val registration = oauthClient.registerClient(
                     registrationEndpoint = registrationEndpoint,
                     request = OAuthHttpClient.ClientRegistrationRequest(
@@ -219,9 +220,9 @@ internal class McpOAuthCoordinator(
             }
 
             val callback = callbackSession.awaitCallback(OAUTH_CALLBACK_TIMEOUT)
-                ?: error("OAuth 授权超时")
+                ?: error(l10n("OAuth 授权超时", "OAuth authorization timed out"))
             callback.error?.let { error(buildAuthorizationError(it, callback.errorDescription)) }
-            val code = callback.code ?: error("授权失败: 未返回授权码")
+            val code = callback.code ?: error(l10n("授权失败: 未返回授权码", "Authorization failed: no authorization code returned"))
 
             val token = oauthClient.exchangeAuthorizationCode(
                 OAuthHttpClient.AuthorizationCodeTokenRequest(

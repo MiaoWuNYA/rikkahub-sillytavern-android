@@ -17,6 +17,7 @@ import okhttp3.Response
 import java.io.IOException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import me.rerere.rikkahub.utils.l10n
 
 private const val TAG = "McpOAuthDiscovery"
 
@@ -64,7 +65,7 @@ internal class McpOAuthDiscoveryClient(
                     return@withContext metadata
                 }
             }
-            error("无法发现受保护资源元数据 (protected resource metadata)")
+            error(l10n("无法发现受保护资源元数据 (protected resource metadata)", "Unable to discover protected resource metadata"))
         }
 
     /** 依次尝试 RFC 8414 与 OIDC Discovery 的 well-known 路径。 */
@@ -77,7 +78,7 @@ internal class McpOAuthDiscoveryClient(
                     return@withContext metadata
                 }
             }
-            error("无法发现授权服务器元数据 (authorization server metadata): $issuer")
+            error(l10n("无法发现授权服务器元数据 (authorization server metadata): $issuer", "Unable to discover authorization server metadata: $issuer"))
         }
 
     private suspend fun probeResourceMetadataUrl(serverUrl: String): String? {

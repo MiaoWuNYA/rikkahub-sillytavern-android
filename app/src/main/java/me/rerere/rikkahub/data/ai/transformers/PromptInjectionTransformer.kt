@@ -29,6 +29,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.uuid.Uuid
 import kotlin.random.Random
+import me.rerere.rikkahub.utils.l10n
 
 /**
  * 提示词注入转换器
@@ -131,7 +132,7 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
             worldInfoOverflowAlert = ctx.settings.worldInfoOverflowAlert,
             worldInfoUseGroupScoring = ctx.settings.worldInfoUseGroupScoring,
             generationType = ctx.generationType,
-            onOverflow = { ctx.processingStatus?.value = "世界书预算已满，部分条目未注入" },
+            onOverflow = { ctx.processingStatus?.value = l10n("世界书预算已满，部分条目未注入", "World book budget is full; some entries were not injected") },
             personaDescription = ctx.settings.personas
                 .firstOrNull { p -> p.id == ctx.settings.activePersonaId && p.enabled }
                 ?.description ?: "",
@@ -275,7 +276,7 @@ internal fun buildCharacterBookEntries(tav: TavernCharacterData?): List<PromptIn
         entries.add(
             PromptInjection.RegexInjection(
                 id = stableCharacterEntryId("phi", tav.postHistoryInstructions),
-                name = "历史后续指令",
+                name = l10n("历史后续指令", "Post-history instructions"),
                 enabled = true,
                 priority = 0,
                 position = InjectionPosition.AFTER_DIALOG,
@@ -289,7 +290,7 @@ internal fun buildCharacterBookEntries(tav: TavernCharacterData?): List<PromptIn
         entries.add(
             PromptInjection.RegexInjection(
                 id = stableCharacterEntryId("depth", tav.depthPrompt),
-                name = "深度提示",
+                name = l10n("深度提示", "Depth prompt"),
                 enabled = true,
                 priority = 0,
                 position = InjectionPosition.AT_DEPTH,

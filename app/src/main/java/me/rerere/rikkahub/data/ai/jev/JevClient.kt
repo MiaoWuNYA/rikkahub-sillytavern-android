@@ -11,6 +11,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import me.rerere.rikkahub.utils.l10n
 
 private const val TAG = "JevClient"
 
@@ -95,10 +96,10 @@ class JevClient(
         state: JsonElement,
         questions: Map<String, JevQuestion>,
     ): Map<String, JevVerdict> {
-        val config = effectiveConfig() ?: throw JevUnavailableException("Jev 未配置")
+        val config = effectiveConfig() ?: throw JevUnavailableException(l10n("Jev 未配置", "Jev is not configured"))
         if (questions.isEmpty()) return emptyMap()
         require(questions.size <= JEV_MAX_QUESTIONS) {
-            "单次请求最多 $JEV_MAX_QUESTIONS 个问题，当前 ${questions.size} 个，请分批"
+            l10n("单次请求最多 $JEV_MAX_QUESTIONS 个问题，当前 ${questions.size} 个，请分批", "At most $JEV_MAX_QUESTIONS questions per request; currently ${questions.size}. Please split into batches.")
         }
 
         val body = JevJson.encodeToString(
@@ -121,7 +122,7 @@ class JevClient(
         val parsed = try {
             JevJson.decodeFromString<JevResponse>(responseBody)
         } catch (e: Exception) {
-            throw JevProtocolException("响应解析失败: ${e.message}", e)
+            throw JevProtocolException(l10n("响应解析失败: ${e.message}", "Failed to parse response: ${e.message}"), e)
         }
 
         val answers = parsed.answers
@@ -149,17 +150,17 @@ class JevClient(
         question: JevQuestion,
     ): JevResult<JevVerdict> {
         val config = try {
-            effectiveConfig() ?: throw JevUnavailableException("Jev 未配置")
+            effectiveConfig() ?: throw JevUnavailableException(l10n("Jev 未配置", "Jev is not configured"))
         } catch (e: Exception) {
             Log.d(TAG, "judgeOne 未配置: ${e.message}")
-            return JevResult.Failed("Jev 未配置")
+            return JevResult.Failed(l10n("Jev 未配置", "Jev is not configured"))
         }
         val verdict = try {
             judge(state, mapOf(id to question))[id]
-                ?: throw JevProtocolException("响应缺少 question id=$id")
+                ?: throw JevProtocolException(l10n("响应缺少 question id=$id", "Response is missing question id=$id"))
         } catch (e: Exception) {
             Log.d(TAG, "judgeOne 失败: ${e.message}")
-            return JevResult.Failed(e.message ?: "Jev 调用失败")
+            return JevResult.Failed(e.message ?: l10n("Jev 调用失败", "Jev request failed"))
         }
         val confidence = verdict.confidence ?: equivalentConfidence(verdict)
         if (confidence != null && confidence < config.threshold) {

@@ -9,6 +9,7 @@ import android.os.Build
 import me.rerere.rikkahub.utils.ImageUtils
 import java.io.File
 import kotlin.uuid.Uuid
+import me.rerere.rikkahub.utils.l10n
 
 /**
  * 媒体创作用到的本地媒体处理：把相册里的素材导入应用目录、读取尺寸、抽取视频帧。
@@ -32,7 +33,7 @@ object MediaCreationFiles {
         while (maxOf(bounds.outWidth, bounds.outHeight) / sampleSize > MAX_IMAGE_SIZE) sampleSize *= 2
         val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
         val decoded = context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) }
-            ?: error("无法读取图片")
+            ?: error(l10n("无法读取图片", "Unable to read image"))
         val bitmap = ImageUtils.correctImageOrientation(context, uri, decoded)
         try {
             // 带透明通道的图片保留 PNG，其余用 JPEG 控制体积
@@ -58,7 +59,7 @@ object MediaCreationFiles {
         }
         dir.mkdirs()
         val file = File(dir, "${Uuid.random()}.$extension")
-        val input = context.contentResolver.openInputStream(uri) ?: error("无法读取视频")
+        val input = context.contentResolver.openInputStream(uri) ?: error(l10n("无法读取视频", "Unable to read video"))
         input.use { source -> file.outputStream().use { source.copyTo(it) } }
         return file
     }

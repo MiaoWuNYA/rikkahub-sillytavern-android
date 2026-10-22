@@ -14,6 +14,7 @@ import me.rerere.rikkahub.data.ai.jev.JevClient
 import me.rerere.rikkahub.data.ai.jev.JevPrompts
 import me.rerere.rikkahub.data.ai.jev.JevQuestion
 import me.rerere.rikkahub.data.ai.jev.JevResult
+import me.rerere.rikkahub.utils.l10n
 
 /**
  * judge 工具：把 Jev 挂给主力模型，让它在生成过程中也能发起判断。
@@ -84,7 +85,7 @@ fun createJudgeTool(jevClient: JevClient): Tool = Tool(
             ?: error("instructions required")
 
         val criteria = buildCriteria(obj, type)
-            ?: error("type=$type 需要提供 options（choice）或 levels（score）")
+            ?: error(l10n("type=$type 需要提供 options（choice）或 levels（score）", "type=$type requires options (choice) or levels (score)"))
 
         val question = JevQuestion(
             type = type,

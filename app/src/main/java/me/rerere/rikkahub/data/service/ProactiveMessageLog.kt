@@ -4,6 +4,7 @@ import android.content.Context
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import me.rerere.rikkahub.utils.l10n
 
 /**
  * 主动消息的执行日志。
@@ -30,16 +31,16 @@ object ProactiveMessageLog {
     /** 一次执行的结果。 */
     enum class Outcome(val label: String) {
         /** 真的生成并发出了消息 */
-        SENT("已发送"),
+        SENT(l10n("已发送", "Sent")),
 
         /** AI 自己选择沉默（[PASS]），算正常结束 */
-        PASSED("AI 选择不发"),
+        PASSED(l10n("AI 选择不发", "AI chose not to send")),
 
         /** 跑到了，但被主动跳过（未启用、已达最小间隔、有并发生成等） */
-        SKIPPED("已跳过"),
+        SKIPPED(l10n("已跳过", "Skipped")),
 
         /** 出错了 */
-        FAILED("失败"),
+        FAILED(l10n("失败", "Failed")),
     }
 
     data class Entry(
@@ -121,22 +122,22 @@ object ProactiveMessageLog {
         val sb = StringBuilder()
         val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
 
-        sb.appendLine("=== 主动消息诊断 ===")
+        sb.appendLine(l10n("=== 主动消息诊断 ===", "=== Proactive message diagnostics ==="))
         val next = ProactiveMessageService.getNextTriggerTime(context)
-        sb.appendLine("下次触发: " + (next?.let { sdf.format(Date(it)) } ?: "未排程"))
+        sb.appendLine(l10n("下次触发: ", "Next trigger: ") + (next?.let { sdf.format(Date(it)) } ?: l10n("未排程", "Not scheduled")))
         val last = runCatching {
             context.getSharedPreferences(
                 ProactiveMessageService.PREFS_NAME, Context.MODE_PRIVATE
             ).getLong(ProactiveMessageService.KEY_LAST_TRIGGERED_TIME, 0L)
         }.getOrDefault(0L)
-        sb.appendLine("上次实际触发: " + (if (last > 0) sdf.format(Date(last)) else "从未"))
-        sb.appendLine("累计执行: ${totalCount(context)} 次")
-        sb.appendLine("保留最近 ${MAX_ENTRIES} 条")
+        sb.appendLine(l10n("上次实际触发: ", "Last actual trigger: ") + (if (last > 0) sdf.format(Date(last)) else l10n("从未", "Never")))
+        sb.appendLine(l10n("累计执行: ${totalCount(context)} 次", "Total runs: ${totalCount(context)}"))
+        sb.appendLine(l10n("保留最近 ${MAX_ENTRIES} 条", "Keeping the latest ${MAX_ENTRIES} entries"))
         sb.appendLine()
 
         val entries = read(context)
         if (entries.isEmpty()) {
-            sb.appendLine("（还没有任何记录。开启开关并等到触发一次后就会出现在这里。）")
+            sb.appendLine(l10n("（还没有任何记录。开启开关并等到触发一次后就会出现在这里。）", "(No records yet. Turn on the switch and wait for one trigger to see entries here.)"))
         } else {
             entries.forEach { sb.appendLine(it.format()); sb.appendLine() }
         }
