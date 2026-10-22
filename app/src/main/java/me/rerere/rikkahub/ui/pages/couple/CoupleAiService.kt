@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import me.rerere.rikkahub.utils.l10n
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.provider.ImageGenerationParams
 import me.rerere.ai.provider.ProviderManager
@@ -188,9 +189,9 @@ class CoupleAiService : KoinComponent {
 
         val settings = settingsStore.settingsFlow.first()
         val model = settings.findModelById(settings.imageGenerationModelId)
-            ?: run { lastErrorMessage = "没有配置可用的图片生成模型"; return emptyList() }
+            ?: run { lastErrorMessage = l10n("没有配置可用的图片生成模型", "No image generation model is configured"); return emptyList() }
         val provider = model.findProvider(settings.providers)
-            ?: run { lastErrorMessage = "图片生成模型没有可用提供商"; return emptyList() }
+            ?: run { lastErrorMessage = l10n("图片生成模型没有可用提供商", "The image generation model has no available provider"); return emptyList() }
 
         val safeCount = count.coerceIn(1, 4)
         val params = ImageGenerationParams(
@@ -232,7 +233,7 @@ class CoupleAiService : KoinComponent {
             }
         saved
     }.getOrElse {
-        lastErrorMessage = it.message?.takeIf(String::isNotBlank) ?: it::class.simpleName ?: "图片生成失败"
+        lastErrorMessage = it.message?.takeIf(String::isNotBlank) ?: it::class.simpleName ?: l10n("图片生成失败", "Image generation failed")
         emptyList()
     }
 
@@ -245,13 +246,13 @@ class CoupleAiService : KoinComponent {
         val multimodal = try {
             generateOnce(assistantId, task, imageUris.take(9))
         } catch (error: Throwable) {
-            lastErrorMessage = error.message?.takeIf(String::isNotBlank) ?: error::class.simpleName ?: "模型调用失败"
+            lastErrorMessage = error.message?.takeIf(String::isNotBlank) ?: error::class.simpleName ?: l10n("模型调用失败", "Model request failed")
             null
         }
         if (!multimodal.isNullOrBlank()) return multimodal
 
         if (imageUris.isEmpty()) {
-            if (lastErrorMessage == null) lastErrorMessage = "模型没有返回可显示内容"
+            if (lastErrorMessage == null) lastErrorMessage = l10n("模型没有返回可显示内容", "The model returned no displayable content")
             return null
         }
 
@@ -263,10 +264,10 @@ class CoupleAiService : KoinComponent {
         """.trimIndent()
         return try {
             generateOnce(assistantId, fallbackTask, emptyList()).also {
-                if (it.isNullOrBlank() && lastErrorMessage == null) lastErrorMessage = "模型没有返回可显示内容"
+                if (it.isNullOrBlank() && lastErrorMessage == null) lastErrorMessage = l10n("模型没有返回可显示内容", "The model returned no displayable content")
             }
         } catch (error: Throwable) {
-            lastErrorMessage = error.message?.takeIf(String::isNotBlank) ?: error::class.simpleName ?: "模型调用失败"
+            lastErrorMessage = error.message?.takeIf(String::isNotBlank) ?: error::class.simpleName ?: l10n("模型调用失败", "Model request failed")
             null
         }
     }
@@ -278,9 +279,9 @@ class CoupleAiService : KoinComponent {
     ): String? {
         val settings = settingsStore.settingsFlow.first()
         val assistant = settings.assistants.firstOrNull { it.id.toString() == assistantId }
-            ?: run { lastErrorMessage = "没有找到情侣空间绑定的角色"; return null }
+            ?: run { lastErrorMessage = l10n("没有找到情侣空间绑定的角色", "No character is linked to the couple space"); return null }
         val model = settings.findModelById(assistant.chatModelId ?: settings.chatModelId)
-            ?: run { lastErrorMessage = "当前角色没有可用聊天模型"; return null }
+            ?: run { lastErrorMessage = l10n("当前角色没有可用聊天模型", "The current character has no available chat model"); return null }
 
         val systemPrompt = buildString {
             appendLine("## 情侣空间互动")
@@ -326,7 +327,7 @@ class CoupleAiService : KoinComponent {
             ?.trim()
             ?.takeIf { it.isNotBlank() }
             .also {
-                if (it == null && lastErrorMessage == null) lastErrorMessage = "模型没有返回可显示内容"
+                if (it == null && lastErrorMessage == null) lastErrorMessage = l10n("模型没有返回可显示内容", "The model returned no displayable content")
             }
     }
 }

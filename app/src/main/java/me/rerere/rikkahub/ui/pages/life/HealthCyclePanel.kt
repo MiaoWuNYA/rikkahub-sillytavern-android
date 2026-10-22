@@ -44,6 +44,7 @@ import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
+import me.rerere.rikkahub.utils.l10n
 import me.rerere.rikkahub.R
 
 private const val HEALTH_PREFS = "tumin_health_cycle"
@@ -411,7 +412,7 @@ private fun BodyLogDialog(date: LocalDate, initial: DailyBodyLog?, onDismiss: ()
                 item { Text(stringResource(R.string.life_health_flow), fontWeight = FontWeight.Bold) }
                 item { ChoiceRow(flowOptions, flow) { flow = if (flow == it) "" else it } }
                 item { Text(stringResource(R.string.life_health_body_feeling), fontWeight = FontWeight.Bold) }
-                item { LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) { items(symptomOptions) { symptom -> FilterChip(selected = symptom in selectedSymptoms, onClick = { selectedSymptoms = if (symptom in selectedSymptoms) selectedSymptoms - symptom else selectedSymptoms + symptom }, label = { Text(symptom) }) } } }
+                item { LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) { items(symptomOptions) { symptom -> FilterChip(selected = symptom in selectedSymptoms, onClick = { selectedSymptoms = if (symptom in selectedSymptoms) selectedSymptoms - symptom else selectedSymptoms + symptom }, label = { Text(healthOptionLabel(symptom)) }) } } }
                 item { Text(stringResource(R.string.life_health_mood), fontWeight = FontWeight.Bold) }
                 item { ChoiceRow(moodOptions, mood) { mood = if (mood == it) "" else it } }
                 item { Text(stringResource(R.string.life_health_energy), fontWeight = FontWeight.Bold) }
@@ -426,7 +427,31 @@ private fun BodyLogDialog(date: LocalDate, initial: DailyBodyLog?, onDismiss: ()
 
 @Composable
 private fun ChoiceRow(options: List<String>, selected: String, onSelect: (String) -> Unit) {
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) { items(options) { item -> FilterChip(selected = selected == item, onClick = { onSelect(item) }, label = { Text(item) }) } }
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) { items(options) { item -> FilterChip(selected = selected == item, onClick = { onSelect(item) }, label = { Text(healthOptionLabel(item)) }) } }
+}
+
+private fun healthOptionLabel(value: String): String = when (value) {
+    "腹痛" -> l10n("腹痛", "Cramps")
+    "腰酸" -> l10n("腰酸", "Lower back pain")
+    "头痛" -> l10n("头痛", "Headache")
+    "胸胀" -> l10n("胸胀", "Breast tenderness")
+    "疲惫" -> l10n("疲惫", "Fatigue")
+    "失眠" -> l10n("失眠", "Insomnia")
+    "食欲变化" -> l10n("食欲变化", "Appetite change")
+    "皮肤状态" -> l10n("皮肤状态", "Skin condition")
+    "开心" -> l10n("开心", "Happy")
+    "平静" -> l10n("平静", "Calm")
+    "敏感" -> l10n("敏感", "Sensitive")
+    "烦躁" -> l10n("烦躁", "Irritable")
+    "低落" -> l10n("低落", "Low")
+    "焦虑" -> l10n("焦虑", "Anxious")
+    "高" -> l10n("高", "High")
+    "中" -> l10n("中", "Medium")
+    "低" -> l10n("低", "Low")
+    "少量" -> l10n("少量", "Light")
+    "中等" -> l10n("中等", "Medium")
+    "较多" -> l10n("较多", "Heavy")
+    else -> value
 }
 
 @Composable

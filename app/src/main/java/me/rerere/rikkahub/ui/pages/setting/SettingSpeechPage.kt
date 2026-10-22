@@ -49,6 +49,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import me.rerere.rikkahub.utils.l10n
 import me.rerere.asr.ASRProviderSetting
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
@@ -447,7 +448,7 @@ private val TTSProviderSetting.typeName: String
         is TTSProviderSetting.Step -> "Step"
         is TTSProviderSetting.ElevenLabs -> "ElevenLabs"
         is TTSProviderSetting.FishAudio -> "Fish Audio"
-        is TTSProviderSetting.Doubao -> "火山引擎"
+        is TTSProviderSetting.Doubao -> l10n("火山引擎", "Volcano Engine")
     }
 
 // TTS 和 ASR 列表共用的服务商卡片，点卡片编辑，点单选圈设为当前使用

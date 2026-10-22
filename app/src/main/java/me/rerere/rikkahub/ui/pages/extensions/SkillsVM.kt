@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import me.rerere.rikkahub.utils.l10n
 import me.rerere.rikkahub.data.skills.SkillFrontmatterParser
 import me.rerere.rikkahub.data.skills.SkillManager
 import me.rerere.rikkahub.data.skills.SkillMetadata
@@ -108,7 +109,7 @@ class SkillsVM(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val inputStream = context.contentResolver.openInputStream(uri)
-                    ?: run { withContext(Dispatchers.Main) { onResult(false, "无法读取文件") }; return@launch }
+                    ?: run { withContext(Dispatchers.Main) { onResult(false, l10n("无法读取文件", "Unable to read file")) }; return@launch }
                 val zipBytes = inputStream.readBytes()
                 inputStream.close()
 
@@ -120,7 +121,7 @@ class SkillsVM(
                     .filter { it.substringAfterLast('/').equals("SKILL.md", ignoreCase = true) }
                     .sorted()
                 if (skillMdPaths.isEmpty()) {
-                    withContext(Dispatchers.Main) { onResult(false, "ZIP 中未找到 SKILL.md") }
+                    withContext(Dispatchers.Main) { onResult(false, l10n("ZIP 中未找到 SKILL.md", "SKILL.md not found in the ZIP")) }
                     return@launch
                 }
 
@@ -133,7 +134,7 @@ class SkillsVM(
                     val frontmatter = SkillFrontmatterParser.parse(skillContent)
                     val name = frontmatter["name"]?.trim()
                     if (name.isNullOrBlank()) {
-                        withContext(Dispatchers.Main) { onResult(false, "$skillMdPath 缺少 name 字段") }
+                        withContext(Dispatchers.Main) { onResult(false, l10n("$skillMdPath 缺少 name 字段", "$skillMdPath is missing the name field")) }
                         return@launch
                     }
 
@@ -148,7 +149,7 @@ class SkillsVM(
 
                     val saved = skillManager.saveSkillFileBytesAtomically(name, skillFiles)
                     if (!saved) {
-                        withContext(Dispatchers.Main) { onResult(false, "保存失败：$name") }
+                        withContext(Dispatchers.Main) { onResult(false, l10n("保存失败：$name", "Failed to save: $name")) }
                         return@launch
                     }
                     importedNames += name
@@ -159,7 +160,7 @@ class SkillsVM(
                     onResult(true, importedNames.distinct().joinToString(", "))
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) { onResult(false, e.message ?: "导入失败") }
+                withContext(Dispatchers.Main) { onResult(false, e.message ?: l10n("导入失败", "Import failed")) }
             }
         }
     }
@@ -231,32 +232,32 @@ class SkillsVM(
                     return@launch
                 }
                 if (!fileName.endsWith(".md")) {
-                    withContext(Dispatchers.Main) { onResult(false, "不支持的格式，请选择 .zip 或 .md 文件") }
+                    withContext(Dispatchers.Main) { onResult(false, l10n("不支持的格式，请选择 .zip 或 .md 文件", "Unsupported format; choose a .zip or .md file")) }
                     return@launch
                 }
                 val content = context.contentResolver.openInputStream(uri)?.bufferedReader()?.readText()
                     ?: run {
-                        withContext(Dispatchers.Main) { onResult(false, "无法读取文件") }
+                        withContext(Dispatchers.Main) { onResult(false, l10n("无法读取文件", "Unable to read file")) }
                         return@launch
                     }
                 val frontmatter = SkillFrontmatterParser.parse(content)
                 val name = frontmatter["name"]?.takeIf { it.isNotBlank() }
                     ?: run {
-                        withContext(Dispatchers.Main) { onResult(false, "无效的Skill文件，缺少name或description字段") }
+                        withContext(Dispatchers.Main) { onResult(false, l10n("无效的Skill文件，缺少name或description字段", "Invalid skill file: missing name or description field")) }
                         return@launch
                     }
                 val desc = frontmatter["description"]?.takeIf { it.isNotBlank() }
                     ?: run {
-                        withContext(Dispatchers.Main) { onResult(false, "无效的Skill文件，缺少name或description字段") }
+                        withContext(Dispatchers.Main) { onResult(false, l10n("无效的Skill文件，缺少name或description字段", "Invalid skill file: missing name or description field")) }
                         return@launch
                     }
                 val saved = skillManager.saveSkill(name, content)
                 _skills.value = skillManager.listSkills()
                 withContext(Dispatchers.Main) {
-                    onResult(saved != null, if (saved != null) name else "保存失败")
+                    onResult(saved != null, if (saved != null) name else l10n("保存失败", "Failed to save"))
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) { onResult(false, e.message ?: "导入失败") }
+                withContext(Dispatchers.Main) { onResult(false, e.message ?: l10n("导入失败", "Import failed")) }
             }
         }
     }
@@ -299,26 +300,26 @@ class SkillsVM(
 
                 if (realDir == null || !realDir.isDirectory) {
                     android.util.Log.e("SkillsVM", "无法解析目录路径, URI=$uri")
-                    withContext(Dispatchers.Main) { onResult(false, "无法读取文件夹，请确认已授权访问权限") }
+                    withContext(Dispatchers.Main) { onResult(false, l10n("无法读取文件夹，请确认已授权访问权限", "Unable to read the folder; make sure access is granted")) }
                     return@launch
                 }
 
                 // 找到 SKILL.md（可能在子目录中），只读它来拿 skill 名字
                 val skillMd = realDir.walkTopDown().firstOrNull { it.name == "SKILL.md" }
                     ?: run {
-                        withContext(Dispatchers.Main) { onResult(false, "文件夹中未找到 SKILL.md") }
+                        withContext(Dispatchers.Main) { onResult(false, l10n("文件夹中未找到 SKILL.md", "SKILL.md not found in the folder")) }
                         return@launch
                     }
 
                 val frontmatter = SkillFrontmatterParser.parse(skillMd.readText())
                 val name = frontmatter["name"]?.takeIf { it.isNotBlank() }
                     ?: run {
-                        withContext(Dispatchers.Main) { onResult(false, "SKILL.md 缺少 name 字段") }
+                        withContext(Dispatchers.Main) { onResult(false, l10n("SKILL.md 缺少 name 字段", "SKILL.md is missing the name field")) }
                         return@launch
                     }
                 val desc = frontmatter["description"]?.takeIf { it.isNotBlank() }
                     ?: run {
-                        withContext(Dispatchers.Main) { onResult(false, "SKILL.md 缺少 description 字段") }
+                        withContext(Dispatchers.Main) { onResult(false, l10n("SKILL.md 缺少 description 字段", "SKILL.md is missing the description field")) }
                         return@launch
                     }
 
@@ -337,7 +338,7 @@ class SkillsVM(
                 withContext(Dispatchers.Main) { onResult(true, name) }
             } catch (e: Exception) {
                 android.util.Log.e("SkillsVM", "importFromFolder 异常: ${e.message}", e)
-                withContext(Dispatchers.Main) { onResult(false, e.message ?: "导入失败") }
+                withContext(Dispatchers.Main) { onResult(false, e.message ?: l10n("导入失败", "Import failed")) }
             }
         }
     }
@@ -371,14 +372,14 @@ class SkillsVM(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val info = parseGitHubUrl(repoUrl) ?: run {
-                    withContext(Dispatchers.Main) { onResult(false, emptyList(), "无效的链接，支持格式：github.com/owner/repo 或 github.com/owner/repo/tree/branch/路径") }
+                    withContext(Dispatchers.Main) { onResult(false, emptyList(), l10n("无效的链接，支持格式：github.com/owner/repo 或 github.com/owner/repo/tree/branch/路径", "Invalid link. Supported formats: github.com/owner/repo or github.com/owner/repo/tree/branch/path")) }
                     return@launch
                 }
 
                 // 解析默认分支
                 val branch = resolveBranch(info.owner, info.repo, info.branch)
                     ?: run {
-                        withContext(Dispatchers.Main) { onResult(false, emptyList(), "无法获取仓库默认分支") }
+                        withContext(Dispatchers.Main) { onResult(false, emptyList(), l10n("无法获取仓库默认分支", "Unable to get the repository default branch")) }
                         return@launch
                     }
 
@@ -386,7 +387,7 @@ class SkillsVM(
                 val treeJson = downloadText(
                     "https://api.github.com/repos/${info.owner}/${info.repo}/git/trees/$branch?recursive=1"
                 ) ?: run {
-                    withContext(Dispatchers.Main) { onResult(false, emptyList(), "读取仓库目录失败") }
+                    withContext(Dispatchers.Main) { onResult(false, emptyList(), l10n("读取仓库目录失败", "Failed to read the repository directory")) }
                     return@launch
                 }
 
@@ -395,7 +396,7 @@ class SkillsVM(
                 val truncated = treeJsonObj.optBoolean("truncated", false)
 
                 if (truncated) {
-                    withContext(Dispatchers.Main) { onResult(false, emptyList(), "仓库文件过多，暂不支持大仓库扫描") }
+                    withContext(Dispatchers.Main) { onResult(false, emptyList(), l10n("仓库文件过多，暂不支持大仓库扫描", "The repository has too many files; large repository scans are not supported yet")) }
                     return@launch
                 }
 
@@ -417,7 +418,7 @@ class SkillsVM(
                 }
 
                 if (filteredPaths.isEmpty()) {
-                    withContext(Dispatchers.Main) { onResult(false, emptyList(), "未找到 SKILL.md") }
+                    withContext(Dispatchers.Main) { onResult(false, emptyList(), l10n("未找到 SKILL.md", "SKILL.md not found")) }
                     return@launch
                 }
 
@@ -459,7 +460,7 @@ class SkillsVM(
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    onResult(false, emptyList(), e.message ?: "扫描失败")
+                    onResult(false, emptyList(), e.message ?: l10n("扫描失败", "Scan failed"))
                 }
             }
         }
@@ -476,13 +477,13 @@ class SkillsVM(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val info = parseGitHubUrl(repoUrl) ?: run {
-                    withContext(Dispatchers.Main) { onResult(false, "无效的链接，支持格式：github.com/owner/repo 或 github.com/owner/repo/tree/branch/路径") }
+                    withContext(Dispatchers.Main) { onResult(false, l10n("无效的链接，支持格式：github.com/owner/repo 或 github.com/owner/repo/tree/branch/路径", "Invalid link. Supported formats: github.com/owner/repo or github.com/owner/repo/tree/branch/path")) }
                     return@launch
                 }
 
                 val branch = resolveBranch(info.owner, info.repo, info.branch)
                     ?: run {
-                        withContext(Dispatchers.Main) { onResult(false, "无法获取仓库默认分支") }
+                        withContext(Dispatchers.Main) { onResult(false, l10n("无法获取仓库默认分支", "Unable to get the repository default branch")) }
                         return@launch
                     }
 
@@ -490,7 +491,7 @@ class SkillsVM(
                 val treeJson = downloadText(
                     "https://api.github.com/repos/${info.owner}/${info.repo}/git/trees/$branch?recursive=1"
                 ) ?: run {
-                    withContext(Dispatchers.Main) { onResult(false, "读取仓库目录失败") }
+                    withContext(Dispatchers.Main) { onResult(false, l10n("读取仓库目录失败", "Failed to read the repository directory")) }
                     return@launch
                 }
                 val tree = org.json.JSONObject(treeJson).getJSONArray("tree")
@@ -508,7 +509,7 @@ class SkillsVM(
                     }
                 }
                 if (files.isEmpty()) {
-                    withContext(Dispatchers.Main) { onResult(false, "目录中未找到文件") }
+                    withContext(Dispatchers.Main) { onResult(false, l10n("目录中未找到文件", "No files found in the directory")) }
                     return@launch
                 }
 
@@ -523,7 +524,7 @@ class SkillsVM(
                 }
                 for ((relativePath, content) in results) {
                     if (content == null) {
-                        withContext(Dispatchers.Main) { onResult(false, "下载文件失败：$relativePath") }
+                        withContext(Dispatchers.Main) { onResult(false, l10n("下载文件失败：$relativePath", "Failed to download file: $relativePath")) }
                         return@launch
                     }
                     fileContents[relativePath] = content
@@ -531,7 +532,7 @@ class SkillsVM(
 
                 val saved = skillManager.saveSkillFilesAtomically(skill.name, fileContents)
                 if (!saved) {
-                    withContext(Dispatchers.Main) { onResult(false, "保存失败") }
+                    withContext(Dispatchers.Main) { onResult(false, l10n("保存失败", "Failed to save")) }
                     return@launch
                 }
 
@@ -557,7 +558,7 @@ class SkillsVM(
                 )
                 withContext(Dispatchers.Main) { onResult(true, skill.name) }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) { onResult(false, e.message ?: "下载失败") }
+                withContext(Dispatchers.Main) { onResult(false, e.message ?: l10n("下载失败", "Download failed")) }
             }
         }
     }
@@ -648,17 +649,17 @@ class SkillsVM(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val source = getSkillSource(skillName) ?: run {
-                    withContext(Dispatchers.Main) { onResult(false, "未找到安装源信息") }
+                    withContext(Dispatchers.Main) { onResult(false, l10n("未找到安装源信息", "Installation source not found")) }
                     return@launch
                 }
                 val info = parseGitHubUrl(source.repoUrl) ?: run {
-                    withContext(Dispatchers.Main) { onResult(false, "无法解析仓库链接") }
+                    withContext(Dispatchers.Main) { onResult(false, l10n("无法解析仓库链接", "Unable to parse the repository link")) }
                     return@launch
                 }
                 val branch = resolveBranch(info.owner, info.repo, source.branch)
-                    ?: run { withContext(Dispatchers.Main) { onResult(false, "无法获取仓库分支") }; return@launch }
+                    ?: run { withContext(Dispatchers.Main) { onResult(false, l10n("无法获取仓库分支", "Unable to get the repository branch")) }; return@launch }
                 val tree = fetchRepoTree(info.owner, info.repo, branch) ?: run {
-                    withContext(Dispatchers.Main) { onResult(false, "无法读取仓库文件列表") }; return@launch
+                    withContext(Dispatchers.Main) { onResult(false, l10n("无法读取仓库文件列表", "Unable to read the repository file list")) }; return@launch
                 }
                 
                 // 对比每个已安装 skill 的目录哈希
@@ -685,12 +686,12 @@ class SkillsVM(
                     if (hasUpdate) break
                 }
                 if (hasUpdate) {
-                    withContext(Dispatchers.Main) { onResult(true, "发现新版本") }
+                    withContext(Dispatchers.Main) { onResult(true, l10n("发现新版本", "New version found")) }
                 } else {
-                    withContext(Dispatchers.Main) { onResult(false, "已是最新版本") }
+                    withContext(Dispatchers.Main) { onResult(false, l10n("已是最新版本", "Already up to date")) }
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) { onResult(false, e.message ?: "检查更新失败") }
+                withContext(Dispatchers.Main) { onResult(false, e.message ?: l10n("检查更新失败", "Failed to check for updates")) }
             }
         }
     }
@@ -706,17 +707,17 @@ class SkillsVM(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val source = getSkillSource(skillName) ?: run {
-                    withContext(Dispatchers.Main) { onResult(false, emptyList(), "未找到安装源信息") }
+                    withContext(Dispatchers.Main) { onResult(false, emptyList(), l10n("未找到安装源信息", "Installation source not found")) }
                     return@launch
                 }
                 val info = parseGitHubUrl(source.repoUrl) ?: run {
-                    withContext(Dispatchers.Main) { onResult(false, emptyList(), "无效仓库链接") }
+                    withContext(Dispatchers.Main) { onResult(false, emptyList(), l10n("无效仓库链接", "Invalid repository link")) }
                     return@launch
                 }
                 val branch = resolveBranch(info.owner, info.repo, source.branch)
-                    ?: run { withContext(Dispatchers.Main) { onResult(false, emptyList(), "无法获取分支") }; return@launch }
+                    ?: run { withContext(Dispatchers.Main) { onResult(false, emptyList(), l10n("无法获取分支", "Unable to get the branch")) }; return@launch }
                 val tree = fetchRepoTree(info.owner, info.repo, branch) ?: run {
-                    withContext(Dispatchers.Main) { onResult(false, emptyList(), "读取仓库失败") }; return@launch
+                    withContext(Dispatchers.Main) { onResult(false, emptyList(), l10n("读取仓库失败", "Failed to read the repository")) }; return@launch
                 }
 
                 val results = mutableListOf<GitHubSkillInfo>()
@@ -761,7 +762,7 @@ class SkillsVM(
                     onResult(true, results, "${info.owner}/${info.repo}")
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) { onResult(false, emptyList(), e.message ?: "扫描失败") }
+                withContext(Dispatchers.Main) { onResult(false, emptyList(), e.message ?: l10n("扫描失败", "Scan failed")) }
             }
         }
     }
@@ -773,17 +774,17 @@ class SkillsVM(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val source = getSkillSource(skillName) ?: run {
-                    withContext(Dispatchers.Main) { onResult(false, "未找到安装源信息") }
+                    withContext(Dispatchers.Main) { onResult(false, l10n("未找到安装源信息", "Installation source not found")) }
                     return@launch
                 }
                 val info = parseGitHubUrl(source.repoUrl) ?: run {
-                    withContext(Dispatchers.Main) { onResult(false, "无效仓库链接") }
+                    withContext(Dispatchers.Main) { onResult(false, l10n("无效仓库链接", "Invalid repository link")) }
                     return@launch
                 }
                 val branch = resolveBranch(info.owner, info.repo, source.branch)
-                    ?: run { withContext(Dispatchers.Main) { onResult(false, "无法获取分支") }; return@launch }
+                    ?: run { withContext(Dispatchers.Main) { onResult(false, l10n("无法获取分支", "Unable to get the branch")) }; return@launch }
                 val tree = fetchRepoTree(info.owner, info.repo, branch) ?: run {
-                    withContext(Dispatchers.Main) { onResult(false, "读取仓库失败") }; return@launch
+                    withContext(Dispatchers.Main) { onResult(false, l10n("读取仓库失败", "Failed to read the repository")) }; return@launch
                 }
 
                 // 找 SKILL.md 获取目录路径和新的 blob sha
@@ -804,15 +805,15 @@ class SkillsVM(
                     }
                 }
                 if (dirPath == null) {
-                    withContext(Dispatchers.Main) { onResult(false, "仓库中未找到此 skill") }
+                    withContext(Dispatchers.Main) { onResult(false, l10n("仓库中未找到此 skill", "Skill not found in the repository")) }
                     return@launch
                 }
 
                 val fileContents = downloadSkillFiles(info.owner, info.repo, branch, dirPath, tree)
-                    ?: run { withContext(Dispatchers.Main) { onResult(false, "下载失败") }; return@launch }
+                    ?: run { withContext(Dispatchers.Main) { onResult(false, l10n("下载失败", "Download failed")) }; return@launch }
 
                 if (!skillManager.saveSkillFilesAtomically(skillName, fileContents)) {
-                    withContext(Dispatchers.Main) { onResult(false, "保存失败") }; return@launch
+                    withContext(Dispatchers.Main) { onResult(false, l10n("保存失败", "Failed to save")) }; return@launch
                 }
 
                 if (newBlobSha != null) {
@@ -823,7 +824,7 @@ class SkillsVM(
                 _skills.value = skillManager.listSkills()
                 withContext(Dispatchers.Main) { onResult(true, skillName) }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) { onResult(false, e.message ?: "更新失败") }
+                withContext(Dispatchers.Main) { onResult(false, e.message ?: l10n("更新失败", "Update failed")) }
             }
         }
     }
@@ -875,36 +876,36 @@ class SkillsVM(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val info = parseGitHubUrl(repoUrl) ?: run {
-                    withContext(Dispatchers.Main) { onResult(false, "无效的链接，支持格式：github.com/owner/repo 或 github.com/owner/repo/tree/branch/路径") }
+                    withContext(Dispatchers.Main) { onResult(false, l10n("无效的链接，支持格式：github.com/owner/repo 或 github.com/owner/repo/tree/branch/路径", "Invalid link. Supported formats: github.com/owner/repo or github.com/owner/repo/tree/branch/path")) }
                     return@launch
                 }
                 val branch = resolveBranch(info.owner, info.repo, info.branch)
                     ?: run {
-                        withContext(Dispatchers.Main) { onResult(false, "无法获取仓库默认分支") }
+                        withContext(Dispatchers.Main) { onResult(false, l10n("无法获取仓库默认分支", "Unable to get the repository default branch")) }
                         return@launch
                     }
 
                 val files = mutableListOf<Pair<String, String>>()
                 val listed = listFilesRecursively(info.owner, info.repo, branch, info.path, info.path, files)
                 if (!listed) {
-                    withContext(Dispatchers.Main) { onResult(false, "读取 GitHub 目录失败") }
+                    withContext(Dispatchers.Main) { onResult(false, l10n("读取 GitHub 目录失败", "Failed to read the GitHub directory")) }
                     return@launch
                 }
 
                 val skillMdEntry = files.find { it.first == "SKILL.md" } ?: run {
-                    withContext(Dispatchers.Main) { onResult(false, "目录中未找到 SKILL.md") }
+                    withContext(Dispatchers.Main) { onResult(false, l10n("目录中未找到 SKILL.md", "SKILL.md not found in the directory")) }
                     return@launch
                 }
 
                 val skillMdContent = downloadText(skillMdEntry.second) ?: run {
-                    withContext(Dispatchers.Main) { onResult(false, "下载 SKILL.md 失败，请检查链接或网络") }
+                    withContext(Dispatchers.Main) { onResult(false, l10n("下载 SKILL.md 失败，请检查链接或网络", "Failed to download SKILL.md; check the link or network")) }
                     return@launch
                 }
 
                 val frontmatter = SkillFrontmatterParser.parse(skillMdContent)
                 val name = frontmatter["name"]
                 if (name.isNullOrBlank()) {
-                    withContext(Dispatchers.Main) { onResult(false, "SKILL.md 格式错误：缺少 name 字段") }
+                    withContext(Dispatchers.Main) { onResult(false, l10n("SKILL.md 格式错误：缺少 name 字段", "Invalid SKILL.md: missing name field")) }
                     return@launch
                 }
 
@@ -919,7 +920,7 @@ class SkillsVM(
                 }
                 for ((relativePath, content) in results) {
                     if (content == null) {
-                        withContext(Dispatchers.Main) { onResult(false, "下载文件失败：$relativePath") }
+                        withContext(Dispatchers.Main) { onResult(false, l10n("下载文件失败：$relativePath", "Failed to download file: $relativePath")) }
                         return@launch
                     }
                     fileContents[relativePath] = content
@@ -927,7 +928,7 @@ class SkillsVM(
 
                 val saved = skillManager.saveSkillFilesAtomically(name, fileContents)
                 if (!saved) {
-                    withContext(Dispatchers.Main) { onResult(false, "保存失败") }
+                    withContext(Dispatchers.Main) { onResult(false, l10n("保存失败", "Failed to save")) }
                     return@launch
                 }
 
@@ -955,7 +956,7 @@ class SkillsVM(
                 }
                 withContext(Dispatchers.Main) { onResult(true, name) }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) { onResult(false, e.message ?: "未知错误") }
+                withContext(Dispatchers.Main) { onResult(false, e.message ?: l10n("未知错误", "Unknown error")) }
             }
         }
     }

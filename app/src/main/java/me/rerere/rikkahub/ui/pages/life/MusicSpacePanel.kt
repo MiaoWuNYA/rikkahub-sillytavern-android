@@ -32,6 +32,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.koin.compose.koinInject
 import java.util.UUID
+import me.rerere.rikkahub.utils.l10n
 import me.rerere.rikkahub.R
 import androidx.compose.ui.res.stringResource
 
@@ -106,7 +107,7 @@ fun MusicSpacePanel() {
                     Intent.FLAG_GRANT_READ_URI_PERMISSION,
                 )
             }
-            val name = queryDisplayName(context, uri).substringBeforeLast('.').ifBlank { "本地音乐" }
+            val name = queryDisplayName(context, uri).substringBeforeLast('.').ifBlank { l10n("本地音乐", "Local Music") }
             val track = MusicTrack(
                 title = name,
                 source = MusicSource.LOCAL,
@@ -520,14 +521,14 @@ private suspend fun importNeteaseTrack(context: Context, client: OkHttpClient, r
         val id = Regex("(?:${type}\\?id=|/${type}/)(\\d+)").find(finalUrl)?.groupValues?.getOrNull(1).orEmpty()
         val title = extractMeta(html, "og:title")
             .ifBlank { extractShareTitle(rawInput) }
-            .ifBlank { if (type == "playlist") "网易云歌单${id.takeIf { it.isNotBlank() }?.let { " #$it" }.orEmpty()}" else "网易云歌曲${id.takeIf { it.isNotBlank() }?.let { " #$it" }.orEmpty()}" }
+            .ifBlank { if (type == "playlist") l10n("网易云歌单${id.takeIf { it.isNotBlank() }?.let { " #$it" }.orEmpty()}", "NetEase Playlist${id.takeIf { it.isNotBlank() }?.let { " #$it" }.orEmpty()}") else l10n("网易云歌曲${id.takeIf { it.isNotBlank() }?.let { " #$it" }.orEmpty()}", "NetEase Song${id.takeIf { it.isNotBlank() }?.let { " #$it" }.orEmpty()}") }
         val description = extractMeta(html, "og:description")
-        val artist = description.substringBefore("。").substringBefore("-").trim().ifBlank { "网易云音乐" }
+        val artist = description.substringBefore("。").substringBefore("-").trim().ifBlank { l10n("网易云音乐", "NetEase Music") }
         val cover = extractMeta(html, "og:image")
         val lyric = if (type == "song" && id.isNotBlank()) fetchNeteaseLyric(client, id) else ""
         MusicTrack(
             title = title.cleanNeteaseTitle(),
-            artist = if (type == "playlist") "网易云歌单" else artist,
+            artist = if (type == "playlist") l10n("网易云歌单", "NetEase Playlist") else artist,
             coverUrl = cover,
             source = MusicSource.NETEASE,
             sourceUrl = finalUrl,
@@ -607,8 +608,8 @@ private fun loadMusicTracks(context: Context): List<MusicTrack> = runCatching {
             add(
                 MusicTrack(
                     id = item.optString("id").ifBlank { UUID.randomUUID().toString() },
-                    title = item.optString("title", "未命名歌曲"),
-                    artist = item.optString("artist", "未知歌手"),
+                    title = item.optString("title", l10n("未命名歌曲", "Untitled Song")),
+                    artist = item.optString("artist", l10n("未知歌手", "Unknown Artist")),
                     coverUrl = item.optString("coverUrl"),
                     source = runCatching { MusicSource.valueOf(item.optString("source")) }.getOrDefault(MusicSource.NETEASE),
                     sourceUrl = item.optString("sourceUrl"),
