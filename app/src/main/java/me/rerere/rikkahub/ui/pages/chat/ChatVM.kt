@@ -333,7 +333,7 @@ class ChatVM(
 
     fun showDeleteBlockedWhileGeneratingError() {
         chatService.addError(
-            error = IllegalStateException("请先停止生成再删除消息"),
+            error = IllegalStateException(context.getString(R.string.chat_delete_while_generating)),
             conversationId = _conversationId,
             title = context.getString(R.string.error_title_operation)
         )

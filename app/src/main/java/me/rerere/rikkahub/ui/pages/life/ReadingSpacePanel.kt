@@ -50,11 +50,11 @@ private data class ReadingBook(
 private data class ReadingChapter(val title: String, val body: String)
 
 // 书签类型名随 BookmarkType 枚举一起持久化与展示，保持字面量稳定。
-private enum class BookmarkType(val label: String, val emoji: String) {
-    NORMAL("普通书签", "🔖"),
-    EMOTION("情绪书签", "💗"),
-    GUESS("猜想书签", "💭"),
-    MEMORY("记忆书签", "✨"),
+private enum class BookmarkType(val label: String, val labelRes: Int, val emoji: String) {
+    NORMAL("普通书签", R.string.life_reading_bookmark_normal, "🔖"),
+    EMOTION("情绪书签", R.string.life_reading_bookmark_emotion, "💗"),
+    GUESS("猜想书签", R.string.life_reading_bookmark_guess, "💭"),
+    MEMORY("记忆书签", R.string.life_reading_bookmark_memory, "✨"),
 }
 
 private data class ReadingBookmark(
@@ -506,7 +506,7 @@ private fun ReadingMarksDialog(
                 LazyColumn(Modifier.heightIn(max = 440.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (tab == 0) {
                         items(bookmarks.sortedByDescending { it.createdAt }, key = { it.id }) { item ->
-                            MarkCard("${item.type.emoji} ${item.type.label}", item.quote, item.note) { onDeleteBookmark(item) }
+                            MarkCard("${item.type.emoji} ${stringResource(item.type.labelRes)}", item.quote, item.note) { onDeleteBookmark(item) }
                         }
                     } else {
                         items(notes.sortedByDescending { it.createdAt }, key = { it.id }) { item ->

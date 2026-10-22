@@ -40,6 +40,7 @@ private data class LifeCalendarEvent(
 private data class CalendarCategory(
     val id: String,
     val label: String,
+    val labelRes: Int,
     val emoji: String,
     val dot: Color,
     val soft: Color,
@@ -48,11 +49,11 @@ private data class CalendarCategory(
 // 分类名持久化在 SharedPreferences 中（category id 与旧数据 tag 迁移都依赖字面量），
 // 必须保持字面量稳定，不随语言切换。
 private val calendarCategories = listOf(
-    CalendarCategory("life", "生活", "🌷", Color(0xFFE97994), Color(0xFFFFEAF0)),
-    CalendarCategory("date", "约会", "💕", Color(0xFFD76A98), Color(0xFFFFE8F3)),
-    CalendarCategory("todo", "安排", "☁", Color(0xFF6F98C8), Color(0xFFEAF3FF)),
-    CalendarCategory("health", "身体", "🌿", Color(0xFF79A985), Color(0xFFEAF5EC)),
-    CalendarCategory("memory", "纪念", "🎀", Color(0xFF9A7BC2), Color(0xFFF2EBFA)),
+    CalendarCategory("life", "生活", R.string.life_calendar_category_life, "🌷", Color(0xFFE97994), Color(0xFFFFEAF0)),
+    CalendarCategory("date", "约会", R.string.life_calendar_category_date, "💕", Color(0xFFD76A98), Color(0xFFFFE8F3)),
+    CalendarCategory("todo", "安排", R.string.life_calendar_category_todo, "☁", Color(0xFF6F98C8), Color(0xFFEAF3FF)),
+    CalendarCategory("health", "身体", R.string.life_calendar_category_health, "🌿", Color(0xFF79A985), Color(0xFFEAF5EC)),
+    CalendarCategory("memory", "纪念", R.string.life_calendar_category_memory, "🎀", Color(0xFF9A7BC2), Color(0xFFF2EBFA)),
 )
 
 private fun calendarCategory(id: String): CalendarCategory =
@@ -333,7 +334,7 @@ private fun CalendarEventCard(
                 Text(if (event.allDay) stringResource(R.string.life_calendar_all_day) else formatEventTime(event.eventAt), color = category.dot, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                 Text(event.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 if (event.detail.isNotBlank()) Text(event.detail, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, maxLines = 2)
-                Text("${category.emoji} ${category.label}", color = category.dot, style = MaterialTheme.typography.labelSmall)
+                Text("${category.emoji} ${stringResource(category.labelRes)}", color = category.dot, style = MaterialTheme.typography.labelSmall)
             }
             Column(horizontalAlignment = Alignment.End) {
                 TextButton(onClick = onSystemCalendar, contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)) { Text(stringResource(R.string.life_calendar_sync)) }
@@ -404,7 +405,7 @@ private fun CalendarEventEditor(
                         FilterChip(
                             selected = category == item.id,
                             onClick = { category = item.id },
-                            label = { Text("${item.emoji} ${item.label}") },
+                            label = { Text("${item.emoji} ${stringResource(item.labelRes)}") },
                             shape = RoundedCornerShape(18.dp),
                             colors = FilterChipDefaults.filterChipColors(selectedContainerColor = item.soft, selectedLabelColor = item.dot),
                         )

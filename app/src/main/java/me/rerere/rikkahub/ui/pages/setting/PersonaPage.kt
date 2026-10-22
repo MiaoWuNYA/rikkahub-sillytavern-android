@@ -20,6 +20,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import java.util.Locale
 import kotlinx.coroutines.launch
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowLeft01
@@ -527,7 +528,10 @@ private fun PersonaEditPage(
     }
 }
 
-private val personaPresets = listOf(
+private val personaPresets: List<Triple<String, String, String>>
+    get() = if (Locale.getDefault().language.startsWith("zh")) personaPresetsZh else personaPresetsEn
+
+private val personaPresetsZh = listOf(
     Triple(
         "空白万用",
         "万能适配",

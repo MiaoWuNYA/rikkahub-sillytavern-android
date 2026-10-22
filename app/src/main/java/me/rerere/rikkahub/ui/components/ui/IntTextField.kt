@@ -16,6 +16,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import me.rerere.rikkahub.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 
 /**
@@ -95,9 +97,9 @@ fun InsertionStrategySelector(
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         listOf(
-            0 to "均匀",
-            1 to "角色卡优先",
-            2 to "全局优先",
+            0 to stringResource(R.string.insertion_strategy_even),
+            1 to stringResource(R.string.insertion_strategy_character_first),
+            2 to stringResource(R.string.insertion_strategy_global_first),
         ).forEach { (v, label) ->
             FilterChip(
                 selected = selected == v,

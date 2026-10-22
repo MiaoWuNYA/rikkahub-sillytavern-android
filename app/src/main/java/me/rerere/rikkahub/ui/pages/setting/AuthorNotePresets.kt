@@ -1,6 +1,13 @@
 package me.rerere.rikkahub.ui.pages.setting
 
-internal val authorsNotePresets = listOf(
+import java.util.Locale
+
+internal val authorsNotePresets: List<Pair<String, String>>
+    get() = if (Locale.getDefault().language.startsWith("zh")) authorsNotePresetsZh else authorsNotePresetsEn
+
+private val authorsNotePresetsEn = authorsNotePresetsEnA + authorsNotePresetsEnB
+
+private val authorsNotePresetsZh = listOf(
     Pair(
         "沉浸式扮演",
         "[Stay fully in character as {{char}}. Never break character, never mention AI, prompts, or rules.]\n用第一人称扮演角色，通过对话、动作和神态展现性格，而不是直接叙述人设。\n台词用引号，动作与心理用斜体。\n只叙述 {{char}} 与配角的想法、感受、行动和对话，绝不替 {{user}} 说话、行动或决定。\nCORE RULE: {{char}} = yours to control / {{user}} = never yours to control.\nNever write for {{user}}: dialogue, thoughts, feelings, or actions; decisions, outcomes, or intentions — violation = INVALID RESPONSE.\n角色拥有自己的目标、立场和情绪，可以不同意、拒绝、怀疑，像真实的人一样自主行动。\n每个角色只能知道亲眼见过、亲耳听过或能合理推断的信息。\n世界的行动可以作用于 {{user}}，但选择永远留给 {{user}}。",

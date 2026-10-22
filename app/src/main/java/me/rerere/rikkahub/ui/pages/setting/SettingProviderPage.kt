@@ -721,7 +721,7 @@ private fun ProviderItem(
                     // 插件带来的供应商：跟着插件走，卸载插件就消失
                     provider.pluginOwner()?.let {
                         Tag(type = TagType.INFO) {
-                            Text("插件提供")
+                            Text(stringResource(R.string.setting_provider_plugin_tag))
                         }
                     }
                 }

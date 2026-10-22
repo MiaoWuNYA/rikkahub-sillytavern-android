@@ -218,8 +218,8 @@ private fun GroupChatStatusBar(
     status: String,
     modifier: Modifier = Modifier,
 ) {
-    val isError = status.contains("失败") || status.contains("错误")
-    val isBusy = status.contains("正在") || status.contains("等待")
+    val isError = status.contains("失败") || status.contains("错误") || status.contains("fail", ignoreCase = true) || status.contains("error", ignoreCase = true)
+    val isBusy = status.contains("正在") || status.contains("等待") || status.contains("typing", ignoreCase = true) || status.contains("waiting", ignoreCase = true)
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
@@ -355,11 +355,11 @@ fun GroupChatPage(groupId: String) {
         containerColor = CustomColors.topBarColors.containerColor,
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text(gc.name.ifBlank { "群聊" }) },
+                title = { Text(gc.name.ifBlank { stringResource(R.string.group_chat_title) }) },
                 navigationIcon = { BackButton() },
                 actions = {
                     IconButton(onClick = { showSettings = true }) {
-                        Icon(HugeIcons.Settings03, contentDescription = "群聊设置")
+                        Icon(HugeIcons.Settings03, contentDescription = stringResource(R.string.group_chat_settings))
                     }
                 },
                 scrollBehavior = scrollBehavior,
@@ -401,7 +401,7 @@ fun GroupChatPage(groupId: String) {
                                     ) {
                                         UIAvatar(
                                             value = speaker?.avatar ?: Avatar.Dummy,
-                                            name = speaker?.name ?: "选",
+                                            name = speaker?.name ?: stringResource(R.string.group_select_speaker),
                                             modifier = Modifier.size(20.dp),
                                         )
                                         if (!speaker?.name.isNullOrBlank()) {
@@ -501,9 +501,9 @@ fun GroupChatPage(groupId: String) {
 
                                 queueMembers = allPicked.mapNotNull { id -> members.find { it.id == id }?.name }
                                 queueStatus = when {
-                                    enabledMembers.isEmpty() -> "全部成员已禁言，仅发送消息"
-                                    allPicked.isEmpty() -> "已发送（未选择发言人）"
-                                    else -> "等待 ${queueMembers.joinToString("、")} 回复..."
+                                    enabledMembers.isEmpty() -> context.getString(R.string.group_all_muted)
+                                    allPicked.isEmpty() -> context.getString(R.string.group_sent_no_speaker)
+                                    else -> context.getString(R.string.group_waiting_reply, queueMembers.joinToString(", "))
                                 }
 
                                 inputState.clearInput()
@@ -527,7 +527,7 @@ fun GroupChatPage(groupId: String) {
                                         for ((idx, sid) in allPicked.withIndex()) {
                                             if (!isActive) break
                                             val speaker = members.find { it.id == sid } ?: continue
-                                            queueStatus = "${speaker.name} 正在输入...（${idx + 1}/${allPicked.size}）"
+                                            queueStatus = context.getString(R.string.group_typing_progress, speaker.name, idx + 1, allPicked.size)
 
                                             // 创建占位消息（流式更新用）
                                             val placeholderNode = UIMessage.assistant("").toMessageNode()
@@ -591,7 +591,7 @@ fun GroupChatPage(groupId: String) {
                                                             speakerMap = conv.speakerMap - placeholderNode.id,
                                                         )
                                                     }
-                                                    queueStatus = "${speaker.name} 回复为空"
+                                                    queueStatus = context.getString(R.string.group_empty_reply, speaker.name)
                                                     delay(1200)
                                                 }
                                             } catch (e: kotlinx.coroutines.CancellationException) {
@@ -604,7 +604,7 @@ fun GroupChatPage(groupId: String) {
                                                 }
                                                 throw e
                                             } catch (e: Exception) {
-                                                queueStatus = "${speaker.name} 生成失败：${e.message?.take(40) ?: "未知错误"}"
+                                                queueStatus = context.getString(R.string.group_generation_failed, speaker.name, e.message?.take(40) ?: context.getString(R.string.group_unknown_error))
                                                 // 删除占位消息
                                                 chatService.updateConversationState(currentConvId) { conv ->
                                                     conv.copy(
@@ -618,7 +618,7 @@ fun GroupChatPage(groupId: String) {
 
                                         // ====== 3. 自动接话 ======
                                         if (gc.autoModeDelay > 0 && isActive) {
-                                            queueStatus = "等待自动接话（${gc.autoModeDelay}秒）..."
+                                            queueStatus = context.getString(R.string.group_waiting_auto, gc.autoModeDelay)
                                             delay(gc.autoModeDelay * 1000L)
                                             if (isActive) {
                                                 // 解锁输入：用户发消息即打断自动接话（对齐酒馆打字即停）
@@ -640,18 +640,18 @@ fun GroupChatPage(groupId: String) {
                                                         isCurrent = { myEpoch == generationEpoch },
                                                         onSpeakerStart = { name, round, total ->
                                                             queueStatus = if (total <= 0) {
-                                                                "$name 正在输入...（自动第 $round 轮）"
+                                                                context.getString(R.string.group_auto_typing_round, name, round)
                                                             } else {
-                                                                "$name 正在输入...（自动 $round/$total）"
+                                                                context.getString(R.string.group_auto_typing_progress, name, round, total)
                                                             }
                                                             queueMembers = listOf(name)
                                                         },
                                                         onWaiting = {
-                                                            queueStatus = "等待自动接话（${gc.autoModeDelay}秒）..."
+                                                            queueStatus = context.getString(R.string.group_waiting_auto, gc.autoModeDelay)
                                                             queueMembers = emptyList()
                                                         },
                                                         onEmptyReply = { name ->
-                                                            queueStatus = "$name 回复为空"
+                                                            queueStatus = context.getString(R.string.group_empty_reply, name)
                                                         },
                                                     )
                                                 }
@@ -714,7 +714,7 @@ fun GroupChatPage(groupId: String) {
                     node = node,
                     assistant = speaker ?: members.firstOrNull(),
                     model = null,
-                    loading = (isGenerating || queueStatus.contains("正在")) && index >= messageNodes.lastIndex - 2,
+                    loading = (isGenerating || queueStatus.contains("正在") || queueStatus.contains("typing", ignoreCase = true)) && index >= messageNodes.lastIndex - 2,
                     lastMessage = index == messageNodes.lastIndex,
                     onRegenerate = {
                         val target = node.messages[node.selectIndex]
@@ -738,7 +738,7 @@ fun GroupChatPage(groupId: String) {
                                         chatService = chatService,
                                         settings = settings,
                                         onSpeakerStart = { name ->
-                                            queueStatus = "$name 正在重新生成..."
+                                            queueStatus = context.getString(R.string.group_regenerating, name)
                                             queueMembers = listOf(name)
                                         },
                                     )
@@ -831,10 +831,10 @@ fun GroupChatPage(groupId: String) {
                     // 激活策略
                     CardGroup(title = { Text(stringResource(R.string.group_activation_strategy)) }) {
                         listOf(
-                            GroupActivationStrategy.NATURAL to "自然(Natural)",
-                            GroupActivationStrategy.LIST to "列表(List)",
-                            GroupActivationStrategy.MANUAL to "手动(Manual)",
-                            GroupActivationStrategy.POOLED to "随机(Pooled)",
+                            GroupActivationStrategy.NATURAL to stringResource(R.string.group_mode_natural),
+                            GroupActivationStrategy.LIST to stringResource(R.string.group_mode_list),
+                            GroupActivationStrategy.MANUAL to stringResource(R.string.group_mode_manual),
+                            GroupActivationStrategy.POOLED to stringResource(R.string.group_mode_pooled),
                         ).forEach { (strategy, label) ->
                             item(
                                 onClick = {
@@ -868,9 +868,9 @@ fun GroupChatPage(groupId: String) {
                     // 生成模式
                     CardGroup(title = { Text(stringResource(R.string.group_generation_mode)) }) {
                         listOf(
-                            GroupGenerationMode.SWAP to "替换(Swap)",
-                            GroupGenerationMode.APPEND to "追加(Append)",
-                            GroupGenerationMode.APPEND_DISABLED to "追加含禁言(Append Disabled)",
+                            GroupGenerationMode.SWAP to stringResource(R.string.group_gen_swap),
+                            GroupGenerationMode.APPEND to stringResource(R.string.group_gen_append),
+                            GroupGenerationMode.APPEND_DISABLED to stringResource(R.string.group_gen_append_disabled),
                         ).forEach { (mode, label) ->
                             item(
                                 onClick = {
@@ -947,7 +947,7 @@ fun GroupChatPage(groupId: String) {
                     // 自动接话轮数
                     Column {
                         Text(
-                            stringResource(R.string.group_auto_reply_rounds, if (gc.autoChatRounds <= 0) "无上限" else gc.autoChatRounds.toString()),
+                            stringResource(R.string.group_auto_reply_rounds, if (gc.autoChatRounds <= 0) stringResource(R.string.group_unlimited) else gc.autoChatRounds.toString()),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Medium,
                         )
@@ -996,7 +996,7 @@ fun GroupChatPage(groupId: String) {
                                     Spacer(Modifier.width(8.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(m.name, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
-                                        Text(if (isEnabled) "已启用" else "已禁用", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(stringResource(if (isEnabled) R.string.group_member_enabled else R.string.group_member_disabled), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                     Switch(
                                         checked = isEnabled,

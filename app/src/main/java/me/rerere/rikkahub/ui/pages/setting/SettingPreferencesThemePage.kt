@@ -297,8 +297,8 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
                             }
                         }
                         formItem(
-                            headlineContent = { Text("界面材质") },
-                            supportingContent = { Text("液态玻璃：半透明玻璃质感，可跟随主题或手动指定") },
+                            headlineContent = { Text(stringResource(R.string.theme_material_title)) },
+                            supportingContent = { Text(stringResource(R.string.theme_material_desc)) },
                         ) {
                             ConnectedChoiceButtons(
                                 options = DisplayMaterialMode.entries,
@@ -311,10 +311,10 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
                             ) { mode, selected ->
                                 ConnectedChoiceLabel(
                                     text = when (mode) {
-                                        DisplayMaterialMode.FOLLOW_THEME -> "跟随主题"
-                                        DisplayMaterialMode.FLAT -> "关闭"
-                                        DisplayMaterialMode.TRANSLUCENT -> "半透明"
-                                        DisplayMaterialMode.GLASS -> "液态玻璃"
+                                        DisplayMaterialMode.FOLLOW_THEME -> stringResource(R.string.theme_material_follow)
+                                        DisplayMaterialMode.FLAT -> stringResource(R.string.theme_material_off)
+                                        DisplayMaterialMode.TRANSLUCENT -> stringResource(R.string.theme_material_translucent)
+                                        DisplayMaterialMode.GLASS -> stringResource(R.string.theme_material_glass)
                                     },
                                     selected = selected,
                                 )
@@ -325,8 +325,8 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
                             materialMode == DisplayMaterialMode.GLASS
                         ) {
                             formItem(
-                                headlineContent = { Text("材质不透明度") },
-                                supportingContent = { Text("数值越低越透") },
+                                headlineContent = { Text(stringResource(R.string.theme_material_opacity_title)) },
+                                supportingContent = { Text(stringResource(R.string.theme_material_opacity_desc)) },
                             ) {
                                 var surfaceAlpha by remember(settings.displaySetting.interfaceSurfaceOpacity) {
                                     mutableStateOf(settings.displaySetting.interfaceSurfaceOpacity)
@@ -357,18 +357,18 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
                         }
                         item(
                             onClick = { settingBgPicker.launch("image/*") },
-                            headlineContent = { Text("设置页背景图") },
+                            headlineContent = { Text(stringResource(R.string.theme_setting_background)) },
                             supportingContent = {
                                 Text(
-                                    if (settings.displaySetting.settingBackgroundImagePath.isBlank()) "未设置"
-                                    else "已设置"
+                                    if (settings.displaySetting.settingBackgroundImagePath.isBlank()) stringResource(R.string.theme_background_not_set)
+                                    else stringResource(R.string.theme_background_set)
                                 )
                             },
                             trailingContent = {
                                 ItemActionMenu(
                                     actions = listOf(
                                         ItemAction(
-                                            text = "重置",
+                                            text = stringResource(R.string.action_reset),
                                             icon = HugeIcons.Delete01,
                                             destructive = true,
                                             enabled = settings.displaySetting.settingBackgroundImagePath.isNotBlank(),

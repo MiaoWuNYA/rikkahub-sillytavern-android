@@ -603,7 +603,7 @@ private fun parseFengyueCard(
         listOf(UIMessage.assistant(prompt = greetingHtml))
     }
 
-    val lorebooks = parseFengyueWorldBook(json)
+    val lorebooks = parseFengyueWorldBook(context, json)
 
     val assistant = Assistant(
         name = name,
@@ -630,7 +630,7 @@ private fun parseFengyueCard(
  * 解析失败一律跳过该条而不是整个导入失败：世界书条目是补充内容，
  * 少一条不影响角色能用，但整个导入失败会让用户什么都拿不到。
  */
-private fun parseFengyueWorldBook(json: JsonObject): List<Lorebook> {
+private fun parseFengyueWorldBook(context: Context, json: JsonObject): List<Lorebook> {
     val raw = json["world_book"] as? JsonArray ?: return emptyList()
     if (raw.isEmpty()) return emptyList()
 
@@ -670,7 +670,7 @@ private fun parseFengyueWorldBook(json: JsonObject): List<Lorebook> {
     if (entries.isEmpty()) return emptyList()
     return listOf(
         Lorebook(
-            name = "风月世界书",
+            name = context.getString(R.string.assistant_importer_label_fengyue_worldbook),
             enabled = true,
             entries = entries,
             isCharacterBook = true,
@@ -682,7 +682,7 @@ private fun parseFengyueWorldBook(json: JsonObject): List<Lorebook> {
  * 卡内嵌世界书物化成外置书，让扩展管理能看到、能逐条开关。
  * 卡自带的预设类内容（历史后指令、深度提示）也一并物化进来。
  */
-private fun materializeEmbeddedBook(assistantName: String, tavData: TavernCharacterData): List<Lorebook> {
+private fun materializeEmbeddedBook(context: Context, assistantName: String, tavData: TavernCharacterData): List<Lorebook> {
     val book = tavData.embeddedBook ?: return emptyList()
     if (book.entries.isEmpty()) return emptyList()
     val bookEntries = buildList {
@@ -719,7 +719,7 @@ private fun materializeEmbeddedBook(assistantName: String, tavData: TavernCharac
         if (tavData.postHistoryInstructions.isNotBlank()) {
             add(
                 PromptInjection.RegexInjection(
-                    name = "历史后续指令",
+                    name = context.getString(R.string.assistant_importer_label_history_instruction),
                     enabled = false,
                     content = tavData.postHistoryInstructions,
                     constantActive = true,
@@ -730,7 +730,7 @@ private fun materializeEmbeddedBook(assistantName: String, tavData: TavernCharac
         if (tavData.depthPrompt.isNotBlank()) {
             add(
                 PromptInjection.RegexInjection(
-                    name = "深度提示",
+                    name = context.getString(R.string.assistant_importer_label_depth_prompt),
                     enabled = false,
                     content = tavData.depthPrompt,
                     constantActive = true,
@@ -742,7 +742,7 @@ private fun materializeEmbeddedBook(assistantName: String, tavData: TavernCharac
     }
     return listOf(
         Lorebook(
-            name = book.name.ifBlank { assistantName + "世界书" },
+            name = book.name.ifBlank { context.getString(R.string.assistant_importer_worldbook_name, assistantName) },
             description = book.description,
             enabled = true,
             entries = bookEntries,
@@ -941,7 +941,7 @@ private fun parseV2Card(context: Context, json: JsonObject, background: String?,
     )
 
     // 内嵌世界书物化成独立外置书，让用户在扩展管理里能看到、能开关
-    return assistant to materializeEmbeddedBook(assistant.name, tavData)
+    return assistant to materializeEmbeddedBook(context, assistant.name, tavData)
 }
 
 // ==================== V3 Parser ====================
@@ -1001,7 +1001,7 @@ private fun parseV3Card(context: Context, json: JsonObject, background: String?,
     )
 
     // 内嵌世界书物化成独立外置书，让用户在扩展管理里能看到、能开关
-    return assistant to materializeEmbeddedBook(assistant.name, tavData)
+    return assistant to materializeEmbeddedBook(context, assistant.name, tavData)
 }
 
 // ==================== Helpers ====================

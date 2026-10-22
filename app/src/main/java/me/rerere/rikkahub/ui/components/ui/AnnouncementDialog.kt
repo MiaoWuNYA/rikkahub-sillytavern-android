@@ -28,7 +28,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.model.Announcement
 import me.rerere.rikkahub.data.service.AnnouncementManager
 import coil3.compose.AsyncImage
@@ -143,7 +145,7 @@ fun AnnouncementDialog(
             //
             // 一个弹窗只需要一个决定性的按钮。
             Button(onClick = { onDismiss(dontShowAgain) }) {
-                Text("知道了")
+                Text(stringResource(R.string.announcement_got_it))
             }
         },
         dismissButton = {
@@ -154,7 +156,7 @@ fun AnnouncementDialog(
                         onCheckedChange = { dontShowAgain = it },
                     )
                     Text(
-                        "不再提示",
+                        stringResource(R.string.announcement_dont_show_again),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
