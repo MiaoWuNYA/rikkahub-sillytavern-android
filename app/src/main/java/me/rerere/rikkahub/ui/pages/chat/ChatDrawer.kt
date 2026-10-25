@@ -48,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -852,7 +853,8 @@ private fun DrawerEntry(
             .fillMaxWidth()
             .padding(horizontal = 4.dp),
         shape = DrawerItemShape,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        // 行底透明融入抽屉背景（MD3 导航抽屉风格），避免背景图/深色主题下一排黑色色块
+        color = Color.Transparent,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Row(
@@ -905,7 +907,7 @@ private fun MemoryDreamingEntry(onClick: () -> Unit) {
             .fillMaxWidth()
             .padding(horizontal = 4.dp),
         shape = DrawerItemShape,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        color = Color.Transparent,
     ) {
         Row(
             modifier = Modifier
