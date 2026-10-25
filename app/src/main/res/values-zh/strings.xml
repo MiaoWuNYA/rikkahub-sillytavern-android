@@ -3550,4 +3550,7 @@
   <string name="workspace_editor_preview">预览</string>
   <string name="workspace_file_saved">已保存</string>
   <string name="workspace_file_save_failed">保存失败</string>
+  <string name="setting_model_page_memory_model">记忆整理模型</string>
+  <string name="setting_model_page_memory_model_desc">用于在后台将对话整理为长期记忆的模型；未设置时使用快速模型</string>
+  <string name="setting_model_page_memory_model_follow_fast">跟随快速模型</string>
 </resources>

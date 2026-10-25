@@ -13,6 +13,7 @@ import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.MarkdownTokenTypes
 import org.intellij.markdown.ast.ASTNode
 import org.intellij.markdown.ast.getTextInNode
+import org.intellij.markdown.flavours.gfm.GFMElementTypes
 import org.intellij.markdown.flavours.gfm.GFMFlavourDescriptor
 import org.intellij.markdown.html.GeneratingProvider
 import org.intellij.markdown.html.HtmlGenerator
@@ -42,8 +43,11 @@ fun parseMarkdown(content: String, softBreakAsLineBreak: Boolean = true): Markdo
     // 解析器只认 \n 作为换行，CRLF 里残留的 \r 会让围栏行匹配不上（比如结尾的 ``` 不被当作闭合）
     val text = normalizeLatexDelimiters(content.replace(LINE_ENDING_REGEX, "\n"))
     val tree = markdownParser.buildMarkdownTreeFromString(text)
-    val providers = flavour.createHtmlGeneratingProviders(LinkMap.buildLinkMap(tree, text), null) +
-        (MarkdownTokenTypes.HTML_TAG to InlineHtmlTagProvider)
+    val providers = flavour.createHtmlGeneratingProviders(LinkMap.buildLinkMap(tree, text), null) + mapOf(
+        MarkdownTokenTypes.HTML_TAG to InlineHtmlTagProvider,
+        GFMElementTypes.INLINE_MATH to MathProvider(inline = true),
+        GFMElementTypes.BLOCK_MATH to MathProvider(inline = false),
+    )
     val html = HtmlGenerator(text, tree, providers, false).generateHtml(tagRenderer)
     val body = Jsoup.parse(html).body()
     return MarkdownDocument(
@@ -56,9 +60,10 @@ fun parseMarkdown(content: String, softBreakAsLineBreak: Boolean = true): Markdo
 
 private val LINE_ENDING_REGEX = Regex("""\r\n?""")
 
-// 第 1 组匹配代码（围栏未闭合时一直算到结尾），用来跳过代码里的内容；第 2、3 组分别是 \( \) 和 \[ \]
+// 第 1 组匹配代码（围栏未闭合时一直算到结尾）和公式里的换行 \\，用来跳过这些内容，
+// 不然 \\[4pt] 里的 \[ 会被当成块级公式的开头；第 2、3 组分别是 \( \) 和 \[ \]
 private val LATEX_DELIMITER_REGEX =
-    Regex("""(```[\s\S]*?(?:```|\z)|`[^`\n]*`)|\\\((.+?)\\\)|\\\[([\s\S]+?)\\]""")
+    Regex("""(```[\s\S]*?(?:```|\z)|`[^`\n]*`|\\\\)|\\\((.+?)\\\)|\\\[([\s\S]+?)\\]""")
 private val LATEX_LINE_BREAK_REGEX = Regex("""[ \t]*\r?\n[ \t]*""")
 
 /** 把 `\( \)`、`\[ \]` 形式的公式定界符换成解析器认识的 `$ $`、`$$ $$` */
@@ -111,12 +116,33 @@ private object InlineHtmlTagProvider : GeneratingProvider {
         val tag = node.getTextInNode(text)
         val name = HTML_TAG_NAME_REGEX.find(tag)?.groupValues?.get(1)
         if (name != null && !Tag.isKnownTag(name.lowercase())) {
-            visitor.consumeHtml(tag.toString().replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
+            visitor.consumeHtml(escapeHtml(tag))
         } else {
             visitor.consumeHtml(tag)
         }
     }
 }
+
+// 代替 GFM 自带公式输出：先把 `<` 转义，否则 Jsoup 会当成标签开头把公式截断
+private class MathProvider(private val inline: Boolean) : GeneratingProvider {
+    override fun processNode(visitor: HtmlGenerator.HtmlGeneratingVisitor, text: String, node: ASTNode) {
+        // 首尾两个子节点是 $ 或 $$ 定界符
+        val formula = node.children.subList(1, node.children.size - 1).joinToString("") { it.getTextInNode(text) }
+        visitor.consumeTagOpen(node, "span", "class=\"math\"", "inline=\"$inline\"")
+        visitor.consumeHtml(escapeHtml(formula.trimSurroundingBackticks()))
+        visitor.consumeTagClose("span")
+    }
+
+    // 兼容 $`x`$ 这种写法，去掉成对包住公式的反引号
+    private fun String.trimSurroundingBackticks(): String {
+        var n = 0
+        while (length - 2 * n > 2 && this[n] == '`' && this[lastIndex - n] == '`') n++
+        return substring(n, length - n).trim()
+    }
+}
+
+private fun escapeHtml(text: CharSequence): String =
+    text.toString().replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 // ---- DOM -> 节点 ----
 
@@ -354,7 +380,14 @@ private class DomConverter(
                 val style = element.inlineStyle()
                 when {
                     children.isEmpty() -> Unit
-                    style == null -> children.forEach { if (it is MarkdownInline.Text) out.appendText(it.text) else out += it }
+                    style == null -> children.forEach {
+                        if (it is MarkdownInline.Text) {
+                            out.appendText(it.text)
+                        } else {
+                            out +=
+                                it
+                        }
+                    }
                     else -> out += MarkdownInline.Styled(style, children)
                 }
             }

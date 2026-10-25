@@ -31,6 +31,7 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.AiBrain01
 import me.rerere.hugeicons.stroke.AiEditing
 import me.rerere.hugeicons.stroke.ArrowShrink
+import me.rerere.hugeicons.stroke.Brain02
 import me.rerere.hugeicons.stroke.BubbleChat
 import me.rerere.hugeicons.stroke.GlobalSearch
 import me.rerere.hugeicons.stroke.Image02
@@ -201,6 +202,11 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
         providers = settings.providers,
         type = ModelType.CHAT,
     )
+    val memoryModel = rememberModelListState(
+        modelId = settings.memoryModelId,
+        providers = settings.providers,
+        type = ModelType.CHAT,
+    )
     val translateModel = rememberModelListState(
         modelId = settings.translateModeId,
         providers = settings.providers,
@@ -298,6 +304,38 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
             }
         }
         item {
+            // 没设置时用快速模型，配色和它保持一致
+            val containerColor = MaterialTheme.colorScheme.tertiaryContainer
+            val contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+            CardGroup {
+                // 不设置时跟着快速模型走，所以要能清掉
+                modelItem(
+                    icon = HugeIcons.Brain02,
+                    title = R.string.setting_model_page_memory_model,
+                    description = R.string.setting_model_page_memory_model_desc,
+                    state = memoryModel,
+                    iconContainerColor = containerColor,
+                    iconContentColor = contentColor,
+                    placeholder = R.string.setting_model_page_memory_model_follow_fast,
+                    onClear = { vm.updateSettings { latest -> latest.copy(memoryModelId = null) } },
+                )
+                // 没设置时推理强度也跟着快速模型
+                if (memoryModel.currentModel != null) {
+                    item(
+                        headlineContent = { Text(stringResource(R.string.assistant_page_thinking_budget)) },
+                        trailingContent = {
+                            ReasoningButton(
+                                reasoningLevel = settings.memoryModelReasoningLevel,
+                                onUpdateReasoningLevel = {
+                                    vm.updateSettings { latest -> latest.copy(memoryModelReasoningLevel = it) }
+                                },
+                            )
+                        },
+                    )
+                }
+            }
+        }
+        item {
             val containerColor = MaterialTheme.colorScheme.secondaryContainer
             val contentColor = MaterialTheme.colorScheme.onSecondaryContainer
             CardGroup {
@@ -338,6 +376,9 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
     ModelListSheet(state = titleModel) {
         vm.updateSettings { latest -> latest.copy(titleModelId = it.id) }
     }
+    ModelListSheet(state = memoryModel) {
+        vm.updateSettings { latest -> latest.copy(memoryModelId = it.id) }
+    }
     ModelListSheet(state = translateModel) {
         vm.updateSettings { latest -> latest.copy(translateModeId = it.id) }
     }
@@ -357,6 +398,8 @@ private fun CardGroupScope.modelItem(
     state: ModelListState,
     iconContainerColor: Color,
     iconContentColor: Color,
+    @StringRes placeholder: Int = R.string.model_list_select_model,
+    onClear: (() -> Unit)? = null,
 ) = formItem(
     headlineContent = { Text(stringResource(title)) },
     supportingContent = { Text(stringResource(description)) },
@@ -367,5 +410,7 @@ private fun CardGroupScope.modelItem(
     ModelField(
         model = state.currentModel,
         onClick = { state.open() },
+        placeholder = stringResource(placeholder),
+        onClear = onClear,
     )
 }

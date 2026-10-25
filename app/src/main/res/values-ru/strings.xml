@@ -3165,4 +3165,7 @@
   <string name="setting_provider_page_device_code_hint">Подтвердите этот код в браузере</string>
   <string name="setting_provider_page_device_code_reopen">Нажмите, чтобы снова открыть страницу</string>
   <string name="setting_provider_page_type_subscription">Подписка %s</string>
+  <string name="setting_model_page_memory_model">Модель упорядочивания памяти</string>
+  <string name="setting_model_page_memory_model_desc">Модель для упорядочивания диалогов в долговременную память в фоне; если не задана, используется быстрая модель</string>
+  <string name="setting_model_page_memory_model_follow_fast">Как быстрая модель</string>
 </resources>

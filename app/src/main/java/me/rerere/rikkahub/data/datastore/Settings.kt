@@ -58,6 +58,9 @@ data class Settings(
     // 标题推理等级。旧版标题请求直接复用 fastModelReasoningLeve
     // 就会花一二百个 token 在"数字数"上；默认 OFF，让标题请求不走思考链。
     val titleReasoningLevel: ReasoningLevel = ReasoningLevel.OFF,
+    // 记忆整理用的模型，没设置时用快速模型
+    val memoryModelId: Uuid? = null,
+    val memoryModelReasoningLevel: ReasoningLevel = ReasoningLevel.AUTO,
     val imageGenerationModelId: Uuid = Uuid.random(),
     // 生图页的尺寸与思考强度。放在全局设置里而不是页面内 state：用户调过一次就该
     // 每次进页面都被重置回 auto 很烦。默认 auto = 不显式指定
