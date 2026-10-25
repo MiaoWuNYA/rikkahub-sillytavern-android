@@ -58,6 +58,18 @@ class TavernPathParityTest {
     }
 
     @Test
+    fun `non tavern chat paths also register memory tools`() {
+        // ChatService 手写工具列表绕开了 ChatToolFactory：那里有记忆工具，手写这份曾经没有，
+        // 于是普通模式下 AI 也拿不到 memory_write，只能回答"我这轮没有写记忆的工具"
+        val registrations = Regex("""addAll\(buildMemoryTools\(memoryRepository, assistant\.memoryId\)\)""")
+            .findAll(chatService).count()
+        assertTrue(
+            "普通路径与酒馆路径都必须注册记忆工具，实际只有 $registrations 处",
+            registrations >= 3,
+        )
+    }
+
+    @Test
     fun `tavern mode does not force reasoning off`() {
         // 深度思考由助手的思考档位决定：酒馆模式只裁上下文，不替用户关思考
         val disable = source.substringAfter("disableReasoning =").substringBefore(",", "")
