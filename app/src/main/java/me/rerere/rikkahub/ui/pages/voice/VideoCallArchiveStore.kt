@@ -53,6 +53,9 @@ data class VideoCallArchiveEntry(
  */
 class VideoCallArchiveStore(context: Context) {
     private val appContext = context.applicationContext
+
+    /** runtime 需要同一份 Application context 拼归档文案，避免重复注入 */
+    internal val applicationContext: Context get() = appContext
     private val archiveDir = File(appContext.filesDir, "video_call_archives").apply { mkdirs() }
     private val archiveFile = File(archiveDir, "archives.json")
 
@@ -180,6 +183,7 @@ object VideoCallArchiveRuntime : KoinComponent {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val chatService: ChatService by inject()
+    private lateinit var appContext: Context
     private var archiveJob: Job? = null
     private var activeConversationId: String? = null
 
@@ -192,6 +196,7 @@ object VideoCallArchiveRuntime : KoinComponent {
         conversationFlow: StateFlow<Conversation>,
     ) {
         val conversationKey = conversationId.toString()
+        appContext = store.applicationContext
         if (activeConversationId == conversationKey && archiveJob?.isActive == true) return
 
         archiveJob?.cancel()

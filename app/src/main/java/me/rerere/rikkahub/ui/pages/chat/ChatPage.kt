@@ -613,7 +613,7 @@ private fun ChatPageContent(
                             activeId == null || activeId == conversation.id.toString() -> {
                                 navController.navigate(Screen.VoiceCall(conversation.id.toString()))
                             }
-                            else -> toaster.show(stringResource(R.string.chat_call_in_progress), type = ToastType.Warning)
+                            else -> toaster.show(context.getString(R.string.chat_call_in_progress), type = ToastType.Warning)
                         }
                     },
                     onVideoCall = {
@@ -621,7 +621,7 @@ private fun ChatPageContent(
                         if (activeId == null || activeId == conversation.id.toString()) {
                             navController.navigate(Screen.VideoCall(conversation.id.toString()))
                         } else {
-                            toaster.show(stringResource(R.string.chat_call_in_progress), type = ToastType.Warning)
+                            toaster.show(context.getString(R.string.chat_call_in_progress), type = ToastType.Warning)
                         }
                     },
                 )
@@ -1409,10 +1409,10 @@ private fun ChatPageContent(
                             val result = when (type) {
                                 "global" -> {
                                     vm.updateSettings { s ->
-                                        val existing = s.regexGroups.find { it.name == stringResource(R.string.chat_tavern_assistant) }
+                                        val existing = s.regexGroups.find { it.name == context.getString(R.string.chat_tavern_assistant) }
                                         val updated = if (existing == null) {
                                             s.regexGroups + me.rerere.rikkahub.data.model.RegexGroup(
-                                                name = stringResource(R.string.chat_tavern_assistant),
+                                                name = context.getString(R.string.chat_tavern_assistant),
                                                 regexes = regexes,
                                             )
                                         } else {

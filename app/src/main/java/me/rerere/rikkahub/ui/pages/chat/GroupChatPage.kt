@@ -831,10 +831,10 @@ fun GroupChatPage(groupId: String) {
                     // 激活策略
                     CardGroup(title = { Text(stringResource(R.string.group_activation_strategy)) }) {
                         listOf(
-                            GroupActivationStrategy.NATURAL to stringResource(R.string.group_mode_natural),
-                            GroupActivationStrategy.LIST to stringResource(R.string.group_mode_list),
-                            GroupActivationStrategy.MANUAL to stringResource(R.string.group_mode_manual),
-                            GroupActivationStrategy.POOLED to stringResource(R.string.group_mode_pooled),
+                            GroupActivationStrategy.NATURAL to context.getString(R.string.group_mode_natural),
+                            GroupActivationStrategy.LIST to context.getString(R.string.group_mode_list),
+                            GroupActivationStrategy.MANUAL to context.getString(R.string.group_mode_manual),
+                            GroupActivationStrategy.POOLED to context.getString(R.string.group_mode_pooled),
                         ).forEach { (strategy, label) ->
                             item(
                                 onClick = {
@@ -868,9 +868,9 @@ fun GroupChatPage(groupId: String) {
                     // 生成模式
                     CardGroup(title = { Text(stringResource(R.string.group_generation_mode)) }) {
                         listOf(
-                            GroupGenerationMode.SWAP to stringResource(R.string.group_gen_swap),
-                            GroupGenerationMode.APPEND to stringResource(R.string.group_gen_append),
-                            GroupGenerationMode.APPEND_DISABLED to stringResource(R.string.group_gen_append_disabled),
+                            GroupGenerationMode.SWAP to context.getString(R.string.group_gen_swap),
+                            GroupGenerationMode.APPEND to context.getString(R.string.group_gen_append),
+                            GroupGenerationMode.APPEND_DISABLED to context.getString(R.string.group_gen_append_disabled),
                         ).forEach { (mode, label) ->
                             item(
                                 onClick = {

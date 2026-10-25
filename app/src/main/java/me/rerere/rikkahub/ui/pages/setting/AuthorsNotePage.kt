@@ -36,11 +36,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import me.rerere.ai.core.MessageRole
+import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.authorNoteEntriesOrLegacy
 import me.rerere.rikkahub.data.model.AuthorNoteEntry
@@ -58,6 +60,7 @@ fun AuthorsNotePage() {
     val settings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val customDefaultName = stringResource(R.string.authors_note_custom_default_name)
     val entries = settings.authorNoteEntriesOrLegacy()
     var editingEntry by remember { mutableStateOf<AuthorNoteEntry?>(null) }
     var editingBuiltin by remember { mutableStateOf(false) }
@@ -118,7 +121,7 @@ fun AuthorsNotePage() {
                         editingBuiltin = false
                         editingEntry = AuthorNoteEntry(
                             id = "custom:${Uuid.random()}",
-                            name = stringResource(R.string.authors_note_custom_default_name),
+                            name = customDefaultName,
                         )
                     },
                 ) { Text(stringResource(R.string.authors_note_add)) }

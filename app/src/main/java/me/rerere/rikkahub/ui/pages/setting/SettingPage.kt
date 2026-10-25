@@ -289,7 +289,7 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                             me.rerere.rikkahub.data.service.AnnouncementManager.reset(context)
                             Toast.makeText(
                                 context,
-                                stringResource(R.string.setting_page_announcement_reset_toast),
+                                context.getString(R.string.setting_page_announcement_reset_toast),
                                 Toast.LENGTH_SHORT,
                             ).show()
                         },
