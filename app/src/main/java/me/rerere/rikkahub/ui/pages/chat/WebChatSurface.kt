@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -216,6 +217,8 @@ fun WebChatSurface(
     var bridge by remember { mutableStateOf<RikkaNativeBridge?>(null) }
     var ready by remember { mutableStateOf(false) }
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
+    // 渲染进程崩溃后换 epoch 强制重建 WebView，不处理会被系统直接杀掉整个应用
+    var rendererEpoch by remember { androidx.compose.runtime.mutableIntStateOf(0) }
 
     LaunchedEffect(onSend, onStop, onRegenerate, onOpenLink, onSlash, onRequestMenu, onInsertSymbol, onOpenImage) {
         bridge?.onSend = onSend
@@ -228,67 +231,85 @@ fun WebChatSurface(
         bridge?.onOpenImage = onOpenImage
     }
 
-    AndroidView(
-        modifier = modifier.fillMaxSize(),
-        factory = { context ->
-            WebView(context).apply {
-                setBackgroundColor(AndroidColor.TRANSPARENT)
-                this.settings.javaScriptEnabled = true
-                // 便于真机排查渲染问题
-                android.webkit.WebView.setWebContentsDebuggingEnabled(true)
-                this.settings.domStorageEnabled = true
-                // 资源全部经 WebViewLocalAssets 从 assets 取，页面不需要也不该直接读本地文件
-                this.settings.allowFileAccess = false
-                this.settings.mediaPlaybackRequiresUserGesture = false
-                webViewClient = object : WebViewClient() {
-                    override fun shouldInterceptRequest(
-                        view: WebView,
-                        request: WebResourceRequest,
-                    ): WebResourceResponse? = WebViewLocalAssets.intercept(
-                        view.context.applicationContext,
-                        request.url,
-                    ) ?: super.shouldInterceptRequest(view, request)
+    key(rendererEpoch) {
+        AndroidView(
+            modifier = modifier.fillMaxSize(),
+            factory = { context ->
+                WebView(context).apply {
+                    setBackgroundColor(AndroidColor.TRANSPARENT)
+                    this.settings.javaScriptEnabled = true
+                    // 便于真机排查渲染问题
+                    android.webkit.WebView.setWebContentsDebuggingEnabled(true)
+                    this.settings.domStorageEnabled = true
+                    // 资源全部经 WebViewLocalAssets 从 assets 取，页面不需要也不该直接读本地文件
+                    this.settings.allowFileAccess = false
+                    this.settings.mediaPlaybackRequiresUserGesture = false
+                    webViewClient = object : WebViewClient() {
+                        override fun shouldInterceptRequest(
+                            view: WebView,
+                            request: WebResourceRequest,
+                        ): WebResourceResponse? = WebViewLocalAssets.intercept(
+                            view.context.applicationContext,
+                            request.url,
+                        ) ?: super.shouldInterceptRequest(view, request)
 
-                    override fun shouldOverrideUrlLoading(
-                        view: WebView,
-                        request: WebResourceRequest,
-                    ): Boolean {
-                        val url = request.url.toString()
-                        if (url.startsWith(WEB_VIEW_BASE_URL) || url.startsWith("about:")) return false
-                        bridge?.onOpenLink?.invoke(url)
-                        return true
-                    }
+                        // 渲染进程崩溃：返回 true 自行处理并重建，默认行为是杀掉整个应用
+                        override fun onRenderProcessGone(
+                            view: WebView,
+                            detail: android.webkit.RenderProcessGoneDetail,
+                        ): Boolean {
+                            android.util.Log.w("WebChatSurface", "webui renderer gone (crashed=${detail.didCrash()}), rebuilding")
+                            me.rerere.rikkahub.utils.CrashHandler.logRendererCrash(
+                                view.context.applicationContext,
+                                "WebChatSurface",
+                                "renderer crashed=${detail.didCrash()}",
+                            )
+                            ready = false
+                            rendererEpoch += 1
+                            return true
+                        }
 
-                    override fun onPageFinished(view: WebView, url: String) {
-                        super.onPageFinished(view, url)
-                        ready = true
+                        override fun shouldOverrideUrlLoading(
+                            view: WebView,
+                            request: WebResourceRequest,
+                        ): Boolean {
+                            val url = request.url.toString()
+                            if (url.startsWith(WEB_VIEW_BASE_URL) || url.startsWith("about:")) return false
+                            bridge?.onOpenLink?.invoke(url)
+                            return true
+                        }
+
+                        override fun onPageFinished(view: WebView, url: String) {
+                            super.onPageFinished(view, url)
+                            ready = true
+                        }
                     }
+                    val localBridge = RikkaNativeBridge()
+                    localBridge.webView = this
+                    localBridge.pageApi = "webui"
+                    bridge = localBridge
+                    addJavascriptInterface(localBridge, "rikkaNative")
+                    loadUrl(WEBUI_URL)
+                    webViewRef = this
                 }
-                val localBridge = RikkaNativeBridge()
-                localBridge.webView = this
-                localBridge.pageApi = "webui"
-                bridge = localBridge
-                addJavascriptInterface(localBridge, "rikkaNative")
-                loadUrl(WEBUI_URL)
-                webViewRef = this
-            }
-        },
-        update = { view ->
-            val url = view.url
-            if (url.isNullOrEmpty() || url == "about:blank" || url.startsWith("chrome-error")) {
-                view.loadUrl(WEBUI_URL)
-            }
-        },
-        // 页面离开即销毁，避免 WebView 残留在渲染层
-        onRelease = { view ->
-            (view.parent as? android.view.ViewGroup)?.removeView(view)
-            bridge = null
-            webViewRef = null
-            view.stopLoading()
-            view.removeAllViews()
-            view.destroy()
-        },
-    )
+            },
+            update = { view ->
+                val url = view.url
+                if (url.isNullOrEmpty() || url == "about:blank" || url.startsWith("chrome-error")) {
+                    view.loadUrl(WEBUI_URL)
+                }
+            },
+            // 页面离开即销毁，避免 WebView 残留在渲染层
+            onRelease = { view ->
+                (view.parent as? android.view.ViewGroup)?.removeView(view)
+                bridge = null
+                webViewRef = null
+                view.stopLoading()
+                view.removeAllViews()
+                view.destroy()
+            },
+        )
+    }
 
 
     LaunchedEffect(bridge, variablesJson, messages, assistant, settings, modelName) {
