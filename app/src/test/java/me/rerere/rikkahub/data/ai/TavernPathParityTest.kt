@@ -28,6 +28,46 @@ class TavernPathParityTest {
             ?: error("找不到 GenerationLoop.kt，查找过：$candidates")
     }
 
+    private val chatService: String by lazy {
+        val candidates = listOf(
+            File("src/main/java/me/rerere/rikkahub/service/ChatService.kt"),
+            File("app/src/main/java/me/rerere/rikkahub/service/ChatService.kt"),
+        )
+        candidates.firstOrNull { it.exists() }?.readText()
+            ?: error("找不到 ChatService.kt，查找过：$candidates")
+    }
+
+    @Test
+    fun `both tool paths register memory tools in tavern mode`() {
+        // ChatService 的两条生成路径都走 buildTavernModeTools，记忆工具必须在那里注册
+        val body = chatService
+            .substringAfter("private suspend fun buildTavernModeTools(")
+            .substringBefore("suspend fun generateForAssistant")
+        assertTrue(
+            "buildTavernModeTools 必须注册记忆工具，否则酒馆模式下 AI 写不进记忆",
+            body.contains("buildMemoryTools("),
+        )
+        assertTrue(
+            "记忆工具必须受助手自己的记忆开关控制",
+            Regex("""if \(assistant\.enableMemory\) \{\s*addAll\(buildMemoryTools\(""").containsMatchIn(body),
+        )
+        assertTrue(
+            "两条生成路径都必须调用 buildTavernModeTools",
+            Regex("""buildTavernModeTools\(""").findAll(chatService).count() >= 3,
+        )
+    }
+
+    @Test
+    fun `tavern mode does not force reasoning off`() {
+        // 深度思考由助手的思考档位决定：酒馆模式只裁上下文，不替用户关思考
+        val disable = source.substringAfter("disableReasoning =").substringBefore(",", "")
+        assertTrue("disableReasoning 取值里不应再出现 tavernMode", !disable.contains("enableTavernMode"))
+        assertTrue(
+            "disableReasoning 必须只看思考档位是否为 OFF",
+            disable.contains("ReasoningLevel.OFF"),
+        )
+    }
+
     @Test
     fun `both system prompt paths gate tool prompts on tavern mode`() {
         // 工具 systemPrompt 段的追加语句，两条路径必须各自被 !tavernMode 包住
@@ -67,9 +107,10 @@ class TavernPathParityTest {
     }
 
     @Test
-    fun `memory tools are stripped in tavern mode at the shared choke point`() {
+    fun `memory tools survive tavern mode when tools are kept`() {
         // 酒馆模式在公共叠加点收窄工具面：保留工具时只留白名单，
-        // 不保留时整组清空——记忆工具不在白名单里，同样被剔除
+        // 不保留时整组清空。记忆工具在白名单里——此前被剔除，酒馆模式下
+        // 助手再也写不进记忆，用户只能看着 AI 说自己没有写记忆的工具。
         assertTrue(
             "酒馆模式必须在公共叠加点按白名单收窄工具（retainAll isTavernBaseTool）",
             source.contains("""retainAll { it.name.isTavernBaseTool() }"""),
@@ -82,6 +123,6 @@ class TavernPathParityTest {
             .substringAfter("private fun String.isTavernBaseTool(): Boolean", "")
             .substringBefore("}")
         assertTrue("找不到酒馆工具白名单定义", whitelist.isNotEmpty())
-        assertTrue("酒馆工具白名单里不允许出现记忆工具", !whitelist.contains("memory_"))
+        assertTrue("酒馆工具白名单必须保留记忆工具，否则 AI 无法写记忆", whitelist.contains("memory_"))
     }
 }

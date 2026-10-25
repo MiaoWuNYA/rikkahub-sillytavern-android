@@ -297,8 +297,8 @@ class GenerationLoop(
     val toolsInternal = buildList {
         Log.i(TAG, "generateInternal: build tools($assistant)")
         // 酒馆模式：本层是全部生成路径的公共叠加点，必须兜底裁剪。
-        // 不保留工具时整组清空；保留时只留酒馆基础工具面（插件 + 文件/搜索/抓取/计算器），
-        // 记忆、技能、MCP、工作空间等 App 工作流工具一律不进请求。
+        // 不保留工具时整组清空；保留时只留酒馆基础工具面（插件 + 文件/搜索/抓取/计算器 + 记忆），
+        // 技能、MCP、工作空间等 App 工作流工具不进请求。
         addAll(tools)
         if (settings.huadengSettings.enableTavernMode) {
             if (settings.huadengSettings.tavernModeKeepTools) {
@@ -743,8 +743,11 @@ class GenerationLoop(
                 add(UIMessage.system(prompt = fallbackSystem()))
             }
 
-            // 记忆（上游语义）：按文件组织的记忆库内容注入 system
-            if (assistant.enableMemory && !tavernMode && !memories.isNullOrEmpty()) {
+            // 记忆（上游语义）：按文件组织的记忆库内容注入 system。
+            // 酒馆模式只在记忆工具真正注册时才注入，否则模型看得到记忆却写不了
+            val memoryToolsRegistered = assistant.enableMemory &&
+                (!tavernMode || settings.huadengSettings.tavernModeKeepTools)
+            if (memoryToolsRegistered && !memories.isNullOrEmpty()) {
                 add(
                     UIMessage.system(prompt = buildMemoryPrompt(memories)).copy(isSynthetic = true)
                 )
@@ -980,12 +983,8 @@ class GenerationLoop(
             sessionId = conversationId?.toString(),
             systemPromptInChat = settings.huadengSettings.enableAntiEmptyResponse,
             enableProxyFix = assistant.enableProxyFix || settings.huadengSettings.enableProxyFix,
-            // 酒馆模式：强制关闭深度思考。注意不是传 reasoning_effort="none"——
-            // 实测部分中转站只要收到该字段就会开启思考链（服务端真实推理，但流式
-            // 通道不回传 reasoning_content，因而界面上看不到），故必须整个字段都不写。
-            // 思考档位 OFF 与酒馆模式等效：部分上游忽略档位参数，必须显式关闭
-            disableReasoning = settings.huadengSettings.enableTavernMode ||
-                assistant.reasoningLevel == me.rerere.ai.core.ReasoningLevel.OFF,
+            // 思考档位 OFF 时显式关闭：部分上游忽略档位参数，只省略字段会沿用服务端默认
+            disableReasoning = assistant.reasoningLevel == me.rerere.ai.core.ReasoningLevel.OFF,
         )
         try {
             if (stream) {
@@ -1553,11 +1552,12 @@ private fun cleanDsmlFromText(text: String): String {
 private fun String.escapeXmlTags(): String =
     this.replace("<", "&lt;").replace(">", "&gt;")
 
-/** 酒馆模式保留工具面：插件工具 + 文件/搜索/抓取/计算器，其余一律不算 */
+/** 酒馆模式保留工具面：插件工具 + 文件/搜索/抓取/计算器 + 记忆，其余一律不算 */
 private fun String.isTavernBaseTool(): Boolean =
     startsWith("plugin_") ||
         startsWith("search_") ||
         startsWith("scrape_") ||
+        startsWith("memory_") ||
         this == "file" ||
         this == "web_fetch" ||
         this == "calculator"

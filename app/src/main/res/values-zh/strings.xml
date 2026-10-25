@@ -693,9 +693,9 @@
   <string name="huadeng_system_prompt_escape">系统提示词转义</string>
   <string name="huadeng_system_prompt_escape_desc">将系统消息中的 &lt; &gt; 转为 HTML 实体，绕过中转站 WAF 安全策略拦截（如遇到 upstream_content_rejected 错误可开启）。一般不需要开启</string>
   <string name="huadeng_tavern_keep_tools">酒馆模式·保留工具</string>
-  <string name="huadeng_tavern_keep_tools_desc">开启时保留文件/搜索/网页抓取/计算器等基础工具（仅保留 JSON 定义，不发送工具提示词）。关闭后退化为纯文本模型，请求中不含任何工具</string>
+  <string name="huadeng_tavern_keep_tools_desc">开启时保留文件/搜索/网页抓取/计算器/记忆等基础工具（仅保留 JSON 定义，不发送工具提示词）。关闭后退化为纯文本模型，请求中不含任何工具</string>
   <string name="huadeng_tavern_mode">酒馆模式（纯净请求）</string>
-  <string name="huadeng_tavern_mode_desc">开启后请求只发送：角色卡（含世界书/示例消息/系统提示）、聊天历史、工具的最小可用定义。插件提示词、记忆检索、跨窗口生活流、模板宏以外的全部注入、工作空间提醒、时间提醒、作者注释、技能自动触发、文档转 Prompt、OCR、Recent Chats、滚动压缩摘要、工具路由与工作伦理区、工具系统提示词——全部不再发送。适合角色扮演与创作，避免工作流噪声干扰生成质量</string>
+  <string name="huadeng_tavern_mode_desc">开启后请求只发送：角色卡（含世界书/示例消息/系统提示）、聊天历史、工具的最小可用定义。插件提示词、跨窗口生活流、模板宏以外的全部注入、工作空间提醒、时间提醒、作者注释、技能自动触发、文档转 Prompt、OCR、Recent Chats、滚动压缩摘要、工具路由与工作伦理区、工具系统提示词——全部不再发送；记忆仅在助手开启记忆且保留工具时随工具一起可用。深度思考不受影响，仍按助手的思考档位发送。适合角色扮演与创作，避免工作流噪声干扰生成质量</string>
   <string name="huadeng_tool_result_truncation">工具结果截断</string>
   <string name="huadeng_tool_result_truncation_desc">工具输出超过 32KB 时自动截断并保存到文件。关闭后工具结果不截断，完整内容保留在消息历史中（若中转站导致工具调用异常，可尝试关闭)</string>
   <string name="huadeng_sub_agent">子 agent</string>
