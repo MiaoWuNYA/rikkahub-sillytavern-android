@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.FilledTonalIconButton
@@ -29,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Job
@@ -46,6 +48,10 @@ fun CompressContextDialog(
     var selectedTokens by remember { mutableIntStateOf(2000) }
     var keepRecentMessages by remember { mutableIntStateOf(32) }
     val tokenOptions = listOf(500, 1000, 2000, 4000)
+    var customMode by remember { mutableStateOf(false) }
+    var customText by remember { mutableStateOf("2000") }
+    val customTokens = customText.toIntOrNull()?.takeIf { it > 0 }
+    val effectiveTokens = if (customMode) customTokens ?: selectedTokens else selectedTokens
     var currentJob by remember { mutableStateOf<Job?>(null) }
     val isLoading = currentJob?.isActive == true
 
@@ -97,16 +103,42 @@ fun CompressContextDialog(
                     ) {
                         tokenOptions.forEachIndexed { index, tokens ->
                             SegmentedButton(
-                                selected = selectedTokens == tokens,
-                                onClick = { selectedTokens = tokens },
+                                selected = !customMode && selectedTokens == tokens,
+                                onClick = {
+                                    customMode = false
+                                    selectedTokens = tokens
+                                },
                                 shape = SegmentedButtonDefaults.itemShape(
                                     index = index,
-                                    count = tokenOptions.size
+                                    count = tokenOptions.size + 1
                                 )
                             ) {
                                 Text("$tokens")
                             }
                         }
+                        SegmentedButton(
+                            selected = customMode,
+                            onClick = { customMode = true },
+                            shape = SegmentedButtonDefaults.itemShape(
+                                index = tokenOptions.size,
+                                count = tokenOptions.size + 1
+                            )
+                        ) {
+                            Text(stringResource(R.string.chat_page_compress_custom_tokens))
+                        }
+                    }
+                    if (customMode) {
+                        OutlinedTextField(
+                            value = customText,
+                            onValueChange = { customText = it.filter(Char::isDigit).take(7) },
+                            label = {
+                                Text(stringResource(R.string.chat_page_compress_target_tokens))
+                            },
+                            isError = customTokens == null,
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
 
                     // Additional context input
@@ -174,9 +206,12 @@ fun CompressContextDialog(
                     Text(stringResource(R.string.cancel))
                 }
             } else {
-                TextButton(onClick = {
-                    currentJob = onConfirm(additionalPrompt, selectedTokens, keepRecentMessages)
-                }) {
+                TextButton(
+                    enabled = !customMode || customTokens != null,
+                    onClick = {
+                        currentJob = onConfirm(additionalPrompt, effectiveTokens, keepRecentMessages)
+                    }
+                ) {
                     Text(stringResource(R.string.confirm))
                 }
             }
