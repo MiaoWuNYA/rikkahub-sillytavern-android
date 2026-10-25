@@ -7,12 +7,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ContainedLoadingIndicator
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
@@ -31,12 +28,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Job
-import me.rerere.hugeicons.HugeIcons
-import me.rerere.hugeicons.stroke.Add01
-import me.rerere.hugeicons.stroke.Remove01
 import me.rerere.rikkahub.R
 
 @Composable
@@ -46,8 +39,9 @@ fun CompressContextDialog(
 ) {
     var additionalPrompt by remember { mutableStateOf("") }
     var selectedTokens by remember { mutableIntStateOf(2000) }
-    var keepRecentMessages by remember { mutableIntStateOf(32) }
-    val tokenOptions = listOf(500, 1000, 2000, 4000)
+    var keepText by remember { mutableStateOf("32") }
+    val keepRecent = keepText.toIntOrNull()?.takeIf { it >= 0 }
+    val tokenOptions = listOf(500, 4000)
     var customMode by remember { mutableStateOf(false) }
     var customText by remember { mutableStateOf("2000") }
     val customTokens = customText.toIntOrNull()?.takeIf { it > 0 }
@@ -163,31 +157,17 @@ fun CompressContextDialog(
                     )
 
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Row(
+                        OutlinedTextField(
+                            value = keepText,
+                            onValueChange = { keepText = it.filter(Char::isDigit).take(4) },
+                            label = {
+                                Text(stringResource(R.string.chat_page_compress_keep_recent))
+                            },
+                            isError = keepRecent == null,
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = stringResource(R.string.chat_page_compress_keep_recent),
-                                style = MaterialTheme.typography.titleSmall,
-                                modifier = Modifier.weight(1f),
-                            )
-                            FilledTonalIconButton(
-                                onClick = { keepRecentMessages-- },
-                                enabled = keepRecentMessages > 0,
-                            ) {
-                                Icon(HugeIcons.Remove01, contentDescription = "Decrease")
-                            }
-                            Text(
-                                text = keepRecentMessages.toString(),
-                                style = MaterialTheme.typography.titleMediumEmphasized,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.widthIn(min = 40.dp),
-                            )
-                            FilledTonalIconButton(onClick = { keepRecentMessages++ }) {
-                                Icon(HugeIcons.Add01, contentDescription = "Increase")
-                            }
-                        }
+                        )
                         Text(
                             text = stringResource(R.string.chat_page_compress_keep_recent_desc),
                             style = MaterialTheme.typography.bodySmall,
@@ -207,9 +187,9 @@ fun CompressContextDialog(
                 }
             } else {
                 TextButton(
-                    enabled = !customMode || customTokens != null,
+                    enabled = (!customMode || customTokens != null) && keepRecent != null,
                     onClick = {
-                        currentJob = onConfirm(additionalPrompt, effectiveTokens, keepRecentMessages)
+                        currentJob = onConfirm(additionalPrompt, effectiveTokens, keepRecent ?: 32)
                     }
                 ) {
                     Text(stringResource(R.string.confirm))

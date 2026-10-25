@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.util.Log
 import android.view.ViewGroup.LayoutParams
 import android.webkit.ConsoleMessage
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -17,7 +18,9 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -55,6 +58,16 @@ internal class MyWebViewClient(private val state: WebViewState) : WebViewClient(
     ): WebResourceResponse? {
         return WebViewLocalAssets.intercept(view.context.applicationContext, request.url)
             ?: super.shouldInterceptRequest(view, request)
+    }
+
+    // 渲染进程崩溃：返回 true 自行处理并重建 WebView，默认行为是杀掉整个应用
+    override fun onRenderProcessGone(
+        view: WebView,
+        detail: RenderProcessGoneDetail
+    ): Boolean {
+        Log.w(TAG, "renderer gone (crashed=${detail.didCrash()}), rebuilding")
+        state.rendererEpoch += 1
+        return true
     }
 
     override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
@@ -107,10 +120,12 @@ fun WebView(
     val webChromeClient = remember { MyWebChromeClient(state) }
     val webViewClient = remember { MyWebViewClient(state) }
 
-    Box(
-        modifier = modifier
-    ) {
-        AndroidView(
+    // 渲染进程崩溃后换 epoch 强制重建 WebView（崩溃的实例不可复用）
+    key(state.rendererEpoch) {
+        Box(
+            modifier = modifier
+        ) {
+            AndroidView(
             factory = { context ->
                 WebView(context).apply {
                     layoutParams = LayoutParams(
@@ -202,6 +217,7 @@ fun WebView(
                 modifier = Modifier.fillMaxWidth()
             )
         }
+        }
     }
 }
 
@@ -264,6 +280,11 @@ class WebViewState(
     // Hold the WebView instance internally to perform actions.
     // Be cautious with this reference, ensure it doesn't leak context.
     var webView: WebView? by mutableStateOf(null)
+        internal set
+
+    // --- Render Process ---
+    // 渲染进程崩溃计数：变化时 WebView() 用 key 强制重建实例
+    var rendererEpoch: Int by mutableIntStateOf(0)
         internal set
 
     // --- Public Actions ---

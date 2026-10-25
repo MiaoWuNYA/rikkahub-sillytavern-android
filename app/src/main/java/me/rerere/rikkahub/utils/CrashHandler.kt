@@ -61,19 +61,24 @@ object CrashHandler {
                 if (info.reason !in INTERESTING_EXIT_REASONS) return@forEach
                 val key = info.timestamp.toString()
                 if (key in seen) return@forEach
+                // trace 是二进制 protobuf tombstone：按文本读会把非 UTF-8 字节全变成
+                // U+FFFD 永久损坏。这里读原始字节，提取内嵌可读字符串做摘要 + base64 存原文
+                val traceBytes = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    runCatching { info.traceInputStream?.readBytes() }.getOrNull()
+                } else null
                 writeCrashFile(
                     appContext,
                     "exit-$key",
                     buildString {
                         appendLine("Exit reason: ${exitReasonName(info.reason)} (${info.reason})")
                         info.description?.takeIf { it.isNotBlank() }?.let { appendLine("Description: $it") }
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            runCatching {
-                                info.traceInputStream?.bufferedReader()?.use { it.readText() }
-                            }.getOrNull()?.takeIf { it.isNotBlank() }?.let {
-                                appendLine("Trace:")
-                                appendLine(it.take(MAX_STACKTRACE_LENGTH))
-                            }
+                        if (traceBytes != null) {
+                            appendLine()
+                            appendLine("Trace summary (strings inside protobuf tombstone):")
+                            appendLine(extractTombstoneStrings(traceBytes))
+                            appendLine()
+                            appendLine("Trace (protobuf, base64):")
+                            appendLine(android.util.Base64.encodeToString(traceBytes, android.util.Base64.NO_WRAP))
                         }
                     },
                 )
@@ -183,6 +188,62 @@ object CrashHandler {
     )
 
     private const val KEY_EXIT_SEEN = "exit_seen"
+
+    // tombstone proto 的字段号在 ROM 间有变体，这里不按 schema 解析：
+    // 通用 wire-format 遍历，收集所有可打印文本段（线程名/函数名/库名/cause 等）
+    private fun extractTombstoneStrings(bytes: ByteArray, depth: Int = 0): String {
+        if (depth > 8) return ""
+        val out = StringBuilder()
+        var i = 0
+        while (i < bytes.size) {
+            val key = readVarint(bytes, i) ?: return out.toString()
+            i = key.second
+            when (val wireType = (key.first and 0x7).toInt()) {
+                0 -> { val v = readVarint(bytes, i) ?: return out.toString(); i = v.second }
+                1 -> i += 8
+                5 -> i += 4
+                2 -> {
+                    val len = readVarint(bytes, i) ?: return out.toString()
+                    i = len.second
+                    val end = i + len.first.toInt()
+                    if (end > bytes.size) return out.toString()
+                    if (end > i) {
+                        val chunk = bytes.copyOfRange(i, end)
+                        if (isPrintableText(chunk)) {
+                            out.appendLine(chunk.decodeToString())
+                        } else if (depth < 8) {
+                            out.append(extractTombstoneStrings(chunk, depth + 1))
+                        }
+                    }
+                    i = end
+                }
+                else -> return out.toString()
+            }
+        }
+        return out.toString()
+    }
+
+    private fun readVarint(bytes: ByteArray, start: Int): Pair<Long, Int>? {
+        var result = 0L
+        var shift = 0
+        var i = start
+        while (i < bytes.size) {
+            val b = bytes[i].toInt() and 0xFF
+            result = result or ((b and 0x7F).toLong() shl shift)
+            i++
+            if (b and 0x80 == 0) return result to i
+            shift += 7
+            if (shift > 63) return null
+        }
+        return null
+    }
+
+    private fun isPrintableText(chunk: ByteArray): Boolean {
+        if (chunk.isEmpty() || chunk.size > 512) return false
+        if (chunk.any { it.code == 0 }) return false
+        val printable = chunk.count { it in 32..126 || it.code >= 0x80 }
+        return printable >= chunk.size * 0.9
+    }
 
     private fun exitReasonName(reason: Int): String = when (reason) {
         ApplicationExitInfo.REASON_SIGNALED -> "SIGNALED(异常信号)"
