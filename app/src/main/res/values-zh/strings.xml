@@ -935,6 +935,7 @@
   <string name="life_reading_error_unreadable">无法读取这个 TXT 文件</string>
   <string name="life_reading_import_failed">导入失败</string>
   <string name="life_reading_marks_note_card">💬 给 TA 的批注</string>
+  <string name="life_reading_ai_reply">🤖 %1$s</string>
   <string name="life_reading_marks_tab_bookmarks">书签 %1$d</string>
   <string name="life_reading_marks_tab_notes">批注 %1$d</string>
   <string name="life_reading_marks_title">书签与批注</string>

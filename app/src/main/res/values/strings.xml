@@ -936,6 +936,7 @@
   <string name="life_reading_error_unreadable">Could not read this TXT file</string>
   <string name="life_reading_import_failed">Import failed</string>
   <string name="life_reading_marks_note_card">💬 A note for them</string>
+  <string name="life_reading_ai_reply">🤖 %1$s</string>
   <string name="life_reading_marks_tab_bookmarks">Bookmarks %1$d</string>
   <string name="life_reading_marks_tab_notes">Notes %1$d</string>
   <string name="life_reading_marks_title">Bookmarks and notes</string>
