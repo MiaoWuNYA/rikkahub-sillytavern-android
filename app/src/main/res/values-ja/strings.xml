@@ -146,8 +146,6 @@
   <string name="assistant_page_regex_visual_only">表示のみ（チェック時は表示にのみ適用、オフの場合は表示とプロンプトの両方に適用）</string>
   <string name="assistant_page_remove">削除</string>
   <string name="assistant_page_remove_background">背景を削除</string>
-  <string name="assistant_page_rolling_context">ローリングコンテキスト圧縮</string>
-  <string name="assistant_page_rolling_context_desc">コンテキストがしきい値を超えると以前の会話を自動要約し、すべてのメッセージを送らずに履歴全体を踏まえた返信を可能にします（圧縮モデルを使用）</string>
   <string name="assistant_page_save">保存</string>
   <string name="assistant_page_search_placeholder">キャラクターカードを検索</string>
   <string name="assistant_page_select_background">背景画像を選択</string>
@@ -332,7 +330,6 @@
   <string name="chat_page_no_conversations">会話がありません</string>
   <string name="chat_page_opening_current">現在</string>
   <string name="chat_page_regenerate_title">タイトルを再生成</string>
-  <string name="chat_page_rolling_context_compressing">以前の会話を圧縮中…</string>
   <string name="chat_page_save">保存</string>
   <string name="chat_page_scroll_to_bottom">一番下へスクロール</string>
   <string name="chat_page_search_chats">チャットを検索</string>
@@ -2942,8 +2939,6 @@
   <string name="search_picker_off">オフ</string>
   <string name="search_picker_status_off">オフ</string>
   <string name="search_picker_off_description">モデルは既に知っている情報のみから回答し、ウェブにはアクセスしません。</string>
-  <string name="chat_page_compress_checkpoint_title">以前のメッセージが要約に圧縮されました</string>
-  <string name="chat_page_compress_checkpoint_hint">この行より上のメッセージはモデルに送信されなくなり、代わりにこの要約が使用されます。要約を削除すると、履歴全体が再び送信されます。</string>
   <string name="chat_page_compress_blocked_generating">コンテキストを圧縮する前に生成を停止してください</string>
   <string name="chat_page_compress_conversation_changed">圧縮中に会話が変更されました。もう一度お試しください。</string>
   <string name="sketch">スケッチ</string>

@@ -175,15 +175,18 @@ fun Conversation.lastContextTokens(): Int? {
     return message.contextTokens()
 }
 
-/** 在 [afterNodeId] 节点之后插入压缩检查点；该节点已不存在时返回 null。 */
-internal fun Conversation.insertContextCheckpoint(afterNodeId: Uuid, summary: String): Conversation? {
-    val index = messageNodes.indexOfFirst { it.id == afterNodeId }
+/**
+ * 把 [throughNodeId] 及其之前的节点整段换成摘要消息，[throughNodeId] 已不存在时返回 null。
+ * 压缩后第一条消息就是摘要，被压缩的历史不再保留（这是早期版本的行为）。
+ */
+internal fun Conversation.replacePrefixWithSummaries(
+    throughNodeId: Uuid,
+    summaries: List<String>,
+): Conversation? {
+    val index = messageNodes.indexOfFirst { it.id == throughNodeId }
     if (index == -1) return null
-    val checkpoint = UIMessage.user(summary).copy(isContextCheckpoint = true).toMessageNode()
-    return copy(
-        messageNodes =
-        messageNodes.subList(0, index + 1) + checkpoint + messageNodes.subList(index + 1, messageNodes.size),
-    )
+    val summaryNodes = summaries.map { UIMessage.user(it).copy(isContextCheckpoint = true).toMessageNode() }
+    return copy(messageNodes = summaryNodes + messageNodes.subList(index + 1, messageNodes.size))
 }
 
 /** 有工具调用在等待用户审批：这一轮还没结束，排队的消息要等审批完成后再发 */

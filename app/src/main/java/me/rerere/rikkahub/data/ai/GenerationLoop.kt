@@ -91,9 +91,6 @@ import me.rerere.rikkahub.utils.l10n
  */
 private const val TAG = "GenerationHandler"
 private const val MAX_EMPTY_RESPONSE_RETRIES = 3
-private const val ROLLING_CONTEXT_SYSTEM_PROMPT =
-    "The following is a rolling summary of earlier conversation turns. Use it as context, " +
-        "but follow the latest messages when they differ:\n<rolling_context_summary>"
 private const val MAX_TOOL_OUTPUT_CHARS = 32 * 1024
 private const val TOOL_OUTPUT_PREVIEW_CHARS = 4 * 1024
 
@@ -138,8 +135,6 @@ class GenerationLoop(
         generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
         maxTokensOverride: Int? = null,
         // 上下文滚动压缩：摘要内容 + 请求窗口起始索引（该索引之前的消息由摘要替代）
-        rollingContextSummary: String? = null,
-        requestMessageStartIndex: Int = 0,
     ): Flow<GenerationChunk> = flow {
         val provider = model.findProvider(settings.providers) ?: error("Provider not found")
         val providerImpl = providerManager.getProviderByType(provider)
@@ -398,8 +393,6 @@ class GenerationLoop(
                     workspaceCwd = workspaceCwd,
                     generationType = generationType,
                     maxTokensOverride = maxTokensOverride,
-                    requestMessageStartIndex = requestMessageStartIndex,
-                    rollingContextSummary = rollingContextSummary,
                 )
                 messages = messages.visualTransforms(
                     transformers = outputTransformers,
@@ -645,17 +638,9 @@ class GenerationLoop(
         conversationId: Uuid? = null,
         generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
         maxTokensOverride: Int? = null,
-        requestMessageStartIndex: Int = 0,
-        rollingContextSummary: String? = null,
         prebuiltRecentChats: String = "",
     ) {
-        // 滚动压缩：请求窗口从摘要覆盖范围之后开始；UI/工具循环仍使用完整消息列表
-        val requestMessages = if (requestMessageStartIndex > 0) {
-            messages.drop(requestMessageStartIndex.coerceIn(0, messages.size))
-        } else {
-            messages
-        }
-        val limitedChat = requestMessages.limitContext(assistant.contextMessageLimit)
+        val limitedChat = messages.limitContext(assistant.contextMessageLimit)
         // 酒馆模式：请求中只保留原版酒馆的上下文构成（角色卡/世界书/示例消息/作者注释）
         val tavernMode = settings.huadengSettings.enableTavernMode
         // 收集插件系统提示词（suspend 调用，需在 coroutine 上下文中）
@@ -748,12 +733,6 @@ class GenerationLoop(
                 add(
                     UIMessage.system(prompt = buildMemoryPrompt(memories)).copy(isSynthetic = true)
                 )
-            }
-
-            // ── 上下文滚动压缩摘要：作为 system 消息注入，替代被覆盖的早期前缀 ──
-            // 酒馆模式：摘要属于"工作流产物"，不发，避免干扰纯净上下文
-            if (!tavernMode && !rollingContextSummary.isNullOrBlank()) {
-                add(UIMessage.system(prompt = ROLLING_CONTEXT_SYSTEM_PROMPT + "\n" + rollingContextSummary + "\n</rolling_context_summary>"))
             }
 
             // ── 官方 mes_example：作为示例消息注入（story string 之后、聊天历史之前）──

@@ -146,8 +146,6 @@
   <string name="assistant_page_regex_visual_only">僅顯示（勾選後只影響介面顯示；不勾選則顯示和提示詞都生效）</string>
   <string name="assistant_page_remove">移除</string>
   <string name="assistant_page_remove_background">移除背景</string>
-  <string name="assistant_page_rolling_context">上下文滾動壓縮</string>
-  <string name="assistant_page_rolling_context_desc">上下文超過閾值時自動把早期對話壓縮為摘要，回覆仍能瞭解完整歷史，但無需傳送每條訊息（使用壓縮模型）</string>
   <string name="assistant_page_save">保存</string>
   <string name="assistant_page_search_placeholder">搜尋助理</string>
   <string name="assistant_page_select_background">選擇背景圖片</string>
@@ -332,7 +330,6 @@
   <string name="chat_page_no_conversations">沒有對話記錄</string>
   <string name="chat_page_opening_current">當前</string>
   <string name="chat_page_regenerate_title">重新生成標題</string>
-  <string name="chat_page_rolling_context_compressing">正在壓縮早期對話…</string>
   <string name="chat_page_save">保存</string>
   <string name="chat_page_scroll_to_bottom">滾動到底部</string>
   <string name="chat_page_search_chats">搜尋聊天</string>
@@ -2932,8 +2929,6 @@
   <string name="search_picker_off">關閉</string>
   <string name="search_picker_status_off">已關閉</string>
   <string name="search_picker_off_description">模型僅根據自身已知的內容回答，不會存取網路。</string>
-  <string name="chat_page_compress_checkpoint_title">先前的訊息已壓縮為摘要</string>
-  <string name="chat_page_compress_checkpoint_hint">此線以上的訊息將不再傳送給模型；此摘要會取代它們。刪除摘要即可再次傳送完整歷史記錄。</string>
   <string name="chat_page_compress_blocked_generating">請先停止生成，再壓縮上下文</string>
   <string name="chat_page_compress_conversation_changed">對話在壓縮期間已變更。請再試一次。</string>
   <string name="sketch">草圖</string>

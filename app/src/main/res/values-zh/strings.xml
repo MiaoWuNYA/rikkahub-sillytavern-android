@@ -150,8 +150,6 @@
   <string name="assistant_page_regex_visual_only">仅显示（勾选后只影响界面显示；不勾选则显示和提示词都生效）</string>
   <string name="assistant_page_remove">移除</string>
   <string name="assistant_page_remove_background">移除背景</string>
-  <string name="assistant_page_rolling_context">上下文滚动压缩</string>
-  <string name="assistant_page_rolling_context_desc">上下文超过阈值时自动把早期对话压缩为摘要，回复仍能了解完整历史，但无需发送每条消息（使用压缩模型）</string>
   <string name="assistant_page_save">保存</string>
   <string name="assistant_page_search_placeholder">搜索角色卡</string>
   <string name="assistant_page_select_background">选择背景图片</string>
@@ -348,7 +346,6 @@
   <string name="chat_page_no_conversations">没有对话记录</string>
   <string name="chat_page_opening_current">当前</string>
   <string name="chat_page_regenerate_title">重新生成标题</string>
-  <string name="chat_page_rolling_context_compressing">正在压缩早期对话…</string>
   <string name="chat_page_save">保存</string>
   <string name="chat_page_scroll_to_bottom">滚动到底部</string>
   <string name="chat_page_search_chats">搜索聊天</string>
@@ -3072,8 +3069,6 @@
   <string name="search_picker_off">关闭</string>
   <string name="search_picker_status_off">已关闭</string>
   <string name="search_picker_off_description">模型只根据已有知识回答，不会访问网络。</string>
-  <string name="chat_page_compress_checkpoint_title">以上内容已压缩为摘要</string>
-  <string name="chat_page_compress_checkpoint_hint">分隔线以上的消息不再发送给模型，由这份摘要代替。删除摘要即可恢复发送完整历史。</string>
   <string name="chat_page_compress_blocked_generating">请先停止生成再压缩上下文</string>
   <string name="chat_page_compress_conversation_changed">对话在压缩期间发生变化，请重试</string>
   <string name="sketch">草图</string>

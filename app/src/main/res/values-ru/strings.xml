@@ -146,8 +146,6 @@
   <string name="assistant_page_regex_visual_only">Только отображение (вкл. — только показ; выкл. — отображение и промпт)</string>
   <string name="assistant_page_remove">Удалить</string>
   <string name="assistant_page_remove_background">Убрать фон</string>
-  <string name="assistant_page_rolling_context">Скользящее сжатие контекста</string>
-  <string name="assistant_page_rolling_context_desc">Автоматически резюмирует более раннюю беседу, когда контекст превышает порог, сохраняя осведомлённость ответов о полной истории без отправки каждого сообщения (используется модель сжатия)</string>
   <string name="assistant_page_save">Сохранить</string>
   <string name="assistant_page_search_placeholder">Поиск карточек персонажа</string>
   <string name="assistant_page_select_background">Выбрать фоновое изображение</string>
@@ -332,7 +330,6 @@
   <string name="chat_page_no_conversations">Нет бесед</string>
   <string name="chat_page_opening_current">Текущее</string>
   <string name="chat_page_regenerate_title">Сгенерировать заголовок заново</string>
-  <string name="chat_page_rolling_context_compressing">Сжатие более ранней беседы…</string>
   <string name="chat_page_save">Сохранить</string>
   <string name="chat_page_scroll_to_bottom">Прокрутить вниз</string>
   <string name="chat_page_search_chats">Поиск чатов</string>
@@ -2942,8 +2939,6 @@
   <string name="search_picker_off">Выкл.</string>
   <string name="search_picker_status_off">Выключено</string>
   <string name="search_picker_off_description">Модель отвечает только на основе того, что уже знает, и не будет обращаться к интернету.</string>
-  <string name="chat_page_compress_checkpoint_title">Ранние сообщения сжаты в сводку</string>
-  <string name="chat_page_compress_checkpoint_hint">Сообщения над этой линией больше не отправляются модели; эта сводка заменяет их. Удалите сводку, чтобы снова отправлять всю историю.</string>
   <string name="chat_page_compress_blocked_generating">Остановите генерацию перед сжатием контекста</string>
   <string name="chat_page_compress_conversation_changed">Диалог изменился во время сжатия. Повторите попытку.</string>
   <string name="sketch">Эскиз</string>
