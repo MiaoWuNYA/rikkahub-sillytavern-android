@@ -116,6 +116,19 @@ fun ReadingSpacePanel() {
         saveMemories(context, value)
     }
 
+    // AI 通过 shared_reading 工具写入同一份 prefs，监听变化让面板实时刷新
+    DisposableEffect(context) {
+        val prefs = context.getSharedPreferences(READING_PREFS, Context.MODE_PRIVATE)
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
+            books = loadBooks(context)
+            bookmarks = loadBookmarks(context)
+            notes = loadNotes(context)
+            memories = loadMemories(context)
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
     val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             runCatching { importTxtBook(context, uri) }
@@ -511,7 +524,12 @@ private fun ReadingMarksDialog(
                         }
                     } else {
                         items(notes.sortedByDescending { it.createdAt }, key = { it.id }) { item ->
-                            MarkCard(stringResource(R.string.life_reading_marks_note_card), item.quote, item.text) { onDeleteNote(item) }
+                            MarkCard(
+                                title = stringResource(R.string.life_reading_marks_note_card),
+                                quote = item.quote,
+                                note = item.text,
+                                aiReply = item.aiReply.takeIf { it.isNotBlank() },
+                            ) { onDeleteNote(item) }
                         }
                     }
                 }
@@ -522,7 +540,7 @@ private fun ReadingMarksDialog(
 }
 
 @Composable
-private fun MarkCard(title: String, quote: String, note: String, onDelete: () -> Unit) {
+private fun MarkCard(title: String, quote: String, note: String, aiReply: String? = null, onDelete: () -> Unit) {
     Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -531,6 +549,15 @@ private fun MarkCard(title: String, quote: String, note: String, onDelete: () ->
             }
             Text("“${quote.take(180)}”", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (note.isNotBlank()) Text(note)
+            if (aiReply != null) {
+                Surface(shape = RoundedCornerShape(10.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+                    Text(
+                        stringResource(R.string.life_reading_ai_reply, aiReply.take(2000)),
+                        modifier = Modifier.padding(8.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
         }
     }
 }
