@@ -3165,4 +3165,7 @@
   <string name="setting_provider_page_device_code_hint">ブラウザでこのコードを確認してください</string>
   <string name="setting_provider_page_device_code_reopen">タップしてページを再度開きます</string>
   <string name="setting_provider_page_type_subscription">%s サブスクリプション</string>
+  <string name="setting_model_page_memory_model">メモリ整理モデル</string>
+  <string name="setting_model_page_memory_model_desc">バックグラウンドで会話を長期メモリに整理するためのモデル。未設定の場合は高速モデルを使用します</string>
+  <string name="setting_model_page_memory_model_follow_fast">高速モデルと同じ</string>
 </resources>

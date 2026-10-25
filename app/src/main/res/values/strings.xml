@@ -3550,4 +3550,7 @@
   <string name="workspace_editor_preview">Preview</string>
   <string name="workspace_file_saved">Saved</string>
   <string name="workspace_file_save_failed">Failed to save</string>
+  <string name="setting_model_page_memory_model">Memory Consolidation Model</string>
+  <string name="setting_model_page_memory_model_desc">Model used to organize conversations into long-term memory in the background; uses the fast model when not set</string>
+  <string name="setting_model_page_memory_model_follow_fast">Same as fast model</string>
 </resources>

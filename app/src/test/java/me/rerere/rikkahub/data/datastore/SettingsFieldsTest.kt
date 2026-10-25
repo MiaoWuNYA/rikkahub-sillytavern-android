@@ -79,6 +79,7 @@ class SettingsFieldsTest {
         assertEquals(DEFAULT_ASSISTANT_ID, settings.assistantId)
         assertEquals(DEFAULT_SYSTEM_TTS_ID, settings.selectedTTSProviderId)
         assertEquals(null, settings.selectedASRProviderId)
+        assertEquals(null, settings.memoryModelId)
         assertEquals(true, settings.dynamicColor)
         assertEquals(8080, settings.webServerPort)
     }
@@ -127,6 +128,8 @@ private val SAMPLE = Settings(
     chatModelId = id(1),
     fastModelId = id(2),
     fastModelReasoningLevel = ReasoningLevel.LOW,
+    memoryModelId = id(6),
+    memoryModelReasoningLevel = ReasoningLevel.HIGH,
     imageGenerationModelId = id(3),
     enableAutoTitle = false,
     titlePrompt = "title",
@@ -230,6 +233,8 @@ private val STORED_KEYS = setOf(
     "fast_model_reasoning_level",
     "title_model",
     "title_reasoning_level",
+    "memory_model",
+    "memory_model_reasoning_level",
     "translate_model",
     "enable_suggestion",
     "enable_auto_title",

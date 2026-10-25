@@ -90,8 +90,8 @@ fun rememberVoiceModeStarter(vm: ChatVM, settings: Settings): () -> Unit {
                         if (settings.displaySetting.ttsOnlyReadOutsideBrackets) {
                             text = text.removeBracketedContent() ?: text
                         }
-                        text = text.stripMarkdown()
-                        if (text.isNotBlank()) {
+                        // tts.speak() 自己会去 Markdown，这里只判空，避免二次清洗把解码后的 &lt;tag&gt; 当标签删掉
+                        if (text.stripMarkdown().isNotBlank()) {
                             tts.speak(text)
                             // playbackState.Ended is also emitted between chunks. isSpeaking
                             // remains true until the entire synthesis/playback queue finishes.
