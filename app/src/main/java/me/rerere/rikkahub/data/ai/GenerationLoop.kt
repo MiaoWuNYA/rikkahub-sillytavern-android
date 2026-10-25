@@ -724,14 +724,16 @@ class GenerationLoop(
                 add(UIMessage.system(prompt = fallbackSystem()))
             }
 
-            // 记忆（上游语义）：按文件组织的记忆库内容注入 system。
+            // 记忆（上游语义）：按文件组织的记忆库内容注入。
+            // 提示词缓存：记忆走冻结锚点（历史中间/尾部），内容被后台整理改写时
+            // 旧块原位保留、新块追加尾部，前缀不再每轮分叉；不走前缀区的独立 system 消息。
             // 酒馆模式只在记忆工具真正注册时才注入，否则模型看得到记忆却写不了
             val memoryToolsRegistered = assistant.enableMemory &&
                 (!tavernMode || settings.huadengSettings.tavernModeKeepTools)
-            if (memoryToolsRegistered && !memories.isNullOrEmpty()) {
-                add(
-                    UIMessage.system(prompt = buildMemoryPrompt(memories)).copy(isSynthetic = true)
-                )
+            val memoryPrompt = if (memoryToolsRegistered && !memories.isNullOrEmpty()) {
+                buildMemoryPrompt(memories)
+            } else {
+                null
             }
 
             // ── 官方 mes_example：作为示例消息注入（story string 之后、聊天历史之前）──
@@ -773,7 +775,14 @@ class GenerationLoop(
                     block.afterMessageId == null || namedChat.any { it.id == block.afterMessageId }
                 }
                 if (!anchorsValid) anchor.blocks.clear()
-                if (userContext.isNotBlank() && anchor.blocks.lastOrNull()?.text != userContext) {
+                // 记忆不再注册（关记忆/酒馆关工具）时清掉旧记忆块，避免继续注入
+                if (memoryPrompt == null) {
+                    anchor.blocks.removeAll { it.tag == ANCHOR_TAG_MEMORY }
+                }
+                // 去重只看 userContext 块：最后一块可能是记忆块，不能拿它判断是否追加
+                if (userContext.isNotBlank() &&
+                    anchor.blocks.lastOrNull { it.tag == null }?.text != userContext
+                ) {
                     anchor.blocks += UserContextAnchorCache.Block(userContext, namedChat.lastOrNull()?.id)
                     // 块数上限：旧块原位冻结供后续请求命中前缀（每轮丢旧块 = 前缀每轮
                     // 在锚点处分叉，缓存失效）。超限才丢最旧块：RAG 用户块只在日期/
@@ -781,6 +790,17 @@ class GenerationLoop(
                     // 深处分叉，好过每轮分叉
                     while (anchor.blocks.size > MAX_ANCHOR_BLOCKS) {
                         anchor.blocks.removeAt(0)
+                    }
+                }
+                // 记忆块独立追加与上限：记忆被后台整理改写的频率远高于 userContext，
+                // 单独限 2 块，避免冻结的过时记忆块在上下文里越积越多
+                if (memoryPrompt != null &&
+                    anchor.blocks.lastOrNull { it.tag == ANCHOR_TAG_MEMORY }?.text != memoryPrompt
+                ) {
+                    anchor.blocks += UserContextAnchorCache.Block(memoryPrompt, namedChat.lastOrNull()?.id, ANCHOR_TAG_MEMORY)
+                    val memoryBlocks = anchor.blocks.filter { it.tag == ANCHOR_TAG_MEMORY }
+                    if (memoryBlocks.size > MAX_MEMORY_ANCHOR_BLOCKS) {
+                        anchor.blocks.remove(memoryBlocks.first())
                     }
                 }
                 var blockIndex = 0
@@ -802,6 +822,9 @@ class GenerationLoop(
                 }
             } else {
                 addAll(namedChat)
+                if (memoryPrompt != null) {
+                    add(UIMessage.system(prompt = memoryPrompt))
+                }
                 if (userContext.isNotBlank()) {
                     add(UIMessage.system(prompt = userContext))
                 }
@@ -1311,7 +1334,7 @@ private var _lastUserContext: String? = null
 private const val MAX_ANCHOR_BLOCKS = 4
 
 private object UserContextAnchorCache {
-    data class Block(val text: String, val afterMessageId: Uuid?)
+    data class Block(val text: String, val afterMessageId: Uuid?, val tag: String? = null)
 
     class Anchor(val blocks: MutableList<Block> = mutableListOf())
 
@@ -1320,6 +1343,10 @@ private object UserContextAnchorCache {
     fun getOrCreate(conversationId: Uuid): Anchor =
         cache.apply { if (size >= 256) clear() }.getOrPut(conversationId.toString()) { Anchor() }
 }
+
+// 记忆锚点块标记与独立上限
+private const val ANCHOR_TAG_MEMORY = "memory"
+private const val MAX_MEMORY_ANCHOR_BLOCKS = 2
 
 /**
  * Persona AT_DEPTH 按用户轮冻结的注入锚点：
@@ -1337,7 +1364,7 @@ private fun buildUserContext(
 
     // 对标 CC getUserContext: currentDate
     // 提示词缓存：本函数整体注入上下文尾部（generateInternal 的 base buildList 末尾），
-    // 日期（每天变化）不进入前缀区；记忆已改由 buildMemoryPrompt 的 system 消息注入
+    // 日期（每天变化）不进入前缀区；记忆走带 tag 的冻结锚点块（同样不进前缀区）
     contextMap["currentDate"] = "Current date: ${java.time.LocalDate.now()}."
     if (recentChats.isNotBlank()) {
         contextMap["recentChats"] = recentChats.trim()
