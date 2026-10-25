@@ -244,7 +244,7 @@ private fun WelcomeStep(
                                 // 跳不过去就退回给用户一条能走的路，不要静默失败
                                 Toast.makeText(
                                     context,
-                                    stringResource(R.string.onboarding_open_original_failed),
+                                    context.getString(R.string.onboarding_open_original_failed),
                                     Toast.LENGTH_LONG,
                                 ).show()
                             }
@@ -433,6 +433,7 @@ private fun ProviderStep(
     onBack: () -> Unit,
     onDone: () -> Unit,
 ) {
+    val context = LocalContext.current
     val testResult by vm.testResult.collectAsStateSafe()
     var expandedId by remember { mutableStateOf<String?>(null) }
     var apiKey by remember { mutableStateOf("") }
@@ -519,7 +520,7 @@ private fun ProviderStep(
                     expandedId = if (expandedId == CUSTOM_ID) null else CUSTOM_ID
                     apiKey = ""
                 },
-                onSubmit = { vm.saveAndTest(buildCustomProvider(customName, customBaseUrl, apiKey, stringResource(R.string.onboarding_custom_default_name))) },
+                onSubmit = { vm.saveAndTest(buildCustomProvider(customName, customBaseUrl, apiKey, context.getString(R.string.onboarding_custom_default_name))) },
             )
 
             if (expandedId != null && expandedId != CUSTOM_ID) {
