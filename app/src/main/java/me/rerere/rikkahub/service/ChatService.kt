@@ -107,7 +107,6 @@ import me.rerere.rikkahub.data.ai.transformers.Base64ImageToLocalFileTransformer
 import me.rerere.rikkahub.data.ai.tools.createHistoryMessageTool
 import me.rerere.rikkahub.data.ai.tools.createLifeCompanionTools
 import me.rerere.rikkahub.data.ai.tools.createCoupleSpaceTools
-import me.rerere.rikkahub.data.ai.context.isStillApplicableTo
 import me.rerere.rikkahub.data.ai.transformers.DocumentAsPromptTransformer
 import me.rerere.rikkahub.data.ai.transformers.OcrTransformer
 import me.rerere.rikkahub.data.ai.transformers.PlaceholderTransformer
