@@ -94,6 +94,10 @@ internal class HighlightEngine(languages: List<Language>) {
                 // rather than taking the whole page down.
                 if (highlightDebugMode) throw error
                 Result(plainTokens(code), 0.0, top)
+            } catch (_: StackOverflowError) {
+                // 深嵌套语法递归会栈溢出（Error 不被 RuntimeException 接住），直接闪退整页：
+                // 降级为纯文本高亮
+                Result(plainTokens(code), 0.0, top)
             }
         }
 

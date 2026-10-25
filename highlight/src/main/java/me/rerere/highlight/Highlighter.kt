@@ -33,7 +33,9 @@ class CodeHighlighter {
     fun highlight(code: String, language: String): List<HighlightToken> {
         if (code.isEmpty()) return emptyList()
 
-        return engine.highlight(code, language)
+        // 引擎内已兜底常见错误，这里再兜一层 Error：任何高亮失败都降级为纯文本，不闪退
+        return runCatching { engine.highlight(code, language) }
+            .getOrNull()
             ?: listOf(HighlightToken.Plain(code))
     }
 
