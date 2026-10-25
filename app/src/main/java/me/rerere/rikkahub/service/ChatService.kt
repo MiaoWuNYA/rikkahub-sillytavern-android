@@ -92,6 +92,7 @@ import me.rerere.rikkahub.data.ai.tools.createSearchTools
 import me.rerere.rikkahub.data.ai.tools.createWorkspaceTools
 import me.rerere.rikkahub.data.ai.tools.createSkillTools
 import me.rerere.rikkahub.data.ai.tools.createFileTools
+import me.rerere.rikkahub.data.ai.tools.buildMemoryTools
 import me.rerere.rikkahub.data.ai.tools.createShellTools
 import me.rerere.rikkahub.data.ai.tools.createPythonTool
 import me.rerere.rikkahub.data.ai.tools.createDatabaseQueryTool
@@ -2160,9 +2161,10 @@ class ChatService(
     /**
      * 酒馆模式下的最小可用工具面。
      *
-     * 目的：工具仍然能用（模型知道有它、能调），但不注册任何会往上下文里
-     * 塞工作流产物的工具（记忆、技能、任务、MCP、数据库、生活/情侣空间等
-     * 全部不注册），也不发送任何工具系统提示词。
+     * 目的：工具仍然能用（模型知道有它、能调），但不注册会往上下文里塞工作流产物的
+     * 工具（技能、任务、MCP、数据库、生活/情侣空间等一律不注册），也不发送工具系统提示词。
+     * 记忆工具按助手自己的记忆开关保留：关掉它就再也写不进记忆，与「酒馆模式只裁剪
+     * App 工作流」的初衷相悖——用户要的是纯净上下文，不是失去记忆能力。
      *
      * 抽出来是因为此前这段逻辑只存在于 handleMessageComplete 里，
      * 而 generateForAssistant 是完全独立的另一条生成路径（群聊、QUIET、
@@ -2184,6 +2186,11 @@ class ChatService(
         // 插件工具保留：插件是用户主动安装的能力（可携带自己的提示词与工具），
         // 属于用户明确要用的东西，与 App 自带工作流不同，酒馆模式下不裁剪
         addAll(pluginToolProvider.getTools())
+
+        // 记忆：助手开着就有，酒馆模式不额外剥夺
+        if (assistant.enableMemory) {
+            addAll(buildMemoryTools(memoryRepository, assistant.memoryId))
+        }
 
         // 只留与聊天/创作直接相关、且不注入额外上下文的基础工具
         if (assistant.localTools.contains(LocalToolOption.FileTools)) {
