@@ -1688,6 +1688,10 @@ class ChatService(
                         addAll(buildTavernModeTools(assistant, settings, useExternalWebSearch))
                         return@buildList
                     }
+                    // 记忆工具：会和记忆库内容一起进请求，缺了它模型只能说自己没有写记忆的工具
+                    if (assistant.enableMemory) {
+                        addAll(buildMemoryTools(memoryRepository, assistant.memoryId))
+                    }
                     if (assistant.localTools.contains(LocalToolOption.FileTools)) {
                         addAll(createFileTools(context = context))
                     }
@@ -2277,6 +2281,9 @@ class ChatService(
                         )
                     )
                     return@buildList
+                }
+                if (assistant.enableMemory) {
+                    addAll(buildMemoryTools(memoryRepository, assistant.memoryId))
                 }
                 if (assistant.localTools.contains(LocalToolOption.FileTools)) {
                     addAll(createFileTools(context = context))

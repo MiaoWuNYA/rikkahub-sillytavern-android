@@ -307,11 +307,8 @@ class GenerationLoop(
                 clear()
             }
         }
-        // 便于核对酒馆模式的实际工具面：把最终注册的工具名列出来。
-        // 排查「记忆工具为何还在」这类问题时，这一行直接给出答案。
-        if (settings.huadengSettings.enableTavernMode) {
-            Log.i(TAG, "tavern mode tools: ${if (isEmpty()) "(none)" else joinToString(", ") { it.name }}")
-        }
+        // 本轮最终注册的工具名：排查「记忆工具为何不见了」这类问题时，这一行就是答案
+        Log.i(TAG, "tools(${if (settings.huadengSettings.enableTavernMode) "tavern" else "normal"}): ${if (isEmpty()) "(none)" else joinToString(", ") { it.name }}")
     }
     val statusTrackedTools = toolsInternal.map { tool ->
         if (tool.name == "ask_user") tool else tool.copy(
