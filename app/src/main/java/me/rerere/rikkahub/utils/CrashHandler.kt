@@ -1,6 +1,9 @@
 package me.rerere.rikkahub.utils
 
+import android.app.ActivityManager
+import android.app.ApplicationExitInfo
 import android.content.Context
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -26,13 +29,62 @@ object CrashHandler {
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             Log.e(TAG, "Uncaught exception on thread ${thread.name}", throwable)
-            markCrashed(appContext, thread, throwable)
-            Handler(Looper.getMainLooper()).post {
-                Toast.makeText(appContext, l10n("崩溃: ${throwable.javaClass.simpleName}: ${throwable.message?.take(100)}", "Crash: ${throwable.javaClass.simpleName}: ${throwable.message?.take(100)}"), Toast.LENGTH_LONG).show()
+            // StackOverflowError 时崩溃线程的栈已耗尽，handler 里再调任何方法都会二次溢出：
+            // 写日志放到独立线程跑，全部包 runCatching，保证崩溃现场尽量落盘
+            val writer = Thread {
+                runCatching { markCrashed(appContext, thread, throwable) }
+            }.apply { priority = Thread.MAX_PRIORITY }
+            runCatching { writer.start(); writer.join(5000) }
+            runCatching {
+                Handler(Looper.getMainLooper()).post {
+                    runCatching {
+                        Toast.makeText(appContext, l10n("崩溃: ${throwable.javaClass.simpleName}: ${throwable.message?.take(100)}", "Crash: ${throwable.javaClass.simpleName}: ${throwable.message?.take(100)}"), Toast.LENGTH_LONG).show()
+                    }
+                }
             }
-            Thread.sleep(3000)
-            defaultHandler?.uncaughtException(thread, throwable)
+            runCatching { Thread.sleep(3000) }
+            runCatching { defaultHandler?.uncaughtException(thread, throwable) }
         }
+    }
+
+    // 上一次进程退出的系统级记录：Java handler 抓不到的 native crash / ANR / 低内存查杀
+    // 都在这里留下原因与 trace（API 31+ 有 trace）。应用启动时调用。
+    fun recordLastExitInfo(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+        val appContext = context.applicationContext
+        runCatching {
+            val am = appContext.getSystemService(ActivityManager::class.java) ?: return
+            val exits = am.getHistoricalProcessExitReasons(appContext.packageName, 0, 6)
+            val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val seen = prefs.getStringSet(KEY_EXIT_SEEN, emptySet())?.toMutableSet() ?: mutableSetOf()
+            exits.forEach { info ->
+                if (info.reason !in INTERESTING_EXIT_REASONS) return@forEach
+                val key = info.timestamp.toString()
+                if (key in seen) return@forEach
+                writeCrashFile(
+                    appContext,
+                    "exit-$key",
+                    buildString {
+                        appendLine("Exit reason: ${exitReasonName(info.reason)} (${info.reason})")
+                        info.description?.takeIf { it.isNotBlank() }?.let { appendLine("Description: $it") }
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            runCatching {
+                                info.traceInputStream?.bufferedReader()?.use { it.readText() }
+                            }.getOrNull()?.takeIf { it.isNotBlank() }?.let {
+                                appendLine("Trace:")
+                                appendLine(it.take(MAX_STACKTRACE_LENGTH))
+                            }
+                        }
+                    },
+                )
+                seen += key
+            }
+            if (seen.size > 64) {
+                prefs.edit { putStringSet(KEY_EXIT_SEEN, seen.sorted().takeLast(64).toSet()) }
+            } else {
+                prefs.edit { putStringSet(KEY_EXIT_SEEN, seen) }
+            }
+        }.onFailure { Log.w(TAG, "recordLastExitInfo failed", it) }
     }
 
     fun hasCrashed(context: Context): Boolean {
@@ -86,23 +138,21 @@ object CrashHandler {
                 putBoolean(KEY_CRASHED, true)
                 putString(KEY_STACKTRACE, stackTrace)
             }
-        runCatching {
-            writeCrashFile(
-                context,
-                "java-${System.currentTimeMillis()}",
-                buildString {
-                    appendLine("Thread: ${thread.name}")
-                    appendLine("Exception: ${throwable.javaClass.name}: ${throwable.message}")
-                    var cause: Throwable? = throwable.cause
-                    while (cause != null) {
-                        appendLine("Caused by: ${cause.javaClass.name}: ${cause.message}")
-                        cause = cause.cause
-                    }
-                    appendLine()
-                    appendLine(throwable.stackTraceToString())
-                },
-            )
-        }
+        writeCrashFile(
+            context,
+            "java-${System.currentTimeMillis()}",
+            buildString {
+                appendLine("Thread: ${thread.name}")
+                appendLine("Exception: ${throwable.javaClass.name}: ${throwable.message}")
+                var cause: Throwable? = throwable.cause
+                while (cause != null) {
+                    appendLine("Caused by: ${cause.javaClass.name}: ${cause.message}")
+                    cause = cause.cause
+                }
+                appendLine()
+                appendLine(throwable.stackTraceToString())
+            },
+        )
     }
 
     // 崩溃路径上只能同步写；头部带版本/设备信息便于离线排查
@@ -121,5 +171,26 @@ object CrashHandler {
             ?.sortedBy { it.name }
             ?.dropLast(MAX_LOG_FILES)
             ?.forEach { it.delete() }
+    }
+
+    private val INTERESTING_EXIT_REASONS = setOf(
+        ApplicationExitInfo.REASON_SIGNALED,
+        ApplicationExitInfo.REASON_LOW_MEMORY,
+        ApplicationExitInfo.REASON_CRASH,
+        ApplicationExitInfo.REASON_CRASH_NATIVE,
+        ApplicationExitInfo.REASON_ANR,
+        ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE,
+    )
+
+    private const val KEY_EXIT_SEEN = "exit_seen"
+
+    private fun exitReasonName(reason: Int): String = when (reason) {
+        ApplicationExitInfo.REASON_SIGNALED -> "SIGNALED(异常信号)"
+        ApplicationExitInfo.REASON_LOW_MEMORY -> "LOW_MEMORY(低内存查杀)"
+        ApplicationExitInfo.REASON_CRASH -> "CRASH(Java 崩溃)"
+        ApplicationExitInfo.REASON_CRASH_NATIVE -> "CRASH_NATIVE(native 崩溃)"
+        ApplicationExitInfo.REASON_ANR -> "ANR(主线程无响应)"
+        ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE -> "EXCESSIVE_RESOURCE_USAGE(资源滥用查杀)"
+        else -> "UNKNOWN"
     }
 }

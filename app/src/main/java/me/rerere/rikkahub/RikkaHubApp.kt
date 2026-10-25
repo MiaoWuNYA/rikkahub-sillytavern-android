@@ -115,6 +115,8 @@ class RikkaHubApp : Application() {
 
         // install crash handler
         CrashHandler.install(this)
+        // 上一次退出的系统级记录（native crash/ANR/低内存查杀）落进崩溃日志
+        CrashHandler.recordLastExitInfo(this)
         trace("crashhandler done")
 
         // Init QuickJS native library
