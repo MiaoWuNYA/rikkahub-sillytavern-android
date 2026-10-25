@@ -1,3 +1,5 @@
+// 自动上下文压缩已从生成链路移除（见 ChatService.compressConversation，只保留手动压缩）。
+// 这里只留数据模型与序列化，旧会话里的摘要字段仍能正常读写。
 package me.rerere.rikkahub.data.ai.context
 
 import kotlinx.serialization.Serializable

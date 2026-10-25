@@ -146,8 +146,6 @@
   <string name="assistant_page_regex_visual_only">표시 전용 (체크 시 표시에만 적용, 해제 시 표시와 프롬프트 모두 적용)</string>
   <string name="assistant_page_remove">제거</string>
   <string name="assistant_page_remove_background">배경 제거</string>
-  <string name="assistant_page_rolling_context">롤링 컨텍스트 압축</string>
-  <string name="assistant_page_rolling_context_desc">컨텍스트가 임계값을 초과하면 이전 대화를 자동으로 요약하여, 모든 메시지를 보내지 않고도 전체 기록을 응답에 반영합니다(압축 모델 사용)</string>
   <string name="assistant_page_save">저장</string>
   <string name="assistant_page_search_placeholder">캐릭터 카드 검색</string>
   <string name="assistant_page_select_background">배경 이미지 선택</string>
@@ -332,7 +330,6 @@
   <string name="chat_page_no_conversations">대화 없음</string>
   <string name="chat_page_opening_current">현재</string>
   <string name="chat_page_regenerate_title">제목 다시 생성</string>
-  <string name="chat_page_rolling_context_compressing">이전 대화 압축 중…</string>
   <string name="chat_page_save">저장</string>
   <string name="chat_page_scroll_to_bottom">맨 아래로 스크롤</string>
   <string name="chat_page_search_chats">채팅 검색</string>
@@ -2942,8 +2939,6 @@
   <string name="search_picker_off">꺼짐</string>
   <string name="search_picker_status_off">꺼짐</string>
   <string name="search_picker_off_description">모델은 이미 알고 있는 내용만으로 답변하며 웹에 접속하지 않습니다.</string>
-  <string name="chat_page_compress_checkpoint_title">이전 메시지가 요약으로 압축됨</string>
-  <string name="chat_page_compress_checkpoint_hint">이 줄 위의 메시지는 더 이상 모델로 전송되지 않으며, 이 요약이 해당 메시지를 대체합니다. 전체 기록을 다시 보내려면 요약을 삭제하세요.</string>
   <string name="chat_page_compress_blocked_generating">컨텍스트를 압축하기 전에 생성을 중지하세요</string>
   <string name="chat_page_compress_conversation_changed">압축 중에 대화가 변경되었습니다. 다시 시도해 주세요.</string>
   <string name="sketch">스케치</string>

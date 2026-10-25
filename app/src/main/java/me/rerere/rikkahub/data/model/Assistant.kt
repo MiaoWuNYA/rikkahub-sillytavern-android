@@ -115,7 +115,7 @@ data class Assistant(
     val jsTimeout: Int = 15,                            // JavaScript引擎超时(秒)
     val shellTimeout: Int = 60,                         // Shell命令超时(秒)
     val talkativeness: Float = 0.5f,                    // 群聊发言倾向 (0-1)，酒馆对齐
-    val enableAutoCompact: Boolean = true,               // 自动压缩对话历史（token过多时）
+    val enableAutoCompact: Boolean = false,              // 自动压缩已停用：宁可超上限也不改写历史，字段仅为兼容旧数据保留
     val enableAutoMemoryExtract: Boolean = true,          // [新增] 自动从对话提取记忆（独立开关，不依赖 enableMemory）
     val autoMemoryExtractInterval: Int = 5,                // 每 N 轮对话提取一次记忆
     // 跨窗口生活流：同一助手在不同对话间的近期经历共享（SharedPreferenc
