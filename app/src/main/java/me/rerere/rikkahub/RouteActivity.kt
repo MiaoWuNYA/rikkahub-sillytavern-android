@@ -129,6 +129,7 @@ import me.rerere.rikkahub.ui.pages.mediacreation.MediaCreationPage
 import me.rerere.rikkahub.ui.pages.mediacreation.MediaCreationSessionsPage
 import me.rerere.rikkahub.ui.pages.search.SearchPage
 import me.rerere.rikkahub.ui.pages.setting.SettingAboutPage
+import me.rerere.rikkahub.ui.pages.setting.SettingCrashLogPage
 import me.rerere.rikkahub.ui.pages.setting.SettingPreferencesPage
 import me.rerere.rikkahub.ui.pages.setting.SettingPreferencesThemePage
 import me.rerere.rikkahub.ui.pages.setting.SettingPreferencesNotificationPage
@@ -636,6 +637,10 @@ class RouteActivity : ComponentActivity() {
                                 SettingAboutPage()
                             }
 
+                            entry<Screen.SettingCrashLog> {
+                                SettingCrashLogPage(onBack = { if (backStack.size > 1) backStack.removeLastOrNull() })
+                            }
+
                             entry<Screen.SettingSearch> {
                                 SettingSearchPage()
                             }
@@ -945,6 +950,7 @@ private fun Screen.isSettingScreen(): Boolean = when (this) {
     Screen.SettingPreferencesNotification, Screen.SettingPreferencesGeneral,
     Screen.SettingPreferencesUI, Screen.SettingPreferencesNetwork,
     Screen.SettingProvider, Screen.SettingModels, Screen.SettingAbout,
+    Screen.SettingCrashLog,
     Screen.SettingSearch, Screen.SettingSpeech, Screen.SettingTtsPlayback,
     Screen.SettingMedia, Screen.SettingMcp, Screen.SettingDonate,
     Screen.SettingFiles, Screen.SettingWeb, Screen.SettingTavern,
@@ -1075,6 +1081,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingAbout : Screen
+
+    @Serializable
+    data object SettingCrashLog : Screen
 
     @Serializable
     data object SettingSearch : Screen

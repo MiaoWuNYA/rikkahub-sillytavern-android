@@ -59,6 +59,7 @@ import androidx.core.content.ContextCompat
 import androidx.graphics.shapes.Morph
 import kotlin.math.roundToInt
 import me.rerere.hugeicons.stroke.Book01
+import me.rerere.hugeicons.stroke.Alert02
 import me.rerere.hugeicons.stroke.InLove
 import android.content.Intent
 import android.content.ActivityNotFoundException
@@ -238,6 +239,12 @@ fun SettingAboutPage() {
                                 Text("${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL} / Android ${android.os.Build.VERSION.RELEASE} / SDK ${android.os.Build.VERSION.SDK_INT}")
                             },
                             headlineContent = { Text(stringResource(R.string.about_page_system)) },
+                        )
+                        item(
+                            onClick = { navController.navigate(Screen.SettingCrashLog) },
+                            leadingContent = { CardGroupIcon(HugeIcons.Alert02, containerColor = containerColor, contentColor = contentColor) },
+                            supportingContent = { Text(me.rerere.rikkahub.utils.l10n("查看闪退现场日志", "Inspect crash reports")) },
+                            headlineContent = { Text(me.rerere.rikkahub.utils.l10n("崩溃日志", "Crash Logs")) },
                         )
                     }
                 }
