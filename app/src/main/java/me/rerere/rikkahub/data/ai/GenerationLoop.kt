@@ -134,7 +134,6 @@ class GenerationLoop(
         workspaceCwd: String? = null,
         generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
         maxTokensOverride: Int? = null,
-        // 上下文滚动压缩：摘要内容 + 请求窗口起始索引（该索引之前的消息由摘要替代）
     ): Flow<GenerationChunk> = flow {
         val provider = model.findProvider(settings.providers) ?: error("Provider not found")
         val providerImpl = providerManager.getProviderByType(provider)
