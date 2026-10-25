@@ -279,6 +279,11 @@ android {
                     storePassword = storePasswordValue
                     keyAlias = keyAliasValue
                     keyPassword = keyPasswordValue
+                    // v2 覆盖 minSdk 26 起的全部设备；v3 让证书可轮换（Android 9+），
+                    // 也便于 Play 后续换密钥而不断升级链。v1 在本项目最低版本上无意义，
+                    // v4 只服务于 adb 增量安装，发布包不需要额外 .idsig。
+                    enableV2Signing = true
+                    enableV3Signing = true
                 }
             }
         }
