@@ -110,6 +110,7 @@ import me.rerere.rikkahub.ui.modifier.onClick
 import me.rerere.rikkahub.ui.theme.LocalMaterialMode
 import me.rerere.rikkahub.ui.theme.hasMaterialBorder
 import me.rerere.rikkahub.ui.theme.isGlass
+import me.rerere.rikkahub.ui.theme.liquidGlassHighlight
 import me.rerere.rikkahub.utils.navigateToChatPage
 import me.rerere.rikkahub.utils.toDp
 import me.rerere.ui.components.Tooltip
@@ -223,6 +224,8 @@ fun ChatDrawerContent(
                 )
             } else Modifier
         )
+        // 玻璃材质：抽屉本体叠玻璃高光，让圆角面板的材质感出来
+        .then(if (materialMode.hasMaterialBorder) Modifier.liquidGlassHighlight() else Modifier)
 
     // 矮屏（如手表、横屏手机）上顶部固定会把会话列表挤没，改为跟随列表一起滚动
     val windowHeight = LocalWindowInfo.current.containerDpSize.height

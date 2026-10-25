@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DrawerDefaults
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
@@ -100,6 +101,8 @@ import kotlinx.serialization.json.put
 import me.rerere.rikkahub.data.datastore.getAssistantById
 import me.rerere.rikkahub.data.model.getAssistantOf
 import me.rerere.rikkahub.ui.theme.CustomColors
+import me.rerere.rikkahub.ui.theme.LocalMaterialMode
+import me.rerere.rikkahub.ui.theme.hasMaterialBorder
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.datastore.getSelectedASRProvider
@@ -181,6 +184,10 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
     }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    // 玻璃/半透明材质下抽屉底色是半透明的，默认黑色 scrim 会从底下透出来毁掉玻璃感
+    val drawerScrimColor =
+        if (LocalMaterialMode.current.hasMaterialBorder) Color.Transparent
+        else DrawerDefaults.scrimColor
     val softwareKeyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     // 界面 WebView 化时消息区自成一个滚动网页，抽屉手势必须让位（见下面的 gesturesEnabled）
@@ -353,6 +360,7 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
                 // WebView 模式下消息区是一个整体滚动的网页：抽屉的边缘手势会把
                 // 纵向滑动判定成开抽屉，表现就是「列表滑不动」。抽屉仍可用顶栏按钮开。
                 gesturesEnabled = !webViewChat || drawerState.isOpen,
+                scrimColor = drawerScrimColor,
                 drawerContent = {
                     ChatDrawerContent(
                         navController = navController,
