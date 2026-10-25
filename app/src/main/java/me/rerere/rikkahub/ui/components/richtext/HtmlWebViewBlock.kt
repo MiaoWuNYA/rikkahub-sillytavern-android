@@ -297,6 +297,11 @@ fun HtmlWebViewBlock(
                                     detail: RenderProcessGoneDetail,
                                 ): Boolean {
                                     Log.w(TAG, "card renderer gone (crashed=${detail.didCrash()}), rebuilding")
+                                    me.rerere.rikkahub.utils.CrashHandler.logRendererCrash(
+                                        view.context.applicationContext,
+                                        "HtmlWebViewBlock",
+                                        "renderer crashed=${detail.didCrash()}",
+                                    )
                                     rendererEpoch += 1
                                     return true
                                 }
