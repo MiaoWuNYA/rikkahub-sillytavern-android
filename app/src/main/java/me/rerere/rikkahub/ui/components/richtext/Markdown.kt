@@ -95,6 +95,13 @@ private const val QUOTE_PATTERN =
     "\"(.+?)\"|\u201C(.+?)\u201D|\u00AB(.+?)\u00BB|\uFF02(.+?)\uFF02"
 private val TEXT_COLOR_REGEX = Regex("$BRACKET_PATTERN|$QUOTE_PATTERN")
 
+// LaTeX 公式区域：里面的 {} 是公式语法（\begin{cases}、\lim_{x}），染色注入 span 会破坏 Math 渲染；
+// 行内 $..$ 也允许跨行：cases 等环境常以单 $ 包裹跨多行，漏匹配公式就会被染色破坏
+private val LATEX_SPAN_REGEX = Regex(
+    """\$\$.+?\$\$|\$.+?\$|\\\(.+?\\\)|\\\[.+?\\\]""",
+    RegexOption.DOT_MATCHES_ALL,
+)
+
 // 尚未带 open 属性的 <details> 标签
 private val DETAILS_OPEN_REGEX = Regex("<details\\b(?!\\s+open\\b)")
 
@@ -274,13 +281,16 @@ fun MarkdownBlock(
         settings.quoteColor.ifBlank { if (darkMode) "#E18A24" else "#C7731E" }
     } else null
     val codeBlocks = CODE_BLOCK_REGEX.findAll(content).map { it.range }.toList()
+    val latexSpans = LATEX_SPAN_REGEX.findAll(content).map { it.range }.toList()
     val coloredContent = if (localQuoteColor == null) {
         content
     } else {
         val bracketColor = settings.bracketColor.ifBlank { if (darkMode) "#7EAFC4" else "#5B8DEF" }
         TEXT_COLOR_REGEX.replace(content) { match ->
             val opener = match.value.firstOrNull()
-            if (opener == null || codeBlocks.any { match.range.first in it }) {
+            if (opener == null || codeBlocks.any { match.range.first in it } ||
+                latexSpans.any { match.range.first in it && match.range.last <= it.last }
+            ) {
                 match.value
             } else {
                 val color = if (opener in BRACKET_OPENERS) bracketColor else localQuoteColor
