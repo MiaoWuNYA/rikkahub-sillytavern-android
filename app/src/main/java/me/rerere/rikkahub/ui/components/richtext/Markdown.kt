@@ -105,6 +105,10 @@ private val LATEX_SPAN_REGEX = Regex(
 // 解析器只认 $ 定界符，\(..\)/\[..\] 需归一化，否则整段按普通文本显示
 private val LATEX_PAREN_DELIM_REGEX = Regex("""\\\((.+?)\\\)|\\\[(.+?)\\\]""", RegexOption.DOT_MATCHES_ALL)
 
+private val LATEX_RAW_NEWLINES = Regex("""[ \t]*\n+[ \t]*""")
+
+private fun String.collapseLatexNewlines(): String = replace(LATEX_RAW_NEWLINES, " ").trim()
+
 // 尚未带 open 属性的 <details> 标签
 private val DETAILS_OPEN_REGEX = Regex("<details\\b(?!\\s+open\\b)")
 
@@ -160,13 +164,14 @@ internal fun restoreEscapedInlineTags(content: String): String {
 }
 
 internal fun preProcessMarkdown(content: String): String {
-    // \(..\)/\[..\] → $..$/$$..$$：数学提取器只认 $ 定界符；代码块内保持原样
+    // \(..\)/\[..\] → $..$/$$..$$：数学提取器只认 $ 定界符；代码块内保持原样。
+    // 公式内的真实换行折叠为空格（LaTeX 换行靠 \\）：多行 cases 折叠成单行后提取器才认
     val codeRanges = CODE_BLOCK_REGEX.findAll(content).map { it.range }.toList()
     val normalized = if ("\\(" in content || "\\[" in content) {
         LATEX_PAREN_DELIM_REGEX.replace(content) { m ->
             if (codeRanges.any { m.range.first in it }) m.value
-            else if (m.groupValues[1].isNotEmpty()) "$${m.groupValues[1]}$"
-            else "$$${m.groupValues[2]}$$"
+            else if (m.groupValues[1].isNotEmpty()) "$${m.groupValues[1].collapseLatexNewlines()}$"
+            else "$$${m.groupValues[2].collapseLatexNewlines()}$$"
         }
     } else {
         content
