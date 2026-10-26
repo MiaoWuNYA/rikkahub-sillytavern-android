@@ -102,6 +102,9 @@ private val LATEX_SPAN_REGEX = Regex(
     RegexOption.DOT_MATCHES_ALL,
 )
 
+// 解析器只认 $ 定界符，\(..\)/\[..\] 需归一化，否则整段按普通文本显示
+private val LATEX_PAREN_DELIM_REGEX = Regex("""\\\((.+?)\\\)|\\\[(.+?)\\\]""", RegexOption.DOT_MATCHES_ALL)
+
 // 尚未带 open 属性的 <details> 标签
 private val DETAILS_OPEN_REGEX = Regex("<details\\b(?!\\s+open\\b)")
 
@@ -157,7 +160,18 @@ internal fun restoreEscapedInlineTags(content: String): String {
 }
 
 internal fun preProcessMarkdown(content: String): String {
-    val escaped = restoreEscapedInlineTags(escapeGuideSequence(convertStatusBlocksToTables(content)))
+    // \(..\)/\[..\] → $..$/$$..$$：数学提取器只认 $ 定界符；代码块内保持原样
+    val codeRanges = CODE_BLOCK_REGEX.findAll(content).map { it.range }.toList()
+    val normalized = if ("\\(" in content || "\\[" in content) {
+        LATEX_PAREN_DELIM_REGEX.replace(content) { m ->
+            if (codeRanges.any { m.range.first in it }) m.value
+            else if (m.groupValues[1].isNotEmpty()) "$${m.groupValues[1]}$"
+            else "$$${m.groupValues[2]}$$"
+        }
+    } else {
+        content
+    }
+    val escaped = restoreEscapedInlineTags(escapeGuideSequence(convertStatusBlocksToTables(normalized)))
     // 酒馆卡常拿 <details> 装工作记忆/状态栏，没有 open 属性时默认展开
     val withOpenDetails = DETAILS_OPEN_REGEX.replace(escaped) { "<details open${it.value.removePrefix("<details")}" }
 
