@@ -139,10 +139,16 @@ private val displayBracketRegex = Regex("""^\\\[(.*?)\\\]""", RegexOption.DOT_MA
 
 // JLatexMath 的 \\ 不认识后面的行距参数，[4pt] 会被当成正文画出来，这里去掉行距只保留换行
 private val lineBreakSpacingRegex =
-    Regex("""\\\\\s*\[\s*-?(?:\d+\.?\d*|\.\d+)\s*(?:pt|em|ex|mm|cm|in|bp|pc|dd|cc|sp|mu)\s*]""")
+    Regex("""\\\\\s*\[\s*-?(?:\d+\.?\d*|\.\d+)\s*(pt|em|ex|mm|cm|in|bp|pc|dd|cc|sp|mu)\s*]""")
+
+// 多行进来的公式（块级 $$ 提取保留换行）在 cases/array 环境里 JLatexMath 解析失败，
+// 折叠成空格（LaTeX 的真实换行本就是空白语义，行分隔靠 \\）
+private val rawNewlineRegex = Regex("""[ \t]*\n+[ \t]*""")
 
 private fun processLatex(latex: String): String {
-    val trimmed = latex.trim().replace(lineBreakSpacingRegex) { """\\""" }
+    val trimmed = latex.trim()
+        .replace(lineBreakSpacingRegex) { """\\""" }
+        .replace(rawNewlineRegex, " ")
     return when {
         displayDollarRegex.matches(trimmed) ->
             displayDollarRegex.find(trimmed)?.groupValues?.get(1)?.trim() ?: trimmed
