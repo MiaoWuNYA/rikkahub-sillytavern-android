@@ -8,6 +8,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -139,6 +140,7 @@ fun ChatMessage(
     onShare: () -> Unit,
     onDelete: () -> Unit,
     onUpdate: (MessageNode) -> Unit,
+    onRequestMultiSelect: (() -> Unit)? = null,
     isFavorite: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
     onTranslate: ((UIMessage, Locale) -> Unit)? = null,
@@ -166,8 +168,27 @@ fun ChatMessage(
     val navController = LocalNavController.current
     val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
+    val multiSelectInteraction = remember { MutableInteractionSource() }
+    val hapticFeedback = LocalHapticFeedback.current
+    val requestMultiSelect = onRequestMultiSelect
     Column(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (requestMultiSelect != null) {
+                    Modifier.combinedClickable(
+                        interactionSource = multiSelectInteraction,
+                        indication = null,
+                        onClick = {},
+                        onLongClick = {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                            requestMultiSelect()
+                        },
+                    )
+                } else {
+                    Modifier
+                }
+            ),
         horizontalAlignment = if (message.role == MessageRole.USER) Alignment.End else Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
@@ -271,6 +292,7 @@ fun ChatMessage(
             onShare = onShare,
             onFork = onFork,
             model = model,
+            onMultiSelect = onRequestMultiSelect,
             onSelectAndCopy = {
                 showSelectCopySheet = true
             },

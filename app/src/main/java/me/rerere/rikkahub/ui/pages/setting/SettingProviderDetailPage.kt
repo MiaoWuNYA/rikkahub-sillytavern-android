@@ -146,6 +146,7 @@ import me.rerere.rikkahub.utils.UiState
 import me.rerere.rikkahub.utils.formatNumber
 import me.rerere.rikkahub.utils.plus
 import me.rerere.ui.components.RikkaConfirmDialog
+import me.rerere.ui.components.Tooltip
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import sh.calvin.reorderable.ReorderableItem
@@ -483,17 +484,27 @@ private fun ModelList(
     onUpdateProvider: (ProviderSetting) -> Unit
 ) {
     val providerManager = koinInject<ProviderManager>()
-    val modelList by produceState(emptyList(), providerSetting) {
-        runCatching {
+    val remoteModels by produceState<Result<List<Model>>>(
+        Result.failure(IllegalStateException("models not loaded")),
+        providerSetting
+    ) {
+        value = runCatching {
             println("loading models...")
-            value = providerManager.getProviderByType(providerSetting)
+            providerManager.getProviderByType(providerSetting)
                 .listModels(providerSetting)
                 .sortedBy { it.modelId }
-                .toList()
-        }.onFailure {
-            it.printStackTrace()
+        }.onFailure { it.printStackTrace() }
+    }
+    val availableModels = remoteModels.getOrNull().orEmpty()
+    // 拉不到云端列表时不做比较，免得把本地模型全当失效
+    val staleModels = remember(providerSetting.models, availableModels, remoteModels) {
+        if (availableModels.isEmpty()) {
+            emptyList()
+        } else {
+            providerSetting.models.filter { model -> availableModels.none { it.modelId == model.modelId } }
         }
     }
+    var showPruneDialog by remember { mutableStateOf(false) }
     var expanded by rememberSaveable { mutableStateOf(true) }
     val lazyListState = rememberLazyListState()
     val currentSetting by rememberUpdatedState(providerSetting)
@@ -551,9 +562,27 @@ private fun ModelList(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .offset(y = -ScreenOffset),
+            leadingContent = {
+                if (staleModels.isNotEmpty()) {
+                    Tooltip(
+                        tooltip = {
+                            Text(stringResource(R.string.setting_provider_page_prune_models, staleModels.size))
+                        }
+                    ) {
+                        IconButton(
+                            onClick = { showPruneDialog = true },
+                        ) {
+                            Icon(
+                                HugeIcons.Delete01,
+                                stringResource(R.string.setting_provider_page_prune_models, staleModels.size),
+                            )
+                        }
+                    }
+                }
+            },
         ) {
             AddModelButton(
-                models = modelList,
+                models = availableModels,
                 selectedModels = providerSetting.models,
                 onAddModel = {
                     onUpdateProvider(providerSetting.addModel(it))
@@ -566,6 +595,27 @@ private fun ModelList(
                 onUpdateProvider = onUpdateProvider
             )
         }
+    }
+
+    RikkaConfirmDialog(
+        show = showPruneDialog,
+        title = stringResource(R.string.setting_provider_page_prune_models, staleModels.size),
+        confirmText = stringResource(R.string.delete),
+        dismissText = stringResource(R.string.cancel),
+        onConfirm = {
+            showPruneDialog = false
+            val staleIds = staleModels.mapTo(mutableSetOf()) { it.id }
+            onUpdateProvider(
+                providerSetting.copyProvider(
+                    models = providerSetting.models.filterNot { it.id in staleIds }
+                )
+            )
+        },
+        onDismiss = { showPruneDialog = false },
+    ) {
+        val preview = staleModels.take(8).joinToString { it.displayName } +
+            if (staleModels.size > 8) "…" else ""
+        Text(stringResource(R.string.setting_provider_page_prune_models_confirm, preview))
     }
 }
 

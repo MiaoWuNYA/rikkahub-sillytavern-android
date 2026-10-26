@@ -47,6 +47,7 @@ import me.rerere.ai.provider.Model
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.CheckmarkSquare02
 import me.rerere.hugeicons.stroke.Copy01
 import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.Edit01
@@ -291,6 +292,7 @@ fun ChatMessageActionsSheet(
     isFavorite: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
     onWebViewPreview: () -> Unit,
+    onMultiSelect: (() -> Unit)? = null,
     onDismissRequest: () -> Unit
 ) {
     ModalBottomSheet(
@@ -301,6 +303,9 @@ fun ChatMessageActionsSheet(
         val hasTextContent = message.parts.filterIsInstance<UIMessagePart.Text>()
             .any { it.text.isNotBlank() }
         val actions = buildList {
+            if (onMultiSelect != null) {
+                add(MessageSheetAction(HugeIcons.CheckmarkSquare02, stringResource(R.string.chat_message_multi_select), onClick = onMultiSelect))
+            }
             add(MessageSheetAction(HugeIcons.TextSelection, stringResource(R.string.select_and_copy), onClick = onSelectAndCopy))
             if (hasTextContent) {
                 add(MessageSheetAction(HugeIcons.WebDesign01, stringResource(R.string.render_with_webview), onClick = onWebViewPreview))

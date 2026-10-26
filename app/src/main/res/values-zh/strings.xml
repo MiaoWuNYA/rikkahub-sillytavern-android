@@ -279,6 +279,9 @@
   <string name="chat_input_unsupported_file_type">不支持的文件类型：%s</string>
   <string name="chat_input_file_read_failed">文件读取失败：%s</string>
   <string name="chat_message_add_favorite">添加收藏</string>
+  <string name="chat_message_delete_selected">删除 %1$d 条消息</string>
+  <string name="chat_message_delete_selected_confirm">确定删除选中的 %1$d 条消息？删除后无法恢复。</string>
+  <string name="chat_message_multi_select">多选</string>
   <string name="chat_message_remove_favorite">取消收藏</string>
   <string name="chat_message_tool_approve">批准</string>
   <string name="chat_message_tool_ask_questions">询问 %d 个问题</string>
@@ -2106,6 +2109,8 @@
   <string name="setting_provider_page_models">模型</string>
   <string name="setting_provider_page_name">名称</string>
   <string name="setting_provider_page_no_models">暂无模型</string>
+  <string name="setting_provider_page_prune_models">清除 %1$d 个失效模型</string>
+  <string name="setting_provider_page_prune_models_confirm">供应商最新模型库里已经没有这些模型，保留也用不了：%1$s</string>
   <string name="setting_provider_page_no_permission">没有权限</string>
   <string name="setting_provider_page_no_qr_found">未找到有效的二维码</string>
   <string name="setting_provider_page_output_modality">输出模态</string>
