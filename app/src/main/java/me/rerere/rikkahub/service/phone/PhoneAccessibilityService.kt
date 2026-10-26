@@ -10,6 +10,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
+import android.accessibilityservice.AccessibilityServiceInfo
 import androidx.core.content.ContextCompat
 
 /**
@@ -30,6 +31,11 @@ class PhoneAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        // 不显式请求按键过滤，onKeyEvent 永远收不到电源键，辅层急停形同虚设
+        serviceInfo?.let { info ->
+            info.flags = info.flags or AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS
+            serviceInfo = info
+        }
         PhoneControlHub.attach(this)
         floatingBar = PhoneFloatingBar(
             service = this,
