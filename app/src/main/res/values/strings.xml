@@ -3551,4 +3551,20 @@
   <string name="setting_model_page_memory_model">Memory Consolidation Model</string>
   <string name="setting_model_page_memory_model_desc">Model used to organize conversations into long-term memory in the background; uses the fast model when not set</string>
   <string name="setting_model_page_memory_model_follow_fast">Same as fast model</string>
+  <string name="local_tool_phone_control_title">Phone Control</string>
+  <string name="local_tool_phone_control_desc">Read what is on screen and tap, type or scroll in other apps through the accessibility service</string>
+  <string name="local_tool_phone_control_permission_required">Turn on the Phone Control accessibility service first</string>
+  <string name="phone_control_accessibility_label">Phone Control</string>
+  <string name="phone_control_accessibility_summary">Let the assistant read the screen and tap for you</string>
+  <string name="phone_control_accessibility_desc">Reads the text on screen and performs taps, typing and scrolling so the assistant can finish tasks in other apps. Screen text is sent to the model you configured; passwords are always masked. Screen off pauses the task and never resumes by itself.</string>
+  <string name="phone_control_notification_channel">Phone control</string>
+  <string name="phone_control_notification_running">Phone task · step %1$d/%2$d</string>
+  <string name="phone_control_notification_idle">Running</string>
+  <string name="phone_control_notification_paused">Paused · tap resume</string>
+  <string name="phone_control_notification_paused_desc">Step %1$d/%2$d, screen off pauses the task</string>
+  <string name="phone_control_notification_done">Phone task finished</string>
+  <string name="phone_control_notification_done_desc">%1$d steps</string>
+  <string name="phone_control_pause">Pause</string>
+  <string name="phone_control_resume">Resume</string>
+  <string name="phone_control_stop">Stop</string>
 </resources>
