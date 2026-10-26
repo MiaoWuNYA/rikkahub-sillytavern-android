@@ -331,6 +331,13 @@ class ChatVM(
         }
     }
 
+    fun deleteMessages(messages: List<UIMessage>) {
+        if (messages.isEmpty()) return
+        viewModelScope.launch {
+            chatService.deleteMessages(_conversationId, messages.map { it.id })
+        }
+    }
+
     fun showDeleteBlockedWhileGeneratingError() {
         chatService.addError(
             error = IllegalStateException(context.getString(R.string.chat_delete_while_generating)),

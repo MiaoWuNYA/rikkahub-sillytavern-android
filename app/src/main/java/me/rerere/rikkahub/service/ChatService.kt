@@ -3049,6 +3049,20 @@ class ChatService(
         deleteMessage(conversationId, message.id, failIfMissing = false)
     }
 
+    suspend fun deleteMessages(
+        conversationId: Uuid,
+        messageIds: Collection<Uuid>,
+    ) {
+        if (messageIds.isEmpty()) return
+        val currentConversation = getConversationFlow(conversationId).value
+        // 一次落盘，避免逐条保存产生中间态
+        val updatedConversation = messageIds.fold(currentConversation) { conversation, id ->
+            buildConversationAfterMessageDelete(conversation, id) ?: conversation
+        }
+        if (updatedConversation == currentConversation) return
+        saveConversation(conversationId, updatedConversation, allowShrink = true)
+    }
+
     private fun buildConversationAfterMessageDelete(
         conversation: Conversation,
         messageId: Uuid,

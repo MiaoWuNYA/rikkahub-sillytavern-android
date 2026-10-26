@@ -279,6 +279,9 @@
   <string name="chat_input_unsupported_file_type">Unsupported file type: %s</string>
   <string name="chat_input_file_read_failed">Failed to read file: %s</string>
   <string name="chat_message_add_favorite">Add Favorite</string>
+  <string name="chat_message_delete_selected">Delete %1$d messages</string>
+  <string name="chat_message_delete_selected_confirm">Delete the %1$d selected messages? This cannot be undone.</string>
+  <string name="chat_message_multi_select">Multi-select</string>
   <string name="chat_message_remove_favorite">Remove Favorite</string>
   <string name="chat_message_tool_approve">Approve</string>
   <string name="chat_message_tool_ask_questions">Ask %d questions</string>
@@ -2141,6 +2144,8 @@
   <string name="setting_provider_page_models">Models</string>
   <string name="setting_provider_page_name">Name</string>
   <string name="setting_provider_page_no_models">No models</string>
+  <string name="setting_provider_page_prune_models">Remove %1$d unavailable models</string>
+  <string name="setting_provider_page_prune_models_confirm">The provider no longer lists these models, so they cannot be used: %1$s</string>
   <string name="setting_provider_page_no_permission">No permission</string>
   <string name="setting_provider_page_no_qr_found">No valid QR code found</string>
   <string name="setting_provider_page_output_modality">Output Modality</string>

@@ -9,6 +9,7 @@ import me.rerere.hugeicons.stroke.ArrowUpDouble
 import me.rerere.hugeicons.stroke.CursorPointer01
 import me.rerere.hugeicons.stroke.Search01
 import me.rerere.hugeicons.stroke.Cancel01
+import me.rerere.hugeicons.stroke.Delete01
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -22,6 +23,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import kotlinx.coroutines.flow.first
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
@@ -57,6 +59,7 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -117,6 +120,7 @@ import me.rerere.rikkahub.ui.hooks.ImeLazyListAutoScroller
 import me.rerere.rikkahub.ui.theme.ChatFontProvider
 import me.rerere.rikkahub.utils.plus
 import me.rerere.ui.components.ListSelectableItem
+import me.rerere.ui.components.RikkaConfirmDialog
 import me.rerere.ui.components.Tooltip
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
@@ -148,6 +152,7 @@ fun ChatList(
     onEdit: (UIMessage) -> Unit = {},
     onForkMessage: (UIMessage) -> Unit = {},
     onDelete: (UIMessage) -> Unit = {},
+    onDeleteMessages: (List<UIMessage>) -> Unit = {},
     onUpdateMessage: (MessageNode) -> Unit = {},
     onClickSuggestion: (String) -> Unit = {},
     onTranslate: ((UIMessage, java.util.Locale) -> Unit)? = null,
@@ -340,6 +345,7 @@ fun ChatList(
                 onEdit = onEdit,
                 onForkMessage = onForkMessage,
                 onDelete = onDelete,
+                onDeleteMessages = onDeleteMessages,
                 onUpdateMessage = onUpdateMessage,
                 onClickSuggestion = onClickSuggestion,
                 onTranslate = onTranslate,
@@ -408,6 +414,7 @@ private fun ChatListNormal(
     onEdit: (UIMessage) -> Unit,
     onForkMessage: (UIMessage) -> Unit,
     onDelete: (UIMessage) -> Unit,
+    onDeleteMessages: (List<UIMessage>) -> Unit,
     onUpdateMessage: (MessageNode) -> Unit,
     onClickSuggestion: (String) -> Unit,
     onTranslate: ((UIMessage, java.util.Locale) -> Unit)?,
@@ -458,6 +465,10 @@ private fun ChatListNormal(
     val selectedItems = remember { mutableStateListOf<Uuid>() }
     var selecting by remember { mutableStateOf(false) }
     var showExportSheet by remember { mutableStateOf(false) }
+    var showDeleteSelectedDialog by remember { mutableStateOf(false) }
+    val toggleSelected = { id: Uuid ->
+        if (!selectedItems.contains(id)) selectedItems.add(id) else selectedItems.remove(id)
+    }
 
     // 自动跟随键盘滚动
     ImeLazyListAutoScroller(lazyListState = state)
@@ -555,63 +566,75 @@ private fun ChatListNormal(
                 Column {
                     ListSelectableItem(
                         key = node.id,
-                        onSelectChange = {
-                            if (!selectedItems.contains(node.id)) {
-                                selectedItems.add(node.id)
-                            } else {
-                                selectedItems.remove(node.id)
-                            }
-                        },
+                        onSelectChange = { toggleSelected(node.id) },
                         selectedKeys = selectedItems,
                         enabled = selecting,
                     ) {
-                        ChatMessage(
-                            node = node,
-                            model = node.currentMessage.modelId?.let(modelById::get)
-                                ?: node.currentMessage.snapshotModel(),
-                            assistant = assistant,
-                            loading = loading && index == lastMessageIndex,
-                            // 官方深度语义：最新一条为 0，向前递增
-                            messageDepth = lastMessageIndex - index,
-                            onRegenerate = {
-                                onRegenerate(node.currentMessage)
-                            },
-                            onImpersonate = onImpersonate?.let { { it(node.currentMessage) } },
-                            onEdit = {
-                                onEdit(node.currentMessage)
-                            },
-                            onFork = {
-                                onForkMessage(node.currentMessage)
-                            },
-                            onDelete = {
-                                onDelete(node.currentMessage)
-                            },
-                            onShare = {
-                                selecting = true  // 使用 CoroutineScope 延迟状态更新
-                                selectedItems.clear()
-                                selectedItems.addAll(conversation.messageNodes.map { it.id }
-                                    .subList(0, conversation.messageNodes.indexOf(node) + 1))
-                            },
-                            onUpdate = {
-                                onUpdateMessage(it)
-                            },
-                            isFavorite = node.isFavorite,
-                            onToggleFavorite = {
-                                onToggleFavorite?.invoke(node)
-                            },
-                            onTranslate = onTranslate,
-                            onClearTranslation = onClearTranslation,
-                            onToolApproval = onToolApproval,
-                            onToolAnswer = onToolAnswer,
-                            lastMessage = index == lastMessageIndex,
-                            // 每条消息带自己的楼层序号与 MVU 快照：
-                            // 状态栏按楼渲染，旧楼旧状态、新楼新状态
-                            cardHost = cardHost?.copy(
-                                nodeIndex = index,
-                                existingMvu = node.currentMessage.mvuData,
-                            ),
-                            cardMessagesJson = cardMessagesJson,
-                        )
+                        Box {
+                            ChatMessage(
+                                node = node,
+                                model = node.currentMessage.modelId?.let(modelById::get)
+                                    ?: node.currentMessage.snapshotModel(),
+                                assistant = assistant,
+                                loading = loading && index == lastMessageIndex,
+                                // 官方深度语义：最新一条为 0，向前递增
+                                messageDepth = lastMessageIndex - index,
+                                onRegenerate = {
+                                    onRegenerate(node.currentMessage)
+                                },
+                                onImpersonate = onImpersonate?.let { { it(node.currentMessage) } },
+                                onEdit = {
+                                    onEdit(node.currentMessage)
+                                },
+                                onFork = {
+                                    onForkMessage(node.currentMessage)
+                                },
+                                onDelete = {
+                                    onDelete(node.currentMessage)
+                                },
+                                onShare = {
+                                    selecting = true  // 使用 CoroutineScope 延迟状态更新
+                                    selectedItems.clear()
+                                    selectedItems.addAll(conversation.messageNodes.map { it.id }
+                                        .subList(0, conversation.messageNodes.indexOf(node) + 1))
+                                },
+                                onRequestMultiSelect = {
+                                    selecting = true
+                                    selectedItems.clear()
+                                    selectedItems.add(node.id)
+                                },
+                                onUpdate = {
+                                    onUpdateMessage(it)
+                                },
+                                isFavorite = node.isFavorite,
+                                onToggleFavorite = {
+                                    onToggleFavorite?.invoke(node)
+                                },
+                                onTranslate = onTranslate,
+                                onClearTranslation = onClearTranslation,
+                                onToolApproval = onToolApproval,
+                                onToolAnswer = onToolAnswer,
+                                lastMessage = index == lastMessageIndex,
+                                // 每条消息带自己的楼层序号与 MVU 快照：
+                                // 状态栏按楼渲染，旧楼旧状态、新楼新状态
+                                cardHost = cardHost?.copy(
+                                    nodeIndex = index,
+                                    existingMvu = node.currentMessage.mvuData,
+                                ),
+                                cardMessagesJson = cardMessagesJson,
+                            )
+                            // 多选时整条消息可点选，避免误触里面正文与按钮
+                            if (selecting) {
+                                Box(
+                                    modifier = Modifier
+                                        .matchParentSize()
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null,
+                                        ) { toggleSelected(node.id) },
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -738,7 +761,46 @@ private fun ChatListNormal(
                             Icon(HugeIcons.Tick01, null)
                         }
                     }
+                    if (!loading) {
+                        Tooltip(
+                            tooltip = {
+                                Text(stringResource(R.string.delete))
+                            }
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    showDeleteSelectedDialog = true
+                                },
+                                enabled = selectedItems.isNotEmpty(),
+                                colors = IconButtonDefaults.iconButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error,
+                                ),
+                            ) {
+                                Icon(HugeIcons.Delete01, null)
+                            }
+                        }
+                    }
                 }
+            }
+
+            // 批量删除确认
+            RikkaConfirmDialog(
+                show = showDeleteSelectedDialog,
+                title = stringResource(R.string.chat_message_delete_selected, selectedItems.size),
+                confirmText = stringResource(R.string.delete),
+                dismissText = stringResource(R.string.cancel),
+                onConfirm = {
+                    showDeleteSelectedDialog = false
+                    val messages = conversation.messageNodes
+                        .filter { it.id in selectedItems }
+                        .map { it.currentMessage }
+                    selecting = false
+                    selectedItems.clear()
+                    onDeleteMessages(messages)
+                },
+                onDismiss = { showDeleteSelectedDialog = false },
+            ) {
+                Text(stringResource(R.string.chat_message_delete_selected_confirm, selectedItems.size))
             }
 
             // 导出对话框
