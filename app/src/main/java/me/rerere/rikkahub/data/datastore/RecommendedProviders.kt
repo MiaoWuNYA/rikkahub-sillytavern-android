@@ -1,38 +1,63 @@
 package me.rerere.rikkahub.data.datastore
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.rikkahub.utils.l10n
 import kotlin.uuid.Uuid
 
 /**
- * 推荐的提供商列表。
+ * 推荐的提供商列表，引导页「选个提供商」与设置页右上角推荐 Sheet 共用。
  *
- * 之前在提供商设置页右上角的推荐 Sheet 中展示，现在也作为新手引导里
- * 「选个提供商」这一步的数据源。
+ * 置顶的砂糖酒馆是为酒馆而生的网关(ai.ota1245.top)。其余为各家官方接口，
+ * 地址公开稳定。历史版本曾放带返利链接的中转站，已全部移除，测试防回归。
  *
- * **这里只列官方服务商，不列中转网关。**
- *
- * 这个列表前后有两版：
- *   · 第一版全是带返利链接的中转站（aff=、go.xxx）。那些链接对项目
- *     有收益，但把一个「选谁家的模型」的决定替用户做了，而且是照着
- *     收益做的——不合适，已全部移除。
- *   · 现在这版是各家官方接口。地址是公开的、稳定的，不随谁的推广
- *     活动变化。
- *
- * 每条都标了**门槛**（要不要实名、有没有免费额度）。这不是推荐谁，
- * 只是把事实摆出来：新人最常见的死法是选了个要充值 + 实名的，
- * 卡在支付页就卸载了。
- *
- * 没在这里的也不影响使用——设置里可以自己填任意服务的地址和 Key。
+ * 每条都标了门槛（要不要实名、有没有免费额度）。
  */
 val RECOMMENDED_PROVIDERS: List<ProviderSetting> = listOf(
+    ProviderSetting.OpenAI(
+        id = Uuid.parse("f3a8d2c4-5e91-4b7a-9c36-d80b2e4a1f57"),
+        name = "砂糖酒馆",
+        baseUrl = "https://ai.ota1245.top/v1",
+        apiKey = "",
+        enabled = true,
+        description = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    ShaTangTag("酒馆专用")
+                    ShaTangTag("Gemini")
+                }
+                Text(
+                    text = buildAnnotatedString {
+                        append(l10n("为酒馆而生的供应商。免实名，可用 Gemini，酒馆专用网关。", "A provider built for taverns. No real-name verification, Gemini available, tavern-only gateway."))
+                        appendLine()
+                        append(l10n("门槛：免实名，可用 Gemini", "Requirements: no real-name verification; Gemini available"))
+                        appendLine()
+                        append(l10n("官网：", "Website:"))
+                        withLink(LinkAnnotation.Url("https://ai.ota1245.top")) {
+                            withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
+                                append("ai.ota1245.top")
+                            }
+                        }
+                    }
+                )
+            }
+        },
+    ),
     ProviderSetting.OpenAI(
         id = Uuid.parse("c601ef92-36db-fc8e-fe15-9f7a1ce5ddb6"),
         name = l10n("DeepSeek 深度求索", "DeepSeek"),
@@ -240,27 +265,19 @@ val RECOMMENDED_PROVIDERS: List<ProviderSetting> = listOf(
             )
         },
     ),
-    ProviderSetting.OpenAI(
-        id = Uuid.parse("7549f937-35d4-0056-3d35-5d42936da8cc"),
-        name = "OpenRouter",
-        baseUrl = "https://openrouter.ai/api/v1",
-        apiKey = "",
-        enabled = true,
-        description = {
-            Text(
-                text = buildAnnotatedString {
-                    append(l10n("一个 Key 调用各家主流模型，模型的覆盖面最广。", "One key for all major models, with the widest coverage."))
-                    appendLine()
-                    append(l10n("门槛：需科学上网，部分模型免费", "Requirements: VPN access; some models are free"))
-                    appendLine()
-                    append(l10n("官网：", "Website:"))
-                    withLink(LinkAnnotation.Url("https://openrouter.ai")) {
-                        withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
-                            append("openrouter.ai")
-                        }
-                    }
-                }
-            )
-        },
-    ),
 )
+
+// 砂糖酒馆的标签小胶囊
+@Composable
+private fun ShaTangTag(text: String) {
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+        )
+    }
+}

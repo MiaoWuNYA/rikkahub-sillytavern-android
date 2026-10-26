@@ -1,13 +1,6 @@
 package me.rerere.rikkahub.data.datastore
 
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withLink
-import androidx.compose.ui.text.withStyle
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.ai.provider.QuotaQuery
 import me.rerere.rikkahub.R
@@ -73,79 +66,6 @@ val DEFAULT_PROVIDERS = listOf(
         )
     ),
     ProviderSetting.OpenAI(
-        id = Uuid.parse("d5734028-d39b-4d41-9841-fd648d65440e"),
-        name = "OpenRouter",
-        baseUrl = "https://openrouter.ai/api/v1",
-        apiKey = "",
-        builtIn = true,
-        quotaQuery = QuotaQuery(
-            enabled = true,
-            url = "{{baseUrl}}/credits",
-            resultPath = "data.total_credits - data.total_usage",
-        )
-    ),
-    ProviderSetting.OpenAI(
-        id = Uuid.parse("9c68d0bb-48c4-4e0a-8e2d-7a7e8d9f3f17"),
-        name = "OrcaRouter",
-        baseUrl = "https://api.orcarouter.ai/v1",
-        apiKey = "",
-        enabled = false,
-        builtIn = true,
-        description = {
-            Text(
-                text = buildAnnotatedString {
-                    append(l10n("OrcaRouter 聚合多家大模型的 OpenAI 兼容网关", "OrcaRouter is an OpenAI-compatible gateway aggregating major LLMs"))
-                    appendLine()
-                    append(l10n("官网：", "Website: "))
-                    withLink(LinkAnnotation.Url("https://www.orcarouter.ai")) {
-                        withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
-                            append("https://www.orcarouter.ai")
-                        }
-                    }
-                    appendLine()
-                    append(l10n("文档：", "Docs: "))
-                    withLink(LinkAnnotation.Url("https://docs.orcarouter.ai")) {
-                        withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
-                            append("https://docs.orcarouter.ai")
-                        }
-                    }
-                }
-            )
-        },
-        shortDescription = {
-            Text(l10n("OpenAI 兼容聚合网关", "OpenAI-compatible gateway"))
-        },
-    ),
-    ProviderSetting.OpenAI(
-        id = Uuid.parse("386e0f29-8228-4512-affe-8fd8add82d88"),
-        name = "Vercel AI Gateway",
-        baseUrl = "https://ai-gateway.vercel.sh/v1",
-        apiKey = "",
-        enabled = false,
-        builtIn = true,
-        quotaQuery = QuotaQuery(
-            enabled = true,
-            url = "{{baseUrl}}/credits",
-            resultPath = "balance",
-        )
-    ),
-    ProviderSetting.OpenAI(
-        id = Uuid.parse("da020a90-f7b3-4c29-b90e-c511a0630630"),
-        name = l10n("小马算力", "TokenPony"),
-        baseUrl = "https://api.tokenpony.cn/v1",
-        apiKey = "",
-        enabled = false,
-        builtIn = true,
-        description = {
-            MarkdownBlock(
-                content = l10n(
-                    "小马算力是一家提供国产模型的API网关服务，使用统一接口接入多种模型\n官网: [tokenpony.cn](https://www.tokenpony.cn/79clb)",
-                    "TokenPony is an API gateway for Chinese models, exposing many models through a unified interface.\nWebsite: [tokenpony.cn](https://www.tokenpony.cn/79clb)",
-                )
-            )
-        }
-    ),
-    ProviderSetting.OpenAI(
         id = Uuid.parse("f76cae46-069a-4334-ab8e-224e4979e58c"),
         name = l10n("阿里云百炼", "Alibaba Cloud Bailian"),
         baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1",
@@ -176,26 +96,6 @@ val DEFAULT_PROVIDERS = listOf(
         apiKey = "",
         enabled = false,
         builtIn = true
-    ),
-    ProviderSetting.OpenAI(
-        id = Uuid.parse("da93779f-3956-48cc-82ef-67bb482eaaf7"),
-        name = "302.AI",
-        baseUrl = "https://api.302.ai/v1",
-        apiKey = "",
-        enabled = false,
-        builtIn = true,
-        description = {
-            Text(
-                text = buildAnnotatedString {
-                    append(l10n("企业级AI服务, 官网：", "Enterprise AI services, website: "))
-                    withLink(LinkAnnotation.Url("https://302.ai/")) {
-                        withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
-                            append("https://302.ai/")
-                        }
-                    }
-                }
-            )
-        }
     ),
     ProviderSetting.OpenAI(
         id = Uuid.parse("ef5d149b-8e34-404b-818c-6ec242e5c3c5"),
@@ -230,4 +130,13 @@ val DEFAULT_PROVIDERS = listOf(
         enabled = false,
         builtIn = true,
     ),
+)
+
+// 已下架的非官方网关预设：存量里没填 Key 的条目会在规整时清掉
+val REMOVED_PROVIDER_IDS = setOf(
+    Uuid.parse("d5734028-d39b-4d41-9841-fd648d65440e"),
+    Uuid.parse("9c68d0bb-48c4-4e0a-8e2d-7a7e8d9f3f17"),
+    Uuid.parse("386e0f29-8228-4512-affe-8fd8add82d88"),
+    Uuid.parse("da020a90-f7b3-4c29-b90e-c511a0630630"),
+    Uuid.parse("da93779f-3956-48cc-82ef-67bb482eaaf7"),
 )
