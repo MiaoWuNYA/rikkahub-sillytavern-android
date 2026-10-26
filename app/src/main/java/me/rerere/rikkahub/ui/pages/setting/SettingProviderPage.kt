@@ -83,6 +83,7 @@ import me.rerere.hugeicons.stroke.Sparkles
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.datastore.RECOMMENDED_PROVIDERS
+import me.rerere.rikkahub.data.datastore.SHATANG_HOST
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
 import me.rerere.rikkahub.ui.components.ui.ItemAction
@@ -705,17 +706,23 @@ private fun ProviderItem(
                     Tag(type = if (provider.enabled) TagType.SUCCESS else TagType.WARNING) {
                         Text(stringResource(if (provider.enabled) R.string.setting_provider_page_enabled else R.string.setting_provider_page_disabled))
                     }
-                    Tag(type = TagType.INFO) {
-                        Text(
-                            stringResource(
-                                R.string.setting_provider_page_model_count,
-                                provider.models.size
-                            )
-                        )
-                    }
-                    if (provider.name == "AiHubMix") {
+                    // 砂糖酒馆：没有模型列表，不显示模型数，标签换成酒馆专用 / Gemini
+                    val isShaTang = (provider as? ProviderSetting.ApiKey)?.baseUrl?.contains(SHATANG_HOST, ignoreCase = true) == true
+                    if (!isShaTang) {
                         Tag(type = TagType.INFO) {
-                            Text(stringResource(R.string.setting_provider_page_discount_tag))
+                            Text(
+                                stringResource(
+                                    R.string.setting_provider_page_model_count,
+                                    provider.models.size
+                                )
+                            )
+                        }
+                    } else {
+                        Tag(type = TagType.INFO) {
+                            Text(stringResource(R.string.setting_provider_page_tavern_tag))
+                        }
+                        Tag(type = TagType.INFO) {
+                            Text("Gemini")
                         }
                     }
                     // 插件带来的供应商：跟着插件走，卸载插件就消失

@@ -35,28 +35,7 @@ val RECOMMENDED_PROVIDERS: List<ProviderSetting> = listOf(
         baseUrl = "https://ai.ota1245.top/v1",
         apiKey = "",
         enabled = true,
-        description = {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    ShaTangTag("酒馆专用")
-                    ShaTangTag("Gemini")
-                }
-                Text(
-                    text = buildAnnotatedString {
-                        append(l10n("为酒馆而生的供应商。免实名，可用 Gemini，酒馆专用网关。", "A provider built for taverns. No real-name verification, Gemini available, tavern-only gateway."))
-                        appendLine()
-                        append(l10n("门槛：免实名，可用 Gemini", "Requirements: no real-name verification; Gemini available"))
-                        appendLine()
-                        append(l10n("官网：", "Website:"))
-                        withLink(LinkAnnotation.Url("https://ai.ota1245.top")) {
-                            withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
-                                append("ai.ota1245.top")
-                            }
-                        }
-                    }
-                )
-            }
-        },
+        description = { ShaTangDescription() },
     ),
     ProviderSetting.OpenAI(
         id = Uuid.parse("c601ef92-36db-fc8e-fe15-9f7a1ce5ddb6"),
@@ -266,6 +245,31 @@ val RECOMMENDED_PROVIDERS: List<ProviderSetting> = listOf(
         },
     ),
 )
+
+// 砂糖酒馆的介绍：推荐 Sheet 与内置预设共用同一份，避免 normalization 覆盖后形态漂移
+@Composable
+internal fun ShaTangDescription() {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            ShaTangTag("酒馆专用")
+            ShaTangTag("Gemini")
+        }
+        Text(
+            text = buildAnnotatedString {
+                append(l10n("为酒馆而生的供应商。免实名，可用 Gemini，酒馆专用网关。", "A provider built for taverns. No real-name verification, Gemini available, tavern-only gateway."))
+                appendLine()
+                append(l10n("门槛：免实名，可用 Gemini", "Requirements: no real-name verification; Gemini available"))
+                appendLine()
+                append(l10n("官网：", "Website:"))
+                withLink(LinkAnnotation.Url("https://ai.ota1245.top")) {
+                    withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
+                        append("ai.ota1245.top")
+                    }
+                }
+            }
+        )
+    }
+}
 
 // 砂糖酒馆的标签小胶囊
 @Composable

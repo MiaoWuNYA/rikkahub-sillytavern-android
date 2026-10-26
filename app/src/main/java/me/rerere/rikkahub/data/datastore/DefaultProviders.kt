@@ -1,6 +1,5 @@
 package me.rerere.rikkahub.data.datastore
 
-import androidx.compose.material3.Text
 import androidx.compose.ui.res.stringResource
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.ai.provider.QuotaQuery
@@ -19,8 +18,13 @@ val DEFAULT_PROVIDERS = listOf(
         apiKey = "",
         enabled = true,
         builtIn = true,
-        shortDescription = {
-            Text(l10n("酒馆专用", "Tavern-only"))
+        description = {
+            MarkdownBlock(
+                content = l10n(
+                    "为酒馆而生的供应商。免实名，可用 Gemini，酒馆专用网关\n官网: [ai.ota1245.top](https://ai.ota1245.top)",
+                    "A provider built for taverns. No real-name verification, Gemini available, tavern-only gateway.\nWebsite: [ai.ota1245.top](https://ai.ota1245.top)",
+                )
+            )
         },
     ),
     ProviderSetting.OpenAI(
