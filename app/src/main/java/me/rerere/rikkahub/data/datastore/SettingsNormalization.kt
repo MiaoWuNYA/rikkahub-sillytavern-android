@@ -1,12 +1,18 @@
 package me.rerere.rikkahub.data.datastore
 
+import me.rerere.ai.provider.ProviderSetting
+
 /** 读盘后和每次修改后都要过一遍，保证内存里的设置始终是规整的。 */
 internal fun Settings.normalized(): Settings =
     withBuiltInDefaults().withoutInvalidReferences().withValuesInRange()
 
 // 补齐缺失的内置提供商/助手/TTS，内置提供商的描述信息始终以代码里的为准
 internal fun Settings.withBuiltInDefaults(): Settings {
-    var providers = this.providers.ifEmpty { DEFAULT_PROVIDERS }.toMutableList()
+    // 已下架的内置网关：存量条目没填 Key 的直接清掉，填了 Key 的视为真实配置保留
+    val kept = this.providers.filterNot {
+        it.id in REMOVED_PROVIDER_IDS && (it as? ProviderSetting.ApiKey)?.apiKey.isNullOrBlank()
+    }
+    var providers = kept.ifEmpty { DEFAULT_PROVIDERS }.toMutableList()
     DEFAULT_PROVIDERS.forEach { defaultProvider ->
         if (providers.none { it.id == defaultProvider.id }) {
             providers.add(defaultProvider.copyProvider())

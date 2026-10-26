@@ -37,7 +37,7 @@ fun computeAIIconByName(name: String): String? {
         PATTERN_JUHENEXT.containsMatchIn(lowerName) -> "juhenext.png"
         PATTERN_KIMI.containsMatchIn(lowerName) -> "kimi-color.svg"
         PATTERN_MOONSHOT.containsMatchIn(lowerName) -> "moonshot.svg"
-        PATTERN_302.containsMatchIn(lowerName) -> "302ai.svg"
+        PATTERN_SHATANG.containsMatchIn(lowerName) -> "shatang.png"
         PATTERN_STEP.containsMatchIn(lowerName) -> "stepfun-color.svg"
         PATTERN_INTERN.containsMatchIn(lowerName) -> "internlm-color.svg"
         PATTERN_COHERE.containsMatchIn(lowerName) -> "cohere-color.svg"
@@ -47,7 +47,6 @@ fun computeAIIconByName(name: String): String? {
         PATTERN_PPIO.containsMatchIn(lowerName) -> "ppio-color.svg"
         PATTERN_VERCEL.containsMatchIn(lowerName) -> "vercel.svg"
         PATTERN_GROQ.containsMatchIn(lowerName) -> "groq.svg"
-        PATTERN_TOKENPONY.containsMatchIn(lowerName) -> "tokenpony.svg"
         PATTERN_LING.containsMatchIn(lowerName) -> "ling.png"
         PATTERN_MIMO.containsMatchIn(lowerName) -> "xiaomimimo.svg"
         PATTERN_LONGCAT.containsMatchIn(lowerName) -> "longcat-color.svg"
@@ -100,7 +99,7 @@ private val PATTERN_XAI = Regex("xai")
 private val PATTERN_JUHENEXT = Regex("juhenext")
 private val PATTERN_KIMI = Regex("kimi|k3")
 private val PATTERN_MOONSHOT = Regex("moonshot|月之暗面")
-private val PATTERN_302 = Regex("302")
+private val PATTERN_302 = Regex("302ai")
 private val PATTERN_STEP = Regex("step|阶跃")
 private val PATTERN_INTERN = Regex("intern|书生")
 private val PATTERN_COHERE = Regex("cohere|command-.+")
@@ -110,7 +109,7 @@ private val PATTERN_NVIDIA = Regex("nvidia")
 private val PATTERN_PPIO = Regex("ppio|派欧")
 private val PATTERN_VERCEL = Regex("vercel")
 private val PATTERN_GROQ = Regex("groq")
-private val PATTERN_TOKENPONY = Regex("tokenpony|小马算力")
+private val PATTERN_SHATANG = Regex("砂糖|shatang|ota1245")
 private val PATTERN_LING = Regex("ling|ring|百灵")
 private val PATTERN_MIMO = Regex("mimo|xiaomi|小米")
 private val PATTERN_LONGCAT = Regex("longcat")

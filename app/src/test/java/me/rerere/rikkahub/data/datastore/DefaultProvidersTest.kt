@@ -1,26 +1,19 @@
 package me.rerere.rikkahub.data.datastore
 
-import me.rerere.ai.provider.ProviderSetting
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DefaultProvidersTest {
     @Test
-    fun `default providers should include vercel ai gateway with expected balance config`() {
-        val vercelProviders = DEFAULT_PROVIDERS
-            .filterIsInstance<ProviderSetting.OpenAI>()
-            .filter { it.name == "Vercel AI Gateway" }
-
-        assertEquals(1, vercelProviders.size)
-
-        val provider = vercelProviders.single()
-        assertEquals("https://ai-gateway.vercel.sh/v1", provider.baseUrl)
-        assertFalse(provider.enabled)
-        assertTrue(provider.builtIn)
-        assertTrue(provider.quotaQuery.enabled)
-        assertEquals("{{baseUrl}}/credits", provider.quotaQuery.url)
-        assertEquals("balance", provider.quotaQuery.resultPath)
+    fun `removed gateway presets no longer ship and are marked for cleanup`() {
+        val names = DEFAULT_PROVIDERS.map { it.name }
+        // 非官方网关预设全部下架，不再作为广告出现在默认列表
+        assertFalse(names.contains("Vercel AI Gateway"))
+        assertFalse(names.contains("OrcaRouter"))
+        assertFalse(names.contains("302.AI"))
+        assertFalse(names.contains("TokenPony"))
+        assertFalse(names.contains("OpenRouter"))
+        // 下架的 id 都登记在清理清单里，存量空 Key 条目会被规整逻辑移除
+        assertFalse(REMOVED_PROVIDER_IDS.isEmpty())
     }
 }
