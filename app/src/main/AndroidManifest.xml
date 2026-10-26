@@ -79,6 +79,40 @@
     android:theme="@style/Theme.Rikkahub"
     android:usesCleartextTraffic="true"
     tools:targetApi="33">
+    <!-- 桌面图标三选一：默认兔盔，切换走 PackageManager 启用单个 alias -->
+    <activity-alias
+      android:name=".IconRabbit"
+      android:enabled="true"
+      android:exported="true"
+      android:icon="@mipmap/ic_launcher"
+      android:targetActivity=".RouteActivity">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
+    <activity-alias
+      android:name=".IconCatBody"
+      android:enabled="false"
+      android:exported="true"
+      android:icon="@mipmap/ic_launcher_cat_body"
+      android:targetActivity=".RouteActivity">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
+    <activity-alias
+      android:name=".IconCatHead"
+      android:enabled="false"
+      android:exported="true"
+      android:icon="@mipmap/ic_launcher_cat_head"
+      android:targetActivity=".RouteActivity">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
     <activity
       android:name=".ui.activity.SafeModeActivity"
       android:exported="false"
@@ -91,11 +125,6 @@
       android:importantForAutofill="noExcludeDescendants"
       android:theme="@style/Theme.Rikkahub"
       android:windowSoftInputMode="adjustResize">
-      <intent-filter>
-        <action android:name="android.intent.action.MAIN" />
-
-        <category android:name="android.intent.category.LAUNCHER" />
-      </intent-filter>
       <intent-filter>
         <action android:name="android.intent.action.SEND" />
 

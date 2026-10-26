@@ -314,6 +314,19 @@ enum class BackgroundEffectType {
     GLASS,
 }
 
+// 桌面图标三选一，与 Manifest 里的三个 activity-alias 一一对应
+@Serializable
+enum class AppIcon {
+    @SerialName("rabbit")
+    RABBIT,
+
+    @SerialName("cat_body")
+    CAT_BODY,
+
+    @SerialName("cat_head")
+    CAT_HEAD,
+}
+
 // 界面材质模式：液态玻璃（GLASS）与半透明（TRANSLUCENT）两种玻璃观感，
 // FOLLOW_THEME 跟随主题（主题为 liquid_glass 时用 GLASS，否则 FLAT）
 @Serializable
@@ -384,6 +397,8 @@ data class DisplaySetting(
     val enableQuoteHighlight: Boolean = false,
     val enableBlurEffect: Boolean = false,
     val backgroundEffectType: BackgroundEffectType = BackgroundEffectType.BLUR,
+    // 桌面图标主题：靠 activity-alias 启停切换，默认兔盔
+    val appIcon: AppIcon = AppIcon.RABBIT,
     // 输入框模糊/玻璃的不透明度（0.1~1.0），太低会影响正文可读性
     val inputEffectAlpha: Float = 0.3f,
     // 界面材质模式（液态玻璃自由开关）
