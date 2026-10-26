@@ -2131,6 +2131,7 @@
   <string name="setting_provider_page_input_modality">Input Modality</string>
   <string name="setting_provider_page_location">Location (e.g. us-central1)</string>
   <string name="setting_provider_page_model_count">%d models</string>
+  <string name="setting_provider_page_tavern_tag">Tavern-only</string>
   <string name="setting_provider_page_model_display_name">Model Display Name</string>
   <string name="setting_provider_page_model_display_name_placeholder">e.g.: GPT-3.5, for UI display</string>
   <string name="setting_provider_page_model_id">Model ID</string>
