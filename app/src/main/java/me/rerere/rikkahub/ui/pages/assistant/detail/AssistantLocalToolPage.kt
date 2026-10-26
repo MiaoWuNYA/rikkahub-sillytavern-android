@@ -43,6 +43,7 @@ import me.rerere.hugeicons.stroke.Image02
 import me.rerere.hugeicons.stroke.JavaScript
 import me.rerere.hugeicons.stroke.MessageQuestion
 import me.rerere.hugeicons.stroke.Python
+import me.rerere.hugeicons.stroke.Cursor02
 import me.rerere.hugeicons.stroke.SmartPhone01
 import me.rerere.hugeicons.stroke.Robot01
 import me.rerere.hugeicons.stroke.SourceCode
@@ -67,6 +68,8 @@ import me.rerere.rikkahub.ui.components.ui.switchItem
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.utils.hasUsageStatsPermission
+import me.rerere.rikkahub.utils.isPhoneAccessibilityEnabled
+import me.rerere.rikkahub.utils.openAccessibilitySettings
 import me.rerere.rikkahub.utils.openUsageAccessSettings
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -121,6 +124,8 @@ private fun AssistantLocalToolContent(
     val toaster = LocalToaster.current
     val permissionRequiredText =
         stringResource(R.string.assistant_page_local_tools_screen_time_permission_required)
+    val accessibilityRequiredText =
+        stringResource(R.string.local_tool_phone_control_permission_required)
 
     val calendarPermissionState = rememberPermissionState(
         permissions = setOf(
@@ -144,6 +149,11 @@ private fun AssistantLocalToolContent(
         if (enabled && option == LocalToolOption.ScreenTime && !context.hasUsageStatsPermission()) {
             toaster.show(message = permissionRequiredText, type = ToastType.Warning)
             context.openUsageAccessSettings()
+        }
+        // 手机控制靠无障碍服务干活，未开启时先带用户去开，开关照常保存
+        if (enabled && option == LocalToolOption.PhoneControl && !context.isPhoneAccessibilityEnabled()) {
+            toaster.show(message = accessibilityRequiredText, type = ToastType.Warning)
+            context.openAccessibilitySettings()
         }
         if (enabled && option == LocalToolOption.Calendar && !calendarPermissionState.allPermissionsGranted) {
             calendarPermissionState.requestPermissions()
@@ -438,6 +448,13 @@ private fun AssistantLocalToolContent(
                 icon = HugeIcons.Robot01,
                 title = R.string.huadeng_sub_agent,
                 description = R.string.huadeng_sub_agent_desc,
+            )
+            // 手机控制：无障碍读屏 + 点击 / 输入 / 滚动
+            toolItem(
+                option = LocalToolOption.PhoneControl,
+                icon = HugeIcons.Cursor02,
+                title = R.string.local_tool_phone_control_title,
+                description = R.string.local_tool_phone_control_desc,
             )
         }
     }

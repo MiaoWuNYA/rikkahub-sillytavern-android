@@ -39,6 +39,9 @@
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
   <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+  <!-- 手机控制：悬浮条（无障碍 overlay 优先，拿不到时退回系统悬浮窗）与通知按钮 -->
+  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
   <uses-feature
     android:name="android.hardware.camera"
     android:required="false" />
@@ -165,6 +168,25 @@
       android:exported="false"
       android:foregroundServiceType="dataSync">
     </service>
+
+    <!-- 手机控制：无障碍读屏 + 手势，供 phone_screen / phone_act / phone_find 使用 -->
+    <service
+      android:name=".service.phone.PhoneAccessibilityService"
+      android:exported="true"
+      android:label="@string/phone_control_accessibility_label"
+      android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+      <intent-filter>
+        <action android:name="android.accessibilityservice.AccessibilityService" />
+      </intent-filter>
+      <meta-data
+        android:name="android.accessibilityservice"
+        android:resource="@xml/phone_accessibility_config" />
+    </service>
+
+    <!-- 通知上的暂停 / 继续 / 结束按钮 -->
+    <receiver
+      android:name=".service.phone.PhoneControlActionReceiver"
+      android:exported="false" />
 
     <!-- 语音/视频通话前台服务：ASR→LLM→TTS 本地通话循环 -->
     <service

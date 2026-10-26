@@ -21,6 +21,7 @@ import me.rerere.ai.core.InputSchema
 import me.rerere.ai.core.Tool
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.event.AppEvent
+import me.rerere.rikkahub.data.ai.tools.phone.buildPhoneTools
 import me.rerere.rikkahub.data.ai.tools.local.buildCalendarCreateTool
 import me.rerere.rikkahub.data.ai.tools.local.buildCalendarQueryTool
 import me.rerere.rikkahub.data.ai.tools.local.buildScreenTimeTool
@@ -158,6 +159,11 @@ sealed class LocalToolOption {
     @Serializable
     @SerialName("sub_agent")
     data object SubAgent : LocalToolOption()
+
+    /** 手机控制：无障碍读屏 + 点击/输入/滚动（phone_screen / phone_act / phone_find）。 */
+    @Serializable
+    @SerialName("phone_control")
+    data object PhoneControl : LocalToolOption()
 }
 
 class LocalTools(
@@ -520,6 +526,11 @@ class LocalTools(
 
         if (options.contains(LocalToolOption.DiffText)) {
             tools.add(diffTextTool)
+        }
+
+        // 手机控制工具直连注册，不走 device_toolbox 二级分发，省每步一次往返
+        if (options.contains(LocalToolOption.PhoneControl)) {
+            tools.addAll(buildPhoneTools())
         }
         return tools
     }

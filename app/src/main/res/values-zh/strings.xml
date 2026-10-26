@@ -3551,4 +3551,20 @@
   <string name="setting_model_page_memory_model">记忆整理模型</string>
   <string name="setting_model_page_memory_model_desc">用于在后台将对话整理为长期记忆的模型；未设置时使用快速模型</string>
   <string name="setting_model_page_memory_model_follow_fast">跟随快速模型</string>
+  <string name="local_tool_phone_control_title">手机控制</string>
+  <string name="local_tool_phone_control_desc">通过无障碍服务读取屏幕文字，代你点击、输入、滚动，跨 App 完成任务</string>
+  <string name="local_tool_phone_control_permission_required">请先开启「手机控制」无障碍服务</string>
+  <string name="phone_control_accessibility_label">手机控制</string>
+  <string name="phone_control_accessibility_summary">让助手读屏并代你点击</string>
+  <string name="phone_control_accessibility_desc">读取屏幕上的文字并执行点击、输入、滚动，让助手在你指定的模型上完成其他 App 里的任务。屏幕文字会发给你配置的模型，密码框永远只显示掩码。熄屏即暂停，且不会自动续跑。</string>
+  <string name="phone_control_notification_channel">手机控制</string>
+  <string name="phone_control_notification_running">手机任务 · 第 %1$d/%2$d 步</string>
+  <string name="phone_control_notification_idle">运行中</string>
+  <string name="phone_control_notification_paused">已暂停 · 点继续</string>
+  <string name="phone_control_notification_paused_desc">第 %1$d/%2$d 步，熄屏会暂停任务</string>
+  <string name="phone_control_notification_done">手机任务已结束</string>
+  <string name="phone_control_notification_done_desc">共 %1$d 步</string>
+  <string name="phone_control_pause">暂停</string>
+  <string name="phone_control_resume">继续</string>
+  <string name="phone_control_stop">结束</string>
 </resources>

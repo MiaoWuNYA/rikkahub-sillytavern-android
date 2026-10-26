@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+  android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged"
+  android:accessibilityFeedbackType="feedbackGeneric"
+  android:accessibilityFlags="flagDefault|flagRetrieveInteractiveWindows|flagReportViewIds|flagIncludeNotImportantViews"
+  android:canPerformGestures="true"
+  android:canRetrieveWindowContent="true"
+  android:description="@string/phone_control_accessibility_desc"
+  android:notificationTimeout="100"
+  android:summary="@string/phone_control_accessibility_summary" />

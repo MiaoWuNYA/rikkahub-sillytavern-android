@@ -257,3 +257,24 @@ fun Context.openUsageAccessSettings() {
         Log.e(TAG, "openUsageAccessSettings failed", it)
     }
 }
+
+/** 手机控制用的无障碍服务是否已在系统设置里启用 */
+fun Context.isPhoneAccessibilityEnabled(): Boolean = runCatching {
+    val enabled = Settings.Secure.getString(contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
+        .orEmpty()
+    val full = me.rerere.rikkahub.service.phone.PhoneAccessibilityService::class.java.name
+    enabled.split(':').any {
+        it.equals("$packageName/$full", true) ||
+            it.equals("$packageName/.service.phone.PhoneAccessibilityService", true)
+    }
+}.getOrDefault(false)
+
+fun Context.openAccessibilitySettings() {
+    runCatching {
+        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        })
+    }.onFailure {
+        Log.e("ContextUtil", "openAccessibilitySettings failed", it)
+    }
+}
