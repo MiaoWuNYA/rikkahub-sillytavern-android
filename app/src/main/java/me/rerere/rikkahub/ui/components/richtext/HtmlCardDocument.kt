@@ -94,6 +94,12 @@ private val FENCED_HTML_OPEN = Regex(
 // 独占一行的闭合围栏
 private val CLOSING_FENCE_LINE = Regex("""^[ \t]*```[ \t]*$""", RegexOption.MULTILINE)
 
+// 完整 fenced 代码块：块内是代码原文，里面的 HTML 标签不能当成卡片起点
+private val FENCED_CODE_BLOCK = Regex("""```[\s\S]*?```""")
+
+private fun codeBlockRanges(normalized: String): List<IntRange> =
+    FENCED_CODE_BLOCK.findAll(normalized).map { it.range }.toList()
+
 /** 消息里是否含 HTML 富文本（供上层决定渲染路径）。 */
 fun isHtmlRichContent(text: String): Boolean {
     val t = normalizeNewlines(text).trimCardEdges()
@@ -132,8 +138,10 @@ fun isHtmlRichContent(text: String): Boolean {
  */
 fun splitCardSegments(text: String): List<Pair<Boolean, String>> {
     val normalized = normalizeNewlines(text)
+    val codeRanges = codeBlockRanges(normalized)
     val starts = (BLOCK_TAG_AT.findAll(normalized).map { it.range.first }.toList() +
         CUSTOM_TAG_LINE_START.findAll(normalized).map { it.range.first }.toList())
+        .filter { start -> codeRanges.none { start >= it.first && start <= it.last } }
         .distinct()
         .sorted()
     val segments = mutableListOf<Pair<Boolean, String>>()
@@ -172,8 +180,10 @@ fun splitCardSegments(text: String): List<Pair<Boolean, String>> {
  */
 fun findHtmlCard(text: String): Pair<Int, String>? {
     val normalized = normalizeNewlines(text)
+    val codeRanges = codeBlockRanges(normalized)
     val starts = (BLOCK_TAG_AT.findAll(normalized).map { it.range.first }.toList() +
         CUSTOM_TAG_LINE_START.findAll(normalized).map { it.range.first }.toList())
+        .filter { start -> codeRanges.none { start >= it.first && start <= it.last } }
         .distinct()
         .sorted()
     for (start in starts) {

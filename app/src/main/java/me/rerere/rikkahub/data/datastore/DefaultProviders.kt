@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.data.datastore
 
+import androidx.compose.material3.Text
 import androidx.compose.ui.res.stringResource
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.ai.provider.QuotaQuery
@@ -11,6 +12,17 @@ import kotlin.uuid.Uuid
 val DEFAULT_AUTO_MODEL_ID = Uuid.parse("b7055fb4-39f9-4042-a88a-0d80ed76cf08")
 
 val DEFAULT_PROVIDERS = listOf(
+    ProviderSetting.OpenAI(
+        id = Uuid.parse("f3a8d2c4-5e91-4b7a-9c36-d80b2e4a1f57"),
+        name = "砂糖酒馆",
+        baseUrl = "https://ai.ota1245.top/v1",
+        apiKey = "",
+        enabled = true,
+        builtIn = true,
+        shortDescription = {
+            Text(l10n("酒馆专用", "Tavern-only"))
+        },
+    ),
     ProviderSetting.OpenAI(
         id = Uuid.parse("1eeea727-9ee5-4cae-93e6-6fb01a4d051e"),
         name = "OpenAI",
@@ -140,3 +152,22 @@ val REMOVED_PROVIDER_IDS = setOf(
     Uuid.parse("da020a90-f7b3-4c29-b90e-c511a0630630"),
     Uuid.parse("da93779f-3956-48cc-82ef-67bb482eaaf7"),
 )
+
+// 历史版本内置过的非官方网关域名：按 baseUrl 匹配清理存量空 Key 条目
+val REMOVED_PROVIDER_BASES = setOf(
+    "aihubmix.com",
+    "sui-xiang.com",
+    "muteki.site",
+    "apimart.ai",
+    "unifyllm.top",
+    "ackai.fun",
+    "juheai.top",
+    "orcarouter.ai",
+    "302.ai",
+    "tokenpony.cn",
+    "vercel.sh",
+    "openrouter.ai",
+)
+
+// 砂糖酒馆的域名：供应商列表置顶
+const val SHATANG_HOST = "ota1245"
