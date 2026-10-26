@@ -6,11 +6,18 @@ import me.rerere.ai.provider.ProviderSetting
 internal fun Settings.normalized(): Settings =
     withBuiltInDefaults().withoutInvalidReferences().withValuesInRange()
 
+// 已下架的内置网关：id 命中清单，或 baseUrl 命中历史版本内置过的网关域名
+private fun ProviderSetting.isRemovedGateway(): Boolean {
+    if (id in REMOVED_PROVIDER_IDS) return true
+    val baseUrl = (this as? ProviderSetting.ApiKey)?.baseUrl ?: return false
+    return REMOVED_PROVIDER_BASES.any { baseUrl.contains(it, ignoreCase = true) }
+}
+
 // 补齐缺失的内置提供商/助手/TTS，内置提供商的描述信息始终以代码里的为准
 internal fun Settings.withBuiltInDefaults(): Settings {
     // 已下架的内置网关：存量条目没填 Key 的直接清掉，填了 Key 的视为真实配置保留
     val kept = this.providers.filterNot {
-        it.id in REMOVED_PROVIDER_IDS && (it as? ProviderSetting.ApiKey)?.apiKey.isNullOrBlank()
+        it.isRemovedGateway() && (it as? ProviderSetting.ApiKey)?.apiKey.isNullOrBlank()
     }
     var providers = kept.ifEmpty { DEFAULT_PROVIDERS }.toMutableList()
     DEFAULT_PROVIDERS.forEach { defaultProvider ->
@@ -27,6 +34,11 @@ internal fun Settings.withBuiltInDefaults(): Settings {
                 shortDescription = defaultProvider.shortDescription,
             )
         } else provider
+    }.toMutableList()
+    // 砂糖酒馆永远在供应商列表第一位（稳定排序，其余相对顺序不变）
+    providers = providers.sortedBy { provider ->
+        val baseUrl = (provider as? ProviderSetting.ApiKey)?.baseUrl ?: ""
+        if (baseUrl.contains(SHATANG_HOST, ignoreCase = true)) 0 else 1
     }.toMutableList()
     val assistants = this.assistants.ifEmpty { DEFAULT_ASSISTANTS }.toMutableList()
     DEFAULT_ASSISTANTS.forEach { defaultAssistant ->
