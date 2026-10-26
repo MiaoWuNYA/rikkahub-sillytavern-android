@@ -240,8 +240,8 @@ object CrashHandler {
 
     private fun isPrintableText(chunk: ByteArray): Boolean {
         if (chunk.isEmpty() || chunk.size > 512) return false
-        if (chunk.any { it.code == 0 }) return false
-        val printable = chunk.count { it in 32..126 || it.code >= 0x80 }
+        if (chunk.any { it.toInt() == 0 }) return false
+        val printable = chunk.count { it.toInt() in 32..126 || it.toInt() < 0 }
         return printable >= chunk.size * 0.9
     }
 
