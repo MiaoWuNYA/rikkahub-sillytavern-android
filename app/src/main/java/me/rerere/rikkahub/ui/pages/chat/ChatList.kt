@@ -111,6 +111,7 @@ import me.rerere.rikkahub.data.model.MessageNode
 import me.rerere.rikkahub.data.model.withConversation
 import me.rerere.rikkahub.service.ChatError
 import me.rerere.rikkahub.ui.components.message.ChatMessage
+import me.rerere.rikkahub.ui.components.richtext.WebViewPresence
 import me.rerere.rikkahub.ui.components.ui.ErrorCardsDisplay
 import me.rerere.rikkahub.ui.hooks.ImeLazyListAutoScroller
 import me.rerere.rikkahub.ui.theme.ChatFontProvider
@@ -373,6 +374,23 @@ private fun Modifier.topFadingEdge(height: Dp): Modifier = this
         }
     }
 
+// WebView 在场时的顶部遮罩：普通 SrcOver 渐变，不采样内容层
+private fun Modifier.topScrimOverlay(height: Dp, color: Color): Modifier = this
+    .drawWithCache {
+        val scrimHeight = height.toPx()
+        val brush = Brush.verticalGradient(
+            0f to color,
+            0.6f to color.copy(alpha = 0.85f),
+            1f to color.copy(alpha = 0f),
+            startY = 0f,
+            endY = scrimHeight,
+        )
+        onDrawWithContent {
+            drawContent()
+            drawRect(brush, size = Size(size.width, scrimHeight))
+        }
+    }
+
 @Composable
 private fun ChatListNormal(
     innerPadding: PaddingValues,
@@ -516,7 +534,17 @@ private fun ChatListNormal(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
                     .fillMaxSize()
-                    .topFadingEdge(innerPadding.calculateTopPadding() + 24.dp)
+                    .then(
+                        // WebView functor 进离屏层会空指针闪退,在场时降级为普通 scrim
+                        if (WebViewPresence.active) {
+                            Modifier.topScrimOverlay(
+                                height = innerPadding.calculateTopPadding() + 24.dp,
+                                color = MaterialTheme.colorScheme.background,
+                            )
+                        } else {
+                            Modifier.topFadingEdge(innerPadding.calculateTopPadding() + 24.dp)
+                        }
+                    )
                     .hazeSource(state = hazeState),
             ) {
             itemsIndexed(
