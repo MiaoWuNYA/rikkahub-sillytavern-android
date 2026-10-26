@@ -114,12 +114,26 @@ class PhoneActionEngine(
         }
     }
 
+    /** 目标行常常是包着输入框的可点容器，所以先自身、再向下找子节点、最后才往父链上找 */
     private fun findEditable(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
-        var current = node
+        node ?: return null
+        if (node.isEditable) return node
+        findEditableChild(node, depth = 0)?.let { return it }
+        var current = node.parent
         var guard = 0
         while (current != null && guard++ < 6) {
             if (current.isEditable) return current
             current = current.parent
+        }
+        return null
+    }
+
+    private fun findEditableChild(node: AccessibilityNodeInfo, depth: Int): AccessibilityNodeInfo? {
+        if (depth > 3) return null
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i) ?: continue
+            if (child.isEditable) return child
+            findEditableChild(child, depth + 1)?.let { return it }
         }
         return null
     }

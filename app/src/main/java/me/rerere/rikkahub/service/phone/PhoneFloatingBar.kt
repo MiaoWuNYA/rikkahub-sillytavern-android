@@ -130,11 +130,8 @@ class PhoneFloatingBar(
         params = null
     }
 
-    private fun windowType(): Int = try {
-        WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
-    } catch (_: Throwable) {
-        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-    }
+    // 无障碍服务可直接挂 overlay 类型窗口，不需要 SYSTEM_ALERT_WINDOW
+    private fun windowType(): Int = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
 
     private fun actionButton(label: String, onClick: () -> Unit): TextView = TextView(service).apply {
         text = label
