@@ -109,8 +109,34 @@ private val LATEX_RAW_NEWLINES = Regex("""[ \t]*\n+[ \t]*""")
 
 private fun String.collapseLatexNewlines(): String = replace(LATEX_RAW_NEWLINES, " ").trim()
 
+// 代码块（fenced/inline）之外的段落才交给 transform，配对型正则永不跨块
+internal fun String.transformOutsideCodeBlocks(transform: (String) -> String): String {
+    val blocks = CODE_BLOCK_REGEX.findAll(this).toList()
+    if (blocks.isEmpty()) return transform(this)
+    val out = StringBuilder(length)
+    var cursor = 0
+    for (block in blocks) {
+        if (block.range.first < cursor) continue
+        out.append(transform(substring(cursor, block.range.first)))
+        out.append(block.value)
+        cursor = block.range.last + 1
+    }
+    if (cursor < length) out.append(transform(substring(cursor)))
+    return out.toString()
+}
+
 // 尚未带 open 属性的 <details> 标签
 private val DETAILS_OPEN_REGEX = Regex("<details\\b(?!\\s+open\\b)")
+
+// 行首的 fenced 围栏开合（0-3 空格缩进）
+private val FENCE_LINE_REGEX = Regex("""^[ ]{0,3}```""", RegexOption.MULTILINE)
+
+// 生成被截断的回复常带着未闭合的围栏：补一个闭合，让后续内容按代码块正常显示
+internal fun String.closeUnclosedFence(): String {
+    if ("```" !in this) return this
+    val count = FENCE_LINE_REGEX.findAll(this).count()
+    return if (count % 2 == 1) trimEnd() + "\n```" else this
+}
 
 internal fun String.normalizeCjkTildes(): String {
     if ('~' !in this) return this
@@ -164,17 +190,19 @@ internal fun restoreEscapedInlineTags(content: String): String {
 }
 
 internal fun preProcessMarkdown(content: String): String {
+    // 截断的未闭合围栏先补闭合，后续所有"代码块保持原样"的跳过逻辑才真正生效
+    val fenced = content.closeUnclosedFence()
     // \(..\)/\[..\] → $..$/$$..$$：数学提取器只认 $ 定界符；代码块内保持原样。
-    // 公式内的真实换行折叠为空格（LaTeX 换行靠 \\）：多行 cases 折叠成单行后提取器才认
-    val codeRanges = CODE_BLOCK_REGEX.findAll(content).map { it.range }.toList()
-    val normalized = if ("\\(" in content || "\\[" in content) {
-        LATEX_PAREN_DELIM_REGEX.replace(content) { m ->
-            if (codeRanges.any { m.range.first in it }) m.value
-            else if (m.groupValues[1].isNotEmpty()) "$${m.groupValues[1].collapseLatexNewlines()}$"
-            else "$$${m.groupValues[2].collapseLatexNewlines()}$$"
+    // 分段处理：配对永不跨代码块，否则跨块公式会把围栏连同换行一起吃掉
+    val normalized = if ("\\(" in fenced || "\\[" in fenced) {
+        fenced.transformOutsideCodeBlocks { segment ->
+            LATEX_PAREN_DELIM_REGEX.replace(segment) { m ->
+                if (m.groupValues[1].isNotEmpty()) "$${m.groupValues[1].collapseLatexNewlines()}$"
+                else "$$${m.groupValues[2].collapseLatexNewlines()}$$"
+            }
         }
     } else {
-        content
+        fenced
     }
     val escaped = restoreEscapedInlineTags(escapeGuideSequence(convertStatusBlocksToTables(normalized)))
     // 酒馆卡常拿 <details> 装工作记忆/状态栏，没有 open 属性时默认展开
@@ -248,14 +276,17 @@ fun MarkdownBlock(
 ) {
     val settings = LocalSettings.current.displaySetting
 
+    // 截断的未闭合围栏先补闭合（流式渲染除外，流式中未闭合是常态）
+    val display = if (isStreaming) content else content.closeUnclosedFence()
+
     // 酒馆角色卡等 HTML 富文本：把 HTML 卡片拆出来交给 WebView 渲染
     // （支持 <style>/class CSS）。前端卡（```html 围栏包完整 HTML 文档）
     // 优先按围栏拆分，否则 <html> 前的 DOCTYPE/head 会被当成散文渲染出源码。
     // 卡片默认内联展开、高度自适应——对齐官方把卡片内联进消息 DOM 的行为。
-    val fencedCard = if (isStreaming) null else findFencedHtmlDocument(content)
+    val fencedCard = if (isStreaming) null else findFencedHtmlDocument(display)
     // 裸 HTML 路径要按「散文 / 卡片」交替拆段。
     val segments = if (fencedCard == null && !isStreaming) {
-        splitCardSegments(content)
+        splitCardSegments(display)
     } else {
         emptyList()
     }
@@ -299,21 +330,23 @@ fun MarkdownBlock(
     val localQuoteColor = if (settings.enableTextColor) {
         settings.quoteColor.ifBlank { if (darkMode) "#E18A24" else "#C7731E" }
     } else null
-    val codeBlocks = CODE_BLOCK_REGEX.findAll(content).map { it.range }.toList()
-    val latexSpans = LATEX_SPAN_REGEX.findAll(content).map { it.range }.toList()
     val coloredContent = if (localQuoteColor == null) {
-        content
+        display
     } else {
         val bracketColor = settings.bracketColor.ifBlank { if (darkMode) "#7EAFC4" else "#5B8DEF" }
-        TEXT_COLOR_REGEX.replace(content) { match ->
-            val opener = match.value.firstOrNull()
-            if (opener == null || codeBlocks.any { match.range.first in it } ||
-                latexSpans.any { match.range.first in it && match.range.last <= it.last }
-            ) {
-                match.value
-            } else {
-                val color = if (opener in BRACKET_OPENERS) bracketColor else localQuoteColor
-                "<span style=\"color:$color\">${match.value}</span>"
+        // 分段处理：配对永不跨代码块，否则跨块引号/括号会把 span 注进代码块
+        display.transformOutsideCodeBlocks { segment ->
+            val latexSpans = LATEX_SPAN_REGEX.findAll(segment).map { it.range }.toList()
+            TEXT_COLOR_REGEX.replace(segment) { match ->
+                val opener = match.value.firstOrNull()
+                if (opener == null ||
+                    latexSpans.any { match.range.first in it && match.range.last <= it.last }
+                ) {
+                    match.value
+                } else {
+                    val color = if (opener in BRACKET_OPENERS) bracketColor else localQuoteColor
+                    "<span style=\"color:$color\">${match.value}</span>"
+                }
             }
         }
     }
