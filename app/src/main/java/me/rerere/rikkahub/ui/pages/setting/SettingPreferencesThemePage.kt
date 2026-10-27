@@ -8,6 +8,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -147,6 +149,7 @@ private enum class ThemeTab(
         @Composable get() = stringResource(labelRes)
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
     val settings by vm.settings.collectAsStateWithLifecycle()
@@ -232,9 +235,9 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
         item {
             CardGroup(title = { Text("应用图标") }) {
                 formItem {
-                    Row(
+                    FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         AppIcon.entries.forEach { icon ->
                             val selected = settings.displaySetting.appIcon == icon

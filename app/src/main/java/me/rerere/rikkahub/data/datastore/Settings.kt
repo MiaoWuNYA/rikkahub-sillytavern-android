@@ -314,7 +314,7 @@ enum class BackgroundEffectType {
     GLASS,
 }
 
-// 桌面图标三选一，与 Manifest 里的三个 activity-alias 一一对应
+// 桌面图标可选主题，与 Manifest 里的 activity-alias 一一对应
 @Serializable
 enum class AppIcon {
     @SerialName("rabbit")
@@ -325,6 +325,15 @@ enum class AppIcon {
 
     @SerialName("cat_head")
     CAT_HEAD,
+
+    @SerialName("earth")
+    EARTH,
+
+    @SerialName("cat_cute")
+    CAT_CUTE,
+
+    @SerialName("google")
+    GOOGLE,
 }
 
 // 界面材质模式：液态玻璃（GLASS）与半透明（TRANSLUCENT）两种玻璃观感，

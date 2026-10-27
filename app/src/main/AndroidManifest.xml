@@ -113,6 +113,39 @@
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
     </activity-alias>
+    <activity-alias
+      android:name=".IconEarth"
+      android:enabled="false"
+      android:exported="true"
+      android:icon="@mipmap/ic_launcher_earth"
+      android:targetActivity=".RouteActivity">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
+    <activity-alias
+      android:name=".IconCatCute"
+      android:enabled="false"
+      android:exported="true"
+      android:icon="@mipmap/ic_launcher_cat_cute"
+      android:targetActivity=".RouteActivity">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
+    <activity-alias
+      android:name=".IconGoogle"
+      android:enabled="false"
+      android:exported="true"
+      android:icon="@mipmap/ic_launcher_google"
+      android:targetActivity=".RouteActivity">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
     <activity
       android:name=".ui.activity.SafeModeActivity"
       android:exported="false"
