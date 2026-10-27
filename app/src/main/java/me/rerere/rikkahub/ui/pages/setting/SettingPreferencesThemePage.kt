@@ -8,8 +8,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -149,7 +147,6 @@ private enum class ThemeTab(
         @Composable get() = stringResource(labelRes)
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
     val settings by vm.settings.collectAsStateWithLifecycle()
@@ -235,45 +232,54 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
         item {
             CardGroup(title = { Text("应用图标") }) {
                 formItem {
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        AppIcon.entries.forEach { icon ->
-                            val selected = settings.displaySetting.appIcon == icon
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(6.dp),
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .clickable {
-                                        vm.updateSettings { latest ->
-                                            latest.copy(displaySetting = latest.displaySetting.copy(appIcon = icon))
-                                        }
-                                        AppIconSwitcher.apply(context, icon)
-                                    }
-                                    .padding(4.dp),
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        // 固定两排三列：兔盔/地球/谷歌，探喵/脸猫/萌猫
+                        listOf(
+                            listOf(AppIcon.RABBIT, AppIcon.EARTH, AppIcon.GOOGLE),
+                            listOf(AppIcon.CAT_BODY, AppIcon.CAT_HEAD, AppIcon.CAT_CUTE),
+                        ).forEach { row ->
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Image(
-                                    painter = painterResource(icon.previewRes),
-                                    contentDescription = icon.label,
-                                    modifier = Modifier
-                                        .size(56.dp)
-                                        .clip(RoundedCornerShape(14.dp))
-                                        .then(
-                                            if (selected) Modifier.border(
-                                                2.dp,
-                                                MaterialTheme.colorScheme.primary,
-                                                RoundedCornerShape(14.dp),
-                                            ) else Modifier
-                                        ),
-                                )
-                                Text(
-                                    text = icon.label,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = if (selected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                                row.forEach { icon ->
+                                    val selected = settings.displaySetting.appIcon == icon
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .clickable {
+                                                vm.updateSettings { latest ->
+                                                    latest.copy(displaySetting = latest.displaySetting.copy(appIcon = icon))
+                                                }
+                                                AppIconSwitcher.apply(context, icon)
+                                            }
+                                            .padding(4.dp),
+                                    ) {
+                                        Image(
+                                            painter = painterResource(icon.previewRes),
+                                            contentDescription = icon.label,
+                                            modifier = Modifier
+                                                .size(56.dp)
+                                                .clip(RoundedCornerShape(14.dp))
+                                                .then(
+                                                    if (selected) Modifier.border(
+                                                        2.dp,
+                                                        MaterialTheme.colorScheme.primary,
+                                                        RoundedCornerShape(14.dp),
+                                                    ) else Modifier
+                                                ),
+                                        )
+                                        Text(
+                                            text = icon.label,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = if (selected) MaterialTheme.colorScheme.primary
+                                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
