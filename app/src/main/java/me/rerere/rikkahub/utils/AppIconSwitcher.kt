@@ -13,6 +13,9 @@ object AppIconSwitcher {
         AppIcon.RABBIT to "me.rerere.rikkahub.IconRabbit",
         AppIcon.CAT_BODY to "me.rerere.rikkahub.IconCatBody",
         AppIcon.CAT_HEAD to "me.rerere.rikkahub.IconCatHead",
+        AppIcon.EARTH to "me.rerere.rikkahub.IconEarth",
+        AppIcon.CAT_CUTE to "me.rerere.rikkahub.IconCatCute",
+        AppIcon.GOOGLE to "me.rerere.rikkahub.IconGoogle",
     )
 
     fun apply(context: Context, icon: AppIcon) {
@@ -40,11 +43,17 @@ val AppIcon.previewRes: Int
         AppIcon.RABBIT -> R.mipmap.ic_launcher_rabbit
         AppIcon.CAT_BODY -> R.mipmap.ic_launcher_cat_body
         AppIcon.CAT_HEAD -> R.mipmap.ic_launcher_cat_head
+        AppIcon.EARTH -> R.mipmap.ic_launcher_earth
+        AppIcon.CAT_CUTE -> R.mipmap.ic_launcher_cat_cute
+        AppIcon.GOOGLE -> R.mipmap.ic_launcher_google
     }
 
 val AppIcon.label: String
     get() = when (this) {
         AppIcon.RABBIT -> "兔盔"
-        AppIcon.CAT_BODY -> "猫身"
-        AppIcon.CAT_HEAD -> "猫头"
+        AppIcon.CAT_BODY -> "探喵"
+        AppIcon.CAT_HEAD -> "脸猫"
+        AppIcon.EARTH -> "地球"
+        AppIcon.CAT_CUTE -> "萌猫"
+        AppIcon.GOOGLE -> "谷歌"
     }
