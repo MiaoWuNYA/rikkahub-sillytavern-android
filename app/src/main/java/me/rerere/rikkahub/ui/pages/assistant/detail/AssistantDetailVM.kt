@@ -25,6 +25,7 @@ import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.MemoryFile
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.Tag
+import me.rerere.rikkahub.data.model.TavernCharacterData
 import me.rerere.rikkahub.data.repository.MemoryRepository
 import me.rerere.rikkahub.data.repository.WorkspaceRepository
 import kotlin.uuid.Uuid
@@ -180,6 +181,23 @@ class AssistantDetailVM(
             replaced?.let { old ->
                 checkAvatarDelete(old = old, new = assistant) // 删除旧头像
                 checkBackgroundDelete(old = old, new = assistant) // 删除旧背景
+            }
+        }
+    }
+
+    // 按最新落盘的卡做增量修改，页面上多个字段同时保存时不会互相覆盖
+    fun updateTavern(transform: (TavernCharacterData) -> TavernCharacterData) {
+        viewModelScope.launch {
+            settingsStore.update { settings ->
+                settings.copy(
+                    assistants = settings.assistants.map { assistant ->
+                        val tav = assistant.tavernData
+                        if (assistant.id == assistantId && tav != null) {
+                            assistant.copy(tavernData = transform(tav))
+                        } else {
+                            assistant
+                        }
+                    })
             }
         }
     }

@@ -1960,7 +1960,8 @@
   <string name="setting_page_jev_active_desc">已开启的接管项由 Jev 完成判断；它判不出来或置信度不足时会静默回退到原有逻辑。</string>
   <string name="setting_page_jev_active_title">Jev 已接管</string>
   <string name="setting_page_jev_api_key">API Key</string>
-  <string name="setting_page_jev_base_url">API 地址</string>
+  <string name="setting_page_jev_base_url">接口地址</string>
+  <string name="setting_page_jev_base_url_desc">自建网关用了别的路径时直接填完整接口地址；只填域名会自动补 /v1/systemone。</string>
   <string name="setting_page_jev_credentials">接入凭证</string>
   <string name="setting_page_jev_desc">把高频小判断交给隐形决策层，省 token 省延迟</string>
   <string name="setting_page_jev_endpoint">实际请求端点：%1$s</string>

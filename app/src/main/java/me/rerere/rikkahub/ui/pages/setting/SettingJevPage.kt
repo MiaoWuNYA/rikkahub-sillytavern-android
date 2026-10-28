@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -37,11 +38,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Alert02
 import me.rerere.hugeicons.stroke.Brain
-import me.rerere.hugeicons.stroke.CheckmarkCircle02
 import me.rerere.hugeicons.stroke.Copy01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.ai.jev.JEV_DEFAULT_BASE_URL
 import me.rerere.rikkahub.data.ai.jev.JEV_DEFAULT_MODEL
+import me.rerere.rikkahub.data.ai.jev.resolveJevEndpoint
 import me.rerere.rikkahub.data.datastore.HuaDengSettings
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
@@ -78,32 +79,22 @@ fun SettingJevPage(vm: SettingVM = koinViewModel()) {
         vm.updateSettings { it.copy(huadengSettings = newValue) }
     }
 
-    fun commitBaseUrl() {
-        val normalized = baseUrl.trim().ifEmpty { JEV_DEFAULT_BASE_URL }
-        if (normalized != huaDeng.jevBaseUrl) {
-            updateHuaDeng(huaDeng.copy(jevBaseUrl = normalized))
+    fun commitAll() {
+        val url = baseUrl.trim().ifEmpty { JEV_DEFAULT_BASE_URL }
+        val key = apiKey.trim()
+        val newModel = model.trim().ifEmpty { JEV_DEFAULT_MODEL }
+        if (url != huaDeng.jevBaseUrl || key != huaDeng.jevApiKey || newModel != huaDeng.jevModel) {
+            updateHuaDeng(huaDeng.copy(jevBaseUrl = url, jevApiKey = key, jevModel = newModel))
         }
     }
 
-    fun commitApiKey() {
-        val normalized = apiKey.trim()
-        if (normalized != huaDeng.jevApiKey) {
-            updateHuaDeng(huaDeng.copy(jevApiKey = normalized))
-        }
-    }
-
-    fun commitModel() {
-        val normalized = model.trim().ifEmpty { JEV_DEFAULT_MODEL }
-        if (normalized != huaDeng.jevModel) {
-            updateHuaDeng(huaDeng.copy(jevModel = normalized))
-        }
-    }
-
+    val dirty = baseUrl.trim().ifEmpty { JEV_DEFAULT_BASE_URL } != huaDeng.jevBaseUrl ||
+        apiKey.trim() != huaDeng.jevApiKey ||
+        model.trim().ifEmpty { JEV_DEFAULT_MODEL } != huaDeng.jevModel
     val configured = huaDeng.jevApiKey.isNotBlank() && huaDeng.jevBaseUrl.isValidHttpUrl()
     val anyTakeover = huaDeng.jevTakeoverMemory || huaDeng.jevJudgeTool
     // 第三方中转/自建代理要照着这个填，所以显示拼好的完整端点而不是只给个域名
-    val endpoint = remember(huaDeng.jevBaseUrl) { huaDeng.jevBaseUrl.resolveSystemOneEndpoint() }
-    val clipboard = LocalClipboardManager.current
+    val endpoint = remember(baseUrl) { resolveJevEndpoint(baseUrl) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -192,6 +183,11 @@ fun SettingJevPage(vm: SettingVM = koinViewModel()) {
                         supportingContent = {
                             Column {
                                 Text(
+                                    text = stringResource(R.string.setting_page_jev_base_url_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
                                     text = stringResource(R.string.setting_page_jev_endpoint, endpoint),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -199,20 +195,14 @@ fun SettingJevPage(vm: SettingVM = koinViewModel()) {
                                 OutlinedTextField(
                                     value = baseUrl,
                                     onValueChange = { baseUrl = it },
-                                    placeholder = { Text(JEV_DEFAULT_BASE_URL) },
+                                    placeholder = { Text("$JEV_DEFAULT_BASE_URL/v1/systemone") },
                                     singleLine = true,
                                     shape = MaterialTheme.shapes.small,
                                     colors = TextFieldDefaults.colors(
                                         focusedIndicatorColor = Color.Transparent,
                                         unfocusedIndicatorColor = Color.Transparent,
                                     ),
-                                    trailingIcon = {
-                                        if (baseUrl.trim() != huaDeng.jevBaseUrl) {
-                                            ConfirmIconButton(visible = true, onClick = ::commitBaseUrl)
-                                        } else {
-                                            CopyEndpointButton(endpoint)
-                                        }
-                                    },
+                                    trailingIcon = { CopyEndpointButton(endpoint) },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(top = 8.dp),
@@ -234,12 +224,6 @@ fun SettingJevPage(vm: SettingVM = koinViewModel()) {
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
                                 ),
-                                trailingIcon = {
-                                    ConfirmIconButton(
-                                        visible = apiKey.trim() != huaDeng.jevApiKey,
-                                        onClick = ::commitApiKey,
-                                    )
-                                },
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         },
@@ -257,16 +241,21 @@ fun SettingJevPage(vm: SettingVM = koinViewModel()) {
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
                                 ),
-                                trailingIcon = {
-                                    ConfirmIconButton(
-                                        visible = model.trim() != huaDeng.jevModel,
-                                        onClick = ::commitModel,
-                                    )
-                                },
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         },
                     )
+                    formItem {
+                        Button(
+                            onClick = ::commitAll,
+                            enabled = dirty,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp),
+                        ) {
+                            Text(stringResource(R.string.common_save))
+                        }
+                    }
                 }
             }
 
@@ -350,35 +339,8 @@ private fun String.isValidHttpUrl(): Boolean =
     startsWith("http://") || startsWith("https://")
 
 /**
- * 与 JevClient 拼 URL 的方式保持一致：填根地址补 /v1/systemone，
- * 填已经带 /v1 的地址就只补后半段。第三方中转的服务地址格式不一（有的要 /v1、
- * 有的自带完整路径），所以这里只做展示，最终以客户端实际拼出来的为准。
+ * 点一下把完整端点拷走，省得第三方服务后台一个个字符照着敲
  */
-private fun String.resolveSystemOneEndpoint(): String {
-    val base = trim().trimEnd('/').ifEmpty { JEV_DEFAULT_BASE_URL }
-    return when {
-        base.endsWith("/v1/systemone") -> base
-        base.endsWith("/v1") -> "$base/systemone"
-        else -> "$base/v1/systemone"
-    }
-}
-
-/**
-
- * 文本框改动没有落盘时露出一个确认按钮，避免每敲一个字符就写一次 DataStore
- */
-@Composable
-private fun ConfirmIconButton(visible: Boolean, onClick: () -> Unit) {
-    if (!visible) return
-    IconButton(onClick = onClick) {
-        Icon(
-            imageVector = HugeIcons.CheckmarkCircle02,
-            contentDescription = stringResource(R.string.common_save),
-        )
-    }
-}
-
-/** 点一下把完整端点拷走，省得第三方服务后台一个个字符照着敲 */
 @Composable
 private fun CopyEndpointButton(endpoint: String) {
     val clipboard = LocalClipboardManager.current

@@ -11,13 +11,13 @@ data class GroupChat(
     val id: Uuid = Uuid.random(),
     val name: String = "",
     val memberIds: List<Uuid> = emptyList(),    // 引用 assistants
-    val activationStrategy: GroupActivationStrategy = GroupActivationStrategy.NATURAL,
-    val generationMode: GroupGenerationMode = GroupGenerationMode.APPEND,
+    val activationStrategy: GroupActivationStrategy = GroupActivationStrategy.LIST,
+    val generationMode: GroupGenerationMode = GroupGenerationMode.SWAP,
     val disabledMemberIds: List<Uuid> = emptyList(),  // 禁言成员
     val speakerWeights: Map<Uuid, Int> = emptyMap(),  // for POOLED
     val conversationId: Uuid? = null,  // 关联的 Conversation ID
     val allowSelfResponses: Boolean = false,
-    val autoModeDelay: Int = 5,  // 自动接话延迟（秒）
+    val autoModeDelay: Int = 0,  // 自动接话延迟（秒），0=关闭；默认一问一答，每个成员各回一句
     val autoChatRounds: Int = 5, // 自动接话轮数上限（0=无上限；每轮全体已选成员各发言一次）
     val enabled: Boolean = true,
     val chatModelId: Uuid? = null,  // 群聊级模型覆盖（不选则用各成员自己的模型）

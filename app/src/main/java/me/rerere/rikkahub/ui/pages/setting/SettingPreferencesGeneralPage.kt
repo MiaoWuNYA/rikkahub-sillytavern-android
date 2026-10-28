@@ -578,12 +578,6 @@ internal fun SettingPreferencesGeneralContent(vm: SettingVM, contentPadding: Pad
                         supportingContent = { Text(stringResource(R.string.setting_display_page_voice_listen_while_replying_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_display_page_voice_listen_while_replying_title)) },
                     )
-                    switchItem(
-                        checked = displaySetting.voiceModeListenWhileReplying,
-                        onCheckedChange = { updateDisplaySetting(displaySetting.copy(voiceModeListenWhileReplying = it)) },
-                        supportingContent = { Text(stringResource(R.string.setting_display_page_voice_listen_while_replying_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_voice_listen_while_replying_title)) },
-                    )
                 }
             }
 

@@ -8,7 +8,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -168,27 +167,8 @@ fun ChatMessage(
     val navController = LocalNavController.current
     val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
-    val multiSelectInteraction = remember { MutableInteractionSource() }
-    val hapticFeedback = LocalHapticFeedback.current
-    val requestMultiSelect = onRequestMultiSelect
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(
-                if (requestMultiSelect != null) {
-                    Modifier.combinedClickable(
-                        interactionSource = multiSelectInteraction,
-                        indication = null,
-                        onClick = {},
-                        onLongClick = {
-                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                            requestMultiSelect()
-                        },
-                    )
-                } else {
-                    Modifier
-                }
-            ),
+        modifier = modifier.fillMaxWidth(),
         horizontalAlignment = if (message.role == MessageRole.USER) Alignment.End else Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
