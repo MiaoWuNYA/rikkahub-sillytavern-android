@@ -1965,7 +1965,8 @@
   <string name="setting_page_jev_active_desc">Enabled takeovers run through Jev. Anything it fails or is unsure about silently falls back to the original logic.</string>
   <string name="setting_page_jev_active_title">Jev is on duty</string>
   <string name="setting_page_jev_api_key">API key</string>
-  <string name="setting_page_jev_base_url">API address</string>
+  <string name="setting_page_jev_base_url">Service URL</string>
+  <string name="setting_page_jev_base_url_desc">Paste the full endpoint if your gateway uses a custom path; a bare domain gets /v1/systemone appended.</string>
   <string name="setting_page_jev_credentials">Credentials</string>
   <string name="setting_page_jev_desc">Offload high-frequency small judgments to a hidden decision layer</string>
   <string name="setting_page_jev_endpoint">Endpoint (what the app actually calls): %1$s</string>

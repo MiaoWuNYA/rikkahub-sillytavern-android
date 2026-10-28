@@ -176,7 +176,7 @@ fun AssistantDetailPage(id: String) {
                     TavernCharacterCard(
                         assistant = assistant,
                         modifier = Modifier.padding(horizontal = 8.dp),
-                        onAssistantUpdate = { updated -> vm.update(updated) },
+                        onTavernUpdate = { transform -> vm.updateTavern(transform) },
                         settings = settings,
                         onSettingsUpdate = { updated -> vm.updateSettings(updated) },
                         onExport = { showExport = true },

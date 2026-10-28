@@ -105,7 +105,7 @@ class JevClient(
         val body = JevJson.encodeToString(
             JevRequest(state = state, model = config.model, questions = questions)
         )
-        val url = "${config.baseUrl}/v1/systemone"
+        val url = resolveJevEndpoint(config.baseUrl)
         val request = Request.Builder()
             .url(url)
             .header("Authorization", "Bearer ${config.apiKey}")

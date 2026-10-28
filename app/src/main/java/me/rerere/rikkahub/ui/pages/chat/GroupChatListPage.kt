@@ -124,9 +124,9 @@ fun GroupChatListPage() {
     if (showCreate) {
         var name by remember { mutableStateOf("") }
         var selectedIds by remember { mutableStateOf(setOf<Uuid>()) }
-        var selectedMode by remember { mutableStateOf(GroupActivationStrategy.NATURAL) }
+        var selectedMode by remember { mutableStateOf(GroupActivationStrategy.LIST) }
         var selectedGenMode by remember { mutableStateOf(GroupGenerationMode.SWAP) }
-        var autoDelay by remember { mutableIntStateOf(5) }
+        var autoDelay by remember { mutableIntStateOf(0) }
         var autoRounds by remember { mutableIntStateOf(5) }
         var allowSelf by remember { mutableStateOf(false) }
 
@@ -232,7 +232,7 @@ fun GroupChatListPage() {
                         if (name.isNotBlank() && selectedIds.size >= 2) {
                             val gc = GroupChat(
                                 name = name,
-                                memberIds = selectedIds.toList(),
+                                memberIds = settings.assistants.filter { it.id in selectedIds }.map { it.id },
                                 activationStrategy = selectedMode,
                                 generationMode = selectedGenMode,
                                 autoModeDelay = autoDelay,

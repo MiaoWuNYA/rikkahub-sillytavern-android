@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.TavernBookEntry
+import me.rerere.rikkahub.data.model.TavernCharacterData
 import me.rerere.rikkahub.data.model.TavernEmbeddedBook
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.utils.l10n
@@ -80,7 +81,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 fun TavernCharacterCard(
     assistant: Assistant,
     modifier: Modifier = Modifier,
-    onAssistantUpdate: ((Assistant) -> Unit)? = null,
+    onTavernUpdate: ((TavernCharacterData) -> TavernCharacterData) -> Unit = {},
     settings: Settings? = null,
     onSettingsUpdate: ((Settings) -> Unit)? = null,
     onExport: (() -> Unit)? = null,
@@ -238,34 +239,34 @@ fun TavernCharacterCard(
                         fields = buildList {
                             if (tav.systemPrompt.isNotBlank()) {
                                 add(FieldSpec(stringResource(R.string.tavern_field_system_prompt), tav.systemPrompt) { v ->
-                                    onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(systemPrompt = v)))
+                                    onTavernUpdate { it.copy(systemPrompt = v) }
                                 })
                             }
                             add(FieldSpec(stringResource(R.string.tavern_field_description), tav.description) { v ->
-                                onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(description = v)))
+                                onTavernUpdate { it.copy(description = v) }
                             })
                             add(FieldSpec(stringResource(R.string.tavern_field_personality), tav.personality) { v ->
-                                onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(personality = v)))
+                                onTavernUpdate { it.copy(personality = v) }
                             })
                             add(FieldSpec(stringResource(R.string.tavern_field_scenario), tav.scenario) { v ->
-                                onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(scenario = v)))
+                                onTavernUpdate { it.copy(scenario = v) }
                             })
                             add(FieldSpec(stringResource(R.string.tavern_field_mes_example), tav.mesExample) { v ->
-                                onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(mesExample = v)))
+                                onTavernUpdate { it.copy(mesExample = v) }
                             })
                             if (tav.postHistoryInstructions.isNotBlank()) {
                                 add(FieldSpec(stringResource(R.string.tavern_field_phi), tav.postHistoryInstructions) { v ->
-                                    onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(postHistoryInstructions = v)))
+                                    onTavernUpdate { it.copy(postHistoryInstructions = v) }
                                 })
                             }
                             if (tav.firstMessage.isNotBlank()) {
                                 add(FieldSpec(stringResource(R.string.tavern_field_first_message), tav.firstMessage, previewLines = 1) { v ->
-                                    onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(firstMessage = v)))
+                                    onTavernUpdate { it.copy(firstMessage = v) }
                                 })
                             }
                             if (tav.creatorNotes.isNotBlank()) {
                                 add(FieldSpec(stringResource(R.string.tavern_field_creator_notes), tav.creatorNotes) { v ->
-                                    onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(creatorNotes = v)))
+                                    onTavernUpdate { it.copy(creatorNotes = v) }
                                 })
                             }
                         },
@@ -278,14 +279,16 @@ fun TavernCharacterCard(
                             fields = buildList {
                                 tav.alternateGreetings.forEachIndexed { i, greeting ->
                                     add(FieldSpec("G${i + 1}", greeting) { v ->
-                                        val newGreetings = tav.alternateGreetings.toMutableList().apply { set(i, v) }
-                                        onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(alternateGreetings = newGreetings)))
+                                        onTavernUpdate { tav ->
+                                            tav.copy(alternateGreetings = tav.alternateGreetings.toMutableList().apply { set(i, v) })
+                                        }
                                     })
                                 }
                                 tav.groupOnlyGreetings.forEachIndexed { i, greeting ->
                                     add(FieldSpec(l10n("群聊G${i + 1}", "Group G${i + 1}"), greeting) { v ->
-                                        val newGreetings = tav.groupOnlyGreetings.toMutableList().apply { set(i, v) }
-                                        onAssistantUpdate?.invoke(assistant.copy(tavernData = tav.copy(groupOnlyGreetings = newGreetings)))
+                                        onTavernUpdate { tav ->
+                                            tav.copy(groupOnlyGreetings = tav.groupOnlyGreetings.toMutableList().apply { set(i, v) })
+                                        }
                                     })
                                 }
                             },
@@ -300,14 +303,17 @@ fun TavernCharacterCard(
                             settings = settings,
                             onSettingsUpdate = onSettingsUpdate,
                             onEntryUpdate = { updated ->
-                                val tav = assistant.tavernData ?: return@EmbeddedBookSummary
-                                val oldBook = tav.embeddedBook ?: return@EmbeddedBookSummary
-                                val newEntries = oldBook.entries.map {
-                                    if (it.id == updated.id) updated else it
+                                onTavernUpdate { tav ->
+                                    val oldBook = tav.embeddedBook
+                                    if (oldBook == null) {
+                                        tav
+                                    } else {
+                                        val newEntries = oldBook.entries.map {
+                                            if (it.id == updated.id) updated else it
+                                        }
+                                        tav.copy(embeddedBook = oldBook.copy(entries = newEntries))
+                                    }
                                 }
-                                val newBook = oldBook.copy(entries = newEntries)
-                                val newTav = tav.copy(embeddedBook = newBook)
-                                onAssistantUpdate?.invoke(assistant.copy(tavernData = newTav))
                             },
                         )
                     }
@@ -477,10 +483,18 @@ private fun FieldCardGroup(
     title: String,
     fields: List<FieldSpec>,
 ) {
-    // 用「标签+值」做稳定 key：字段值没变时保留展开/编辑状态，外部保存后值变化才重置
-    val stateKey = fields.map { it.label to it.value }
-    val expandedKeys = remember(stateKey) { mutableStateMapOf<String, Boolean>() }
-    val editTexts = remember(stateKey) { mutableStateMapOf<String, String>() }
+    val expandedKeys = remember { mutableStateMapOf<String, Boolean>() }
+    val editTexts = remember { mutableStateMapOf<String, String>() }
+    // 直接返回上一级时不会经过「收起字段」这一步，离开页面也要把没提交的编辑写回去
+    val currentFields = rememberUpdatedState(fields)
+    DisposableEffect(Unit) {
+        onDispose {
+            currentFields.value.forEach { field ->
+                val text = editTexts[field.label] ?: return@forEach
+                if (text != field.value) field.onSave(text)
+            }
+        }
+    }
 
     CardGroup(title = { Text(title) }) {
         fields.forEach { field ->
@@ -488,7 +502,7 @@ private fun FieldCardGroup(
                 onClick = {
                     if (expandedKeys[field.label] == true) {
                         expandedKeys[field.label] = false
-                        val text = editTexts[field.label] ?: field.value
+                        val text = editTexts.remove(field.label) ?: field.value
                         if (text != field.value) field.onSave(text)
                     } else {
                         expandedKeys[field.label] = true

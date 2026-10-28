@@ -18,6 +18,20 @@ const val JEV_DEFAULT_BASE_URL = "https://api.typesafe.ai"
 const val JEV_DEFAULT_MODEL = "jev-latest"
 
 /**
+ * 用户填根地址时补默认路径；填了带路径的完整地址就原样使用，
+ * 兼容自建网关把接口挂在任意路径下的情况。
+ */
+fun resolveJevEndpoint(raw: String): String {
+    val base = raw.trim().trimEnd('/').ifEmpty { JEV_DEFAULT_BASE_URL }
+    return when {
+        base.endsWith("/v1/systemone") -> base
+        base.endsWith("/v1") -> "$base/systemone"
+        base.substringAfter("://", "").contains('/') -> base
+        else -> "$base/v1/systemone"
+    }
+}
+
+/**
  * model 不给默认值：序列化统一用 `encodeDefaults = false`，带默认值的字段会被整段省略，
  * 而服务端把 model 列为必填——省掉它换来的是 422 "Field required"。
  * 这里让它在类型层面就必填，杜绝再被漏掉。
