@@ -19,6 +19,7 @@ import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.model.GroupChat
 import me.rerere.rikkahub.data.model.GroupActivationStrategy
 import me.rerere.rikkahub.data.model.GroupGenerationMode
+import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.ui.components.ai.ExtensionEmptyState
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
@@ -26,6 +27,7 @@ import me.rerere.rikkahub.ui.components.ui.UIAvatar
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.ArrowRight01
+import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.UserGroup
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.context.LocalNavController
@@ -37,10 +39,12 @@ import kotlin.uuid.Uuid
 @Composable
 fun GroupChatListPage() {
     val settingsStore: SettingsStore = koinInject()
+    val conversationRepository: ConversationRepository = koinInject()
     val settings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var showCreate by remember { mutableStateOf(false) }
+    var pendingDelete by remember { mutableStateOf<GroupChat?>(null) }
     val scope = rememberCoroutineScope()
 
     Scaffold(
@@ -106,6 +110,13 @@ fun GroupChatListPage() {
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,
+                                )
+                            }
+                            IconButton(onClick = { pendingDelete = gc }) {
+                                Icon(
+                                    HugeIcons.Delete01,
+                                    contentDescription = stringResource(R.string.delete),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                             Icon(
@@ -248,6 +259,41 @@ fun GroupChatListPage() {
                 ) { Text(stringResource(R.string.group_create)) }
             },
             dismissButton = { TextButton(onClick = { showCreate = false }) { Text(stringResource(R.string.group_cancel)) } },
+        )
+    }
+
+    pendingDelete?.let { target ->
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            title = { Text(stringResource(R.string.group_delete_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.group_delete_message,
+                        target.name.ifBlank { stringResource(R.string.group_unnamed) },
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendingDelete = null
+                        scope.launch {
+                            target.conversationId?.let { conversationId ->
+                                conversationRepository.getConversationById(conversationId)?.let {
+                                    conversationRepository.deleteConversation(it)
+                                }
+                            }
+                            settingsStore.update { current ->
+                                current.copy(groupChats = current.groupChats.filterNot { it.id == target.id })
+                            }
+                        }
+                    }
+                ) { Text(stringResource(R.string.delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDelete = null }) { Text(stringResource(R.string.group_cancel)) }
+            },
         )
     }
 }

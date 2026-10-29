@@ -379,7 +379,8 @@ class QqBotService : Service(), KoinComponent {
      */
     private suspend fun handleInboundMessage(text: String): String {
         val settings = settingsStore.settingsFlow.first()
-        val assistant = settings.getCurrentAssistant()
+        val assistant = settings.assistants.find { it.id.toString() == settings.qqBotSetting.assistantId }
+            ?: settings.getCurrentAssistant()
 
         val recent = conversationRepository.getRecentConversations(assistant.id, limit = 1)
         val conversationId = recent.firstOrNull()?.id ?: Uuid.random()

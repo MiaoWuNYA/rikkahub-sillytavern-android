@@ -40,6 +40,7 @@ import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.model.*
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.ai.transformers.PlaceholderTransformer
+import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.service.ChatService
 import me.rerere.rikkahub.ui.components.ai.ChatInput
 import me.rerere.rikkahub.ui.components.ai.ModelSelector
@@ -266,6 +267,7 @@ private fun GroupChatStatusBar(
 fun GroupChatPage(groupId: String) {
     val settingsStore: SettingsStore = koinInject()
     val chatService: ChatService = koinInject()
+    val conversationRepository: ConversationRepository = koinInject()
     val settings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val scope = rememberCoroutineScope()
@@ -324,6 +326,7 @@ fun GroupChatPage(groupId: String) {
 
     var selectedSpeakerId by remember { mutableStateOf(enabledMembers.firstOrNull()?.id) }
     var showSettings by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     var isGenerating by remember { mutableStateOf(false) }
     var queueStatus by remember { mutableStateOf("") }
     var queueMembers by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -1034,8 +1037,58 @@ fun GroupChatPage(groupId: String) {
                         }
                         Spacer(Modifier.height(4.dp))
                     }
+
+                    TextButton(
+                        onClick = {
+                            showSettings = false
+                            showDeleteDialog = true
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.group_delete_title))
+                    }
                 }
             }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(stringResource(R.string.group_delete_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.group_delete_message,
+                        gc.name.ifBlank { stringResource(R.string.group_unnamed) },
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        scope.launch {
+                            // 先等 cancelled 的生成任务在 finally 里保存完，再删会话
+                            generationJob?.cancel()
+                            generationJob?.join()
+                            gc.conversationId?.let { conversationId ->
+                                conversationRepository.getConversationById(conversationId)?.let {
+                                    conversationRepository.deleteConversation(it)
+                                }
+                            }
+                            settingsStore.update { current ->
+                                current.copy(groupChats = current.groupChats.filterNot { it.id == gcId })
+                            }
+                            navController.popBackStack()
+                        }
+                    }
+                ) { Text(stringResource(R.string.delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.group_cancel)) }
+            },
+        )
     }
 }
 

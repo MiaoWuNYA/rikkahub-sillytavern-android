@@ -46,6 +46,12 @@ const val LIQUID_GLASS_THEME_ID = "liquid_glass"
 
 private val AMOLED_DARK_BACKGROUND = Color(0xFF000000)
 
+// AMOLED 下让容器也贴近纯黑，否则设置页卡片仍是深灰，开关看上去没反应
+private val AMOLED_DARK_CONTAINER_LOW = Color(0xFF000000)
+private val AMOLED_DARK_CONTAINER = Color(0xFF000000)
+private val AMOLED_DARK_CONTAINER_HIGH = Color(0xFF101010)
+private val AMOLED_DARK_CONTAINER_HIGHEST = Color(0xFF161616)
+
 @Serializable
 enum class ColorMode {
     SYSTEM,
@@ -100,6 +106,14 @@ fun RikkahubTheme(
             colorScheme.copy(
                 background = AMOLED_DARK_BACKGROUND,
                 surface = AMOLED_DARK_BACKGROUND,
+                surfaceDim = AMOLED_DARK_BACKGROUND,
+                surfaceContainerLowest = AMOLED_DARK_BACKGROUND,
+                surfaceContainerLow = AMOLED_DARK_CONTAINER_LOW,
+                surfaceContainer = AMOLED_DARK_CONTAINER,
+                surfaceContainerHigh = AMOLED_DARK_CONTAINER_HIGH,
+                surfaceContainerHighest = AMOLED_DARK_CONTAINER_HIGHEST,
+                surfaceBright = AMOLED_DARK_CONTAINER_HIGHEST,
+                surfaceVariant = AMOLED_DARK_CONTAINER_HIGH,
             )
         } else {
             colorScheme

@@ -113,26 +113,6 @@ fun SettingHuaDengCompatPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
-                        headlineContent = { Text(stringResource(R.string.huadeng_clean_mode)) },
-                        supportingContent = {
-                            Text(stringResource(R.string.huadeng_clean_mode_desc))
-                        },
-                        trailingContent = {
-                            Switch(
-                                checked = settings.huadengSettings.enableCleanMode,
-                                onCheckedChange = { enabled ->
-                                    vm.updateSettings {
-                                        it.copy(
-                                            huadengSettings = it.huadengSettings.copy(
-                                                enableCleanMode = enabled,
-                                            ),
-                                        )
-                                    }
-                                },
-                            )
-                        },
-                    )
-                    item(
                         headlineContent = { Text(stringResource(R.string.huadeng_tool_result_truncation)) },
                         supportingContent = {
                             Text(stringResource(R.string.huadeng_tool_result_truncation_desc))

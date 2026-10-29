@@ -10,6 +10,7 @@ import kotlinx.serialization.Serializable
  *
  * 字段:
  *  - [enabled]: 总开关. 开启后启动 QqBotService 建立 WebSocket 连接.
+ *  - [assistantId]: 绑定的助手, 留空 = 用当前助手.
  *  - [appId] / [appSecret]: 在 QQ 开放平台 (q.qq.com) 创建机器人后获得.
  *  - [accessToken] / [accessTokenExpireAt]: getAppAccessToken 返回的凭证缓存 (过期前刷新).
  *    持久化是为了重启后不立即重新拿 token, 但过期仍会自动刷新.
@@ -17,6 +18,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class QqBotSetting(
     val enabled: Boolean = false,
+    val assistantId: String = "",
     val appId: String = "",
     val appSecret: String = "",
     val accessToken: String = "",

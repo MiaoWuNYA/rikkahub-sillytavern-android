@@ -648,6 +648,8 @@
   <string name="group_chat_list_title">群聊</string>
   <string name="group_chat_name">群名</string>
   <string name="group_create">创建</string>
+  <string name="group_delete_message">将删除群聊「%1$s」及其聊天记录，此操作不可撤销。</string>
+  <string name="group_delete_title">删除群聊</string>
   <string name="group_gen_append">追加</string>
   <string name="group_gen_append_disabled">追加含禁言</string>
   <string name="group_gen_swap">替换</string>
@@ -1394,6 +1396,7 @@
   <string name="qq_bot_how_to_get_credentials">怎么获取 AppID 和 Secret</string>
   <string name="qq_bot_how_to_get_credentials_desc">1. 去 q.qq.com 注册开发者并创建机器人\n2. 在机器人管理页面找到 AppID 和 AppSecret\n3. 复制填到下面</string>
   <string name="qq_bot_linked_assistant">关联角色卡</string>
+  <string name="qq_bot_linked_assistant_desc">使用角色卡：%1$s（点击更换）</string>
   <string name="qq_bot_notification_disconnected_text">机器人可能已下架或被封禁, 请到 q.qq.com 检查</string>
   <string name="qq_bot_notification_disconnected_title">QQ Bot 已断开</string>
   <string name="qq_bot_notification_running_text">正在监听 QQ 私聊消息</string>

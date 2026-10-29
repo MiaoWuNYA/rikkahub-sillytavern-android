@@ -649,6 +649,8 @@
   <string name="group_chat_list_title">Group Chat</string>
   <string name="group_chat_name">Group Name</string>
   <string name="group_create">Create</string>
+  <string name="group_delete_message">Delete group chat \"%1$s\" and its chat history? This cannot be undone.</string>
+  <string name="group_delete_title">Delete Group Chat</string>
   <string name="group_gen_append">Append</string>
   <string name="group_gen_append_disabled">Append Disabled</string>
   <string name="group_gen_swap">Swap</string>
@@ -1399,6 +1401,7 @@
   <string name="qq_bot_how_to_get_credentials">How to get AppID and Secret</string>
   <string name="qq_bot_how_to_get_credentials_desc">1. Register as a developer and create a bot at q.qq.com\n2. Find the AppID and AppSecret on the bot management page\n3. Copy and paste them below</string>
   <string name="qq_bot_linked_assistant">Linked Character Card</string>
+  <string name="qq_bot_linked_assistant_desc">Replies as: %1$s (tap to change)</string>
   <string name="qq_bot_notification_disconnected_text">The bot may have been taken down or banned. Check q.qq.com for details</string>
   <string name="qq_bot_notification_disconnected_title">QQ Bot disconnected</string>
   <string name="qq_bot_notification_running_text">Listening for QQ private messages</string>
