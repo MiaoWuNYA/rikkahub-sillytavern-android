@@ -303,6 +303,9 @@ fun ChatDrawerContent(
                 }
             }
 
+            // 条目是 fillMaxWidth，放进下面的 Row 会把 weight(1f) 的文件夹栏挤成 0 宽
+            DrawerActions(navController = navController, settings = settings)
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -319,8 +322,6 @@ fun ChatDrawerContent(
                     onDelete = { folderToDelete = it },
                     modifier = Modifier.weight(1f),
                 )
-
-                DrawerActions(navController = navController, settings = settings)
 
                 ConversationSortButton(
                     sortOrder = settings.displaySetting.conversationSortOrder,
