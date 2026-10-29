@@ -630,6 +630,16 @@ internal fun SettingPreferencesUIContent(vm: SettingVM, contentPadding: PaddingV
                             )
                         },
                     )
+                    switchItem(
+                        checked = settings.huadengSettings.enableCleanMode,
+                        onCheckedChange = { enabled ->
+                            vm.updateSettings {
+                                it.copy(huadengSettings = it.huadengSettings.copy(enableCleanMode = enabled))
+                            }
+                        },
+                        supportingContent = { Text(stringResource(R.string.huadeng_clean_mode_desc)) },
+                        headlineContent = { Text(stringResource(R.string.huadeng_clean_mode)) },
+                    )
                 }
             }
         }
