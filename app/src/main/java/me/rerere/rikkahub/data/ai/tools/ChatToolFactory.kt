@@ -10,7 +10,6 @@ import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.ai.mcp.McpManager
 import me.rerere.rikkahub.data.ai.tools.LocalTools
 import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.files.FileFolders
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.repository.ConversationRepository
@@ -18,7 +17,6 @@ import me.rerere.rikkahub.data.repository.MemoryRepository
 import me.rerere.rikkahub.data.repository.WorkspaceRepository
 import me.rerere.rikkahub.data.repository.memoryId
 import me.rerere.rikkahub.data.skills.SkillManager
-import me.rerere.rikkahub.plugin.manager.PluginManager
 import me.rerere.workspace.WorkspaceShellStatus
 import java.io.File
 import kotlin.uuid.Uuid
@@ -46,9 +44,6 @@ class ChatToolFactory(
     private val mcpManager: McpManager,
     private val skillManager: SkillManager,
     private val workspaceRepository: WorkspaceRepository,
-    private val settingsStore: SettingsStore,
-    private val pluginManager: PluginManager,
-    private val pluginSettingsService: me.rerere.rikkahub.plugin.settings.PluginSettingsService,
 ) {
     suspend fun createTools(
         settings: Settings,
@@ -65,14 +60,7 @@ class ChatToolFactory(
                 addAll(createSearchTools(settings))
             }
             addAll(localTools.getTools(assistant.localTools))
-            add(
-                buildSettingsControlTool(
-                    settingsStore = settingsStore,
-                    patchRecorder = pluginSettingsService,
-                    onPatchCreated = { pluginManager.refreshPlugins() },
-                )
-            )
-            add(buildPluginAuthorTool(pluginManager))
+
             if (assistant.enableRecentChatsReference) {
                 addAll(createConversationTools(conversationRepository, assistant.id))
             }

@@ -31,6 +31,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.ui.toast.ToastType
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.AiBrowser
+import me.rerere.hugeicons.stroke.Bulb
+import me.rerere.hugeicons.stroke.Settings01
 import me.rerere.hugeicons.stroke.Calendar03
 import me.rerere.hugeicons.stroke.ChartLineData01
 import me.rerere.hugeicons.stroke.ClipboardPaste
@@ -463,6 +465,20 @@ private fun AssistantLocalToolContent(
                 icon = HugeIcons.AiBrowser,
                 title = R.string.local_tool_browser_agent_title,
                 description = R.string.local_tool_browser_agent_desc,
+            )
+            // 设置控制：按分组懒加载读写应用设置
+            toolItem(
+                option = LocalToolOption.SettingsControl,
+                icon = HugeIcons.Settings01,
+                title = R.string.local_tool_settings_control_title,
+                description = R.string.local_tool_settings_control_desc,
+            )
+            // 创造模式：直接写插件
+            toolItem(
+                option = LocalToolOption.PluginAuthor,
+                icon = HugeIcons.Bulb,
+                title = R.string.local_tool_plugin_author_title,
+                description = R.string.local_tool_plugin_author_desc,
             )
         }
     }

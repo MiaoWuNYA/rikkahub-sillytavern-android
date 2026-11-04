@@ -3583,6 +3583,10 @@
   <string name="browser_activity_label">AI Browser</string>
   <string name="local_tool_browser_agent_title">AI Browser</string>
   <string name="local_tool_browser_agent_desc">Open a visible browser the assistant can read, click, type and screenshot</string>
+  <string name="local_tool_settings_control_title">App settings</string>
+  <string name="local_tool_settings_control_desc">Let the assistant read and change app settings (theme, models, providers, prompts…) step by step</string>
+  <string name="local_tool_plugin_author_title">Creation mode</string>
+  <string name="local_tool_plugin_author_desc">Let the assistant write, install, export and delete plugins</string>
   <string name="setting_browser_title">AI Browser</string>
   <string name="setting_browser_desc">Let the assistant drive a real visible browser</string>
   <string name="setting_browser_enabled">Enable AI browser</string>

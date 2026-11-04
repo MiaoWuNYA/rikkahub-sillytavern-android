@@ -170,6 +170,16 @@ sealed class LocalToolOption {
     @Serializable
     @SerialName("browser_agent")
     data object BrowserAgent : LocalToolOption()
+
+    /** 设置控制：分级懒加载读写应用设置。 */
+    @Serializable
+    @SerialName("settings_control")
+    data object SettingsControl : LocalToolOption()
+
+    /** 创造模式：让模型直接写/装/导出/删除插件。 */
+    @Serializable
+    @SerialName("plugin_author")
+    data object PluginAuthor : LocalToolOption()
 }
 
 class LocalTools(
@@ -177,6 +187,8 @@ class LocalTools(
     private val eventBus: AppEventBus,
     private val ttsManager: TTSManager,
     private val settingsStore: SettingsStore,
+    private val pluginManager: me.rerere.rikkahub.plugin.manager.PluginManager,
+    private val pluginSettingsService: me.rerere.rikkahub.plugin.settings.PluginSettingsService,
 ) {
     // ── Persistent JS engine ──
     private var jsExecutor = java.util.concurrent.Executors.newSingleThreadExecutor()
@@ -547,6 +559,18 @@ class LocalTools(
         if (options.contains(LocalToolOption.BrowserAgent)) {
             tools.addAll(buildBrowserTools(context, settingsStore))
         }
+        if (options.contains(LocalToolOption.SettingsControl)) {
+            tools.add(
+                buildSettingsControlTool(
+                    settingsStore = settingsStore,
+                    patchRecorder = pluginSettingsService,
+                    onPatchCreated = { pluginManager.refreshPlugins() },
+                )
+            )
+        }
+        if (options.contains(LocalToolOption.PluginAuthor)) {
+            tools.add(buildPluginAuthorTool(pluginManager))
+        }
         return tools
     }
 }
@@ -594,4 +618,6 @@ fun LocalToolOption.groupId(): String = when (this) {
     LocalToolOption.SubAgent -> "subagent"
     LocalToolOption.PhoneControl -> "phone"
     LocalToolOption.BrowserAgent -> "browser"
+    LocalToolOption.SettingsControl -> "settings"
+    LocalToolOption.PluginAuthor -> "plugin"
 }
