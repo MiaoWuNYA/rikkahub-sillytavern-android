@@ -334,7 +334,8 @@ internal fun buildMessage(
     }
 
     val model = message.modelSnapshot
-    val useAssistantAvatar = !isUser && assistant.useAssistantAvatar
+    val useAssistantAvatar =
+        !isUser && (settings.displaySetting.useAssistantAvatar || assistant.useAssistantAvatar)
     val name = message.name?.takeIf { it.isNotBlank() } ?: when {
         isUser -> settings.displaySetting.userNickname.ifBlank { "You" }
         useAssistantAvatar || model == null -> assistant.name.ifBlank { "Assistant" }

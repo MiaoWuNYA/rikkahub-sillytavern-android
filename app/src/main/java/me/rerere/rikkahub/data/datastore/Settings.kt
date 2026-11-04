@@ -379,6 +379,8 @@ data class DisplaySetting(
     val bubbleOpacity: Float = 0.9f,
     val showModelIcon: Boolean = true,
     val showModelName: Boolean = true,
+    // 全局用角色卡头像/名字替代模型图标与模型名；关 = 跟随助手自身的开关
+    val useAssistantAvatar: Boolean = false,
     val showDateTimeInMessage: Boolean = false,
     val showTokenUsage: Boolean = true,
     val showThinkingContent: Boolean = true,

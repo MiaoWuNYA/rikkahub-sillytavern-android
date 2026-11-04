@@ -1694,6 +1694,8 @@
   <string name="setting_display_page_show_message_jumper_title">Show Message Jumper</string>
   <string name="setting_display_page_show_model_name_desc">Whether to display model names in chat messages</string>
   <string name="setting_display_page_show_model_name_title">Show Model Name</string>
+  <string name="setting_display_page_use_assistant_avatar_desc">Use the character card avatar and name instead of the model icon and name in chats</string>
+  <string name="setting_display_page_use_assistant_avatar_title">Use Character Card Avatar &amp; Name</string>
   <string name="setting_display_page_show_thinking_content_desc">Whether to expand and show the thinking process by default during generation</string>
   <string name="setting_display_page_show_thinking_content_title">Show Thinking Content</string>
   <string name="setting_display_page_show_token_usage_desc">Display token usage and message count</string>
