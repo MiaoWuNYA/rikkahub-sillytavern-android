@@ -23,6 +23,18 @@ data class Model(
     val contextLength: Int = 1_000_000,
 )
 
+/** 按空格分隔的关键词筛选模型：忽略大小写，每个关键词都要命中 modelId 或 displayName，顺序不限 */
+fun List<Model>.filterByKeywords(query: String): List<Model> {
+    val keywords = query.split(" ").filter { it.isNotBlank() }
+    if (keywords.isEmpty()) return this
+    return filter { model ->
+        keywords.all { keyword ->
+            model.modelId.contains(keyword, ignoreCase = true) ||
+                model.displayName.contains(keyword, ignoreCase = true)
+        }
+    }
+}
+
 @Serializable
 enum class ModelType {
     CHAT,
