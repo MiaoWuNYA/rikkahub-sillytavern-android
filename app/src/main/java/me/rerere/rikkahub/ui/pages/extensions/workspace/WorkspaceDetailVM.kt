@@ -211,9 +211,12 @@ class WorkspaceDetailVM(
         }
     }
 
-    fun exportFile(entry: WorkspaceFileEntry, outputStream: OutputStream) {
+    fun exportFile(entry: WorkspaceFileEntry, uri: Uri, resolver: ContentResolver) {
         viewModelScope.launch {
             runCatching {
+                // 个别 ROM 的 SAF 打开目标文件时才会真正创建，失败要报错而不是闪退
+                val outputStream = withContext(Dispatchers.IO) { resolver.openOutputStream(uri) }
+                    ?: error(l10n("无法打开目标文件", "Unable to open the target file"))
                 repository.exportFile(
                     id = id,
                     area = state.value.area,

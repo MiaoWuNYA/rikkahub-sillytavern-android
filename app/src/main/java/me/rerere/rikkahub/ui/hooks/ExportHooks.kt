@@ -65,9 +65,12 @@ class ExporterState<T>(
 
     internal fun writeToUri(uri: Uri) {
         scope.launch(Dispatchers.IO) {
-            context.contentResolver.openOutputStream(uri)?.use { output ->
-                output.write(value.toByteArray())
-            }
+            // 目标 URI 打不开时直接抛 FileNotFoundException，这里吞掉避免闪退
+            runCatching {
+                context.contentResolver.openOutputStream(uri)?.use { output ->
+                    output.write(value.toByteArray())
+                }
+            }.onFailure { it.printStackTrace() }
         }
     }
 }
