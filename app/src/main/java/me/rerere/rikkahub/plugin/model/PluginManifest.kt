@@ -161,7 +161,7 @@ data class PluginRegex(
 @Serializable
 data class PluginMessageAction(
     val label: String,
-    /** regenerate=重新生成 / slash=发送斜杠命令 / tool=调用插件工具 */
+    /** regenerate=重新生成 / slash=发送斜杠命令 */
     val action: String = "regenerate",
     val payload: String = "",
     val icon: String = "",
