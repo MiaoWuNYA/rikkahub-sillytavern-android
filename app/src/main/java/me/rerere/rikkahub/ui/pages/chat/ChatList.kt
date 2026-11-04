@@ -162,6 +162,8 @@ fun ChatList(
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onToggleFavorite: ((MessageNode) -> Unit)? = null,
     onConversationSystemPromptChange: ((String?) -> Unit)? = null,
+    pluginActions: List<me.rerere.rikkahub.plugin.model.PluginMessageAction> = emptyList(),
+    onPluginAction: (me.rerere.rikkahub.plugin.model.PluginMessageAction) -> Unit = {},
 ) {
     // 前端角色卡（PNG 里带完整互动网页的那种）会调用 window.generate 让宿主
     // 帮忙生成开场白。这里接上真实生成能力：卡拼好的 prompt 送给当前对话模型，
@@ -354,6 +356,8 @@ fun ChatList(
                 onToolAnswer = onToolAnswer,
                 onToggleFavorite = onToggleFavorite,
                 onConversationSystemPromptChange = onConversationSystemPromptChange,
+                pluginActions = pluginActions,
+                onPluginAction = onPluginAction,
                 cardHost = cardHost,
                 cardMessagesJson = cardMessagesJson,
             )
@@ -423,6 +427,8 @@ private fun ChatListNormal(
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onToggleFavorite: ((MessageNode) -> Unit)? = null,
     onConversationSystemPromptChange: ((String?) -> Unit)? = null,
+    pluginActions: List<me.rerere.rikkahub.plugin.model.PluginMessageAction> = emptyList(),
+    onPluginAction: (me.rerere.rikkahub.plugin.model.PluginMessageAction) -> Unit = {},
     cardHost: CardHostContext? = null,
     cardMessagesJson: String = "[]",
 ) {
@@ -636,6 +642,15 @@ private fun ChatListNormal(
                             }
                         }
                     }
+                }
+            }
+
+            if (pluginActions.isNotEmpty() && !loading) {
+                item(key = "PluginMessageActions") {
+                    PluginMessageActionRow(
+                        actions = pluginActions,
+                        onAction = onPluginAction,
+                    )
                 }
             }
 

@@ -8,6 +8,7 @@ import me.rerere.rikkahub.plugin.provider.PluginProviderRegistry
 import me.rerere.rikkahub.plugin.provider.PluginToolProvider
 import me.rerere.rikkahub.plugin.repository.PluginRepository
 import me.rerere.rikkahub.plugin.scanner.PluginScanner
+import me.rerere.rikkahub.plugin.settings.PluginSettingsService
 import me.rerere.rikkahub.plugin.ui.PluginViewModel
 import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidContext
@@ -35,12 +36,15 @@ val pluginModule = module {
         registry
     }
 
+    // 设置补丁：插件改设置的落点与回滚
+    single { PluginSettingsService(get(), get(), get()) }
+
     // Manager
-    single { PluginManager(androidContext(), get(), get(), get(), get()) }
+    single { PluginManager(androidContext(), get(), get(), get(), get(), get()) }
 
     // Provider - 需要 PluginManager 来确保插件已初始化
     single { PluginToolProvider(get(), get()) }
 
     // ViewModel
-    viewModel { PluginViewModel(get()) }
+    viewModel { PluginViewModel(get(), get()) }
 }

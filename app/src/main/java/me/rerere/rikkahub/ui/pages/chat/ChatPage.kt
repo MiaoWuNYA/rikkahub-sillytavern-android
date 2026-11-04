@@ -480,6 +480,9 @@ private fun ChatPageContent(
     // 前端插件只在前端 WebView 模式生效：脚本随启用状态变化重新下发
     val pluginManager: me.rerere.rikkahub.plugin.manager.PluginManager = koinInject()
     val pluginList by pluginManager.plugins.collectAsStateWithLifecycle()
+    val pluginMessageActions = remember(pluginList) {
+        pluginList.filter { it.isEnabled }.flatMap { it.manifest.messageActions }
+    }
     var frontendScriptsJson by remember { mutableStateOf("[]") }
     LaunchedEffect(frontendCardPreferredNow, pluginList) {
         frontendScriptsJson = if (frontendCardPreferredNow) pluginManager.buildFrontendScriptsJson() else "[]"
@@ -1716,6 +1719,20 @@ private fun ChatPageContent(
                 onConversationSystemPromptChange = { newPrompt ->
                     vm.updateConversation(conversation.copy(customSystemPrompt = newPrompt))
                     vm.saveConversationAsync()
+                },
+                pluginActions = pluginMessageActions,
+                onPluginAction = { pluginAction ->
+                    when (pluginAction.action) {
+                        "slash" -> {
+                            inputState.setMessageText(pluginAction.payload)
+                            vm.handleMessageSend(inputState.getContents())
+                            inputState.clearInput()
+                        }
+                        "regenerate" -> conversation.currentMessages.lastOrNull()?.let {
+                            vm.regenerateAtMessage(it)
+                        }
+                        else -> toaster.show("插件动作: ${pluginAction.label}", type = ToastType.Info)
+                    }
                 },
 
             )

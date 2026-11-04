@@ -98,6 +98,73 @@ data class PluginManifest(
 
     /** 前端脚本：仅在前端 WebView 模式注入，兼容酒馆助手那类插件 */
     val frontend: PluginFrontend? = null,
+
+    /** 插件设置补丁：启用后写进应用设置，用于主题包这类“装上即生效”的插件 */
+    val settings: List<PluginSettingPatch> = emptyList(),
+
+    /** 世界书式提示词注入 */
+    val injections: List<PluginInjection> = emptyList(),
+
+    /** 插件正则：作用于消息内容 */
+    val regexes: List<PluginRegex> = emptyList(),
+
+    /** 对话末尾的消息按钮 */
+    val messageActions: List<PluginMessageAction> = emptyList(),
+
+    /** 侧边栏小程序：纯前端页面，读写插件自己的 dataStore */
+    val miniApps: List<PluginMiniApp> = emptyList(),
+)
+
+/** 侧边栏小程序（纯 WebView，不需要聊天） */
+@Serializable
+data class PluginMiniApp(
+    val id: String,
+    val name: String,
+    /** 插件目录内的 html 相对路径 */
+    val entry: String,
+    val icon: String = "",
+    val description: String = "",
+)
+
+/** 一条设置补丁，path 语法与 settings_control 工具一致 */
+@Serializable
+data class PluginSettingPatch(
+    val path: String,
+    val value: JsonElement,
+    val label: String = "",
+)
+
+/** 插件注入的提示词 */
+@Serializable
+data class PluginInjection(
+    val name: String = "",
+    val content: String = "",
+    /** file: 或 enc: 引用，优先于 content */
+    val file: String = "",
+    /** AFTER_SYSTEM_PROMPT / BEFORE_PROMPT / IN_CHAT */
+    val position: String = "AFTER_SYSTEM_PROMPT",
+)
+
+/** 插件正则 */
+@Serializable
+data class PluginRegex(
+    val name: String = "",
+    val findRegex: String,
+    val replaceString: String = "",
+    /** 只改发给模型的内容 */
+    val promptOnly: Boolean = false,
+    /** 只改界面显示 */
+    val visualOnly: Boolean = false,
+)
+
+/** 对话末尾的插件按钮 */
+@Serializable
+data class PluginMessageAction(
+    val label: String,
+    /** regenerate=重新生成 / slash=发送斜杠命令 / tool=调用插件工具 */
+    val action: String = "regenerate",
+    val payload: String = "",
+    val icon: String = "",
 )
 
 /** 前端插件定义，仅在前端 WebView 模式生效。 */

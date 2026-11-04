@@ -9,10 +9,10 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.Serializable
 import me.rerere.rikkahub.plugin.model.PluginFolder
 
 /**
@@ -90,6 +90,18 @@ class PluginRepository(
                 prefs[configKey] = json.encodeToString(pluginInfo.config)
             }
         }
+    }
+
+    /** 任意元数据：设置补丁基线这类不属于插件配置的数据 */
+    suspend fun getMeta(key: String): String? =
+        context.dataStore.data.map { it[stringPreferencesKey(key)] }.first()
+
+    suspend fun putMeta(key: String, value: String) {
+        context.dataStore.edit { prefs -> prefs[stringPreferencesKey(key)] = value }
+    }
+
+    suspend fun removeMeta(key: String) {
+        context.dataStore.edit { prefs -> prefs.remove(stringPreferencesKey(key)) }
     }
 
     /**

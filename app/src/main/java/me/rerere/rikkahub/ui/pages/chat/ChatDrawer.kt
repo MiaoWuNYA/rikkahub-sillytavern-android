@@ -1179,6 +1179,11 @@ private fun DrawerActions(
     navController: Navigator,
     settings: Settings,
 ) {
+    val pluginManager: me.rerere.rikkahub.plugin.manager.PluginManager = koinInject()
+    val plugins by pluginManager.plugins.collectAsStateWithLifecycle()
+    val miniApps = plugins.filter { it.isEnabled }.flatMap { info ->
+        info.manifest.miniApps.map { miniApp -> info.manifest.id to miniApp }
+    }
     Column {
         // 历史记录入口，行尾是搜索入口
         DrawerEntry(
@@ -1220,6 +1225,14 @@ private fun DrawerActions(
                 icon = HugeIcons.Rocket01,
                 text = stringResource(R.string.chat_drawer_life_space),
                 onClick = { navController.navigate(Screen.LifeHub) },
+            )
+        }
+        // 插件小程序：插件停用或删除后入口自动消失
+        miniApps.forEach { (pluginId, miniApp) ->
+            DrawerEntry(
+                icon = HugeIcons.Rocket01,
+                text = if (miniApp.icon.isBlank()) miniApp.name else "${miniApp.icon} ${miniApp.name}",
+                onClick = { navController.navigate(Screen.PluginMiniApp(pluginId, miniApp.id)) },
             )
         }
         // 清爽简洁模式：隐藏情侣空间/生活空间等娱乐功能入口
