@@ -20,8 +20,13 @@ import me.rerere.rikkahub.plugin.model.PluginInfo
 import me.rerere.rikkahub.plugin.model.PluginManifest
 import me.rerere.rikkahub.plugin.provider.PluginProviderRegistry
 import me.rerere.rikkahub.plugin.repository.PluginRepository
+import me.rerere.rikkahub.plugin.runtime.PluginRegexRegistry
 import me.rerere.rikkahub.plugin.scanner.PluginScanner
+import java.io.BufferedOutputStream
 import java.io.File
+import java.io.FileOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 /**
  * 插件管理器
@@ -33,10 +38,13 @@ class PluginManager(
     private val loader: PluginLoader,
     private val repository: PluginRepository,
     private val providerRegistry: PluginProviderRegistry? = null,
+    private val settingsService: me.rerere.rikkahub.plugin.settings.PluginSettingsService? = null,
 ) {
     companion object {
         /** 单个前端脚本体积上限：整包扩展动辄数 MB，注入 WebView 会卡死页面。 */
         const val MAX_FRONTEND_SCRIPT_BYTES = 1024 * 1024
+
+        private const val MAX_READ_BYTES = 512 * 1024
     }
 
     /**
@@ -135,6 +143,9 @@ class PluginManager(
                     loadPlugin(plugin)
                 }
             }
+            // 插件设置补丁在这里收敛：新插件生效，被删掉的插件回滚
+            settingsService?.reconcile(pluginsWithConfig)
+            PluginRegexRegistry.update(pluginsWithConfig)
         } finally {
             _isLoading.value = false
         }
@@ -235,6 +246,130 @@ class PluginManager(
                 false
             }
         }
+    }
+
+    private val prettyJson = Json {
+        prettyPrint = true
+        encodeDefaults = true
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
+
+    private fun sanitizePluginId(raw: String): String {
+        val id = raw.trim().lowercase().replace(Regex("[^a-z0-9._-]"), "-").trim('-', '.')
+        require(id.isNotBlank()) { "插件 id 不能为空" }
+        return id
+    }
+
+    private fun safeResolve(dir: File, relativePath: String): File {
+        val base = dir.canonicalFile
+        val target = File(base, relativePath).canonicalFile
+        require(target.path == base.path || target.path.startsWith(base.path + File.separator)) {
+            "路径越出插件目录: $relativePath"
+        }
+        return target
+    }
+
+    private fun requirePluginDir(pluginId: String): File {
+        val info = _plugins.value.find { it.manifest.id == pluginId }
+        val dir = info?.directory ?: File(scanner.pluginsDir, pluginId)
+        require(dir.isDirectory) { "插件不存在: $pluginId" }
+        return dir
+    }
+
+    /** 新建插件目录与 manifest.json，返回扫描后的插件信息 */
+    suspend fun createPlugin(
+        id: String,
+        name: String,
+        description: String,
+        icon: String = "🧩",
+        author: String = "user",
+        entry: String = "index.js",
+    ): Result<PluginInfo> = withContext(Dispatchers.IO) {
+        runCatching {
+            val safeId = sanitizePluginId(id)
+            val dir = File(scanner.pluginsDir, safeId)
+            require(!dir.exists()) { "插件已存在: $safeId" }
+            require(dir.mkdirs()) { "无法创建插件目录: ${dir.absolutePath}" }
+            val manifest = PluginManifest(
+                id = safeId,
+                name = name.ifBlank { safeId },
+                description = description,
+                version = "1.0.0",
+                author = author.ifBlank { "user" },
+                icon = icon.ifBlank { "🧩" },
+                entry = entry,
+            )
+            File(dir, PluginScanner.MANIFEST_FILE).writeText(prettyJson.encodeToString(manifest))
+            refreshPlugins()
+            _plugins.value.find { it.manifest.id == safeId } ?: error("插件创建后未能扫描到: $safeId")
+        }
+    }
+
+    /** 写插件目录内的文件；写 manifest 会重新加载该插件 */
+    suspend fun writePluginFile(pluginId: String, relativePath: String, content: String): Result<File> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val dir = requirePluginDir(pluginId)
+                val target = safeResolve(dir, relativePath)
+                target.parentFile?.mkdirs()
+                target.writeText(content)
+                if (target.name == PluginScanner.MANIFEST_FILE) {
+                    loader.unloadPlugin(pluginId)
+                    refreshPlugins()
+                }
+                target
+            }
+        }
+
+    suspend fun readPluginFile(pluginId: String, relativePath: String = PluginScanner.MANIFEST_FILE): Result<String> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val dir = requirePluginDir(pluginId)
+                val target = safeResolve(dir, relativePath)
+                require(target.isFile) { "文件不存在: $relativePath" }
+                require(target.length() <= MAX_READ_BYTES) { "文件过大: ${target.length()} bytes" }
+                target.readText()
+            }
+        }
+
+    suspend fun listPluginFiles(pluginId: String): Result<List<String>> = withContext(Dispatchers.IO) {
+        runCatching {
+            val dir = requirePluginDir(pluginId)
+            dir.walkTopDown()
+                .filter { it.isFile }
+                .map { it.relativeTo(dir).invariantSeparatorsPath + " (${it.length()}B)" }
+                .sorted()
+                .toList()
+        }
+    }
+
+    /** 打包插件目录为 zip，返回缓存里的文件路径，供分享或再次导入 */
+    suspend fun exportPlugin(pluginId: String): Result<File> = withContext(Dispatchers.IO) {
+        runCatching {
+            val info = _plugins.value.find { it.manifest.id == pluginId } ?: error("插件不存在: $pluginId")
+            val dir = info.directory
+            require(dir.isDirectory) { "插件目录不存在: ${dir.absolutePath}" }
+            val outDir = File(context.cacheDir, "plugin_exports").apply { mkdirs() }
+            val name = "${sanitizePluginId(pluginId)}-${info.manifest.version.ifBlank { "1.0.0" }}.zip"
+            val zipFile = File(outDir, name)
+            ZipOutputStream(BufferedOutputStream(FileOutputStream(zipFile))).use { zos ->
+                dir.walkTopDown().filter { it.isFile }.forEach { file ->
+                    val entryName = file.relativeTo(dir).invariantSeparatorsPath
+                    zos.putNextEntry(ZipEntry(entryName))
+                    file.inputStream().use { it.copyTo(zos) }
+                    zos.closeEntry()
+                }
+            }
+            zipFile
+        }
+    }
+
+    /** 从本地 zip 路径导入插件（供 AI 与文件管理器共用） */
+    suspend fun importPluginFromPath(path: String): Result<PluginInfo> {
+        val file = File(path)
+        if (!file.isFile) return Result.failure(IllegalArgumentException("文件不存在: $path"))
+        return importPlugin(Uri.fromFile(file))
     }
 
     suspend fun togglePlugin(pluginId: String, enabled: Boolean) {

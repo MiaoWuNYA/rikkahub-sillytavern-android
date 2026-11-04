@@ -156,7 +156,7 @@ data class Settings(
 ) {
     /** 所有全局正则：各分组按列表顺序拼接。派生视图，不单独持久化。 */
     val globalRegexes: List<AssistantRegex>
-        get() = regexGroups.flatMap { it.regexes }
+        get() = regexGroups.flatMap { it.regexes } + me.rerere.rikkahub.plugin.runtime.PluginRegexRegistry.regexes
 
     companion object {
         // 构造一个用于初始化的settings, 但它不能用于保存，防止使用初始值存储

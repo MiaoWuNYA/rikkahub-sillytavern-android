@@ -489,6 +489,10 @@ class LocalTools(
     val showImageTool by lazy { buildShowImageTool(context) }
     val codeCheckTool by lazy { buildCodeCheckTool(context) }
 
+    /** 按选项分组：懒加载按组登记，模型只在需要时加载 */
+    fun getToolGroups(options: List<LocalToolOption>): Map<String, List<Tool>> =
+        options.distinct().associate { it.groupId() to getTools(listOf(it)) }
+
     fun getTools(options: List<LocalToolOption>): List<Tool> {
         val tools = mutableListOf<Tool>()
         if (options.contains(LocalToolOption.JavascriptEngine)) {
@@ -559,4 +563,35 @@ fun deduplicateTools(tools: List<Tool>): List<Tool> {
 private fun guessMimeType(fileName: String): String {
     val ext = fileName.substringAfterLast('.', "").lowercase()
     return android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: "*/*"
+}
+
+/** 懒加载分组名 */
+fun LocalToolOption.groupId(): String = when (this) {
+    LocalToolOption.JavascriptEngine -> "javascript"
+    LocalToolOption.TimeInfo -> "time"
+    LocalToolOption.Clipboard -> "clipboard"
+    LocalToolOption.Tts -> "tts"
+    LocalToolOption.AskUser -> "ask_user"
+    LocalToolOption.PresentFile -> "present"
+    LocalToolOption.PythonEngine -> "python"
+    LocalToolOption.FileTools -> "file"
+    LocalToolOption.ShellTools -> "shell"
+    LocalToolOption.DatabaseQuery -> "database"
+    LocalToolOption.TaskTools -> "task"
+    LocalToolOption.Calculator -> "calculator"
+    LocalToolOption.WorkerTools -> "worker"
+    LocalToolOption.TeammateTools -> "teammate"
+    LocalToolOption.SendMessage -> "send_message"
+    LocalToolOption.ScreenTime -> "screen_time"
+    LocalToolOption.Calendar -> "calendar"
+    LocalToolOption.DeviceToolbox -> "device"
+    LocalToolOption.LifeCompanion -> "life"
+    LocalToolOption.CoupleSpace -> "couple"
+    LocalToolOption.ChartDisplay -> "chart"
+    LocalToolOption.DiffText -> "diff"
+    LocalToolOption.ShowImage -> "image"
+    LocalToolOption.CodeCheck -> "code"
+    LocalToolOption.SubAgent -> "subagent"
+    LocalToolOption.PhoneControl -> "phone"
+    LocalToolOption.BrowserAgent -> "browser"
 }

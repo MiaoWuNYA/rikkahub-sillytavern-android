@@ -8,12 +8,12 @@ import kotlinx.serialization.json.put
 import me.rerere.ai.core.InputSchema
 import me.rerere.ai.core.Tool
 import me.rerere.ai.ui.UIMessagePart
+import me.rerere.rikkahub.plugin.crypto.PluginCrypto
 import me.rerere.rikkahub.plugin.loader.LoadedPlugin
 import me.rerere.rikkahub.plugin.loader.PluginLoader
 import me.rerere.rikkahub.plugin.loader.PluginToolNaming
 import me.rerere.rikkahub.plugin.manager.PluginManager
 import me.rerere.rikkahub.plugin.model.PluginToolDefinition
-import me.rerere.rikkahub.plugin.crypto.PluginCrypto
 import java.io.File
 
 /**
@@ -73,7 +73,10 @@ class PluginToolProvider(
                 if (section.name != "skills") {
                     val configKey = "enable_${section.name}"
                     val sectionEnabled = plugin.info.getConfigValue(configKey)
-                        ?.let { it is kotlinx.serialization.json.JsonPrimitive && it.content.toBooleanStrictOrNull() ?: false }
+                        ?.let {
+                            it is kotlinx.serialization.json.JsonPrimitive &&
+                                it.content.toBooleanStrictOrNull() ?: false
+                        }
                         ?: false
                     if (!sectionEnabled) return@forEach
                 }
@@ -87,7 +90,10 @@ class PluginToolProvider(
                         val enabledSkills = skillChunks.filter { (skillName, _) ->
                             val skillKey = "enable_$skillName"
                             val skillEnabled = plugin.info.getConfigValue(skillKey)
-                                ?.let { it is kotlinx.serialization.json.JsonPrimitive && it.content.toBooleanStrictOrNull() ?: false }
+                                ?.let {
+                                    it is kotlinx.serialization.json.JsonPrimitive &&
+                                        it.content.toBooleanStrictOrNull() ?: false
+                                }
                                 ?: false
                             skillEnabled
                         }
@@ -96,7 +102,9 @@ class PluginToolProvider(
                             val preamble = "以下专项能力模块的完整内容已直接注入本提示词中，无需也不会存在于任何文件或 skills 目录，" +
                                 "禁止在文件系统中搜索或读取它们：" +
                                 "$skillNames。当用户问题涉及相关领域时，直接运用下方对应模块的方法回答，不要先用工具去找模块文件。"
-                            parts.add("【${section.label}】\n$preamble\n\n${enabledSkills.joinToString("\n\n") { it.second }}")
+                            parts.add(
+                                "【${section.label}】\n$preamble\n\n${enabledSkills.joinToString("\n\n") { it.second }}"
+                            )
                         }
                     }
                 } else {
@@ -104,8 +112,20 @@ class PluginToolProvider(
                 }
             }
 
+            // 世界书式注入：启用即随每次请求发送，不改系统提示词也能插入内容
+            plugin.info.manifest.injections.forEach { injection ->
+                val text = when {
+                    injection.file.isNotBlank() -> resolvePluginFile(plugin, injection.file)
+                    else -> injection.content
+                }?.takeIf { it.isNotBlank() } ?: return@forEach
+                parts.add(if (injection.name.isBlank()) text else "【${injection.name}】\n$text")
+            }
+
             if (parts.isEmpty()) return@mapNotNull null
-            android.util.Log.i("PluginToolProvider", "Plugin ${plugin.id}: ${parts.size} sections, total ${parts.sumOf { it.length }} chars")
+            android.util.Log.i(
+                "PluginToolProvider",
+                "Plugin ${plugin.id}: ${parts.size} sections, total ${parts.sumOf { it.length }} chars"
+            )
             parts.joinToString("\n\n")
         }
     }
@@ -118,15 +138,25 @@ class PluginToolProvider(
             when {
                 ref.startsWith("enc:") -> {
                     val file = File(plugin.info.directory, ref.removePrefix("enc:"))
-                    if (file.exists()) PluginCrypto.decryptFile(file) else {
-                        android.util.Log.w("PluginToolProvider", "Plugin ${plugin.id}: enc file not found: ${file.absolutePath}")
+                    if (file.exists()) {
+                        PluginCrypto.decryptFile(file)
+                    } else {
+                        android.util.Log.w(
+                            "PluginToolProvider",
+                            "Plugin ${plugin.id}: enc file not found: ${file.absolutePath}"
+                        )
                         null
                     }
                 }
                 ref.startsWith("file:") -> {
                     val file = File(plugin.info.directory, ref.removePrefix("file:"))
-                    if (file.exists()) file.readText(Charsets.UTF_8) else {
-                        android.util.Log.w("PluginToolProvider", "Plugin ${plugin.id}: file not found: ${file.absolutePath}")
+                    if (file.exists()) {
+                        file.readText(Charsets.UTF_8)
+                    } else {
+                        android.util.Log.w(
+                            "PluginToolProvider",
+                            "Plugin ${plugin.id}: file not found: ${file.absolutePath}"
+                        )
                         null
                     }
                 }

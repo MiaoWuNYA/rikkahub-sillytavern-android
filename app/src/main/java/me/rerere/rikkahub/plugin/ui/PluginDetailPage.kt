@@ -15,8 +15,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -37,15 +40,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
@@ -64,6 +72,7 @@ import me.rerere.rikkahub.plugin.model.PluginFrontendScript
 import me.rerere.rikkahub.plugin.model.PluginInfo
 import me.rerere.rikkahub.plugin.model.PluginToolDefinition
 import me.rerere.rikkahub.ui.components.ai.ModelSelector
+import java.io.File
 import me.rerere.rikkahub.ui.theme.CustomColors
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
@@ -207,6 +216,43 @@ fun PluginDetailPage(
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
+
+            val context = LocalContext.current
+            val scope = rememberCoroutineScope()
+            var pendingZip by remember { mutableStateOf<File?>(null) }
+            val exportLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.CreateDocument("application/zip")
+            ) { uri ->
+                val zip = pendingZip
+                pendingZip = null
+                if (uri != null && zip != null) {
+                    scope.launch(Dispatchers.IO) {
+                        runCatching {
+                            context.contentResolver.openOutputStream(uri)?.use { out ->
+                                zip.inputStream().use { it.copyTo(out) }
+                            }
+                        }
+                    }
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(onClick = {
+                    scope.launch {
+                        viewModel.exportPlugin(pluginId).onSuccess { zip ->
+                            pendingZip = zip
+                            exportLauncher.launch(zip.name)
+                        }
+                    }
+                }) {
+                    Text("导出插件")
+                }
+                if (plugin.manifest.settings.isNotEmpty()) {
+                    OutlinedButton(onClick = { viewModel.restorePluginSettings(pluginId) }) {
+                        Text("回滚设置补丁")
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
 
             Text(text = stringResource(R.string.plugin_detail_path), style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))

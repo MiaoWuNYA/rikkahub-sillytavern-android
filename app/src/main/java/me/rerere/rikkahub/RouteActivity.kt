@@ -772,6 +772,14 @@ class RouteActivity : ComponentActivity() {
                                 )
                             }
 
+                            entry<Screen.PluginMiniApp> { key ->
+                                me.rerere.rikkahub.plugin.ui.PluginMiniAppPage(
+                                    pluginId = key.pluginId,
+                                    miniAppId = key.miniAppId,
+                                    onNavigateBack = { backStack.removeLastOrNull() },
+                                )
+                            }
+
                             entry<Screen.PluginDetail> { key ->
                                 PluginDetailPage(
                                     pluginId = key.pluginId,
@@ -1179,6 +1187,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data class PluginDetail(val pluginId: String) : Screen
+
+    @Serializable
+    data class PluginMiniApp(val pluginId: String, val miniAppId: String) : Screen
 
     @Serializable
     data class WorkspaceFileEditor(val id: String, val area: String, val path: String) : Screen

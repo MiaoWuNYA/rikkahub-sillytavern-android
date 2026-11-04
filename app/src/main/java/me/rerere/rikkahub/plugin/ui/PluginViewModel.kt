@@ -21,7 +21,8 @@ import java.io.File
  * 插件 ViewModel
  */
 class PluginViewModel(
-    private val pluginManager: PluginManager
+    private val pluginManager: PluginManager,
+    private val pluginSettingsService: me.rerere.rikkahub.plugin.settings.PluginSettingsService,
 ) : ViewModel() {
 
     // 插件列表
@@ -109,6 +110,12 @@ class PluginViewModel(
     fun cancelImportPreview() {
         _pendingImport.value?.tempDir?.deleteRecursively()
         _pendingImport.value = null
+    }
+
+    suspend fun exportPlugin(pluginId: String): Result<File> = pluginManager.exportPlugin(pluginId)
+
+    fun restorePluginSettings(pluginId: String) {
+        viewModelScope.launch { pluginSettingsService.restorePlugin(pluginId) }
     }
 
     /**
