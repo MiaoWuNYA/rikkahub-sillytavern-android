@@ -31,7 +31,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -81,9 +83,11 @@ internal fun EditedFilesList(
     ) { uri ->
         val path = selectedPath.also { selectedPath = null } ?: return@rememberLauncherForActivityResult
         if (uri == null) return@rememberLauncherForActivityResult
-        val outputStream = context.contentResolver.openOutputStream(uri) ?: return@rememberLauncherForActivityResult
         scope.launch {
             runCatching {
+                // 个别 ROM 的 SAF 会在打开时才创建文件，失败要进 runCatching 而不是闪退
+                val outputStream = withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri) }
+                    ?: return@runCatching
                 val (area, relativePath) = resolveWorkspacePath(path)
                 outputStream.use { output ->
                     workspaceRepository.exportFile(workspaceId, area, relativePath, output)
