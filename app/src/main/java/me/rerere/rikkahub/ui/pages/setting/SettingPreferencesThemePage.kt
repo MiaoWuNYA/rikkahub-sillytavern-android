@@ -52,7 +52,7 @@ import me.rerere.rikkahub.data.datastore.DisplayMaterialMode
 import me.rerere.rikkahub.ui.components.ui.ConnectedChoiceButtons
 import me.rerere.rikkahub.ui.components.ui.ConnectedChoiceLabel
 import me.rerere.rikkahub.utils.AppIconSwitcher
-import me.rerere.rikkahub.utils.label
+import me.rerere.rikkahub.utils.labelRes
 import me.rerere.rikkahub.utils.previewRes
 import me.rerere.rikkahub.ui.theme.ColorMode
 import me.rerere.rikkahub.ui.hooks.rememberColorMode
@@ -230,7 +230,7 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
         }
 
         item {
-            CardGroup(title = { Text("应用图标") }) {
+            CardGroup(title = { Text(stringResource(R.string.setting_page_app_icon)) }) {
                 formItem {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         // 固定两排三列：兔盔/地球/谷歌，探喵/脸猫/萌猫
@@ -260,7 +260,7 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
                                     ) {
                                         Image(
                                             painter = painterResource(icon.previewRes),
-                                            contentDescription = icon.label,
+                                            contentDescription = stringResource(icon.labelRes),
                                             modifier = Modifier
                                                 .size(56.dp)
                                                 .clip(RoundedCornerShape(14.dp))
@@ -273,7 +273,7 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
                                                 ),
                                         )
                                         Text(
-                                            text = icon.label,
+                                            text = stringResource(icon.labelRes),
                                             style = MaterialTheme.typography.labelSmall,
                                             color = if (selected) MaterialTheme.colorScheme.primary
                                             else MaterialTheme.colorScheme.onSurfaceVariant,

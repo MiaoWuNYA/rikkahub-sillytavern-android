@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.AppIcon
 
@@ -48,12 +49,14 @@ val AppIcon.previewRes: Int
         AppIcon.GOOGLE -> R.mipmap.ic_launcher_google
     }
 
-val AppIcon.label: String
+// 设置页展示用的图标名，跟随系统语言
+@get:StringRes
+val AppIcon.labelRes: Int
     get() = when (this) {
-        AppIcon.RABBIT -> "兔盔"
-        AppIcon.CAT_BODY -> "探喵"
-        AppIcon.CAT_HEAD -> "脸猫"
-        AppIcon.EARTH -> "地球"
-        AppIcon.CAT_CUTE -> "萌猫"
-        AppIcon.GOOGLE -> "谷歌"
+        AppIcon.RABBIT -> R.string.setting_app_icon_rabbit
+        AppIcon.CAT_BODY -> R.string.setting_app_icon_cat_body
+        AppIcon.CAT_HEAD -> R.string.setting_app_icon_cat_head
+        AppIcon.EARTH -> R.string.setting_app_icon_earth
+        AppIcon.CAT_CUTE -> R.string.setting_app_icon_cat_cute
+        AppIcon.GOOGLE -> R.string.setting_app_icon_google
     }
