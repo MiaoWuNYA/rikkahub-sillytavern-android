@@ -3621,4 +3621,11 @@
   <string name="setting_browser_snapshot_compact">Compact</string>
   <string name="setting_browser_snapshot_standard">Standard</string>
   <string name="setting_browser_snapshot_detailed">Detailed</string>
+  <string name="setting_page_app_icon">App Icon</string>
+  <string name="setting_app_icon_rabbit">Bunny</string>
+  <string name="setting_app_icon_cat_body">Peek Cat</string>
+  <string name="setting_app_icon_cat_head">Cat Face</string>
+  <string name="setting_app_icon_earth">Earth</string>
+  <string name="setting_app_icon_cat_cute">Cute Cat</string>
+  <string name="setting_app_icon_google">Google</string>
 </resources>

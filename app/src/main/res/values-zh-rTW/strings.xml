@@ -3203,4 +3203,11 @@
   <string name="setting_browser_snapshot_compact">精簡</string>
   <string name="setting_browser_snapshot_standard">標準</string>
   <string name="setting_browser_snapshot_detailed">詳細</string>
+  <string name="setting_page_app_icon">應用圖示</string>
+  <string name="setting_app_icon_rabbit">兔盔</string>
+  <string name="setting_app_icon_cat_body">探喵</string>
+  <string name="setting_app_icon_cat_head">臉貓</string>
+  <string name="setting_app_icon_earth">地球</string>
+  <string name="setting_app_icon_cat_cute">萌貓</string>
+  <string name="setting_app_icon_google">谷歌</string>
 </resources>
