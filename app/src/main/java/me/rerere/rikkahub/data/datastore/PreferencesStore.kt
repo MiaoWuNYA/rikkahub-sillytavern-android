@@ -114,6 +114,7 @@ class SettingsStore internal constructor(
         val QQ_BOT_SETTING = stringPreferencesKey("qq_bot_setting")
         val PROACTIVE_MESSAGE_SETTING = stringPreferencesKey("proactive_message_setting")
         val SECURITY_SETTING = stringPreferencesKey("security_setting")
+        val BROWSER_SETTINGS = stringPreferencesKey("browser_settings")
         val DEVELOPER_MODE = booleanPreferencesKey("developer_mode")
 
         // 模型选择

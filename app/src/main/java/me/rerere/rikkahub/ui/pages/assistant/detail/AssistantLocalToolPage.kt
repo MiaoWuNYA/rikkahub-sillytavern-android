@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.ui.toast.ToastType
 import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.AiBrowser
 import me.rerere.hugeicons.stroke.Calendar03
 import me.rerere.hugeicons.stroke.ChartLineData01
 import me.rerere.hugeicons.stroke.ClipboardPaste
@@ -455,6 +456,13 @@ private fun AssistantLocalToolContent(
                 icon = HugeIcons.Cursor02,
                 title = R.string.local_tool_phone_control_title,
                 description = R.string.local_tool_phone_control_desc,
+            )
+            // AI 浏览器代理：屏幕上真的跑一个 WebView，AI 点它、读它
+            toolItem(
+                option = LocalToolOption.BrowserAgent,
+                icon = HugeIcons.AiBrowser,
+                title = R.string.local_tool_browser_agent_title,
+                description = R.string.local_tool_browser_agent_desc,
             )
         }
     }

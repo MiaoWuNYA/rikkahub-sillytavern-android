@@ -3576,4 +3576,47 @@
   <string name="phone_control_pause">Pause</string>
   <string name="phone_control_resume">Resume</string>
   <string name="phone_control_stop">Stop</string>
+
+  <!-- AI 浏览器代理 -->
+  <string name="browser_activity_label">AI Browser</string>
+  <string name="local_tool_browser_agent_title">AI Browser</string>
+  <string name="local_tool_browser_agent_desc">Open a visible browser the assistant can read, click, type and screenshot</string>
+  <string name="setting_browser_title">AI Browser</string>
+  <string name="setting_browser_desc">Let the assistant drive a real visible browser</string>
+  <string name="setting_browser_enabled">Enable AI browser</string>
+  <string name="setting_browser_enabled_desc">Master switch. Assistant-level switch still has to be on.</string>
+  <string name="setting_browser_permissions">Permissions</string>
+  <string name="setting_browser_allow_open_close">Allow open / close</string>
+  <string name="setting_browser_allow_screenshot">Allow screenshots</string>
+  <string name="setting_browser_allow_full_page">Allow full-page screenshots</string>
+  <string name="setting_browser_allow_full_page_desc">Slow: stitches several scroll positions</string>
+  <string name="setting_browser_allow_form_submit">Allow form submit / order</string>
+  <string name="setting_browser_allow_form_submit_desc">Off by default; checkout and payment stays with the user</string>
+  <string name="setting_browser_allow_eval">Allow running arbitrary JS</string>
+  <string name="setting_browser_privacy">Privacy</string>
+  <string name="setting_browser_block_sensitive">Block screenshots on sensitive pages</string>
+  <string name="setting_browser_block_sensitive_desc">Payment, login and password pages are never captured</string>
+  <string name="setting_browser_sites">Sites</string>
+  <string name="setting_browser_allow_list">Allow list</string>
+  <string name="setting_browser_block_list">Block list</string>
+  <string name="setting_browser_domains_hint">Comma or newline separated, empty means no restriction</string>
+  <string name="setting_browser_performance">Performance</string>
+  <string name="setting_browser_snapshot_detail">Snapshot detail</string>
+  <string name="setting_browser_snapshot_detail_desc">How many elements and how much text one snapshot may contain</string>
+  <string name="setting_browser_idle_timeout">Auto close when idle (minutes)</string>
+  <string name="setting_browser_idle_timeout_desc">0 keeps the browser open until closed explicitly</string>
+  <string name="setting_browser_keep_shots">Screenshots to keep</string>
+  <string name="setting_browser_session">Session</string>
+  <string name="setting_browser_saved_account">Saved account</string>
+  <string name="setting_browser_no_account">None</string>
+  <string name="setting_browser_delete_account">Delete saved account</string>
+  <string name="setting_browser_clear_cookies">Clear cookies and page data</string>
+  <string name="setting_browser_clear_cookies_desc">Next open starts logged out</string>
+  <string name="setting_browser_logs">Tool call logs</string>
+  <string name="setting_browser_logs_desc">Show the log panel inside the browser</string>
+  <string name="setting_browser_taobao_rules">Site extraction rules</string>
+  <string name="setting_browser_taobao_rules_desc">Product list / detail shortcuts for Taobao and Tmall</string>
+  <string name="setting_browser_snapshot_compact">Compact</string>
+  <string name="setting_browser_snapshot_standard">Standard</string>
+  <string name="setting_browser_snapshot_detailed">Detailed</string>
 </resources>

@@ -121,6 +121,9 @@ class RikkaHubApp : Application() {
 
         // Init QuickJS native library
         QuickJSLoader.init()
+
+        // AI 浏览器代理的单例要一个 application context 才能拉起 BrowserActivity
+        runCatching { me.rerere.rikkahub.browser.BrowserRuntime.init(this) }
         trace("quickjs done")
 
         // 插件声明的供应商要随启动就位，顺带清掉已被外部删掉的插件留下的供应商

@@ -5,6 +5,7 @@ import me.rerere.ai.provider.ProviderSetting
 /** 读盘后和每次修改后都要过一遍，保证内存里的设置始终是规整的。 */
 internal fun Settings.normalized(): Settings =
     withBuiltInDefaults().withoutInvalidReferences().withValuesInRange()
+        .let { it.copy(browserSettings = it.browserSettings.normalized()) }
 
 // 已下架的内置网关：id 命中清单，或 baseUrl 命中历史版本内置过的网关域名
 private fun ProviderSetting.isRemovedGateway(): Boolean {

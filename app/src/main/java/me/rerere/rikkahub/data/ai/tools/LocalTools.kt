@@ -21,6 +21,7 @@ import me.rerere.ai.core.InputSchema
 import me.rerere.ai.core.Tool
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.event.AppEvent
+import me.rerere.rikkahub.browser.buildBrowserTools
 import me.rerere.rikkahub.data.ai.tools.phone.buildPhoneTools
 import me.rerere.rikkahub.data.ai.tools.local.buildCalendarCreateTool
 import me.rerere.rikkahub.data.ai.tools.local.buildCalendarQueryTool
@@ -164,6 +165,11 @@ sealed class LocalToolOption {
     @Serializable
     @SerialName("phone_control")
     data object PhoneControl : LocalToolOption()
+
+    /** AI 浏览器代理：可见的 WebView + 快照/点击/输入/截图一组工具。 */
+    @Serializable
+    @SerialName("browser_agent")
+    data object BrowserAgent : LocalToolOption()
 }
 
 class LocalTools(
@@ -531,6 +537,11 @@ class LocalTools(
         // 手机控制工具直连注册，不走 device_toolbox 二级分发，省每步一次往返
         if (options.contains(LocalToolOption.PhoneControl)) {
             tools.addAll(buildPhoneTools())
+        }
+
+        // AI 浏览器代理：只在助手开关打开时注册，全局开关在工具内部再判一次
+        if (options.contains(LocalToolOption.BrowserAgent)) {
+            tools.addAll(buildBrowserTools(context, settingsStore))
         }
         return tools
     }
