@@ -109,7 +109,7 @@ fun ChatMessageAssistantAvatar(
         ) {
             val displayName = message.name?.takeIf { it.isNotBlank() }
                 ?: (assistant?.name ?: "").ifEmpty { stringResource(R.string.assistant_page_default_assistant) }
-            if (useAssistantAvatar) {
+            if (useAssistantAvatar && assistant != null) {
                 if (showIcon) {
                     FramedAvatar(
                         frameUrl = settings.displaySetting.themeIcons.avatarFrame(forUser = false),
