@@ -258,6 +258,12 @@ internal fun SettingPreferencesUIContent(vm: SettingVM, contentPadding: PaddingV
                         headlineContent = { Text(stringResource(R.string.setting_display_page_show_model_name_title)) },
                     )
                     switchItem(
+                        checked = displaySetting.useAssistantAvatar,
+                        onCheckedChange = { updateDisplaySetting(displaySetting.copy(useAssistantAvatar = it)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_use_assistant_avatar_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_use_assistant_avatar_title)) },
+                    )
+                    switchItem(
                         checked = displaySetting.showDateTimeInMessage,
                         onCheckedChange = { updateDisplaySetting(displaySetting.copy(showDateTimeInMessage = it)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_page_show_datetime_in_message_desc)) },

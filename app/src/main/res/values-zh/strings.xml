@@ -1687,6 +1687,8 @@
   <string name="setting_display_page_show_message_jumper_title">消息导航按钮</string>
   <string name="setting_display_page_show_model_name_desc">是否在聊天消息中显示模型名称</string>
   <string name="setting_display_page_show_model_name_title">显示模型名称</string>
+  <string name="setting_display_page_use_assistant_avatar_desc">聊天中的头像和名字改用角色卡，而不是模型图标和模型名称</string>
+  <string name="setting_display_page_use_assistant_avatar_title">使用角色卡头像和名字</string>
   <string name="setting_display_page_show_thinking_content_desc">是否在生成过程中默认展开并显示思考过程</string>
   <string name="setting_display_page_show_thinking_content_title">显示思考内容</string>
   <string name="setting_display_page_show_token_usage_desc">显示token用量和消息数量</string>
