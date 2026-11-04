@@ -56,8 +56,10 @@ fun PluginMiniAppPage(
             Text(text = stringResource(R.string.plugin_detail_not_found), modifier = Modifier.padding(padding))
             return@Scaffold
         }
-        val entryFile = File(plugin.directory, miniApp.entry)
-        if (!entryFile.isFile) {
+        val baseDir = plugin.directory.canonicalFile
+        val entryFile = File(baseDir, miniApp.entry).canonicalFile
+        val insidePlugin = entryFile.path.startsWith(baseDir.path + File.separator)
+        if (!insidePlugin || !entryFile.isFile) {
             Text(text = "缺少页面文件: ${miniApp.entry}", modifier = Modifier.padding(padding))
             return@Scaffold
         }
