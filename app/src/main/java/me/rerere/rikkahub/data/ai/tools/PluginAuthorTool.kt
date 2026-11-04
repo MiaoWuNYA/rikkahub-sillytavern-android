@@ -235,7 +235,7 @@ index.js 规则：
 - settings：插件启用时把这些设置路径直接写进应用设置（主题、displaySetting、huadengSettings、providers 等均可，路径同 settings_control 工具）。适合“美化主题包”。
 - injections：按世界书方式插入提示词，启用后每次请求生效；position 取 AFTER_SYSTEM_PROMPT / BEFORE_PROMPT / IN_CHAT。
 - regexes：作用于消息的正则替换，promptOnly=true 只改发给模型的内容。
-- messageActions：在对话末尾渲染按钮，action 支持 regenerate（重新生成）、slash（发送斜杠命令）、tool（调用本插件工具，payload 为工具名）。
+- messageActions：在对话末尾渲染按钮，action 支持 regenerate（重新生成本条）与 slash（发送斜杠命令，payload 为命令文本）。
 - miniApps：侧边栏入口 + 纯 WebView 页面（html/css/js 三件套），插件停用或删除后入口消失。
   页面里用 `window.rikkaData.get(key)` / `set(key, value)` / `remove(key)` / `keys()` / `all()` 读写与 index.js 的 dataStore 同一份数据；
   页面不需要也不会加载聊天，可轮询 setInterval 显示实时数据（如今日摄入）。
