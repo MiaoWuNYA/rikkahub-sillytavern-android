@@ -237,7 +237,7 @@ class GenerationLoop(
             if (hasTool("memory_tool", "memory_")) add("Memory → memory_tool")
             // 工具懒加载：其余工具按组放在 load_tools 后面，只在这里点一下组名
             val lazyGroups = me.rerere.rikkahub.data.ai.tools.LazyToolGroups.availableGroups().keys
-            if (hasTool("load_tools") && lazyGroups.isNotEmpty()) {
+            if (lazyGroups.isNotEmpty()) {
                 add("More tools → load_tools (${lazyGroups.joinToString("/")})")
             }
         }
