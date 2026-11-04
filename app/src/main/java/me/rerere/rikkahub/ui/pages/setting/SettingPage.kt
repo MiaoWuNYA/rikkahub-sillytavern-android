@@ -51,6 +51,7 @@ import me.rerere.hugeicons.stroke.AiMagic
 import me.rerere.hugeicons.stroke.Alert01
 import me.rerere.hugeicons.stroke.Book01
 import me.rerere.hugeicons.stroke.Book03
+import me.rerere.hugeicons.stroke.AiBrowser
 import me.rerere.hugeicons.stroke.BookOpen02
 import me.rerere.hugeicons.stroke.BookmarkAdd01
 import me.rerere.hugeicons.stroke.Bookshelf01
@@ -200,6 +201,12 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         leadingContent = { CardGroupIcon(HugeIcons.Settings03, containerColor = containerColor, contentColor = contentColor) },
                         supportingContent = { Text(stringResource(R.string.setting_page_huadeng_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_huadeng)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingBrowser) },
+                        leadingContent = { CardGroupIcon(HugeIcons.AiBrowser, containerColor = containerColor, contentColor = contentColor) },
+                        supportingContent = { Text(stringResource(R.string.setting_browser_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_browser_title)) },
                     )
                     item(
                         onClick = { navController.navigate(Screen.SettingTavern) },

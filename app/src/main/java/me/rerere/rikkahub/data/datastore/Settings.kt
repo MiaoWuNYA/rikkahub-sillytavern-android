@@ -9,6 +9,7 @@ import me.rerere.ai.provider.ProviderSetting
 import me.rerere.ai.ui.ImageGenSize
 import me.rerere.asr.ASRProviderSetting
 import me.rerere.mediagen.provider.MediaGenerationProviderSetting
+import me.rerere.rikkahub.browser.BrowserSettings
 import me.rerere.rikkahub.data.ai.mcp.McpServerConfig
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_COMPRESS_PROMPT
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_OCR_PROMPT
@@ -151,6 +152,7 @@ data class Settings(
     val qqBotSetting: QqBotSetting = QqBotSetting(),                    // QQ Bot（开放平台 WebSocket）
     val proactiveMessageSetting: ProactiveMessageSetting = ProactiveMessageSetting(), // AI 主动发消息
     val securitySetting: SecuritySetting = SecuritySetting(),           // 安全设置（工具调用审批策略）
+    val browserSettings: BrowserSettings = BrowserSettings(),           // AI 浏览器代理（可见的 WebView）
 ) {
     /** 所有全局正则：各分组按列表顺序拼接。派生视图，不单独持久化。 */
     val globalRegexes: List<AssistantRegex>

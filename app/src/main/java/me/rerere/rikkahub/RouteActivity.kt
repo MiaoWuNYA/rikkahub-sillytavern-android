@@ -130,6 +130,7 @@ import me.rerere.rikkahub.ui.pages.mediacreation.MediaCreationSessionsPage
 import me.rerere.rikkahub.ui.pages.search.SearchPage
 import me.rerere.rikkahub.ui.pages.setting.SettingAboutPage
 import me.rerere.rikkahub.ui.pages.setting.SettingCrashLogPage
+import me.rerere.rikkahub.ui.pages.setting.SettingBrowserPage
 import me.rerere.rikkahub.ui.pages.setting.SettingPreferencesPage
 import me.rerere.rikkahub.ui.pages.setting.SettingPreferencesThemePage
 import me.rerere.rikkahub.ui.pages.setting.SettingPreferencesNotificationPage
@@ -706,6 +707,10 @@ class RouteActivity : ComponentActivity() {
                                 SettingSecurityPage()
                             }
 
+                            entry<Screen.SettingBrowser> {
+                                SettingBrowserPage()
+                            }
+
                             entry<Screen.SettingWeixinBot> {
                                 SettingWeixinBotPage()
                             }
@@ -955,7 +960,7 @@ private fun Screen.isSettingScreen(): Boolean = when (this) {
     Screen.SettingMedia, Screen.SettingMcp, Screen.SettingDonate,
     Screen.SettingFiles, Screen.SettingWeb, Screen.SettingTavern,
     Screen.SettingTavernRegex, Screen.SettingHuaDeng, Screen.SettingHuaDengCompat,
-    Screen.SettingJev, Screen.SettingSecurity,
+    Screen.SettingJev, Screen.SettingSecurity, Screen.SettingBrowser,
     Screen.SettingWeixinBot, Screen.SettingQqBot, Screen.SettingProactiveMessage,
     Screen.Persona, Screen.AuthorsNote, Screen.Extensions, Screen.QuickMessages,
     Screen.Prompts, Screen.Skills, Screen.Plugins, Screen.Workspaces,
@@ -1132,6 +1137,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingSecurity : Screen
+
+    @Serializable
+    data object SettingBrowser : Screen
 
     @Serializable
     data object SettingWeixinBot : Screen

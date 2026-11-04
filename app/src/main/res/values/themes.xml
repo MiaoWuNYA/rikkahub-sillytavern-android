@@ -2,4 +2,9 @@
 <resources>
 
 <style name="Theme.Rikkahub" parent="Theme.Material3.DayNight.NoActionBar" />
+
+  <!-- 浏览器独立主题：不继承主界面主题，避免状态栏/字体/动画互相污染 -->
+  <style name="Theme.Rikkahub.Browser" parent="Theme.Material3.DayNight.NoActionBar">
+    <item name="android:windowBackground">@android:color/white</item>
+  </style>
 </resources>

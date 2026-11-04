@@ -146,6 +146,16 @@
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
     </activity-alias>
+    <!-- AI 浏览器代理：独立全屏 Activity，主界面零布局侵入 -->
+    <activity
+      android:name=".browser.BrowserActivity"
+      android:configChanges="orientation|screenSize|smallestScreenSize|keyboardHidden|uiMode|density"
+      android:exported="false"
+      android:hardwareAccelerated="true"
+      android:label="@string/browser_activity_label"
+      android:launchMode="singleTask"
+      android:theme="@style/Theme.Rikkahub.Browser"
+      android:windowSoftInputMode="adjustResize" />
     <activity
       android:name=".ui.activity.SafeModeActivity"
       android:exported="false"
