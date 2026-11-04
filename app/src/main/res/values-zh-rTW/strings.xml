@@ -3210,4 +3210,6 @@
   <string name="setting_app_icon_earth">地球</string>
   <string name="setting_app_icon_cat_cute">萌貓</string>
   <string name="setting_app_icon_google">谷歌</string>
+  <string name="chat_page_compress_keep_recent_minus">減少保留條數</string>
+  <string name="chat_page_compress_keep_recent_plus">增加保留條數</string>
 </resources>
