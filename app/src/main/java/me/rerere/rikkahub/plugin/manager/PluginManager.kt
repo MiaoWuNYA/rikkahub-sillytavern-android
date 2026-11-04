@@ -99,6 +99,9 @@ class PluginManager(
      */
     private val initializationDeferred = CompletableDeferred<Unit>()
 
+    @Volatile
+    private var startupReconcileDone = false
+
     init {
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -143,8 +146,12 @@ class PluginManager(
                     loadPlugin(plugin)
                 }
             }
-            // 插件设置补丁在这里收敛：新插件生效，被删掉的插件回滚
-            settingsService?.reconcile(pluginsWithConfig)
+            // 插件设置补丁只在进程启动后的第一次扫描里收敛：新装的插件要重启才生效，
+            // 避免导入插件时热改设置把界面改到不可用；被删掉的插件同样在下次启动回滚
+            if (!startupReconcileDone) {
+                startupReconcileDone = true
+                settingsService?.reconcile(pluginsWithConfig)
+            }
             PluginRegexRegistry.update(pluginsWithConfig)
         } finally {
             _isLoading.value = false

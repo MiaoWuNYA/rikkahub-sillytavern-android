@@ -232,7 +232,8 @@ index.js 规则：
 - detailCard 函数返回 {"title": "...", "items":[{"label":"...","value":"..."}]}，显示在插件详情页。
 
 能力边界：
-- settings：插件启用时把这些设置路径直接写进应用设置（主题、displaySetting、huadengSettings、providers 等均可，路径同 settings_control 工具）。适合“美化主题包”。
+- settings：插件声明要写进应用设置的值（主题、displaySetting、huadengSettings、providers 等，路径同 settings_control 工具）。适合“美化主题包”。
+  注意：settings 补丁**在应用重启后的首次启动才应用**，导入或启用后当前会话不会立刻变化，这是刻意的（避免热改设置把界面弄坏）；删除插件后同样在下次启动回滚。
 - injections：按世界书方式插入提示词，启用后每次请求生效；position 取 AFTER_SYSTEM_PROMPT / BEFORE_PROMPT / IN_CHAT。
 - regexes：作用于消息的正则替换，promptOnly=true 只改发给模型的内容。
 - messageActions：在对话末尾渲染按钮，action 支持 regenerate（重新生成本条）与 slash（发送斜杠命令，payload 为命令文本）。
