@@ -19,11 +19,18 @@ class TavernRouter(
             if (reply != null) return reply
         }
 
-        if (clean.startsWith("api/")) return TavernReply.Text(404, "unknown api: " + clean)
+        // 未实现的 API 不返回 404：酒馆前端见 4xx 会弹错并卡住面板，空结构能继续用
+        if (clean.startsWith("api/")) return TavernReply.Json(200, emptyBodyFor(clean))
 
         val response = assetHandler.handle(clean.ifEmpty { "index.html" })
         val bytes = response.bytes ?: return TavernReply.Text(response.status, "missing asset: " + clean)
         return TavernReply.Binary(response.status, response.contentType, bytes)
+    }
+
+    private fun emptyBodyFor(path: String): String = when {
+        path.endsWith("all") || path.endsWith("list") || path.endsWith("names") ||
+            path.endsWith("recent") || path.endsWith("search") -> "[]"
+        else -> "{}"
     }
 
     companion object {
