@@ -241,7 +241,7 @@
       android:foregroundServiceType="dataSync">
     </service>
 
-    <!-- 手机控制：无障碍读屏 + 手势，供 phone_screen / phone_act / phone_find 使用 -->
+    <!-- 手机控制：无障碍读屏 + 手势 -->
     <service
       android:name=".service.phone.PhoneAccessibilityService"
       android:exported="true"

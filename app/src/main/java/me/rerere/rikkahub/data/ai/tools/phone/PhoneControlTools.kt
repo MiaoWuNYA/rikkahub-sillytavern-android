@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.data.ai.tools.phone
 
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
@@ -10,11 +11,10 @@ import kotlinx.serialization.json.put
 import me.rerere.ai.core.InputSchema
 import me.rerere.ai.core.Tool
 import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.service.phone.PhoneActionRequest
 import me.rerere.rikkahub.service.phone.PhoneControlException
 import me.rerere.rikkahub.service.phone.PhoneControlHub
 import me.rerere.rikkahub.service.phone.PhoneError
-import me.rerere.rikkahub.service.phone.PhoneScreenSnapshot
+import me.rerere.rikkahub.service.phone.PhoneFormatted
 
 /** 敏感动作词：命中即每次停下来问用户，模型无权跳过 */
 private val SENSITIVE_KEYWORDS = listOf(
@@ -35,154 +35,371 @@ internal fun phoneActNeedsApproval(args: JsonObject?): Boolean {
     return SENSITIVE_KEYWORDS.any { haystack.contains(it) }
 }
 
-private fun screenPayload(snapshot: PhoneScreenSnapshot, step: Int, limit: Int): String = buildString {
-    append(snapshot.render())
-    append("\nstep=").append(step).append('/').append(limit)
+private fun toolResult(text: String): List<UIMessagePart> = listOf(UIMessagePart.Text(text))
+
+private fun okText(message: String, screen: PhoneFormatted?, step: Int, limit: Int): String = buildString {
+    append("ok=true ").append(message).append(" step=").append(step).append('/').append(limit)
+    screen?.let { append('\n').append(it.text) }
 }
 
-private fun errorText(error: PhoneError, message: String): String =
-    "ok=false err=${error.code} msg=$message"
+private fun errText(error: PhoneError, message: String): String = "ok=false err=${error.code} msg=$message"
 
-private fun toolResult(text: String): List<UIMessagePart> = listOf(UIMessagePart.Text(text))
+private suspend fun runTool(block: suspend () -> List<UIMessagePart>): List<UIMessagePart> = try {
+    block()
+} catch (e: PhoneControlException) {
+    toolResult(errText(e.error, e.message.orEmpty()))
+} catch (e: Exception) {
+    toolResult(errText(PhoneError.ACTION_FAILED, e.message ?: "手机控制失败"))
+}
+
+private fun stepText(): Pair<Int, Int> {
+    val state = PhoneControlHub.state.value
+    return state.step to state.stepLimit
+}
 
 fun buildPhoneScreenTool(): Tool = Tool(
     name = "phone_screen",
-    description = "Read the words currently visible on the phone screen outside this app. " +
-        "Returns a numbered list where each line is `index|role|text`; role is one char: " +
-        "t=text, b=tappable, i=input box, c=checkable, s=scrollable, x=other interactive. " +
-        "Use the index with phone_act. Call this first, and again whenever the screen changed " +
-        "outside your control.",
+    description = "Read the current phone screen outside this app. Each line is one element: " +
+        "[id] role label - states, ids valid only for this screen. Zones are top/middle/bottom, lists nest. " +
+        "A warning mark means a sensitive target that needs the user's confirmation. " +
+        "Call it first and after any change you did not cause.",
     systemPrompt = { _, _ ->
-        "Phone control: phone_screen reads the current screen, phone_act taps/types/scrolls it. " +
-            "If an app has a direct entry (launch_app / open_url / share), use that instead of navigating by taps."
+        "Phone control: phone_screen reads, phone_tap / phone_type / phone_scroll / phone_key act. " +
+            "Prefer phone_open and phone_apps over navigating by taps."
     },
     needsApproval = { false },
     parameters = {
         InputSchema.Obj(
             properties = buildJsonObject {
-                put("fresh", buildJsonObject {
+                put("detail", buildJsonObject {
                     put("type", "boolean")
-                    put("description", "Force a fresh read even if the cached screen looks unchanged")
+                    put("description", "Also append element centre coordinates")
                 })
-            }
+            },
         )
     },
     execute = { args ->
-        val fresh = args.jsonObjectBoolean("fresh")
-        try {
-            val snapshot = PhoneControlHub.readScreen(force = fresh)
-            val state = PhoneControlHub.state.value
-            toolResult(screenPayload(snapshot, state.step, state.stepLimit))
-        } catch (e: PhoneControlException) {
-            toolResult(errorText(e.error, e.message.orEmpty()))
-        } catch (e: Exception) {
-            toolResult(errorText(PhoneError.NO_WINDOW, e.message ?: "读屏失败"))
+        runTool {
+            val screen = PhoneControlHub.screen(args.jsonBool("detail"))
+            val (step, limit) = stepText()
+            toolResult(okText("pkg=${screen.appLabel}", screen, step, limit))
         }
-    }
+    },
 )
 
-fun buildPhoneActTool(): Tool = Tool(
-    name = "phone_act",
-    description = "Act on the phone screen read by phone_screen. Actions: " +
-        "tap / long_press (target = index or visible text), input (target + text), " +
-        "scroll (direction up|down), back, wait. " +
-        "Returns ok=true/false with err code and the new screen. " +
-        "After acting, trust the returned screen instead of calling phone_screen again. " +
-        "If err=STALE the indexes are invalid: call phone_screen. " +
-        "If err=NOT_FOUND the text is absent: scroll or pick from the returned candidates. " +
-        "If err=PAUSED the user stopped the task; do not retry.",
-    systemPrompt = { _, _ ->
-        "Phone control rules: never guess coordinates, never retry a PAUSED or BLOCKED package, " +
-            "one action per call, and read the returned screen to decide the next step."
+fun buildPhoneShotTool(): Tool = Tool(
+    name = "phone_shot",
+    description = "Take a real screenshot of the phone screen and show it to yourself. " +
+        "Use it when phone_screen returns almost no text (games, canvas UIs), then act with phone_tap_xy.",
+    needsApproval = { false },
+    parameters = { InputSchema.Obj(properties = buildJsonObject { }) },
+    execute = {
+        runTool {
+            val file = PhoneControlHub.screenshot()
+            val screen = runCatching { PhoneControlHub.screen(detail = false) }.getOrNull()
+            val (step, limit) = stepText()
+            listOf(
+                UIMessagePart.Image(url = file.absolutePath),
+                UIMessagePart.Text(okText("shot=${file.name}", screen, step, limit)),
+            )
+        }
     },
+)
+
+fun buildPhoneTapTool(): Tool = Tool(
+    name = "phone_tap",
+    description = "Tap element [id] from the last phone_screen. long=true for a long press. " +
+        "The element is re-verified before tapping: err=STALE means the screen changed, read it again. " +
+        "err=NEED_CONFIRM means the label is sensitive (send/pay/delete/logout): ask the user, do not retry.",
     needsApproval = { args -> phoneActNeedsApproval(args as? JsonObject) },
     parameters = {
         InputSchema.Obj(
             properties = buildJsonObject {
-                put("action", buildJsonObject {
-                    put("type", "string")
-                    put("enum", buildJsonArray {
-                        add("tap"); add("long_press"); add("input"); add("scroll"); add("back"); add("wait")
-                    })
-                    put("description", "tap | long_press | input | scroll | back | wait")
+                put("id", buildJsonObject {
+                    put("type", "integer")
+                    put("description", "Element id from the last phone_screen")
+                })
+                put("long", buildJsonObject {
+                    put("type", "boolean")
+                    put("description", "Long press instead of tap")
                 })
                 put("target", buildJsonObject {
                     put("type", "string")
-                    put("description", "Index from phone_screen (e.g. \"4\") or the visible text of the item")
-                })
-                put("text", buildJsonObject {
-                    put("type", "string")
-                    put("description", "Text to type for action=input")
-                })
-                put("direction", buildJsonObject {
-                    put("type", "string")
-                    put("enum", buildJsonArray { add("down"); add("up") })
-                    put("description", "Scroll direction, default down")
+                    put("description", "Optional label of the target, only used by the approval check")
                 })
             },
-            required = listOf("action")
+            required = listOf("id"),
         )
     },
     execute = { args ->
-        val obj = args as? JsonObject ?: return@Tool toolResult(errorText(PhoneError.BAD_ARGS, "参数必须是对象"))
-        val action = obj["action"]?.jsonPrimitive?.contentOrNull.orEmpty()
-        if (action.isBlank()) return@Tool toolResult(errorText(PhoneError.BAD_ARGS, "缺少 action"))
-        try {
-            val result = PhoneControlHub.perform(
-                PhoneActionRequest(
-                    action = action,
-                    target = obj["target"]?.jsonPrimitive?.contentOrNull,
-                    text = obj["text"]?.jsonPrimitive?.contentOrNull,
-                    direction = obj["direction"]?.jsonPrimitive?.contentOrNull,
-                )
-            )
-            val state = PhoneControlHub.state.value
-            val head = "ok=true act=$action changed=${result.changed} step=${state.step}/${state.stepLimit} msg=${result.message}"
-            val screen = result.screen
-            if (screen == null) toolResult(head) else toolResult(head + "\n" + screen.render())
-        } catch (e: PhoneControlException) {
-            toolResult(errorText(e.error, e.message.orEmpty()))
-        } catch (e: Exception) {
-            toolResult(errorText(PhoneError.ACTION_FAILED, e.message ?: "动作失败"))
+        runTool {
+            val id = args.jsonInt("id")
+            if (id == null) {
+                toolResult(errText(PhoneError.BAD_ARGS, "缺少 id"))
+            } else {
+                val result = PhoneControlHub.tap(id, args.jsonBool("long"))
+                val (step, limit) = stepText()
+                toolResult(okText(result.message, result.screen, step, limit))
+            }
         }
-    }
+    },
 )
 
-fun buildPhoneFindTool(): Tool = Tool(
-    name = "phone_find",
-    description = "Search the current screen for visible text and return matching indexes (max 5). " +
-        "Use it when you know the label but not where it is. Call phone_screen first.",
+fun buildPhoneTypeTool(): Tool = Tool(
+    name = "phone_type",
+    description = "Replace the text of input [id] from the last phone_screen and return the new screen. " +
+        "submit=true presses the keyboard action key (search/send/done). " +
+        "err=SECRET means a password or verification-code field: hand it to the user.",
+    needsApproval = { args -> phoneActNeedsApproval(args as? JsonObject) },
+    parameters = {
+        InputSchema.Obj(
+            properties = buildJsonObject {
+                put("id", buildJsonObject {
+                    put("type", "integer")
+                    put("description", "Input element id from the last phone_screen")
+                })
+                put("text", buildJsonObject {
+                    put("type", "string")
+                    put("description", "Text to type, replaces the current content")
+                })
+                put("submit", buildJsonObject {
+                    put("type", "boolean")
+                    put("description", "Press the keyboard action key after typing")
+                })
+            },
+            required = listOf("id", "text"),
+        )
+    },
+    execute = { args ->
+        runTool {
+            val id = args.jsonInt("id")
+            val text = args.jsonStr("text")
+            if (id == null || text == null) {
+                toolResult(errText(PhoneError.BAD_ARGS, "缺少 id 或 text"))
+            } else {
+                val result = PhoneControlHub.type(id, text, args.jsonBool("submit"))
+                val (step, limit) = stepText()
+                toolResult(okText(result.message, result.screen, step, limit))
+            }
+        }
+    },
+)
+
+fun buildPhoneScrollTool(): Tool = Tool(
+    name = "phone_scroll",
+    description = "Scroll the screen. id is the list element to scroll; omit it to scroll the main page.",
+    needsApproval = { false },
+    parameters = {
+        InputSchema.Obj(
+            properties = buildJsonObject {
+                put("direction", buildJsonObject {
+                    put("type", "string")
+                    put("enum", buildJsonArray {
+                        add("up")
+                        add("down")
+                        add("left")
+                        add("right")
+                    })
+                    put("description", "Scroll direction")
+                })
+                put("id", buildJsonObject {
+                    put("type", "integer")
+                    put("description", "List element id, optional")
+                })
+            },
+            required = listOf("direction"),
+        )
+    },
+    execute = { args ->
+        runTool {
+            val result = PhoneControlHub.scroll(args.jsonStr("direction") ?: "down", args.jsonInt("id"))
+            val (step, limit) = stepText()
+            toolResult(okText(result.message, result.screen, step, limit))
+        }
+    },
+)
+
+fun buildPhoneKeyTool(): Tool = Tool(
+    name = "phone_key",
+    description = "Press a system key: back / home / recents / notifications.",
+    needsApproval = { false },
+    parameters = {
+        InputSchema.Obj(
+            properties = buildJsonObject {
+                put("key", buildJsonObject {
+                    put("type", "string")
+                    put("enum", buildJsonArray {
+                        add("back")
+                        add("home")
+                        add("recents")
+                        add("notifications")
+                    })
+                    put("description", "System key")
+                })
+            },
+            required = listOf("key"),
+        )
+    },
+    execute = { args ->
+        runTool {
+            val key = args.jsonStr("key")
+            if (key == null) {
+                toolResult(errText(PhoneError.BAD_ARGS, "缺少 key"))
+            } else {
+                val result = PhoneControlHub.key(key)
+                val (step, limit) = stepText()
+                toolResult(okText(result.message, result.screen, step, limit))
+            }
+        }
+    },
+)
+
+fun buildPhoneTapXyTool(): Tool = Tool(
+    name = "phone_tap_xy",
+    description = "Tap raw pixel coordinates. Use it only when phone_screen cannot find the target, " +
+        "typically together with phone_shot. Coordinates are pixels of the screenshot you saw.",
+    needsApproval = { true },
+    parameters = {
+        InputSchema.Obj(
+            properties = buildJsonObject {
+                put("x", buildJsonObject {
+                    put("type", "integer")
+                    put("description", "X pixel from the screenshot")
+                })
+                put("y", buildJsonObject {
+                    put("type", "integer")
+                    put("description", "Y pixel from the screenshot")
+                })
+            },
+            required = listOf("x", "y"),
+        )
+    },
+    execute = { args ->
+        runTool {
+            val x = args.jsonInt("x")
+            val y = args.jsonInt("y")
+            if (x == null || y == null) {
+                toolResult(errText(PhoneError.BAD_ARGS, "缺少 x 或 y"))
+            } else {
+                val result = PhoneControlHub.tapAt(x, y)
+                val (step, limit) = stepText()
+                toolResult(okText(result.message, result.screen, step, limit))
+            }
+        }
+    },
+)
+
+fun buildPhoneCollectTool(): Tool = Tool(
+    name = "phone_collect",
+    description = "Read a long list completely by scrolling page by page and deduplicating. " +
+        "id must be a list element from the last phone_screen. Prefer it over many phone_scroll calls.",
+    needsApproval = { false },
+    parameters = {
+        InputSchema.Obj(
+            properties = buildJsonObject {
+                put("id", buildJsonObject {
+                    put("type", "integer")
+                    put("description", "List element id")
+                })
+                put("max_pages", buildJsonObject {
+                    put("type", "integer")
+                    put("description", "How many pages to scroll, 1-30, default 10")
+                })
+                put("until", buildJsonObject {
+                    put("type", "string")
+                    put("description", "Stop once this text shows up")
+                })
+            },
+            required = listOf("id"),
+        )
+    },
+    execute = { args ->
+        runTool {
+            val id = args.jsonInt("id")
+            if (id == null) {
+                toolResult(errText(PhoneError.BAD_ARGS, "缺少 id"))
+            } else {
+                toolResult(PhoneControlHub.collect(id, args.jsonInt("max_pages") ?: 10, args.jsonStr("until")))
+            }
+        }
+    },
+)
+
+fun buildPhoneAppsTool(): Tool = Tool(
+    name = "phone_apps",
+    description = "List installed apps that can be launched, one per line as label - package. Filter with query.",
     needsApproval = { false },
     parameters = {
         InputSchema.Obj(
             properties = buildJsonObject {
                 put("query", buildJsonObject {
                     put("type", "string")
-                    put("description", "Text to look for on the current screen")
+                    put("description", "Filter by label or package, optional")
                 })
             },
-            required = listOf("query")
         )
     },
     execute = { args ->
-        val query = args.jsonObjectString("query")
-        if (query.isNullOrBlank()) return@Tool toolResult(errorText(PhoneError.BAD_ARGS, "缺少 query"))
-        val snapshot = runCatching { PhoneControlHub.readScreen() }.getOrNull()
-            ?: return@Tool toolResult(errorText(PhoneError.NO_SERVICE, "无障碍服务未开启或当前没有可读窗口"))
-        val matches = snapshot.nodes.filter { it.text.contains(query, ignoreCase = true) }
-        if (matches.isEmpty()) {
-            val hint = snapshot.nodes.take(5).joinToString("；") { "${it.index}|${it.text.take(16)}" }
-            return@Tool toolResult(errorText(PhoneError.NOT_FOUND, "屏幕没有「$query」，当前前几项：$hint"))
-        }
-        val body = matches.take(5).joinToString("\n") { "${it.index}|${it.role.code}|${it.text}" }
-        toolResult("ok=true count=${matches.size}\n$body")
-    }
+        runTool { toolResult(PhoneControlHub.listApps(args.jsonStr("query"))) }
+    },
 )
 
-fun buildPhoneTools(): List<Tool> = listOf(buildPhoneScreenTool(), buildPhoneActTool(), buildPhoneFindTool())
+fun buildPhoneOpenTool(): Tool = Tool(
+    name = "phone_open",
+    description = "Open an app (label or package) or a URL / deep link, then read the new screen. " +
+        "Prefer this over tapping launcher icons.",
+    needsApproval = { false },
+    parameters = {
+        InputSchema.Obj(
+            properties = buildJsonObject {
+                put("app", buildJsonObject {
+                    put("type", "string")
+                    put("description", "App label or package name")
+                })
+                put("url", buildJsonObject {
+                    put("type", "string")
+                    put("description", "URL or deep link")
+                })
+            },
+        )
+    },
+    execute = { args ->
+        runTool {
+            val app = args.jsonStr("app")
+            val url = args.jsonStr("url")
+            val result = when {
+                !app.isNullOrBlank() -> PhoneControlHub.launch(app)
+                !url.isNullOrBlank() -> PhoneControlHub.openUrl(url)
+                else -> null
+            }
+            if (result == null) {
+                toolResult(errText(PhoneError.BAD_ARGS, "app 和 url 至少给一个"))
+            } else {
+                val (step, limit) = stepText()
+                toolResult(okText(result.message, result.screen, step, limit))
+            }
+        }
+    },
+)
 
-private fun kotlinx.serialization.json.JsonElement.jsonObjectBoolean(key: String): Boolean =
+fun buildPhoneTools(): List<Tool> = listOf(
+    buildPhoneScreenTool(),
+    buildPhoneShotTool(),
+    buildPhoneTapTool(),
+    buildPhoneTypeTool(),
+    buildPhoneScrollTool(),
+    buildPhoneKeyTool(),
+    buildPhoneTapXyTool(),
+    buildPhoneCollectTool(),
+    buildPhoneAppsTool(),
+    buildPhoneOpenTool(),
+)
+
+private fun JsonElement.jsonInt(key: String): Int? =
+    runCatching { (this as JsonObject)[key]?.jsonPrimitive?.contentOrNull?.toIntOrNull() }.getOrNull()
+
+private fun JsonElement.jsonStr(key: String): String? =
+    runCatching { (this as JsonObject)[key]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() } }.getOrNull()
+
+private fun JsonElement.jsonBool(key: String): Boolean =
     runCatching { (this as JsonObject)[key]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() }.getOrNull() == true
-
-private fun kotlinx.serialization.json.JsonElement.jsonObjectString(key: String): String? =
-    runCatching { (this as JsonObject)[key]?.jsonPrimitive?.contentOrNull }.getOrNull()
