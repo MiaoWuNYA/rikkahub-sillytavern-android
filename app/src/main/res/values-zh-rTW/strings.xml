@@ -3216,4 +3216,21 @@
   <string name="local_tool_settings_control_desc">讓助手按分組一步步讀取和修改應用設定（主題、模型、供應商、提示詞等）</string>
   <string name="local_tool_plugin_author_title">創造模式</string>
   <string name="local_tool_plugin_author_desc">讓助手直接撰寫、安裝、匯出和刪除外掛</string>
+  <string name="local_tool_browser_agent_title">AI 瀏覽器</string>
+  <string name="local_tool_browser_agent_desc">在螢幕上開一個真實瀏覽器，助手可以讀取、點擊、輸入和截圖</string>
+  <string name="local_tool_calculator_title">計算機</string>
+  <string name="local_tool_calculator_desc">數學計算與單位換算</string>
+  <string name="local_tool_code_check_title">程式碼檢查</string>
+  <string name="local_tool_code_check_desc">寫完程式碼先靜態檢查一遍</string>
+  <string name="local_tool_diff_text_title">文字比對</string>
+  <string name="local_tool_diff_text_desc">比對兩段文字的差異</string>
+  <string name="local_tool_phone_control_title">手機控制</string>
+  <string name="local_tool_phone_control_desc">透過無障礙讀螢幕、點擊、輸入和滾動</string>
+  <string name="local_tool_phone_control_permission_required">需要開啟無障礙權限</string>
+  <string name="local_tool_present_file_title">分享檔案</string>
+  <string name="local_tool_present_file_desc">把檔案交給系統分享面板</string>
+  <string name="local_tool_show_image_title">顯示圖片</string>
+  <string name="local_tool_show_image_desc">在聊天裡直接顯示本地圖片</string>
+  <string name="local_tool_task_title">任務清單</string>
+  <string name="local_tool_task_desc">建立與管理多步驟任務</string>
 </resources>
