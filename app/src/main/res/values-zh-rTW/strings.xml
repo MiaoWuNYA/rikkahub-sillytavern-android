@@ -3059,6 +3059,7 @@
   <string name="huadeng_frontend_card_mode_auto">自動識別（開場白或世界書含網頁時切換）</string>
   <string name="huadeng_frontend_card_mode_always">總是使用前端相容模式</string>
   <string name="huadeng_frontend_card_mode_never">總是使用原生介面</string>
+  <string name="huadeng_frontend_card_mode_tavern">原生酒館（SillyTavern 前端）</string>
   <string name="setting_page_huadeng_compat">相容與輔助</string>
   <string name="setting_provider_page_context_length">上下文長度</string>
   <string name="setting_provider_page_context_length_custom">自訂</string>
