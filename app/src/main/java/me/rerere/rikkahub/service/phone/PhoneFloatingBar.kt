@@ -169,7 +169,9 @@ class PhoneFloatingBar(
                 if (moved) {
                     layoutParams.x = (startX + dx).toInt().coerceAtLeast(0)
                     layoutParams.y = (startY + dy).toInt().coerceAtLeast(0)
-                    runCatching { wm.updateViewLayout(view, layoutParams) }
+                    // 必须更新挂到窗口的容器，给子 View 设窗口参数会让 LinearLayout 测量时崩
+                    val target = root ?: return@OnTouchListener false
+                    runCatching { wm.updateViewLayout(target, layoutParams) }
                 }
                 true
             }
