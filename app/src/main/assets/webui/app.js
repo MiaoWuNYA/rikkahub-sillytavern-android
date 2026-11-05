@@ -548,6 +548,56 @@
     return selectors.split(',').map(function (s) { return ':where(' + s.trim() + ')'; }).join(',');
   };
 
+  // 酒馆卡的 CSS 普遍按 ST 的变量与 DOM 写（#chat/.mes/.name_text + --SmartTheme*），
+  // 缺了就整张卡的样式失效。这里把主题色映射成 ST 变量，并用 display:contents 补出
+  // ST 结构：选择器能命中，但不参与布局，不会把卡片自身的排版顶歪。
+  var ST_THEME_VARS = [
+    ['--SmartThemeBodyColor', '--md-on-surface', '#1D1B20'],
+    ['--SmartThemeEmColor', '--md-primary', '#6750A4'],
+    ['--SmartThemeQuoteColor', '--md-on-surface-variant', '#49454F'],
+    ['--SmartThemeUnderlineColor', '--md-primary', '#6750A4'],
+    ['--SmartThemeBorderColor', '--md-outline-variant', '#CAC4D0'],
+    ['--SmartThemeBlurTintColor', '--md-surface', '#FEF7FF'],
+    ['--SmartThemeChatTintColor', '--md-surface-container', '#F3EDF7'],
+    ['--SmartThemeUserMesBlurTintColor', '--md-secondary-container', '#E8DEF8'],
+    ['--SmartThemeBotMesBlurTintColor', '--md-surface-container-high', '#ECE6F0'],
+    ['--SmartThemeShadowColor', null, 'rgba(0,0,0,0.24)'],
+    ['--SmartThemeUserMesColor', '--md-on-secondary-container', '#1D192B'],
+    ['--SmartThemeBotMesColor', '--md-on-surface', '#1D1B20'],
+    ['--SmartThemeBannedWordsColor', '--md-error', '#B3261E'],
+  ];
+
+  function stThemeVarsCss() {
+    var root = document.documentElement;
+    var style = getComputedStyle(root);
+    var out = [];
+    for (var i = 0; i < ST_THEME_VARS.length; i++) {
+      var name = ST_THEME_VARS[i][0], src = ST_THEME_VARS[i][1], fallback = ST_THEME_VARS[i][2];
+      var value = src ? String(style.getPropertyValue(src) || '').trim() : '';
+      out.push(name + ':' + (value || fallback));
+    }
+    var font = String(style.getPropertyValue('--base-font') || '').trim() || '16px';
+    var family = String(style.fontFamily || '').trim();
+    out.push('--mainFontSize:' + font);
+    if (family) out.push('--mainFontFamily:' + family);
+    return ':root{' + out.join(';') + '}';
+  }
+
+  var ST_DOM_CSS =
+    wrapWhere('#chat, .rikka-st-chat') + '{display:contents;}' +
+    wrapWhere('.rikka-st-mes, .rikka-st-mes .mes_block') + '{display:contents;}' +
+    wrapWhere('.mes_text') + '{display:block;}' +
+    wrapWhere('.name_text') + '{font-weight:600;}' +
+    wrapWhere('.mes_text q') + '{color:var(--SmartThemeQuoteColor,#49454F);}' +
+    wrapWhere('.mes_text em') + '{color:var(--SmartThemeEmColor,#6750A4);font-style:italic;}';
+
+  // 卡自带 #chat 就原样放行；否则补一层 ST 结构，让按 #chat .mes 写的样式能命中
+  function wrapStDom(html) {
+    var body = String(html == null ? '' : html);
+    if (/id\s*=\s*["']?chat["']?[\s>]/i.test(body)) return body;
+    return '<div id="chat" class="rikka-st-chat"><div class="mes rikka-st-mes" is_user="false">' +
+      '<div class="mes_block"><div class="mes_text">' + body + '</div></div></div></div>';
+  }
   var CARD_SHELL_CSS =
     wrapWhere('html,body') + '{margin:0;padding:0;height:auto;background:transparent;color:inherit;' +
     'font-family:inherit;font-size:inherit;line-height:inherit;word-break:break-word;overflow-x:hidden;}' +
@@ -879,7 +929,7 @@
       : rewriteCharaCss(parts.head);
     return '<!DOCTYPE html><html><head><meta charset="utf-8">' +
       '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
-      '<style>' + CARD_SHELL_CSS +
+      '<style>' + stThemeVarsCss() + CARD_SHELL_CSS + ST_DOM_CSS +
       ':root{--TH-viewport-height:' + Math.max(320, window.innerHeight || 640) + 'px;}' +
       '</style>' +
       // 卡片样式必须各自独立成 <style>：嵌在外层 <style> 里只是纯文本，规则与变量全废
@@ -895,7 +945,7 @@
       ownHtml +
       escapeScriptBodies(parts.prepared ? parts.head : '') +
       '</head><body class="rikka-card-body">' +
-      body + '</body></html>';
+      wrapStDom(body) + '</body></html>';
   }
 
   function cardFrame(key, desc) {
