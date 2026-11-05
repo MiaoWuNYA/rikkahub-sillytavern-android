@@ -44,10 +44,12 @@ class ChatCompletionsRequestMessageTest {
         includeHistoryReasoning: Boolean = true,
         includeOpenRouterReasoningDetails: Boolean = false,
         systemPromptInChat: Boolean = false,
+        includeToolReasoning: Boolean = false,
     ): JsonArray {
         val method = ChatCompletionsAPI::class.java.getDeclaredMethod(
             "buildMessages",
             List::class.java,
+            Boolean::class.javaPrimitiveType,
             Boolean::class.javaPrimitiveType,
             Boolean::class.javaPrimitiveType,
             List::class.java,
@@ -58,6 +60,7 @@ class ChatCompletionsRequestMessageTest {
             api,
             messages,
             includeHistoryReasoning,
+            includeToolReasoning,
             includeOpenRouterReasoningDetails,
             listOf(Modality.TEXT, Modality.IMAGE),
             systemPromptInChat,
@@ -228,6 +231,51 @@ class ChatCompletionsRequestMessageTest {
             assertFalse("Assistant should not have reasoning_content",
                 msg.jsonObject.containsKey("reasoning_content"))
         }
+    }
+
+    @Test
+    fun `tool call should keep reasoning_content when thinking mode is enabled and history reasoning disabled`() {
+        // 思考模式下带 tool_calls 的助手消息必须回传 reasoning_content，
+        // 历史思考被关掉时也要补空串，否则 DeepSeek 直接 400
+        val messages = listOf(
+            UIMessage.user("查询天气"),
+            UIMessage(
+                role = MessageRole.ASSISTANT,
+                parts = listOf(
+                    UIMessagePart.Text("我来查一下"),
+                    createExecutedTool("call_1", "weather", "{}", "晴"),
+                ),
+            ),
+        )
+
+        val result = invokeBuildMessages(
+            messages,
+            includeHistoryReasoning = false,
+            includeToolReasoning = true,
+        )
+
+        val assistant = result[1].jsonObject
+        assertTrue(assistant.containsKey("tool_calls"))
+        assertTrue("tool call message must carry reasoning_content", assistant.containsKey("reasoning_content"))
+        assertEquals("", assistant["reasoning_content"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `tool call should omit reasoning_content when thinking mode is disabled`() {
+        val messages = listOf(
+            UIMessage.user("查询天气"),
+            UIMessage(
+                role = MessageRole.ASSISTANT,
+                parts = listOf(
+                    UIMessagePart.Text("我来查一下"),
+                    createExecutedTool("call_1", "weather", "{}", "晴"),
+                ),
+            ),
+        )
+
+        val result = invokeBuildMessages(messages, includeHistoryReasoning = false)
+
+        assertFalse(result[1].jsonObject.containsKey("reasoning_content"))
     }
 
     private fun createMultiRoundReasoningMessages(): List<UIMessage> {

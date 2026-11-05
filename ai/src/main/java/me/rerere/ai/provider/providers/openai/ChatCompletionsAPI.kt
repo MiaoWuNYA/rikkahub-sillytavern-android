@@ -246,6 +246,7 @@ class ChatCompletionsAPI(
                 buildMessages(
                     messages = messages,
                     includeHistoryReasoning = providerSetting.includeHistoryReasoning,
+                    includeToolReasoning = params.reasoningLevel.isEnabled,
                     includeOpenRouterReasoningDetails = isOpenRouter,
                     supportInputModalities = params.model.inputModalities,
                     systemPromptInChat = params.systemPromptInChat,
@@ -502,6 +503,9 @@ class ChatCompletionsAPI(
     private fun buildMessages(
         messages: List<UIMessage>,
         includeHistoryReasoning: Boolean = true,
+        // 思考模式下带 tool_calls 的助手消息必须回传 reasoning_content，
+        // 否则 DeepSeek 这类接口会返回 400
+        includeToolReasoning: Boolean = false,
         includeOpenRouterReasoningDetails: Boolean = false,
         supportInputModalities: List<Modality> = listOf(Modality.TEXT, Modality.IMAGE),
         systemPromptInChat: Boolean = false,
@@ -535,6 +539,7 @@ class ChatCompletionsAPI(
                 addAssistantMessages(
                     message = message,
                     includeReasoning = includeHistoryReasoning,
+                    includeToolReasoning = includeToolReasoning,
                     includeOpenRouterReasoningDetails = includeOpenRouterReasoningDetails,
                     supportInputModalities = supportInputModalities,
                 )
@@ -547,6 +552,7 @@ class ChatCompletionsAPI(
     private fun JsonArrayBuilder.addAssistantMessages(
         message: UIMessage,
         includeReasoning: Boolean,
+        includeToolReasoning: Boolean,
         includeOpenRouterReasoningDetails: Boolean,
         supportInputModalities: List<Modality>,
     ) {
@@ -576,6 +582,7 @@ class ChatCompletionsAPI(
                         reasoningPart = reasoningPart,
                         name = message.name,
                         includeOpenRouterReasoningDetails = includeOpenRouterReasoningDetails,
+                        forceReasoningContent = includeToolReasoning,
                     )?.let { assistantMessage ->
                         add(assistantMessage)
                     }
@@ -615,6 +622,7 @@ class ChatCompletionsAPI(
         reasoningPart: UIMessagePart.Reasoning?,
         name: String?,
         includeOpenRouterReasoningDetails: Boolean,
+        forceReasoningContent: Boolean = false,
     ): JsonObject? {
         val hasUsableContent = contentParts.any { part ->
             when (part) {
@@ -629,7 +637,9 @@ class ChatCompletionsAPI(
             null
         }
         val hasReasoning = !reasoningPart?.reasoning.isNullOrBlank() || !reasoningDetails.isNullOrEmpty()
-        if (!hasUsableContent && !hasReasoning && tools.isEmpty()) {
+        // 思考模式下工具调用链要靠 reasoning_content 续写，历史里缺失时补空串占位
+        val needsReasoningContent = forceReasoningContent && tools.isNotEmpty()
+        if (!hasUsableContent && !hasReasoning && tools.isEmpty() && !needsReasoningContent) {
             return null
         }
 
@@ -639,12 +649,10 @@ class ChatCompletionsAPI(
             name?.takeIf { it.isNotBlank() }?.let { put("name", it) }
 
             // reasoning_content
-            if (hasReasoning) {
-                if (!reasoningDetails.isNullOrEmpty()) {
-                    put("reasoning_details", reasoningDetails)
-                } else {
-                    put("reasoning_content", reasoningPart?.reasoning.orEmpty())
-                }
+            if (!reasoningDetails.isNullOrEmpty()) {
+                put("reasoning_details", reasoningDetails)
+            } else if (hasReasoning || needsReasoningContent) {
+                put("reasoning_content", reasoningPart?.reasoning.orEmpty())
             }
 
             // content

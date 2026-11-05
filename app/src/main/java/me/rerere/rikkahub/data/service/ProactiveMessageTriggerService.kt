@@ -759,6 +759,9 @@ class ProactiveMessageRunner(
             updateAt = java.time.Instant.now(),
         )
         conversationRepository.updateConversation(updated)
+        // 对话可能正开着：session 是内存里的那份，只写库页面不会刷新，
+        // 于是「执行日志显示已发送」但聊天窗口里什么都没有
+        chatService.publishConversationUpdate(updated)
         Log.d(TAG, "Saved proactive message to $conversationId (${nodes.size} nodes)")
         return true
     }
