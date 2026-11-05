@@ -222,6 +222,11 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
         providers = settings.providers,
         type = ModelType.CHAT,
     )
+    val proactiveModel = rememberModelListState(
+        modelId = settings.proactiveMessageModelId,
+        providers = settings.providers,
+        type = ModelType.CHAT,
+    )
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -339,6 +344,17 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
             val containerColor = MaterialTheme.colorScheme.secondaryContainer
             val contentColor = MaterialTheme.colorScheme.onSecondaryContainer
             CardGroup {
+                // 不设置时跟着助手的聊天模型走，所以要能清掉
+                modelItem(
+                    icon = HugeIcons.Megaphone01,
+                    title = R.string.setting_model_page_proactive_model,
+                    description = R.string.setting_model_page_proactive_model_desc,
+                    state = proactiveModel,
+                    iconContainerColor = containerColor,
+                    iconContentColor = contentColor,
+                    placeholder = R.string.setting_model_page_proactive_model_follow_assistant,
+                    onClear = { vm.updateSettings { latest -> latest.copy(proactiveMessageModelId = null) } },
+                )
                 modelItem(
                     icon = HugeIcons.Translate,
                     title = R.string.setting_model_page_translate_model,
@@ -387,6 +403,9 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
     }
     ModelListSheet(state = compressModel) {
         vm.updateSettings { latest -> latest.copy(compressModelId = it.id) }
+    }
+    ModelListSheet(state = proactiveModel) {
+        vm.updateSettings { latest -> latest.copy(proactiveMessageModelId = it.id) }
     }
 }
 

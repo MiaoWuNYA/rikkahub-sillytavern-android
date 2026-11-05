@@ -9,6 +9,7 @@ import me.rerere.ai.core.ReasoningLevel
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.asr.ASRProviderSetting
 import me.rerere.mediagen.provider.MediaGenerationProviderSetting
+import me.rerere.rikkahub.browser.BrowserSettings
 import me.rerere.rikkahub.data.ai.mcp.McpServerConfig
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AuthorNoteEntry
@@ -178,7 +179,10 @@ private val SAMPLE = Settings(
     wechatBotSetting = WechatBotSetting(enabled = true),
     qqBotSetting = QqBotSetting(enabled = true),
     proactiveMessageSetting = ProactiveMessageSetting(enabled = true),
+    proactiveMessageModelId = id(23),
     securitySetting = SecuritySetting(forceConfirmToolCalls = true),
+    browserSettings = BrowserSettings(allowEval = true),
+    compressPrompt = "compress",
     titleModelId = id(15),
     titleReasoningLevel = ReasoningLevel.HIGH,
     imageGenerationSize = "1024x1024",
@@ -225,6 +229,10 @@ private val STORED_KEYS = setOf(
     "wechat_bot_setting",
     "qq_bot_setting",
     "proactive_message_setting",
+    "proactive_message_model",
+    "browser_settings",
+    "compress_prompt",
+    "compress_model",
     "security_setting",
     "developer_mode",
     "favorite_models",

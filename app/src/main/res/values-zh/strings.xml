@@ -3543,6 +3543,9 @@
   <string name="life_reading_bookmark_memory">记忆书签</string>
   <string name="setting_model_page_compress_model">压缩模型</string>
   <string name="setting_model_page_compress_model_desc">用于压缩对话历史的模型</string>
+  <string name="setting_model_page_proactive_model">主动消息模型</string>
+  <string name="setting_model_page_proactive_model_desc">AI 主动发消息时使用的模型；未设置时使用助手的聊天模型</string>
+  <string name="setting_model_page_proactive_model_follow_assistant">跟随助手的聊天模型</string>
   <string name="setting_model_page_compress_prompt_vars">变量：{content}、{target_tokens}、{additional_context}</string>
   <string name="setting_model_page_prompt_compress">上下文压缩</string>
   <string name="theme_name_liquid_glass">液态玻璃</string>
