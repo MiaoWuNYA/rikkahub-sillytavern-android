@@ -99,6 +99,10 @@ dsh-purge.zip
 XuanXingNieHe/
 *.zip
 
+# ── 酒馆前端资产（由 tools/build_tavern_assets.py 从 TauriTavern 生成，体积 24MB）──
+tavern-frontend/
+app/src/main/assets/tavern/
+
 # ── 杂项测试文本 ──
 3.txt
 4.txt
