@@ -22,6 +22,8 @@ enum class FrontendCardMode {
     AUTO,
     ALWAYS,
     NEVER,
+    // 内置 SillyTavern 前端：酒馆脚本、前端卡、正则都按酒馆那套跑
+    TAVERN,
 }
 
 @Serializable

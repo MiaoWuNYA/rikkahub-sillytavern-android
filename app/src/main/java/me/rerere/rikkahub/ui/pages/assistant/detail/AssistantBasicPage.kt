@@ -226,6 +226,9 @@ internal fun AssistantBasicContent(
 
                             me.rerere.rikkahub.data.model.FrontendCardMode.NEVER ->
                                 stringResource(R.string.huadeng_frontend_card_mode_never)
+
+                            me.rerere.rikkahub.data.model.FrontendCardMode.TAVERN ->
+                                stringResource(R.string.huadeng_frontend_card_mode_tavern)
                         }
                     },
                 )

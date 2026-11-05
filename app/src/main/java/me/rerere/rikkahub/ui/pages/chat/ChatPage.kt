@@ -405,6 +405,7 @@ private fun resolveFrontendCardMode(setting: Settings, conversation: Conversatio
     val assistant = setting.getAssistantOf(conversation)
     return when (assistant.frontendCardMode) {
         me.rerere.rikkahub.data.model.FrontendCardMode.ALWAYS -> true
+        me.rerere.rikkahub.data.model.FrontendCardMode.TAVERN -> true
         me.rerere.rikkahub.data.model.FrontendCardMode.NEVER -> false
         me.rerere.rikkahub.data.model.FrontendCardMode.AUTO ->
             assistant.frontendCardPreferred ||
@@ -860,6 +861,10 @@ private fun ChatPageContent(
             val chatAssistant = setting.getAssistantOf(conversation)
             // 只有该助手被标记为前端卡会话时才走 WebView，普通会话一律原生
             val frontendCardMode = frontendCardPreferredNow
+            // 原生酒馆模式：内核换成内置的 SillyTavern 前端，界面外壳仍是原生的
+            val tavernMode = remember(chatAssistant.id, chatAssistant.frontendCardMode) {
+                chatAssistant.frontendCardMode == me.rerere.rikkahub.data.model.FrontendCardMode.TAVERN
+            }
             webTranslateMessage?.let { target ->
                 me.rerere.rikkahub.ui.components.message.LanguageSelectionDialog(
                     onLanguageSelected = { locale ->
@@ -969,7 +974,15 @@ private fun ChatPageContent(
                 }
             }
 
-            if (frontendCardMode) {
+            if (tavernMode) {
+                TavernSurface(
+                    assistantName = chatAssistant.name,
+                    appSettings = setting,
+                    model = currentChatModel,
+                    conversationId = conversation.id,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else if (frontendCardMode) {
                 // 前端卡专属模式：整块消息区交给单个 WebView，标题栏与输入栏保持原生
                 val uriHandler = LocalUriHandler.current
                 Box(modifier = Modifier.fillMaxSize()) {
