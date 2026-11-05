@@ -1,11 +1,13 @@
 package me.rerere.rikkahub.ui.components.ai
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -48,6 +51,7 @@ import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.ui.components.ui.UIAvatar
+import me.rerere.rikkahub.ui.components.ui.VerticalScrollBar
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.hooks.rememberAssistantState
 import kotlin.uuid.Uuid
@@ -174,36 +178,44 @@ private fun AssistantPickerSheet(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // 助手列表
+            // 助手列表：右侧拖动滚动条，卡多时不用一页页翻
             val navController = LocalNavController.current
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(filteredAssistants, key = { it.id }) { assistant ->
-                    val checked = assistant.id == currentAssistant.id
-                    Card(
-                        onClick = { onAssistantSelected(assistant) },
-                        modifier = Modifier.animateItem(),
-                        shape = MaterialTheme.shapes.large,
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (checked) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-                            contentColor = if (checked) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                        ),
-                    ) {
-                        AssistantItem(
-                            assistant = assistant,
-                            defaultAssistantName = defaultAssistantName,
-                            onEdit = {
-                                scope.launch {
-                                    sheetState.hide()
-                                    onDismiss()
-                                    navController.navigate(Screen.AssistantDetail(assistant.id.toString()))
+            val listState = rememberLazyListState()
+            Box(modifier = Modifier.weight(1f)) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(filteredAssistants, key = { it.id }) { assistant ->
+                        val checked = assistant.id == currentAssistant.id
+                        Card(
+                            onClick = { onAssistantSelected(assistant) },
+                            modifier = Modifier.animateItem(),
+                            shape = MaterialTheme.shapes.large,
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (checked) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                                contentColor = if (checked) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                            ),
+                        ) {
+                            AssistantItem(
+                                assistant = assistant,
+                                defaultAssistantName = defaultAssistantName,
+                                onEdit = {
+                                    scope.launch {
+                                        sheetState.hide()
+                                        onDismiss()
+                                        navController.navigate(Screen.AssistantDetail(assistant.id.toString()))
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
+                VerticalScrollBar(
+                    state = listState,
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                )
             }
         }
     }

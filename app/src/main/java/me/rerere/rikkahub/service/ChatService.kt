@@ -488,6 +488,19 @@ class ChatService(
         return sessionManager.get(conversationId)?.isGenerating == true
     }
 
+    /**
+     * 外部（主动消息等后台任务）写库后，把新内容同步进已打开的 session。
+     *
+     * 页面读的是内存 session，只更新数据库不会让聊天窗口刷新，表现为
+     * 「日志显示已发送，窗口里看不到」。这里只同步已存在且空闲的 session，
+     * 不凭空创建，也不碰正在生成的会话。
+     */
+    fun publishConversationUpdate(conversation: Conversation) {
+        val session = sessionManager.get(conversation.id) ?: return
+        if (session.isGenerating) return
+        synchronized(session) { session.updateConversation(conversation) }
+    }
+
     fun getGenerationJobStateFlow(conversationId: Uuid): Flow<Job?> {
         val session = sessionManager.get(conversationId) ?: return flowOf(null)
         return session.generationJob

@@ -58,6 +58,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Size
@@ -118,6 +119,7 @@ import me.rerere.rikkahub.ui.components.ai.ChatAttachmentPickerActions
 import me.rerere.rikkahub.ui.components.ai.ChatInput
 import me.rerere.rikkahub.ui.components.message.ChatMessageActionsSheet
 import me.rerere.rikkahub.ui.components.message.ChatMessageCopySheet
+import me.rerere.rikkahub.ui.components.ui.ErrorCardsDisplay
 import me.rerere.rikkahub.ui.components.ui.ImagePreviewDialog
 import me.rerere.rikkahub.ui.components.richtext.buildMarkdownPreviewHtml
 import me.rerere.rikkahub.ui.components.richtext.findFencedHtmlDocument
@@ -1617,6 +1619,16 @@ private fun ChatPageContent(
                     onOpenImage = { url -> webPreviewImage = url },
                     // 铺满全屏：原生标题栏与输入栏由 Scaffold 覆盖在其上
                     modifier = Modifier.fillMaxSize(),
+                )
+                // 前端卡模式没有原生消息列表，错误卡片得自己浮在 WebView 上，
+                // 否则中转站报错、压缩失败这类错误在这里完全不可见
+                ErrorCardsDisplay(
+                    errors = errors,
+                    onDismissError = onDismissError,
+                    onClearAllErrors = onClearAllErrors,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .zIndex(5f),
                 )
                 if (previewMode) {
                     Surface(
