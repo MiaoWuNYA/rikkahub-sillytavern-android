@@ -87,6 +87,10 @@ private val exactNames = mapOf(
     "list_contacts" to "阅名册通讯",
     "search_contacts" to "名册寻人",
     "list_call_log" to "阅往来电录",
+    // ── 设置 / 插件创作 ──
+    "settings_control" to "设界执令",
+    "plugin_author" to "造化编器",
+    "load_tools" to "启封新器",
 )
 
 private val prefixNames = mapOf(

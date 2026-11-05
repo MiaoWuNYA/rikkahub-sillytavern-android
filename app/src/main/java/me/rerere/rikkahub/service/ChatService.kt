@@ -91,6 +91,8 @@ import me.rerere.rikkahub.data.ai.tools.LocalToolOption
 import me.rerere.rikkahub.data.ai.tools.createSearchTools
 import me.rerere.rikkahub.data.ai.tools.createWorkspaceTools
 import me.rerere.rikkahub.data.ai.tools.createSkillTools
+import me.rerere.rikkahub.data.ai.tools.LazyToolGroups
+import me.rerere.rikkahub.data.ai.tools.buildLoadToolsTool
 import me.rerere.rikkahub.data.ai.tools.createFileTools
 import me.rerere.rikkahub.data.ai.tools.buildMemoryTools
 import me.rerere.rikkahub.data.ai.tools.createShellTools
@@ -1653,6 +1655,8 @@ class ChatService(
                     }
                     addAll(createWorkspaceToolsIfReady(assistant.workspaceId?.toString(), conversation.workspaceCwd))
                     addAll(localTools.getTools(assistant.localTools))
+                    LazyToolGroups.register(localTools.getToolGroups(assistant.localTools))
+                    add(buildLoadToolsTool(conversation.id.toString()))
                     if (assistant.localTools.contains(LocalToolOption.ShellTools)) {
                         addAll(createShellTools())
                     }
@@ -2231,6 +2235,8 @@ class ChatService(
                     addAll(createSearchTools(settings))
                 }
                 addAll(localTools.getTools(assistant.localTools))
+                LazyToolGroups.register(localTools.getToolGroups(assistant.localTools))
+                add(buildLoadToolsTool(conversationId.toString()))
                 if (assistant.localTools.contains(LocalToolOption.ShellTools)) {
                     addAll(createShellTools())
                 }
