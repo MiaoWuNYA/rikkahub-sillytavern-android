@@ -45,13 +45,19 @@ class TavernMiscApi(private val assets: TavernAssets) : TavernApi {
         }
     }
 
+    // TauriTavern 的内核要的是数组 [{name:"third-party/X", type:"local"}]，不是上游 ST 的
+    // {third-party:[...]}；给错格式它会在 map 上报错，所有第三方扩展静默不加载
     private fun discover(): TavernReply {
         val installed = assets.list("scripts/extensions/third-party").filter { it.isNotBlank() }
-        val body = buildJsonObject {
-            put("third-party", buildJsonArray { installed.forEach { add(it) } })
-            put("system", buildJsonArray { })
-            put("local", buildJsonArray { })
-            put("global", buildJsonArray { })
+        val body = buildJsonArray {
+            installed.forEach { dir ->
+                add(
+                    buildJsonObject {
+                        put("name", "third-party/" + dir)
+                        put("type", "local")
+                    },
+                )
+            }
         }
         return TavernReply.Json(body.toString())
     }

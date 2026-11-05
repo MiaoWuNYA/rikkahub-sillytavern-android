@@ -106,6 +106,11 @@ SHIM = """    <!-- Android host shim: no Tauri runtime is present. Keep this ahe
             }
             window.__TAURI__ = makeNode();
             window.__TAURI_INTERNALS__ = window.__TAURI_INTERNALS__ || { invoke: stub, metadata: {} };
+            // 第三方扩展（酒馆助手）走这条宿主通道，缺了它 manifest 的 activate 钩子会抛错
+            window.__TAURITAVERN__ = window.__TAURITAVERN__ || {
+                invoke: { safeInvoke: stub, invoke: stub },
+                isAvailable: function () { return false; }
+            };
         })();
     </script>
 """
