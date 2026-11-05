@@ -344,17 +344,6 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
             val containerColor = MaterialTheme.colorScheme.secondaryContainer
             val contentColor = MaterialTheme.colorScheme.onSecondaryContainer
             CardGroup {
-                // 不设置时跟着助手的聊天模型走，所以要能清掉
-                modelItem(
-                    icon = HugeIcons.Megaphone01,
-                    title = R.string.setting_model_page_proactive_model,
-                    description = R.string.setting_model_page_proactive_model_desc,
-                    state = proactiveModel,
-                    iconContainerColor = containerColor,
-                    iconContentColor = contentColor,
-                    placeholder = R.string.setting_model_page_proactive_model_follow_assistant,
-                    onClear = { vm.updateSettings { latest -> latest.copy(proactiveMessageModelId = null) } },
-                )
                 modelItem(
                     icon = HugeIcons.Translate,
                     title = R.string.setting_model_page_translate_model,
@@ -378,6 +367,17 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
                     state = compressModel,
                     iconContainerColor = containerColor,
                     iconContentColor = contentColor,
+                )
+                // 不设置时跟着助手的聊天模型走，所以要能清掉
+                modelItem(
+                    icon = HugeIcons.Megaphone01,
+                    title = R.string.setting_model_page_proactive_model,
+                    description = R.string.setting_model_page_proactive_model_desc,
+                    state = proactiveModel,
+                    iconContainerColor = containerColor,
+                    iconContentColor = contentColor,
+                    placeholder = R.string.setting_model_page_proactive_model_follow_assistant,
+                    onClear = { vm.updateSettings { latest -> latest.copy(proactiveMessageModelId = null) } },
                 )
             }
         }
