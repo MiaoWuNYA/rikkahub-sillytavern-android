@@ -26,6 +26,7 @@ import me.rerere.rikkahub.tavern.TavernRouter
 import me.rerere.rikkahub.tavern.TavernServer
 import me.rerere.rikkahub.tavern.api.TavernDataApi
 import me.rerere.rikkahub.tavern.api.TavernGenerateApi
+import me.rerere.rikkahub.tavern.api.TavernMiscApi
 import org.koin.compose.koinInject
 import kotlin.uuid.Uuid
 
@@ -73,6 +74,7 @@ fun TavernSurface(
             assetHandler = TavernAssetHandler(assets),
             apis = listOf(
                 TavernDataApi({ settingsState }, repository, kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO)),
+                TavernMiscApi(assets),
                 TavernGenerateApi(
                     settingsProvider = { settingsState },
                     generate = generate,

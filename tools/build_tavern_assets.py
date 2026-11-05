@@ -12,6 +12,7 @@ Usage: python3 tools/build_tavern_assets.py [--src DIR] [--dest DIR] [--quiet]
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import shutil
 import sys
@@ -20,6 +21,46 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_SRC = Path("/tmp/ref/TauriTavern/src")
 DEFAULT_DEST = REPO_ROOT / "app/src/main/assets/tavern"
+# 酒馆助手（JS-Slash-Runner 的 TauriTavern 分叉）：装进 third-party 后由前端按扩展清单加载
+HELPER_SRC = Path("/tmp/ref/JS-Slash-Runner")
+
+# 外观覆盖：酒馆自己的配色压成 App 主题色。输入区与顶栏保留，用户还要在这里打字
+STYLE_OVERRIDE = """<style id="rikka-native-override">
+body{background:var(--md-surface,#FEF7FF)!important;color:var(--md-on-surface,#1D1B20)!important;
+  font-size:15px;-webkit-tap-highlight-color:transparent;}
+#chat{background:transparent!important;border:0!important;box-shadow:none!important;}
+.mes{background:var(--md-surface-container,#F3EDF7)!important;color:var(--md-on-surface,#1D1B20)!important;
+  border:0!important;border-radius:16px!important;box-shadow:none!important;margin:6px 10px!important;}
+.mes[is_user="true"]{background:var(--md-secondary-container,#E8DEF8)!important;
+  color:var(--md-on-secondary-container,#1D192B)!important;}
+.mes_text{color:inherit!important;line-height:1.55!important;}
+.name_text{color:var(--md-primary,#6750A4)!important;font-weight:600!important;}
+.mes_buttons{background:transparent!important;color:var(--md-on-surface-variant,#49454F)!important;}
+#send_textarea{background:var(--md-surface-container-high,#ECE6F0)!important;color:inherit!important;
+  border:0!important;border-radius:20px!important;}
+#send_form{background:var(--md-surface,#FEF7FF)!important;border:0!important;}
+#top-bar,#top-settings-holder{background:var(--md-surface,#FEF7FF)!important;border:0!important;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-thumb{background:var(--md-outline-variant,#CAC4D0);border-radius:3px;}
+</style>"""
+
+
+def install_helper(dest: Path) -> None:
+    """把酒馆助手放进 third-party；扩展清单由 Kotlin 侧的 extensions/discover 报给前端。"""
+    if not HELPER_SRC.is_dir():
+        return
+    target = dest / "scripts/extensions/third-party/JS-Slash-Runner"
+    target.mkdir(parents=True, exist_ok=True)
+    for name in ("index.js", "index.css"):
+        candidate = HELPER_SRC / "dist" / name
+        if candidate.is_file():
+            shutil.copy2(candidate, target / name)
+    manifest = HELPER_SRC / "manifest.json"
+    if manifest.is_file():
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+        # 本地资产不会自动更新，关掉，免得前端去拉网络
+        data["auto_update"] = False
+        (target / "manifest.json").write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 # Top level entries copied verbatim.
 KEEP_FILES = ["index.html", "init.js", "script.js", "lib.js", "style.css"]
@@ -129,6 +170,11 @@ def rewrite_index(html_path: Path) -> int:
         lines.append(line)
     text = "".join(lines)
 
+    if "rikka-native-override" not in text:
+        head_end = re.search(r"</head>", text, re.IGNORECASE)
+        if head_end is not None:
+            text = text[:head_end.start()] + STYLE_OVERRIDE + text[head_end.start():]
+
     if "window.__TAURI__" not in text:
         head_end = re.search(r"</head>", text, re.IGNORECASE)
         if head_end is None:
@@ -183,6 +229,8 @@ def main() -> int:
             continue
         if is_excluded(item.relative_to(dest)):
             item.unlink()
+
+    install_helper(dest)
 
     index = dest / "index.html"
     if not index.is_file():

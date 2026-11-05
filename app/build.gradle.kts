@@ -198,7 +198,7 @@ android {
         minSdk = 26
         targetSdk = 37
         // 跟随上游 3.1.1；versionCode 在本地线（238）上递增，保证覆盖安装
-        versionCode = 245
+        versionCode = 246
         versionName = "3.1.1"
 
         // 插件解密密钥的派生因子之一：由签名口令做 HMAC，口令只存在于

@@ -30,6 +30,16 @@ class TavernAssets(
 
     fun exists(path: String): Boolean = open(path)?.use { true } ?: false
 
+    /** 列出某个目录下的直接子项；目录不存在时返回空表。 */
+    fun list(path: String): List<String> {
+        val dir = resolve(path) ?: return emptyList()
+        return try {
+            assets.list(dir)?.toList().orEmpty()
+        } catch (_: IOException) {
+            emptyList()
+        }
+    }
+
     fun contentType(path: String): String {
         val extension = path.substringAfterLast('.', "").substringBefore('?').substringBefore('#').lowercase()
         return CONTENT_TYPES[extension] ?: DEFAULT_CONTENT_TYPE
