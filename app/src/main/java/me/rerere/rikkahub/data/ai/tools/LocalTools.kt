@@ -161,7 +161,7 @@ sealed class LocalToolOption {
     @SerialName("sub_agent")
     data object SubAgent : LocalToolOption()
 
-    /** 手机控制：无障碍读屏 + 点击/输入/滚动（phone_screen / phone_act / phone_find）。 */
+    /** 手机控制：无障碍读屏 + 元素级点击/输入/滚动/按键/截图。 */
     @Serializable
     @SerialName("phone_control")
     data object PhoneControl : LocalToolOption()
