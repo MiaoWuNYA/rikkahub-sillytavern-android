@@ -3165,6 +3165,9 @@
   <string name="setting_model_page_memory_model">記憶整理模型</string>
   <string name="setting_model_page_memory_model_desc">用於在背景將對話整理為長期記憶的模型；未設定時使用快速模型</string>
   <string name="setting_model_page_memory_model_follow_fast">跟隨快速模型</string>
+  <string name="setting_model_page_proactive_model">主動訊息模型</string>
+  <string name="setting_model_page_proactive_model_desc">AI 主動發訊息時使用的模型；未設定時使用助手的聊天模型</string>
+  <string name="setting_model_page_proactive_model_follow_assistant">跟隨助手的聊天模型</string>
   <string name="setting_browser_title">AI 瀏覽器</string>
   <string name="setting_browser_desc">讓助手驅動一個真實可見的瀏覽器</string>
   <string name="setting_browser_enabled">啟用 AI 瀏覽器</string>

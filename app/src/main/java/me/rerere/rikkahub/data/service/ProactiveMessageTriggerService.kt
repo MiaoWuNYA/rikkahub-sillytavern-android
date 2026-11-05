@@ -255,13 +255,15 @@ class ProactiveMessageRunner(
                 val assistant = settings.assistants.find { it.id.toString() == proactiveSetting.assistantId }
                     ?: settings.getCurrentAssistant()
                 val assistantUuid = assistant.id
-                val model = settings.findModelById(assistant.chatModelId ?: settings.chatModelId)
+                val model = settings.findModelById(settings.proactiveMessageModelId)
+                    ?: settings.findModelById(assistant.chatModelId ?: settings.chatModelId)
                 if (model == null) {
                     Log.e(TAG, "No model found for proactive message")
                     ProactiveMessageLog.log(
                         appContext, ProactiveMessageLog.Outcome.FAILED, "模型检查",
                         buildString {
                             appendLine("助手：${assistant.name.ifBlank { assistantUuid.toString() }}")
+                            appendLine("主动消息模型 ID：" + (settings.proactiveMessageModelId ?: "（未设置）"))
                             appendLine("助手配置的模型 ID：" + (assistant.chatModelId ?: "（未设置）"))
                             appendLine("全局默认模型 ID：" + settings.chatModelId)
                             append("原因：找不到对应的模型定义。去助手设置里选一个模型，" +

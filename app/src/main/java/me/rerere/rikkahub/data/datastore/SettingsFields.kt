@@ -158,6 +158,12 @@ internal val SETTINGS_FIELDS: List<SettingsField<*, *>> = with(SettingsStore) {
         plain(OCR_PROMPT, Settings::ocrPrompt) { copy(ocrPrompt = it) },
         uuid(COMPRESS_MODEL, Settings::compressModelId) { copy(compressModelId = it) },
         plain(COMPRESS_PROMPT, Settings::compressPrompt) { copy(compressPrompt = it) },
+        SettingsField(
+            PROACTIVE_MESSAGE_MODEL, Settings::proactiveMessageModelId,
+            { copy(proactiveMessageModelId = it) },
+            encode = { it?.toString() },
+            decode = { stored -> stored.takeIf { it.isNotBlank() }?.let { Uuid.parse(it) } },
+        ),
 
         // 提供商
         json(PROVIDERS, Settings::providers) { copy(providers = it) },

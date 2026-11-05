@@ -47,7 +47,8 @@ private val SETTINGS_GROUPS = listOf(
             "memoryModelId", "memoryModelReasoningLevel", "imageGenerationModelId", "imageGenerationSize",
             "imageGenerationReasoningLevel", "enableAutoTitle", "titlePrompt", "translateModeId", "translatePrompt",
             "translateThinkingBudget", "translateTargetLanguage", "enableSuggestion", "suggestionPrompt",
-            "ocrModelId", "ocrPrompt", "compressModelId", "compressPrompt", "favoriteModels"
+            "ocrModelId", "ocrPrompt", "compressModelId", "compressPrompt", "favoriteModels",
+            "proactiveMessageModelId"
         )
     ),
     SettingsGroup(
