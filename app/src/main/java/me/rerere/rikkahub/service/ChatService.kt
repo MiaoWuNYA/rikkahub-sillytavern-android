@@ -1613,10 +1613,9 @@ class ChatService(
                     // 酒馆模式对齐原版酒馆的上下文构成；必须 addAll 打底再删减，
                     // 手写白名单会静默漏掉文档/占位符等基础转换器
                     addAll(inputTransformers)
-
+                    // PromptInjection/AuthorsNote 已在基础列表里，再 add 一次会让世界书、
+                    // 注入文档、作者笔记在同一个请求里拼两遍（实测 B 文档出现两份）
                     add(templateTransformer)
-                    add(PromptInjectionTransformer)
-                    add(AuthorsNoteTransformer)
 
                     if (settings.huadengSettings.enableTavernMode) {
                         // 用户手动上传的文档和写的占位符照常处理，只去掉自动注入类
@@ -2292,12 +2291,10 @@ class ChatService(
                 }
             },
             inputTransformers = buildList {
-                // 同上：addAll 打底再按酒馆模式删减
+                // 同上：addAll 打底再按酒馆模式删减；注入/作者笔记不重复注册
                 addAll(inputTransformers)
 
                 add(templateTransformer)
-                add(PromptInjectionTransformer)
-                add(AuthorsNoteTransformer)
 
                 if (settings.huadengSettings.enableTavernMode) {
                     removeAll { it === OcrTransformer }
