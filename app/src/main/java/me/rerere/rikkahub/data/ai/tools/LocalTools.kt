@@ -552,7 +552,7 @@ class LocalTools(
 
         // 手机控制工具直连注册，不走 device_toolbox 二级分发，省每步一次往返
         if (options.contains(LocalToolOption.PhoneControl)) {
-            tools.addAll(buildPhoneTools())
+            tools.addAll(buildPhoneTools(context))
         }
 
         // AI 浏览器代理：只在助手开关打开时注册，全局开关在工具内部再判一次

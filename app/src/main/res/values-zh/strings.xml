@@ -3631,4 +3631,7 @@
   <string name="local_tool_plugin_author_desc">让助手直接编写、安装、导出和删除插件</string>
   <string name="local_tool_browser_agent_title">AI 浏览器</string>
   <string name="local_tool_browser_agent_desc">在屏幕上开一个真实浏览器，助手可以读取、点击、输入和截图</string>
+  <string name="phone_control_permission_notification_title">AI 请求打开手机控制权限</string>
+  <string name="phone_control_permission_notification_desc">到「无障碍」里打开「手机控制」，助手才能代你点击</string>
+  <string name="phone_control_permission_notification_action">去开启</string>
 </resources>
