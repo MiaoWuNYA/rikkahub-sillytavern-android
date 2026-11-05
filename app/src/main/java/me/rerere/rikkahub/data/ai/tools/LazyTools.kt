@@ -21,7 +21,10 @@ import java.util.concurrent.ConcurrentHashMap
  * 未加载的工具既不占 tools 参数，也不占 system prompt。
  */
 object LazyToolGroups {
-    private val CORE_GROUPS = setOf("time", "calculator", "ask_user", "clipboard", "diff", "search", "memory", "skill")
+    private val CORE_GROUPS = setOf(
+        "time", "calculator", "ask_user", "clipboard", "diff", "search", "memory", "skill",
+        "settings", "plugin",
+    )
 
     @Volatile
     private var groupOfTool: Map<String, String> = emptyMap()
@@ -32,8 +35,10 @@ object LazyToolGroups {
     private val loaded = ConcurrentHashMap<String, MutableSet<String>>()
 
     fun register(groups: Map<String, List<Tool>>) {
-        groupOfTool = groups.flatMap { (group, tools) -> tools.map { it.name to group } }.toMap()
-        catalog = groups.mapValues { (_, tools) -> tools.map { it.name } }
+        // 核心组不进懒加载表：不登记就不会被过滤，也不出现在可加载列表里
+        val lazy = groups.filterKeys { it !in CORE_GROUPS }
+        groupOfTool = lazy.flatMap { (group, tools) -> tools.map { it.name to group } }.toMap()
+        catalog = lazy.mapValues { (_, tools) -> tools.map { it.name } }
     }
 
     fun groupOf(toolName: String): String? = groupOfTool[toolName]

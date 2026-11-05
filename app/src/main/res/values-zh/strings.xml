@@ -3625,4 +3625,8 @@
   <string name="setting_app_icon_google">谷歌</string>
   <string name="chat_page_compress_keep_recent_minus">减少保留条数</string>
   <string name="chat_page_compress_keep_recent_plus">增加保留条数</string>
+  <string name="local_tool_settings_control_title">应用设置</string>
+  <string name="local_tool_settings_control_desc">让助手按分组一步步读取和修改应用设置（主题、模型、供应商、提示词等）</string>
+  <string name="local_tool_plugin_author_title">创造模式</string>
+  <string name="local_tool_plugin_author_desc">让助手直接编写、安装、导出和删除插件</string>
 </resources>
