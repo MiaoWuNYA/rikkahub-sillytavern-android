@@ -3634,4 +3634,7 @@
   <string name="setting_app_icon_google">Google</string>
   <string name="chat_page_compress_keep_recent_minus">Fewer messages</string>
   <string name="chat_page_compress_keep_recent_plus">More messages</string>
+  <string name="phone_control_permission_notification_title">AI wants to control your phone</string>
+  <string name="phone_control_permission_notification_desc">Open Accessibility and turn on Phone Control so the assistant can tap for you</string>
+  <string name="phone_control_permission_notification_action">Open settings</string>
 </resources>

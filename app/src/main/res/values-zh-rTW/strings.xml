@@ -3233,4 +3233,7 @@
   <string name="local_tool_show_image_desc">在聊天裡直接顯示本地圖片</string>
   <string name="local_tool_task_title">任務清單</string>
   <string name="local_tool_task_desc">建立與管理多步驟任務</string>
+  <string name="phone_control_permission_notification_title">AI 請求開啟手機控制權限</string>
+  <string name="phone_control_permission_notification_desc">到「無障礙」裡開啟「手機控制」，助理才能代你點擊</string>
+  <string name="phone_control_permission_notification_action">去開啟</string>
 </resources>
