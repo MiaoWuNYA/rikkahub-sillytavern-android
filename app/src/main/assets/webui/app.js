@@ -211,6 +211,17 @@
     });
   }
 
+  // 卡片常带 position:fixed 装饰层与 100vh/100vw 尺寸：在官方那是铺满浏览器视口的壁纸，
+  // 塞进卡片 iframe 后会盖住整屏（父页面连输入栏都被挡），或者把卡片撑到视口那么高。
+  // 与原生 HtmlWebViewBlock.normalizeViewportUnits 同一套换算。
+  function normalizeCardUnits(css) {
+    var H = window.innerHeight || 800;
+    var W = window.innerWidth || 400;
+    return String(css == null ? '' : css)
+      .replace(/position\s*:\s*fixed/gi, 'position:absolute')
+      .replace(/(\d+(?:\.\d+)?)vh/gi, function (m, v) { return Math.round(H * parseFloat(v) / 100) + 'px'; })
+      .replace(/(\d+(?:\.\d+)?)vw/gi, function (m, v) { return Math.round(W * parseFloat(v) / 100) + 'px'; });
+  }
   function rewriteCharaCss(css) {
     var text = String(css == null ? '' : css);
     if (!NON_ASCII.test(text)) return text;
@@ -919,14 +930,14 @@
     var body = expandMacros(decodeEscapedInlineTags(normalizeCharaTags(parts.body)));
     var libs = state.libs || {};
     var compat = libs.compat || RUNTIME_COMPAT;
-    var cardCss = rewriteCharaCss(state.cardStyle);
+    var cardCss = normalizeCardUnits(rewriteCharaCss(state.cardStyle));
     // 拆好的那份是纯 CSS，要自己包 <style>；兜底那份已经是 <style> 标签的 outerHTML
     var ownHtml = parts.prepared
       ? (function () {
-        var css = rewriteCharaCss(parts.style);
+        var css = normalizeCardUnits(rewriteCharaCss(parts.style));
         return css ? '<style data-rikka="card-own">' + css + '</style>' : '';
       })()
-      : rewriteCharaCss(parts.head);
+      : normalizeCardUnits(rewriteCharaCss(parts.head));
     return '<!DOCTYPE html><html><head><meta charset="utf-8">' +
       '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
       '<style>' + stThemeVarsCss() + CARD_SHELL_CSS + ST_DOM_CSS +

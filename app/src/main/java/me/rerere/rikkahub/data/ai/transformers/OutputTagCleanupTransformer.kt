@@ -18,7 +18,7 @@ private val SIDE_EFFECT_MACRO = Regex(
  */
 private val WRAPPER_TAGS = listOf(
     "正文", "content", "reply", "response", "output",
-    "正文内容", "maintext", "main",
+    "正文内容", "maintext", "main", "mainbody",
     "combat_driver",
 )
 
