@@ -278,15 +278,17 @@ fun MarkdownBlock(
 
     // 截断的未闭合围栏先补闭合（流式渲染除外，流式中未闭合是常态）
     val display = if (isStreaming) content else content.closeUnclosedFence()
+    // 转义过的卡片（&lt;html&gt;…）先解一层，否则标签判据全失效、整条按源码显示
+    val cardText = if (isStreaming) display else decodeEscapedCardHtml(display)
 
     // 酒馆角色卡等 HTML 富文本：把 HTML 卡片拆出来交给 WebView 渲染
     // （支持 <style>/class CSS）。前端卡（```html 围栏包完整 HTML 文档）
     // 优先按围栏拆分，否则 <html> 前的 DOCTYPE/head 会被当成散文渲染出源码。
     // 卡片默认内联展开、高度自适应——对齐官方把卡片内联进消息 DOM 的行为。
-    val fencedCard = if (isStreaming) null else findFencedHtmlDocument(display)
+    val fencedCard = if (isStreaming) null else findFencedHtmlDocument(cardText)
     // 裸 HTML 路径要按「散文 / 卡片」交替拆段。
     val segments = if (fencedCard == null && !isStreaming) {
-        splitCardSegments(display)
+        splitCardSegments(cardText)
     } else {
         emptyList()
     }

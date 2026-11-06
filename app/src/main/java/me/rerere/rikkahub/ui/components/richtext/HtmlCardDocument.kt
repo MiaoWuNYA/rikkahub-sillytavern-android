@@ -28,6 +28,31 @@ internal val INVISIBLE_LEADING = charArrayOf(
     '\u200b', '\ufeff', '\u200e', '\u200f', '\u200c', '\u200d'
 )
 
+
+/**
+ * 卡片被整段转义过的情况：正则脚本、客户端复制、模型自我保护都会把 < 写成 &lt;。
+ *
+ * 转义后所有标签判据（BLOCK_TAG_AT、isFullHtmlDocument、围栏识别）全部失效，
+ * 卡片段为 0，整条消息退回正文按纯文本渲染 —— 表现就是「HTML 卡完全没被识别，
+ * 直接显示成源码」，正文段还因为带围栏被画成代码块。
+ *
+ * 只在整篇没有任何真实 < 时才解一层，散文里的 &lt; 比较符号不会被误还原。
+ */
+private val ESCAPED_TAG_FORM = Regex("""&lt;/?[a-zA-Z][a-zA-Z0-9]*""")
+
+internal fun decodeEscapedCardHtml(text: String): String {
+    if (!text.contains("&lt;")) return text
+    if (text.indexOf('<') >= 0) return text
+    // 必须是标签形态（&lt;div / &lt;/span），散文里的 "a &lt; b" 比较符号不动
+    if (!ESCAPED_TAG_FORM.containsMatchIn(text)) return text
+    return text
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&#39;", "'")
+        .replace("&amp;", "&")
+}
+
 /** 统一行尾：酒馆导出的卡普遍带 \r\n，会干扰围栏正则与 marked 解析。 */
 internal fun normalizeNewlines(text: String): String =
     text.replace("\r\n", "\n").replace("\r", "\n")
@@ -159,12 +184,14 @@ fun splitCardSegments(text: String): List<Pair<Boolean, String>> {
         val start = starts[i]
         if (start < cursor) { i++; continue }
         val rest = normalized.substring(start)
-        if (!looksLikeCardMarkup(rest)) { i++; continue }
-        // 该卡片块的结束位置：自定义标签的闭合处；没有就取到文末
+        // 结束位置先算出来：判据必须只看这一段，不能看整条余下内容。
+        // 之前用 rest 判定，余下内容里只要有个 <html> 文档，前面的散文段也会被
+        // 当成卡片吞进 WebView，表现就是「正文变成源码」。
         val selfClose = CUSTOM_TAG_SELF_CLOSE.find(rest)
         val end = selfClose?.range?.last?.plus(start + 1) ?: normalized.length
         val piece = normalized.substring(start, end).trimCardEdges()
         if (piece.isEmpty()) { i++; continue }
+        if (!looksLikeCardMarkup(piece)) { i++; continue }
         if (start > cursor) {
             val prose = normalized.substring(cursor, start).trimCardEdges()
             if (prose.isNotEmpty()) segments += false to prose
