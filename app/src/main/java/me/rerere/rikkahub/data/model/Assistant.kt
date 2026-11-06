@@ -85,6 +85,7 @@ data class Assistant(
         LocalToolOption.Calculator,
         LocalToolOption.AskUser,
         LocalToolOption.Clipboard,
+        LocalToolOption.PresentFile,
         LocalToolOption.PythonEngine,
         LocalToolOption.DiffText,
         // 上游自带的图表渲染（原生 Compose，直接显示在聊天里）。
@@ -1067,6 +1068,7 @@ val LEGACY_LOCAL_TOOLS: Set<LocalToolOption> = setOf(
 val ALWAYS_ADD_LOCAL_TOOLS: List<LocalToolOption> = listOf(
     LocalToolOption.SettingsControl,
     LocalToolOption.PluginAuthor,
+    LocalToolOption.PresentFile,
 )
 
 fun Assistant.withNewLocalTools(): Assistant {

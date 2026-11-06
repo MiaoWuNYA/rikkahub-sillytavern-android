@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap
 object LazyToolGroups {
     private val CORE_GROUPS = setOf(
         "time", "calculator", "ask_user", "clipboard", "diff", "search", "memory", "skill",
-        "settings", "plugin",
+        "settings", "plugin", "present", "phone",
     )
 
     @Volatile
