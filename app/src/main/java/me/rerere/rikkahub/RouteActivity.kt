@@ -189,6 +189,9 @@ import me.rerere.rikkahub.utils.l10n
 private const val TAG = "RouteActivity"
 private const val ACTION_TRANSLATE = "me.rerere.rikkahub.action.TRANSLATE"
 private const val ACTION_MEDIA_CREATION = "me.rerere.rikkahub.action.MEDIA_CREATION"
+internal const val ACTION_MINI_APP = "me.rerere.rikkahub.action.MINI_APP"
+internal const val EXTRA_MINI_APP_PLUGIN_ID = "miniAppPluginId"
+internal const val EXTRA_MINI_APP_ID = "miniAppId"
 
 class RouteActivity : ComponentActivity() {
     private val okHttpClient by inject<OkHttpClient>()
@@ -281,6 +284,10 @@ class RouteActivity : ComponentActivity() {
                 openNewMediaCreation(backStack)
                 null
             }
+            ACTION_MINI_APP -> Screen.PluginMiniApp(
+                pluginId = intent.getStringExtra(EXTRA_MINI_APP_PLUGIN_ID).orEmpty(),
+                miniAppId = intent.getStringExtra(EXTRA_MINI_APP_ID).orEmpty(),
+            )
             Intent.ACTION_SEND -> Screen.ShareHandler(
                 text = intent.getStringExtra(Intent.EXTRA_TEXT).orEmpty(),
                 streamUri = intent.getStringExtra(Intent.EXTRA_STREAM),

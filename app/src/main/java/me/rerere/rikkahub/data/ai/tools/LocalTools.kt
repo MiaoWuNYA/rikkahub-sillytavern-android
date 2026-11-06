@@ -569,7 +569,7 @@ class LocalTools(
             )
         }
         if (options.contains(LocalToolOption.PluginAuthor)) {
-            tools.add(buildPluginAuthorTool(pluginManager))
+            tools.add(buildPluginAuthorTool(context, pluginManager))
         }
         return tools
     }
