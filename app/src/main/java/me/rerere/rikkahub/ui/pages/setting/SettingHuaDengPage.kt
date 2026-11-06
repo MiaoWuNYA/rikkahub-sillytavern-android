@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Settings03
+import me.rerere.hugeicons.stroke.AiBrowser
 import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.Brain01
 import me.rerere.hugeicons.stroke.Message01
@@ -60,7 +61,7 @@ import me.rerere.rikkahub.utils.plus
 import org.koin.androidx.compose.koinViewModel
 
 /**
- * 华灯设置：全局兼容与辅助功能。
+ * 华灯设置：接入、自动化与安全。
  */
 @Composable
 fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
@@ -114,13 +115,6 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                         trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
                     )
                     item(
-                        onClick = { navController.navigate(Screen.SettingHuaDengCompat) },
-                        leadingContent = { CardGroupIcon(HugeIcons.Settings03) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_huadeng_title_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_huadeng_compat)) },
-                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
-                    )
-                    item(
                         onClick = { navController.navigate(Screen.SettingSecurity) },
                         leadingContent = { CardGroupIcon(HugeIcons.Shield01) },
                         supportingContent = { Text(stringResource(R.string.setting_page_security_desc)) },
@@ -130,6 +124,21 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                 }
             }
 
+            // ── AI 浏览器 ──
+            item {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.setting_browser_title)) },
+                ) {
+                    item(
+                        onClick = { navController.navigate(Screen.SettingBrowser) },
+                        leadingContent = { CardGroupIcon(HugeIcons.AiBrowser) },
+                        supportingContent = { Text(stringResource(R.string.setting_browser_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_browser_title)) },
+                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
+                    )
+                }
+            }
         }
     }
 }
