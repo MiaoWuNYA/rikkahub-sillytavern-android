@@ -24,6 +24,7 @@ import me.rerere.hugeicons.stroke.Message01
 import me.rerere.hugeicons.stroke.MessageMultiple01
 import me.rerere.hugeicons.stroke.Notebook
 import me.rerere.hugeicons.stroke.Package
+import me.rerere.hugeicons.stroke.Settings03
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.ui.components.nav.BackButton
@@ -33,7 +34,7 @@ import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.plus
 
-/** 酒馆设置：只收酒馆上游同款菜单，兼容与自动化仍在华灯设置里。 */
+/** 酒馆设置：上游同款菜单，加上全局兼容与辅助开关。 */
 @Composable
 fun SettingTavernPage() {
     val navController = LocalNavController.current
@@ -110,6 +111,20 @@ fun SettingTavernPage() {
                         leadingContent = { CardGroupIcon(HugeIcons.Message01) },
                         supportingContent = { Text(stringResource(R.string.extensions_page_quick_messages_desc)) },
                         headlineContent = { Text(stringResource(R.string.assistant_page_quick_messages)) },
+                    )
+                }
+            }
+
+            item("tavernCompat") {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.tavern_section_compat)) },
+                ) {
+                    item(
+                        onClick = { navController.navigate(Screen.SettingHuaDengCompat) },
+                        leadingContent = { CardGroupIcon(HugeIcons.Settings03) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_huadeng_title_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_huadeng_compat)) },
                     )
                 }
             }
