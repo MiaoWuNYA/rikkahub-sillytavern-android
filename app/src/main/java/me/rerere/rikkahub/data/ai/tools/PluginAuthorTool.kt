@@ -1,7 +1,21 @@
 package me.rerere.rikkahub.data.ai.tools
 
+import android.content.Context
+import android.content.Intent
+import android.content.pm.ShortcutInfo
+import android.content.pm.ShortcutManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Typeface
+import android.graphics.drawable.Icon
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import me.rerere.rikkahub.EXTRA_MINI_APP_ID
+import me.rerere.rikkahub.EXTRA_MINI_APP_PLUGIN_ID
+import me.rerere.rikkahub.R
+import me.rerere.rikkahub.RouteActivity
+import me.rerere.rikkahub.ACTION_MINI_APP
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
@@ -20,7 +34,7 @@ import me.rerere.rikkahub.utils.JsonInstant
 /**
  * 创造模式：让模型直接创作、修改、导入、导出、删除本应用的插件。
  */
-fun buildPluginAuthorTool(pluginManager: PluginManager): Tool = Tool(
+fun buildPluginAuthorTool(context: Context, pluginManager: PluginManager): Tool = Tool(
     name = "plugin_author",
     description = "创造模式：用户说「创造模式」「帮我写个插件/功能」或要求安装、分享、删除、改造插件时使用。" +
         "先 action=guide 读插件编写规范，再用 create/write/reload 生成插件；也可 list/read/export/import/delete/enable。",
@@ -32,7 +46,7 @@ fun buildPluginAuthorTool(pluginManager: PluginManager): Tool = Tool(
                     put(
                         "enum",
                         buildJsonArray {
-                            listOf("guide", "list", "read", "create", "write", "delete", "export", "import", "enable", "reload")
+                            listOf("guide", "list", "read", "create", "write", "delete", "export", "import", "enable", "reload", "shortcut", "unshortcut")
                                 .forEach { add(JsonPrimitive(it)) }
                         }
                     )
@@ -61,6 +75,14 @@ fun buildPluginAuthorTool(pluginManager: PluginManager): Tool = Tool(
                 put("icon", buildJsonObject {
                     put("type", "string")
                     put("description", "emoji 图标")
+                })
+                put("miniApp", buildJsonObject {
+                    put("type", "string")
+                    put("description", "action=shortcut/unshortcut 的插件小程序 id（manifest miniApps[].id）")
+                })
+                put("label", buildJsonObject {
+                    put("type", "string")
+                    put("description", "action=shortcut 的桌面图标名称，缺省用小程序名")
                 })
                 put("source", buildJsonObject {
                     put("type", "string")
@@ -151,6 +173,16 @@ fun buildPluginAuthorTool(pluginManager: PluginManager): Tool = Tool(
                 pluginManager.reloadAllPlugins()
                 listPlugins(pluginManager)
             }.fold({ it }, { errorText(it) })
+            "shortcut" -> runCatching {
+                val pluginId = obj.requireStr("id")
+                val miniAppId = obj.requireStr("miniApp")
+                pinMiniAppShortcut(context, pluginManager, pluginId, miniAppId, obj.str("label"), obj.str("icon"))
+                buildJsonObject { put("ok", true); put("hint", "请在系统弹窗里确认添加到桌面") }.toString()
+            }.fold({ it }, { errorText(it) })
+            "unshortcut" -> runCatching {
+                removeMiniAppShortcut(context, obj.requireStr("id"), obj.requireStr("miniApp"))
+                buildJsonObject { put("ok", true) }.toString()
+            }.fold({ it }, { errorText(it) })
             else -> errorText(IllegalArgumentException("unknown action: $action"))
         }
         listOf(UIMessagePart.Text(text))
@@ -188,6 +220,53 @@ private fun JsonObject.str(key: String): String? =
 
 private fun JsonObject.requireStr(key: String): String =
     str(key) ?: error("$key required")
+
+private suspend fun pinMiniAppShortcut(
+    context: Context,
+    pluginManager: PluginManager,
+    pluginId: String,
+    miniAppId: String,
+    labelOverride: String?,
+    iconOverride: String?,
+) {
+    pluginManager.refreshPlugins()
+    val info = pluginManager.plugins.value
+        .find { it.manifest.id == pluginId && it.isEnabled } ?: error("插件不存在或未启用: $pluginId")
+    val miniApp = info.manifest.miniApps.find { it.id == miniAppId } ?: error("插件「$pluginId」没有小程序「$miniAppId」")
+    val label = labelOverride?.takeIf { it.isNotBlank() } ?: miniApp.name.ifBlank { info.manifest.name }
+    val sm = context.getSystemService(Context.SHORTCUT_SERVICE) as ShortcutManager
+    val shortcut = ShortcutInfo.Builder(context, "miniapp_${pluginId}_$miniAppId")
+        .setShortLabel(label)
+        .setLongLabel(label)
+        .setIcon(shortcutIcon(context, iconOverride))
+        .setIntent(Intent(Intent.ACTION_VIEW).apply {
+            component = android.content.ComponentName(context, RouteActivity::class.java)
+            action = ACTION_MINI_APP
+            putExtra(EXTRA_MINI_APP_PLUGIN_ID, pluginId)
+            putExtra(EXTRA_MINI_APP_ID, miniAppId)
+        })
+        .build()
+    if (!sm.isRequestPinShortcutSupported) error("启动器不支持创建桌面快捷图标")
+    sm.requestPinShortcut(shortcut, null)
+}
+
+private fun shortcutIcon(context: Context, emoji: String?): Icon {
+    val text = emoji?.takeIf { it.isNotBlank() }?.first().toString()
+    if (text.isBlank()) return Icon.createWithResource(context, R.mipmap.ic_launcher)
+    val size = 128
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = 96f
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.DEFAULT
+    }
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    Canvas(bitmap).drawText(text, size / 2f, size * 0.78f, paint)
+    return Icon.createWithBitmap(bitmap)
+}
+private fun removeMiniAppShortcut(context: Context, pluginId: String, miniAppId: String) {
+    val sm = context.getSystemService(Context.SHORTCUT_SERVICE) as ShortcutManager
+    sm.disableShortcuts(listOf("miniapp_${pluginId}_$miniAppId"), "插件小程序已删除")
+}
 
 internal object PluginAuthorGuide {
     val TEXT: String = """
@@ -242,5 +321,6 @@ index.js 规则：
   页面不需要也不会加载聊天，可轮询 setInterval 显示实时数据（如今日摄入）。
 
 生成流程：create → write manifest.json → write index.js → reload → list 确认 tools 数量与加载错误。
+- shortcut：给某个 miniApp 请求桌面快捷图标（id=插件id, miniApp=小程序 id, label=图标名, icon=emoji 可选），系统会弹确认框；unshortcut 用同样参数移除。
 """.trimIndent()
 }
