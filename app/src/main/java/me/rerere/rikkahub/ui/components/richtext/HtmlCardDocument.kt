@@ -97,8 +97,16 @@ private val CLOSING_FENCE_LINE = Regex("""^[ \t]*```[ \t]*$""", RegexOption.MULT
 // 完整 fenced 代码块：块内是代码原文，里面的 HTML 标签不能当成卡片起点
 private val FENCED_CODE_BLOCK = Regex("""```[\s\S]*?```""")
 
+/**
+ * 围栏块当作「不能起卡片」的区域，但整份 HTML 文档例外：酒馆卡最常见的就是
+ * ```html 围栏包一整篇文档。若一律排除，围栏里的标签全被过滤光，
+ * 卡片段为 0，整条消息（含 <html>/<style>/<script>）退回正文按纯文本显示。
+ */
 private fun codeBlockRanges(normalized: String): List<IntRange> =
-    FENCED_CODE_BLOCK.findAll(normalized).map { it.range }.toList()
+    FENCED_CODE_BLOCK.findAll(normalized)
+        .filterNot { fenced -> looksLikeCardMarkup(fenced.value.removeSurrounding("```")) }
+        .map { it.range }
+        .toList()
 
 /** 消息里是否含 HTML 富文本（供上层决定渲染路径）。 */
 fun isHtmlRichContent(text: String): Boolean {
