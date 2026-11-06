@@ -1795,9 +1795,9 @@
   <string name="tavern_section_compat">호환과 런타임</string>
   <string name="tavern_section_automation">자동화</string>
   <string name="setting_page_huadeng">HuaDeng 기능</string>
-  <string name="setting_page_huadeng_desc">롤링 압축, 클린 모드 등 화보 &amp; 도구 세부 조정</string>
+  <string name="setting_page_huadeng_desc">의사결정 모델, BOT, AI 브라우저</string>
   <string name="setting_page_huadeng_title">HuaDeng</string>
-  <string name="setting_page_huadeng_title_desc">연결 수정, 빈 응답 대체, 콘텐츠 정리, 컨텍스트 압축 등 전역 설정</string>
+  <string name="setting_page_huadeng_title_desc">연결 수정, 빈 응답 대체, 콘텐츠 정리, 컨텍스트 압축, 선술집 모드 등 전역 설정</string>
   <string name="setting_page_interaction_notification_settings">상호작용 &amp;amp; 알림</string>
   <string name="setting_page_jev">Jev</string>
   <string name="setting_page_jev_about">Jev 정보</string>

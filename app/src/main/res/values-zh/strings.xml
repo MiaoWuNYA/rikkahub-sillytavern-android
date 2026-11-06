@@ -1965,9 +1965,9 @@
   <string name="tavern_section_compat">兼容与运行</string>
   <string name="tavern_section_automation">自动化</string>
   <string name="setting_page_huadeng">华灯设置</string>
-  <string name="setting_page_huadeng_desc">决策模型、BOT、兼容和审批</string>
+  <string name="setting_page_huadeng_desc">决策模型、BOT、AI 浏览器</string>
   <string name="setting_page_huadeng_title">兼容与辅助</string>
-  <string name="setting_page_huadeng_title_desc">连接修复、空响应兜底、内容裁剪、上下文压缩等全局开关</string>
+  <string name="setting_page_huadeng_title_desc">连接修复、空响应兜底、内容裁剪、上下文压缩、酒馆模式等全局开关</string>
   <string name="setting_page_interaction_notification_settings">互动与通知</string>
   <string name="setting_page_jev">Jev 智能决策</string>
   <string name="setting_page_jev_about">说明</string>

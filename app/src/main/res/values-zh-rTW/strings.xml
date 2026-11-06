@@ -1806,9 +1806,9 @@
   <string name="tavern_section_compat">相容與執行</string>
   <string name="tavern_section_automation">自動化</string>
   <string name="setting_page_huadeng">華燈設定</string>
-  <string name="setting_page_huadeng_desc">全域中轉站相容、防空回覆、上下文與工具治理</string>
+  <string name="setting_page_huadeng_desc">決策模型、BOT、AI 瀏覽器</string>
   <string name="setting_page_huadeng_title">相容與輔助</string>
-  <string name="setting_page_huadeng_title_desc">連接修復、空回應兜底、內容裁剪、上下文壓縮等全域開關</string>
+  <string name="setting_page_huadeng_title_desc">連接修復、空回應兜底、內容裁剪、上下文壓縮、酒館模式等全域開關</string>
   <string name="setting_page_interaction_notification_settings">互動與通知</string>
   <string name="setting_page_jev">Jev 智慧決策</string>
   <string name="setting_page_jev_about">說明</string>
