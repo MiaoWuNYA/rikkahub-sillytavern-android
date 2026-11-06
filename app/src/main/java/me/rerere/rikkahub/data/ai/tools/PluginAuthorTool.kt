@@ -6,9 +6,18 @@ import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.Icon
+import coil3.ImageLoader
+import coil3.request.ImageRequest
+import coil3.svg.SvgDecoder
+import coil3.toBitmap
+import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import me.rerere.rikkahub.EXTRA_MINI_APP_ID
@@ -74,7 +83,16 @@ fun buildPluginAuthorTool(context: Context, pluginManager: PluginManager): Tool 
                 })
                 put("icon", buildJsonObject {
                     put("type", "string")
-                    put("description", "emoji 图标")
+                    put("description", "图标：create 用 emoji；shortcut 还可写 url:https://…/a.png 或 file:icons/a.png（插件目录内相对路径），支持 png/jpg/webp/svg，不带前缀时按内容自动判断")
+                })
+                put("iconBg", buildJsonObject {
+                    put("type", "string")
+                    put("description", "shortcut 图标底色 #RRGGBB，不传为透明")
+                })
+                put("mode", buildJsonObject {
+                    put("type", "string")
+                    put("enum", buildJsonArray { add("preview"); add("pin") })
+                    put("description", "shortcut 用：preview 只渲染图标给你看（推荐先做这步），pin 才真正请求加到桌面")
                 })
                 put("miniApp", buildJsonObject {
                     put("type", "string")
@@ -99,6 +117,7 @@ fun buildPluginAuthorTool(context: Context, pluginManager: PluginManager): Tool 
     execute = { args ->
         val obj = args.jsonObject
         val action = obj.str("action") ?: "guide"
+        var previewIcon: File? = null
         val text = when (action) {
             "guide" -> PluginAuthorGuide.TEXT
             "list" -> listPlugins(pluginManager)
@@ -176,8 +195,28 @@ fun buildPluginAuthorTool(context: Context, pluginManager: PluginManager): Tool 
             "shortcut" -> runCatching {
                 val pluginId = obj.requireStr("id")
                 val miniAppId = obj.requireStr("miniApp")
-                pinMiniAppShortcut(context, pluginManager, pluginId, miniAppId, obj.str("label"), obj.str("icon"))
-                buildJsonObject { put("ok", true); put("hint", "请在系统弹窗里确认添加到桌面") }.toString()
+                val mode = obj.str("mode") ?: "pin"
+                val (message, iconFile) = pinMiniAppShortcut(
+                    context = context,
+                    pluginManager = pluginManager,
+                    pluginId = pluginId,
+                    miniAppId = miniAppId,
+                    labelOverride = obj.str("label"),
+                    iconOverride = obj.str("icon"),
+                    iconBg = obj.str("iconBg"),
+                    mode = mode,
+                )
+                previewIcon = iconFile
+                buildJsonObject {
+                    put("ok", true)
+                    put("mode", mode)
+                    put("message", message)
+                    if (mode == "preview") {
+                        put("next", "确认图标没错再调 action=shortcut&mode=pin")
+                    } else {
+                        put("hint", "请在系统弹窗里确认添加到桌面")
+                    }
+                }.toString()
             }.fold({ it }, { errorText(it) })
             "unshortcut" -> runCatching {
                 removeMiniAppShortcut(context, obj.requireStr("id"), obj.requireStr("miniApp"))
@@ -185,7 +224,12 @@ fun buildPluginAuthorTool(context: Context, pluginManager: PluginManager): Tool 
             }.fold({ it }, { errorText(it) })
             else -> errorText(IllegalArgumentException("unknown action: $action"))
         }
-        listOf(UIMessagePart.Text(text))
+        val image = previewIcon
+        if (image != null) {
+            listOf(UIMessagePart.Image(url = image.absolutePath), UIMessagePart.Text(text))
+        } else {
+            listOf(UIMessagePart.Text(text))
+        }
     }
 )
 
@@ -221,6 +265,7 @@ private fun JsonObject.str(key: String): String? =
 private fun JsonObject.requireStr(key: String): String =
     str(key) ?: error("$key required")
 
+// 图标先落成 PNG 让模型自己看一眼：emoji 缺字形会渲染成豆腐块，必须由模型把关
 private suspend fun pinMiniAppShortcut(
     context: Context,
     pluginManager: PluginManager,
@@ -228,17 +273,23 @@ private suspend fun pinMiniAppShortcut(
     miniAppId: String,
     labelOverride: String?,
     iconOverride: String?,
-) {
+    iconBg: String?,
+    mode: String,
+): Pair<String, File?> {
     pluginManager.refreshPlugins()
     val info = pluginManager.plugins.value
         .find { it.manifest.id == pluginId && it.isEnabled } ?: error("插件不存在或未启用: $pluginId")
     val miniApp = info.manifest.miniApps.find { it.id == miniAppId } ?: error("插件「$pluginId」没有小程序「$miniAppId」")
     val label = labelOverride?.takeIf { it.isNotBlank() } ?: miniApp.name.ifBlank { info.manifest.name }
+    val icon = renderShortcutIcon(context, info.directory, iconOverride ?: miniApp.icon, iconBg)
+    if (mode == "preview") {
+        return "图标已渲染，先看这张图：emoji 渲染成方块说明系统没这个字形，换一个或改用 url:/file: 图片" to icon.bitmapFile
+    }
     val sm = context.getSystemService(Context.SHORTCUT_SERVICE) as ShortcutManager
     val shortcut = ShortcutInfo.Builder(context, "miniapp_${pluginId}_$miniAppId")
         .setShortLabel(label)
         .setLongLabel(label)
-        .setIcon(shortcutIcon(context, iconOverride))
+        .setIcon(Icon.createWithBitmap(icon.bitmap))
         .setIntent(Intent(Intent.ACTION_VIEW).apply {
             component = android.content.ComponentName(context, RouteActivity::class.java)
             action = ACTION_MINI_APP
@@ -248,20 +299,92 @@ private suspend fun pinMiniAppShortcut(
         .build()
     if (!sm.isRequestPinShortcutSupported) error("启动器不支持创建桌面快捷图标")
     sm.requestPinShortcut(shortcut, null)
+    return "已请求添加到桌面" to icon.bitmapFile
 }
 
-private fun shortcutIcon(context: Context, emoji: String?): Icon {
-    val text = emoji?.takeIf { it.isNotBlank() }?.first().toString()
-    if (text.isBlank()) return Icon.createWithResource(context, R.mipmap.ic_launcher)
-    val size = 128
+private class ShortcutIcon(val bitmap: Bitmap, val bitmapFile: File?)
+
+private suspend fun renderShortcutIcon(
+    context: Context,
+    pluginDir: File,
+    spec: String?,
+    bg: String?,
+): ShortcutIcon {
+    val source = spec?.trim().orEmpty()
+    val bitmap = when {
+        source.isBlank() -> null
+        source.startsWith("url:") -> loadIconImage(context, source.removePrefix("url:"))
+        source.startsWith("file:") -> loadIconImage(context, pluginFile(pluginDir, source.removePrefix("file:")).toURI().toString())
+        source.contains("://") -> loadIconImage(context, source)
+        source.length <= 4 -> drawEmoji(source)
+        else -> runCatching { loadIconImage(context, pluginFile(pluginDir, source).toURI().toString()) }.getOrNull()
+            ?: drawEmoji(source)
+    }
+    val finalBitmap = bitmap?.let { applyBackground(it, bg) }
+    if (finalBitmap == null) {
+        val fallback = androidx.core.content.ContextCompat.getDrawable(context, R.mipmap.ic_launcher)
+        val drawn = Bitmap.createBitmap(512, 512, Bitmap.Config.ARGB_8888)
+        fallback?.setBounds(0, 0, 512, 512)
+        fallback?.draw(Canvas(drawn))
+        val file = File(context.cacheDir, "shortcut_icon_preview.png")
+        file.outputStream().use { drawn.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        return ShortcutIcon(drawn, file)
+    }
+    val file = File(context.cacheDir, "shortcut_icon_preview.png")
+    file.outputStream().use { finalBitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    return ShortcutIcon(finalBitmap, file)
+}
+
+private fun pluginFile(pluginDir: File, relative: String): File {
+    val base = pluginDir.canonicalFile
+    val file = File(base, relative).canonicalFile
+    require(file.path.startsWith(base.path + File.separator)) { "图标必须放在插件目录内: $relative" }
+    return file
+}
+
+private suspend fun loadIconImage(context: Context, model: String): Bitmap = withContext(Dispatchers.IO) {
+    val loader = ImageLoader.Builder(context).components { add(SvgDecoder.Factory()) }.build()
+    val request = ImageRequest.Builder(context).data(model).size(512).build()
+    val result = loader.execute(request)
+    result.image?.toBitmap() ?: error("图标读不出来: $model")
+}
+
+private fun drawEmoji(emoji: String): Bitmap {
+    val size = 512
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textSize = 96f
+        textSize = size * 0.72f
         textAlign = Paint.Align.CENTER
         typeface = Typeface.DEFAULT
     }
-    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-    Canvas(bitmap).drawText(text, size / 2f, size * 0.78f, paint)
-    return Icon.createWithBitmap(bitmap)
+    Canvas(bitmap).drawText(emoji.take(2), size / 2f, size * 0.75f, paint)
+    return bitmap
+}
+
+private fun applyBackground(source: Bitmap, bg: String?): Bitmap {
+    val color = bg?.trim()?.takeIf { it.isNotBlank() }?.let {
+        runCatching { Color.parseColor(if (it.startsWith("#")) it else "#$it") }.getOrNull()
+    } ?: return if (source.width >= 192) source else scaleIcon(source)
+    val size = 512
+    val out = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(out)
+    canvas.drawColor(color)
+    val scaled = scaleIcon(source, (size * 0.78f).toInt())
+    val left = (size - scaled.width) / 2f
+    val top = (size - scaled.height) / 2f
+    canvas.drawBitmap(scaled, left, top, Paint(Paint.FILTER_BITMAP_FLAG))
+    return out
+}
+
+private fun scaleIcon(source: Bitmap, target: Int = 512): Bitmap {
+    if (source.width == target && source.height == target) return source
+    val ratio = target.toFloat() / maxOf(source.width, source.height).coerceAtLeast(1)
+    return Bitmap.createScaledBitmap(
+        source,
+        (source.width * ratio).toInt().coerceAtLeast(1),
+        (source.height * ratio).toInt().coerceAtLeast(1),
+        true,
+    )
 }
 private fun removeMiniAppShortcut(context: Context, pluginId: String, miniAppId: String) {
     val sm = context.getSystemService(Context.SHORTCUT_SERVICE) as ShortcutManager
@@ -321,6 +444,10 @@ index.js 规则：
   页面不需要也不会加载聊天，可轮询 setInterval 显示实时数据（如今日摄入）。
 
 生成流程：create → write manifest.json → write index.js → reload → list 确认 tools 数量与加载错误。
-- shortcut：给某个 miniApp 请求桌面快捷图标（id=插件id, miniApp=小程序 id, label=图标名, icon=emoji 可选），系统会弹确认框；unshortcut 用同样参数移除。
+- shortcut：给某个 miniApp 建桌面快捷图标（id=插件id, miniApp=小程序 id, label=图标名）。
+  icon 支持三种：emoji；file:icons/a.png（插件目录内相对路径）；url:https://…/a.png。png/jpg/webp/svg 都行。iconBg=#RRGGBB 可加底色。
+  **先 mode=preview 再 mode=pin**：preview 只把渲染好的图标作为图片返回给你看，不建快捷方式。
+  看一眼那张图——emoji 变成方块/豆腐块就是系统缺字形，必须换一个 emoji 或改用图片文件；确认没问题再 mode=pin 真正钉到桌面。
+  unshortcut 用 id+miniApp 移除。
 """.trimIndent()
 }
