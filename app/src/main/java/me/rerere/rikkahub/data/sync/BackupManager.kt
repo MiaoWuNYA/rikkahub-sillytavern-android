@@ -19,8 +19,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.migration.SettingsJsonMigrator
-import me.rerere.rikkahub.data.db.AppDatabaseFactory
 import me.rerere.rikkahub.data.db.AppDatabase
+import me.rerere.rikkahub.data.db.AppDatabaseFactory
 import me.rerere.rikkahub.data.db.SQLiteConfiguration
 import me.rerere.rikkahub.data.files.FileFolders
 import me.rerere.rikkahub.data.files.MediaCreationFiles
@@ -69,14 +69,19 @@ class BackupManager(
                 if (includeFiles) {
                     for (folder in ATTACHMENT_FOLDERS) {
                         val directory = File(context.filesDir, folder)
-                        val files = if (folder in NESTED_ATTACHMENT_FOLDERS) directory.walkTopDown().asSequence()
-                        else directory.listFiles().orEmpty().asSequence()
+                        val files = if (folder in NESTED_ATTACHMENT_FOLDERS) {
+                            directory.walkTopDown().asSequence()
+                        } else {
+                            directory.listFiles().orEmpty().asSequence()
+                        }
                         for (file in files.filter { it.isFile }) {
                             currentCoroutineContext().ensureActive()
                             // A media result still being downloaded is incomplete and gets renamed when it finishes.
                             if (folder == FileFolders.MEDIA_CREATION &&
                                 file.name.endsWith(MediaCreationFiles.PARTIAL_SUFFIX)
-                            ) continue
+                            ) {
+                                continue
+                            }
                             val relative = file.relativeTo(directory).invariantSeparatorsPath
                             PendingRestore.resolveInside(directory, relative)
                             addFile(zip, file, "$folder/$relative")
@@ -118,7 +123,9 @@ class BackupManager(
                                 DatabaseBackup.SHM -> null // Rebuilt by SQLite; never restore shared-memory state.
                                 else -> if (includeFiles && isAttachment(entry.name)) {
                                     PendingRestore.resolveInside(File(payload, "files"), entry.name)
-                                } else null
+                                } else {
+                                    null
+                                }
                             } ?: continue
                             require(seen.add(entry.name)) { "Duplicate backup entry: ${entry.name}" }
                             check(target.parentFile!!.isDirectory || target.parentFile!!.mkdirs()) {
@@ -155,7 +162,10 @@ class BackupManager(
                         val settings = json.decodeFromString<Settings>(migrated)
                         require(!settings.init) { "Backup contains uninitialized settings" }
                         // Persist the migrated value once, including generated IDs, for restart/retry consistency.
-                        PendingRestore.writeDurably(settingsFile, json.encodeSettings(settings, json.launchCountOf(migrated)))
+                        PendingRestore.writeDurably(
+                            settingsFile,
+                            json.encodeSettings(settings, json.launchCountOf(migrated))
+                        )
                     }
                     currentCoroutineContext().ensureActive()
                     restore.publish(staging)
@@ -209,8 +219,8 @@ class BackupManager(
      */
     private class BackupRestoreBudget(
         private val maxEntries: Int = 100_000,
-        private val maxEntryBytes: Long = 2L * 1024 * 1024 * 1024,
-        private val maxTotalBytes: Long = 8L * 1024 * 1024 * 1024,
+        private val maxEntryBytes: Long = 8L * 1024 * 1024 * 1024,
+        private val maxTotalBytes: Long = 24L * 1024 * 1024 * 1024,
     ) {
         private var entries = 0
         private var totalBytes = 0L
