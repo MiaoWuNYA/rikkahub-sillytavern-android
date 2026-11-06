@@ -36,6 +36,7 @@ import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.ui.components.message.tools.toolDisplayName
 import me.rerere.rikkahub.ui.components.richtext.parseCardDocument
+import me.rerere.rikkahub.ui.components.richtext.decodeEscapedCardHtml
 import me.rerere.rikkahub.ui.components.richtext.splitCardSegments
 import kotlinx.datetime.toJavaLocalDateTime
 import me.rerere.rikkahub.utils.computeAIIconByName
@@ -300,7 +301,7 @@ internal fun buildMessage(
         }
         textParts.forEach { part ->
             var cardIndex = 0
-            splitCardSegments(part.text).forEach { (isCard, segment) ->
+            splitCardSegments(decodeEscapedCardHtml(part.text)).forEach { (isCard, segment) ->
                 if (isCard) {
                     // 卡片段自己也要剥围栏、拆文档。带 ``` 围栏或 <html>/<head> 外壳的原文
                     // 塞进 iframe 的 body 会把解析树整个搞乱：样式表落进正文变成可见文本、
