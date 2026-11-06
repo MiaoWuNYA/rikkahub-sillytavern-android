@@ -8,6 +8,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -44,6 +45,7 @@ import me.rerere.rikkahub.utils.l10n
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.ArrowRight01
+import me.rerere.hugeicons.stroke.Settings03
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.db.entity.CoupleCommentEntity
 import me.rerere.rikkahub.data.db.entity.CoupleDiaryEntity
@@ -65,6 +67,10 @@ fun CoupleSpacePage(vm: CoupleVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val partner = settings.assistants.firstOrNull { it.id.toString() == relationship?.assistantId }
     var pendingPartnerId by remember { mutableStateOf<String?>(null) }
+    var pendingStartDate by remember { mutableStateOf(false) }
+    var pendingPartnerSwitch by remember { mutableStateOf(false) }
+    var showUnbindConfirm by remember { mutableStateOf(false) }
+    val nav = LocalNavController.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
         containerColor = CustomColors.topBarColors.containerColor,
@@ -73,6 +79,35 @@ fun CoupleSpacePage(vm: CoupleVM = koinViewModel()) {
             LargeFlexibleTopAppBar(
                 title = { Text(stringResource(R.string.couple_space_title)) },
                 navigationIcon = { BackButton() },
+                actions = {
+                    if (relationship != null && partner != null) {
+                        var showMenu by remember { mutableStateOf(false) }
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(HugeIcons.Settings03, contentDescription = stringResource(R.string.couple_space_settings))
+                        }
+                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.couple_space_edit_partner_card)) },
+                                onClick = {
+                                    showMenu = false
+                                    nav.navigate(Screen.AssistantDetail(partner.id.toString()))
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.couple_space_change_partner)) },
+                                onClick = { showMenu = false; pendingPartnerSwitch = true },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.couple_space_change_start_date)) },
+                                onClick = { showMenu = false; pendingStartDate = true },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.couple_space_unbind)) },
+                                onClick = { showMenu = false; showUnbindConfirm = true },
+                            )
+                        }
+                    }
+                },
                 scrollBehavior = scrollBehavior,
                 colors = CustomColors.topBarColors,
             )
@@ -120,6 +155,76 @@ fun CoupleSpacePage(vm: CoupleVM = koinViewModel()) {
             },
         )
     }
+    if (pendingStartDate) {
+        DateChooserDialog(
+            title = stringResource(R.string.couple_space_change_start_date),
+            initialDate = relationship?.startedAt ?: System.currentTimeMillis(),
+            onDismiss = { pendingStartDate = false },
+            onConfirm = { date ->
+                vm.rebindStartDate(date)
+                pendingStartDate = false
+            },
+        )
+    }
+    if (pendingPartnerSwitch) {
+        PartnerChooserDialog(
+            assistants = settings.assistants.filter { it.id.toString() != relationship?.assistantId },
+            onDismiss = { pendingPartnerSwitch = false },
+            onPick = { assistantId ->
+                vm.rebindPartner(assistantId)
+                pendingPartnerSwitch = false
+            },
+        )
+    }
+    if (showUnbindConfirm) {
+        AlertDialog(
+            onDismissRequest = { showUnbindConfirm = false },
+            title = { Text(stringResource(R.string.couple_space_unbind_title)) },
+            text = { Text(stringResource(R.string.couple_space_unbind_desc)) },
+            confirmButton = {
+                TextButton(onClick = { vm.unbind(); showUnbindConfirm = false }) {
+                    Text(stringResource(R.string.couple_space_unbind_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUnbindConfirm = false }) {
+                    Text(stringResource(R.string.couple_space_clear))
+                }
+            },
+        )
+    }
+}
+
+// 换恋人：排除当前这位，一个都没有时提示先去建角色卡
+@Composable
+private fun PartnerChooserDialog(
+    assistants: List<me.rerere.rikkahub.data.model.Assistant>,
+    onDismiss: () -> Unit,
+    onPick: (String) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.couple_space_change_partner)) },
+        text = {
+            if (assistants.isEmpty()) {
+                Text(stringResource(R.string.couple_space_no_other_assistant))
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    assistants.forEach { assistant ->
+                        ListItem(
+                            headlineContent = {
+                                Text(assistant.name.ifBlank { stringResource(R.string.couple_space_unnamed_assistant) })
+                            },
+                            modifier = Modifier.clickable { onPick(assistant.id.toString()) },
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.couple_space_got_it)) }
+        },
+    )
 }
 
 @Composable

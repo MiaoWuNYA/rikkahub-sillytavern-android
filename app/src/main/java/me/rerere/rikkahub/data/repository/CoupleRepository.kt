@@ -26,6 +26,22 @@ class CoupleRepository(private val dao: CoupleDAO) {
         )
     }
 
+    suspend fun rebindPartner(relationship: CoupleRelationshipEntity, assistantId: String) =
+        dao.saveRelationship(relationship.copy(assistantId = assistantId))
+
+    suspend fun updateStartDate(relationship: CoupleRelationshipEntity, startedAt: Long) =
+        dao.saveRelationship(relationship.copy(startedAt = startedAt))
+
+    /** 解除绑定：关系与它的动态/日记/纪念日一起清掉，换人不会串数据 */
+    suspend fun unbind(relationshipId: String) {
+        dao.clearComments(relationshipId)
+        dao.clearPosts(relationshipId)
+        dao.clearDiaries(relationshipId)
+        dao.clearDiaryFolders(relationshipId)
+        dao.clearAnniversaries(relationshipId)
+        dao.deleteRelationship(relationshipId)
+    }
+
     suspend fun updateJournalCover(relationship: CoupleRelationshipEntity, cover: String) =
         dao.saveRelationship(relationship.copy(journalCover = cover))
 
