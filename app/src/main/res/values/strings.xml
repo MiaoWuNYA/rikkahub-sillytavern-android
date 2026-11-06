@@ -1974,9 +1974,9 @@
   <string name="tavern_section_compat">Compatibility &amp; Runtime</string>
   <string name="tavern_section_automation">Automation</string>
   <string name="setting_page_huadeng">HuaDeng Settings</string>
-  <string name="setting_page_huadeng_desc">Decision model, BOT, compatibility and approval</string>
+  <string name="setting_page_huadeng_desc">Decision model, BOT and AI browser</string>
   <string name="setting_page_huadeng_title">Compatibility</string>
-  <string name="setting_page_huadeng_title_desc">Connection fixes, empty-response fallback, content pruning, context compression</string>
+  <string name="setting_page_huadeng_title_desc">Connection fixes, empty-response fallback, content pruning, context compression, tavern mode</string>
   <string name="setting_page_jev">Jev Decisions</string>
   <string name="setting_page_jev_about">About</string>
   <string name="setting_page_jev_active_desc">Enabled takeovers run through Jev. Anything it fails or is unsure about silently falls back to the original logic.</string>
