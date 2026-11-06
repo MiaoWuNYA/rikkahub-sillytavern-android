@@ -175,8 +175,8 @@ object PhoneControlHub {
         "ok=true pages=$pagesRead count=${seen.size}\n" + seen.joinToString("\n")
     }
 
-    suspend fun launch(query: String): PhoneActionResult = withElement(null, "打开应用") { _, _ ->
-        val svc = service ?: throw noService()
+    // 打开应用/链接不依赖读屏：不要求本机不在前台，也不要求先 phone_screen
+    suspend fun launch(query: String): PhoneActionResult = withGlobalAction("打开应用") { svc ->
         val pkg = resolvePackage(query) ?: throw PhoneControlException(PhoneError.NOT_FOUND, "没找到应用「$query」")
         val intent = svc.packageManager.getLaunchIntentForPackage(pkg)
             ?: throw PhoneControlException(PhoneError.NOT_FOUND, "「$query」没有可启动的界面")
@@ -186,8 +186,7 @@ object PhoneControlHub {
         "已打开 ${appLabelOf(pkg)}"
     }
 
-    suspend fun openUrl(url: String): PhoneActionResult = withElement(null, "打开链接") { _, _ ->
-        val svc = service ?: throw noService()
+    suspend fun openUrl(url: String): PhoneActionResult = withGlobalAction("打开链接") { svc ->
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         runCatching { svc.startActivity(intent) }
             .onFailure { throw PhoneControlException(PhoneError.ACTION_FAILED, "打不开：${it.message}") }
@@ -234,6 +233,28 @@ object PhoneControlHub {
         return file
     }
 
+    // 全局动作：不读屏不验元素，动作后读一次屏，读不到（例如本机还在前台）也不报错
+    private suspend fun withGlobalAction(
+        label: String,
+        block: suspend (PhoneAccessibilityService) -> String,
+    ): PhoneActionResult = actionMutex.withLock {
+        assertRunnable()
+        val svc = service ?: throw noService()
+        bumpStep(label)
+        val message = block(svc)
+        delay(SETTLE_MS)
+        val screenAfter = runCatching {
+            val after = capture()
+            PhoneScreenFormat.format(after, appLabelOf(after.packageName.orEmpty()))
+        }.getOrNull()
+        if (screenAfter != null) gainScreen(screenAfter)
+        PhoneActionResult(message, screenAfter != null, screenAfter)
+    }
+
+    private fun gainScreen(screenAfter: PhoneFormatted) {
+        lastScreen = screenAfter
+        touchTask(screenAfter)
+    }
     private suspend fun withElement(
         id: Int?,
         label: String,
