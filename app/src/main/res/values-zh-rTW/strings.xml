@@ -525,6 +525,15 @@
   <string name="couple_space_since">從 %1$s 開始</string>
   <string name="couple_space_space_photo">空間照片</string>
   <string name="couple_space_title">情侶空間</string>
+  <string name="couple_space_settings">情侶空間設定</string>
+  <string name="couple_space_edit_partner_card">修改角色卡</string>
+  <string name="couple_space_change_partner">更換戀人</string>
+  <string name="couple_space_change_start_date">修改開始日期</string>
+  <string name="couple_space_unbind">解除綁定</string>
+  <string name="couple_space_unbind_title">解除綁定？</string>
+  <string name="couple_space_unbind_desc">兔眠空間的動態、日記和紀念日都會一起刪除，這個操作不能撤銷。</string>
+  <string name="couple_space_unbind_confirm">解除綁定</string>
+  <string name="couple_space_no_other_assistant">還沒有別的角色卡，先去助手頁新建一個。</string>
   <string name="couple_space_unnamed_assistant">未命名角色卡</string>
   <string name="couple_space_whats_on_mind">這一刻想說什麼？</string>
   <string name="couple_vm_ai_posted">TA 已發表動態</string>

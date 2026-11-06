@@ -54,6 +54,23 @@ class CoupleVM(
         repository.bind(assistantId, startedAt)
     }
 
+    /** 换恋人：沿用原来在一起的日子，关系 id 不变，动态与日记都还在 */
+    fun rebindPartner(assistantId: String) {
+        val relation = relationship.value ?: return
+        viewModelScope.launch { repository.rebindPartner(relation, assistantId) }
+    }
+
+    fun rebindStartDate(startedAt: Long) {
+        val relation = relationship.value ?: return
+        viewModelScope.launch { repository.updateStartDate(relation, startedAt) }
+    }
+
+    /** 解除绑定：关系连带动静日记纪念日一并清空 */
+    fun unbind() {
+        val relation = relationship.value ?: return
+        viewModelScope.launch { repository.unbind(relation.id) }
+    }
+
     fun clearRabbitSpaceFeedback() {
         _rabbitSpaceUiState.value = _rabbitSpaceUiState.value.copy(notice = null, error = null)
     }

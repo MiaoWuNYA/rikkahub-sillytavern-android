@@ -19,6 +19,24 @@ interface CoupleDAO {
     @Query("DELETE FROM couple_relationship")
     suspend fun clearRelationship()
 
+    @Query("DELETE FROM couple_relationship WHERE id = :id")
+    suspend fun deleteRelationship(id: String)
+
+    @Query("DELETE FROM couple_post WHERE relationship_id = :id")
+    suspend fun clearPosts(id: String)
+
+    @Query("DELETE FROM couple_comment WHERE relationship_id = :id")
+    suspend fun clearComments(id: String)
+
+    @Query("DELETE FROM couple_diary WHERE relationship_id = :id")
+    suspend fun clearDiaries(id: String)
+
+    @Query("DELETE FROM couple_diary_folder WHERE relationship_id = :id")
+    suspend fun clearDiaryFolders(id: String)
+
+    @Query("DELETE FROM couple_anniversary WHERE relationship_id = :id")
+    suspend fun clearAnniversaries(id: String)
+
     @Query("SELECT * FROM couple_post WHERE relationship_id = :id ORDER BY created_at DESC")
     fun posts(id: String): Flow<List<CouplePostEntity>>
 

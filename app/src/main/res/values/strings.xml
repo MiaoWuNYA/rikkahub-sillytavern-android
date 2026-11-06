@@ -545,6 +545,15 @@
   <string name="couple_space_since">Together since %1$s</string>
   <string name="couple_space_space_photo">Space photo</string>
   <string name="couple_space_title">Couple Space</string>
+  <string name="couple_space_settings">Couple settings</string>
+  <string name="couple_space_edit_partner_card">Edit partner card</string>
+  <string name="couple_space_change_partner">Change partner</string>
+  <string name="couple_space_change_start_date">Change start date</string>
+  <string name="couple_space_unbind">Unbind</string>
+  <string name="couple_space_unbind_title">Unbind this couple space?</string>
+  <string name="couple_space_unbind_desc">Moments, journal entries and anniversaries of this couple space are deleted together. This cannot be undone.</string>
+  <string name="couple_space_unbind_confirm">Unbind</string>
+  <string name="couple_space_no_other_assistant">No other assistant yet. Create one first.</string>
   <string name="couple_space_unnamed_assistant">Unnamed character card</string>
   <string name="couple_space_whats_on_mind">What\'s on your mind?</string>
   <string name="couple_vm_ai_posted">They published a post</string>
