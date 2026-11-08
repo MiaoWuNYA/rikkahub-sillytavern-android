@@ -1,0 +1,105 @@
+name: Release
+
+# 打 tag 就发 Release：GitHub 自带 GITHUB_TOKEN 够用，不需要任何 PAT。
+# 本地只负责 git push（SSH 密钥），构建与附件上传全部交给 Actions。
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '要重新发布的 tag（如 v3.1.2-huadeng）'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.repository == 'MiaoWuNYA/rikkahub-sillytavern-android'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Setup Android native toolchain
+        uses: ./.github/actions/setup-android-native
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Upgrade pip & setuptools
+        run: pip install --upgrade pip setuptools wheel
+
+      # 与 Build APK 完全一致的签名注入：secret 缺失时退回调试密钥，
+      # 但那样签名与正式版不一致，用户无法覆盖安装，故在下面显式告警。
+      - name: Write signing config
+        env:
+          KEY_BASE64: ${{ secrets.KEY_BASE64 }}
+          SIGNING_CONFIG: ${{ secrets.SIGNING_CONFIG }}
+        run: |
+          if [ -n "$KEY_BASE64" ] && [ -n "$SIGNING_CONFIG" ]; then
+            echo "$KEY_BASE64" | base64 -d > app/app.key
+            echo "$SIGNING_CONFIG" > local.properties
+            echo "SIGNED=release" >> "$GITHUB_ENV"
+          else
+            echo "::warning::未配置 KEY_BASE64 / SIGNING_CONFIG，本次 APK 使用调试密钥签名，无法覆盖安装正式版"
+            cat > local.properties << 'EOF'
+          storeFile=app.key
+          storePassword=android
+          keyAlias=androiddebugkey
+          keyPassword=android
+          EOF
+            echo "SIGNED=debug" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build release APK
+        run: |
+          chmod +x gradlew
+          rm -rf app/build/python/
+          ./gradlew assembleRelease -x :web:buildWebUi --no-build-cache --stacktrace 2>&1 | tee build.log
+          exit ${PIPESTATUS[0]}
+
+      - name: Rename APK
+        run: |
+          set -e
+          V=$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts)
+          echo "versionName=$V"
+          mv app/build/outputs/apk/release/app-release.apk "app/build/outputs/apk/release/rikkahub-plus-${V}-arm64-v8a.apk"
+          ls -lh app/build/outputs/apk/release/
+
+      # 更新日志优先取仓库里对应版本的 RELEASE_NOTES_<version>.md，没有则退回 tag 本身
+      - name: Collect release notes
+        run: |
+          V=$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts)
+          if [ -f "RELEASE_NOTES_${V}.md" ]; then
+            cp "RELEASE_NOTES_${V}.md" release-body.md
+          else
+            echo "华灯 ${V}" > release-body.md
+          fi
+          echo "--- release-body.md ---"; head -5 release-body.md
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          name: 华灯 ${{ github.ref_name }}
+          body_path: release-body.md
+          draft: false
+          prerelease: false
+          files: app/build/outputs/apk/release/rikkahub-plus-*-arm64-v8a.apk
+
+      - name: Upload build log
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: release-build-log
+          path: build.log
