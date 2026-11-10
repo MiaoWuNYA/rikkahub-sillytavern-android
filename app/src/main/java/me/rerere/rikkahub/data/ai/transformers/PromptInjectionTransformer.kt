@@ -22,6 +22,9 @@ import me.rerere.rikkahub.data.model.TavernCharacterData
 import me.rerere.rikkahub.data.model.extractContextForMatching
 import me.rerere.rikkahub.data.model.isTriggered
 import me.rerere.rikkahub.data.model.matchedKeyScore
+import me.rerere.rikkahub.data.st.runtime.StWorldInfoOutlets
+import me.rerere.rikkahub.data.st.runtime.TavernRuntimeManager
+import me.rerere.rikkahub.data.st.runtime.TavernWorldInfoEvents
 import me.rerere.rikkahub.ui.pages.assistant.detail.mapSelectiveLogic
 import me.rerere.rikkahub.ui.pages.assistant.detail.mapTavernPosition
 import me.rerere.rikkahub.ui.pages.assistant.detail.mapTavernRole
@@ -140,6 +143,17 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
             tickState = !alreadyTicked,
             frozenInjections = frozen?.injections,
             anchors = anchors,
+            // 世界书 outlet（position=OUTLET）汇聚结果发布给宏引擎：{{outlet::name}} 读取
+            outletSink = { outlets -> StWorldInfoOutlets.publish(ctx.conversationId?.toString(), outlets) },
+            // 世界书事件（entriesLoaded / scanDone）：会话级守卫 + developerMode 显式同步
+            worldInfoEventSink = { name, payload ->
+                TavernRuntimeManager.fireConversationEvent(
+                    conversationId = ctx.conversationId?.toString(),
+                    name = name,
+                    payloadJson = payload,
+                    developerMode = ctx.settings.developerMode,
+                )
+            },
             onResolved = { resolved ->
                 // 本轮首次计算：冻结激活集合与尾部锚点，供本轮后续 agentic 步骤复用
                 if (frozen == null && lastUserMsgId != null) {
@@ -401,6 +415,8 @@ internal fun transformMessages(
     frozenInjections: List<PromptInjection>? = null,
     anchors: java.util.concurrent.ConcurrentHashMap<String, String>? = null,
     onResolved: ((List<PromptInjection>) -> Unit)? = null,
+    outletSink: ((Map<String, String>) -> Unit)? = null,
+    worldInfoEventSink: ((String, String) -> Unit)? = null,
 ): List<UIMessage> {
     // 收集所有需要注入的内容（按用户轮冻结时直接复用首轮扫描结果）
     val injections = frozenInjections ?: collectInjections(
@@ -426,6 +442,7 @@ internal fun transformMessages(
         personaDescription = personaDescription,
         onOverflow = onOverflow,
         vectorActivatedIds = vectorActivatedIds,
+        worldInfoEventSink = worldInfoEventSink,
     )
 
     if (injections.isEmpty()) {
@@ -434,6 +451,8 @@ internal fun transformMessages(
             tickSticky(activeStickyEntries, cooldownEntries, emptyList())
             tickCooldowns(cooldownEntries)
         }
+        // 本轮未激活任何条目 -> 清空旧 outlet 快照（官方每次扫描重建 extension_prompts）
+        outletSink?.invoke(emptyMap())
         return messages
     }
 
@@ -466,6 +485,9 @@ internal fun transformMessages(
         }
     }
 
+    // 官方 outlet（position=OUTLET）不注入任何位置：按 outlet 名汇聚内容，交给 {{outlet::name}} 展开
+    outletSink?.invoke(collectOutlets(resolvedInjections.sortedBy { it.priority }))
+
     // 按位置分组。官方构建提示词时按 order 降序遍历 + unshift（world-info.js sortFn + WIBeforeEntries.unshift），
     // 最终注入顺序 = order 升序（先写的在前），这里直接按 priority 升序对齐
     val byPosition = resolvedInjections
@@ -489,6 +511,22 @@ internal fun transformMessages(
     }
 
     return result
+}
+
+/**
+ * 官方 outlet（world-info.js CUSTOM_WI_OUTLET）：被激活条目的内容按 outlet 名分组（同名 "\n" 连接）。
+ * 不是「全部条目」，只有 position=OUTLET 且本轮真的被激活的条目参与。
+ */
+private fun collectOutlets(injections: List<PromptInjection>): Map<String, String> {
+    val outletValues = LinkedHashMap<String, MutableList<String>>()
+    for (injection in injections) {
+        if (injection !is PromptInjection.RegexInjection) continue
+        if (injection.position != InjectionPosition.OUTLET) continue
+        val name = injection.outletName.trim()
+        if (name.isEmpty() || injection.content.isEmpty()) continue
+        outletValues.getOrPut(name) { mutableListOf() }.add(injection.content)
+    }
+    return outletValues.mapValues { (_, contents) -> contents.joinToString("\n") }
 }
 
 /**
@@ -517,6 +555,7 @@ internal fun collectInjections(
     personaDescription: String = "",
     onOverflow: () -> Unit = {},
     vectorActivatedIds: Set<Uuid> = emptySet(),
+    worldInfoEventSink: ((String, String) -> Unit)? = null,
 ): List<PromptInjection> {
     val injections = mutableListOf<PromptInjection>()
     // 绑定跟随助手自身，会话级绑定已废弃（见 PreferenceStoreV4Migration）
@@ -584,6 +623,18 @@ internal fun collectInjections(
                     )
                 }
             }
+
+        // ST WORLDINFO_ENTRIES_LOADED（world-info.js:4604）：全部世界书载入完成、扫描开始前发一次
+        worldInfoEventSink?.invoke(
+            TavernWorldInfoEvents.EVENT_ENTRIES_LOADED,
+            TavernWorldInfoEvents.entriesLoadedPayload(
+                globalLore = boundLorebooks.filter { !it.isCharacterBook }.flatMap { it.entries },
+                characterLore = boundLorebooks.filter { it.isCharacterBook }
+                    .flatMap { it.entries } + characterEntries,
+            ),
+        )
+        // ST 形状的 sortedEntries 只构造一次；没人订阅时不构造（纯函数路径零开销）
+        val sortedEntriesJson = if (worldInfoEventSink != null) TavernWorldInfoEvents.sortedEntriesJson(sortedEntries) else null
 
         // 官方 checkWorldInfo 单循环共享状态：
         // allActivatedEntries（Map，key=world.uid 去重）、递归缓冲、failedProbabilityChecks、skew、预算
@@ -756,6 +807,24 @@ internal fun collectInjections(
                 nextScanState = 2
                 skew++
             }
+            // ST WORLDINFO_SCAN_DONE（world-info.js:5149-5175）每轮扫描后发一次；budget=0 因本仓库不按预算裁剪（d31c52ed5）
+            if (sortedEntriesJson != null) worldInfoEventSink?.invoke(
+                TavernWorldInfoEvents.EVENT_SCAN_DONE,
+                TavernWorldInfoEvents.scanDonePayload(
+                    loopCount = count,
+                    currentState = scanState,
+                    nextState = nextScanState,
+                    newAll = accepted,
+                    newSuccessful = newOnes,
+                    activatedEntries = activatedEntries,
+                    activatedText = activatedEntries.joinToString("\n") { it.content },
+                    sortedEntriesJson = sortedEntriesJson,
+                    recursionLevel = currentLevel,
+                    availableLevels = availableLevels.toList(),
+                    budget = 0,
+                    overflowed = false,
+                ),
+            )
             if (nextScanState == -1) break
             scanState = nextScanState
         }

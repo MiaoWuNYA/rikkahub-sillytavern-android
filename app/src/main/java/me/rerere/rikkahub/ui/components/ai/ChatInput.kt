@@ -147,12 +147,6 @@ fun ChatInput(
     state: ChatInputState,
     loading: Boolean,
     settings: Settings,
-    hasFrontendCard: Boolean = false,
-    // WebView 工具条代理：外部请求打开某个原生菜单（"model"/"sear
-    proxyMenu: String? = null,
-    onProxyMenuHandled: () -> Unit = {},
-    // WebView 界面模式下工具条由页面复刻，原生这排按钮隐藏（输入框本体保留）
-    hideToolbar: Boolean = false,
     // 会话视角下的助手和模型：会话开始后以会话上固定的配置为准
     assistant: Assistant,
     chatModel: Model?,
@@ -346,7 +340,7 @@ fun ChatInput(
                 onResume = onResumeMessageQueue,
             )
             // 只要当前有 WebView 存活（内嵌卡片、代码块、Mermaid、界面模式），
-            val webViewLive = hasFrontendCard || me.rerere.rikkahub.ui.components.richtext.WebViewPresence.active
+            val webViewLive = me.rerere.rikkahub.ui.components.richtext.WebViewPresence.active
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -411,8 +405,6 @@ fun ChatInput(
                         onShowHelp = { showHelpDialog = true },
                     )
 
-                    // WebView 界面模式下工具条由页面复刻，这里整排隐藏（输入框本体保留）
-                    if (!hideToolbar) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -429,8 +421,6 @@ fun ChatInput(
                                 // Model Picker
                                 if (!settings.displaySetting.hideModelPicker) {
                                     ModelSelectorButton(
-                                        forceShow = proxyMenu == "model",
-                                        onForceShowHandled = onProxyMenuHandled,
                                         state = modelListState,
                                         onlyIcon = true,
                                         modifier = Modifier,
@@ -442,8 +432,6 @@ fun ChatInput(
                                 val disableSearchMsg = stringResource(R.string.web_search_disabled)
                                 if (!settings.displaySetting.hideSearchPicker) {
                                     SearchPickerButton(
-                                        forceShow = proxyMenu == "search",
-                                        onForceShowHandled = onProxyMenuHandled,
                                         enableSearch = assistant.enableWebSearch,
                                         settings = settings,
                                         themeIcons = settings.displaySetting.themeIcons,
@@ -470,8 +458,6 @@ fun ChatInput(
                                     chatModel?.abilities?.contains(ModelAbility.REASONING) == true
                                 ) {
                                     ReasoningButton(
-                                        forceShow = proxyMenu == "reasoning",
-                                        onForceShowHandled = onProxyMenuHandled,
                                         reasoningLevel = assistant.reasoningLevel,
                                         themeIcons = settings.displaySetting.themeIcons,
                                         onUpdateReasoningLevel = {
@@ -510,12 +496,6 @@ fun ChatInput(
                             }
 
                             if (!settings.displaySetting.hideMoreButton) {
-                                LaunchedEffect(proxyMenu) {
-                                    if (proxyMenu == "more") {
-                                        onMoreClick()
-                                        onProxyMenuHandled()
-                                    }
-                                }
                                 ActionIconButton(
                                     onClick = onMoreClick
                                 ) {
@@ -574,7 +554,6 @@ fun ChatInput(
                                 )
                             }
                         }
-                    }
                 }
             }
 

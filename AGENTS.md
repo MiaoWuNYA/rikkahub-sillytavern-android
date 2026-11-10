@@ -78,17 +78,20 @@ python3 tools/verify_db_migrations.py         # 用 sqlite3 验证任意旧版�
   users to regenerate responses and switch between different conversation branches, creating a tree-like conversation
   structure. (app/src/main/java/me/rerere/rikkahub/data/model/Conversation.kt)
 
-- **Frontend Card Mode**: When a conversation's assistant was imported from a card containing HTML
-  frontend cards, the chat message area is rendered by a single WebView
-  (`ui/pages/chat/WebChatSurface.kt`, page loaded from `app/src/main/assets/webui/index.html`) instead of the
-  Compose `ChatList`; the top bar and chat input stay native. Mode resolution lives in
-  `ui/pages/chat/ChatPage.kt` (`resolveFrontendCardMode` + `FrontendCardMode.AUTO/ALWAYS/NEVER`, stored on the
-  assistant). The page gets a thin TavernHelper-style bridge (slash commands, sendMessage, variables,
-  message read/write) and only displays text already processed by the native pipeline (regex, macros, context
-  assembly). Non-frontend conversations keep the original per-message embedded rendering. (
-  app/src/main/java/me/rerere/rikkahub/ui/pages/chat/WebChatSurface.kt,
+- **Frontend Card Mode (华灯兼容模式)**: A single per-message rendering path, no whole-page WebView. The
+  message list stays native Compose; a message containing an HTML card gets a WebView embedded in that bubble,
+  mounted through a serial scheduler and a bounded LRU pool (`ui/components/richtext/PanelLoadScheduler.kt`,
+  `PanelWebViewPool.kt`) so only one panel loads at a time. The card talks to the app through the TavernHelper
+  bridge (`CardHostShim.kt` injected script → `CardHostBridge.kt` `@JavascriptInterface`), covering slash
+  commands, message read/write, variables/MVU and panel form events. `FrontendCardMode` is assistant-level and has
+  two values only: `COMPAT` (render cards, the default) and `NATIVE` (text only); legacy `AUTO/ALWAYS/TAVERN`
+  deserialize to `COMPAT` and `NEVER` to `NATIVE` via `FrontendCardModeSerializer`. Tavern-compatible helpers
+  live under `data/st/` (macro, regex, script, preset, import, extensions, runtime) with their JS runtime bundled at
+  `app/src/main/assets/st-runtime/`. Text reaching a card is always already processed by the native pipeline
+  (regex, macros, context assembly). (
+  app/src/main/java/me/rerere/rikkahub/ui/components/richtext/,
   app/src/main/java/me/rerere/rikkahub/data/model/Assistant.kt,
-  app/src/main/assets/webui/)
+  app/src/main/java/me/rerere/rikkahub/data/st/)
 
 - **Message Transformer**: A pipeline mechanism for transforming messages before sending to AI providers (
   InputMessageTransformer) or after receiving responses (OutputMessageTransformer). Transformers can modify message

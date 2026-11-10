@@ -247,6 +247,16 @@ data class HuaDengSettings(
     val tavernPresets: Map<String, kotlinx.serialization.json.JsonElement> = emptyMap(),
     // 当前从哪个预设加载而来（getLoadedPresetName）
     val loadedPresetName: String? = null,
+    // 酒馆全局脚本：原始 JSON 数组字符串，脚本读写无损
+    val tavernGlobalScripts: String = "[]",
+    // 酒馆全局脚本总开关
+    val tavernGlobalScriptsEnabled: Boolean = true,
+    // 按预设组存的脚本：JSON 对象字符串 {组名: [脚本项]}，喂给 mergePresetScripts(String?)
+    val tavernPresetScripts: String = "{}",
+    // 已禁用的第三方扩展标识
+    val tavernThirdPartyDisabled: Set<String> = emptySet(),
+    // 酒馆扩展配置：原始 JSON 对象字符串，无损落盘
+    val tavernExtensionSettings: String = "{}",
 
     // ---- 酒馆模式：纯净请求 ----
     // 开启后请求里只保留「角色卡（含世界书/示例消息/系统提示）+ 聊天历史 + 工具

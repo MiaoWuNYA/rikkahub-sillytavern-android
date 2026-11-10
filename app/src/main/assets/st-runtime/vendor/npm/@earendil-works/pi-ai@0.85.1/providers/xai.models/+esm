@@ -1,0 +1,8 @@
+/**
+ * Bundled by jsDelivr using Rollup v4.62.2 and esbuild v0.28.1.
+ * Original file: /npm/@earendil-works/pi-ai@0.85.1/dist/providers/xai.models.js
+ *
+ * Do NOT use SRI with dynamically generated files! More information: https://www.jsdelivr.com/using-sri-with-dynamic-files
+ */
+var i={"openai-responses":{"grok-4.3":{id:"grok-4.3",name:"Grok 4.3",api:"openai-responses",provider:"xai",baseUrl:"https://api.x.ai/v1",compat:{supportsLongCacheRetention:!1},reasoning:!0,input:["text","image"],cost:{input:1.25,output:2.5,cacheRead:.2,cacheWrite:0},contextWindow:1e6,maxTokens:3e4,thinkingLevelMap:{off:"none",minimal:null,low:"low",medium:"medium",high:"high",xhigh:null,max:null}},"grok-4.5":{id:"grok-4.5",name:"Grok 4.5",api:"openai-responses",provider:"xai",baseUrl:"https://api.x.ai/v1",compat:{supportsLongCacheRetention:!1},reasoning:!0,input:["text","image"],cost:{input:2,output:6,cacheRead:.3,cacheWrite:0},contextWindow:5e5,maxTokens:5e5,thinkingLevelMap:{off:null,minimal:null,low:"low",medium:"medium",high:"high",xhigh:null,max:null}},"grok-4.6":{id:"grok-4.6",name:"Grok 4.6",api:"openai-responses",provider:"xai",baseUrl:"https://api.x.ai/v1",compat:{supportsLongCacheRetention:!1},reasoning:!0,input:["text","image"],cost:{input:2,output:6,cacheRead:.5,cacheWrite:0},contextWindow:5e5,maxTokens:5e5,thinkingLevelMap:{off:null,minimal:null,low:"low",medium:"medium",high:"high",xhigh:"xhigh",max:null}}}};function n(o,e){return Object.assign({},...Object.values(e))}const a=n("xai",i);export{a as XAI_MODELS};
+//# sourceMappingURL=/sm/86356d367776b5256c20af1359a7fb75a61af74db85902a19022e1b48a854af0.map

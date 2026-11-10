@@ -713,8 +713,10 @@
   <string name="huadeng_tool_result_truncation_desc">Tool output over 32 KB is truncated and saved to a file. Turn off to keep full tool results in message history (try this if tool calls misbehave through a proxy)</string>
   <string name="huadeng_sub_agent">Sub-Agent</string>
   <string name="huadeng_sub_agent_desc">Let the AI delegate subtasks to an independent sub-agent (no conversation history) and take back the result</string>
-  <string name="huadeng_frontend_card_mode">Huadeng Frontend Kernel</string>
-  <string name="huadeng_frontend_card_mode_desc">Detects pages in the greeting or world info; can also be forced per character card</string>
+  <string name="huadeng_frontend_card_mode">Huadeng compatible mode</string>
+  <string name="huadeng_frontend_card_mode_desc">Render frontend cards; native text only</string>
+  <string name="huadeng_frontend_card_mode_compat">Huadeng compatible mode</string>
+  <string name="huadeng_frontend_card_mode_native">Native text only</string>
   <string name="huadeng_frontend_card_auto_switched">Frontend mode switched on automatically</string>
   <string name="huadeng_frontend_card_slash_unsupported">Frontend card command %1$s is not supported yet</string>
   <string name="huadeng_transient_prune">Transient Content Pruning</string>
@@ -1320,6 +1322,7 @@
   <string name="prompt_page_no_group">Ungrouped</string>
   <string name="prompt_page_official_advanced">Official Advanced</string>
   <string name="prompt_page_pos_em_bottom">EM Bottom</string>
+  <string name="prompt_page_pos_outlet">Outlet (via {{outlet::name}})</string>
   <string name="prompt_page_pos_em_top">EM Top</string>
   <string name="prompt_page_position_after_character">After Character</string>
   <string name="prompt_page_position_after_dialog">After Latest AI Reply</string>
@@ -1327,6 +1330,8 @@
   <string name="prompt_page_position_antagonize">Antagonize (Between Card and Chat)</string>
   <string name="prompt_page_position_at_depth">At Depth</string>
   <string name="prompt_page_position_author_note">Author\'s Note (Follows Global Setting)</string>
+  <string name="prompt_page_position_before_author_note">Before Author\'s Note (ANTop)</string>
+  <string name="prompt_page_position_after_author_note">After Author\'s Note (ANBottom)</string>
   <string name="prompt_page_position_before_character">Before Character</string>
   <string name="prompt_page_position_before_system">Before System Prompt</string>
   <string name="prompt_page_position_bottom_of_chat">Before Latest Message</string>
@@ -3209,10 +3214,6 @@
   <string name="weixin_bot_notification_running_title">WeChat Bot running</string>
   <string name="weixin_bot_scan_login">Scan to Login</string>
   <string name="weixin_bot_unknown">Unknown</string>
-  <string name="huadeng_frontend_card_mode_auto">Auto (detect web pages in greeting or world info)</string>
-  <string name="huadeng_frontend_card_mode_always">Always use the Huadeng frontend kernel</string>
-  <string name="huadeng_frontend_card_mode_never">Always use the native interface</string>
-  <string name="huadeng_frontend_card_mode_tavern">Native tavern (SillyTavern front-end)</string>
   <string name="setting_page_huadeng_compat">Compatibility &amp; helpers</string>
   <string name="setting_provider_page_context_length">Context Length</string>
   <string name="setting_provider_page_context_length_custom">Custom</string>

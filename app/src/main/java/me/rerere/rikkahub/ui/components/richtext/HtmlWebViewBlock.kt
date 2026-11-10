@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,11 +27,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +60,7 @@ import androidx.compose.ui.geometry.Offset
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.ArrowUp01
+import me.rerere.hugeicons.stroke.Refresh01
 import me.rerere.hugeicons.stroke.View as ViewIcon
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
@@ -62,6 +71,7 @@ import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.ui.toast.ToastType
 import me.rerere.rikkahub.utils.base64Encode
+import me.rerere.rikkahub.utils.l10n
 import kotlin.math.roundToInt
 
 /**
@@ -108,6 +118,8 @@ fun HtmlWebViewBlock(
     cardHost: CardHostContext? = null,
     /** 当前对话的消息快照（官方 swipes 结构），供 `getChatMessages` 读取。 */
     cardMessagesJson: String = "[]",
+    /** 混排分段推出来的面板名；为空时用默认文案。 */
+    panelTitleOverride: String? = null,
 ) {
     // 有 WebView 存活时，输入栏的模糊/玻璃效果必须让位
     TrackWebViewPresence()
@@ -121,13 +133,22 @@ fun HtmlWebViewBlock(
         }.getOrDefault("")
     }
 
+    val panelTitle = panelTitleOverride ?: l10n("面板", "Panel")
+    val contentHash = remember(html) { html.hashCode() }
+    // 面板 key = 楼层 + 内容哈希：同楼改内容即换一张卡，串行闸门与池化都按它认身份
+    val panelKey = remember(html, cardHost?.nodeIndex) {
+        "panel#" + (cardHost?.nodeIndex ?: "inline") + "#" + contentHash
+    }
     // JS 上报的内容高度（CSS px ≈ Compose dp）；0 表示尚未上报
-    var contentHeight by remember(html) { mutableIntStateOf(0) }
+    var contentHeight by remember(html, panelKey) {
+        mutableIntStateOf(PanelHeightCache.get(panelKey, contentHash))
+    }
     // 允许双向修正但忽略 2px 抖动，避免图片加载/动画让列表反复跳动
-    val applyHeight: (Int) -> Unit = remember(html) {
+    val applyHeight: (Int) -> Unit = remember(html, panelKey) {
         { h ->
             if (h > 0 && kotlin.math.abs(h - contentHeight) > 2) {
                 contentHeight = h
+                PanelHeightCache.put(panelKey, contentHash, h)
             }
         }
     }
@@ -136,6 +157,62 @@ fun HtmlWebViewBlock(
     var rendererEpoch by remember(html) { mutableIntStateOf(0) }
     // 卡片脚本错误只提示一次：脚本循环报错时逐条弹提示会把界面刷爆
     val cardErrorNotified = remember(html) { java.util.concurrent.atomic.AtomicBoolean(false) }
+    // 面板装载状态机：串行闸门放行后才建 WebView，工具条与占位卡都读它
+    val panelState = remember(panelKey) { PanelMountState() }
+    var stage by remember(panelKey) { mutableStateOf<PanelLoadStage>(PanelLoadStage.WaitingHost(panelTitle)) }
+    var panelLive by remember(panelKey) { mutableStateOf(false) }
+    var rendererCrashedOut by remember(panelKey) { mutableStateOf(false) }
+    var rendererCrashCount by remember(panelKey) { mutableIntStateOf(0) }
+
+    val activeKeys by ActivePanelWebViewPool.activeKeys.collectAsState()
+    val panelActive = activeKeys.contains(panelKey)
+
+    LaunchedEffect(panelKey) {
+        val slot = TavernPanelLoadScheduler.enqueue(panelKey, panelTitle)
+        stage = PanelLoadStage.Queued(
+            panelTitle = panelTitle,
+            position = TavernPanelLoadScheduler.positionOf(panelKey) ?: 1,
+            totalQueued = maxOf(1, TavernPanelLoadScheduler.queueSize()),
+        )
+        if (!slot.awaitTurn()) return@LaunchedEffect
+        stage = PanelLoadStage.LoadingWebView(panelTitle)
+        ActivePanelWebViewPool.acquire(panelKey)
+        panelLive = true
+    }
+    // 被 LRU 挤出的卡让出 WebView，回到占位卡等用户重载或回流
+    LaunchedEffect(panelLive, panelActive) {
+        if (panelLive && !ActivePanelWebViewPool.isActive(panelKey)) {
+            panelLive = false
+            stage = PanelLoadStage.WaitingHost(panelTitle)
+            Log.i(TAG, "[panel] dormant key=$panelKey active=${ActivePanelWebViewPool.activeCount()}")
+        }
+    }
+    LaunchedEffect(panelLive, contentHeight) {
+        if (panelLive && contentHeight > 0 && !rendererCrashedOut) stage = PanelLoadStage.Ready
+    }
+    DisposableEffect(panelKey) {
+        onDispose {
+            TavernPanelLoadScheduler.cancel(panelKey)
+            ActivePanelWebViewPool.release(panelKey)
+        }
+    }
+    // 重载三步：清高度缓存 → 销毁该卡 WebView（解挂缓存 + 换 WebView 实例）→ 文档级重载
+    val reloadPanel: () -> Unit = remember(panelKey) {
+        {
+            PanelHeightCache.invalidateForMessage(panelKey)
+            DetachedPanelWebViewCache.evictAndDestroy(panelKey)
+            panelState.reloadNow()
+            contentHeight = 0
+            rendererCrashedOut = false
+            rendererEpoch += 1
+            if (!panelLive) {
+                ActivePanelWebViewPool.acquire(panelKey)
+                panelLive = true
+                stage = PanelLoadStage.LoadingWebView(panelTitle)
+            }
+            Log.i(TAG, "[panel] reload key=$panelKey gen=${panelState.reloadGen}")
+        }
+    }
 
     // 宿主 API 垫片：只有真的能生成注入时，才把 generate/eventOn 暴露给卡。
     // 没有宿主能力却注入 shim，卡会拿到一个永远失败的假接口，
@@ -242,11 +319,26 @@ fun HtmlWebViewBlock(
                     }
                 )
         ) {
+            if (!panelLive || !panelActive) {
+                PanelStatusPlaceholder(
+                    modifier = Modifier.fillMaxSize(),
+                    title = panelTitle,
+                    statusText = panelStatusText(
+                        stage = stage,
+                        lastError = panelState.lastError,
+                        crashCount = rendererCrashCount,
+                        manualReload = rendererCrashedOut,
+                    ),
+                    onReload = reloadPanel,
+                )
+            } else
             // epoch 变化即渲染进程崩溃过一次，这里整体换新 WebView 实例重建
             key(rendererEpoch) {
                 AndroidView(
                     factory = { ctx ->
-                        CardWebView(ctx).apply {
+                        // 解挂缓存里同 key 同内容的实例优先复用，省掉一次整页重载
+                        val recycled = DetachedPanelWebViewCache.take(panelKey, inlinePage) as? CardWebView
+                        (recycled ?: CardWebView(ctx)).apply {
                             cardWebViewRef.view = this
                             // MATCH_PARENT 高度：与 AndroidView 的 fillMaxSize 一致，
                             // 让 WebView 视口等于卡片高度而不是文档高度（否则内部无可滚区间）。
@@ -302,12 +394,23 @@ fun HtmlWebViewBlock(
                                         "HtmlWebViewBlock",
                                         "renderer crashed=${detail.didCrash()}",
                                     )
-                                    rendererEpoch += 1
+                                    rendererCrashCount += 1
+                                    if (rendererCrashCount > MAX_RENDERER_CRASH_REBUILDS) {
+                                        rendererCrashedOut = true
+                                        panelLive = false
+                                        ActivePanelWebViewPool.release(panelKey)
+                                        stage = PanelLoadStage.WaitingHost(panelTitle)
+                                        Log.w(TAG, "[panel] renderer crashed ${rendererCrashCount}x, need manual reload key=$panelKey")
+                                    } else {
+                                        rendererEpoch += 1
+                                    }
                                     return true
                                 }
 
                                 override fun onPageFinished(view: WebView, url: String?) {
                                     super.onPageFinished(view, url)
+                                    stage = PanelLoadStage.ResourcesLoading(panelTitle)
+                                    TavernPanelLoadScheduler.markDone(panelKey)
                                     // 图片/字体异步加载会继续撑高内容，轮询兜底；
                                     // 高频窗口结束后接一段低频复查，覆盖脚本延迟渲染
                                     pollContentHeight(view) { h -> applyHeight(h) }
@@ -332,12 +435,17 @@ fun HtmlWebViewBlock(
                     },
                     // 不启用 item 复用：滑出视口的 WebView 必须销毁，GLFunctor 残留
                     // 在渲染层后与新卡片并存会崩（2.5.8 无复用无此崩溃）
-                    onRelease = {
+                    onRelease = { view ->
                         // 先从父容器摘除再销毁，否则渲染线程仍持有失效绘制表面
-                        (it.parent as? ViewGroup)?.removeView(it)
-                        it.stopLoading()
-                        it.removeAllViews()
-                        it.destroy()
+                        (view.parent as? ViewGroup)?.removeView(view)
+                        // 只有仍占活跃名额的实例才进解挂缓存（不调 pauseTimers，定时器照跑）
+                        val parked = ActivePanelWebViewPool.isActive(panelKey) &&
+                            DetachedPanelWebViewCache.park(panelKey, view.tag as? String, view)
+                        if (!parked) {
+                            view.stopLoading()
+                            view.removeAllViews()
+                            view.destroy()
+                        }
                     },
                     // 高度必须填满外层 Box，不能用 wrap_content。
                     //
@@ -380,6 +488,13 @@ fun HtmlWebViewBlock(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+            }
+            IconButton(onClick = reloadPanel, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    HugeIcons.Refresh01,
+                    contentDescription = l10n("重载面板", "Reload panel"),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             IconButton(onClick = { showFullscreen.value = true }, modifier = Modifier.size(32.dp)) {
                 Icon(
@@ -457,6 +572,68 @@ fun HtmlWebViewBlock(
             }
         }
     }
+}
+
+/** 面板占位卡：排队/装载/脚本异常/崩溃待重载都落在这一张卡上。 */
+@Composable
+private fun PanelStatusPlaceholder(
+    title: String,
+    statusText: String,
+    onReload: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(16.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.labelMedium)
+                Text(
+                    statusText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            TextButton(onClick = onReload) {
+                Text(l10n("重载面板", "Reload panel"))
+            }
+        }
+    }
+}
+
+/** 占位卡文案：崩溃待重载 > 脚本异常 > 当前装载阶段。 */
+private fun panelStatusText(
+    stage: PanelLoadStage,
+    lastError: String?,
+    crashCount: Int,
+    manualReload: Boolean,
+): String = when {
+    manualReload || crashCount > MAX_RENDERER_CRASH_REBUILDS ->
+        l10n("渲染器反复崩溃，请手动重新加载面板", "Renderer crashed repeatedly, reload manually")
+    lastError != null -> l10n("脚本异常：" + lastError, "Script error: " + lastError)
+    stage is PanelLoadStage.Queued ->
+        l10n(
+            "正在按序排队加载「" + stage.panelTitle + "」（队列 " + stage.position + "/" + stage.totalQueued + "）…",
+            "Queued: " + stage.panelTitle + " (" + stage.position + "/" + stage.totalQueued + ")",
+        )
+    stage is PanelLoadStage.WaitingHost -> l10n("等待宿主就绪…", "Waiting for host…")
+    stage is PanelLoadStage.LoadingWebView -> l10n("正在装载 WebView…", "Loading WebView…")
+    stage is PanelLoadStage.MountingDom -> l10n("正在挂载 DOM…", "Mounting DOM…")
+    stage is PanelLoadStage.ResourcesLoading -> l10n("资源未就绪，正在加载…", "Resources loading…")
+    else -> l10n("已就绪", "Ready")
 }
 
 /**
@@ -609,6 +786,7 @@ private class CardWebView(context: Context) : WebView(context) {
 }
 
 private const val TAG = "HtmlWebViewBlock"
+private const val MAX_RENDERER_CRASH_REBUILDS = 3
 
 private const val HEIGHT_JS =
     "(function(){return Math.max(document.documentElement.scrollHeight,document.body?document.body.scrollHeight:0);})()"

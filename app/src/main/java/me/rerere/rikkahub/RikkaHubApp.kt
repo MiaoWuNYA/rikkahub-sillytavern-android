@@ -122,6 +122,14 @@ class RikkaHubApp : Application() {
         // Init QuickJS native library
         QuickJSLoader.init()
 
+        // 酒馆兼容层：宏定义与 tiktoken 词表一次性注册（registerAll/attach 均幂等）
+        me.rerere.rikkahub.data.st.macro.MacroDefinitions.registerAll()
+        me.rerere.rikkahub.data.st.tokenizer.TikToken.attach { path ->
+            runCatching { assets.open(path).buffered() }.getOrNull()
+        }
+        me.rerere.rikkahub.data.st.runtime.TavernScriptStore.settingsBridge =
+            me.rerere.rikkahub.data.datastore.TavernScriptSettingsBridgeImpl(get<SettingsStore>())
+
         // AI 浏览器代理的单例要一个 application context 才能拉起 BrowserActivity
         runCatching { me.rerere.rikkahub.browser.BrowserRuntime.init(this) }
         trace("quickjs done")
@@ -156,6 +164,7 @@ class RikkaHubApp : Application() {
         // Resume media generations interrupted by the last process death
         resumeMediaCreations()
         resumeMemoryConsolidation()
+        initTavernRuntime()
 
         // Increment launch count
         incrementLaunchCount()
@@ -186,6 +195,21 @@ class RikkaHubApp : Application() {
                 get<MemoryConsolidationScheduler>().resumePending()
             }.onFailure {
                 Log.e(TAG, "resumeMemoryConsolidation failed", it)
+            }
+        }
+    }
+
+    private fun initTavernRuntime() {
+        get<AppScope>().launch(Dispatchers.IO) {
+            runCatching {
+                me.rerere.rikkahub.data.st.runtime.TavernVariableStore.ensureInitialized(this@RikkaHubApp)
+                val settings = get<SettingsStore>().settingsFlowRaw.first()
+                me.rerere.rikkahub.data.st.runtime.TavernVariableStore.importLegacy(
+                    legacyGlobal = settings.macroGlobalVariables,
+                    legacyChats = settings.macroChatVariables,
+                )
+            }.onFailure {
+                Log.e(TAG, "initTavernRuntime failed", it)
             }
         }
     }

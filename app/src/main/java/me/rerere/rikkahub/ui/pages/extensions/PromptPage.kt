@@ -585,7 +585,9 @@ private fun InjectionPosition.usesStandaloneMessage(): Boolean = when (this) {
     InjectionPosition.BEFORE_SYSTEM_PROMPT,
     InjectionPosition.AFTER_SYSTEM_PROMPT,
     InjectionPosition.BEFORE_CHARACTER,
-    InjectionPosition.AFTER_CHARACTER -> false
+    InjectionPosition.AFTER_CHARACTER,
+    // outlet 不注入任何位置，仅经 {{outlet::name}} 宏引用展开
+    InjectionPosition.OUTLET -> false
 
     InjectionPosition.ANTAGONIZE,
     InjectionPosition.TOP_OF_CHAT,
@@ -593,6 +595,8 @@ private fun InjectionPosition.usesStandaloneMessage(): Boolean = when (this) {
     InjectionPosition.AFTER_DIALOG,
     InjectionPosition.AT_DEPTH,
     InjectionPosition.AUTHOR_NOTE,
+    InjectionPosition.BEFORE_AUTHOR_NOTE,
+    InjectionPosition.AFTER_AUTHOR_NOTE,
     InjectionPosition.EM_TOP,
     InjectionPosition.EM_BOTTOM -> true
 }
@@ -609,8 +613,11 @@ private fun getPositionLabel(position: InjectionPosition): String = when (positi
     InjectionPosition.AFTER_DIALOG -> stringResource(R.string.prompt_page_position_after_dialog)
     InjectionPosition.AT_DEPTH -> stringResource(R.string.prompt_page_position_at_depth)
     InjectionPosition.AUTHOR_NOTE -> stringResource(R.string.prompt_page_position_author_note)
+    InjectionPosition.BEFORE_AUTHOR_NOTE -> stringResource(R.string.prompt_page_position_before_author_note)
+    InjectionPosition.AFTER_AUTHOR_NOTE -> stringResource(R.string.prompt_page_position_after_author_note)
     InjectionPosition.EM_TOP -> stringResource(R.string.prompt_page_pos_em_top)
     InjectionPosition.EM_BOTTOM -> stringResource(R.string.prompt_page_pos_em_bottom)
+    InjectionPosition.OUTLET -> stringResource(R.string.prompt_page_pos_outlet)
 }
 
 @Composable

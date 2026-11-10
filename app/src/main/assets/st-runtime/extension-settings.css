@@ -1,0 +1,304 @@
+/* [10-19-21] 扩展设置页高可读性、100%可交互设置面板与全屏小手机/悬浮窗适配样式。
+   适配清单：
+   1. JS-Slash-Runner (酒馆助手)
+   2. ST-Prompt-Template (提示词模板)
+   3. st-memory-enhancement (记忆增强表格)
+   4. LittleWhiteBox (小白X)
+   5. ST-iPhonie (小手机) */
+:root {
+    color-scheme: dark;
+    --ext-bg: #121318;
+    --ext-fg: #eef0f8;
+    --ext-muted: #a6aec4;
+    --ext-panel: #1b1e28;
+    --ext-panel-elevated: #242836;
+    --ext-accent: #8ab4f8;
+    --ext-accent-bg: rgba(138, 180, 248, 0.16);
+    --ext-border: rgba(255, 255, 255, 0.15);
+    --ext-button: #2a2f40;
+    --ext-button-hover: #363c52;
+    --SmartThemeBodyColor: #eef0f8;
+    --SmartThemeQuoteColor: #8ab4f8;
+    --SmartThemeBorderColor: rgba(255, 255, 255, 0.16);
+    --SmartThemeEmColor: #c58af9;
+    --SmartThemeBlurTintColor: #1b1e28;
+    --SmartThemeChatTintColor: #121318;
+    --mainFontSize: 14px;
+    --grey50: #a6aec4;
+    --grey5050a: rgba(166, 174, 196, 0.5);
+    --white50a: rgba(255, 255, 255, 0.5);
+    --black50a: rgba(0, 0, 0, 0.5);
+}
+html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background: var(--ext-bg) !important;
+    color: var(--ext-fg) !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 14px;
+    line-height: 1.55;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+}
+* { box-sizing: border-box; }
+/* 严格禁止 #chat 与 #form_sheld 在扩展设置页显示，彻底杜绝会话小说文本泄露到插件设置界面 */
+#rikka-hidden-st-stubs,
+#chat,
+#form_sheld,
+#send_form,
+#send_textarea {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
+}
+#rikka-st-compat-dom {
+    display: block;
+    width: 100%;
+    padding: 8px 12px 72px;
+    overflow-x: hidden;
+}
+#top-settings-holder,
+#extensions_settings,
+#extensions_settings2,
+#extensionsMenu,
+#extensions_menu,
+#extensions-settings-button,
+#translation_container,
+#extensions_details,
+#mvu-standalone-buttons,
+#rikka-ext-workbench-root {
+    display: block;
+    width: 100%;
+}
+img, video, canvas, svg { max-width: 100%; }
+input, select, textarea, button { max-width: 100%; font-family: inherit; }
+input[type="text"], input[type="password"], input[type="number"], input[type="search"], input[type="url"], textarea, select, .text_pole {
+    background: var(--ext-panel-elevated) !important;
+    color: var(--ext-fg) !important;
+    border: 1px solid var(--ext-border) !important;
+    border-radius: 10px;
+    padding: 8px 10px;
+    min-height: 36px;
+    font-size: 14px;
+    outline: none;
+}
+input[type="checkbox"], input[type="radio"] {
+    accent-color: var(--ext-accent);
+    width: 19px;
+    height: 19px;
+    min-width: 19px;
+    min-height: 19px;
+    vertical-align: middle;
+    cursor: pointer;
+}
+.menu_button, .menu_button_icon, button:not(.unstyled) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 7px 13px;
+    margin: 3px;
+    border: 1px solid var(--ext-border);
+    border-radius: 10px;
+    background: var(--ext-button);
+    color: var(--ext-fg);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.menu_button:hover, .menu_button_icon:hover { background: var(--ext-button-hover); }
+.menu_button_icon i { pointer-events: none; }
+.inline-drawer, .drawer-content {
+    margin: 10px 0;
+    padding: 12px;
+    border: 1px solid var(--ext-border);
+    border-radius: 14px;
+    background: var(--ext-panel);
+    color: var(--ext-fg);
+}
+.inline-drawer-toggle, .inline-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--ext-accent);
+    padding: 4px 0;
+}
+.inline-drawer-content { padding-top: 10px; }
+.drawer {
+    position: relative;
+    margin: 10px 0;
+}
+.drawer-toggle { display: flex; align-items: center; gap: 8px; }
+.drawer-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    background: var(--ext-button);
+    cursor: pointer;
+}
+/* 强制展开顶层扩展设置容器，同时允许记忆增强插件内部 tab 自由切换或平铺显示 */
+.drawer-content.closedDrawer,
+#prompt_template_settings,
+#table_drawer_content,
+#memory_enhancement_settings_inline_drawer_content,
+.memory_enhancement_container,
+#tavern_helper,
+#sttts-extension-entry,
+.inline-drawer > .inline-drawer-content:not([data-rikka-collapsed="true"]),
+.inline-drawer-content:not([data-rikka-collapsed="true"]) {
+    display: block !important;
+}
+#app_header_table_container {
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+}
+#setting-content,
+#editor-content,
+#database-content {
+    height: auto !important;
+    overflow: visible !important;
+}
+/* 小手机 (ST-iPhonie) 全屏弹窗适配：强制居中满屏，禁止 placePanel 负向/越界偏移与模糊空遮罩 */
+#sttts-panel,
+#sttts-panel.floating,
+#sttts-panel:not(.floating) {
+    position: fixed !important;
+    inset: 0 !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: #0f111a !important;
+    color: var(--ext-fg) !important;
+    z-index: 9999 !important;
+    transform: none !important;
+}
+#sttts-panel::backdrop {
+    background: rgba(10, 12, 20, 0.85) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+#sttts-panel iframe,
+#sttts-panel.floating iframe {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    transform: none !important;
+    border: none !important;
+    display: block !important;
+}
+.flex-container { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.flex1 { flex: 1 1 auto; }
+.m-b-1 { margin-bottom: 8px; }
+.m-t-1 { margin-top: 8px; }
+.checkbox_label, .checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    cursor: pointer;
+    color: var(--ext-fg) !important;
+}
+.list-group-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    margin: 4px 0;
+    border-radius: 10px;
+    background: var(--ext-panel);
+    border: 1px solid var(--ext-border);
+    cursor: pointer;
+    color: var(--ext-fg);
+}
+.list-group-item:hover { background: var(--ext-panel-elevated); }
+small, .small, .notes { color: var(--ext-muted) !important; font-size: 12px; }
+hr { border: 0; border-top: 1px solid var(--ext-border); margin: 12px 0; }
+#rikka-ext-settings-status {
+    margin: 10px 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--ext-border);
+    border-radius: 12px;
+    background: var(--ext-panel);
+    color: var(--ext-muted);
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+#rikka-ext-settings-status[data-error="true"] {
+    border-color: #ef5350;
+    color: #ef9a9a;
+}
+.rikka-ext-card {
+    margin: 10px 0;
+    padding: 14px;
+    border: 1px solid var(--ext-border);
+    border-radius: 14px;
+    background: var(--ext-panel);
+    color: var(--ext-fg);
+}
+.rikka-ext-card h3 {
+    margin: 0 0 8px 0;
+    font-size: 15px;
+    color: var(--ext-accent);
+}
+.rikka-ext-card pre {
+    margin: 8px 0 0;
+    padding: 10px;
+    border-radius: 10px;
+    background: var(--ext-panel-elevated);
+    border: 1px solid var(--ext-border);
+    overflow-x: auto;
+    font-size: 12px;
+    white-space: pre-wrap;
+}
+.rikka-setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 10px;
+    margin: 5px 0;
+    border-radius: 10px;
+    background: var(--ext-panel-elevated);
+    border: 1px solid var(--ext-border);
+}
+.rikka-setting-row label {
+    flex: 1;
+    cursor: pointer;
+    font-size: 13.5px;
+    color: var(--ext-fg);
+}
+.rikka-setting-row .rikka-setting-desc {
+    display: block;
+    font-size: 11.5px;
+    color: var(--ext-muted);
+    margin-top: 2px;
+}
+.rikka-save-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--ext-accent-bg);
+    color: var(--ext-accent);
+    font-size: 11.5px;
+    font-weight: 600;
+}

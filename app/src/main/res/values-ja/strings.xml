@@ -673,8 +673,10 @@
   <string name="huadeng_tool_result_truncation_desc">32 KBを超えるツール出力は切り詰めてファイルに保存します。オフにするとツール結果全文がメッセージ履歴に残ります（プロキシ経由でツール呼び出しがおかしい場合は試してください）</string>
   <string name="huadeng_sub_agent">サブエージェント</string>
   <string name="huadeng_sub_agent_desc">AI がサブタスクを独立したサブエージェントに委譲し（会話履歴なし）、結果を取得できるようにします</string>
-  <string name="huadeng_frontend_card_mode">フロントエンド互換モード</string>
-  <string name="huadeng_frontend_card_mode_desc">挨拶や世界情報の Web ページを自動判別。キャラクターカード単位で強制も可能</string>
+  <string name="huadeng_frontend_card_mode">華灯互換モード</string>
+  <string name="huadeng_frontend_card_mode_desc">カード描画を有効化。純ネイティブはテキストのみ</string>
+  <string name="huadeng_frontend_card_mode_compat">華灯互換モード</string>
+  <string name="huadeng_frontend_card_mode_native">純ネイティブ表示</string>
   <string name="huadeng_frontend_card_auto_switched">フロントモードを自動で有効にしました</string>
   <string name="huadeng_frontend_card_slash_unsupported">フロントカードのコマンド %1$s は未対応です</string>
   <string name="huadeng_transient_prune">一時コンテンツの間引き</string>
@@ -1239,6 +1241,7 @@
   <string name="prompt_page_no_group">未グループ化</string>
   <string name="prompt_page_official_advanced">公式の詳細設定</string>
   <string name="prompt_page_pos_em_bottom">EM下部</string>
+  <string name="prompt_page_pos_outlet">アウトレット（{{outlet::name}} で参照）</string>
   <string name="prompt_page_pos_em_top">EM上部</string>
   <string name="prompt_page_position_after_character">キャラクターの後</string>
   <string name="prompt_page_position_after_dialog">最新のAI返信の後</string>
@@ -1246,6 +1249,8 @@
   <string name="prompt_page_position_antagonize">Antagonize（カードとチャットの間）</string>
   <string name="prompt_page_position_at_depth">深度</string>
   <string name="prompt_page_position_author_note">ディレクターノート（グローバル設定に従う）</string>
+  <string name="prompt_page_position_before_author_note">作者ノート前 (ANTop)</string>
+  <string name="prompt_page_position_after_author_note">作者ノート後 (ANBottom)</string>
   <string name="prompt_page_position_before_character">キャラクターの前</string>
   <string name="prompt_page_position_before_system">システムプロンプトの前</string>
   <string name="prompt_page_position_bottom_of_chat">最新メッセージの前</string>
@@ -3054,9 +3059,6 @@
   <string name="weixin_bot_notification_running_title">WeChatボットが実行中</string>
   <string name="weixin_bot_scan_login">スキャンしてログイン</string>
   <string name="weixin_bot_unknown">不明</string>
-  <string name="huadeng_frontend_card_mode_auto">自動判別（挨拶や世界情報にWebページがある場合）</string>
-  <string name="huadeng_frontend_card_mode_always">Always use frontend compatibility mode</string>
-  <string name="huadeng_frontend_card_mode_never">Always use the native interface</string>
   <string name="setting_page_huadeng_compat">互換性と補助</string>
   <string name="setting_provider_page_context_length">コンテキスト長</string>
   <string name="setting_provider_page_context_length_custom">カスタム</string>

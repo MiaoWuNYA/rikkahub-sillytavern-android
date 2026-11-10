@@ -23,6 +23,12 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.provider.Model
 import me.rerere.ai.ui.UIMessage
@@ -35,10 +41,23 @@ import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.Conversation
+import me.rerere.rikkahub.data.model.GenerationType
 import me.rerere.rikkahub.data.model.MessageNode
 import me.rerere.rikkahub.data.model.NodeFavoriteTarget
 import me.rerere.rikkahub.data.model.getAssistantOf
 import me.rerere.rikkahub.data.model.getChatModelOf
+import me.rerere.rikkahub.data.model.toMessageNode
+import me.rerere.rikkahub.data.st.runtime.TavernRuntimeManager
+import me.rerere.rikkahub.data.st.runtime.TavernVariableStore
+import me.rerere.rikkahub.data.st.runtime.applyLorebookDisablePatch
+import me.rerere.rikkahub.data.st.runtime.applyLorebookUpsertPatch
+import me.rerere.rikkahub.data.st.runtime.applyTavernChatUpdates
+import me.rerere.rikkahub.data.st.runtime.buildLorebookFromJsrEntries
+import me.rerere.rikkahub.data.st.runtime.extractWorldName
+import me.rerere.rikkahub.data.st.runtime.findLorebookIndexByName
+import me.rerere.rikkahub.data.st.runtime.lorebookNameMatches
+import me.rerere.rikkahub.data.st.runtime.parseRuntimeChatInserts
+import me.rerere.rikkahub.data.st.runtime.updateWorldNameInExtensionsRaw
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.data.repository.FavoriteRepository
 import me.rerere.rikkahub.service.ChatError
@@ -169,6 +188,14 @@ class ChatVM(
         }
     }
 
+    /** STscript 宿主用：settings 当前快照（同步读，任意线程安全） */
+    fun latestSettingsSnapshot(): Settings = settings.value
+
+    /** STscript 宿主用：函数式写入设置（沿用 [updateSettings] 的既有写通道） */
+    fun patchSettings(transform: (Settings) -> Settings) {
+        updateSettings(transform)
+    }
+
     /** 同步更新设置并等待完成 — 供切换助手等场景使用 */
     suspend fun updateSettingsAndWait(newSettings: Settings) {
         val oldSettings = settings.value
@@ -245,9 +272,11 @@ class ChatVM(
     fun handleMessageEdit(parts: List<UIMessagePart>, messageId: Uuid) {
         if (parts.isEmptyInputMessage()) return
         analytics?.logEvent("ai_edit_message", null)
+        val index = conversation.value.messageNodes.indexOfFirst { node -> node.messages.any { it.id == messageId } }
 
         viewModelScope.launch {
             chatService.editMessage(_conversationId, messageId, parts)
+            fireMessageEvent(index, null, TavernRuntimeManager.EVENT_MESSAGE_EDITED)
         }
     }
 
@@ -333,8 +362,14 @@ class ChatVM(
 
     fun deleteMessages(messages: List<UIMessage>) {
         if (messages.isEmpty()) return
+        val deleteIds = messages.map { it.id }.toSet()
+        val indices = conversation.value.messageNodes.mapIndexedNotNull { idx, node ->
+            if (node.messages.any { it.id in deleteIds }) idx else null
+        }
+
         viewModelScope.launch {
-            chatService.deleteMessages(_conversationId, messages.map { it.id })
+            chatService.deleteMessages(_conversationId, deleteIds)
+            indices.sortedDescending().forEach { fireMessageEvent(it, null, TavernRuntimeManager.EVENT_MESSAGE_DELETED) }
         }
     }
 
@@ -389,6 +424,57 @@ class ChatVM(
     /** 官方 /gen：安静生成，结果填入输入框待确认 */
     fun quietGenerate(args: ChatService.GenArgs, onDraft: (String) -> Unit) {
         chatService.quietGenerate(_conversationId, args, onDraft)
+    }
+
+    /**
+     * STscript /gen、/genraw：同步等待一次安静生成的结果（不写会话、不触发 UI 生成任务）。
+     */
+    suspend fun quietGenerateSync(
+        prompt: String,
+        includeHistory: Boolean = true,
+        systemPrompt: String = "",
+        asRole: ChatService.QuietPromptAs = ChatService.QuietPromptAs.SYSTEM,
+        length: Int = 0,
+        name: String? = null,
+        trim: Boolean = false,
+    ): Result<String> = runCatching {
+        val currentSettings = settings.value
+        val currentConversation = conversation.value
+        val currentAssistant = currentSettings.getAssistantOf(currentConversation)
+        val history = if (includeHistory) currentConversation.currentMessages else emptyList()
+        val extraSystem = if (systemPrompt.isBlank()) {
+            emptyList()
+        } else {
+            listOf(UIMessage(role = MessageRole.SYSTEM, parts = listOf(UIMessagePart.Text(systemPrompt))))
+        }
+        val text = chatService.generateForAssistant(
+            assistant = if (name.isNullOrBlank()) currentAssistant else currentAssistant.copy(name = name),
+            settings = currentSettings,
+            prompt = prompt,
+            history = history,
+            conversationId = _conversationId,
+            generationType = GenerationType.QUIET,
+            promptRole = if (asRole == ChatService.QuietPromptAs.CHAR) MessageRole.ASSISTANT else MessageRole.USER,
+            extraSystemMessages = extraSystem,
+            maxTokensOverride = if (length > 0) length * 4 else null,
+        )
+        if (trim) text.trim() else text
+    }
+
+    /**
+     * STscript /del：按节点索引删除消息，同步返回被删消息文本（/del cut 需要回显）。
+     */
+    fun deleteChatMessageIndices(indices: Set<Int>): List<String> {
+        val nodes = conversation.value.messageNodes
+        val targets = indices.sorted().mapNotNull { nodes.getOrNull(it) }
+        if (targets.isEmpty()) return emptyList()
+        val texts = targets.mapNotNull { node ->
+            (node.messages.getOrNull(node.selectIndex) ?: node.messages.firstOrNull())
+        }.map { it.toText() }
+        viewModelScope.launch {
+            chatService.deleteMessages(_conversationId, targets.flatMap { node -> node.messages.map { it.id } })
+        }
+        return texts
     }
 
     fun saveConversationAsync() {
@@ -478,6 +564,291 @@ class ChatVM(
                     }
                 )
             }
+        }
+    }
+
+    // ==================== 酒馆运行时桥：ChatPage 绑定的落点（JS 侧回写） ====================
+
+    private fun fireMessageEvent(index: Int, swipeId: Int?, eventName: String) {
+        if (index < 0) return
+        val payload = buildJsonObject {
+            put("message_id", JsonPrimitive(index))
+            if (swipeId != null) put("swipe_id", JsonPrimitive(swipeId))
+            put("args", buildJsonArray { add(JsonPrimitive(index)) })
+        }.toString()
+        TavernRuntimeManager.fireConversationEvent(_conversationId.toString(), eventName, payload)
+    }
+
+    /** 手机端切换备选回复 → 补发消息事件，脚本侧 listChatMessages 之外也可即时感知。 */
+    fun notifyMessageSwiped(node: MessageNode) {
+        val index = conversation.value.messageNodes.indexOfFirst { it.id == node.id }
+        fireMessageEvent(index, node.selectIndex, TavernRuntimeManager.EVENT_MESSAGE_SWIPED)
+        fireMessageEvent(index, node.selectIndex, TavernRuntimeManager.EVENT_MESSAGE_UPDATED)
+    }
+
+    /** JS setChatMessages / saveChat：同步改内存（脚本随后要读），异步落盘。 */
+    fun applyRuntimeChatUpdates(jsonText: String): Boolean {
+        val current = conversation.value
+        val alternateGreetings = settings.value.getAssistantOf(current).tavernData?.alternateGreetings.orEmpty()
+        val updated = applyTavernChatUpdates(current, jsonText, alternateGreetings) ?: return false
+        updateConversation(updated)
+        viewModelScope.launch {
+            runCatching { chatService.saveConversation(_conversationId, updated) }
+        }
+        return true
+    }
+
+    /** JS createChatMessages：同步追加楼层（卡片紧接着 /trigger，排队任务会被取消）。 */
+    fun insertRuntimeChatMessages(jsonText: String): Boolean {
+        val items = parseRuntimeChatInserts(jsonText)
+        if (items.isEmpty()) return false
+        val current = conversation.value
+        val nodes = items.map { item ->
+            UIMessage(
+                role = item.role,
+                parts = listOf(UIMessagePart.Text(item.message)),
+                name = item.name,
+            ).toMessageNode()
+        }
+        // 消息级变量按楼层下标对齐，新楼层补空对象
+        runCatching {
+            val key = _conversationId.toString()
+            val existing = TavernVariableStore.getMessageVars(key)
+            val list = (existing as? JsonArray)?.toMutableList() ?: mutableListOf()
+            items.forEach { list += (it.data ?: JsonObject(emptyMap())) }
+            TavernVariableStore.replaceMessageVars(key, JsonArray(list))
+        }
+        val updated = current.copy(messageNodes = current.messageNodes + nodes)
+        updateConversation(updated)
+        viewModelScope.launch {
+            runCatching { chatService.saveConversation(_conversationId, updated) }
+        }
+        TavernRuntimeManager.appendLog("info", "[chat] insertChatMessages n=${items.size}")
+        return true
+    }
+
+    /** JS deleteChatMessages(idsJson)：按 0 基楼层下标删除，同步裁剪消息级变量。 */
+    fun deleteRuntimeChatMessages(idsJson: String): Boolean {
+        val ids = runCatching {
+            (Json.parseToJsonElement(idsJson) as? JsonArray)
+                ?.mapNotNull { (it as? JsonPrimitive)?.content?.toIntOrNull() }
+                ?.toSet()
+                .orEmpty()
+        }.getOrDefault(emptySet())
+        if (ids.isEmpty()) return false
+        val nodes = conversation.value.messageNodes
+        val valid = ids.filter { it in nodes.indices }.toSet()
+        if (valid.isEmpty()) return false
+        runCatching {
+            val key = _conversationId.toString()
+            val existing = TavernVariableStore.getMessageVars(key)
+            val list = (existing as? JsonArray)?.toMutableList()
+            if (list != null && list.isNotEmpty()) {
+                TavernVariableStore.replaceMessageVars(
+                    key,
+                    JsonArray(list.filterIndexed { idx, _ -> idx !in valid }),
+                )
+            }
+        }
+        val deleted = deleteChatMessageIndices(valid).isNotEmpty()
+        if (deleted) valid.forEach { fireMessageEvent(it, null, TavernRuntimeManager.EVENT_MESSAGE_DELETED) }
+        return deleted
+    }
+
+    /** JS upsertLorebookEntries：卡内嵌世界书优先，其次全局世界书库。 */
+    fun applyLorebookUpsert(bookName: String, payloadJson: String): Boolean {
+        val currentSettings = settings.value
+        val requested = bookName.trim()
+        if (requested.isEmpty()) return false
+        val assistant = currentSettings.getAssistantOf(conversation.value)
+        val tavernData = assistant.tavernData
+        val embedded = tavernData?.embeddedBook
+        if (tavernData != null && embedded != null) {
+            val worldName = extractWorldName(tavernData.extensionsRaw)
+            val embeddedName = embedded.name.ifBlank { worldName ?: "" }
+            val isMatch = requested == "current" ||
+                lorebookNameMatches(embeddedName, bookName) ||
+                lorebookNameMatches(worldName, bookName)
+            if (isMatch) {
+                val updatedBook = applyLorebookUpsertPatch(embedded, payloadJson) ?: return false
+                patchSettings { s ->
+                    s.copy(
+                        assistants = s.assistants.map { a ->
+                            if (a.id == assistant.id) {
+                                a.copy(tavernData = tavernData.copy(embeddedBook = updatedBook))
+                            } else {
+                                a
+                            }
+                        },
+                    )
+                }
+                TavernRuntimeManager.appendLog("info", "[lorebook] upsert embedded '$embeddedName'")
+                return true
+            }
+        }
+        if (findLorebookIndexByName(currentSettings.lorebooks, requested) < 0) {
+            TavernRuntimeManager.appendLog("warn", "[lorebook] upsert miss '$requested'")
+            return false
+        }
+        patchSettings { s ->
+            val index = findLorebookIndexByName(s.lorebooks, requested)
+            if (index < 0) return@patchSettings s
+            val updatedBook = applyLorebookUpsertPatch(s.lorebooks[index], payloadJson)
+                ?: return@patchSettings s
+            s.copy(lorebooks = s.lorebooks.toMutableList().also { it[index] = updatedBook })
+        }
+        TavernRuntimeManager.appendLog("info", "[lorebook] upsert global '$requested'")
+        return true
+    }
+
+    /** JS setLorebookEntries / 启停：同名书存在即视为命中。 */
+    fun applyLorebookUpdate(bookName: String, entriesJson: String): Boolean {
+        val currentSettings = settings.value
+        val requested = bookName.trim()
+        if (requested.isEmpty()) return false
+        val assistant = currentSettings.getAssistantOf(conversation.value)
+        val tavernData = assistant.tavernData
+        val embedded = tavernData?.embeddedBook
+        if (tavernData != null && embedded != null) {
+            val worldName = extractWorldName(tavernData.extensionsRaw)
+            val embeddedName = embedded.name.ifBlank { worldName ?: "" }
+            val isMatch = requested == "current" ||
+                lorebookNameMatches(embeddedName, bookName) ||
+                lorebookNameMatches(worldName, bookName)
+            if (isMatch) {
+                val updatedBook = applyLorebookDisablePatch(embedded, entriesJson) ?: return true
+                patchSettings { s ->
+                    s.copy(
+                        assistants = s.assistants.map { a ->
+                            if (a.id == assistant.id) {
+                                a.copy(tavernData = tavernData.copy(embeddedBook = updatedBook))
+                            } else {
+                                a
+                            }
+                        },
+                    )
+                }
+                return true
+            }
+        }
+        if (findLorebookIndexByName(currentSettings.lorebooks, requested) < 0) {
+            TavernRuntimeManager.appendLog("warn", "[lorebook] update miss '$requested'")
+            return false
+        }
+        patchSettings { s ->
+            val index = findLorebookIndexByName(s.lorebooks, requested)
+            if (index < 0) return@patchSettings s
+            val updatedBook = applyLorebookDisablePatch(s.lorebooks[index], entriesJson)
+                ?: return@patchSettings s
+            s.copy(lorebooks = s.lorebooks.toMutableList().also { it[index] = updatedBook })
+        }
+        return true
+    }
+
+    /** JS createOrReplaceLorebook：写入宿主世界书库。 */
+    fun createOrReplaceLorebook(
+        bookName: String,
+        entriesJson: String,
+        replaceIfExists: Boolean = true,
+    ): Boolean {
+        val requested = bookName.trim()
+        if (requested.isEmpty()) return false
+        if (findLorebookIndexByName(settings.value.lorebooks, requested) >= 0 && !replaceIfExists) return true
+        patchSettings { s ->
+            val index = findLorebookIndexByName(s.lorebooks, requested)
+            val existing = if (index >= 0) s.lorebooks[index] else null
+            val built = buildLorebookFromJsrEntries(requested, entriesJson, existing)
+            val nextBooks = s.lorebooks.toMutableList().also {
+                if (index >= 0) it[index] = built else it.add(built)
+            }
+            s.copy(lorebooks = nextBooks)
+        }
+        TavernRuntimeManager.appendLog("info", "[lorebook] createOrReplace '$requested'")
+        return true
+    }
+
+    /** JS deleteLorebook：删书并解除助手/会话绑定。 */
+    fun deleteLorebookByName(bookName: String): Boolean {
+        val requested = bookName.trim()
+        if (requested.isEmpty()) return false
+        val currentSettings = settings.value
+        val index = findLorebookIndexByName(currentSettings.lorebooks, requested)
+        if (index < 0) return false
+        val removedId = currentSettings.lorebooks[index].id
+        patchSettings { s ->
+            val currentIndex = findLorebookIndexByName(s.lorebooks, requested)
+            if (currentIndex < 0) return@patchSettings s
+            val targetId = s.lorebooks[currentIndex].id
+            s.copy(
+                lorebooks = s.lorebooks.filterIndexed { i, _ -> i != currentIndex },
+                assistants = s.assistants.map { a -> a.copy(lorebookIds = a.lorebookIds - targetId) },
+            )
+        }
+        if (removedId in conversation.value.lorebookIds) {
+            updateConversation(conversation.value.copy(lorebookIds = conversation.value.lorebookIds - removedId))
+            saveConversationAsync()
+        }
+        TavernRuntimeManager.appendLog("info", "[lorebook] delete '$requested'")
+        return true
+    }
+
+    /** JS rebindLorebooks：scope=global/char/chat，按名字重新绑定。 */
+    fun rebindLorebooks(scope: String, namesJson: String): Boolean {
+        val names = runCatching {
+            (Json.parseToJsonElement(namesJson) as? JsonArray)
+                ?.mapNotNull { (it as? JsonPrimitive)?.content?.trim() }
+                .orEmpty()
+        }.getOrDefault(emptyList()).filter { it.isNotEmpty() }
+        val matchedIds = settings.value.lorebooks
+            .filter { book -> names.any { lorebookNameMatches(book.name, it) } }
+            .map { it.id }
+            .toSet()
+        return when (scope.trim().lowercase()) {
+            "global" -> {
+                patchSettings { s ->
+                    s.copy(
+                        lorebooks = s.lorebooks.map { book ->
+                            book.copy(enabled = names.any { lorebookNameMatches(book.name, it) })
+                        },
+                    )
+                }
+                true
+            }
+
+            "char", "character" -> {
+                val assistantId = conversation.value.assistantId
+                patchSettings { s ->
+                    s.copy(
+                        assistants = s.assistants.map { a ->
+                            if (a.id != assistantId) {
+                                a
+                            } else {
+                                val tavernData = a.tavernData
+                                val reboundData = if (tavernData == null) {
+                                    null
+                                } else {
+                                    tavernData.copy(
+                                        extensionsRaw = updateWorldNameInExtensionsRaw(
+                                            tavernData.extensionsRaw,
+                                            names.firstOrNull(),
+                                        ),
+                                    )
+                                }
+                                a.copy(lorebookIds = matchedIds, tavernData = reboundData)
+                            }
+                        },
+                    )
+                }
+                true
+            }
+
+            "chat" -> {
+                updateConversation(conversation.value.copy(lorebookIds = matchedIds))
+                saveConversationAsync()
+                true
+            }
+
+            else -> false
         }
     }
 

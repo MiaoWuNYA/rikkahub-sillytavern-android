@@ -712,8 +712,10 @@
   <string name="huadeng_tool_result_truncation_desc">工具输出超过 32KB 时自动截断并保存到文件。关闭后工具结果不截断，完整内容保留在消息历史中（若中转站导致工具调用异常，可尝试关闭)</string>
   <string name="huadeng_sub_agent">子 agent</string>
   <string name="huadeng_sub_agent_desc">允许 AI 把子任务派给独立的子 agent 执行（不产生会话历史），完成后取回结果</string>
-  <string name="huadeng_frontend_card_mode">华灯前端内核</string>
-  <string name="huadeng_frontend_card_mode_desc">自动识别开场白或世界书中的网页，也可按角色卡强制开启或关闭</string>
+  <string name="huadeng_frontend_card_mode">华灯兼容模式</string>
+  <string name="huadeng_frontend_card_mode_desc">开启卡片渲染；纯原生界面只显示文本</string>
+  <string name="huadeng_frontend_card_mode_compat">华灯兼容模式</string>
+  <string name="huadeng_frontend_card_mode_native">纯原生界面</string>
   <string name="huadeng_frontend_card_auto_switched">已自动切换前端模式</string>
   <string name="huadeng_frontend_card_slash_unsupported">前端卡命令 %1$s 暂未支持</string>
   <string name="huadeng_transient_prune">上下文瞬态内容裁剪</string>
@@ -1315,6 +1317,7 @@
   <string name="prompt_page_no_group">未分组</string>
   <string name="prompt_page_official_advanced">官方高级字段</string>
   <string name="prompt_page_pos_em_bottom">示例消息后</string>
+  <string name="prompt_page_pos_outlet">出口（经 {{outlet::name}} 引用）</string>
   <string name="prompt_page_pos_em_top">示例消息前</string>
   <string name="prompt_page_position_after_character">角色卡后</string>
   <string name="prompt_page_position_after_dialog">最近一条AI回复后</string>
@@ -1322,6 +1325,8 @@
   <string name="prompt_page_position_antagonize">角色卡与对话之间</string>
   <string name="prompt_page_position_at_depth">指定深度</string>
   <string name="prompt_page_position_author_note">作者备注位置（跟随全局设置）</string>
+  <string name="prompt_page_position_before_author_note">作者备注之前 (ANTop)</string>
+  <string name="prompt_page_position_after_author_note">作者备注之后 (ANBottom)</string>
   <string name="prompt_page_position_before_character">角色卡前</string>
   <string name="prompt_page_position_before_system">系统提示词前</string>
   <string name="prompt_page_position_bottom_of_chat">最新消息前</string>
@@ -3193,10 +3198,6 @@
   <string name="weixin_bot_open_qr_link">用浏览器打开二维码链接</string>
   <string name="weixin_bot_scan_prompt">请用微信扫码</string>
   <string name="weixin_bot_unnamed">未命名</string>
-  <string name="huadeng_frontend_card_mode_auto">自动识别（开场白或世界书含网页时切换）</string>
-  <string name="huadeng_frontend_card_mode_always">总是使用华灯前端内核</string>
-  <string name="huadeng_frontend_card_mode_never">总是使用原生界面</string>
-  <string name="huadeng_frontend_card_mode_tavern">原生酒馆（SillyTavern 前端）</string>
   <string name="setting_page_huadeng_compat">兼容与辅助</string>
   <string name="setting_provider_page_context_length">上下文长度</string>
   <string name="setting_provider_page_context_length_custom">自定义</string>

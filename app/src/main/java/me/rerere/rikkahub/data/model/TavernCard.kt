@@ -110,4 +110,5 @@ data class TavernBookEntry(
     val matchScenario: Boolean = false,              // extensions.match_scenario
     val matchCreatorNotes: Boolean = false,          // extensions.match_creator_notes
     val ignoreBudget: Boolean = false,               // extensions.ignore_budget（跳过预算上限）
+    val outletName: String = "",                     // extensions.outlet_name（position=7 时被 {{outlet::name}} 展开）
 )

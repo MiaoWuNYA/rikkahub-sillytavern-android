@@ -673,8 +673,10 @@
   <string name="huadeng_tool_result_truncation_desc">Вывод инструмента более 32 КБ обрезается и сохраняется в файл. Отключите, чтобы хранить полные результаты инструментов в истории сообщений (попробуйте, если вызовы инструментов ведут себя странно через прокси)</string>
   <string name="huadeng_sub_agent">Суб-агент</string>
   <string name="huadeng_sub_agent_desc">Позволяет ИИ передавать подзадачи независимому суб-агенту (без истории диалога) и получать результат</string>
-  <string name="huadeng_frontend_card_mode">Режим совместимости</string>
-  <string name="huadeng_frontend_card_mode_desc">Определяет веб-страницы в приветствии или мире; можно задать принудительно</string>
+  <string name="huadeng_frontend_card_mode">Режим совместимости Huadeng</string>
+  <string name="huadeng_frontend_card_mode_desc">Включает отрисовку карточек; чистый нативный режим — только текст</string>
+  <string name="huadeng_frontend_card_mode_compat">Режим совместимости</string>
+  <string name="huadeng_frontend_card_mode_native">Только нативный текст</string>
   <string name="huadeng_frontend_card_auto_switched">Фронт-режим включён автоматически</string>
   <string name="huadeng_frontend_card_slash_unsupported">Команда фронт-карты %1$s пока не поддерживается</string>
   <string name="huadeng_transient_prune">Обрезка переходящего содержимого</string>
@@ -1239,6 +1241,7 @@
   <string name="prompt_page_no_group">Без группы</string>
   <string name="prompt_page_official_advanced">Официальные расширенные</string>
   <string name="prompt_page_pos_em_bottom">EM снизу</string>
+  <string name="prompt_page_pos_outlet">Выход (через {{outlet::name}})</string>
   <string name="prompt_page_pos_em_top">EM сверху</string>
   <string name="prompt_page_position_after_character">После персонажа</string>
   <string name="prompt_page_position_after_dialog">После последнего ответа ИИ</string>
@@ -1246,6 +1249,8 @@
   <string name="prompt_page_position_antagonize">Antagonize (между карточкой и чатом)</string>
   <string name="prompt_page_position_at_depth">На глубине</string>
   <string name="prompt_page_position_author_note">Заметка режиссёра (следует глобальной настройке)</string>
+  <string name="prompt_page_position_before_author_note">Перед заметкой автора (ANTop)</string>
+  <string name="prompt_page_position_after_author_note">После заметки автора (ANBottom)</string>
   <string name="prompt_page_position_before_character">Перед персонажем</string>
   <string name="prompt_page_position_before_system">Перед системным приглашением</string>
   <string name="prompt_page_position_bottom_of_chat">Перед последним сообщением</string>
@@ -3054,9 +3059,6 @@
   <string name="weixin_bot_notification_running_title">WeChat-бот работает</string>
   <string name="weixin_bot_scan_login">Сканировать для входа</string>
   <string name="weixin_bot_unknown">Неизвестно</string>
-  <string name="huadeng_frontend_card_mode_auto">Авто (веб-страница в приветствии или мире)</string>
-  <string name="huadeng_frontend_card_mode_always">Always use frontend compatibility mode</string>
-  <string name="huadeng_frontend_card_mode_never">Always use the native interface</string>
   <string name="setting_page_huadeng_compat">Совместимость и помощники</string>
   <string name="setting_provider_page_context_length">Длина контекста</string>
   <string name="setting_provider_page_context_length_custom">Пользовательский</string>

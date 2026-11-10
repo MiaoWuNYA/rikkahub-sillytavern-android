@@ -79,12 +79,10 @@ import me.rerere.hugeicons.stroke.MusicNote03
 import me.rerere.hugeicons.stroke.Video01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.data.datastore.allRegexesOf
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantAffectScope
 import me.rerere.rikkahub.data.model.MessageNode
 import me.rerere.rikkahub.data.model.TRANSPARENT_BUBBLE as TRANSPARENT_BUBBLE_SENTINEL
-import me.rerere.rikkahub.data.model.replaceRegexes
 import me.rerere.rikkahub.ui.components.richtext.CardHostContext
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import me.rerere.rikkahub.ui.components.richtext.ZoomableAsyncImage
@@ -119,6 +117,12 @@ import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
 import androidx.compose.foundation.border
 import androidx.compose.ui.draw.shadow
+import me.rerere.rikkahub.data.st.regex.RegexPlacement
+import me.rerere.rikkahub.data.st.regex.RegexScript
+import me.rerere.rikkahub.data.st.regex.mergeActiveRegexScripts
+import me.rerere.rikkahub.data.st.runtime.TavernRuntimeManager
+import me.rerere.rikkahub.ui.components.richtext.rememberStRegexedText
+import kotlin.uuid.Uuid
 
 @Composable
 fun ChatMessage(
@@ -127,6 +131,8 @@ fun ChatMessage(
     loading: Boolean = false,
     model: Model? = null,
     assistant: Assistant? = null,
+    // 会话级注入 ID（页面能拿到时传入，正则预设组靠它激活）
+    extraModeInjectionIds: Set<Uuid> = emptySet(),
     lastMessage: Boolean = false,
     // 消息深度：0 = 最新一条，向前递增。正则脚本（尤其前端卡的 HTML 注入）
     // 用 minDepth/maxDepth 限定生效范围，必须传真实值，否则 maxDepth 失效、
@@ -153,6 +159,8 @@ fun ChatMessage(
     cardHost: CardHostContext? = null,
     /** 卡把开局正文写回消息的入口。 */
     cardMessagesJson: String = "[]",
+    /** 原生模式（NATIVE）传 false：不建 WebView，卡片按纯文本显示。 */
+    renderCards: Boolean = true,
 ) {
     val message = node.messages[node.selectIndex]
     val settings = LocalSettings.current.displaySetting
@@ -200,6 +208,7 @@ fun ChatMessage(
         ) {
             MessagePartsBlock(
                 assistant = assistant,
+                extraModeInjectionIds = extraModeInjectionIds,
                 messageDepth = messageDepth,
                 role = message.role,
                 parts = message.parts,
@@ -211,6 +220,7 @@ fun ChatMessage(
                 onToolAnswer = onToolAnswer,
                 onUserMessageClick = if (message.role == MessageRole.USER) onEdit else null,
                 cardHost = cardHost,
+                renderCards = renderCards,
                 cardMessagesJson = cardMessagesJson,
             )
 
@@ -316,6 +326,7 @@ private const val COLLAPSED_VISIBLE_STEPS = 2
 @Composable
 private fun MessagePartsBlock(
     assistant: Assistant?,
+    extraModeInjectionIds: Set<Uuid> = emptySet(),
     messageDepth: Int,
     role: MessageRole,
     model: Model?,
@@ -329,6 +340,7 @@ private fun MessagePartsBlock(
     onUserMessageClick: (() -> Unit)? = null,
     cardHost: CardHostContext? = null,
     cardMessagesJson: String = "[]",
+    renderCards: Boolean = true,
 ) {
     val context = LocalContext.current
     // 消息输出HapticFeedback
@@ -369,28 +381,22 @@ private fun MessagePartsBlock(
     // Render parts in original order (group thinking/tool as chain-of-thought)
     val groupedParts = remember(parts) { parts.groupMessageParts() }
 
-    // 正则可视化替换按 (原文, 作用域) 缓存，稳定消息重组直接复用；流式期间见 applyVisualRegexes
-    val effectiveRegexes = remember(assistant?.id, assistant?.regexes, settings.globalRegexes, messageDepth) {
-        settings.allRegexesOf(assistant)
+    // 三源合并的 ST 正则（全局 + 预设内嵌 + 卡内嵌）：显示层在此统一收口
+    val stRegexScripts = remember(
+        assistant?.id,
+        assistant?.regexes,
+        assistant?.tavernData,
+        settings.globalRegexes,
+        settings.modeInjections,
+        settings.huadengSettings.tavernPresets,
+        extraModeInjectionIds,
+    ) {
+        mergeActiveRegexScripts(settings, assistant, extraModeInjectionIds)
     }
-    val regexVisualCache = remember(effectiveRegexes, messageDepth) {
-        mutableMapOf<Pair<String, AssistantAffectScope>, String>()
+    val stUserName = remember(settings.personas, settings.activePersonaId, settings.displaySetting.userNickname) {
+        settings.personas.firstOrNull { it.id == settings.activePersonaId }?.name
+            ?: settings.displaySetting.userNickname.ifBlank { "User" }
     }
-    fun applyVisualRegexes(text: String, scope: AssistantAffectScope): String {
-        if (effectiveRegexes.isEmpty()) return text
-        // 流式期间不跑正则：整条消息每个 chunk 重算会卡，生成结束后再一次性生效
-        if (loading) return text
-        val key = text to scope
-        return regexVisualCache.getOrPut(key) {
-            text.replaceRegexes(
-                regexes = effectiveRegexes,
-                scope = scope,
-                visual = true,
-                depth = messageDepth,
-            )
-        }
-    }
-
     groupedParts.fastForEach { block ->
         when (block) {
             is MessagePartBlock.ThinkingBlock -> {
@@ -523,9 +529,19 @@ private fun MessagePartsBlock(
                                         }
                                         Column(modifier = Modifier.padding(8.dp)) {
                                             MarkdownBlock(
-                                                content = applyVisualRegexes(part.text, AssistantAffectScope.USER),
+                                                content = displayStRegexedText(
+                                                    raw = part.text,
+                                                    scripts = stRegexScripts,
+                                                    assistant = assistant,
+                                                    scope = AssistantAffectScope.USER,
+                                                    placement = RegexPlacement.USER_INPUT,
+                                                    depth = messageDepth,
+                                                    userName = stUserName,
+                                                    loading = loading,
+                                                ),
                                                 onClickCitation = handleClickCitation,
                                                 cardHost = cardHost,
+                                                renderCards = renderCards,
                                                 cardMessagesJson = cardMessagesJson,
                                                 // 生成中的半截 HTML 不交给 WebView，
                                                 // 否则会渲染出残缺网页、观感像卡死
@@ -597,9 +613,19 @@ private fun MessagePartsBlock(
                                             }
                                             Column(modifier = Modifier.padding(8.dp)) {
                                                 MarkdownBlock(
-                                                    content = applyVisualRegexes(part.text, AssistantAffectScope.ASSISTANT),
+                                                    content = displayStRegexedText(
+                                                        raw = part.text,
+                                                        scripts = stRegexScripts,
+                                                        assistant = assistant,
+                                                        scope = AssistantAffectScope.ASSISTANT,
+                                                        placement = RegexPlacement.AI_OUTPUT,
+                                                        depth = messageDepth,
+                                                        userName = stUserName,
+                                                        loading = loading,
+                                                    ),
                                                     onClickCitation = handleClickCitation,
                                                     cardHost = cardHost,
+                                                    renderCards = renderCards,
                                                                                                     isStreaming = isStreamingMessage,
                                                 cardMessagesJson = cardMessagesJson,
                                                 )
@@ -608,9 +634,19 @@ private fun MessagePartsBlock(
                                     }
                                 } else {
                                     MarkdownBlock(
-                                        content = applyVisualRegexes(part.text, AssistantAffectScope.ASSISTANT),
+                                        content = displayStRegexedText(
+                                            raw = part.text,
+                                            scripts = stRegexScripts,
+                                            assistant = assistant,
+                                            scope = AssistantAffectScope.ASSISTANT,
+                                            placement = RegexPlacement.AI_OUTPUT,
+                                            depth = messageDepth,
+                                            userName = stUserName,
+                                            loading = loading,
+                                        ),
                                         onClickCitation = handleClickCitation,
                                         cardHost = cardHost,
+                                        renderCards = renderCards,
                                                 cardMessagesJson = cardMessagesJson,
                                         // 生成中不渲染卡片：正文里的 <article> 之类
                                         // 会被判成卡片，而它是半截的
@@ -786,7 +822,7 @@ private fun ChatMessageCitations(annotations: List<UIMessageAnnotation>) {
         annotations.mapNotNull { annotation ->
             when (annotation) {
                 is UIMessageAnnotation.UrlCitation -> annotation.url
-                UIMessageAnnotation.CharacterCardData, UIMessageAnnotation.ExampleMessage -> null
+                UIMessageAnnotation.CharacterCardData, UIMessageAnnotation.ExampleMessage, UIMessageAnnotation.Hidden -> null
             }
         }
     }
@@ -834,6 +870,7 @@ private fun ChatMessageCitations(annotations: List<UIMessageAnnotation>) {
 
                                 is UIMessageAnnotation.CharacterCardData -> Unit
                                 is UIMessageAnnotation.ExampleMessage -> Unit
+                                is UIMessageAnnotation.Hidden -> Unit
                             }
                         }
                     }
@@ -923,4 +960,30 @@ private fun Modifier.themeBubbleBorder(
         m = m.border(width = width.dp, color = Color(color.toInt()), shape = shape)
     }
     return m
+}
+
+// 显示层 ST 正则收口：输出作为 MarkdownBlock 的 content，先于其内部 splitMixedMessagePieces
+@Composable
+private fun displayStRegexedText(
+    raw: String,
+    scripts: List<RegexScript>,
+    assistant: Assistant?,
+    scope: AssistantAffectScope,
+    placement: Int,
+    depth: Int,
+    userName: String,
+    loading: Boolean,
+): String {
+    // 流式期间整条重算会卡，生成结束后再一次性生效
+    if (loading) return raw
+    return rememberStRegexedText(
+        text = raw,
+        scripts = scripts,
+        assistant = assistant,
+        scope = scope,
+        placement = placement,
+        depth = depth,
+        userName = userName,
+        conversationId = TavernRuntimeManager.activeConversationId,
+    )
 }

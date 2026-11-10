@@ -673,8 +673,10 @@
   <string name="huadeng_tool_result_truncation_desc">긴 도구 실행 결과를 잘라 컨텍스트를 아낍니다</string>
   <string name="huadeng_sub_agent">서브 에이전트</string>
   <string name="huadeng_sub_agent_desc">AI가 하위 작업을 독립적인 서브 에이전트에 위임하고(대화 기록 없음) 결과를 가져옵니다</string>
-  <string name="huadeng_frontend_card_mode">프런트엔드 호환 모드</string>
-  <string name="huadeng_frontend_card_mode_desc">인사말이나 세계 정보의 웹 페이지를 자동 감지하며 도우미별로 강제할 수 있습니다</string>
+  <string name="huadeng_frontend_card_mode">화등 호환 모드</string>
+  <string name="huadeng_frontend_card_mode_desc">카드 렌더링을 켭니다. 순수 네이티브는 텍스트만 표시</string>
+  <string name="huadeng_frontend_card_mode_compat">화등 호환 모드</string>
+  <string name="huadeng_frontend_card_mode_native">순수 네이티브</string>
   <string name="huadeng_frontend_card_auto_switched">프론트 모드가 자동으로 켜졌습니다</string>
   <string name="huadeng_frontend_card_slash_unsupported">프론트 카드 명령 %1$s은(는) 아직 지원되지 않습니다</string>
   <string name="huadeng_transient_prune">임시 메시지 정리</string>
@@ -1239,6 +1241,7 @@
   <string name="prompt_page_no_group">그룹 없음</string>
   <string name="prompt_page_official_advanced">공식 고급 설정</string>
   <string name="prompt_page_pos_em_bottom">아래</string>
+  <string name="prompt_page_pos_outlet">아울렛 ({{outlet::name}} 참조)</string>
   <string name="prompt_page_pos_em_top">위</string>
   <string name="prompt_page_position_after_character">캐릭터 뒤</string>
   <string name="prompt_page_position_after_dialog">대화 뒤</string>
@@ -1246,6 +1249,8 @@
   <string name="prompt_page_position_antagonize">Antagonize (도발)</string>
   <string name="prompt_page_position_at_depth">심도에서</string>
   <string name="prompt_page_position_author_note">디렉터 노트</string>
+  <string name="prompt_page_position_before_author_note">작가 노트 이전 (ANTop)</string>
+  <string name="prompt_page_position_after_author_note">작가 노트 이후 (ANBottom)</string>
   <string name="prompt_page_position_before_character">캐릭터 앞</string>
   <string name="prompt_page_position_before_system">시스템 프롬프트 전</string>
   <string name="prompt_page_position_bottom_of_chat">최신 메시지 앞</string>
@@ -3054,9 +3059,6 @@
   <string name="weixin_bot_notification_running_title">위챗 봇 실행 중</string>
   <string name="weixin_bot_scan_login">QR 스캔 로그인</string>
   <string name="weixin_bot_unknown">알 수 없음</string>
-  <string name="huadeng_frontend_card_mode_auto">자동 감지(인사말 또는 세계 정보에 웹 페이지 포함 시)</string>
-  <string name="huadeng_frontend_card_mode_always">Always use frontend compatibility mode</string>
-  <string name="huadeng_frontend_card_mode_never">Always use the native interface</string>
   <string name="setting_page_huadeng_compat">호환성 및 보조</string>
   <string name="setting_provider_page_context_length">컨텍스트 길이</string>
   <string name="setting_provider_page_context_length_custom">사용자 지정</string>
