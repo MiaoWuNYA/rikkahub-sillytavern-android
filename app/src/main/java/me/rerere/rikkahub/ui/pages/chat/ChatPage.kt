@@ -858,13 +858,6 @@ private fun ChatPageContent(
             },
         ) { innerPadding ->
             ChatList(
-                onCardSendToInput = { text ->
-                    if (inputState.textContent.text.isBlank()) {
-                        inputState.setMessageText(text)
-                    } else {
-                        inputState.appendText("\n" + text)
-                    }
-                },
                 innerPadding = innerPadding,
                 conversation = conversation,
                 state = chatListState,

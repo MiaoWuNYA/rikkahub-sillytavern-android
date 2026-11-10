@@ -265,17 +265,12 @@ fun MarkdownBlock(
     modifier: Modifier = Modifier,
     style: TextStyle = LocalTextStyle.current,
     onClickCitation: (String) -> Unit = {},
-    /**
-     * 前端卡的宿主能力包；透传给 [HtmlWebViewBlock]。
-     * 为 null 时不注入任何宿主 API，卡会走它自己的「宿主未注入」分支。
-     */
-    cardHost: CardHostContext? = null,
-    /** 当前对话消息快照（官方 swipes 结构），供卡内 `getChatMessages` 读取。 */
-    cardMessagesJson: String = "[]",
     // 生成中禁用卡片渲染：半截 HTML 交给 WebView 会渲染出残缺网页
     isStreaming: Boolean = false,
     // 原生模式（纯文本界面）：不建 WebView，卡片源码按 Markdown 显示
     renderCards: Boolean = true,
+    // 面板所属消息 id：runtime 靠它定位楼层变量
+    messageKey: String = "",
 ) {
     val settings = LocalSettings.current.displaySetting
 
@@ -296,16 +291,13 @@ fun MarkdownBlock(
                     when (piece) {
                         is MixedContentPiece.HtmlPanel -> HtmlWebViewBlock(
                             html = piece.html,
-                            cardHost = cardHost,
-                            cardMessagesJson = cardMessagesJson,
                             panelTitleOverride = piece.panelTitle,
+                            messageKey = if (piece.subIndex == 0) messageKey else messageKey + "#" + piece.subIndex,
                         )
 
                         is MixedContentPiece.MarkdownBody -> MarkdownBlock(
                             content = piece.text,
                             onClickCitation = onClickCitation,
-                            cardHost = cardHost,
-                            cardMessagesJson = cardMessagesJson,
                             isStreaming = isStreaming,
                         )
                     }

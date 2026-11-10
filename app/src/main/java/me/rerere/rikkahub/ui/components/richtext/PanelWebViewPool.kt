@@ -5,17 +5,16 @@ import android.os.Looper
 import android.util.Log
 import android.view.ViewGroup
 import android.webkit.WebView
+import android.widget.FrameLayout
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 private const val POOL_TAG = "PanelPool"
-private const val PANEL_HOST_JS = "rikkaHost"
-private const val PANEL_HOST_GEN_JS = "rikkaHostGen"
 
 /** 活跃面板 WebView 的 LRU 名额，超出即淘汰最久未用的一张。 */
 internal object ActivePanelWebViewPool {
-    const val MAX_ACTIVE_PANEL_WEBVIEWS = 3
+    const val MAX_ACTIVE_PANEL_WEBVIEWS = 16
 
     private val lock = Any()
     private val lruKeys = LinkedHashSet<String>()
@@ -40,10 +39,6 @@ internal object ActivePanelWebViewPool {
             Log.i(POOL_TAG, "[panel-pool] acquire key=$key active=${lruKeys.size}/$MAX_ACTIVE_PANEL_WEBVIEWS")
         }
         for (old in evicted) {
-            Log.i(
-                POOL_TAG,
-                "[panel-pool] evicted oldest panel WebView key=$old (active=${MAX_ACTIVE_PANEL_WEBVIEWS}/$MAX_ACTIVE_PANEL_WEBVIEWS)",
-            )
             DetachedPanelWebViewCache.evictAndDestroy(old)
         }
     }
@@ -83,54 +78,66 @@ internal object ActivePanelWebViewPool {
 }
 
 /**
- * 滑出视口的面板 WebView 暂存（最多 2 个）。刻意不调 pauseTimers：
- * 暂停定时器会让卡里的 setInterval 状态机冻住，重新出现时行为错乱。
+ * 滑出视口的面板暂存（最多 2 个）：连容器与挂载状态一起缓存，
+ * 复用后 pageReady/pendingHtml 仍在，重新挂载不必重开页面。
  */
 internal object DetachedPanelWebViewCache {
     const val MAX_DETACHED_WEBVIEWS = 2
 
-    private class Entry(val key: String, val page: String, val view: WebView)
+    class CachedPanelEntry(
+        val key: String,
+        val container: FrameLayout,
+        val mountState: PanelMountState,
+    ) {
+        val webView: WebView? get() = container.getChildAt(0) as? WebView
+    }
 
     private val lock = Any()
-    private val entries = object : LinkedHashMap<String, Entry>(8, 0.75f, true) {}
+    private val entries = object : LinkedHashMap<String, CachedPanelEntry>(8, 0.75f, true) {}
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    fun take(key: String, page: String): WebView? {
-        synchronized(lock) {
-            val entry = entries[key]
-            if (entry == null || entry.page != page) return null
-            entries.remove(key)
-            val view = entry.view
-            view.removeJavascriptInterface(PANEL_HOST_JS)
-            view.removeJavascriptInterface(PANEL_HOST_GEN_JS)
-            Log.i(POOL_TAG, "[panel-pool] reused detached WebView key=$key cached=${entries.size}/$MAX_DETACHED_WEBVIEWS")
-            return view
-        }
-    }
+    fun getMountState(key: String): PanelMountState? = synchronized(lock) { entries[key]?.mountState }
 
     fun has(key: String): Boolean = synchronized(lock) { entries.containsKey(key) }
 
     fun size(): Int = synchronized(lock) { entries.size }
 
-    fun park(key: String, page: String?, view: WebView): Boolean {
-        if (page == null) return false
-        val overflow = mutableListOf<WebView>()
+    fun takeContainer(key: String): CachedPanelEntry? = synchronized(lock) {
+        val entry = entries.remove(key) ?: return null
+        mainHandler.post {
+            entry.webView?.let { wv ->
+                wv.onResume()
+                runCatching {
+                    wv.evaluateJavascript(
+                        "try{if(window.__rikkaPanelAwaitSettled){window.__rikkaPanelAwaitSettled();}}catch(e){}",
+                        null,
+                    )
+                }
+            }
+        }
+        Log.i(POOL_TAG, "[panel-pool] take key=$key cached=${entries.size}/$MAX_DETACHED_WEBVIEWS")
+        entry
+    }
+
+    fun parkContainer(key: String, container: FrameLayout, mountState: PanelMountState) {
+        val overflow = mutableListOf<CachedPanelEntry>()
         synchronized(lock) {
-            val old = entries.put(key, Entry(key, page, view))
-            if (old != null && old.view !== view) overflow += old.view
+            val old = entries.put(key, CachedPanelEntry(key, container, mountState))
+            if (old != null && old.container !== container) overflow += old
             while (entries.size > MAX_DETACHED_WEBVIEWS) {
                 val eldest = entries.entries.firstOrNull() ?: break
                 entries.remove(eldest.key)
-                overflow += eldest.value.view
+                overflow += eldest.value
             }
         }
+        (container.parent as? ViewGroup)?.removeView(container)
+        container.getChildAt(0)?.let { wv -> runCatching { (wv as WebView).onPause() } }
         Log.i(POOL_TAG, "[panel-pool] parked key=$key cached=${size()}/$MAX_DETACHED_WEBVIEWS")
         overflow.forEach { destroy(it) }
-        return true
     }
 
     fun evictAndDestroy(key: String) {
-        val victim = synchronized(lock) { entries.remove(key)?.view }
+        val victim = synchronized(lock) { entries.remove(key) }
         if (victim != null) {
             Log.i(POOL_TAG, "[panel-pool] cache evict key=$key cached=${size()}/$MAX_DETACHED_WEBVIEWS")
             destroy(victim)
@@ -139,19 +146,18 @@ internal object DetachedPanelWebViewCache {
 
     fun clearAll() {
         val all = synchronized(lock) {
-            val list = entries.values.map { it.view }
+            val list = entries.values.toList()
             entries.clear()
             list
         }
         all.forEach { destroy(it) }
     }
 
-    private fun destroy(view: WebView) {
+    private fun destroy(entry: CachedPanelEntry) {
         mainHandler.post {
-            (view.parent as? ViewGroup)?.removeView(view)
-            view.stopLoading()
-            view.removeAllViews()
-            view.destroy()
+            entry.mountState.release()
+            (entry.container.parent as? ViewGroup)?.removeView(entry.container)
+            entry.container.removeAllViews()
         }
     }
 }
@@ -188,4 +194,19 @@ internal object PanelHeightCache {
     fun clear() {
         synchronized(lock) { entries.clear() }
     }
+}
+
+/** GPU 纹理上限下的安全高度（dp）：min(1600, 4096/density)，不低于 480。 */
+internal fun gpuSafeMaxPanelHeightDp(density: Float, maxTexturePx: Int = 4096): Int =
+    minOf(1600, (maxTexturePx / density.coerceAtLeast(0.5f)).toInt()).coerceAtLeast(480)
+
+/** 面板高度约束：返回 (显示高度 dp, 是否被 GPU 上限截断)。 */
+internal fun computePanelHeightConstraint(
+    rawDp: Int,
+    density: Float,
+    maxTexturePx: Int = 4096,
+): Pair<Int, Boolean> {
+    val gpuSafeMaxDp = gpuSafeMaxPanelHeightDp(density, maxTexturePx)
+    val capped = rawDp > gpuSafeMaxDp
+    return rawDp.coerceIn(48, gpuSafeMaxDp) to capped
 }

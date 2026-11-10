@@ -83,7 +83,6 @@ import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantAffectScope
 import me.rerere.rikkahub.data.model.MessageNode
 import me.rerere.rikkahub.data.model.TRANSPARENT_BUBBLE as TRANSPARENT_BUBBLE_SENTINEL
-import me.rerere.rikkahub.ui.components.richtext.CardHostContext
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import me.rerere.rikkahub.ui.components.richtext.ZoomableAsyncImage
 import me.rerere.rikkahub.ui.components.richtext.buildMarkdownPreviewHtml
@@ -152,13 +151,6 @@ fun ChatMessage(
     onClearTranslation: (UIMessage) -> Unit = {},
     onToolApproval: ((toolCallId: String, approved: Boolean, reason: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
-    /**
-     * 前端角色卡的宿主生成入口（卡内 `window.generate`）。
-     * 为 null 时卡会显示「宿主未注入 generate 接口，无法生成」。
-     */
-    cardHost: CardHostContext? = null,
-    /** 卡把开局正文写回消息的入口。 */
-    cardMessagesJson: String = "[]",
     /** 原生模式（NATIVE）传 false：不建 WebView，卡片按纯文本显示。 */
     renderCards: Boolean = true,
 ) {
@@ -219,9 +211,8 @@ fun ChatMessage(
                 onToolApproval = onToolApproval,
                 onToolAnswer = onToolAnswer,
                 onUserMessageClick = if (message.role == MessageRole.USER) onEdit else null,
-                cardHost = cardHost,
                 renderCards = renderCards,
-                cardMessagesJson = cardMessagesJson,
+                messageKey = node.id.toString(),
             )
 
             message.translation?.let { translation ->
@@ -338,8 +329,7 @@ private fun MessagePartsBlock(
     onToolApproval: ((toolCallId: String, approved: Boolean, reason: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onUserMessageClick: (() -> Unit)? = null,
-    cardHost: CardHostContext? = null,
-    cardMessagesJson: String = "[]",
+    messageKey: String = "",
     renderCards: Boolean = true,
 ) {
     val context = LocalContext.current
@@ -540,9 +530,8 @@ private fun MessagePartsBlock(
                                                     loading = loading,
                                                 ),
                                                 onClickCitation = handleClickCitation,
-                                                cardHost = cardHost,
                                                 renderCards = renderCards,
-                                                cardMessagesJson = cardMessagesJson,
+                                                messageKey = messageKey,
                                                 // 生成中的半截 HTML 不交给 WebView，
                                                 // 否则会渲染出残缺网页、观感像卡死
                                                                                                                 isStreaming = isStreamingMessage,
@@ -624,10 +613,9 @@ private fun MessagePartsBlock(
                                                         loading = loading,
                                                     ),
                                                     onClickCitation = handleClickCitation,
-                                                    cardHost = cardHost,
                                                     renderCards = renderCards,
+                                                    messageKey = messageKey,
                                                                                                     isStreaming = isStreamingMessage,
-                                                cardMessagesJson = cardMessagesJson,
                                                 )
                                             }
                                         }
@@ -645,9 +633,8 @@ private fun MessagePartsBlock(
                                             loading = loading,
                                         ),
                                         onClickCitation = handleClickCitation,
-                                        cardHost = cardHost,
                                         renderCards = renderCards,
-                                                cardMessagesJson = cardMessagesJson,
+                                        messageKey = messageKey,
                                         // 生成中不渲染卡片：正文里的 <article> 之类
                                         // 会被判成卡片，而它是半截的
                                                                                         isStreaming = isStreamingMessage,
