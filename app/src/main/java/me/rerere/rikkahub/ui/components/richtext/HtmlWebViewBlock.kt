@@ -156,7 +156,6 @@ fun HtmlWebViewBlock(
     // 卡片按同一份 inlinePage 重新加载，用户看到的是自动恢复而不是永久白屏
     var rendererEpoch by remember(html) { mutableIntStateOf(0) }
     // 卡片脚本错误只提示一次：脚本循环报错时逐条弹提示会把界面刷爆
-    val cardErrorNotified = remember(html) { java.util.concurrent.atomic.AtomicBoolean(false) }
     // 面板装载状态机：串行闸门放行后才建 WebView，工具条与占位卡都读它
     val panelState = remember(panelKey) { PanelMountState() }
     var stage by remember(panelKey) { mutableStateOf<PanelLoadStage>(PanelLoadStage.WaitingHost(panelTitle)) }
@@ -356,15 +355,8 @@ fun HtmlWebViewBlock(
                                 HeightBridge(
                                     onHeight = applyHeight,
                                     onError = { message ->
-                                        Log.w(TAG, "card script error: $message")
-                                        if (cardErrorNotified.compareAndSet(false, true)) {
-                                            hostScope.launch {
-                                                toaster.show(
-                                                    context.getString(R.string.html_card_script_error),
-                                                    type = ToastType.Warning,
-                                                )
-                                            }
-                                        }
+                                        // 与官方一致：脚本错误只进日志和面板状态行，不打断聊天
+                                        panelState.reportError(message)
                                     },
                                 ),
                                 "rikkaHost",
@@ -378,6 +370,9 @@ fun HtmlWebViewBlock(
                                     view: WebView,
                                     request: WebResourceRequest,
                                 ): WebResourceResponse? = WebViewLocalAssets.intercept(
+                                    view.context.applicationContext,
+                                    request.url,
+                                ) ?: WebViewLocalAssets.interceptCdn(
                                     view.context.applicationContext,
                                     request.url,
                                 ) ?: super.shouldInterceptRequest(view, request)
@@ -537,6 +532,9 @@ fun HtmlWebViewBlock(
                                     view: WebView,
                                     request: WebResourceRequest,
                                 ): WebResourceResponse? = WebViewLocalAssets.intercept(
+                                    view.context.applicationContext,
+                                    request.url,
+                                ) ?: WebViewLocalAssets.interceptCdn(
                                     view.context.applicationContext,
                                     request.url,
                                 ) ?: super.shouldInterceptRequest(view, request)
