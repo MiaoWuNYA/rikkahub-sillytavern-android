@@ -339,6 +339,30 @@ internal fun cardHostShim(): String = """
     var value = btn.getAttribute && btn.getAttribute('data-value');
     rikkaPanelSend(action, rikkaFieldName(btn), value == null ? rikkaReadValue(btn) : value);
   }, true);
+
+  // ---- TavernHelper：官方全局对象，卡大量直接取用 ----
+  var TH = window.TavernHelper || {};
+  var TH_ALIAS = ['eventOn', 'eventOnce', 'eventRemoveListener', 'generate', 'setChatMessages', 'getChatMessages', 'setChatMessage', 'getVariables', 'updateVariablesWith'];
+  for (var ti = 0; ti < TH_ALIAS.length; ti++) {
+    var tn = TH_ALIAS[ti];
+    if (typeof TH[tn] !== 'function' && typeof window[tn] === 'function') TH[tn] = window[tn];
+  }
+  TH.getLastMessageId = function () {
+    var all = [];
+    try { all = JSON.parse(window.rikkaHostGen.getChatMessages()) || []; } catch (e) { all = []; }
+    return all.length ? all.length - 1 : -1;
+  };
+  TH.substitudeMacros = function (text) { return text == null ? '' : String(text); };
+  TH.formatAsTavernRegexedString = function (text) { return text == null ? '' : String(text); };
+  TH.getLorebookEntries = function () { return Promise.resolve([]); };
+  TH.getLorebookNames = function () { return []; };
+  TH.getCharacterNames = function () { return []; };
+  TH.getPresetNames = function () { return []; };
+  TH.triggerSlash = function () { return Promise.resolve(''); };
+  window.TavernHelper = TH;
+  if (typeof window.getTavernHelper !== 'function') {
+    window.getTavernHelper = function () { return TH; };
+  }
 })();
 </script>
 """.trimIndent()
