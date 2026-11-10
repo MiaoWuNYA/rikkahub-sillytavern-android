@@ -143,6 +143,11 @@ import me.rerere.rikkahub.data.model.getChatModelOf
 import me.rerere.rikkahub.data.model.getStoredAssistantOf
 import me.rerere.rikkahub.data.model.localFileUrls
 import me.rerere.rikkahub.data.model.replaceRegexes
+import me.rerere.rikkahub.data.st.regex.RegexPlacement
+import me.rerere.rikkahub.data.st.regex.getStRegexed
+import me.rerere.rikkahub.data.st.regex.mergeActiveRegexScripts
+import me.rerere.rikkahub.data.st.runtime.TavernRuntimeManager
+import me.rerere.ai.provider.ModelType
 import me.rerere.rikkahub.data.model.replacePrefixWithSummaries
 import me.rerere.rikkahub.data.model.GenerationType
 import me.rerere.rikkahub.data.model.toMessageNode
@@ -361,6 +366,22 @@ class ChatService(
 
     init {
         registerLifecycleObserver()
+        // 酒馆运行时 {{model}} / {{current_model}} 宏的宿主模型来源
+        TavernRuntimeManager.generationModelIdsSupplier = {
+            val settings = settingsStore.settingsFlow.value
+            val out = LinkedHashSet<String>()
+            settings.providers.filter { it.enabled }.forEach { provider ->
+                provider.models.filter { it.type == ModelType.CHAT }.forEach { model ->
+                    val name = model.displayName.ifBlank { model.modelId }
+                    if (name.isNotBlank()) out.add(name)
+                }
+            }
+            out.toList()
+        }
+        TavernRuntimeManager.currentModelIdSupplier = {
+            val settings = settingsStore.settingsFlow.value
+            settings.findModelById(settings.chatModelId)?.let { it.displayName.ifBlank { it.modelId } }
+        }
     }
 
     fun cleanup() = runCatching {
@@ -719,7 +740,12 @@ class ChatService(
                 }
                 val assistant = settings.getAssistantById(currentConversation.assistantId)
                     ?: settings.getCurrentAssistant()
-                val processedContent = preprocessUserInputParts(content, assistant, settings)
+                val processedContent = preprocessUserInputParts(
+                    content,
+                    assistant,
+                    settings,
+                    currentConversation.modeInjectionIds,
+                )
 
                 // 添加消息到列表
                 val newConversation = currentConversation.copy(
@@ -811,9 +837,18 @@ class ChatService(
                         }
                         currentConversation.messageNodes.size + 1 - index
                     }
+                    val activeScripts = mergeActiveRegexScripts(settings, assistant, currentConversation.modeInjectionIds)
                     content.map { part ->
                         if (part is UIMessagePart.Text) {
-                            part.copy(text = part.text.replaceRegexes(settings.allRegexesOf(assistant), scope, visual = false, depth = insertDepth))
+                            val afterLegacy = part.text.replaceRegexes(settings.allRegexesOf(assistant), scope, visual = false, depth = insertDepth)
+                            part.copy(
+                                text = afterLegacy.getStRegexed(
+                                    scripts = activeScripts,
+                                    placement = if (scope == AssistantAffectScope.USER) RegexPlacement.USER_INPUT else RegexPlacement.SLASH_COMMAND,
+                                    isPrompt = false,
+                                    depth = insertDepth,
+                                )
+                            )
                         } else {
                             part
                         }
@@ -962,7 +997,14 @@ class ChatService(
                 // 官方 /sysgen trim=true：先按最后一个句子边界裁剪（trimToEndSentence），再走 getRegexedString(message, SLASH_COMMAND)
                 val rawNarration = result.message.toText()
                 val trimmed = if (trim) trimToEndSentence(rawNarration) else rawNarration.trim()
-                val narration = trimmed.replaceRegexes(settings.allRegexesOf(assistant), AssistantAffectScope.ASSISTANT, visual = false, depth = 1)
+                val narration = trimmed
+                    .replaceRegexes(settings.allRegexesOf(assistant), AssistantAffectScope.ASSISTANT, visual = false, depth = 1)
+                    .getStRegexed(
+                        scripts = mergeActiveRegexScripts(settings, assistant, currentConversation.modeInjectionIds),
+                        placement = RegexPlacement.SLASH_COMMAND,
+                        isPrompt = true,
+                        depth = 1,
+                    )
                 if (narration.isBlank()) {
                     addError(
                         IllegalStateException(context.getString(R.string.slash_error_sysgen_empty)),
@@ -1032,17 +1074,31 @@ class ChatService(
             cp in 0x1FA70..0x1FAFF || cp in 0x2600..0x27BF || cp in 0x2B00..0x2BFF
     }
 
-    private fun preprocessUserInputParts(parts: List<UIMessagePart>, assistant: Assistant, settings: Settings): List<UIMessagePart> {
+    private fun preprocessUserInputParts(
+        parts: List<UIMessagePart>,
+        assistant: Assistant,
+        settings: Settings,
+        conversationModeInjectionIds: Set<Uuid> = emptySet(),
+    ): List<UIMessagePart> {
+        // 提示词层只吃非 promptOnly 脚本；markdownOnly 规则留给显示层（isMarkdown=false 天然不生效）
+        val activeStRegex = mergeActiveRegexScripts(settings, assistant, conversationModeInjectionIds)
+            .filter { !it.promptOnly }
         return parts.map { part ->
             when (part) {
                 is UIMessagePart.Text -> {
+                    val afterLegacy = part.text.replaceRegexes(
+                        regexes = settings.allRegexesOf(assistant),
+                        scope = AssistantAffectScope.USER,
+                        visual = false,
+                        // 用户输入即将作为最新消息发出，官方深度语义 1 = 最新
+                        depth = 1
+                    )
                     part.copy(
-                        text = part.text.replaceRegexes(
-                            regexes = settings.allRegexesOf(assistant),
-                            scope = AssistantAffectScope.USER,
-                            visual = false,
-                            // 用户输入即将作为最新消息发出，官方深度语义 1 = 最新
-                            depth = 1
+                        text = afterLegacy.getStRegexed(
+                            scripts = activeStRegex,
+                            placement = RegexPlacement.USER_INPUT,
+                            isPrompt = false,
+                            depth = 1,
                         )
                     )
                 }
@@ -2922,7 +2978,12 @@ class ChatService(
         val settings = settingsStore.awaitLoaded()
         val assistant = settings.getAssistantById(currentConversation.assistantId)
             ?: settings.getCurrentAssistant()
-        val processedParts = preprocessUserInputParts(parts, assistant, settings)
+        val processedParts = preprocessUserInputParts(
+            parts,
+            assistant,
+            settings,
+            currentConversation.modeInjectionIds,
+        )
         var edited = false
 
         val updatedNodes = currentConversation.messageNodes.map { node ->

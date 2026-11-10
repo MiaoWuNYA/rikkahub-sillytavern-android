@@ -21,4 +21,9 @@ sealed class UIMessageAnnotation {
     @Serializable
     @SerialName("character_card")
     data object CharacterCardData : UIMessageAnnotation()
+
+    /** ST /hide：消息从提示词中隐藏（对齐 ST 的 is_system 隐藏标记）。 */
+    @Serializable
+    @SerialName("hidden")
+    data object Hidden : UIMessageAnnotation()
 }

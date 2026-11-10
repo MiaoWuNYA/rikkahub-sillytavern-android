@@ -98,6 +98,10 @@ class RootfsInstaller(
         }
     }
 
+    /** 解压 tar/tar.gz/tar.xz 归档到目标目录（Node 运行时等外部调用方使用）。 */
+    fun extractArchive(archive: File, targetDir: File, onProgress: (RootfsInstallProgress) -> Unit = {}) =
+        extractTar(archive, targetDir, ArchiveFormat.fromFile(archive), onProgress)
+
     internal fun extractTar(
         archive: File,
         targetDir: File,

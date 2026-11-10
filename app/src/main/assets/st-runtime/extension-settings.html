@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>rikkaST Extension Settings</title>
+    <!-- [v197 + 10-19-17] 扩展设置页模式：runtime.js 装载第三方扩展设置 UI 并自动展开隐藏抽屉。 -->
+    <script>window.__RIKKA_EXT_SETTINGS_MODE__ = true;</script>
+    <script src="./vendor/lib/jquery-3.5.1.min.js"></script>
+    <script src="./vendor/lib/lodash.min.js"></script>
+    <script src="./vendor/lib/toastr.min.js"></script>
+    <script src="./vendor/lib/ejs.umd.js"></script>
+    <script src="./vendor/lib/vue.runtime.global.prod.js"></script>
+    <script src="./vendor/lib/vue-router.global.prod.js"></script>
+    <link rel="stylesheet" href="./extension-settings.css">
+</head>
+<body>
+    <div id="rikka-ext-settings-status">正在加载扩展设置…</div>
+    <!-- 第三方扩展把设置 UI append / after 到这些 ST 兼容节点上（如 #extensions_settings / #translation_container / #top-settings-holder）。 -->
+    <div id="rikka-st-compat-dom">
+        <div id="top-settings-holder"></div>
+        <div id="extensions_settings"></div>
+        <div id="extensions_settings2"></div>
+        <div id="extensionsMenu"></div>
+        <div id="extensions_menu"></div>
+        <div id="extensions-settings-button"></div>
+        <div id="translation_container"></div>
+        <div id="extensions_details"></div>
+        <div id="mvu-standalone-buttons"></div>
+        <div id="user-settings-block"></div>
+        <div id="rikka-ext-workbench-root"></div>
+    </div>
+    <!-- 隐藏的 ST 聊天与输入框 DOM 桩：仅供扩展脚本选择器查询，绝不在设置页渲染可见小说正文 -->
+    <div id="rikka-hidden-st-stubs" style="display:none !important;" aria-hidden="true">
+        <div id="form_sheld" style="display:none !important;">
+            <div id="send_form" style="display:none !important;">
+                <textarea id="send_textarea" style="display:none !important;"></textarea>
+            </div>
+        </div>
+        <div id="chat" style="display:none !important;"></div>
+    </div>
+    <script src="./vendor/lib/hljs.min.js"></script>
+    <link rel="stylesheet" href="./vendor/lib/hljs-theme.css">
+    <script src="./vendor/lib/third-party-globals.js"></script>
+    <link rel="stylesheet" href="./vendor/lib/select2.min.css">
+    <link rel="stylesheet" href="./vendor/lib/select2-overrides.css">
+    <script src="./vendor/lib/select2.min.js"></script>
+    <script src="./vendor/lib/select2-search-placeholder.js"></script>
+    <script type="module" src="./runtime.js"></script>
+</body>
+</html>

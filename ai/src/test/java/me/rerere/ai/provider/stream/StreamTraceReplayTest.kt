@@ -412,7 +412,7 @@ class StreamTraceReplayTest {
                         put("url", annotation.url)
                     })
                     // 角色卡数据 / 示例消息标注属于本地结构信息，不进 trace 摘要
-                    UIMessageAnnotation.CharacterCardData, UIMessageAnnotation.ExampleMessage -> {}
+                    UIMessageAnnotation.CharacterCardData, UIMessageAnnotation.ExampleMessage, UIMessageAnnotation.Hidden -> {}
                 }
             }
         }

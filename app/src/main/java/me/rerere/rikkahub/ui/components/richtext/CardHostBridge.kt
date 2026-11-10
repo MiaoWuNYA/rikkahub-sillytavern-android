@@ -1,15 +1,21 @@
 package me.rerere.rikkahub.ui.components.richtext
 
+import android.util.Log
 import android.webkit.JavascriptInterface
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.json.JSONObject
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 import me.rerere.rikkahub.utils.l10n
+
+private const val BRIDGE_TAG = "CardHostBridge"
 
 /**
  * 前端角色卡的宿主桥。
@@ -280,6 +286,52 @@ class CardHostBridge(
     @Volatile
     private var chatMessagesJson: String = "[]"
 
+    /**
+     * 卡片内表单/输入事件（submit / input / change / button click）。
+     *
+     * 动作：`send` 把文本交回聊天（[CardHostContext.sendToInput]），
+     * `setVariable` 写进变量树并持久化。两种都写日志，便于现场排查。
+     */
+    @JavascriptInterface
+    fun panelEvent(payloadJson: String): String {
+        val payload = runCatching { JSONObject(payloadJson) }.getOrNull() ?: return ""
+        val action = payload.optString("action")
+        val name = payload.optString("name")
+        val value = payload.optString("value")
+        Log.i(BRIDGE_TAG, "[panel-event] action=$action name=$name value=${value.take(80)}")
+        when (action) {
+            "setVariable" -> if (name.isNotBlank()) writePanelVariable(name, value)
+            "send" -> if (value.isNotBlank()) dispatchPanelSend(value)
+            else -> Unit
+        }
+        return ""
+    }
+
+    private fun writePanelVariable(name: String, value: String) {
+        val stat = MvuStore.unwrap(mvuData)
+        val next = JsonObject(
+            buildMap<String, JsonElement> {
+                stat?.forEach { (k, v) -> put(k, v) }
+                put(name, JsonPrimitive(value))
+            }
+        )
+        val encoded = MvuStore.encode(MvuStore.wrap(next)) ?: return
+        mvuData = encoded
+        Log.i(BRIDGE_TAG, "[panel-event] variable $name=$value persisted")
+        onMvuChanged?.invoke(encoded)
+    }
+
+    private fun dispatchPanelSend(text: String) {
+        val hook = host.sendToInput
+        if (hook == null) {
+            Log.w(BRIDGE_TAG, "[panel-event] no send hook, dropped: ${text.take(80)}")
+            onToast(l10n("卡片发送被忽略：未接聊天输入框", "Card send ignored: chat input not wired"), true)
+            return
+        }
+        val trimmed = text.trim()
+        scope.launch { hook(trimmed) }
+    }
+
     fun dispose() {
         pending.values.forEach { it.cancel() }
         pending.clear()
@@ -314,4 +366,6 @@ data class CardHostContext(
     val userName: String = "user",
     /** 透传卡的 toastr 提示。 */
     val toast: (message: String, warning: Boolean) -> Unit = { _, _ -> },
+    /** 卡片表单把文本发回聊天输入框；为 null 时只提示不发送。 */
+    val sendToInput: ((String) -> Unit)? = null,
 )

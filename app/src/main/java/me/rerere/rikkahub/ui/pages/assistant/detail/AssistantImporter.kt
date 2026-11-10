@@ -1467,9 +1467,10 @@ private fun mapInjectionToPosition(pos: InjectionPosition): Int = when (pos) {
     InjectionPosition.TOP_OF_CHAT -> 2
     InjectionPosition.BOTTOM_OF_CHAT -> 3
     InjectionPosition.AT_DEPTH -> 4
-    InjectionPosition.AUTHOR_NOTE -> 2
+    InjectionPosition.AUTHOR_NOTE, InjectionPosition.BEFORE_AUTHOR_NOTE -> 2
+    InjectionPosition.AFTER_AUTHOR_NOTE -> 3
     // 本地扩展位置写入官方枚举时落到最接近的出口（outlet=7）
-    InjectionPosition.ANTAGONIZE, InjectionPosition.AFTER_DIALOG -> 7
+    InjectionPosition.ANTAGONIZE, InjectionPosition.AFTER_DIALOG, InjectionPosition.OUTLET -> 7
     InjectionPosition.EM_TOP -> 5
     InjectionPosition.EM_BOTTOM -> 6
 }

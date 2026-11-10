@@ -373,6 +373,13 @@ kotlin {
     }
 }
 
+configurations.matching { it.name.endsWith("UnitTestRuntimeClasspath") }.configureEach {
+    resolutionStrategy.dependencySubstitution {
+        substitute(module("io.github.dokar3:quickjs-kt-android"))
+            .using(module("io.github.dokar3:quickjs-kt-jvm:${libs.versions.quickjs.kt.get()}"))
+    }
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -450,6 +457,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 // QuickJS (JS 引擎执行; 原由 highlight 模块 api 传递, 上游重写 highlight 后需显式声明)
     implementation(libs.quickjs)
+    implementation(libs.quickjs.kt)
 
     // YAML front matter
     implementation(libs.snakeyaml)

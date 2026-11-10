@@ -15,7 +15,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import me.rerere.rikkahub.plugin.loader.PluginLoader
 import me.rerere.rikkahub.plugin.model.PluginFolder
-import me.rerere.rikkahub.plugin.model.PluginFrontendPayload
 import me.rerere.rikkahub.plugin.model.PluginInfo
 import me.rerere.rikkahub.plugin.model.PluginManifest
 import me.rerere.rikkahub.plugin.provider.PluginProviderRegistry
@@ -53,36 +52,6 @@ class PluginManager(
      */
     suspend fun callExport(pluginId: String, functionName: String): Result<JsonElement> =
         loader.callExport(pluginId, functionName, kotlinx.serialization.json.JsonObject(emptyMap()))
-
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-    }
-
-    /** 汇总启用插件的前端脚本，供前端卡 WebView 注入。 */
-    suspend fun buildFrontendScriptsJson(): String = withContext(Dispatchers.IO) {
-        awaitInitialization()
-        val payload = _plugins.value.filter { it.isEnabled }.flatMap { info ->
-            info.manifest.frontend?.scripts.orEmpty()
-                .filter { it.enabled && it.entry.isNotBlank() && it.scriptKey() !in info.disabledFrontendScripts }
-                .mapNotNull { script ->
-                    val file = File(info.directory, script.entry)
-                    if (!file.isFile || file.length() > MAX_FRONTEND_SCRIPT_BYTES) return@mapNotNull null
-                    runCatching {
-                        PluginFrontendPayload(
-                            id = info.manifest.id + "::" + script.scriptKey(),
-                            pluginId = info.manifest.id,
-                            pluginName = info.manifest.name,
-                            name = script.name.ifBlank { file.nameWithoutExtension },
-                            info = script.info,
-                            source = file.readText(),
-                            buttons = script.buttons,
-                        )
-                    }.getOrNull()
-                }
-        }
-        json.encodeToString(payload)
-    }
 
     private val _plugins = MutableStateFlow<List<PluginInfo>>(emptyList())
     val plugins: StateFlow<List<PluginInfo>> = _plugins.asStateFlow()

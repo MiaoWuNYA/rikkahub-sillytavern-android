@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="referrer" content="no-referrer">
+    <title>rikkaST Tavern Panel</title>
+    <!-- C4：消息内嵌面板渲染宿主。
+         __RIKKA_PANEL_MODE__ 让 runtime.js 只装载 shims（TavernHelper / 变量 / 事件），
+         不加载卡脚本、不启动 MVU（由消息内嵌 HTML/JS 自行执行）。 -->
+    <script>window.__RIKKA_PANEL_MODE__ = true;</script>
+    <!-- 经典库（对齐 SillyTavern 1.18 的加载序：jQuery → toastr；lodash 供 window._） -->
+    <script src="./vendor/lib/jquery-3.5.1.min.js"></script>
+    <script src="./vendor/lib/lodash.min.js"></script>
+    <script src="./vendor/lib/toastr.min.js"></script>
+    <!-- Vue 3 / Vue Router（面板 UI 常用） -->
+    <script src="./vendor/lib/vue.runtime.global.prod.js"></script>
+    <script src="./vendor/lib/vue-router.global.prod.js"></script>
+    <!-- KaTeX 改为按需加载：只有面板 HTML 真的包含数学公式时才拉取 270KB JS + CSS。 -->
+    <style>
+        html, body { margin: 0; padding: 0; background: transparent; }
+        #rikka-panel-root { width: 100%; overflow-x: hidden; }
+        /* 面板常见的暗色场景默认色（面板自身 CSS 会覆盖） */
+        body { color: #e6e6e6; }
+        /* T2 (batch11 / bug D)：面板默认前景色跟随 App 主题。
+       MessageHtmlBlock 在挂载 HTML 前注入 --rikka-fg（取 Compose 的 onSurface）；
+       未注入时回退到原暗色默认值。放在样式表末尾，靠层叠顺序覆盖上面的写死值。 */
+    body {
+      color: var(--rikka-fg, #e6e6e6);
+      color-scheme: light dark;
+    }
+  </style>
+</head>
+<body>
+    <div id="rikka-panel-root"></div>
+    <script type="module" src="./runtime.js"></script>
+</body>
+</html>

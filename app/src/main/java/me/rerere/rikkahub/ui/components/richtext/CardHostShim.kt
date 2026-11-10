@@ -258,6 +258,87 @@ internal fun cardHostShim(): String = """
   };
   window.toastr.success = function () {};
   window.toastr.info = function () {};
+
+  // ---- 表单/输入事件桥：form submit、input、change、按钮点击回传宿主 ----
+  //
+  // 卡里的原生表单没有宿主就只是死控件：按钮点下去什么都不发生。
+  // 这里统一走 panelEvent(action, name, value)，宿主侧按 action 分发
+  // （send = 发回聊天，setVariable = 写入变量树）。
+  var RIKKA_EVENT_INPUTS = 'input, textarea, select';
+
+  function rikkaFieldName(el) {
+    if (!el || !el.getAttribute) return '';
+    var name = el.getAttribute('data-var') || el.getAttribute('name') || el.id || '';
+    return name ? String(name) : '';
+  }
+
+  function rikkaPanelSend(action, name, value) {
+    var payload = {
+      action: String(action || ''),
+      name: String(name == null ? '' : name),
+      value: String(value == null ? '' : value)
+    };
+    try { window.rikkaHostGen.panelEvent(JSON.stringify(payload)); } catch (e) {}
+  }
+
+  function rikkaIsInput(el) {
+    if (!el || !el.tagName) return false;
+    return RIKKA_EVENT_INPUTS.indexOf(String(el.tagName).toLowerCase()) >= 0;
+  }
+
+  function rikkaReadValue(el) {
+    if (!el) return '';
+    if (el.value != null) return String(el.value);
+    return String(el.textContent == null ? '' : el.textContent);
+  }
+
+  document.addEventListener('submit', function (ev) {
+    var form = ev.target;
+    if (!form) return;
+    if (ev.preventDefault) ev.preventDefault();
+    var value = form.getAttribute ? String(form.getAttribute('data-value') || '') : '';
+    if (!value) {
+      var parts = [];
+      var fields = [];
+      try { fields = Array.prototype.slice.call(form.querySelectorAll(RIKKA_EVENT_INPUTS)); } catch (e) { fields = []; }
+      for (var i = 0; i < fields.length; i++) {
+        var name = rikkaFieldName(fields[i]);
+        if (name) parts.push(name + '=' + rikkaReadValue(fields[i]));
+      }
+      value = parts.join('&');
+    }
+    var action = (form.getAttribute && form.getAttribute('data-action')) || 'send';
+    rikkaPanelSend(action, rikkaFieldName(form) || 'form', value);
+  }, true);
+
+  document.addEventListener('change', function (ev) {
+    var el = ev.target;
+    if (!rikkaIsInput(el)) return;
+    var name = rikkaFieldName(el);
+    if (!name) return;
+    rikkaPanelSend('setVariable', name, rikkaReadValue(el));
+  }, true);
+
+  document.addEventListener('input', function (ev) {
+    var el = ev.target;
+    if (!rikkaIsInput(el)) return;
+    var name = rikkaFieldName(el);
+    if (!name) return;
+    if (el.__rikkaInputTimer) clearTimeout(el.__rikkaInputTimer);
+    el.__rikkaInputTimer = setTimeout(function () {
+      rikkaPanelSend('setVariable', name, rikkaReadValue(el));
+    }, 300);
+  }, true);
+
+  document.addEventListener('click', function (ev) {
+    var el = ev.target;
+    var btn = (el && el.closest) ? el.closest('[data-action], button') : null;
+    if (!btn) return;
+    var action = btn.getAttribute ? String(btn.getAttribute('data-action') || '') : '';
+    if (action !== 'send' && action !== 'setVariable') return;
+    var value = btn.getAttribute && btn.getAttribute('data-value');
+    rikkaPanelSend(action, rikkaFieldName(btn), value == null ? rikkaReadValue(btn) : value);
+  }, true);
 })();
 </script>
 """.trimIndent()

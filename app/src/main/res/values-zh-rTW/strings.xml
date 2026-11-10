@@ -682,8 +682,10 @@
   <string name="huadeng_tool_result_truncation_desc">工具輸出超過 32KB 時自動截斷並儲存到檔案。關閉後工具結果不截斷，完整內容保留在訊息歷史中（若中轉站導致工具呼叫異常，可嘗試關閉)</string>
   <string name="huadeng_sub_agent">子 agent</string>
   <string name="huadeng_sub_agent_desc">允許 AI 把子任務派給獨立的子 agent 執行（不產生會話歷史），完成後取回結果</string>
-  <string name="huadeng_frontend_card_mode">前端相容模式</string>
-  <string name="huadeng_frontend_card_mode_desc">自動識別開場白或世界書中的網頁，也可依角色卡強制開啟或關閉</string>
+  <string name="huadeng_frontend_card_mode">華燈相容模式</string>
+  <string name="huadeng_frontend_card_mode_desc">開啟卡片渲染；純原生介面只顯示文字</string>
+  <string name="huadeng_frontend_card_mode_compat">華燈相容模式</string>
+  <string name="huadeng_frontend_card_mode_native">純原生介面</string>
   <string name="huadeng_frontend_card_auto_switched">已自動切換前端模式</string>
   <string name="huadeng_frontend_card_slash_unsupported">前端卡命令 %1$s 尚未支援</string>
   <string name="huadeng_transient_prune">上下文瞬態內容裁剪</string>
@@ -1248,6 +1250,7 @@
   <string name="prompt_page_no_group">未分組(Ungrouped)</string>
   <string name="prompt_page_official_advanced">官方高階欄位(Official Advanced)</string>
   <string name="prompt_page_pos_em_bottom">示例訊息後(EM Bottom)</string>
+  <string name="prompt_page_pos_outlet">出口（經 {{outlet::name}} 引用）</string>
   <string name="prompt_page_pos_em_top">示例訊息前(EM Top)</string>
   <string name="prompt_page_position_after_character">角色卡後</string>
   <string name="prompt_page_position_after_dialog">最近一條AI回覆後</string>
@@ -1255,6 +1258,8 @@
   <string name="prompt_page_position_antagonize">角色卡與對話之間(Antagonize)</string>
   <string name="prompt_page_position_at_depth">在深度</string>
   <string name="prompt_page_position_author_note">作者備註位置（跟隨全域設定）</string>
+  <string name="prompt_page_position_before_author_note">作者備註之前 (ANTop)</string>
+  <string name="prompt_page_position_after_author_note">作者備註之後 (ANBottom)</string>
   <string name="prompt_page_position_before_character">角色卡前</string>
   <string name="prompt_page_position_before_system">系統提示之前</string>
   <string name="prompt_page_position_bottom_of_chat">最新訊息之前</string>
@@ -3065,10 +3070,6 @@
   <string name="weixin_bot_notification_running_text">正在監聽微信訊息</string>
   <string name="weixin_bot_relogin">重新登入</string>
   <string name="weixin_bot_title">微信 Bot</string>
-  <string name="huadeng_frontend_card_mode_auto">自動識別（開場白或世界書含網頁時切換）</string>
-  <string name="huadeng_frontend_card_mode_always">總是使用前端相容模式</string>
-  <string name="huadeng_frontend_card_mode_never">總是使用原生介面</string>
-  <string name="huadeng_frontend_card_mode_tavern">原生酒館（SillyTavern 前端）</string>
   <string name="setting_page_huadeng_compat">相容與輔助</string>
   <string name="setting_provider_page_context_length">上下文長度</string>
   <string name="setting_provider_page_context_length_custom">自訂</string>

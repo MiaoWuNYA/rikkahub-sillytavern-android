@@ -100,6 +100,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceAtLeast
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.CoroutineScope
@@ -112,6 +113,9 @@ import me.rerere.rikkahub.data.datastore.getAssistantById
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.model.MessageNode
 import me.rerere.rikkahub.data.model.withConversation
+import me.rerere.rikkahub.data.model.FrontendCardMode
+import me.rerere.rikkahub.data.model.getAssistantOf
+import me.rerere.rikkahub.data.st.runtime.TavernRuntimeManager
 import me.rerere.rikkahub.service.ChatError
 import me.rerere.rikkahub.ui.components.message.ChatMessage
 import me.rerere.rikkahub.ui.components.richtext.WebViewPresence
@@ -164,6 +168,8 @@ fun ChatList(
     onConversationSystemPromptChange: ((String?) -> Unit)? = null,
     pluginActions: List<me.rerere.rikkahub.plugin.model.PluginMessageAction> = emptyList(),
     onPluginAction: (me.rerere.rikkahub.plugin.model.PluginMessageAction) -> Unit = {},
+    /** 卡内表单/按钮的发送事件，落到聊天输入框。 */
+    onCardSendToInput: (String) -> Unit = {},
 ) {
     // 前端角色卡（PNG 里带完整互动网页的那种）会调用 window.generate 让宿主
     // 帮忙生成开场白。这里接上真实生成能力：卡拼好的 prompt 送给当前对话模型，
@@ -213,6 +219,13 @@ fun ChatList(
                         }
                     )
                 }
+                if (nodeIndex in conversation.messageNodes.indices) {
+                    TavernRuntimeManager.fireConversationEvent(
+                        conversation.id.toString(),
+                        TavernRuntimeManager.EVENT_MESSAGE_UPDATED,
+                        """{"message_id":$nodeIndex}""",
+                    )
+                }
             }
         }
 
@@ -223,13 +236,26 @@ fun ChatList(
     val onCardSwitchSwipe: suspend (Int, Int) -> Unit =
         remember(chatService, conversation.id) {
             { nodeIndex, swipeId ->
+                var applied = false
                 chatService.updateConversationState(conversation.id) { conv ->
-                    if (nodeIndex !in conv.messageNodes.indices) conv
-                    else conv.copy(
-                        messageNodes = conv.messageNodes.mapIndexed { i, node ->
-                            if (i != nodeIndex || swipeId !in node.messages.indices) node
-                            else node.copy(selectIndex = swipeId)
-                        }
+                    if (nodeIndex !in conv.messageNodes.indices) {
+                        conv
+                    } else if (swipeId !in conv.messageNodes[nodeIndex].messages.indices) {
+                        conv
+                    } else {
+                        applied = true
+                        conv.copy(
+                            messageNodes = conv.messageNodes.mapIndexed { i, node ->
+                                if (i != nodeIndex) node else node.copy(selectIndex = swipeId)
+                            }
+                        )
+                    }
+                }
+                if (applied) {
+                    TavernRuntimeManager.fireConversationEvent(
+                        conversation.id.toString(),
+                        TavernRuntimeManager.EVENT_MESSAGE_SWIPED,
+                        """{"message_id":$nodeIndex,"swipe_id":$swipeId}""",
                     )
                 }
             }
@@ -254,6 +280,18 @@ fun ChatList(
         settingsStore.settingsFlow.value.displaySetting.userNickname.ifBlank { "user" }
     }
 
+    // 原生模式（NATIVE）：该会话不建任何 WebView，卡片按纯文本显示
+    val appSettings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
+    val cardsEnabled = appSettings.getAssistantOf(conversation).frontendCardMode == FrontendCardMode.COMPAT
+
+    // COMPAT 兜底启动：ChatList 可能先于 ChatPage 的 supplier 绑定渲染，离屏运行时先起来
+    val context = LocalContext.current
+    LaunchedEffect(cardsEnabled) {
+        if (cardsEnabled) {
+            TavernRuntimeManager.ensureStarted(context.applicationContext)
+        }
+    }
+
     // 卡写回 MVU 变量后持久化到对应楼层。
     //
     // 状态栏是「逐楼快照」：旧楼显示旧状态、新楼显示新状态。所以变量挂在
@@ -276,7 +314,7 @@ fun ChatList(
         }
 
     val cardHost = remember(
-        chatService, conversation.id, cardInitVars, cardUserName, onCardPersistMvu,
+        chatService, conversation.id, cardInitVars, cardUserName, onCardPersistMvu, onCardSendToInput,
     ) {
         CardHostContext(
             generate = onCardGenerate,
@@ -285,6 +323,7 @@ fun ChatList(
             initVars = cardInitVars,
             userName = cardUserName,
             persistMvu = onCardPersistMvu,
+            sendToInput = onCardSendToInput,
         )
     }
 
@@ -360,6 +399,7 @@ fun ChatList(
                 onPluginAction = onPluginAction,
                 cardHost = cardHost,
                 cardMessagesJson = cardMessagesJson,
+                renderCards = cardsEnabled,
             )
         }
     }
@@ -431,6 +471,7 @@ private fun ChatListNormal(
     onPluginAction: (me.rerere.rikkahub.plugin.model.PluginMessageAction) -> Unit = {},
     cardHost: CardHostContext? = null,
     cardMessagesJson: String = "[]",
+    renderCards: Boolean = true,
 ) {
     val scope = rememberCoroutineScope()
     val loadingState by rememberUpdatedState(loading)
@@ -582,6 +623,7 @@ private fun ChatListNormal(
                                 model = node.currentMessage.modelId?.let(modelById::get)
                                     ?: node.currentMessage.snapshotModel(),
                                 assistant = assistant,
+                                extraModeInjectionIds = conversation.modeInjectionIds,
                                 loading = loading && index == lastMessageIndex,
                                 // 官方深度语义：最新一条为 0，向前递增
                                 messageDepth = lastMessageIndex - index,
@@ -628,6 +670,7 @@ private fun ChatListNormal(
                                     existingMvu = node.currentMessage.mvuData,
                                 ),
                                 cardMessagesJson = cardMessagesJson,
+                                renderCards = renderCards,
                             )
                             // 多选时整条消息可点选，避免误触里面正文与按钮
                             if (selecting) {

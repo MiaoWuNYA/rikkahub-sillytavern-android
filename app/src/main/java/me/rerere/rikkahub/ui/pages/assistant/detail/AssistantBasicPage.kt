@@ -218,17 +218,11 @@ internal fun AssistantBasicContent(
                     modifier = Modifier.fillMaxWidth(),
                     optionToString = {
                         when (it) {
-                            me.rerere.rikkahub.data.model.FrontendCardMode.AUTO ->
-                                stringResource(R.string.huadeng_frontend_card_mode_auto)
+                            me.rerere.rikkahub.data.model.FrontendCardMode.COMPAT ->
+                                stringResource(R.string.huadeng_frontend_card_mode_compat)
 
-                            me.rerere.rikkahub.data.model.FrontendCardMode.ALWAYS ->
-                                stringResource(R.string.huadeng_frontend_card_mode_always)
-
-                            me.rerere.rikkahub.data.model.FrontendCardMode.NEVER ->
-                                stringResource(R.string.huadeng_frontend_card_mode_never)
-
-                            me.rerere.rikkahub.data.model.FrontendCardMode.TAVERN ->
-                                stringResource(R.string.huadeng_frontend_card_mode_tavern)
+                            me.rerere.rikkahub.data.model.FrontendCardMode.NATIVE ->
+                                stringResource(R.string.huadeng_frontend_card_mode_native)
                         }
                     },
                 )

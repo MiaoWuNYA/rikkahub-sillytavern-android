@@ -1,0 +1,8 @@
+/**
+ * Bundled by jsDelivr using Rollup v4.62.2 and esbuild v0.28.1.
+ * Original file: /npm/@earendil-works/pi-ai@0.85.1/dist/providers/xiaomi.models.js
+ *
+ * Do NOT use SRI with dynamically generated files! More information: https://www.jsdelivr.com/using-sri-with-dynamic-files
+ */
+var i={"openai-completions":{"mimo-v2.5":{id:"mimo-v2.5",name:"MiMo-V2.5",api:"openai-completions",provider:"xiaomi",baseUrl:"https://api.xiaomimimo.com/v1",compat:{requiresReasoningContentOnAssistantMessages:!0,thinkingFormat:"deepseek"},reasoning:!0,input:["text","image"],cost:{input:.14,output:.28,cacheRead:.0028,cacheWrite:0},contextWindow:1048576,maxTokens:131072},"mimo-v2.5-pro":{id:"mimo-v2.5-pro",name:"MiMo-V2.5-Pro",api:"openai-completions",provider:"xiaomi",baseUrl:"https://api.xiaomimimo.com/v1",compat:{requiresReasoningContentOnAssistantMessages:!0,thinkingFormat:"deepseek"},reasoning:!0,input:["text"],cost:{input:.435,output:.87,cacheRead:.0036,cacheWrite:0},contextWindow:1048576,maxTokens:131072},"mimo-v2.5-pro-ultraspeed":{id:"mimo-v2.5-pro-ultraspeed",name:"MiMo-V2.5-Pro-UltraSpeed",api:"openai-completions",provider:"xiaomi",baseUrl:"https://api.xiaomimimo.com/v1",compat:{requiresReasoningContentOnAssistantMessages:!0,thinkingFormat:"deepseek"},reasoning:!0,input:["text"],cost:{input:1.305,output:2.61,cacheRead:.0108,cacheWrite:0},contextWindow:1048576,maxTokens:131072}}};function o(a,e){return Object.assign({},...Object.values(e))}const t=o("xiaomi",i);export{t as XIAOMI_MODELS};
+//# sourceMappingURL=/sm/876e202b646a7ee95235ccb60857357b1bbaf4c8f86e3d1e2c2c3f157fe313da.map
