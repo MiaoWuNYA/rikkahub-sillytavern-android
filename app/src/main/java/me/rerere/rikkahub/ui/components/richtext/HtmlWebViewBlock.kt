@@ -893,27 +893,6 @@ private fun cardBaseCss(
 """
 }
 
-/** 页面挂载时早已 load 完：DOMContentLoaded/load 监听补执行一次，否则卡内初始化不跑。 */
-private fun cardReadyPatchJs(): String = """
-<script>
-(function() {
-  function patch(t) {
-    if (!t || t.__rikkaReadyPatched) return;
-    try { t.__rikkaReadyPatched = true; } catch (e) {}
-    var add = t.addEventListener;
-    t.addEventListener = function (type, fn, opts) {
-      if ((type === 'DOMContentLoaded' || type === 'load') && typeof fn === 'function' && document.readyState !== 'loading') {
-        setTimeout(function () { try { fn.call(t, new Event(type)); } catch (e) {} }, 0);
-        return;
-      }
-      return add.call(t, type, fn, opts);
-    };
-  }
-  try { patch(document); patch(window); } catch (e) {}
-})();
-</script>
-"""
-
 /** 高度上报脚本：load + 若干延时 + ResizeObserver 兜底。 */
 private fun heightReportScript(extraDelays: String = "1500, 4000"): String = """
 <script>
@@ -1157,7 +1136,6 @@ internal fun buildFragmentPage(
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 $hostShim
-${cardReadyPatchJs()}
 <title>HTML</title>
 <style>
 $baseCss
@@ -1211,13 +1189,6 @@ $markedTag
   if (!root.firstChild) {
     root.innerHTML = '<pre>' + esc(src) + '</pre>';
   }
-  // innerHTML 插入的 <script> 惰性：原地重建节点，卡内交互脚本才会执行
-  Array.prototype.slice.call(root.querySelectorAll('script')).forEach(function (old) {
-    var s = document.createElement('script');
-    for (var i = 0; i < old.attributes.length; i++) s.setAttribute(old.attributes[i].name, old.attributes[i].value);
-    s.textContent = old.textContent;
-    if (old.parentNode) old.parentNode.replaceChild(s, old); else document.body.appendChild(s);
-  });
 })();
 </script>
 ${heightReportScript()}
