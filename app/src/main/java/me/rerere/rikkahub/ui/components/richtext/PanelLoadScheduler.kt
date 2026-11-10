@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import me.rerere.rikkahub.data.st.runtime.TavernRuntimeManager
 
 private const val PANEL_TAG = "PanelLoad"
 
@@ -21,6 +22,7 @@ internal sealed interface PanelLoadStage {
     data class WaitingHost(val panelTitle: String) : PanelLoadStage
     data class LoadingWebView(val panelTitle: String) : PanelLoadStage
     data class MountingDom(val panelTitle: String) : PanelLoadStage
+    data class WaitingVars(val panelTitle: String) : PanelLoadStage
     data class ResourcesLoading(val panelTitle: String) : PanelLoadStage
     data object Ready : PanelLoadStage
 }
@@ -54,9 +56,9 @@ internal object TavernPanelLoadScheduler {
     private val _queueSnapshot = MutableStateFlow<List<String>>(emptyList())
     val queueSnapshot: StateFlow<List<String>> = _queueSnapshot.asStateFlow()
 
-    /** 宿主就绪探针；本仓库没有独立主运行时，默认恒为就绪。 */
+    /** 宿主就绪探针：主运行时 WebView 未就绪时先等它，避免面板与主运行时抢渲染进程。 */
     @Volatile
-    var hostReadyProvider: () -> Boolean = { true }
+    var hostReadyProvider: () -> Boolean = { TavernRuntimeManager.isPageReady }
 
     fun enqueue(key: String, title: String, prioritize: Boolean = false): Slot {
         val slot: Slot
@@ -80,7 +82,7 @@ internal object TavernPanelLoadScheduler {
         return slot
     }
 
-    /** 面板完成首次装载（页面 onPageFinished），放行下一个。 */
+    /** 面板完成首次装载（onPageFinished/首帧高度），放行下一个。 */
     fun markDone(key: String) {
         synchronized(lock) {
             val active = activeRequest
@@ -169,72 +171,5 @@ internal object TavernPanelLoadScheduler {
             }
             delay(INTER_PANEL_COOLDOWN_MS)
         }
-    }
-}
-
-internal enum class PanelUpdateAction { NO_OP, RELOAD_DOCUMENT }
-
-/**
- * 单张卡片的挂载状态：记录已装载文档、重载代次与最近一次错误。
- */
-internal class PanelMountState {
-    internal companion object {
-        const val STREAMING_REMOUNT_COALESCE_MS = 48L
-        val SCRIPT_TAG_RE = Regex("<script[\\s>]", RegexOption.IGNORE_CASE)
-    }
-
-    var mountedPage: String? = null
-        private set
-    var reloadGen: Int = 0
-        private set
-    var lastError: String? = null
-        private set
-    var reloadCount: Int = 0
-        private set
-    var inPlaceRemountCount: Int = 0
-        private set
-
-    private var lastReloadAtMs = 0L
-
-    fun decideUpdateAction(page: String): PanelUpdateAction {
-        val prev = mountedPage
-        if (prev == null) {
-            mountedPage = page
-            reloadCount++
-            return PanelUpdateAction.RELOAD_DOCUMENT
-        }
-        if (page == prev) return PanelUpdateAction.NO_OP
-        mountedPage = page
-        reloadCount++
-        return PanelUpdateAction.RELOAD_DOCUMENT
-    }
-
-    fun reportError(message: String) {
-        lastError = message
-        Log.w(PANEL_TAG, "[panel] script error: $message")
-    }
-
-    fun clearError() {
-        lastError = null
-    }
-
-    /** 文档级重载：递增代次，调用方据此换新 WebView 并重装页面。 */
-    fun reloadNow(): Int {
-        mountedPage = null
-        lastError = null
-        reloadCount++
-        reloadGen += 1
-        return reloadGen
-    }
-
-    /** 48ms 内重复请求合并成一次重载，避免连点把渲染进程打满。 */
-    fun submit(nowMs: Long = android.os.SystemClock.uptimeMillis()): Boolean {
-        if (nowMs - lastReloadAtMs < STREAMING_REMOUNT_COALESCE_MS) {
-            inPlaceRemountCount++
-            Log.i(PANEL_TAG, "[panel] reload coalesced (${nowMs - lastReloadAtMs}ms)")
-            return false
-        }
-        lastReloadAtMs = nowMs
-        return true
     }
 }
