@@ -12,13 +12,14 @@ import java.util.concurrent.ConcurrentHashMap
 
 private const val TAG = "MemoryRag"
 
-// 单轮召回上限：命中片段数、注入正文字符预算（宁少勿多，省 token 是这条链路的目的）
-private const val MAX_RECALL_CHUNKS = 6
+// 默认召回参数：命中片段数、注入正文字符预算（宁少勿多，省 token 是这条链路的目的）
+internal const val DEFAULT_RECALL_LIMIT = 6
+internal const val DEFAULT_MIN_SIMILARITY = 0.2f
 private const val RECALL_CHAR_BUDGET = 1200
 
-// 相关性下限：片段短，语义分普遍偏低；词法兜底没有向量可比，阈值更严
-private const val MIN_SIMILARITY = 0.2f
-private const val MIN_LEXICAL_SCORE = 0.34f
+// 词法兜底按命中个数判定：长问句会切出几十个词，比例被稀释，用比例会永远召不回
+private const val MIN_LEXICAL_HITS = 2
+private const val LEXICAL_HIT_SCALE = 6
 
 private const val EMBED_BATCH_SIZE = 32
 private const val EMBED_FAILURE_TTL_MS = 60_000L
@@ -82,18 +83,27 @@ object MemoryRag {
         files: List<MemoryFile>,
         query: String,
         turnKey: String,
+        minSimilarity: Float = DEFAULT_MIN_SIMILARITY,
+        limit: Int = DEFAULT_RECALL_LIMIT,
+        logging: Boolean = false,
     ): List<MemoryChunk> {
         if (query.isBlank() || files.isEmpty()) return emptyList()
+        val threshold = minSimilarity.coerceIn(0f, 1f)
+        val maxHits = limit.coerceIn(1, 20)
         val signature = query.take(QUERY_SIGNATURE_CHARS) + "|" + files.size + "|" +
-            (files.maxOfOrNull { it.updatedAt } ?: 0L)
+            (files.maxOfOrNull { it.updatedAt } ?: 0L) + "|" + threshold + "|" + maxHits
         frozenTurns[turnKey]?.let { (cachedSignature, cached) ->
             if (cachedSignature == signature) return cached
         }
         val result = runCatching {
-            recall(context, providerManager, settings, files, query)
+            recall(context, providerManager, settings, files, query, threshold, maxHits, logging)
         }.getOrElse { error ->
             Log.w(TAG, "recall failed: ${error.message}")
             emptyList()
+        }
+        if (logging) {
+            Log.i(TAG, "recall hits=${result.size} threshold=$threshold limit=$maxHits")
+            result.forEach { Log.i(TAG, "hit ${it.path} ${it.text.length}ch") }
         }
         if (frozenTurns.size >= MAX_FROZEN_TURNS) frozenTurns.clear()
         frozenTurns[turnKey] = signature to result
@@ -136,6 +146,9 @@ object MemoryRag {
         settings: Settings,
         files: List<MemoryFile>,
         query: String,
+        threshold: Float,
+        maxHits: Int,
+        logging: Boolean,
     ): List<MemoryChunk> {
         // profile 与 preferences 已由 buildMemoryPrompt 全文注入，不再重复召回
         val chunks = files.filter {
@@ -143,11 +156,14 @@ object MemoryRag {
         }.flatMap { file ->
             MemoryChunker.chunks(file.body).map { MemoryChunk(file.path, file.title, it) }
         }
-        if (chunks.isEmpty()) return emptyList()
-        val scored = scoreByEmbedding(context, providerManager, settings, chunks, query)
+        if (chunks.isEmpty()) {
+            if (logging) Log.i(TAG, "no searchable chunks (only profile/preferences or empty store)")
+            return emptyList()
+        }
+        val scored = scoreByEmbedding(context, providerManager, settings, chunks, query, threshold, logging)
             ?: scoreLexically(chunks, query)
         return scored.sortedByDescending { it.second }
-            .take(MAX_RECALL_CHUNKS)
+            .take(maxHits)
             .map { it.first }
     }
 
@@ -158,9 +174,14 @@ object MemoryRag {
         settings: Settings,
         chunks: List<MemoryChunk>,
         query: String,
+        threshold: Float,
+        logging: Boolean,
     ): List<Pair<MemoryChunk, Float>>? = withContext(Dispatchers.IO) {
         if (System.currentTimeMillis() < embedFailureUntil) return@withContext null
-        val (providerSetting, model) = settings.resolveEmbeddingModel() ?: return@withContext null
+        val (providerSetting, model) = settings.resolveEmbeddingModel() ?: run {
+            if (logging) Log.i(TAG, "no embedding model configured, lexical fallback")
+            return@withContext null
+        }
         val provider = runCatching {
             providerManager.getProviderByType(providerSetting)
         }.getOrNull() ?: return@withContext null
@@ -203,7 +224,7 @@ object MemoryRag {
             }
         chunks.mapNotNull { chunk ->
             vectors[chunk.key]?.let { chunk to VectorStoreCache.cosineSimilarity(queryVector, it) }
-        }.filter { it.second >= MIN_SIMILARITY }
+        }.filter { it.second >= threshold }
     }
 
     private fun markEmbedFailure(error: Throwable) {
@@ -218,10 +239,15 @@ object MemoryRag {
     ): List<Pair<MemoryChunk, Float>> {
         val terms = queryTerms(query)
         if (terms.isEmpty()) return emptyList()
-        return chunks.map { chunk ->
+        return chunks.mapNotNull { chunk ->
             val text = (chunk.title + "\n" + chunk.text).lowercase()
-            chunk to terms.count { text.contains(it) }.toFloat() / terms.size
-        }.filter { it.second >= MIN_LEXICAL_SCORE }
+            val hits = terms.count { text.contains(it) }
+            if (hits < MIN_LEXICAL_HITS) {
+                null
+            } else {
+                chunk to hits.toFloat() / terms.size.coerceAtMost(LEXICAL_HIT_SCALE)
+            }
+        }
     }
 
     private fun queryTerms(query: String): List<String> {

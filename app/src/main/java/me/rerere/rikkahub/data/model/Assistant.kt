@@ -60,6 +60,9 @@ data class Assistant(
     val useGlobalMemory: Boolean = false, // 使用全局共享记忆而非助手隔离记忆
     // 记忆 RAG：按对话内容自动检索相关记忆片段注入，省掉模型自己翻记忆文件的 token
     val enableMemoryRag: Boolean = true,
+    val ragSimilarityThreshold: Float = 0.2f, // RAG 相似度下限，越高越只取强相关片段
+    val ragLimit: Int = 6, // 单轮最多召回的片段数
+    val enableRagLogging: Boolean = false, // 输出召回日志，排查为何没命中
     // 上下文滚动压缩：达到阈值后自动把早期对话压缩为摘要（保留原文，仅请求时替换前缀）
     // 默认关闭：入口已从设置里移除，无法再关闭，故对所有助手统一停用。
     // 该字段仅为兼容旧数据保留，设置归一化时会强制置 false。

@@ -106,6 +106,7 @@ import me.rerere.rikkahub.data.ai.tools.ChatToolFactory
 import me.rerere.rikkahub.data.ai.tools.InvalidMcpServerNamesException
 import me.rerere.rikkahub.data.skills.SkillManager
 import me.rerere.rikkahub.data.ai.transformers.Base64ImageToLocalFileTransformer
+import me.rerere.rikkahub.data.ai.transformers.CitationMarkerTransformer
 import me.rerere.rikkahub.data.ai.tools.createHistoryMessageTool
 import me.rerere.rikkahub.data.ai.tools.createLifeCompanionTools
 import me.rerere.rikkahub.data.ai.tools.createCoupleSpaceTools
@@ -246,6 +247,7 @@ private val outputTransformers by lazy {
     listOf(
         // 先清理 setvar 等标记，思考块识别才匹配得上开头
         OutputTagCleanupTransformer,
+        CitationMarkerTransformer,
         ThinkTagTransformer,
         Base64ImageToLocalFileTransformer,
         RegexOutputTransformer,
