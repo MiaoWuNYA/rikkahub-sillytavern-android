@@ -334,6 +334,23 @@ class GenerationLoop(
         buildRecentChatsPrompt(assistant, conversationRepo, excludeConversationId = conversationId)
     } else ""
 
+    // 记忆 RAG 召回：只检索、不改注入位置。关闭该开关时完全不进入这里，行为与旧版一致
+    val ragEnabled = assistant.enableMemory && assistant.enableMemoryRag &&
+        !settings.huadengSettings.enableTavernMode && !memories.isNullOrEmpty()
+    val ragRecall = if (ragEnabled && conversationId != null) {
+        val query = messages.lastOrNull { it.role == MessageRole.USER }?.toText()?.trim().orEmpty()
+        MemoryRag.recallForTurn(
+            context = context,
+            providerManager = providerManager,
+            settings = settings,
+            files = memories,
+            query = query,
+            turnKey = "${assistant.id}:$conversationId",
+        )
+    } else {
+        emptyList()
+    }
+
     // 流式期间正则改由 applyStreamingRegexTail 只跑正在生成的最后一条，避免整段历史逐 chunk 重算
     val streamingTransformers = outputTransformers.filterNot { it is RegexOutputTransformer }
 
@@ -396,6 +413,7 @@ class GenerationLoop(
                     conversationLorebookIds = conversationLorebookIds,
                     prebuiltSystemMessages = prebuiltSystemMessages,
                     prebuiltRecentChats = prebuiltRecentChats,
+                    ragRecall = ragRecall,
                     workspaceCwd = workspaceCwd,
                     generationType = generationType,
                     maxTokensOverride = maxTokensOverride,
@@ -645,6 +663,7 @@ class GenerationLoop(
         generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
         maxTokensOverride: Int? = null,
         prebuiltRecentChats: String = "",
+        ragRecall: List<MemoryChunk> = emptyList(),
     ) {
         val limitedChat = messages.limitContext(assistant.contextMessageLimit)
         // 酒馆模式：请求中只保留原版酒馆的上下文构成（角色卡/世界书/示例消息/作者注释）
@@ -742,6 +761,9 @@ class GenerationLoop(
             } else {
                 null
             }
+            // 与 generateText 里的 ragEnabled 同一判据：关闭时完全不碰召回块
+            val ragActive = assistant.enableMemory && assistant.enableMemoryRag && !tavernMode &&
+                memories.isNotEmpty()
 
             // ── 官方 mes_example：作为示例消息注入（story string 之后、聊天历史之前）──
             // 酒馆模式：角色卡自带内容，保留（属于用户明确要发送的部分）
@@ -765,7 +787,10 @@ class GenerationLoop(
             // userContext 置空只是不再新增，旧块仍会被下面的循环按 afterMessageId 命中并注入，
             // 表现为「关掉酒馆模式之外仍收到近期对话」。此处显式清空以保证语义一致。
             if (tavernMode) {
-                conversationId?.let { UserContextAnchorCache.getOrCreate(it).blocks.clear() }
+                conversationId?.let {
+                    UserContextAnchorCache.getOrCreate(it).blocks.clear()
+                    UserContextAnchorCache.getOrCreate(it).injectedMemories.clear()
+                }
             }
             // 华灯：上下文瞬态内容裁剪——两轮之前的网页搜索结果/图片/音视频不再随请求发送
             //（占位说明带消息 ID，AI 可用 read_history_message 取回），存储与 UI 不受影响
@@ -781,7 +806,10 @@ class GenerationLoop(
                 val anchorsValid = anchor.blocks.all { block ->
                     block.afterMessageId == null || namedChat.any { it.id == block.afterMessageId }
                 }
-                if (!anchorsValid) anchor.blocks.clear()
+                if (!anchorsValid) {
+                    anchor.blocks.clear()
+                    anchor.injectedMemories.clear()
+                }
                 // 记忆不再注册（关记忆/酒馆关工具）时清掉旧记忆块，避免继续注入
                 if (memoryPrompt == null) {
                     anchor.blocks.removeAll { it.tag == ANCHOR_TAG_MEMORY }
@@ -795,8 +823,10 @@ class GenerationLoop(
                     // 在锚点处分叉，缓存失效）。超限才丢最旧块：RAG 用户块只在日期/
                     // Recent Chats 变化时追加，几乎不会触顶；非 RAG 用户每几轮一次
                     // 深处分叉，好过每轮分叉
-                    while (anchor.blocks.size > MAX_ANCHOR_BLOCKS) {
-                        anchor.blocks.removeAt(0)
+                    // RAG 块按自己的上限单独管理，不参与这里的通用裁剪
+                    while (anchor.blocks.count { it.tag != ANCHOR_TAG_MEMORY_RAG } > MAX_ANCHOR_BLOCKS) {
+                        val victim = anchor.blocks.firstOrNull { it.tag != ANCHOR_TAG_MEMORY_RAG } ?: break
+                        anchor.blocks.remove(victim)
                     }
                 }
                 // 记忆块独立追加与上限：记忆被后台整理改写的频率远高于 userContext，
@@ -809,6 +839,22 @@ class GenerationLoop(
                     if (memoryBlocks.size > MAX_MEMORY_ANCHOR_BLOCKS) {
                         anchor.blocks.remove(memoryBlocks.first())
                     }
+                }
+                // RAG 召回块：只追加到尾部（锚在最后一条消息），旧块原位冻结且永不删除。
+                // 已注入过的片段按 路径#内容 去重，同一段记忆不会在历史里出现第二次，
+                // 因此块数天然被记忆库大小限住，不需要裁剪
+                if (ragActive) {
+                    val fresh = ragRecall.filter { it.key !in anchor.injectedMemories }
+                    val used = anchor.blocks.filter { it.tag == ANCHOR_TAG_MEMORY_RAG }.sumOf { it.text.length }
+                    val ragText = MemoryRag.render(fresh)
+                    if (ragText != null && used + ragText.length <= MAX_RAG_ANCHOR_CHARS) {
+                        anchor.blocks += UserContextAnchorCache.Block(ragText, namedChat.lastOrNull()?.id, ANCHOR_TAG_MEMORY_RAG)
+                        fresh.forEach { anchor.injectedMemories += it.key }
+                    }
+                } else if (anchor.blocks.any { it.tag == ANCHOR_TAG_MEMORY_RAG }) {
+                    // 关掉 RAG 等于回到旧版行为：清掉召回块，已注入记录一并失效
+                    anchor.blocks.removeAll { it.tag == ANCHOR_TAG_MEMORY_RAG }
+                    anchor.injectedMemories.clear()
                 }
                 var blockIndex = 0
                 for (message in namedChat) {
@@ -1356,7 +1402,11 @@ private const val MAX_ANCHOR_BLOCKS = 4
 private object UserContextAnchorCache {
     data class Block(val text: String, val afterMessageId: Uuid?, val tag: String? = null)
 
-    class Anchor(val blocks: MutableList<Block> = mutableListOf())
+    class Anchor(
+        val blocks: MutableList<Block> = mutableListOf(),
+        // 已注入过的记忆键（路径@版本）：同一段记忆只注入一次，避免历史里出现重复副本
+        val injectedMemories: MutableSet<String> = mutableSetOf(),
+    )
 
     private val cache = java.util.concurrent.ConcurrentHashMap<String, Anchor>()
 
@@ -1367,6 +1417,9 @@ private object UserContextAnchorCache {
 // 记忆锚点块标记与独立上限
 private const val ANCHOR_TAG_MEMORY = "memory"
 private const val MAX_MEMORY_ANCHOR_BLOCKS = 2
+private const val ANCHOR_TAG_MEMORY_RAG = "memory_rag"
+// 召回块的字符总预算：到顶就不再注入，已有块一律不动（删块 = 前缀分叉，缓存失效）
+private const val MAX_RAG_ANCHOR_CHARS = 4000
 
 /**
  * Persona AT_DEPTH 按用户轮冻结的注入锚点：
