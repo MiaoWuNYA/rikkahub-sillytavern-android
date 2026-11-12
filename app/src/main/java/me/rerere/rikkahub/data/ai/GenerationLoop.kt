@@ -351,6 +351,17 @@ class GenerationLoop(
             logging = assistant.enableRagLogging,
         )
     } else {
+        // 开关开着却没动作时给出可排查的原因：日志里看到这一行就知道卡在哪一步
+        if (assistant.enableRagLogging) {
+            Log.i(
+                TAG,
+                "rag skipped: memory=" + assistant.enableMemory +
+                    " rag=" + assistant.enableMemoryRag +
+                    " tavern=" + settings.huadengSettings.enableTavernMode +
+                    " files=" + (memories?.size ?: 0) +
+                    " conversation=" + conversationId,
+            )
+        }
         emptyList()
     }
 
@@ -759,8 +770,10 @@ class GenerationLoop(
             // 酒馆模式只在记忆工具真正注册时才注入，否则模型看得到记忆却写不了
             val memoryToolsRegistered = assistant.enableMemory &&
                 (!tavernMode || settings.huadengSettings.tavernModeKeepTools)
+            // RAG 开着就走精简版：清单只给路径、不常驻写入格式规范，
+            // 相关的正文由尾部召回块补上；关掉则与旧版逐字一致
             val memoryPrompt = if (memoryToolsRegistered && !memories.isNullOrEmpty()) {
-                buildMemoryPrompt(memories)
+                buildMemoryPrompt(memories, compact = assistant.enableMemoryRag && !tavernMode)
             } else {
                 null
             }
