@@ -346,6 +346,9 @@ class GenerationLoop(
             files = memories,
             query = query,
             turnKey = "${assistant.id}:$conversationId",
+            minSimilarity = assistant.ragSimilarityThreshold,
+            limit = assistant.ragLimit,
+            logging = assistant.enableRagLogging,
         )
     } else {
         emptyList()
@@ -1419,7 +1422,7 @@ private const val ANCHOR_TAG_MEMORY = "memory"
 private const val MAX_MEMORY_ANCHOR_BLOCKS = 2
 private const val ANCHOR_TAG_MEMORY_RAG = "memory_rag"
 // 召回块的字符总预算：到顶就不再注入，已有块一律不动（删块 = 前缀分叉，缓存失效）
-private const val MAX_RAG_ANCHOR_CHARS = 4000
+private const val MAX_RAG_ANCHOR_CHARS = 8000
 
 /**
  * Persona AT_DEPTH 按用户轮冻结的注入锚点：

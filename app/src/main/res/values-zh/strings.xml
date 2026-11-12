@@ -124,6 +124,12 @@
   <string name="assistant_page_memory_desc">启用记忆后，模型在与你对话时尝试主动记录你的信息，并在后续其他对话中使用，此功能需要模型支持工具调用才能正常工作</string>
   <string name="assistant_page_memory_rag">记忆 RAG 检索</string>
   <string name="assistant_page_memory_rag_desc">基于嵌入向量只检索与当前对话相关的记忆（向量不可用时自动退回词法检索）。需要在世界书设置中选择嵌入模型</string>
+  <string name="assistant_page_memory_rag_threshold">召回相似度下限</string>
+  <string name="assistant_page_memory_rag_threshold_desc">数值越高只保留强相关片段，越低召回越多但可能带进噪声</string>
+  <string name="assistant_page_memory_rag_limit">单轮召回条数</string>
+  <string name="assistant_page_memory_rag_limit_desc">每轮最多注入的记忆片段数量</string>
+  <string name="assistant_page_memory_rag_logging">召回日志</string>
+  <string name="assistant_page_memory_rag_logging_desc">把召回过程写进日志（标签 MemoryRag），用来排查为什么没召回</string>
   <string name="assistant_page_message_template">聊天内容模板</string>
   <string name="assistant_page_message_template_desc">控制聊天消息在发送给LLM之前的内容格式，通常不需要修改</string>
   <string name="assistant_page_message_template_missing_message">模板不包含 {{ message }}，用户消息将不会被发送</string>

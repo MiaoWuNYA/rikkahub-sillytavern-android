@@ -124,6 +124,12 @@
   <string name="assistant_page_memory_desc">When memory is enabled, the model will try to actively record your information during conversations and use it in subsequent conversations. This feature requires the model to support tool calls to work properly</string>
   <string name="assistant_page_memory_rag">Memory RAG Retrieval</string>
   <string name="assistant_page_memory_rag_desc">Retrieve only the memories relevant to the current conversation using embeddings (falls back to lexical search). Requires an embedding model selected in world info settings</string>
+  <string name="assistant_page_memory_rag_threshold">Recall Similarity Threshold</string>
+  <string name="assistant_page_memory_rag_threshold_desc">Higher keeps only strongly related excerpts; lower recalls more but may pull in noise</string>
+  <string name="assistant_page_memory_rag_limit">Recall Limit</string>
+  <string name="assistant_page_memory_rag_limit_desc">Maximum number of memory excerpts injected per turn</string>
+  <string name="assistant_page_memory_rag_logging">Recall Logging</string>
+  <string name="assistant_page_memory_rag_logging_desc">Write recall results to logcat (tag MemoryRag) so you can see why nothing was recalled</string>
   <string name="assistant_page_message_template">Message Content Template</string>
   <string name="assistant_page_message_template_desc">Controls the content format of chat messages before being sent to the LLM, usually no need to modify</string>
   <string name="assistant_page_message_template_missing_message">Template does not contain {{ message }}, user messages will not be sent</string>

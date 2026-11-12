@@ -28,12 +28,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -253,6 +256,62 @@ private fun MemorySettingsTab(
                 supportingContent = { Text(stringResource(R.string.assistant_page_memory_rag_desc)) },
                 headlineContent = { Text(stringResource(R.string.assistant_page_memory_rag)) },
             )
+            if (assistant.enableMemory && assistant.enableMemoryRag) {
+                formItem(
+                    headlineContent = { Text(stringResource(R.string.assistant_page_memory_rag_threshold)) },
+                    supportingContent = { Text(stringResource(R.string.assistant_page_memory_rag_threshold_desc)) },
+                    trailingContent = {
+                        Text(
+                            text = String.format(java.util.Locale.US, "%.2f", assistant.ragSimilarityThreshold),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    },
+                ) {
+                    var localThreshold by remember(assistant.ragSimilarityThreshold) {
+                        mutableFloatStateOf(assistant.ragSimilarityThreshold)
+                    }
+                    Slider(
+                        value = localThreshold,
+                        onValueChange = { localThreshold = it },
+                        onValueChangeFinished = {
+                            onUpdateAssistant(assistant.copy(ragSimilarityThreshold = localThreshold))
+                        },
+                        valueRange = 0f..1f,
+                        steps = 19,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                formItem(
+                    headlineContent = { Text(stringResource(R.string.assistant_page_memory_rag_limit)) },
+                    supportingContent = { Text(stringResource(R.string.assistant_page_memory_rag_limit_desc)) },
+                    trailingContent = {
+                        Text(
+                            text = assistant.ragLimit.toString(),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    },
+                ) {
+                    var localLimit by remember(assistant.ragLimit) { mutableIntStateOf(assistant.ragLimit) }
+                    Slider(
+                        value = localLimit.toFloat(),
+                        onValueChange = { localLimit = it.toInt() },
+                        onValueChangeFinished = {
+                            onUpdateAssistant(assistant.copy(ragLimit = localLimit))
+                        },
+                        valueRange = 1f..20f,
+                        steps = 18,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                switchItem(
+                    checked = assistant.enableRagLogging,
+                    onCheckedChange = { onUpdateAssistant(assistant.copy(enableRagLogging = it)) },
+                    supportingContent = { Text(stringResource(R.string.assistant_page_memory_rag_logging_desc)) },
+                    headlineContent = { Text(stringResource(R.string.assistant_page_memory_rag_logging)) },
+                )
+            }
             switchItem(
                 checked = assistant.autoConsolidateMemory,
                 onCheckedChange = {
