@@ -26,33 +26,77 @@ private const val LEXICAL_BODY_WEIGHT = 0.8f
 private const val LEXICAL_HEAD_BONUS = 0.2f
 private const val LEXICAL_FULL_MATCH_BONUS = 0.1f
 
+private const val RELATIVE_SCORE_CUTOFF = 0.55f
+private const val PER_FILE_CHUNKS = 2
+
 private const val EMBED_BATCH_SIZE = 32
 private const val EMBED_FAILURE_TTL_MS = 60_000L
 private const val QUERY_SIGNATURE_CHARS = 400
 private const val MAX_FROZEN_TURNS = 64
 private const val CACHE_NAMESPACE = "memory-rag"
 
-/** 把记忆文件正文切成可检索的片段：按空行分段，超长再硬切 */
+/**
+ * 把记忆文件正文切成可检索的片段。
+ *
+ * 记忆文件本身就是一行一条事实，按行切比按段落切精确得多：
+ * 段落常常一次塞进十几条不相关的事，召回整段等于把噪音一起注入。
+ */
 internal object MemoryChunker {
     private const val MAX_CHARS = 500
+    private const val MIN_CHARS = 40
 
     fun chunks(body: String): List<String> {
-        val paragraphs = mutableListOf<String>()
+        val lines = mutableListOf<String>()
         val buffer = StringBuilder()
         body.lines().forEach { raw ->
             val line = raw.trimEnd()
-            if (line.isBlank()) {
-                if (buffer.isNotBlank()) paragraphs += buffer.toString().trim()
-                buffer.setLength(0)
-            } else {
-                if (buffer.isNotEmpty()) buffer.append('\n')
-                buffer.append(line)
+            when {
+                line.isBlank() -> {
+                    if (buffer.isNotBlank()) {
+                        lines += buffer.toString().trim()
+                        buffer.setLength(0)
+                    }
+                }
+                line.startsWith("- ") || line.startsWith("* ") -> {
+                    if (buffer.isNotBlank()) {
+                        lines += buffer.toString().trim()
+                        buffer.setLength(0)
+                    }
+                    lines += line.trim()
+                }
+                else -> {
+                    if (buffer.isNotEmpty()) buffer.append('\n')
+                    buffer.append(line)
+                }
             }
         }
-        if (buffer.isNotBlank()) paragraphs += buffer.toString().trim()
-        return paragraphs.filter { it.isNotBlank() }
-            .flatMap { if (it.length <= MAX_CHARS) listOf(it) else it.chunked(MAX_CHARS).map(String::trim) }
-            .filter { it.isNotBlank() }
+        if (buffer.isNotBlank()) lines += buffer.toString().trim()
+        return lines.filter { it.isNotBlank() }.flatMap { splitLong(it) }
+    }
+
+    /** 超长条目优先在句末切，其次逗号空格，避免把一句话切成半截残句 */
+    private fun splitLong(text: String): List<String> {
+        if (text.length <= MAX_CHARS) return listOf(text)
+        val parts = mutableListOf<String>()
+        var start = 0
+        while (start < text.length) {
+            val end = (start + MAX_CHARS).coerceAtMost(text.length)
+            if (end == text.length) {
+                parts += text.substring(start).trim()
+                break
+            }
+            val cut = lastBreak(text, start, end)
+            parts += text.substring(start, cut).trim()
+            start = cut
+        }
+        return parts.filter { it.isNotBlank() }
+    }
+
+    private fun lastBreak(text: String, start: Int, end: Int): Int {
+        val floor = start + MIN_CHARS
+        for (i in end downTo floor) if (text[i - 1] in "。！？；!?;") return i
+        for (i in end downTo floor) if (text[i - 1] in "，,、  ") return i
+        return end
     }
 }
 
@@ -177,7 +221,16 @@ object MemoryRag {
             }
         }
         val scored = merged.values.toList()
-        val above = scored.filter { it.second >= threshold }
+        val ranked = scored.filter { it.second >= threshold }
+            .sortedByDescending { it.second }
+        // 相对截断：略过最高分一半的片段基本都是同一个话题的边角料，注进去只是噪音
+        val best = ranked.firstOrNull()?.second ?: 0f
+        val floor = (best * RELATIVE_SCORE_CUTOFF).coerceAtLeast(threshold)
+        val above = ranked.filter { it.second >= floor }
+            // 单个文件最多留两段，避免一个文件把预算吃光、别的相关文件进不来
+            .groupBy { it.first.path }
+            .values
+            .flatMap { it.take(PER_FILE_CHUNKS) }
             .sortedByDescending { it.second }
         if (logging) {
             val top = scored.maxOfOrNull { it.second } ?: 0f
