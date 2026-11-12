@@ -15,12 +15,16 @@ private const val TAG = "MemoryRag"
 // 默认召回参数：命中片段数、注入正文字符预算（宁少勿多，省 token 是这条链路的目的）
 internal const val DEFAULT_RECALL_LIMIT = 6
 internal const val DEFAULT_MIN_SIMILARITY = 0.2f
-private const val RECALL_CHAR_BUDGET = 1200
 
-// 词法兜底按命中个数判定：长问句会切出几十个词，比例被稀释，用比例会永远召不回。
-// 短问句（"你好"这类）只切得出一个词，要求 2 个永远命中不了，所以下限按词数收缩
-private const val MIN_LEXICAL_HITS = 2
-private const val LEXICAL_HIT_SCALE = 6
+// 注入正文的字符预算：太小模型拿到几句残片仍会去读整份文件，RAG 就白做了
+private const val RECALL_CHAR_BUDGET = 2400
+
+// 词法兜底把命中数折算到 0..1：最多按 3 个词算满分，标题/路径命中权重翻倍。
+// 这样 similarityThreshold 对没有嵌入模型的用户同样是"严格度"而不是摆设
+private const val LEXICAL_TERMS_FOR_FULL = 3
+private const val LEXICAL_BODY_WEIGHT = 0.8f
+private const val LEXICAL_HEAD_BONUS = 0.2f
+private const val LEXICAL_FULL_MATCH_BONUS = 0.1f
 
 private const val EMBED_BATCH_SIZE = 32
 private const val EMBED_FAILURE_TTL_MS = 60_000L
@@ -161,20 +165,32 @@ object MemoryRag {
             if (logging) Log.i(TAG, "no searchable chunks (only profile/preferences or empty store)")
             return emptyList()
         }
-        // 有嵌入结果但全被阈值滤掉时不退回词法：否则用户设定的严格度会被兜底绕过
-        val embedded = scoreByEmbedding(context, providerManager, settings, chunks, query, threshold, logging)
-        if (embedded != null && embedded.isEmpty()) {
-            if (logging) Log.i(TAG, "no chunk above threshold=" + threshold + " among " + chunks.size)
-            return emptyList()
+        // 语义和词法各算一遍取较高分：嵌入模型对中文常常整体偏低，只看向量会把
+        // 明明关键词能命中的片段漏掉，那时模型只能退回 memory_read 读全文
+        val semantic = scoreByEmbedding(context, providerManager, settings, chunks, query, logging)
+        val lexical = scoreLexically(chunks, query)
+        val merged = HashMap<String, Pair<MemoryChunk, Float>>()
+        listOfNotNull(semantic, lexical).forEach { list ->
+            list.forEach { (chunk, score) ->
+                val previous = merged[chunk.key]
+                if (previous == null || score > previous.second) merged[chunk.key] = chunk to score
+            }
         }
-        // 词法兜底同样要过阈值：否则调高相似度下限对没配嵌入模型的用户完全无效
-        val scored = (embedded ?: scoreLexically(chunks, query)).filter { it.second >= threshold }
-        if (logging && scored.isEmpty()) {
-            Log.i(TAG, "nothing above threshold=" + threshold + " among " + chunks.size + " chunk(s)")
+        val scored = merged.values.toList()
+        val above = scored.filter { it.second >= threshold }
+            .sortedByDescending { it.second }
+        if (logging) {
+            val top = scored.maxOfOrNull { it.second } ?: 0f
+            Log.i(
+                TAG,
+                "threshold=" + threshold + " candidates=" + scored.size +
+                    " above=" + above.size + " best=" + String.format("%.3f", top),
+            )
+            above.take(maxHits).forEach {
+                Log.i(TAG, "hit " + it.first.path + " score=" + String.format("%.3f", it.second))
+            }
         }
-        return scored.sortedByDescending { it.second }
-            .take(maxHits)
-            .map { it.first }
+        return above.take(maxHits).map { it.first }
     }
 
     /** 语义打分；嵌入模型缺失或请求失败返回 null，由调用方退回词法检索 */
@@ -184,12 +200,12 @@ object MemoryRag {
         settings: Settings,
         chunks: List<MemoryChunk>,
         query: String,
-        threshold: Float,
         logging: Boolean,
     ): List<Pair<MemoryChunk, Float>>? = withContext(Dispatchers.IO) {
         if (System.currentTimeMillis() < embedFailureUntil) return@withContext null
         val (providerSetting, model) = settings.resolveEmbeddingModel() ?: run {
-            if (logging) Log.i(TAG, "no embedding model configured, lexical fallback")
+            // 没有嵌入模型时召回质量只靠关键词，明确告诉用户该去配一个
+            if (logging) Log.w(TAG, "no embedding model configured, matching by keywords only")
             return@withContext null
         }
         val provider = runCatching {
@@ -215,6 +231,7 @@ object MemoryRag {
                 null
             } ?: return@withContext null
 
+        var batchFailed = false
         chunks.filter { it.key !in vectors }
             .chunked(EMBED_BATCH_SIZE)
             .forEach { batch ->
@@ -230,11 +247,16 @@ object MemoryRag {
                             VectorStoreCache.put(context, cacheKey(modelId, chunk.text), vector.toFloatArray())
                         }
                     }
-                }.onFailure { markEmbedFailure(it) }
+                }.onFailure {
+                    markEmbedFailure(it)
+                    batchFailed = true
+                }
             }
+        // 部分片段没拿到向量时语义分数不可比，交给词法兜底而不是静默丢掉这些片段
+        if (batchFailed) return@withContext null
         chunks.mapNotNull { chunk ->
             vectors[chunk.key]?.let { chunk to VectorStoreCache.cosineSimilarity(queryVector, it) }
-        }.filter { it.second >= threshold }
+        }
     }
 
     private fun markEmbedFailure(error: Throwable) {
@@ -242,22 +264,38 @@ object MemoryRag {
         embedFailureUntil = System.currentTimeMillis() + EMBED_FAILURE_TTL_MS
     }
 
-    /** 词法兜底：拉丁词 + 中文二元组的命中率 */
+    /**
+     * 词法兜底：拉丁词 + 中文二元组。
+     *
+     * 分母固定按 [LEXICAL_TERMS_FOR_FULL] 个词算，不随问句长度膨胀：长问句切出几十个词、
+     * 只命中一个也会被打到接近 0 分，那正是之前"调高阈值就永远召不回"的原因。
+     */
     private fun scoreLexically(
         chunks: List<MemoryChunk>,
         query: String,
     ): List<Pair<MemoryChunk, Float>> {
         val terms = queryTerms(query)
         if (terms.isEmpty()) return emptyList()
-        val required = if (terms.size < MIN_LEXICAL_HITS) 1 else MIN_LEXICAL_HITS
+        val phrase = query.lowercase().trim()
+        val ceiling = terms.size.coerceAtMost(LEXICAL_TERMS_FOR_FULL)
         return chunks.mapNotNull { chunk ->
-            val text = (chunk.title + "\n" + chunk.text).lowercase()
-            val hits = terms.count { text.contains(it) }
-            if (hits < required) {
-                null
-            } else {
-                chunk to hits.toFloat() / terms.size.coerceAtMost(LEXICAL_HIT_SCALE)
+            val head = (chunk.title + " " + chunk.path).lowercase()
+            val body = chunk.text.lowercase()
+            var hits = 0
+            var headHits = 0
+            terms.forEach { term ->
+                if (head.contains(term)) {
+                    hits++
+                    headHits++
+                } else if (body.contains(term)) {
+                    hits++
+                }
             }
+            if (hits == 0) return@mapNotNull null
+            var score = hits.coerceAtMost(ceiling).toFloat() / ceiling * LEXICAL_BODY_WEIGHT
+            if (headHits > 0) score += LEXICAL_HEAD_BONUS
+            if (phrase.length >= 4 && body.contains(phrase)) score += LEXICAL_FULL_MATCH_BONUS
+            chunk to score.coerceAtMost(1f)
         }
     }
 
