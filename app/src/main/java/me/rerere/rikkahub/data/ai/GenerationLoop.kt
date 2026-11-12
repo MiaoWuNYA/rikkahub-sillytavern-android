@@ -22,6 +22,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.core.Tool
+import me.rerere.ai.core.sum
 import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.Provider
 import me.rerere.ai.provider.ProviderManager
@@ -67,6 +68,9 @@ import java.net.NoRouteToHostException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import kotlin.time.Clock
+import kotlin.time.Duration
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 import kotlin.uuid.Uuid
 import me.rerere.rikkahub.utils.l10n
 
@@ -115,6 +119,7 @@ class GenerationLoop(
     private val memoryRepo: MemoryRepository,
     private val conversationRepo: ConversationRepository,
     private val pluginToolProvider: me.rerere.rikkahub.plugin.provider.PluginToolProvider,
+    private val usageRecorder: UsageRecorder,
 ) {
     fun generateText(
         settings: Settings,
@@ -1053,6 +1058,11 @@ class GenerationLoop(
             // 思考档位 OFF 时显式关闭：部分上游忽略档位参数，只省略字段会沿用服务端默认
             disableReasoning = assistant.reasoningLevel == me.rerere.ai.core.ReasoningLevel.OFF,
         )
+        // 官方链由 AgentLoop 记录用量，本地链不经过那里，必须在这里自己记
+        val recordingProvider = usageRecorder.wrap(
+            providerImpl,
+            UsageTag(UsageSource.CHAT, assistant.id, conversationId),
+        )
         try {
             if (stream) {
                 // 每次重试都从本次模型调用开始前的消息快照重新合并，避免将重试响应
@@ -1070,16 +1080,26 @@ class GenerationLoop(
                     }
                 var retryCount = 0
                 var emptyRetryCount = 0
+                // 本步只统计自己的用量：先清掉继承的累计值，结束后再与之前步骤相加
+                val stepBase = responseBaseMessages.lastOrNull()
+                    ?.takeIf { it.role == MessageRole.ASSISTANT }
+                val streamBaseMessages = if (stepBase?.usage != null) {
+                    responseBaseMessages.dropLast(1) + stepBase.copy(usage = null)
+                } else {
+                    responseBaseMessages
+                }
 
                 while (true) {
                     val streamChunkHandler = StreamChunkHandler(model)
-                    var attemptMessages = responseBaseMessages
+                    var attemptMessages = streamBaseMessages
+                    val stepMark = TimeSource.Monotonic.markNow()
+                    var firstChunkMark: TimeMark? = null
                     // 防空回复：重试时对请求副本的末条用户消息做微扰（历史消息不动）
                     val requestMessages =
                         if (emptyRetryCount > 0) escapedMessages.perturbForEmptyRetry(emptyRetryCount)
                         else escapedMessages
                     try {
-                        providerImpl.streamText(
+                        recordingProvider.streamText(
                             providerSetting = provider,
                             messages = requestMessages,
                             params = params
@@ -1089,6 +1109,7 @@ class GenerationLoop(
                                     processingStatus.value = null
                                 }
                                 attemptMessages = streamChunkHandler.handle(attemptMessages, chunk)
+                                if (firstChunkMark == null) firstChunkMark = TimeSource.Monotonic.markNow()
                                 onUpdateMessages(attemptMessages)
                             } catch (error: CancellationException) {
                                 throw error
@@ -1097,7 +1118,10 @@ class GenerationLoop(
                                 throw StreamChunkHandlingException(error)
                             }
                         }
-                        messages = attemptMessages
+                        val stepTime = (firstChunkMark ?: stepMark).elapsedNow()
+                        messages = attemptMessages.let {
+                            it.dropLast(1) + it.last().withStepStats(stepBase, stepTime)
+                        }
                         // 中转站兼容：流结束后评估整条回复，正文为空而推理有实质内容时
                         // 把推理提升为正文（中转站把回复塞进 reasoning_content 的病态情形）
                         if (params.enableProxyFix) {
@@ -1138,17 +1162,27 @@ class GenerationLoop(
                     val requestMessages =
                         if (emptyRetryCount > 0) escapedMessages.perturbForEmptyRetry(emptyRetryCount)
                         else escapedMessages
+                    val stepMark = TimeSource.Monotonic.markNow()
+                    val generationBase = baseMessages.lastOrNull()
+                        ?.takeIf { it.role == MessageRole.ASSISTANT }
+                    val generationBaseMessages = if (generationBase?.usage != null) {
+                        baseMessages.dropLast(1) + generationBase.copy(usage = null)
+                    } else {
+                        baseMessages
+                    }
                     val result = executeProviderRequestWithRetry(
                         processingStatus = processingStatus,
                         enabled = settings.networkSetting.enableAutoRetry,
                     ) {
-                        providerImpl.generateText(
+                        recordingProvider.generateText(
                             providerSetting = provider,
                             messages = requestMessages,
                             params = params,
                         )
                     }
-                    messages = baseMessages.handleTextGenerationResult(result = result, model = model)
+                    val generationTime = stepMark.elapsedNow()
+                    messages = generationBaseMessages.handleTextGenerationResult(result = result, model = model)
+                        .let { it.dropLast(1) + it.last().withStepStats(generationBase, generationTime) }
                     if (settings.huadengSettings.enableAntiEmptyResponse &&
                         emptyRetryCount < MAX_EMPTY_RESPONSE_RETRIES &&
                         messages.lastOrNull().isBlankAssistantReply()
@@ -1652,3 +1686,11 @@ private fun String.isTavernBaseTool(): Boolean =
         this == "file" ||
         this == "web_fetch" ||
         this == "calculator"
+
+// 多步工具调用共用一条助手消息：把本步的用量和耗时累加到之前步骤的统计上
+private fun UIMessage.withStepStats(stepBase: UIMessage?, stepTime: Duration): UIMessage = copy(
+    usage = stepBase?.usage.sum(usage),
+    lastUsage = usage ?: stepBase?.lastUsage,
+    generationTimeMs = (stepBase?.generationTimeMs ?: 0L) + stepTime.inWholeMilliseconds,
+    stepCount = (stepBase?.stepCount ?: 0) + 1,
+)
