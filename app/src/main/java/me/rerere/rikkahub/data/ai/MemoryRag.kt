@@ -17,7 +17,8 @@ internal const val DEFAULT_RECALL_LIMIT = 6
 internal const val DEFAULT_MIN_SIMILARITY = 0.2f
 private const val RECALL_CHAR_BUDGET = 1200
 
-// 词法兜底按命中个数判定：长问句会切出几十个词，比例被稀释，用比例会永远召不回
+// 词法兜底按命中个数判定：长问句会切出几十个词，比例被稀释，用比例会永远召不回。
+// 短问句（"你好"这类）只切得出一个词，要求 2 个永远命中不了，所以下限按词数收缩
 private const val MIN_LEXICAL_HITS = 2
 private const val LEXICAL_HIT_SCALE = 6
 
@@ -160,8 +161,17 @@ object MemoryRag {
             if (logging) Log.i(TAG, "no searchable chunks (only profile/preferences or empty store)")
             return emptyList()
         }
-        val scored = scoreByEmbedding(context, providerManager, settings, chunks, query, threshold, logging)
-            ?: scoreLexically(chunks, query)
+        // 有嵌入结果但全被阈值滤掉时不退回词法：否则用户设定的严格度会被兜底绕过
+        val embedded = scoreByEmbedding(context, providerManager, settings, chunks, query, threshold, logging)
+        if (embedded != null && embedded.isEmpty()) {
+            if (logging) Log.i(TAG, "no chunk above threshold=" + threshold + " among " + chunks.size)
+            return emptyList()
+        }
+        // 词法兜底同样要过阈值：否则调高相似度下限对没配嵌入模型的用户完全无效
+        val scored = (embedded ?: scoreLexically(chunks, query)).filter { it.second >= threshold }
+        if (logging && scored.isEmpty()) {
+            Log.i(TAG, "nothing above threshold=" + threshold + " among " + chunks.size + " chunk(s)")
+        }
         return scored.sortedByDescending { it.second }
             .take(maxHits)
             .map { it.first }
@@ -239,10 +249,11 @@ object MemoryRag {
     ): List<Pair<MemoryChunk, Float>> {
         val terms = queryTerms(query)
         if (terms.isEmpty()) return emptyList()
+        val required = if (terms.size < MIN_LEXICAL_HITS) 1 else MIN_LEXICAL_HITS
         return chunks.mapNotNull { chunk ->
             val text = (chunk.title + "\n" + chunk.text).lowercase()
             val hits = terms.count { text.contains(it) }
-            if (hits < MIN_LEXICAL_HITS) {
+            if (hits < required) {
                 null
             } else {
                 chunk to hits.toFloat() / terms.size.coerceAtMost(LEXICAL_HIT_SCALE)
