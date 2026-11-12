@@ -58,6 +58,8 @@ data class Assistant(
     // 记忆功能默认开启：记忆让 AI 更了解用户
     val enableMemory: Boolean = true,
     val useGlobalMemory: Boolean = false, // 使用全局共享记忆而非助手隔离记忆
+    // 记忆 RAG：按对话内容自动检索相关记忆片段注入，省掉模型自己翻记忆文件的 token
+    val enableMemoryRag: Boolean = true,
     // 上下文滚动压缩：达到阈值后自动把早期对话压缩为摘要（保留原文，仅请求时替换前缀）
     // 默认关闭：入口已从设置里移除，无法再关闭，故对所有助手统一停用。
     // 该字段仅为兼容旧数据保留，设置归一化时会强制置 false。

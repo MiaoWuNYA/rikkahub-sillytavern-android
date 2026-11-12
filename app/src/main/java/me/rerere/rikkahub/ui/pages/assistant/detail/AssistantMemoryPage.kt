@@ -241,6 +241,19 @@ private fun MemorySettingsTab(
                 headlineContent = { Text(stringResource(R.string.assistant_page_global_memory)) },
             )
             switchItem(
+                checked = assistant.enableMemoryRag,
+                onCheckedChange = {
+                    onUpdateAssistant(
+                        assistant.copy(
+                            enableMemoryRag = it
+                        )
+                    )
+                },
+                enabled = assistant.enableMemory,
+                supportingContent = { Text(stringResource(R.string.assistant_page_memory_rag_desc)) },
+                headlineContent = { Text(stringResource(R.string.assistant_page_memory_rag)) },
+            )
+            switchItem(
                 checked = assistant.autoConsolidateMemory,
                 onCheckedChange = {
                     onUpdateAssistant(
