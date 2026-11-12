@@ -149,6 +149,9 @@ class ProactiveMessageRunner(
         // 保护 last_triggered_time 的 check-then-act 竞态（防止 AlarmManager 与 WorkManager
         // 前后脚触发导致"最小间隔"被砍半）。纯同步 SharedPreferences 读写，无挂起点，用对象锁即可。
         private val prefsLock = Any()
+
+        // 判定沉默时忽略的标记与标点：正文里顺口提到 [PASS] 不该算作放弃
+        private val MARKER_NOISE_REGEX = Regex("[\\s\\p{Punct}。，、！？；：…—－“”‘’（）【】《》]+")
     }
 
     // 输入转换器（与 ChatService 保持一致的子集）
@@ -362,20 +365,13 @@ class ProactiveMessageRunner(
                     }
                 )
 
-                // 构建系统提示词（助手人设 + 记忆 + 触发说明与上下文，上下文放最后避免被淹没）
-                val systemPrompt = buildSystemPrompt(
-                    assistant = assistant,
-                    settings = settings,
-                    idleMinutes = idleMinutes,
-                    context = contextStr,
-                )
+                // 系统提示词只放稳定内容（人设 + 记忆），保证前缀缓存命中
+                val systemPrompt = buildSystemPrompt(assistant = assistant)
 
-                // user message 只放简短指令（上下文已在系统提示词中）
+                // 每次都变的触发说明与上下文追加到最末尾，不破坏前缀
                 val userMessage = UIMessage(
                     role = MessageRole.USER,
-                    parts = listOf(UIMessagePart.Text(
-                        "请根据以上上下文决定是否发消息。没什么好说的就回复 [PASS] 即可，不要强行找话题。"
-                    ))
+                    parts = listOf(UIMessagePart.Text(buildTriggerPrompt(idleMinutes, contextStr)))
                 )
 
                 // 应用输入转换器
@@ -473,7 +469,7 @@ class ProactiveMessageRunner(
 
                 Log.d(TAG, "Proactive message generated: '${replyText.take(100)}' (${replyText.length} chars), shouldJump=$shouldJump")
 
-                if (replyText.isBlank() || rawText.contains("[PASS]")) {
+                if (replyText.isBlank() || isPassReply(rawText)) {
                     // AI 选择跳过，移除本次生成的 aiMessage node（基于 id 匹配，不误删历史）
                     Log.d(TAG, "AI chose to skip proactive message")
                     val aiId = aiMessage.id
@@ -658,14 +654,9 @@ class ProactiveMessageRunner(
     }
 
     /**
-     * 构建系统提示词：助手人设 + 记忆 + 主动消息触发说明与上下文。
+     * 构建系统提示词：只放助手人设 + 记忆，逐字稳定以命中前缀缓存。
      */
-    private suspend fun buildSystemPrompt(
-        assistant: Assistant,
-        settings: Settings,
-        idleMinutes: Int,
-        context: String,
-    ): String {
+    private suspend fun buildSystemPrompt(assistant: Assistant): String {
         return buildString {
             if (assistant.systemPrompt.isNotBlank()) {
                 append(assistant.systemPrompt)
@@ -684,15 +675,26 @@ class ProactiveMessageRunner(
                 }
             }
 
-            appendLine()
-            appendLine()
+        }
+    }
+
+    /**
+     * 构建当轮触发提示：时间、上下文等每次都变的内容只出现在最后一条 user 消息里。
+     */
+    private fun buildTriggerPrompt(idleMinutes: Int, context: String): String {
+        return buildString {
             appendLine("## 主动消息触发（定时触发）")
             appendLine("距离用户上次回复已过去 $idleMinutes 分钟。")
             appendLine("这是定时触发的主动消息。绝对不要复述上一轮的对话内容，要发新的话题或新的关心。")
             appendLine("如果你觉得现在没什么好说的，或者没什么有趣的话题，请只回复 [PASS] 即可。")
             appendLine("[JUMP] 标记不会展示给用户，仅用于触发屏幕跳转。")
+            if (context.isNotBlank()) {
+                appendLine()
+                appendLine("### 当前上下文")
+                appendLine(context)
+            }
             appendLine()
-            appendLine(context)
+            append("请根据以上上下文决定是否发消息。没什么好说的就回复 [PASS] 即可，不要强行找话题。")
         }
     }
 
@@ -895,6 +897,17 @@ class ProactiveMessageRunner(
             val hasResumableTool = tools.any { !it.isExecuted && it.approvalState.canResumeToolExecution() }
             !hasResumableTool
         }
+    }
+
+    /**
+     * 整段回复只剩标记与标点才算沉默，避免正文里出现 "[PASS]" 就当放弃。
+     */
+    private fun isPassReply(text: String): Boolean {
+        val stripped = text
+            .replace(Regex("\\[JUMP]", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("\\[PASS]", RegexOption.IGNORE_CASE), "")
+            .replace(MARKER_NOISE_REGEX, "")
+        return stripped.isEmpty()
     }
 
     /**

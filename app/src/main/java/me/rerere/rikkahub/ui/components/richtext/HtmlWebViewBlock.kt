@@ -66,6 +66,7 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowUp01
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Refresh01
+import me.rerere.rikkahub.ui.context.LocalDisplaySettings
 import me.rerere.hugeicons.stroke.View as ViewIcon
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.st.runtime.RikkaWebChromeClient
@@ -94,6 +95,7 @@ fun HtmlWebViewBlock(
     messageKey: String = "",
 ) {
     TrackWebViewPresence()
+    val displaySetting = LocalDisplaySettings.current
     val density = LocalDensity.current.density
     val colorScheme = MaterialTheme.colorScheme
     val context = LocalContext.current
@@ -260,19 +262,23 @@ fun HtmlWebViewBlock(
                     )
                 }
             }
-            IconButton(onClick = reloadPanel, modifier = Modifier.size(32.dp)) {
-                Icon(
-                    HugeIcons.Refresh01,
-                    contentDescription = l10n("重载面板", "Reload panel"),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            if (!displaySetting.hideCardRefreshButton) {
+                IconButton(onClick = reloadPanel, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        HugeIcons.Refresh01,
+                        contentDescription = l10n("重载面板", "Reload panel"),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
-            IconButton(onClick = { showFullscreen = true }, modifier = Modifier.size(32.dp)) {
-                Icon(
-                    HugeIcons.ViewIcon,
-                    contentDescription = stringResource(R.string.html_block_fullscreen),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            if (!displaySetting.hideCardExpandButton) {
+                IconButton(onClick = { showFullscreen = true }, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        HugeIcons.ViewIcon,
+                        contentDescription = stringResource(R.string.html_block_fullscreen),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
