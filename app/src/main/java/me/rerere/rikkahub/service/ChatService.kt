@@ -122,6 +122,7 @@ import me.rerere.rikkahub.data.ai.transformers.TimeReminderTransformer
 import me.rerere.rikkahub.data.ai.transformers.WorkspaceReminderTransformer
 import me.rerere.rikkahub.data.ai.transformers.AuthorsNoteTransformer
 import me.rerere.rikkahub.data.ai.transformers.CrossWindowMemoryTransformer
+import me.rerere.rikkahub.data.ai.transformers.PreRequestMcpHookTransformer
 import me.rerere.rikkahub.data.ai.transformers.SkillAutoTriggerTransformer
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.Settings
@@ -281,6 +282,9 @@ class ChatService(
 ) {
     // workspace 系统提示注入 (依赖 workspaceRepository, 故在类内构造)
     private val workspaceReminderTransformer = WorkspaceReminderTransformer(workspaceRepository)
+
+    // 发消息前自动跑一次 MCP 工具并注入当轮上下文（结果不落库）
+    private val preRequestMcpHookTransformer = PreRequestMcpHookTransformer(mcpManager)
 
     // 主线程 Handler：用于把 LifecycleRegistry 的注册/注销强制派发到主线程
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -1674,6 +1678,8 @@ class ChatService(
                     // PromptInjection/AuthorsNote 已在基础列表里，再 add 一次会让世界书、
                     // 注入文档、作者笔记在同一个请求里拼两遍（实测 B 文档出现两份）
                     add(templateTransformer)
+                    // 预请求 MCP Hook：开关关闭时内部直接短路
+                    add(preRequestMcpHookTransformer)
 
                     if (settings.huadengSettings.enableTavernMode) {
                         // 用户手动上传的文档和写的占位符照常处理，只去掉自动注入类
@@ -2353,6 +2359,8 @@ class ChatService(
                 addAll(inputTransformers)
 
                 add(templateTransformer)
+                // 预请求 MCP Hook：开关关闭时内部直接短路
+                add(preRequestMcpHookTransformer)
 
                 if (settings.huadengSettings.enableTavernMode) {
                     removeAll { it === OcrTransformer }

@@ -145,6 +145,7 @@ import me.rerere.rikkahub.ui.pages.setting.SettingMcpDetailPage
 import me.rerere.rikkahub.ui.pages.setting.SettingMcpPage
 import me.rerere.rikkahub.ui.pages.setting.SettingModelPage
 import me.rerere.rikkahub.ui.pages.setting.SettingPage
+import me.rerere.rikkahub.ui.pages.setting.SettingPreRequestHookPage
 import me.rerere.rikkahub.ui.pages.setting.SettingProactiveMessagePage
 import me.rerere.rikkahub.ui.pages.setting.SettingProviderDetailPage
 import me.rerere.rikkahub.ui.pages.setting.SettingProviderPage
@@ -730,6 +731,10 @@ class RouteActivity : ComponentActivity() {
                                 SettingProactiveMessagePage()
                             }
 
+                            entry<Screen.SettingPreRequestHook> {
+                                SettingPreRequestHookPage()
+                            }
+
                             entry<Screen.Debug> {
                                 DebugPage()
                             }
@@ -977,6 +982,7 @@ private fun Screen.isSettingScreen(): Boolean = when (this) {
     Screen.SettingTavernRegex, Screen.SettingHuaDeng, Screen.SettingHuaDengCompat,
     Screen.SettingJev, Screen.SettingSecurity, Screen.SettingBrowser,
     Screen.SettingWeixinBot, Screen.SettingQqBot, Screen.SettingProactiveMessage,
+    Screen.SettingPreRequestHook,
     Screen.Persona, Screen.AuthorsNote, Screen.Extensions, Screen.QuickMessages,
     Screen.Prompts, Screen.Skills, Screen.Plugins, Screen.Workspaces,
     Screen.Stats -> true
@@ -1164,6 +1170,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingProactiveMessage : Screen
+
+    @Serializable
+    data object SettingPreRequestHook : Screen
 
     @Serializable
     data object Debug : Screen

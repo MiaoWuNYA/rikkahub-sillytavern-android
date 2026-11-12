@@ -18,6 +18,7 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Settings03
 import me.rerere.hugeicons.stroke.AiBrowser
 import me.rerere.hugeicons.stroke.ArrowRight01
+import me.rerere.hugeicons.stroke.Brain
 import me.rerere.hugeicons.stroke.Brain01
 import me.rerere.hugeicons.stroke.Message01
 import me.rerere.hugeicons.stroke.MessageMultiple01
@@ -112,6 +113,13 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                         leadingContent = { CardGroupIcon(HugeIcons.MessageMultiple01) },
                         supportingContent = { Text(stringResource(R.string.setting_page_qq_bot_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_qq_bot)) },
+                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingPreRequestHook) },
+                        leadingContent = { CardGroupIcon(HugeIcons.Brain) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_pre_request_hook_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_pre_request_hook)) },
                         trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
                     )
                     item(

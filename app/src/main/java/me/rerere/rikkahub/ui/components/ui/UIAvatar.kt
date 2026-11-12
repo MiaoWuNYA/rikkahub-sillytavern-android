@@ -3,7 +3,6 @@ package me.rerere.rikkahub.ui.components.ui
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
@@ -52,9 +51,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import androidx.core.net.toUri
 import coil3.compose.AsyncImage
-import me.rerere.common.android.appTempFolder
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Edit03
 import me.rerere.rikkahub.R
@@ -63,7 +60,6 @@ import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.ui.components.ai.useCropLauncher
 import me.rerere.rikkahub.ui.hooks.rememberAvatarShape
 import org.koin.compose.koinInject
-import java.io.File
 
 @Composable
 fun TextAvatar(
@@ -105,12 +101,10 @@ fun UIAvatar(
     onClick: (() -> Unit)? = null
 ) {
     val filesManager: FilesManager = koinInject()
-    val context = LocalContext.current
     var showPickOption by remember { mutableStateOf(false) }
     var showEmojiPicker by remember { mutableStateOf(false) }
     var showUrlInput by remember { mutableStateOf(false) }
     var urlInput by remember { mutableStateOf("") }
-    var preCropTempFile by remember { mutableStateOf<File?>(null) }
 
     fun saveAvatarImage(uri: Uri) {
         val localUris = filesManager.createChatFilesByContents(listOf(uri))
@@ -123,10 +117,6 @@ fun UIAvatar(
         onCroppedImageReady = { croppedUri ->
             saveAvatarImage(croppedUri)
         },
-        onCleanup = {
-            preCropTempFile?.delete()
-            preCropTempFile = null
-        },
         aspectRatio = 1f to 1f,
         freeStyleCropEnabled = false
     )
@@ -134,20 +124,8 @@ fun UIAvatar(
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { selectedUri ->
-            val tempFile = File(context.appTempFolder, "avatar_pick_${System.currentTimeMillis()}.jpg")
-            runCatching {
-                context.contentResolver.openInputStream(selectedUri)?.use { input ->
-                    tempFile.outputStream().use { output -> input.copyTo(output) }
-                } ?: error("Failed to open input stream for $selectedUri")
-                preCropTempFile?.delete()
-                preCropTempFile = tempFile
-                launchImageCrop(tempFile.toUri())
-            }.onFailure {
-                tempFile.delete()
-                launchImageCrop(selectedUri)
-            }
-        }
+        // 直接交给裁剪器：原样复制成 .jpg 会让后缀与真实格式不符，裁剪必失败
+        uri?.let { launchImageCrop(it) }
     }
 
     Box(modifier = modifier.then(Modifier.size(32.dp))) {
@@ -172,12 +150,19 @@ fun UIAvatar(
             ) {
                 when (value) {
                     is Avatar.Image -> {
-                        AsyncImage(
-                            model = value.url,
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                        )
+                        // 备份恢复后路径可能失效，加载失败就退回程序化头像而不是留一块空圆
+                        var loadFailed by remember(value.url) { mutableStateOf(false) }
+                        if (loadFailed) {
+                            ProceduralAvatar(name = name, modifier = Modifier.fillMaxSize())
+                        } else {
+                            AsyncImage(
+                                model = value.url,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop,
+                                onError = { loadFailed = true },
+                            )
+                        }
                     }
 
                     is Avatar.Emoji -> {

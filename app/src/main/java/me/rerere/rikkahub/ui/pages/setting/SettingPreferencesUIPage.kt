@@ -613,6 +613,30 @@ internal fun SettingPreferencesUIContent(vm: SettingVM, contentPadding: PaddingV
                         },
                     )
                     item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_hide_card_expand_button_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_hide_card_expand_button_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.hideCardExpandButton,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(hideCardExpandButton = it))
+                                }
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_hide_card_refresh_button_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_hide_card_refresh_button_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.hideCardRefreshButton,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(hideCardRefreshButton = it))
+                                }
+                            )
+                        },
+                    )
+                    item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_hide_drawer_media_creation_title)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_page_hide_drawer_media_creation_desc)) },
                         trailingContent = {

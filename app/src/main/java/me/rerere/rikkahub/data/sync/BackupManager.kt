@@ -2,6 +2,7 @@ package me.rerere.rikkahub.data.sync
 
 import android.content.Context
 import android.util.Log
+import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -23,6 +24,7 @@ import me.rerere.rikkahub.data.db.AppDatabase
 import me.rerere.rikkahub.data.db.AppDatabaseFactory
 import me.rerere.rikkahub.data.db.SQLiteConfiguration
 import me.rerere.rikkahub.data.files.FileFolders
+import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.files.MediaCreationFiles
 import java.io.File
 import java.io.FileOutputStream
@@ -159,7 +161,10 @@ class BackupManager(
                     val settingsFile = File(staging, "settings.json")
                     if (settingsFile.exists()) {
                         val migrated = SettingsJsonMigrator.migrate(settingsFile.readText())
-                        val settings = json.decodeFromString<Settings>(migrated)
+                        val settings = remapAvatarFiles(
+                            json.decodeFromString<Settings>(migrated),
+                            File(payload, "files"),
+                        )
                         require(!settings.init) { "Backup contains uninitialized settings" }
                         // Persist the migrated value once, including generated IDs, for restart/retry consistency.
                         PendingRestore.writeDurably(
@@ -202,6 +207,25 @@ class BackupManager(
             throw e
         }
         return room
+    }
+
+    /**
+     * 备份里的头像 url 记的是导出机器的绝对路径（旧包名），恢复后必然指不到文件。
+     * 这里按文件名重新指向当前 filesDir，找不到就退回程序化头像。
+     */
+    private fun remapAvatarFiles(settings: Settings, stagedFiles: File): Settings {
+        val stagedUpload = File(stagedFiles, FileFolders.UPLOAD)
+        fun remap(avatar: Avatar): Avatar {
+            if (avatar !is Avatar.Image) return avatar
+            val name = avatar.url.substringAfterLast('/').substringBefore('?')
+            if (name.isBlank()) return Avatar.Dummy
+            if (!File(stagedUpload, name).isFile) return Avatar.Dummy
+            return Avatar.Image(File(context.filesDir, "${FileFolders.UPLOAD}/$name").toUri().toString())
+        }
+        return settings.copy(
+            assistants = settings.assistants.map { it.copy(avatar = remap(it.avatar)) },
+            displaySetting = settings.displaySetting.copy(userAvatar = remap(settings.displaySetting.userAvatar)),
+        )
     }
 
     private fun isAttachment(name: String): Boolean {
