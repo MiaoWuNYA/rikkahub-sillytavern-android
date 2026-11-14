@@ -3384,7 +3384,10 @@
   <string name="onboarding_extras_desc_prefix">These are </string>
   <string name="onboarding_extras_desc_emphasis">all optional</string>
   <string name="onboarding_extras_desc_suffix">; come back anytime. You can head in and chat right now.</string>
-  <string name="preset_page_third_party_notice">HuaDeng is only a tooling framework. Presets and other third-party content are published by their own authors — please respect copyright, obtain them from the original author, and follow their license terms. This app does not bundle or provide any third-party presets.</string>
+  <string name="preset_page_third_party_notice">HuaDeng is only a tooling framework that encourages you to build your own lorebooks and presets. Third-party presets and similar content remain the copyright of their creators — please follow their license terms. This app does not bundle or provide any third-party presets.</string>
+  <string name="preset_page_notice_title">About presets and third-party content</string>
+  <string name="preset_page_notice_got_it">Got it</string>
+  <string name="preset_page_notice_never">Don\'t show again</string>
   <string name="onboarding_disclaimer_accuracy">AI can make mistakes. Double-check anything that matters.</string>
   <string name="onboarding_disclaimer_medical">AI is not a therapist. If you need help, please consult a qualified professional.</string>
   <string name="onboarding_disclaimer_framework">HuaDeng is only a tooling framework and does not provide generated content. Any risk arising from the content is yours to bear.</string>

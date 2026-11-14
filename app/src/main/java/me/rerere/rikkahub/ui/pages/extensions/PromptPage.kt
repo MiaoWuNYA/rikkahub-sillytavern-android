@@ -110,6 +110,7 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.export.LorebookSerializer
 import me.rerere.rikkahub.data.export.ModeInjectionSerializer
 import me.rerere.rikkahub.data.export.SillyTavernRegexImporter
+import me.rerere.rikkahub.ui.hooks.readBooleanPreference
 import me.rerere.rikkahub.ui.hooks.rememberExporter
 import me.rerere.rikkahub.ui.hooks.rememberImporter
 import me.rerere.rikkahub.data.model.InjectionPosition
@@ -135,6 +136,7 @@ import me.rerere.rikkahub.ui.components.ui.Tag
 import me.rerere.rikkahub.ui.components.ui.TagType
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.hooks.useEditState
+import me.rerere.rikkahub.ui.hooks.writeBooleanPreference
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.plus
 import me.rerere.ui.components.FormItem
@@ -155,11 +157,44 @@ private enum class PromptTab(
         @Composable get() = stringResource(labelRes)
 }
 
+private const val KEY_PRESET_NOTICE_DISMISSED = "preset_third_party_notice_dismissed"
+
 @Composable
 fun PromptPage(vm: PromptVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val pagerState = rememberPagerState { PromptTab.entries.size }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val context = LocalContext.current
+    // 第三方内容提示每次进页面弹一次，「不再提示」后永久关闭
+    var showNotice by remember { mutableStateOf(!context.readBooleanPreference(KEY_PRESET_NOTICE_DISMISSED)) }
+
+    if (showNotice) {
+        AlertDialog(
+            onDismissRequest = { showNotice = false },
+            title = { Text(stringResource(R.string.preset_page_notice_title)) },
+            text = {
+                Text(
+                    text = stringResource(R.string.preset_page_third_party_notice),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
+            confirmButton = {
+                Button(onClick = { showNotice = false }) {
+                    Text(stringResource(R.string.preset_page_notice_got_it))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        context.writeBooleanPreference(KEY_PRESET_NOTICE_DISMISSED, true)
+                        showNotice = false
+                    }
+                ) {
+                    Text(stringResource(R.string.preset_page_notice_never))
+                }
+            },
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -178,13 +213,6 @@ fun PromptPage(vm: PromptVM = koinViewModel()) {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Text(
-                text = stringResource(R.string.preset_page_third_party_notice),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 6.dp),
-            )
-
             PagerTabs(
                 pagerState = pagerState,
                 tabs = PromptTab.entries,
