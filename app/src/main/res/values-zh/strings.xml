@@ -3375,9 +3375,12 @@
   <string name="onboarding_extras_desc_prefix">这些</string>
   <string name="onboarding_extras_desc_emphasis">都不是必须的</string>
   <string name="onboarding_extras_desc_suffix">，随时可以回来弄。现在就进去聊也完全没问题。</string>
-  <string name="preset_page_third_party_notice">华灯只是一个工具性框架，预设等第三方内容由各自作者发布，尊重版权，请从原作者处获取并遵守其授权说明。本应用不内置、不提供任何第三方预设。</string>
+  <string name="preset_page_third_party_notice">华灯只是一个工具性框架，鼓励用户自己创建属于自己的世界书和预设。第三方预设等内容版权归属创作者，请遵守其授权说明。本应用不内置、不提供任何第三方预设。</string>
+  <string name="preset_page_notice_title">关于预设与第三方内容</string>
+  <string name="preset_page_notice_got_it">我知道了</string>
+  <string name="preset_page_notice_never">不再提示</string>
   <string name="onboarding_disclaimer_accuracy">人工智能可能会出错，请仔细甄别</string>
-  <string name="onboarding_disclaimer_medical">人工智能不是心理医生，如需帮助请咨询专业医师</string>
+  <string name="onboarding_disclaimer_medical">AI 不是心理医生，如需帮助请咨询专业医师</string>
   <string name="onboarding_disclaimer_framework">华灯只是一个工具性框架，不提供生成式内容，内容所带来的一切风险需自行承担</string>
   <string name="onboarding_tavern_title">开启酒馆模式</string>
   <string name="onboarding_tavern_desc">开启后角色卡的工具将被关闭，请求只保留角色卡与聊天历史。这样能有效精简提示词、减少模型的安全拦截策略。需要工具时可以随时在设置里单独打开。</string>
