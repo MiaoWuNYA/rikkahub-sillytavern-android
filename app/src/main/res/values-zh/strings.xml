@@ -2015,7 +2015,7 @@
   <string name="setting_page_persona">用户人设</string>
   <string name="setting_page_persona_desc">定义用户角色，注入到提示词中</string>
   <string name="setting_page_plugins">插件管理</string>
-  <string name="setting_page_pre_request_hook">发消息前 MCP Hook</string>
+  <string name="setting_page_pre_request_hook">信息前 MCP</string>
   <string name="setting_page_pre_request_hook_desc">发消息前自动跑一个 MCP 工具，把结果注入当轮上下文</string>
   <string name="setting_page_pre_request_hook_about">说明</string>
   <string name="setting_page_pre_request_hook_what">上下文注入</string>

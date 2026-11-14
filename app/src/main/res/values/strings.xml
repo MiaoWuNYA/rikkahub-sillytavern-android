@@ -2016,7 +2016,7 @@
   <string name="setting_page_memory_desc">Fixed memory, cross-window life stream, long-term recall</string>
   <string name="setting_page_persona">Persona</string>
   <string name="setting_page_plugins">Plugins</string>
-  <string name="setting_page_pre_request_hook">Pre-request MCP Hook</string>
+  <string name="setting_page_pre_request_hook">Pre-message MCP</string>
   <string name="setting_page_pre_request_hook_desc">Run an MCP tool before sending and inject its result into this turn</string>
   <string name="setting_page_pre_request_hook_about">About</string>
   <string name="setting_page_pre_request_hook_what">Context injection</string>
