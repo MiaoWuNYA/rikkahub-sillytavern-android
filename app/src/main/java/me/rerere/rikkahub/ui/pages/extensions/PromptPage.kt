@@ -178,6 +178,13 @@ fun PromptPage(vm: PromptVM = koinViewModel()) {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            Text(
+                text = stringResource(R.string.preset_page_third_party_notice),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 6.dp),
+            )
+
             PagerTabs(
                 pagerState = pagerState,
                 tabs = PromptTab.entries,
