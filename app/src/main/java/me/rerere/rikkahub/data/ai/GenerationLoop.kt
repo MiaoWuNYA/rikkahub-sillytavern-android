@@ -1141,6 +1141,8 @@ class GenerationLoop(
                             Log.w(TAG, "Empty assistant reply, perturbing and retrying ($emptyRetryCount/$MAX_EMPTY_RESPONSE_RETRIES)")
                             continue
                         }
+                        // 逐 chunk 推给外层的是本步未累计的统计，收尾要再推一次，否则累计用量和多步计数传不出去
+                        onUpdateMessages(messages)
                         break
                     } catch (error: Throwable) {
                         if (error is StreamChunkHandlingException) {
