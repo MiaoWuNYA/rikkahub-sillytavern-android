@@ -780,6 +780,9 @@ private fun ExtrasStep(
                 }
             }
 
+            Spacer(Modifier.height(8.dp))
+            DisclaimerLines()
+
             // 这里**不再放一个「开始用」大按钮**。
             //
             // 右下角已经有一个「知道了，开始用」了，同一屏出现两个
@@ -966,6 +969,28 @@ private fun OriginalImportRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+    }
+}
+
+/** 引导页底部的灰字免责声明。 */
+@Composable
+private fun DisclaimerLines() {
+    val lines = listOf(
+        R.string.onboarding_disclaimer_accuracy,
+        R.string.onboarding_disclaimer_medical,
+        R.string.onboarding_disclaimer_framework,
+    )
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        lines.forEach { res ->
+            Text(
+                text = stringResource(res),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

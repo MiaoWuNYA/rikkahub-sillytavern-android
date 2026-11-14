@@ -3384,6 +3384,10 @@
   <string name="onboarding_extras_desc_prefix">These are </string>
   <string name="onboarding_extras_desc_emphasis">all optional</string>
   <string name="onboarding_extras_desc_suffix">; come back anytime. You can head in and chat right now.</string>
+  <string name="preset_page_third_party_notice">HuaDeng is only a tooling framework. Presets and other third-party content are published by their own authors — please respect copyright, obtain them from the original author, and follow their license terms. This app does not bundle or provide any third-party presets.</string>
+  <string name="onboarding_disclaimer_accuracy">AI can make mistakes. Double-check anything that matters.</string>
+  <string name="onboarding_disclaimer_medical">AI is not a therapist. If you need help, please consult a qualified professional.</string>
+  <string name="onboarding_disclaimer_framework">HuaDeng is only a tooling framework and does not provide generated content. Any risk arising from the content is yours to bear.</string>
   <string name="onboarding_tavern_title">Enable Tavern mode</string>
   <string name="onboarding_tavern_desc">Turns off character-card tools and sends only the card and chat history, which trims the prompt and reduces safety blocks. You can enable tools later in settings.</string>
   <string name="onboarding_import_card_title">Import a character card</string>
