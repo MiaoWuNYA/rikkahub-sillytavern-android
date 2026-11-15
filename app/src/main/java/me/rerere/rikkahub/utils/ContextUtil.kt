@@ -258,14 +258,14 @@ fun Context.openUsageAccessSettings() {
     }
 }
 
-/** 手机控制用的无障碍服务是否已在系统设置里启用 */
+/** 手机操作用的无障碍服务是否已在系统设置里启用 */
 fun Context.isPhoneAccessibilityEnabled(): Boolean = runCatching {
     val enabled = Settings.Secure.getString(contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
         .orEmpty()
-    val full = me.rerere.rikkahub.service.phone.PhoneAccessibilityService::class.java.name
+    val full = me.rerere.rikkahub.phoneuse.PhoneUseAccessibilityService::class.java.name
     enabled.split(':').any {
         it.equals("$packageName/$full", true) ||
-            it.equals("$packageName/.service.phone.PhoneAccessibilityService", true)
+            it.equals("$packageName/.phoneuse.PhoneUseAccessibilityService", true)
     }
 }.getOrDefault(false)
 

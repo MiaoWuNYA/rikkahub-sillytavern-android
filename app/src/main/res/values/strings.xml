@@ -3607,22 +3607,6 @@
   <string name="setting_model_page_memory_model">Memory Consolidation Model</string>
   <string name="setting_model_page_memory_model_desc">Model used to organize conversations into long-term memory in the background; uses the fast model when not set</string>
   <string name="setting_model_page_memory_model_follow_fast">Same as fast model</string>
-  <string name="local_tool_phone_control_title">Phone Control</string>
-  <string name="local_tool_phone_control_desc">Read what is on screen and tap, type or scroll in other apps through the accessibility service</string>
-  <string name="local_tool_phone_control_permission_required">Turn on the Phone Control accessibility service first</string>
-  <string name="phone_control_accessibility_label">Phone Control</string>
-  <string name="phone_control_accessibility_summary">Let the assistant read the screen and tap for you</string>
-  <string name="phone_control_accessibility_desc">Reads the text on screen and performs taps, typing and scrolling so the assistant can finish tasks in other apps. Screen text is sent to the model you configured; passwords are always masked. Screen off pauses the task and never resumes by itself.</string>
-  <string name="phone_control_notification_channel">Phone control</string>
-  <string name="phone_control_notification_running">Phone task · step %1$d/%2$d</string>
-  <string name="phone_control_notification_idle">Running</string>
-  <string name="phone_control_notification_paused">Paused · tap resume</string>
-  <string name="phone_control_notification_paused_desc">Step %1$d/%2$d, screen off pauses the task</string>
-  <string name="phone_control_notification_done">Phone task finished</string>
-  <string name="phone_control_notification_done_desc">%1$d steps</string>
-  <string name="phone_control_pause">Pause</string>
-  <string name="phone_control_resume">Resume</string>
-  <string name="phone_control_stop">Stop</string>
 
   <!-- AI 浏览器代理 -->
   <string name="browser_activity_label">AI Browser</string>
@@ -3679,7 +3663,39 @@
   <string name="setting_app_icon_google">Google</string>
   <string name="chat_page_compress_keep_recent_minus">Fewer messages</string>
   <string name="chat_page_compress_keep_recent_plus">More messages</string>
-  <string name="phone_control_permission_notification_title">AI wants to control your phone</string>
-  <string name="phone_control_permission_notification_desc">Open Accessibility and turn on Phone Control so the assistant can tap for you</string>
-  <string name="phone_control_permission_notification_action">Open settings</string>
+  <string name="assistant_page_local_tools_phone_use_title">Phone Use</string>
+  <string name="assistant_page_local_tools_phone_use_desc">Let the AI read the screen and operate other apps on this phone</string>
+  <string name="assistant_page_local_tools_phone_use_service_off">The accessibility service is off. Turn this switch off and on again to open the settings. If the system greys the option out, allow restricted settings for this app in App info first.</string>
+  <string name="assistant_page_local_tools_phone_use_enable_service">Turn on \"Phone Use\" in the accessibility settings</string>
+  <string name="phone_use_accessibility_description">Lets the AI assistant read the screen and perform taps, swipes and text input for you when you enable the Phone Use tool. Nothing is done unless the assistant is running a task you asked for.</string>
+  <string name="chat_message_tool_phone_use_observe">Read screen</string>
+  <string name="chat_message_tool_phone_use_screenshot">Take screenshot</string>
+  <string name="chat_message_tool_phone_use_tap">Tap</string>
+  <string name="chat_message_tool_phone_use_tap_target">Tap %1$s</string>
+  <string name="chat_message_tool_phone_use_long_press">Long press</string>
+  <string name="chat_message_tool_phone_use_long_press_target">Long press %1$s</string>
+  <string name="chat_message_tool_phone_use_swipe">Swipe</string>
+  <string name="chat_message_tool_phone_use_swipe_path">Swipe %1$s → %2$s</string>
+  <string name="chat_message_tool_phone_use_scroll_up">Scroll up</string>
+  <string name="chat_message_tool_phone_use_scroll_down">Scroll down</string>
+  <string name="chat_message_tool_phone_use_scroll_left">Scroll left</string>
+  <string name="chat_message_tool_phone_use_scroll_right">Scroll right</string>
+  <string name="chat_message_tool_phone_use_type">Type text</string>
+  <string name="chat_message_tool_phone_use_type_text">Enter text: %1$s</string>
+  <string name="chat_message_tool_phone_use_press_back">Press Back</string>
+  <string name="chat_message_tool_phone_use_press_home">Go to home screen</string>
+  <string name="chat_message_tool_phone_use_press_recents">Open recent apps</string>
+  <string name="chat_message_tool_phone_use_press_notifications">Open notifications</string>
+  <string name="chat_message_tool_phone_use_press_enter">Press Enter</string>
+  <string name="chat_message_tool_phone_use_open_app">Open app</string>
+  <string name="chat_message_tool_phone_use_open_app_name">Open app: %1$s</string>
+  <string name="chat_message_tool_phone_use_list_apps">List apps</string>
+  <string name="chat_message_tool_phone_use_wait">Wait %1$s seconds</string>
+  <string name="phone_use_accessibility_label" translatable="false">Phone Use</string>
+  <string name="phone_use_overlay_running">AI is operating the phone</string>
+  <string name="phone_use_overlay_stopped">AI stopped</string>
+  <string name="phone_use_overlay_stop_hint">Tap stop to interrupt</string>
+  <string name="phone_use_overlay_resume_hint">Tap resume to continue</string>
+  <string name="phone_use_overlay_stop">Stop</string>
+  <string name="phone_use_overlay_resume">Resume</string>
 </resources>
