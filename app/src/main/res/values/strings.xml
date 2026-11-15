@@ -3661,8 +3661,6 @@
   <string name="setting_app_icon_earth">Earth</string>
   <string name="setting_app_icon_cat_cute">Cute Cat</string>
   <string name="setting_app_icon_google">Google</string>
-  <string name="chat_page_compress_keep_recent_minus">Fewer messages</string>
-  <string name="chat_page_compress_keep_recent_plus">More messages</string>
   <string name="assistant_page_local_tools_phone_use_title">Phone Use</string>
   <string name="assistant_page_local_tools_phone_use_desc">Let the AI read the screen and operate other apps on this phone</string>
   <string name="assistant_page_local_tools_phone_use_service_off">The accessibility service is off. Turn this switch off and on again to open the settings. If the system greys the option out, allow restricted settings for this app in App info first.</string>
