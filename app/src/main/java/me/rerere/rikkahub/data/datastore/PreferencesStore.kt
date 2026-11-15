@@ -282,7 +282,12 @@ class SettingsStore internal constructor(
         // 整份设置的 JSON 解码很重，不能放在主线程
         scope.launch(Dispatchers.Default) {
             state.value = try {
-                preferencesFlow.first().toSettings().normalized()
+                val raw = preferencesFlow.first().toSettings()
+                // 规整只是把值修正到合法范围，出错时用读出的原值继续，不能因为它让启动失败
+                runCatching { raw.normalized() }.getOrElse {
+                    Log.e(TAG, "Failed to normalize settings, using the raw values", it)
+                    raw
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
