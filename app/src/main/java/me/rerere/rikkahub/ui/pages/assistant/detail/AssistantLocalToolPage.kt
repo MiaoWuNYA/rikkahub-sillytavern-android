@@ -46,8 +46,8 @@ import me.rerere.hugeicons.stroke.Image02
 import me.rerere.hugeicons.stroke.JavaScript
 import me.rerere.hugeicons.stroke.MessageQuestion
 import me.rerere.hugeicons.stroke.Python
-import me.rerere.hugeicons.stroke.Cursor02
 import me.rerere.hugeicons.stroke.SmartPhone01
+import me.rerere.hugeicons.stroke.Tap01
 import me.rerere.hugeicons.stroke.Robot01
 import me.rerere.hugeicons.stroke.SourceCode
 import me.rerere.hugeicons.stroke.Task01
@@ -60,6 +60,7 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.ai.tools.LocalToolOption
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.Assistant
+import me.rerere.rikkahub.phoneuse.PhoneUseManager
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.CardGroupIcon
@@ -75,6 +76,7 @@ import me.rerere.rikkahub.utils.isPhoneAccessibilityEnabled
 import me.rerere.rikkahub.utils.openAccessibilitySettings
 import me.rerere.rikkahub.utils.openUsageAccessSettings
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 
 @Composable
@@ -128,7 +130,9 @@ private fun AssistantLocalToolContent(
     val permissionRequiredText =
         stringResource(R.string.assistant_page_local_tools_screen_time_permission_required)
     val accessibilityRequiredText =
-        stringResource(R.string.local_tool_phone_control_permission_required)
+        stringResource(R.string.assistant_page_local_tools_phone_use_enable_service)
+    val phoneUseManager: PhoneUseManager = koinInject()
+    val phoneUseServiceOn = phoneUseManager.controller.collectAsStateWithLifecycle().value != null
 
     val calendarPermissionState = rememberPermissionState(
         permissions = setOf(
@@ -153,8 +157,8 @@ private fun AssistantLocalToolContent(
             toaster.show(message = permissionRequiredText, type = ToastType.Warning)
             context.openUsageAccessSettings()
         }
-        // 手机控制靠无障碍服务干活，未开启时先带用户去开，开关照常保存
-        if (enabled && option == LocalToolOption.PhoneControl && !context.isPhoneAccessibilityEnabled()) {
+        // 手机操作靠无障碍服务干活，未开启时先带用户去开，开关照常保存
+        if (enabled && option == LocalToolOption.PhoneUse && !context.isPhoneAccessibilityEnabled()) {
             toaster.show(message = accessibilityRequiredText, type = ToastType.Warning)
             context.openAccessibilitySettings()
         }
@@ -173,8 +177,8 @@ private fun AssistantLocalToolContent(
     fun CardGroupScope.toolItem(
         option: LocalToolOption,
         icon: ImageVector,
-        @StringRes title: Int,
-        @StringRes description: Int,
+        title: @Composable () -> Unit,
+        description: @Composable () -> Unit,
     ) {
         val checked = assistant.localTools.contains(option)
         switchItem(
@@ -196,10 +200,22 @@ private fun AssistantLocalToolContent(
                     },
                 )
             },
-            supportingContent = { Text(stringResource(description)) },
-            headlineContent = { Text(stringResource(title)) },
+            supportingContent = description,
+            headlineContent = title,
         )
     }
+
+    fun CardGroupScope.toolItem(
+        option: LocalToolOption,
+        icon: ImageVector,
+        @StringRes title: Int,
+        @StringRes description: Int,
+    ) = toolItem(
+        option = option,
+        icon = icon,
+        title = { Text(stringResource(title)) },
+        description = { Text(stringResource(description)) },
+    )
 
     Column(
         modifier = Modifier
@@ -452,13 +468,25 @@ private fun AssistantLocalToolContent(
                 title = R.string.huadeng_sub_agent,
                 description = R.string.huadeng_sub_agent_desc,
             )
-            // 手机控制：无障碍读屏 + 点击 / 输入 / 滚动
-            toolItem(
-                option = LocalToolOption.PhoneControl,
-                icon = HugeIcons.Cursor02,
-                title = R.string.local_tool_phone_control_title,
-                description = R.string.local_tool_phone_control_desc,
-            )
+            // 手机操作：无障碍读屏 + 点击 / 输入 / 滚动
+            if (PhoneUseManager.isSupported) {
+                toolItem(
+                    option = LocalToolOption.PhoneUse,
+                    icon = HugeIcons.Tap01,
+                    title = { Text(stringResource(R.string.assistant_page_local_tools_phone_use_title)) },
+                    description = {
+                        Column {
+                            Text(stringResource(R.string.assistant_page_local_tools_phone_use_desc))
+                            if (LocalToolOption.PhoneUse in assistant.localTools && !phoneUseServiceOn) {
+                                Text(
+                                    text = stringResource(R.string.assistant_page_local_tools_phone_use_service_off),
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
+                    },
+                )
+            }
             // AI 浏览器代理：屏幕上真的跑一个 WebView，AI 点它、读它
             toolItem(
                 option = LocalToolOption.BrowserAgent,

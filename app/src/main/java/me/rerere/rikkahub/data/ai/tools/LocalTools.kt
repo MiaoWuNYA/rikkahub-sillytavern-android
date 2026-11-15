@@ -22,7 +22,9 @@ import me.rerere.ai.core.Tool
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.event.AppEvent
 import me.rerere.rikkahub.browser.buildBrowserTools
-import me.rerere.rikkahub.data.ai.tools.phone.buildPhoneTools
+import me.rerere.rikkahub.data.ai.tools.local.buildPhoneUseTool
+import me.rerere.rikkahub.data.files.FilesManager
+import me.rerere.rikkahub.phoneuse.PhoneUseManager
 import me.rerere.rikkahub.data.ai.tools.local.buildCalendarCreateTool
 import me.rerere.rikkahub.data.ai.tools.local.buildCalendarQueryTool
 import me.rerere.rikkahub.data.ai.tools.local.buildScreenTimeTool
@@ -161,10 +163,10 @@ sealed class LocalToolOption {
     @SerialName("sub_agent")
     data object SubAgent : LocalToolOption()
 
-    /** 手机控制：无障碍读屏 + 元素级点击/输入/滚动/按键/截图。 */
+    /** 手机操作：无障碍读屏 + 元素级点击/输入/滚动/按键/截图。 */
     @Serializable
-    @SerialName("phone_control")
-    data object PhoneControl : LocalToolOption()
+    @SerialName("phone_use")
+    data object PhoneUse : LocalToolOption()
 
     /** AI 浏览器代理：可见的 WebView + 快照/点击/输入/截图一组工具。 */
     @Serializable
@@ -189,6 +191,8 @@ class LocalTools(
     private val settingsStore: SettingsStore,
     private val pluginManager: me.rerere.rikkahub.plugin.manager.PluginManager,
     private val pluginSettingsService: me.rerere.rikkahub.plugin.settings.PluginSettingsService,
+    private val phoneUseManager: PhoneUseManager,
+    private val filesManager: FilesManager,
 ) {
     // ── Persistent JS engine ──
     private var jsExecutor = java.util.concurrent.Executors.newSingleThreadExecutor()
@@ -484,6 +488,17 @@ class LocalTools(
         )
     }
 
+    val phoneUseTool by lazy {
+        buildPhoneUseTool(
+            ownPackageName = context.packageName,
+            manager = phoneUseManager,
+            saveScreenshot = { bytes ->
+                filesManager.createChatFilesByByteArrays(listOf(bytes), "screenshot.jpg", "image/jpeg")
+                    .first().toString()
+            },
+        )
+    }
+
     val screenTimeTool by lazy { buildScreenTimeTool(context, eventBus) }
 
     val calendarQueryTool by lazy { buildCalendarQueryTool(context) }
@@ -550,9 +565,9 @@ class LocalTools(
             tools.add(diffTextTool)
         }
 
-        // 手机控制工具直连注册，不走 device_toolbox 二级分发，省每步一次往返
-        if (options.contains(LocalToolOption.PhoneControl)) {
-            tools.addAll(buildPhoneTools(context))
+        // 手机操作直连注册，不走 device_toolbox 二级分发，省每步一次往返
+        if (options.contains(LocalToolOption.PhoneUse) && PhoneUseManager.isSupported) {
+            tools.add(phoneUseTool)
         }
 
         // AI 浏览器代理：只在助手开关打开时注册，全局开关在工具内部再判一次
@@ -616,7 +631,7 @@ fun LocalToolOption.groupId(): String = when (this) {
     LocalToolOption.ShowImage -> "image"
     LocalToolOption.CodeCheck -> "code"
     LocalToolOption.SubAgent -> "subagent"
-    LocalToolOption.PhoneControl -> "phone"
+    LocalToolOption.PhoneUse -> "phone"
     LocalToolOption.BrowserAgent -> "browser"
     LocalToolOption.SettingsControl -> "settings"
     LocalToolOption.PluginAuthor -> "plugin"
