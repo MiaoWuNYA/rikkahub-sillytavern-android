@@ -1,7 +1,6 @@
 package me.rerere.rikkahub.data.datastore
 
 import me.rerere.ai.provider.ProviderSetting
-import me.rerere.rikkahub.data.model.withMigratedLocalTools
 
 /** 读盘后和每次修改后都要过一遍，保证内存里的设置始终是规整的。 */
 internal fun Settings.normalized(): Settings =
@@ -42,9 +41,7 @@ internal fun Settings.withBuiltInDefaults(): Settings {
         val baseUrl = (provider as? ProviderSetting.ApiKey)?.baseUrl ?: ""
         if (baseUrl.contains(SHATANG_HOST, ignoreCase = true)) 0 else 1
     }.toMutableList()
-    // 旧版的手机控制序列名换成现在的 Phone Use，别让老配置带着读不懂的选项继续存下去
-    val assistants = this.assistants.map { it.withMigratedLocalTools() }
-        .ifEmpty { DEFAULT_ASSISTANTS }.toMutableList()
+    val assistants = this.assistants.ifEmpty { DEFAULT_ASSISTANTS }.toMutableList()
     DEFAULT_ASSISTANTS.forEach { defaultAssistant ->
         if (assistants.none { it.id == defaultAssistant.id }) {
             assistants.add(defaultAssistant.copy())

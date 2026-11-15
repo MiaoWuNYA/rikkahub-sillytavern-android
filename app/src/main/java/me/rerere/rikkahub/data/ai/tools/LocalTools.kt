@@ -168,11 +168,6 @@ sealed class LocalToolOption {
     @SerialName("phone_use")
     data object PhoneUse : LocalToolOption()
 
-    /** 旧版手机控制的序列名，只为读得下老配置，读入后换成 [PhoneUse]。 */
-    @Serializable
-    @SerialName("phone_control")
-    data object PhoneControlLegacy : LocalToolOption()
-
     /** AI 浏览器代理：可见的 WebView + 快照/点击/输入/截图一组工具。 */
     @Serializable
     @SerialName("browser_agent")
@@ -636,7 +631,7 @@ fun LocalToolOption.groupId(): String = when (this) {
     LocalToolOption.ShowImage -> "image"
     LocalToolOption.CodeCheck -> "code"
     LocalToolOption.SubAgent -> "subagent"
-    LocalToolOption.PhoneUse, LocalToolOption.PhoneControlLegacy -> "phone"
+    LocalToolOption.PhoneUse -> "phone"
     LocalToolOption.BrowserAgent -> "browser"
     LocalToolOption.SettingsControl -> "settings"
     LocalToolOption.PluginAuthor -> "plugin"

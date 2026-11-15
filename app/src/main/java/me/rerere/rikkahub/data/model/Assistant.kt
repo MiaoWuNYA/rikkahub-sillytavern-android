@@ -1097,24 +1097,13 @@ val ALWAYS_ADD_LOCAL_TOOLS: List<LocalToolOption> = listOf(
     LocalToolOption.PresentFile,
 )
 
-/** 把已经不存在的旧序列名换成现在的选项，只做映射，不动用户关掉的开关 */
-fun Assistant.withMigratedLocalTools(): Assistant {
-    if (localTools.none { it == LocalToolOption.PhoneControlLegacy }) return this
-    return copy(
-        localTools = localTools.map {
-            if (it == LocalToolOption.PhoneControlLegacy) LocalToolOption.PhoneUse else it
-        }.distinct()
-    )
-}
-
 fun Assistant.withNewLocalTools(): Assistant {
-    val mapped = withMigratedLocalTools().localTools
     val missing = buildList {
-        if (mapped.isEmpty() || LEGACY_LOCAL_TOOLS.containsAll(mapped)) {
-            addAll(DEFAULT_NEW_LOCAL_TOOLS.filterNot { it in mapped })
+        if (localTools.isEmpty() || LEGACY_LOCAL_TOOLS.containsAll(localTools)) {
+            addAll(DEFAULT_NEW_LOCAL_TOOLS.filterNot { it in localTools })
         }
-        addAll(ALWAYS_ADD_LOCAL_TOOLS.filterNot { it in mapped })
+        addAll(ALWAYS_ADD_LOCAL_TOOLS.filterNot { it in localTools })
     }
-    if (missing.isEmpty() && mapped == localTools) return this
-    return copy(localTools = mapped + missing)
+    if (missing.isEmpty()) return this
+    return copy(localTools = localTools + missing)
 }
