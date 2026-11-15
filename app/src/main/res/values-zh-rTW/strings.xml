@@ -3272,4 +3272,10 @@
   <string name="chat_message_tool_phone_use_open_app_name">開啟應用程式：%1$s</string>
   <string name="chat_message_tool_phone_use_list_apps">列出應用程式</string>
   <string name="chat_message_tool_phone_use_wait">等待 %1$s 秒</string>
+  <string name="phone_use_overlay_running">AI 正在操作手機</string>
+  <string name="phone_use_overlay_stopped">AI 已停止</string>
+  <string name="phone_use_overlay_stop_hint">點「停止」隨時打斷</string>
+  <string name="phone_use_overlay_resume_hint">點「繼續」恢復任務</string>
+  <string name="phone_use_overlay_stop">停止</string>
+  <string name="phone_use_overlay_resume">繼續</string>
 </resources>
