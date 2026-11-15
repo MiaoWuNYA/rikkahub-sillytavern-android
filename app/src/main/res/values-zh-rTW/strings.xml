@@ -3224,8 +3224,6 @@
   <string name="setting_app_icon_earth">地球</string>
   <string name="setting_app_icon_cat_cute">萌貓</string>
   <string name="setting_app_icon_google">谷歌</string>
-  <string name="chat_page_compress_keep_recent_minus">減少保留條數</string>
-  <string name="chat_page_compress_keep_recent_plus">增加保留條數</string>
   <string name="local_tool_settings_control_title">應用設定</string>
   <string name="local_tool_settings_control_desc">讓助手按分組一步步讀取和修改應用設定（主題、模型、供應商、提示詞等）</string>
   <string name="local_tool_plugin_author_title">創造模式</string>
