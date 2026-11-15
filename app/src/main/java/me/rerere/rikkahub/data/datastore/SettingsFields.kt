@@ -1,17 +1,26 @@
 package me.rerere.rikkahub.data.datastore
 
+import android.util.Log
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.core.ReasoningLevel
 import me.rerere.rikkahub.data.ai.prompts.TITLE_PROMPT_REVISION
+import me.rerere.rikkahub.data.ai.tools.LocalToolOption
 import me.rerere.rikkahub.browser.BrowserSettings
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.parseAuthorNotePosition
+import me.rerere.rikkahub.data.model.withMigratedLocalTools
 import me.rerere.rikkahub.data.model.withNewLocalTools
 import me.rerere.rikkahub.utils.JsonInstant
 import kotlin.reflect.KProperty1
 import kotlin.uuid.Uuid
+
+private const val TAG = "SettingsFields"
 
 /**
  * [Settings] 的一个字段和它在 DataStore 里的 key 的对应关系。
@@ -27,10 +36,16 @@ internal class SettingsField<T, P : Any>(
 ) {
     fun changed(old: Settings, new: Settings): Boolean = property.get(old) != property.get(new)
 
-    /** key 不存在时保留 [settings] 里原有的值。 */
+    /** key 不存在时保留 [settings] 里原有的值；解不出来也只丢这一个字段，不能让整份设置读不出来。 */
     fun read(preferences: Preferences, settings: Settings): Settings {
         val stored = preferences[key] ?: return settings
-        return settings.set(decode(stored))
+        val value = try {
+            decode(stored)
+        } catch (e: Throwable) {
+            Log.e(TAG, "Failed to decode settings field ${key.name}", e)
+            return settings
+        }
+        return settings.set(value)
     }
 
     /** 编码结果为 null 时删除 key。 */
@@ -71,6 +86,38 @@ private inline fun <reified T> jsonSafe(
     encode = { JsonInstant.encodeToString(it) },
     decode = { stored -> runCatching { JsonInstant.decodeFromString<T>(stored) }.getOrElse { fallback() } },
 )
+
+/**
+ * 丢掉认不出的本地工具选项后再解码。
+ *
+ * 工具被删掉或改名后，老配置里会剩下读不懂的 type；整份助手配置解码失败会让应用在启动时直接退出，
+ * 而这里只丢一个工具开关，用户的其余设置都能留下。
+ */
+internal fun dropUnknownToolOptions(stored: String): String {
+    fun JsonObject.sanitized(): JsonObject {
+        val tools = this["localTools"] as? JsonArray ?: return this
+        val kept = tools.filter { element ->
+            runCatching {
+                JsonInstant.decodeFromString<LocalToolOption>(element.toString())
+            }.isSuccess
+        }
+        if (kept.size == tools.size) return this
+        return JsonObject(this + ("localTools" to JsonArray(kept)))
+    }
+
+    return runCatching {
+        val root = JsonInstant.parseToJsonElement(stored)
+        val array = root.jsonArray.map { it.jsonObject.sanitized() }
+        JsonArray(array).toString()
+    }.getOrDefault(stored)
+}
+
+/** 助手配置解码：先按原样读，读不动再把认不出的工具选项剔掉重读一次。 */
+internal fun decodeAssistants(stored: String): List<Assistant> = runCatching {
+    JsonInstant.decodeFromString<List<Assistant>>(stored)
+}.getOrElse {
+    JsonInstant.decodeFromString<List<Assistant>>(dropUnknownToolOptions(stored))
+}.map { it.withNewLocalTools() }
 
 private fun uuid(
     key: Preferences.Key<String>,
@@ -173,10 +220,8 @@ internal val SETTINGS_FIELDS: List<SettingsField<*, *>> = with(SettingsStore) {
         SettingsField(
             ASSISTANTS, Settings::assistants, { copy(assistants = it) },
             encode = { JsonInstant.encodeToString(it) },
-            // 旧数据里的助手补上后来新增的本地工具选项
-            decode = { stored ->
-                JsonInstant.decodeFromString<List<Assistant>>(stored).map { it.withNewLocalTools() }
-            },
+            // 旧数据里的助手补上后来新增的本地工具选项，认不出的旧工具选项直接丢掉
+            decode = { stored -> decodeAssistants(stored) },
         ),
         json(ASSISTANT_TAGS, Settings::assistantTags) { copy(assistantTags = it) },
 
