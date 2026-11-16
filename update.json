@@ -1,6 +1,6 @@
 {
   "version": "3.2.0",
-  "publishedAt": "2026-11-15T22:43:37Z",
+  "publishedAt": "2026-11-16T19:31:13Z",
   "changelog": "本次更新是华灯 3.2.0，跟随上游拿到了手机控制，RAG 记忆回归，前端与工具链一并做了补强。\n\n欢迎加入软件反馈/RP 欢乐 QQ 交流群 [【Rikkahub·华灯】（点击加群）](http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=XXbZtPG3SrT0QoGtn-19_rChhGgfCzh7&authKey=ww4WCnqfe%2BoKe68oaNW897iGbxMivTPwcfCoYhUYeHN40Bv2QGmyx8hco7Cxw6mO&noverify=0&group_code=1129035651)，反馈问题可以更快回复，群里可享高速下载，领取免费公益模型，欢迎加群体验。\n\n## 更新内容\n\n1. 优化了前端能力\n2. RAG 记忆功能回归，可自由开关\n3. 增加了工具多步统计 用量次数统计\n4. 华灯设置中添加了 MCP hook （实验性）\n5. 主动信息缓存修复\n6. 增加了隐藏前端小眼睛预览和刷新的设置\n7. 修复了备份头像导入的问题\n8. 增加预设世界书版权提醒\n9. 其他上游的各种修复\n10. 暂时性合并了上游的手机控制功能\n\n## 注意\n\n手机控制是暂时性合并的上游功能，需要在系统里手动开启本应用的无障碍服务；部分系统会额外限制后台操作，遇到操作不生效时可先确认服务是否仍在运行。\n\n感谢供应商[砂糖酒馆](https://ai.ota1245.top/) 对本软件的完善和更新支持，砂糖酒馆致力于提供稳定的 RP 模型！",
   "downloads": [
     {
