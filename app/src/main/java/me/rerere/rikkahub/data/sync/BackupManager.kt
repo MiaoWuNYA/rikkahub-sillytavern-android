@@ -148,7 +148,7 @@ class BackupManager(
                         DatabaseBackup.normalize(context, stagedDatabase)
                         // 显式升级 + 结构对齐：恢复不再依赖 Room 的迁移容器，
                         // 任意旧版本备份（v1 起）都能升到当前结构
-                        DatabaseBackup.upgradeToCurrent(context, stagedDatabase)
+                        DatabaseBackup.upgradeToCurrent(context, stagedDatabase, json)
                         val room = openStagedDatabase(context, stagedDatabase)
                         try {
                             DatabaseBackup.checkpoint(room.openHelper.writableDatabase)
@@ -160,7 +160,12 @@ class BackupManager(
 
                     val settingsFile = File(staging, "settings.json")
                     if (settingsFile.exists()) {
-                        val migrated = SettingsJsonMigrator.migrate(settingsFile.readText())
+                        // 上游备份里的 TTS/ASR 提供商、消息部件可能本地没有对应类型，先丢掉读不懂
+                        // 的条目，否则整份 settings.json 反序列化失败
+                        val migrated = ForeignBackupCompat.sanitizeSettingsJson(
+                            SettingsJsonMigrator.migrate(settingsFile.readText()),
+                            json,
+                        )
                         val settings = remapAvatarFiles(
                             json.decodeFromString<Settings>(migrated),
                             File(payload, "files"),
