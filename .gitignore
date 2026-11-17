@@ -109,3 +109,12 @@ app/src/main/assets/tavern/
 aaa.txt
 001.txt
 材料/
+
+# ── 个人创作文档 / 人设提示词 / 角色卡（勿入库）──
+huadengmiao_persona.md
+humanize_system_prompt*.md
+长歌_*.json
+*角色卡*.json
+*角色卡*.png
+奇术*.json
+*归纳报告*.md
