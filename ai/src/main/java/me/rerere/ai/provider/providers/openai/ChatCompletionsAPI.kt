@@ -810,16 +810,12 @@ class ChatCompletionsAPI(
             ?: MessageRole.ASSISTANT
 
         // 也许支持其他模态的输出content?
-        val content = jsonObject["content"]?.jsonPrimitiveOrNull?.contentOrNull ?: ""
+        // 一般是字符串；Mistral 开启推理时是块列表（thinking 块的 thinking 又是 text 块列表）
+        val parsedContent = parseChatCompletionsContent(jsonObject["content"])
+        val content = parsedContent.text
         val reasoning = jsonObject["reasoning_content"]?.jsonPrimitiveOrNull?.contentOrNull
             ?: jsonObject["reasoning"]?.jsonPrimitiveOrNull?.contentOrNull
-            ?: jsonObject["content"]?.takeIf { it is JsonArray }?.let { arr ->
-                // Mistral接口
-                // {"id":"","object":"chat.completion.chunk","created":1772351733,"model":"magistral-medium-2509","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":"好的"}]}]},"finish_reason":null}]}
-                arr.jsonArrayOrNull?.getOrNull(0)?.jsonObject?.get("thinking")?.jsonArrayOrNull?.getOrNull(0)?.jsonObjectOrNull?.get(
-                    "text"
-                )?.jsonPrimitiveOrNull?.contentOrNull
-            }
+            ?: parsedContent.reasoning
         val reasoningMetadata = jsonObject["reasoning_details"]?.jsonArrayOrNull?.let {
             OpenRouterReasoningMetadata(reasoningDetails = it).toMetadata()
         }

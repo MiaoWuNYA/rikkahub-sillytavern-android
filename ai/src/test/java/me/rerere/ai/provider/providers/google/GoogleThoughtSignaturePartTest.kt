@@ -121,9 +121,14 @@ class GoogleThoughtSignaturePartTest {
     }
 
     private fun replayModelParts(messages: List<UIMessage>): JsonArray {
-        val method = GoogleProvider::class.java.getDeclaredMethod("buildContents", List::class.java)
+        val method = GoogleProvider::class.java.getDeclaredMethod(
+            "buildContents",
+            List::class.java,
+            Boolean::class.javaPrimitiveType,
+            Boolean::class.javaPrimitiveType,
+        )
         method.isAccessible = true
-        val contents = method.invoke(provider, messages) as JsonArray
+        val contents = method.invoke(provider, messages, false, false) as JsonArray
         return contents[1].jsonObject["parts"]!!.jsonArray
     }
 

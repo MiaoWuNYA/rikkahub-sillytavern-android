@@ -30,11 +30,12 @@ class ClaudeThinkingReplayTest {
         val method = ClaudeProvider::class.java.getDeclaredMethod(
             "buildMessages",
             List::class.java,
+            UIMessage::class.java,
             Boolean::class.javaPrimitiveType,
             ClaudePromptCacheTtl::class.java,
         )
         method.isAccessible = true
-        val request = method.invoke(provider, messages, false, ClaudePromptCacheTtl.FIVE_MINUTES) as JsonArray
+        val request = method.invoke(provider, messages, null, false, ClaudePromptCacheTtl.FIVE_MINUTES) as JsonArray
         return request
             .filter { it.jsonObject["role"]?.jsonPrimitive?.content == "assistant" }
             .flatMap { it.jsonObject.getValue("content").jsonArray.map { block -> block.jsonObject } }
