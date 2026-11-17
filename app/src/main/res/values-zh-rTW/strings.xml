@@ -656,7 +656,6 @@
   <string name="group_self_reply_desc">AI可以連續發言</string>
   <string name="group_talkativeness">話多程度(Talkativeness)</string>
   <string name="history_page_cancel">取消</string>
-  <string name="history_page_conversation_deleted">對話已刪除</string>
   <string name="history_page_delete">刪除</string>
   <string name="history_page_delete_all">刪除全部</string>
   <string name="history_page_delete_all_confirmation">確定要刪除所有對話嗎？此操作無法撤銷。</string>
@@ -3301,4 +3300,28 @@
   <string name="backup_page_import_deepseek_complete">DeepSeek 匯入完成</string>
   <string name="backup_page_import_deepseek_summary">已匯入 %1$d 個對話\n略過 %2$d 個已存在的對話\n略過 %3$d 個空對話\n%4$d 個附件未包含在匯出檔中或無法匯入，已保留檔案名稱提示。</string>
   <string name="backup_page_import_deepseek_missing_attachment">[附件未包含在匯出檔中或無法匯入：%1$s]</string>
+  <string name="background_tasks_running">背景任務：%1$d 個執行中</string>
+  <string name="background_tasks_title">背景任務</string>
+  <string name="background_tasks_empty">此對話中沒有背景任務</string>
+  <string name="background_tasks_stopping">正在停止…</string>
+  <string name="background_tasks_log_truncated">顯示日誌結尾。完整日誌：%1$s</string>
+  <string name="background_tasks_no_output_yet">尚無輸出</string>
+  <string name="background_tasks_no_output">無輸出</string>
+  <string name="background_tasks_status_running">執行中 · %1$s</string>
+  <string name="background_tasks_status_exited">已退出，退出碼 %1$d · %2$s</string>
+  <string name="background_tasks_status_stopped">已停止 · %1$s</string>
+  <string name="background_tasks_duration_seconds">%1$d秒</string>
+  <string name="background_tasks_duration_minutes">%1$d分 %2$d秒</string>
+  <string name="background_tasks_duration_hours">%1$d小時 %2$d分</string>
+  <string name="tool_ui_shell_background_running">背景執行中 · %1$s</string>
+  <string name="tool_ui_shell_background_stopped">已停止 · %1$s</string>
+  <string name="tool_ui_shell_background">背景 · %1$s</string>
+  <string name="chat_page_notice_retry">重試</string>
+  <string name="notification_background_shell_running">背景指令執行中：%1$d</string>
+  <string name="background_shell_notice_exited">背景指令已結束，結束代碼 %1$d：%2$s</string>
+  <string name="background_shell_notice_stopped">背景指令已被你停止：%1$s</string>
+  <string name="history_page_select">選取</string>
+  <string name="history_page_selected_count">已選取 %1$d 項</string>
+  <string name="history_page_exit_selection">退出選取</string>
+  <string name="history_page_delete_selected_text">已選取的 %1$d 個對話將會被刪除，此操作無法復原。</string>
 </resources>

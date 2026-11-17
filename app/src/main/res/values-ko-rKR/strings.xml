@@ -647,7 +647,6 @@
   <string name="group_self_reply_desc">멤버가 자기 자신의 메시지에 이어서 답할 수 있습니다</string>
   <string name="group_talkativeness">말수</string>
   <string name="history_page_cancel">취소</string>
-  <string name="history_page_conversation_deleted">대화 삭제됨</string>
   <string name="history_page_delete">삭제</string>
   <string name="history_page_delete_all">전체 삭제</string>
   <string name="history_page_delete_all_confirmation">정말 모든 대화를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</string>
@@ -3218,4 +3217,28 @@
   <string name="backup_page_import_deepseek_complete">DeepSeek 가져오기 완료</string>
   <string name="backup_page_import_deepseek_summary">가져온 대화: %1$d\n건너뛴 기존 대화: %2$d\n건너뛴 빈 대화: %3$d\n내보내기에서 누락되었거나 가져올 수 없는 첨부 파일: %4$d. 해당 파일 이름은 자리 표시자로 유지되었습니다.</string>
   <string name="backup_page_import_deepseek_missing_attachment">[내보내기에 없거나 가져올 수 없는 첨부파일: %1$s]</string>
+  <string name="background_tasks_running">백그라운드 작업: %1$d개 실행 중</string>
+  <string name="background_tasks_title">백그라운드 작업</string>
+  <string name="background_tasks_empty">이 대화에는 백그라운드 작업이 없습니다</string>
+  <string name="background_tasks_stopping">중지 중…</string>
+  <string name="background_tasks_log_truncated">로그의 끝부분을 표시합니다. 전체 로그: %1$s</string>
+  <string name="background_tasks_no_output_yet">아직 출력이 없습니다</string>
+  <string name="background_tasks_no_output">출력 없음</string>
+  <string name="background_tasks_status_running">실행 중 · %1$s</string>
+  <string name="background_tasks_status_exited">코드 %1$d(으)로 종료됨 · %2$s</string>
+  <string name="background_tasks_status_stopped">중지됨 · %1$s</string>
+  <string name="background_tasks_duration_seconds">%1$d초</string>
+  <string name="background_tasks_duration_minutes">%1$d분 %2$d초</string>
+  <string name="background_tasks_duration_hours">%1$d시간 %2$d분</string>
+  <string name="tool_ui_shell_background_running">백그라운드에서 실행 중 · %1$s</string>
+  <string name="tool_ui_shell_background_stopped">중지됨 · %1$s</string>
+  <string name="tool_ui_shell_background">백그라운드 · %1$s</string>
+  <string name="chat_page_notice_retry">재시도</string>
+  <string name="notification_background_shell_running">백그라운드 명령 실행 중: %1$d</string>
+  <string name="background_shell_notice_exited">백그라운드 명령이 코드 %1$d(으)로 종료되었습니다: %2$s</string>
+  <string name="background_shell_notice_stopped">백그라운드 명령을 사용자가 중지했습니다: %1$s</string>
+  <string name="history_page_select">선택</string>
+  <string name="history_page_selected_count">%1$d개 선택됨</string>
+  <string name="history_page_exit_selection">선택 종료</string>
+  <string name="history_page_delete_selected_text">선택한 대화 %1$d개가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.</string>
 </resources>

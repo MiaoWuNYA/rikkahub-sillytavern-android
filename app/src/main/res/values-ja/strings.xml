@@ -647,7 +647,6 @@
   <string name="group_self_reply_desc">AIが発言し続けることを許可します</string>
   <string name="group_talkativeness">おしゃべり度</string>
   <string name="history_page_cancel">キャンセル</string>
-  <string name="history_page_conversation_deleted">会話が削除されました</string>
   <string name="history_page_delete">削除</string>
   <string name="history_page_delete_all">すべて削除</string>
   <string name="history_page_delete_all_confirmation">すべての会話を削除してもよろしいですか？この操作は元に戻せません。</string>
@@ -3218,4 +3217,28 @@
   <string name="backup_page_import_deepseek_complete">DeepSeekのインポートが完了しました</string>
   <string name="backup_page_import_deepseek_summary">インポートされた会話: %1$d\n既存の会話のスキップ: %2$d\n空の会話のスキップ: %3$d\nエクスポートに含まれていない、またはインポートできなかった添付ファイル: %4$d。ファイル名はプレースホルダーとして保持されています。</string>
   <string name="backup_page_import_deepseek_missing_attachment">[エクスポートに存在しないかインポートできなかった添付ファイル: %1$s]</string>
+  <string name="background_tasks_running">バックグラウンドタスク: %1$d件実行中</string>
+  <string name="background_tasks_title">バックグラウンドタスク</string>
+  <string name="background_tasks_empty">この会話にはバックグラウンドタスクはありません</string>
+  <string name="background_tasks_stopping">停止中…</string>
+  <string name="background_tasks_log_truncated">ログの末尾を表示しています。完全なログ: %1$s</string>
+  <string name="background_tasks_no_output_yet">まだ出力がありません</string>
+  <string name="background_tasks_no_output">出力なし</string>
+  <string name="background_tasks_status_running">実行中 · %1$s</string>
+  <string name="background_tasks_status_exited">コード %1$d で終了 · %2$s</string>
+  <string name="background_tasks_status_stopped">停止 · %1$s</string>
+  <string name="background_tasks_duration_seconds">%1$d秒</string>
+  <string name="background_tasks_duration_minutes">%1$d分 %2$d秒</string>
+  <string name="background_tasks_duration_hours">%1$d時間%2$d分</string>
+  <string name="tool_ui_shell_background_running">バックグラウンドで実行中 · %1$s</string>
+  <string name="tool_ui_shell_background_stopped">停止 · %1$s</string>
+  <string name="tool_ui_shell_background">バックグラウンド · %1$s</string>
+  <string name="chat_page_notice_retry">再試行</string>
+  <string name="notification_background_shell_running">バックグラウンドで実行中のコマンド: %1$d</string>
+  <string name="background_shell_notice_exited">バックグラウンドコマンドがコード %1$d で終了しました: %2$s</string>
+  <string name="background_shell_notice_stopped">バックグラウンドコマンドを停止しました: %1$s</string>
+  <string name="history_page_select">選択</string>
+  <string name="history_page_selected_count">%1$d件選択中</string>
+  <string name="history_page_exit_selection">選択を終了</string>
+  <string name="history_page_delete_selected_text">選択した%1$d件の会話が削除されます。この操作は元に戻せません。</string>
 </resources>

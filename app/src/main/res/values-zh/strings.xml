@@ -685,7 +685,6 @@
   <string name="group_self_reply_desc">AI可以连续发言</string>
   <string name="group_talkativeness">话多程度</string>
   <string name="history_page_cancel">取消</string>
-  <string name="history_page_conversation_deleted">对话已删除</string>
   <string name="history_page_delete">删除</string>
   <string name="history_page_delete_all">删除全部</string>
   <string name="history_page_delete_all_confirmation">确定要删除所有对话吗？此操作无法撤销。</string>
@@ -3717,4 +3716,28 @@
   <string name="backup_page_import_deepseek_complete">DeepSeek 导入完成</string>
   <string name="backup_page_import_deepseek_summary">已导入 %1$d 个会话\n跳过 %2$d 个已存在会话\n跳过 %3$d 个空会话\n%4$d 个附件未包含在导出包中或无法导入，已保留文件名提示。</string>
   <string name="backup_page_import_deepseek_missing_attachment">[附件未包含在导出包中或无法导入：%1$s]</string>
+  <string name="background_tasks_running">后台任务：%1$d 个运行中</string>
+  <string name="background_tasks_title">后台任务</string>
+  <string name="background_tasks_empty">此对话中没有后台任务</string>
+  <string name="background_tasks_stopping">正在停止…</string>
+  <string name="background_tasks_log_truncated">显示的是日志末尾部分。完整日志：%1$s</string>
+  <string name="background_tasks_no_output_yet">暂无输出</string>
+  <string name="background_tasks_no_output">无输出</string>
+  <string name="background_tasks_status_running">运行中 · %1$s</string>
+  <string name="background_tasks_status_exited">已退出，退出码 %1$d · %2$s</string>
+  <string name="background_tasks_status_stopped">已停止 · %1$s</string>
+  <string name="background_tasks_duration_seconds">%1$d秒</string>
+  <string name="background_tasks_duration_minutes">%1$d分 %2$d秒</string>
+  <string name="background_tasks_duration_hours">%1$d小时 %2$d分</string>
+  <string name="tool_ui_shell_background_running">后台运行中 · %1$s</string>
+  <string name="tool_ui_shell_background_stopped">已停止 · %1$s</string>
+  <string name="tool_ui_shell_background">后台 · %1$s</string>
+  <string name="chat_page_notice_retry">重试</string>
+  <string name="notification_background_shell_running">后台命令运行中：%1$d</string>
+  <string name="background_shell_notice_exited">后台命令已退出，退出码为 %1$d：%2$s</string>
+  <string name="background_shell_notice_stopped">后台命令已被你停止：%1$s</string>
+  <string name="history_page_select">选择</string>
+  <string name="history_page_selected_count">已选择 %1$d 项</string>
+  <string name="history_page_exit_selection">退出选择</string>
+  <string name="history_page_delete_selected_text">选中的 %1$d 个对话将被删除。此操作无法撤销。</string>
 </resources>
