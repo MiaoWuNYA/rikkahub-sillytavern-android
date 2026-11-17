@@ -57,7 +57,7 @@ internal class ClaudeStreamDecoder : StreamChunkDecoder {
                         ClaudeReasoningMetadata(signature = it).toMetadata()
                     }
                     "redacted_thinking" -> contentBlock["data"]?.jsonPrimitive?.contentOrNull?.let {
-                        ClaudeReasoningMetadata(redactedData = it).toMetadata()
+                        ClaudeReasoningMetadata(redacted = it).toMetadata()
                     }
                     else -> null
                 }

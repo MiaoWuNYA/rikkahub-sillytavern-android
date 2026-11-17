@@ -38,6 +38,15 @@ class HistoryVM(
         }
     }
 
+    fun deleteConversations(conversationIds: Collection<Uuid>) {
+        viewModelScope.launch {
+            conversationIds.forEach { id ->
+                val conversation = conversationRepo.getConversationById(id)
+                conversationRepo.deleteConversation(conversation ?: return@forEach)
+            }
+        }
+    }
+
     fun deleteAllConversations() {
         val assistant = assistant.value ?: return
         viewModelScope.launch {

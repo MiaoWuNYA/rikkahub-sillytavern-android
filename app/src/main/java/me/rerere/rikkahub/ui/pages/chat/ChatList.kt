@@ -229,7 +229,7 @@ fun ChatList(
 
 // 顶部渐隐：消息滚到标题栏下面时逐渐透明，从状态栏一直淡出到标题栏下沿之外，保证标题可读。
 // 让内容自己变透明而不是盖一层背景色，背景图和动态渐变背景才不会被盖住。
-private fun Modifier.topFadingEdge(height: Dp): Modifier = this
+internal fun Modifier.topFadingEdge(height: Dp): Modifier = this
     .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
     .drawWithCache {
         val fadeHeight = height.toPx()
