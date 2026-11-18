@@ -485,14 +485,18 @@ internal fun transformMessages(
         }
     }
 
+    // Preserve legacy scanning/competition and fixed output slots, then apply ordinary root order.
+    val outputInjections = orderOrdinaryLorebookOutput(
+        resolvedInjections.sortedBy { it.priority },
+        lorebooks.filter { it.enabled && it.id in assistant.lorebookIds },
+    )
+
     // 官方 outlet（position=OUTLET）不注入任何位置：按 outlet 名汇聚内容，交给 {{outlet::name}} 展开
-    outletSink?.invoke(collectOutlets(resolvedInjections.sortedBy { it.priority }))
+    outletSink?.invoke(collectOutlets(outputInjections))
 
     // 按位置分组。官方构建提示词时按 order 降序遍历 + unshift（world-info.js sortFn + WIBeforeEntries.unshift），
-    // 最终注入顺序 = order 升序（先写的在前），这里直接按 priority 升序对齐
-    val byPosition = resolvedInjections
-        .sortedBy { it.priority }
-        .groupBy { it.position }
+    // 默认顺序 = priority 升序；有分类/rootOrder 的普通条目已在各自输出块中按界面顺序排列。
+    val byPosition = outputInjections.groupBy { it.position }
 
     // 应用注入（尾部相对位置按锚点消息冻结，见 applyInjections 注释）
     val result = applyInjections(messages, byPosition, anchors)
