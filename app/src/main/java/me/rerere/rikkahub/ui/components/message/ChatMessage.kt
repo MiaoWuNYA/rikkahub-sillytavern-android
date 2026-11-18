@@ -370,6 +370,8 @@ internal fun MessagePartsBlock(
 
     // Render parts in original order (group thinking/tool as chain-of-thought)
     val thoughtSettings = settings.displaySetting.customThought
+    // 独立于原生思考块的挂载位置，隐藏原生窗时不会重置民用窗的折叠状态。
+    val customThoughtExpanded = remember { mutableStateOf(false) }
     val groupedParts = remember(parts, settings.displaySetting.hideNativeReasoning, thoughtSettings, role) {
         parts.groupMessageParts(
             hideNativeReasoning = settings.displaySetting.hideNativeReasoning,
@@ -397,7 +399,7 @@ internal fun MessagePartsBlock(
     groupedParts.fastForEach { block ->
         when (block) {
             is MessagePartBlock.CustomThoughtBlock -> key("custom-thought", block.index) {
-                CustomThoughtCard(text = block.text, loading = loading)
+                CustomThoughtCard(text = block.text, loading = loading, expandedState = customThoughtExpanded)
             }
             is MessagePartBlock.ThinkingBlock -> {
                 if (block.steps.isNotEmpty()) {

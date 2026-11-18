@@ -10,6 +10,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import me.rerere.hugeicons.HugeIcons
@@ -19,13 +22,19 @@ import me.rerere.rikkahub.ui.components.ui.ChainOfThought
 
 /** 独立 ChainOfThought 实例，折叠状态不会和原生推理/工具步骤互相影响。 */
 @Composable
-fun CustomThoughtCard(text: String, loading: Boolean = false) {
+fun CustomThoughtCard(
+    text: String,
+    loading: Boolean = false,
+    expandedState: MutableState<Boolean> = remember { mutableStateOf(false) },
+) {
     ChainOfThought(
         steps = listOf(text),
         collapsedAdaptiveWidth = true,
         cardColors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
     ) { thought ->
-        ChainOfThoughtStep(
+        ControlledChainOfThoughtStep(
+            expanded = expandedState.value,
+            onExpandedChange = { expandedState.value = it },
             icon = { Icon(HugeIcons.Idea01, contentDescription = null) },
             label = { Text("自定义思考链", style = MaterialTheme.typography.titleSmall) },
             collapsedAdaptiveWidth = true,

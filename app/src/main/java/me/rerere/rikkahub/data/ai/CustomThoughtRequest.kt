@@ -19,4 +19,3 @@ fun List<UIMessage>.withoutCustomThoughtForRequest(settings: CustomThoughtSettin
         })
     }
 }
-
