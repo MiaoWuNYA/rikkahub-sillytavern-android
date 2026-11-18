@@ -1,8 +1,5 @@
 package me.rerere.rikkahub.data.ai
 
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.model.CustomThoughtSettings
 
 data class CustomThoughtMatch(
@@ -39,35 +36,19 @@ fun findCustomThought(text: String, settings: CustomThoughtSettings): CustomThou
         .minByOrNull { it.start }
 }
 
-/** 与显示层共享同一个匹配器；每条助手消息最多一处，不遍历工具输出或原生推理。 */
-fun List<UIMessage>.withoutCustomThoughtForRequest(settings: CustomThoughtSettings): List<UIMessage> {
-    if (!settings.enabled || !settings.excludeFromRequests) return this
-    return map { message ->
-        if (message.role != MessageRole.ASSISTANT) return@map message
-        var extracted = false
-        message.copy(parts = message.parts.map partMap@{ part ->
-            if (part !is UIMessagePart.Text || extracted) return@partMap part
-            val match = findCustomThought(part.text, settings) ?: return@partMap part
-            extracted = true
-            part.copy(text = match.removeFrom(part.text))
-        })
-    }
-}
-
 /** 防止 Markdown 把配置标签当 HTML 吞掉；代码围栏及行内代码保持原样。 */
 fun visibleThoughtTags(text: String, settings: CustomThoughtSettings): String {
     val tags = (settings.rules.flatMap { listOf(it.startTag, it.endTag) } +
         listOf("<think>", "</think>", "<thinking>", "</thinking>", "<thought>", "</thought>"))
         .filter { it.contains('<') || it.contains('>') }.distinct().sortedByDescending { it.length }
-    val codeSpans = Regex("(`{3,}|~{3,})[^\\n]*\\n[\\s\\S]*?(?:\\n\\1[^\\n]*(?:\\n|$)|$)|(`+)[^`]*?\\2")
+    val tagPattern = Regex("(?<!\\\\)(?:" + tags.joinToString("|") { Regex.escape(it) } + ")")
     fun escape(segment: String): String {
         if (tags.isEmpty()) return segment
-        val pattern = Regex(tags.joinToString("|") { Regex.escape(it) })
-        return pattern.replace(segment) { it.value.replace("<", "\\<").replace(">", "\\>") }
+        return tagPattern.replace(segment) { it.value.replace("<", "\\<").replace(">", "\\>") }
     }
     return buildString {
         var cursor = 0
-        codeSpans.findAll(text).forEach { match ->
+        THOUGHT_CODE_SPANS.findAll(text).forEach { match ->
             append(escape(text.substring(cursor, match.range.first)))
             append(match.value)
             cursor = match.range.last + 1
@@ -75,3 +56,5 @@ fun visibleThoughtTags(text: String, settings: CustomThoughtSettings): String {
         append(escape(text.substring(cursor)))
     }
 }
+
+private val THOUGHT_CODE_SPANS = Regex("(`{3,}|~{3,})[^\\n]*\\n[\\s\\S]*?(?:\\n\\1[^\\n]*(?:\\n|$)|$)|(`+)[^`]*?\\2")

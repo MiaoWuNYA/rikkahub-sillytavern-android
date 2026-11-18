@@ -167,6 +167,7 @@ class CustomThoughtTest {
         assertEquals("before\\<rainchain\\>private thought\\</rainchain\\>after", visibleThoughtTags(raw, config))
         val code = "`<rainchain>`\n```xml\n<rainchain>code</rainchain>\n```\n<div>card</div>"
         assertEquals(code, visibleThoughtTags(code, config))
+        assertEquals("\\<rainchain>", visibleThoughtTags("\\<rainchain>", config))
         assertEquals("\\<thinking\\>raw\\</thinking\\>", visibleThoughtTags("<thinking>raw</thinking>", CustomThoughtSettings()))
     }
 }

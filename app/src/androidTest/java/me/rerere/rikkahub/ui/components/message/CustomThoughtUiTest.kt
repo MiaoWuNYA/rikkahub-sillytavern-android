@@ -37,7 +37,9 @@ class CustomThoughtUiTest {
     private val config = CustomThoughtSettings(enabled = true, rules = listOf(rule))
 
     @Test fun separateCardFoldsWithoutChangingOriginal() {
-        compose.setContent { MaterialTheme { CustomThoughtCard("PRIVATE_MARKER") } }
+        compose.setContent { MaterialTheme {
+            CompositionLocalProvider(LocalSettings provides Settings()) { CustomThoughtCard("PRIVATE_MARKER") }
+        } }
         compose.onNodeWithText("PRIVATE_MARKER").assertDoesNotExist()
         compose.onNodeWithText("自定义思考链").performClick()
         compose.onNodeWithText("PRIVATE_MARKER").assertIsDisplayed()
