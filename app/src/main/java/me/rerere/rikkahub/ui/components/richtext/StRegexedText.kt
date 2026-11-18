@@ -33,15 +33,18 @@ internal data class StRegexRenderResult(
 )
 
 private val QUICK_STRIP_BLOCKS_RE = Regex(
-    """<(style|script|UpdateVariable|Analysis|JSONPatch|thinking|TASK_CHECK_PASS|Interleaving)\b[^>]*>[\s\S]*?</\1>""",
+    """<(style|script|UpdateVariable|JSONPatch|TASK_CHECK_PASS|Interleaving)\b[^>]*>[\s\S]*?</\1>""",
     RegexOption.IGNORE_CASE,
 )
 private val QUICK_STRIP_TAGS_RE = Regex("""<[^>]+>""")
 private val QUICK_HTML_COMMENT_RE = Regex("""<!--[\s\S]*?-->""")
+// 暂停内置思考块隐藏：由 TTTF 与全局自定义解析负责；未提取的正文应保持可见。
+/*
 private val RESIDUAL_THINK_STRIP_RE = Regex(
     """<(think|thinking|thought)\b[^>]*>[\s\S]*?(?:</\1>|\z)""",
     RegexOption.IGNORE_CASE,
 )
+*/
 private val DRAW_TAG_BLOCK_RE = Regex(
     """\[出图]\s*([\s\S]*?)\s*\[/出图]""",
     RegexOption.IGNORE_CASE,
@@ -561,13 +564,8 @@ internal fun computePureKotlinRegexedText(
     userName: String? = null,
     conversationId: String? = null,
 ): String {
-    val text = if (scope == AssistantAffectScope.ASSISTANT &&
-        (rawInputText.contains("<think", ignoreCase = true) || rawInputText.contains("<thought", ignoreCase = true))
-    ) {
-        RESIDUAL_THINK_STRIP_RE.replace(rawInputText, "").trimStart('\r', '\n')
-    } else {
-        rawInputText
-    }
+    val text = rawInputText
+    // RESIDUAL_THINK_STRIP_RE.replace(rawInputText, "").trimStart('\r', '\n')
     val charName = assistant?.tavernData?.nickname?.takeIf { it.isNotBlank() }
         ?: assistant?.name?.takeIf { it.isNotBlank() }
         ?: ""
@@ -596,13 +594,8 @@ internal fun computeStRegexedText(
     userName: String? = null,
     conversationId: String? = null,
 ): String {
-    val text = if (scope == AssistantAffectScope.ASSISTANT &&
-        (rawInputText.contains("<think", ignoreCase = true) || rawInputText.contains("<thought", ignoreCase = true))
-    ) {
-        RESIDUAL_THINK_STRIP_RE.replace(rawInputText, "").trimStart('\r', '\n')
-    } else {
-        rawInputText
-    }
+    val text = rawInputText
+    // RESIDUAL_THINK_STRIP_RE.replace(rawInputText, "").trimStart('\r', '\n')
     val cacheKey = StRegexTextCache.keyOf(
         text = text,
         scripts = scripts,
@@ -663,13 +656,8 @@ internal suspend fun computeStRegexedTextAsync(
     conversationId: String? = null,
 ): String {
     val rawInputText = text
-    val cleanedText = if (scope == AssistantAffectScope.ASSISTANT &&
-        (rawInputText.contains("<think", ignoreCase = true) || rawInputText.contains("<thought", ignoreCase = true))
-    ) {
-        RESIDUAL_THINK_STRIP_RE.replace(rawInputText, "").trimStart('\r', '\n')
-    } else {
-        rawInputText
-    }
+    val cleanedText = rawInputText
+    // RESIDUAL_THINK_STRIP_RE.replace(rawInputText, "").trimStart('\r', '\n')
     val cacheKey = StRegexTextCache.keyOf(
         text = cleanedText,
         scripts = scripts,

@@ -132,6 +132,12 @@ fun SettingHuaDengPage(vm: SettingVM = koinViewModel()) {
                 }
             }
 
+            item {
+                CustomThoughtSettingsEditor(settings.displaySetting) { update ->
+                    vm.updateSettings { current -> current.copy(displaySetting = update(current.displaySetting)) }
+                }
+            }
+
             // ── AI 浏览器 ──
             item {
                 CardGroup(

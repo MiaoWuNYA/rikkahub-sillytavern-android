@@ -4,6 +4,7 @@ import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
 import me.rerere.ai.provider.Model
 import me.rerere.ai.ui.UIMessage
+import me.rerere.rikkahub.data.ai.withoutCustomThoughtForRequest
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.GenerationType
@@ -98,7 +99,11 @@ suspend fun List<UIMessage>.transforms(
         chatUserMessageCount = chatUserMessageCount,
         chatMessageCount = chatMessageCount,
     )
-    return transformers.fold(this) { acc, transformer ->
+    // 只过滤发送用副本。输出转换和存档不经过此分支，TTTF 行为保持不变。
+    val input = if (transformers.any { it is InputMessageTransformer }) {
+        withoutCustomThoughtForRequest(settings.displaySetting.customThought)
+    } else this
+    return transformers.fold(input) { acc, transformer ->
         transformer.transform(ctx, acc)
     }
 }

@@ -407,6 +407,8 @@ data class DisplaySetting(
     val showDateTimeInMessage: Boolean = false,
     val showTokenUsage: Boolean = true,
     val showThinkingContent: Boolean = true,
+    val hideNativeReasoning: Boolean = false,
+    val customThought: me.rerere.rikkahub.data.model.CustomThoughtSettings = me.rerere.rikkahub.data.model.CustomThoughtSettings(),
     val autoCloseThinking: Boolean = true,
     val updateCheckDisabledUntilEpochMillis: Long = 0L,
     val showMessageJumper: Boolean = true,
