@@ -648,6 +648,7 @@ sealed class PromptInjection {
         val selective: Boolean = false,                 // 是否启用二级关键词逻辑
         val selectiveLogic: SelectiveLogic = SelectiveLogic.AND_ANY, // 触发逻辑
         val group: String = "",                         // 分组标签（同组条目互斥时只激活一个）
+        val categoryId: Uuid? = null, // 独立分类归属；绝不参与 group 互斥选择
         val groupWeight: Int = 100,                     // 同组权重（随机选择时使用）
         val groupOverride: Boolean = false,             // 是否覆盖同组其他条目
         val probability: Int = 100,                     // 触发概率 0-100
@@ -732,7 +733,17 @@ data class Lorebook(
     val entries: List<PromptInjection.RegexInjection> = emptyList(),
     // 是否来自角色卡内嵌世界书（官方 world_info_character_str
     val isCharacterBook: Boolean = false,
+    // Display order and empty groups only; entry membership remains RegexInjection.group.
+    val entryGroups: List<String> = emptyList(),
+    val categories: List<LorebookCategory> = emptyList(),
+    val rootOrder: List<LorebookOrderNode> = emptyList(),
 )
+
+@Serializable
+data class LorebookOrderNode(val categoryId: Uuid? = null, val entryId: Uuid? = null)
+
+@Serializable
+data class LorebookCategory(val id: Uuid = Uuid.random(), val name: String = "")
 
 /**
  * 检查 RegexInjection 是否被触发
