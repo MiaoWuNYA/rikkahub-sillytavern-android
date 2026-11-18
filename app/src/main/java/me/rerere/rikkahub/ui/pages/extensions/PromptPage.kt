@@ -1,5 +1,7 @@
 package me.rerere.rikkahub.ui.pages.extensions
 
+import kotlin.uuid.Uuid
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -11,6 +13,7 @@ import me.rerere.hugeicons.stroke.Book01
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.FileImport
+import me.rerere.hugeicons.stroke.Link01
 import me.rerere.hugeicons.stroke.Folder01
 import me.rerere.hugeicons.stroke.MagicWand01
 import me.rerere.hugeicons.stroke.Setting07
@@ -50,6 +53,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Button
@@ -76,6 +81,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -88,11 +94,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -114,6 +122,7 @@ import me.rerere.rikkahub.ui.hooks.readBooleanPreference
 import me.rerere.rikkahub.ui.hooks.rememberExporter
 import me.rerere.rikkahub.ui.hooks.rememberImporter
 import me.rerere.rikkahub.data.model.InjectionPosition
+import me.rerere.rikkahub.data.model.orderedEntries
 import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.model.RegexGroup
 import me.rerere.rikkahub.data.model.RegexGroupSource
@@ -139,6 +148,7 @@ import me.rerere.rikkahub.ui.hooks.useEditState
 import me.rerere.rikkahub.ui.hooks.writeBooleanPreference
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.plus
+import me.rerere.rikkahub.utils.JsonInstant
 import me.rerere.ui.components.FormItem
 import me.rerere.ui.components.RikkaConfirmDialog
 import me.rerere.ui.components.Select
@@ -239,6 +249,8 @@ fun PromptPage(vm: PromptVM = koinViewModel()) {
                             vm.updateSettings { latest -> latest.copy(lorebooks = newLorebooks) }
                         },
                         settings = settings,
+                        onCommitBatch = vm::commitLorebookBatch,
+                        copyState = vm.lorebookCopies,
                         onSettingsUpdate = { fn -> vm.updateSettings(fn) }
                     )
                 }
@@ -314,12 +326,7 @@ private fun ModeInjectionTab(
                             injection = injection,
                             modifier = Modifier
                                 .longPressDraggableHandle()
-                                .graphicsLayer {
-                                    if (isDragging) {
-                                        scaleX = 1.05f
-                                        scaleY = 1.05f
-                                    }
-                                },
+                                .promptReorderLift(isDragging),
                             onEdit = { editState.open(injection) },
                             onDelete = { onUpdate(modeInjections - injection) }
                         )
@@ -603,7 +610,7 @@ private fun ModeInjectionEditSheet(
 }
 
 @Composable
-private fun InjectionPositionSelector(
+internal fun InjectionPositionSelector(
     position: InjectionPosition,
     onSelect: (InjectionPosition) -> Unit
 ) {
@@ -616,7 +623,7 @@ private fun InjectionPositionSelector(
     )
 }
 
-private fun InjectionPosition.usesStandaloneMessage(): Boolean = when (this) {
+internal fun InjectionPosition.usesStandaloneMessage(): Boolean = when (this) {
     InjectionPosition.BEFORE_SYSTEM_PROMPT,
     InjectionPosition.AFTER_SYSTEM_PROMPT,
     InjectionPosition.BEFORE_CHARACTER,
@@ -656,7 +663,7 @@ private fun getPositionLabel(position: InjectionPosition): String = when (positi
 }
 
 @Composable
-private fun InjectionRoleSelector(
+internal fun InjectionRoleSelector(
     role: MessageRole,
     onSelect: (MessageRole) -> Unit,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -686,7 +693,11 @@ private fun LorebookTab(
     onUpdate: (List<Lorebook>) -> Unit,
     settings: Settings,
     onSettingsUpdate: ((Settings) -> Settings) -> Unit,
+    onCommitBatch: suspend (LorebookBatchRequest) -> Lorebook,
+    copyState: LorebookCopyState,
 ) {
+    val pendingCopy by copyState.pending.collectAsStateWithLifecycle()
+    val copyBusy by copyState.busy.collectAsStateWithLifecycle()
     var expanded by rememberSaveable { mutableStateOf(true) }
     val lazyListState = rememberLazyListState()
     val toaster = LocalToaster.current
@@ -701,14 +712,16 @@ private fun LorebookTab(
             onUpdate(newList)
         }
     }
-    val editState = useEditState<Lorebook> { edited ->
-        val index = lorebooks.indexOfFirst { it.id == edited.id }
+    fun saveLorebook(edited: Lorebook) {
+        val latest = currentLorebooks
+        val index = latest.indexOfFirst { it.id == edited.id }
         if (index >= 0) {
-            onUpdate(lorebooks.toMutableList().apply { set(index, edited) })
+            onUpdate(latest.toMutableList().apply { set(index, edited) })
         } else {
-            onUpdate(lorebooks + edited)
+            onUpdate(latest + edited)
         }
     }
+    val editState = useEditState<Lorebook>(::saveLorebook)
     val importSuccessMsg = stringResource(R.string.export_import_success)
     val importFailedMsg = stringResource(R.string.export_import_failed)
     val presetFolderName = stringResource(R.string.tavern_regex_preset_folder)
@@ -766,6 +779,9 @@ private fun LorebookTab(
                 .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            if (!editState.isEditing) pendingCopy?.let { task ->
+                LorebookCopyShelf(task, copyBusy, copyState::remove, copyState::cancel)
+            }
             TextButton(
                 onClick = { worldInfoSettingsExpanded = !worldInfoSettingsExpanded },
             ) {
@@ -1151,12 +1167,7 @@ private fun LorebookTab(
                             book = book,
                             modifier = Modifier
                                 .longPressDraggableHandle()
-                                .graphicsLayer {
-                                    if (isDragging) {
-                                        scaleX = 1.05f
-                                        scaleY = 1.05f
-                                    }
-                                },
+                                .promptReorderLift(isDragging),
                             onEdit = { editState.open(book) },
                             onDelete = { onUpdate(lorebooks - book) }
                         )
@@ -1201,6 +1212,17 @@ private fun LorebookTab(
                 book = state,
                 onDismiss = { editState.dismiss() },
                 onConfirm = { editState.confirm() },
+                onSave = ::saveLorebook,
+                persistedBook = currentLorebooks.firstOrNull { it.id == state.id },
+                onCommitBatch = onCommitBatch,
+                copyTask = pendingCopy,
+                copyBusy = copyBusy,
+                onStageCopy = { entries ->
+                    copyState.stage(state.id, entries)
+                    editState.dismiss()
+                },
+                onRemoveCopyEntry = copyState::remove,
+                onCancelCopy = copyState::cancel,
                 onEdit = { editState.currentState = it }
             )
         }
@@ -1325,20 +1347,111 @@ private fun LorebookCard(
 }
 
 @Composable
-private fun LorebookEditSheet(
+internal fun LorebookEditSheet(
     book: Lorebook,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
+    onSave: (Lorebook) -> Unit,
+    persistedBook: Lorebook?,
+    onCommitBatch: suspend (LorebookBatchRequest) -> Lorebook,
+    copyTask: LorebookCopyTask? = null,
+    copyBusy: Boolean = false,
+    onStageCopy: ((List<PromptInjection.RegexInjection>) -> Unit)? = null,
+    onRemoveCopyEntry: (Uuid) -> Unit = {},
+    onCancelCopy: () -> Unit = {},
     onEdit: (Lorebook) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
+    var pendingEntryJson by rememberSaveable(book.id.toString()) { mutableStateOf<String?>(null) }
+    val pendingEntry = remember(pendingEntryJson) {
+        pendingEntryJson?.let {
+            JsonInstant.decodeFromString<PromptInjection.RegexInjection>(it)
+        }
+    }
+    var selecting by rememberSaveable(book.id.toString()) { mutableStateOf(false) }
+    var selectionMode by rememberSaveable(book.id.toString()) { mutableStateOf(LorebookBatchMode.MOVE.name) }
+    var showGroupManagement by remember { mutableStateOf(false) }
+    var showCategoryManagement by remember { mutableStateOf(false) }
+    var groupMoveConfirmation by remember { mutableStateOf<LorebookBatchRequest?>(null) }
+    var showBulkSettings by remember { mutableStateOf(false) }
+    var deleteConfirmation by remember { mutableStateOf<LorebookBatchRequest?>(null) }
+    var copyConfirmation by remember { mutableStateOf<LorebookBatchRequest?>(null) }
+    var selectedStrings by rememberSaveable(book.id.toString()) { mutableStateOf(emptyList<String>()) }
+    var movingStrings by rememberSaveable(book.id.toString()) { mutableStateOf(emptyList<String>()) }
+    var batchToken by remember { mutableStateOf(Uuid.random()) }
+    var menuExpanded by remember { mutableStateOf(false) }
+    var savingBatch by remember { mutableStateOf(false) }
+    var batchError by remember { mutableStateOf<String?>(null) }
+    var baselineJson by rememberSaveable(book.id.toString()) {
+        mutableStateOf(persistedBook?.let { JsonInstant.encodeToString(it) })
+    }
+    val baseline = remember(baselineJson) { baselineJson?.let { JsonInstant.decodeFromString<Lorebook>(it) } }
+    val selectedIds = selectedStrings.map { Uuid.parse(it) }.toSet()
+    val movingIds = movingStrings.map { Uuid.parse(it) }.toSet()
+    val moving = movingIds.takeIf { it.isNotEmpty() }?.let {
+        LorebookBatchPreview(batchToken, LorebookBatchMode.MOVE, orderedLorebookSelection(book.entries, it))
+    }
+    val activeBatch = copyTask?.preview() ?: moving
+    val canCopyHere = copyTask == null || copyTask.sourceBookId != book.id
+    LaunchedEffect(copyTask?.id) { copyConfirmation = null; batchError = null }
+    LaunchedEffect(persistedBook, book) {
+        if (persistedBook == book) baselineJson = JsonInstant.encodeToString(book)
+    }
+    fun cancelBatch() {
+        if (!savingBatch) {
+            selecting = false
+            selectedStrings = emptyList()
+            movingStrings = emptyList()
+            batchError = null
+        }
+    }
+    fun executeBatch(request: LorebookBatchRequest) {
+        if (savingBatch) return
+        savingBatch = true
+        batchError = null
+        scope.launch {
+            try {
+                val saved = onCommitBatch(request)
+                onEdit(saved)
+                baselineJson = JsonInstant.encodeToString(saved)
+                val action = request.action
+                if (action is LorebookBatchAction.Move) {
+                    movingStrings = movingStrings.filterNot { Uuid.parse(it) in action.ids }
+                    selecting = false
+                    selectedStrings = emptyList()
+                }
+                if (action is LorebookBatchAction.Delete || action is LorebookBatchAction.Settings) {
+                    selectedStrings = emptyList()
+                    selecting = false
+                }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                batchError = "保存失败：${failure.message ?: "请重试"}；${if (request.action is LorebookBatchAction.Delete) "选择仍保留" else "暂存条目仍保留"}"
+            } finally {
+                savingBatch = false
+            }
+        }
+    }
+    fun commitBatch(placement: LorebookEntryPlacement?, atEnd: Boolean?, singleId: Uuid? = null) {
+        if (savingBatch || copyBusy) return
+        val ids = singleId?.let { setOf(it) }
+        val action = copyTask?.let { LorebookBatchAction.Copy(it, ids ?: it.entries.map { entry -> entry.id }.toSet()) }
+            ?: LorebookBatchAction.Move(ids ?: movingIds)
+        val request = LorebookBatchRequest(book, baseline, action, placement, atEnd)
+        if (action is LorebookBatchAction.Copy) {
+            if (canCopyHere) copyConfirmation = request
+            else batchError = "请选择另一份世界书作为复制目标；待复制选择仍保留"
+        } else executeBatch(request)
+    }
+    val dismiss = { if (!savingBatch && !copyBusy) onDismiss() }
     val entryEditState = useEditState<PromptInjection.RegexInjection> { edited ->
         val index = book.entries.indexOfFirst { it.id == edited.id }
         if (index >= 0) {
-            onEdit(book.copy(entries = book.entries.toMutableList().apply { set(index, edited) }))
+            onEdit(book.withLorebookEntries(book.entries.toMutableList().apply { set(index, if (edited.group.isNotBlank()) edited.copy(categoryId = null) else edited) }))
         } else {
-            onEdit(book.copy(entries = book.entries + edited))
+            pendingEntryJson = JsonInstant.encodeToString(edited)
         }
     }
     val groupEditState = useEditState<Pair<String, List<PromptInjection.RegexInjection>>> { pair ->
@@ -1372,18 +1485,19 @@ private fun LorebookEditSheet(
                 )
             } else entry
         }
-        onEdit(book.copy(entries = newEntries))
+        val renamed = lorebookEntryGroupNames(book).map { if (it == oldGroupName) newGroupName else it }
+        onEdit(book.copy(entryGroups = renamed.filter { it.isNotBlank() }.distinct()).copy(entries = newEntries))
     }
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = dismiss,
         sheetState = sheetState,
         sheetGesturesEnabled = false,
         dragHandle = {
-            IconButton(onClick = {
+            IconButton(enabled = !savingBatch && !copyBusy, onClick = {
                 scope.launch {
                     sheetState.hide()
-                    onDismiss()
+                    dismiss()
                 }
             }) {
                 Icon(HugeIcons.ArrowDown01, null)
@@ -1392,10 +1506,11 @@ private fun LorebookEditSheet(
     ) {
         Column(
             modifier = Modifier
+                .testTag("lorebook-editor-sheet")
                 .fillMaxWidth()
                 .fillMaxHeight(0.95f)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
                 text = stringResource(R.string.prompt_page_edit_lorebook),
@@ -1403,134 +1518,189 @@ private fun LorebookEditSheet(
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                OutlinedTextField(
-                    value = book.name,
-                    onValueChange = { onEdit(book.copy(name = it)) },
-                    label = { Text(stringResource(R.string.prompt_page_name)) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = book.description,
-                    onValueChange = { onEdit(book.copy(description = it)) },
-                    label = { Text(stringResource(R.string.prompt_page_description)) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                FormItem(
-                    label = { Text(stringResource(R.string.prompt_page_enabled)) },
-                    tail = {
-                        Switch(
-                            checked = book.enabled,
-                            onCheckedChange = { onEdit(book.copy(enabled = it)) }
-                        )
-                    }
-                )
-
-                // 条目列表（按分组）
-                val groupedEntries = book.entries.groupBy { it.group }
-                val namedGroups = groupedEntries.filterKeys { it.isNotBlank() }
-                val ungroupedEntries = groupedEntries[""] ?: emptyList()
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        stringResource(R.string.prompt_page_entries_format, book.entries.size),
-                        style = MaterialTheme.typography.titleSmall
-                    )
-                    FilledTonalIconButton(onClick = {
-                        entryEditState.open(PromptInjection.RegexInjection())
-                    }) {
-                        Icon(HugeIcons.Add01, stringResource(R.string.prompt_page_add_entry))
-                    }
+            if (pendingEntry == null && activeBatch == null && !selecting) Box(Modifier.fillMaxWidth()) {
+                TextButton(onClick = { menuExpanded = true }, enabled = pendingEntry == null && activeBatch == null && !selecting && !savingBatch && !copyBusy) {
+                    Text("批量管理条目")
                 }
-
-                // 有分组的组
-                namedGroups.toList().forEachIndexed { idx, (groupName, groupEntries) ->
-                    LorebookGroupSection(
-                        groupName = groupName,
-                        groupIndex = idx,
-                        entries = groupEntries,
-                        onGroupSettings = {
-                            groupEditState.open(Pair(groupName, groupEntries))
-                        },
-                        onEditEntry = { entryEditState.open(it) },
-                        onDeleteEntry = {
-                            onEdit(book.copy(entries = book.entries - it))
-                        },
-                        onUpdateEntry = { edited ->
-                            val idx = book.entries.indexOfFirst { it.id == edited.id }
-                            if (idx >= 0) {
-                                onEdit(book.copy(entries = book.entries.toMutableList().apply { set(idx, edited) }))
-                            }
-                        },
-                        onAddEntry = {
-                            entryEditState.open(PromptInjection.RegexInjection(group = groupName))
-                        },
-                    )
-                }
-
-                // 无分组的条目
-                if (ungroupedEntries.isNotEmpty()) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            text = stringResource(R.string.prompt_page_no_group),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        )
-                        ungroupedEntries.forEach { entry ->
-                            RegexInjectionEntryCard(
-                                entry = entry,
-                                onEdit = { entryEditState.open(entry) },
-                                onDelete = {
-                                    onEdit(book.copy(entries = book.entries - entry))
-                                },
-                                onUpdate = { edited ->
-                                    val idx = book.entries.indexOfFirst { it.id == edited.id }
-                                    if (idx >= 0) {
-                                        onEdit(book.copy(entries = book.entries.toMutableList().apply { set(idx, edited) }))
-                                    }
-                                },
-                            )
-                        }
-                    }
-                }
-
-                // 没有条目时提示
-                if (book.entries.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.prompt_page_no_entries),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 16.dp),
+                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                    DropdownMenuItem(text = { Text("批量设置") }, onClick = { menuExpanded = false; selectionMode = LorebookBatchMode.SETTINGS.name; selecting = true })
+                    DropdownMenuItem(text = { Text("删除条目") }, onClick = { menuExpanded = false; selectionMode = LorebookBatchMode.DELETE.name; selecting = true })
+                    DropdownMenuItem(text = { Text("移动到本书其他位置") }, onClick = { menuExpanded = false; selectionMode = LorebookBatchMode.MOVE.name; selecting = true })
+                    DropdownMenuItem(
+                        text = { Text("复制到其他世界书") },
+                        enabled = persistedBook != null && onStageCopy != null,
+                        onClick = { menuExpanded = false; selectionMode = LorebookBatchMode.COPY.name; selecting = true },
+                        trailingIcon = { if (persistedBook == null) Text("请先保存本书", style = MaterialTheme.typography.labelSmall) },
                     )
                 }
             }
+            if (selecting) LorebookSelectionControls(
+                book.entries, selectedIds, LorebookBatchMode.valueOf(selectionMode),
+                onSelect = { selectedStrings = it.map(Uuid::toString) },
+                onDone = {
+                    val ordered = orderedLorebookSelection(book.orderedEntries(), selectedIds)
+                    try {
+                        if (selectionMode == LorebookBatchMode.SETTINGS.name) {
+                            showBulkSettings = true
+                            return@LorebookSelectionControls
+                        } else if (selectionMode == LorebookBatchMode.DELETE.name) {
+                            deleteConfirmation = LorebookBatchRequest(book, baseline, LorebookBatchAction.Delete(ordered.map { it.id }.toSet()))
+                            return@LorebookSelectionControls
+                        } else if (selectionMode == LorebookBatchMode.COPY.name) checkNotNull(onStageCopy).invoke(ordered)
+                        else {
+                            movingStrings = ordered.map { it.id.toString() }
+                            batchToken = Uuid.random()
+                        }
+                        selectedStrings = emptyList()
+                        selecting = false
+                    } catch (failure: Exception) {
+                        batchError = failure.message ?: "暂存失败，请重试"
+                    }
+                },
+                onCancel = ::cancelBatch,
+                groups = lorebookEntryGroupNames(book),
+                enabled = !savingBatch && !copyBusy,
+                book = book,
+                onMoveToPlacement = { placement ->
+                    if (selectedIds.isNotEmpty()) groupMoveConfirmation = LorebookBatchRequest(book, baseline,
+                        LorebookBatchAction.Move(selectedIds), placement)
+                },
+            )
+            if (savingBatch) Text("正在保存，请稍候…", style = MaterialTheme.typography.bodySmall)
+            batchError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+
+            LorebookEntryList(
+                book = book,
+                pendingEntry = pendingEntry,
+                batch = activeBatch,
+                selectedIds = if (selecting) selectedIds else null,
+                onSelectEntry = { id ->
+                    // Multiple taps can arrive before recomposition; read the live selection.
+                    val latestIds = selectedStrings.map { Uuid.parse(it) }.toSet()
+                    val entry = book.entries.firstOrNull { it.id == id }
+                    if (!savingBatch && !copyBusy && entry != null) {
+                        selectedStrings = (if (id in latestIds) latestIds - id else latestIds + id).map(Uuid::toString)
+                    }
+                },
+                onRemoveBatchEntry = { id ->
+                    if (!savingBatch && !copyBusy) {
+                        if (copyTask != null) onRemoveCopyEntry(id)
+                        else {
+                            movingStrings = movingStrings - id.toString()
+                            if (movingStrings.isEmpty()) batchError = null
+                        }
+                    }
+                },
+                onCommitBatch = { placement, end -> commitBatch(placement, end) },
+                onCommitSingle = { id, placement -> commitBatch(placement, null, id) },
+                batchEnabled = !savingBatch && !copyBusy && canCopyHere,
+                batchBusy = savingBatch || copyBusy,
+                batchHint = if (copyTask != null) {
+                    if (canCopyHere) "长按整组手柄选择落点；复制前会确认分组与位置"
+                    else "这是来源世界书，请返回列表选择另一份；暂存选择会保留"
+                } else null,
+                onUpdatePending = { pendingEntryJson = JsonInstant.encodeToString(it) },
+                onCancelPending = {
+                    if (copyTask != null) { onCancelCopy(); batchError = null }
+                    else if (moving != null) cancelBatch() else pendingEntryJson = null
+                },
+                onInsertPending = { placement ->
+                    pendingEntry?.let { pending ->
+                        val entries = insertLorebookEntry(book.entries, pending, placement)
+                        if (entries.any { it.id == pending.id }) {
+                            val inserted = book.withPlacedEntries(entries, setOf(pending.id), placement)
+                            onEdit(inserted)
+                            if (placement?.targetId == null) onSave(inserted)
+                            pendingEntryJson = null
+                        }
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                header = {
+                    OutlinedTextField(
+                        value = book.name,
+                        onValueChange = { onEdit(book.copy(name = it)) },
+                        label = { Text(stringResource(R.string.prompt_page_name)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = book.description,
+                        onValueChange = { onEdit(book.copy(description = it)) },
+                        label = { Text(stringResource(R.string.prompt_page_description)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    FormItem(
+                        label = { Text(stringResource(R.string.prompt_page_enabled)) },
+                        tail = {
+                            Switch(
+                                checked = book.enabled,
+                                onCheckedChange = { onEdit(book.copy(enabled = it)) }
+                            )
+                        }
+                    )
+
+                },
+                onEntriesChange = { if (!savingBatch) onEdit(book.withLorebookEntries(it)) },
+                onEditEntry = { if (!savingBatch) entryEditState.open(it) },
+                onManageGroups = { showGroupManagement = true },
+                onManageCategories = { showCategoryManagement = true },
+                onAddCategoryEntry = { category -> entryEditState.open(PromptInjection.RegexInjection(categoryId = category)) },
+                onGroupsChange = { if (!savingBatch && !copyBusy) onEdit(it) },
+                onAddEntry = { group -> entryEditState.open(PromptInjection.RegexInjection(group = group)) },
+                onGroupSettings = { group, entries -> groupEditState.open(group to entries) },
+            )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
             ) {
-                TextButton(onClick = onDismiss) {
+                TextButton(onClick = dismiss, enabled = !savingBatch && !copyBusy) {
                     Text(stringResource(R.string.prompt_page_cancel))
                 }
-                Button(onClick = onConfirm) {
+                Button(onClick = onConfirm, enabled = pendingEntry == null && activeBatch == null && !selecting && !savingBatch && !copyBusy) {
                     Text(stringResource(R.string.prompt_page_confirm))
                 }
             }
         }
     }
 
+    copyConfirmation?.let { request ->
+        AlertDialog(
+            onDismissRequest = { copyConfirmation = null },
+            title = { Text("确认跨书复制") },
+            text = { Text(lorebookCopyConfirmation(request), Modifier.verticalScroll(rememberScrollState())) },
+            confirmButton = {
+                TextButton(onClick = { copyConfirmation = null; executeBatch(request) }) { Text("确认复制") }
+            },
+            dismissButton = {
+                TextButton(onClick = { copyConfirmation = null }) { Text("返回选择落点") }
+            },
+        )
+    }
+
+    if (showBulkSettings) LorebookBulkSettingsDialog(orderedLorebookSelection(book.orderedEntries(), selectedIds),
+        onDismiss = { showBulkSettings = false }, onApply = { patch ->
+            showBulkSettings = false
+            executeBatch(LorebookBatchRequest(book, baseline, LorebookBatchAction.Settings(selectedIds, patch)))
+        })
+    deleteConfirmation?.let { request ->
+        val count = (request.action as LorebookBatchAction.Delete).ids.size
+        AlertDialog(onDismissRequest = { deleteConfirmation = null }, title = { Text("确认删除所选") },
+            text = { Text("将删除 $count 条条目，未选中的条目和独立分组将保留。") },
+            confirmButton = { TextButton(onClick = { deleteConfirmation = null; executeBatch(request) }) { Text("确认删除") } },
+            dismissButton = { TextButton(onClick = { deleteConfirmation = null }) { Text("取消删除") } })
+    }
+    if (showCategoryManagement) LorebookCategoryManagement(book, onEdit, { showCategoryManagement = false })
+    if (showGroupManagement) LorebookGroupManagement(book, onEdit, { showGroupManagement = false })
+    groupMoveConfirmation?.let { request ->
+        val count = (request.action as LorebookBatchAction.Move).ids.size
+        AlertDialog(onDismissRequest = { groupMoveConfirmation = null }, title = { Text("确认移入分组") },
+            text = { Text("将 $count 条移动到「${if (request.placement?.categoryTarget == true) book.categories.firstOrNull { it.id.toString() == request.placement.group }?.name ?: "未分类" else groupLabel(request.placement?.group.orEmpty())}」末尾。将更新所选条目的归属；移入普通分类或未分类会解除互斥归属，移入互斥组会移出普通区。其他触发配置与条目 ID 保留。") },
+            confirmButton = { TextButton(onClick = { groupMoveConfirmation = null; executeBatch(request) }) { Text("确认移动") } },
+            dismissButton = { TextButton(onClick = { groupMoveConfirmation = null }) { Text("取消移动") } })
+    }
     if (entryEditState.isEditing) {
         entryEditState.currentState?.let { state ->
             RegexInjectionEditDialog(
@@ -1596,17 +1766,28 @@ private fun LorebookEditSheet(
 }
 
 @Composable
-private fun RegexInjectionEntryCard(
+internal fun RegexInjectionEntryCard(
     entry: PromptInjection.RegexInjection,
-    shape: Shape = RoundedCornerShape(20.dp),
+    collapsed: Boolean = false,
+    dragHandle: @Composable () -> Unit = {},
+    selection: @Composable () -> Unit = {},
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onUpdate: (PromptInjection.RegexInjection) -> Unit = {},
 ) {
     var editingName by remember { mutableStateOf(false) }
     var editNameValue by remember { mutableStateOf(entry.name) }
-    var newKeyword by remember { mutableStateOf("") }
 
+    val viewConfiguration = androidx.compose.ui.platform.LocalViewConfiguration.current
+    val controlsConfiguration = remember(viewConfiguration) {
+        object : androidx.compose.ui.platform.ViewConfiguration by viewConfiguration {
+            override val minimumTouchTargetSize = androidx.compose.ui.unit.DpSize(32.dp, 32.dp)
+        }
+    }
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalViewConfiguration provides controlsConfiguration,
+        androidx.compose.material3.LocalMinimumInteractiveComponentSize provides 32.dp,
+    ) {
     Card(
         modifier = if (!entry.enabled) Modifier.fillMaxWidth().alpha(0.5f) else Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -1614,207 +1795,195 @@ private fun RegexInjectionEntryCard(
             containerColor = CustomColors.listItemColors.containerColor
         ),
     ) {
-        Row(modifier = Modifier.fillMaxWidth()) {
-            // 左侧 4dp 彩色装饰线
-            Box(
-                modifier = Modifier
-                    .width(4.dp)
-                    .fillMaxHeight()
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            )
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(12.dp)
-            ) {
-            // 第一行：名称 + 启用开关 + 操作按钮
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // 条目名称（可点击编辑）
-                if (editingName) {
-                    OutlinedTextField(
-                        value = editNameValue,
-                        onValueChange = { editNameValue = it },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f),
-                        textStyle = MaterialTheme.typography.bodyMedium,
-                    )
-                    IconButton(
-                        onClick = {
-                            onUpdate(entry.copy(name = editNameValue))
-                            editingName = false
-                        },
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        Icon(HugeIcons.Add01, null, modifier = Modifier.size(16.dp))
+        val stripeColor = MaterialTheme.colorScheme.surfaceVariant
+        // Draw inside the measured card. A fillMaxHeight child would expand a bounded safety area.
+        LorebookEntryCardLayout(dragHandle = dragHandle) {
+            Row(modifier = Modifier.fillMaxWidth().drawBehind {
+                drawRect(stripeColor, size = Size(4.dp.toPx(), size.height))
+            }) {
+                selection()
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 12.dp, top = 6.dp, end = 8.dp, bottom = 6.dp)
+                ) {
+                val weightLabel = stringResource(R.string.prompt_page_group_weight_preview, entry.groupWeight)
+                val constantLabel = stringResource(R.string.prompt_page_constant_preview)
+                val metadata = listOfNotNull(
+                    "P${entry.probability}%",
+                    (entry.keywords + entry.secondaryKeys).joinToString(", ").takeIf { it.isNotBlank() },
+                    entry.group.takeIf { it.isNotBlank() },
+                    weightLabel.takeIf { !collapsed && entry.group.isNotBlank() },
+                    constantLabel.takeIf { entry.constantActive },
+                ).joinToString(" · ")
+                // The title owns the main column; actions no longer consume its width.
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // 条目名称（可点击编辑）
+                    if (editingName) {
+                        OutlinedTextField(
+                            value = editNameValue,
+                            onValueChange = { editNameValue = it },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                            textStyle = MaterialTheme.typography.bodyMedium,
+                        )
+                        IconButton(
+                            onClick = {
+                                onUpdate(entry.copy(name = editNameValue))
+                                editingName = false
+                            },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(HugeIcons.Add01, null, modifier = Modifier.size(16.dp))
+                        }
+                    } else {
+                        Text(
+                            text = entry.name.ifEmpty { stringResource(R.string.prompt_page_unnamed_entry) },
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { editingName = true; editNameValue = entry.name },
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
-                } else {
+
+                    Switch(
+                        checked = entry.enabled,
+                        onCheckedChange = { onUpdate(entry.copy(enabled = it)) },
+                        modifier = Modifier.size(width = 52.dp, height = 32.dp),
+                    )
+                }
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Text(
-                        text = entry.name.ifEmpty { stringResource(R.string.prompt_page_unnamed_entry) },
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { editingName = true; editNameValue = entry.name },
+                        metadata, Modifier.weight(1f), style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                    IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+                        Icon(HugeIcons.Tools, stringResource(R.string.prompt_page_edit), modifier = Modifier.size(18.dp))
+                    }
+                    IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                        Icon(HugeIcons.Delete01, stringResource(R.string.prompt_page_delete), modifier = Modifier.size(18.dp))
+                    }
+                }
+
+                Column {
+                if (collapsed) {
+                    Text(
+                        text = entry.content.replace('\n', ' '),
+                        style = MaterialTheme.typography.bodySmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.clickable(onClick = onEdit),
                     )
-                }
-
-                Switch(
-                    checked = entry.enabled,
-                    onCheckedChange = { onUpdate(entry.copy(enabled = it)) },
-                    modifier = Modifier.size(32.dp),
-                )
-                IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
-                    Icon(HugeIcons.Tools, stringResource(R.string.prompt_page_edit), modifier = Modifier.size(18.dp))
-                }
-                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                    Icon(HugeIcons.Delete01, stringResource(R.string.prompt_page_delete), modifier = Modifier.size(18.dp))
-                }
-            }
-
-            // 触发词（紧凑显示）
-            if (entry.keywords.isNotEmpty() || entry.secondaryKeys.isNotEmpty()) {
-                Text(
-                    text = entry.keywords.joinToString(", ").let {
-                        if (it.length > 100) it.take(100) + "…" else it
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 2.dp),
-                )
-            }
-
-            // 状态信息行: 概率 + 分组 + 权重
-            Row(
-                modifier = Modifier.padding(top = 2.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    "P${entry.probability}%",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                if (entry.group.isNotBlank()) {
-                    Text(
-                        entry.group,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.tertiary,
-                    )
-                    Text(
-                        stringResource(R.string.prompt_page_group_weight_preview, entry.groupWeight),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    )
-                }
-                if (entry.constantActive) {
-                    Text(
-                        stringResource(R.string.prompt_page_constant_preview),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    )
-                }
-            }
-
-            // 注入内容预览（可展开编辑）
-            var contentExpanded by remember { mutableStateOf(false) }
-            var editContent by remember(entry.content) { mutableStateOf(entry.content) }
-            Column(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
-                if (contentExpanded) {
-                    OutlinedTextField(
-                        value = editContent,
-                        onValueChange = { editContent = it },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 80.dp, max = 200.dp),
-                        textStyle = MaterialTheme.typography.bodySmall,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                        ),
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        TextButton(
-                            onClick = {
-                                contentExpanded = false
-                                editContent = entry.content
-                            },
-                            contentPadding = PaddingValues(horizontal = 8.dp),
-                        ) {
-                            Text(stringResource(R.string.prompt_page_cancel), style = MaterialTheme.typography.labelSmall)
-                        }
-                        Spacer(Modifier.width(4.dp))
-                        TextButton(
-                            onClick = {
-                                onUpdate(entry.copy(content = editContent))
-                                contentExpanded = false
-                            },
-                            contentPadding = PaddingValues(horizontal = 8.dp),
-                        ) {
-                            Text(stringResource(R.string.prompt_page_confirm), style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                } else if (entry.content.isNotBlank()) {
-                    Surface(
-                        onClick = { contentExpanded = true; editContent = entry.content },
-                        shape = RoundedCornerShape(4.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            text = entry.content.lines().take(3).joinToString("\n")
-                                .let { if (it.length < entry.content.length) "$it…" else it },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(10.dp),
-                        )
-                    }
                 } else {
-                    Surface(
-                        onClick = { contentExpanded = true },
-                        shape = RoundedCornerShape(4.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.prompt_page_add_content),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(10.dp),
+                // 注入内容预览（可展开编辑）
+                var contentExpanded by remember { mutableStateOf(false) }
+                var editContent by remember(entry.content) { mutableStateOf(entry.content) }
+                Column(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                    if (contentExpanded) {
+                        OutlinedTextField(
+                            value = editContent,
+                            onValueChange = { editContent = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 80.dp, max = 200.dp),
+                            textStyle = MaterialTheme.typography.bodySmall,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                            ),
                         )
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            TextButton(
+                                onClick = {
+                                    contentExpanded = false
+                                    editContent = entry.content
+                                },
+                                contentPadding = PaddingValues(horizontal = 8.dp),
+                            ) {
+                                Text(stringResource(R.string.prompt_page_cancel), style = MaterialTheme.typography.labelSmall)
+                            }
+                            Spacer(Modifier.width(4.dp))
+                            TextButton(
+                                onClick = {
+                                    onUpdate(entry.copy(content = editContent))
+                                    contentExpanded = false
+                                },
+                                contentPadding = PaddingValues(horizontal = 8.dp),
+                            ) {
+                                Text(stringResource(R.string.prompt_page_confirm), style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    } else if (entry.content.isNotBlank()) {
+                        Surface(
+                            onClick = { contentExpanded = true; editContent = entry.content },
+                            shape = RoundedCornerShape(4.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                text = entry.content.lines().take(3).joinToString("\n")
+                                    .let { if (it.length < entry.content.length) "$it…" else it },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(8.dp),
+                            )
+                        }
+                    } else {
+                        Surface(
+                            onClick = { contentExpanded = true },
+                            shape = RoundedCornerShape(4.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.prompt_page_add_content),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(8.dp),
+                            )
+                        }
                     }
+                }
+                }
                 }
             }
         }
-    }
+        }
 }
 
+}
 }
 
 @Composable
-private fun LorebookGroupSection(
+internal fun LorebookGroupSection(
     groupName: String,
     entries: List<PromptInjection.RegexInjection>,
     onGroupSettings: () -> Unit,
-    onEditEntry: (PromptInjection.RegexInjection) -> Unit,
-    onDeleteEntry: (PromptInjection.RegexInjection) -> Unit,
-    onUpdateEntry: (PromptInjection.RegexInjection) -> Unit,
     onAddEntry: () -> Unit,
+    canAddEntry: Boolean = true,
+    canEditGroup: Boolean = true,
     groupIndex: Int = 0,
+    expanded: Boolean,
+    onExpandedChange: () -> Unit,
+    headerGesture: Modifier? = null,
+    exclusive: Boolean = false,
 ) {
-    var expanded by rememberSaveable(groupName) { mutableStateOf(false) }
     val rotationAngle by animateFloatAsState(
         targetValue = if (expanded) 90f else 0f,
         animationSpec = tween(200),
@@ -1840,7 +2009,7 @@ private fun LorebookGroupSection(
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { expanded = !expanded },
+                .then(headerGesture ?: Modifier.clickable { onExpandedChange() }),
         ) {
             Row(
                 modifier = Modifier
@@ -1858,8 +2027,8 @@ private fun LorebookGroupSection(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Icon(
-                    HugeIcons.Folder01,
-                    contentDescription = null,
+                    if (exclusive) HugeIcons.Link01 else HugeIcons.Folder01,
+                    contentDescription = if (exclusive) "互斥组" else "分类组",
                     modifier = Modifier.size(20.dp),
                     tint = folderColor,
                 )
@@ -1881,37 +2050,21 @@ private fun LorebookGroupSection(
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
                 }
-                IconButton(onClick = onGroupSettings, modifier = Modifier.size(28.dp)) {
+                IconButton(onClick = onGroupSettings, enabled = canEditGroup, modifier = Modifier.size(28.dp)) {
                     Icon(HugeIcons.Tools, null, modifier = Modifier.size(16.dp))
                 }
-                IconButton(onClick = onAddEntry, modifier = Modifier.size(28.dp)) {
-                    Icon(HugeIcons.Add01, null, modifier = Modifier.size(16.dp))
+                IconButton(onClick = onAddEntry, enabled = canAddEntry, modifier = Modifier.size(28.dp)) {
+                    Icon(HugeIcons.Add01, "在 $groupName 中新增条目", modifier = Modifier.size(16.dp))
                 }
             }
         }
 
-        // 组内条目：LazyColumn item 内不做高度动画（会跳），展开收起直接切换
-        if (expanded) {
-            Column(
-                modifier = Modifier.padding(start = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                entries.forEach { entry ->
-                    RegexInjectionEntryCard(
-                        entry = entry,
-                        onEdit = { onEditEntry(entry) },
-                        onDelete = { onDeleteEntry(entry) },
-                        onUpdate = { edited -> onUpdateEntry(edited) },
-                    )
-                }
-            }
-        }
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun GroupSettingsDialog(
+internal fun GroupSettingsDialog(
     groupName: String,
     entries: List<PromptInjection.RegexInjection>,
     onDismiss: () -> Unit,
@@ -2252,503 +2405,18 @@ private fun GroupSettingsDialog(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun RegexInjectionEditDialog(
+internal fun RegexInjectionEditDialog(
     entry: PromptInjection.RegexInjection,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
     onEdit: (PromptInjection.RegexInjection) -> Unit
 ) {
-    var newKeyword by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.prompt_page_edit_entry)) },
         text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .imePadding(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedTextField(
-                    value = entry.name,
-                    onValueChange = { onEdit(entry.copy(name = it)) },
-                    label = { Text(stringResource(R.string.prompt_page_name)) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                FormItem(
-                    label = { Text(stringResource(R.string.prompt_page_enabled)) },
-                    tail = {
-                        Switch(
-                            checked = entry.enabled,
-                            onCheckedChange = { onEdit(entry.copy(enabled = it)) }
-                        )
-                    }
-                )
-
-                IntTextField(
-                    value = entry.priority,
-                    onValueChange = { onEdit(entry.copy(priority = it)) },
-                    label = { Text(stringResource(R.string.prompt_page_priority_label)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-
-                Text(
-                    stringResource(R.string.prompt_page_injection_position),
-                    style = MaterialTheme.typography.titleSmall
-                )
-                InjectionPositionSelector(
-                    position = entry.position,
-                    onSelect = { onEdit(entry.copy(position = it)) }
-                )
-
-                // 深度 (depth) — 始终显示
-                IntTextField(
-                    value = entry.injectDepth,
-                    onValueChange = { onEdit(entry.copy(injectDepth = it)) },
-                    label = { Text(stringResource(R.string.prompt_page_inject_depth)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-
-                // 关键词
-                Text(stringResource(R.string.prompt_page_keywords_label), style = MaterialTheme.typography.titleSmall)
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    entry.keywords.forEach { keyword ->
-                        InputChip(
-                            selected = false,
-                            onClick = {},
-                            label = { Text(keyword) },
-                            trailingIcon = {
-                                IconButton(
-                                    onClick = {
-                                        onEdit(entry.copy(keywords = entry.keywords - keyword))
-                                    },
-                                    modifier = Modifier.size(16.dp)
-                                ) {
-                                    Icon(HugeIcons.Cancel01, null, modifier = Modifier.size(12.dp))
-                                }
-                            }
-                        )
-                    }
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedTextField(
-                        value = newKeyword,
-                        onValueChange = { newKeyword = it },
-                        label = { Text(stringResource(R.string.prompt_page_new_keyword)) },
-                        modifier = Modifier.weight(1f),
-                        singleLine = true
-                    )
-                    IconButton(
-                        onClick = {
-                            if (newKeyword.isNotBlank()) {
-                                onEdit(entry.copy(keywords = entry.keywords + newKeyword.trim()))
-                                newKeyword = ""
-                            }
-                        }
-                    ) {
-                        Icon(HugeIcons.Add01, stringResource(R.string.prompt_page_add))
-                    }
-                }
-
-                FormItem(
-                    label = { Text(stringResource(R.string.prompt_page_use_regex)) },
-                    tail = {
-                        Switch(
-                            checked = entry.useRegex,
-                            onCheckedChange = { onEdit(entry.copy(useRegex = it)) }
-                        )
-                    }
-                )
-
-                FormItem(
-                    label = { Text(stringResource(R.string.prompt_page_case_sensitive)) },
-                    tail = {
-                        Switch(
-                            checked = entry.caseSensitive,
-                            onCheckedChange = { onEdit(entry.copy(caseSensitive = it)) }
-                        )
-                    }
-                )
-
-                FormItem(
-                    label = { Text(stringResource(R.string.prompt_page_match_whole_words)) },
-                    tail = {
-                        Switch(
-                            checked = entry.matchWholeWords,
-                            onCheckedChange = { onEdit(entry.copy(matchWholeWords = it)) }
-                        )
-                    }
-                )
-
-                FormItem(
-                    label = { Text(stringResource(R.string.prompt_page_exclude_recursion)) },
-                    tail = {
-                        Switch(
-                            checked = entry.excludeRecursion,
-                            onCheckedChange = { onEdit(entry.copy(excludeRecursion = it)) }
-                        )
-                    }
-                )
-
-                FormItem(
-                    label = { Text(stringResource(R.string.prompt_page_prevent_recursion)) },
-                    tail = {
-                        Switch(
-                            checked = entry.preventRecursion,
-                            onCheckedChange = { onEdit(entry.copy(preventRecursion = it)) }
-                        )
-                    }
-                )
-
-                FormItem(
-                    label = { Text(stringResource(R.string.prompt_page_delay_until_recursion)) },
-                    tail = {
-                        Switch(
-                            checked = entry.delayUntilRecursion > 0,
-                            onCheckedChange = { onEdit(entry.copy(delayUntilRecursion = if (it) 1 else 0)) }
-                        )
-                    }
-                )
-                AnimatedVisibility(visible = entry.delayUntilRecursion > 0) {
-                    IntTextField(
-                        value = entry.delayUntilRecursion,
-                        onValueChange = { onEdit(entry.copy(delayUntilRecursion = it)) },
-                        validate = { it > 0 },
-                        label = { Text(stringResource(R.string.prompt_page_delay_until_recursion_level)) },
-                        supportingText = { Text(stringResource(R.string.prompt_page_delay_until_recursion_level_desc)) },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-
-                // 次级关键词
-                var newSecKey by remember { mutableStateOf("") }
-                Text(stringResource(R.string.prompt_page_secondary_keys_label), style = MaterialTheme.typography.titleSmall)
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    entry.secondaryKeys.forEach { keyword ->
-                        InputChip(
-                            selected = false,
-                            onClick = {},
-                            label = { Text(keyword) },
-                            trailingIcon = {
-                                IconButton(
-                                    onClick = {
-                                        onEdit(entry.copy(secondaryKeys = entry.secondaryKeys - keyword))
-                                    },
-                                    modifier = Modifier.size(16.dp)
-                                ) {
-                                    Icon(HugeIcons.Cancel01, null, modifier = Modifier.size(12.dp))
-                                }
-                            }
-                        )
-                    }
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedTextField(
-                        value = newSecKey,
-                        onValueChange = { newSecKey = it },
-                        label = { Text(stringResource(R.string.prompt_page_new_keyword)) },
-                        modifier = Modifier.weight(1f),
-                        singleLine = true
-                    )
-                    IconButton(
-                        onClick = {
-                            if (newSecKey.isNotBlank()) {
-                                onEdit(entry.copy(secondaryKeys = entry.secondaryKeys + newSecKey.trim()))
-                                newSecKey = ""
-                            }
-                        }
-                    ) {
-                        Icon(HugeIcons.Add01, stringResource(R.string.prompt_page_add))
-                    }
-                }
-
-                // Selective mode
-                FormItem(
-                    label = { Text(stringResource(R.string.prompt_page_selective)) },
-                    description = { Text(stringResource(R.string.prompt_page_selective_desc)) },
-                    tail = {
-                        Switch(
-                            checked = entry.selective,
-                            onCheckedChange = { onEdit(entry.copy(selective = it)) }
-                        )
-                    }
-                )
-
-                // 当 selective 启用时，显示 selectiveLogic
-                AnimatedVisibility(visible = entry.selective) {
-                    CardGroup(title = { Text(stringResource(R.string.prompt_page_selective_logic)) }) {
-                        // 官方 world-info.js 仅 4 档：AND_ANY / AND_ALL / NOT_ALL / NOT_ANY（主键必须先命中）
-                        listOf(
-                            SelectiveLogic.AND_ANY,
-                            SelectiveLogic.AND_ALL,
-                            SelectiveLogic.NOT_ALL,
-                            SelectiveLogic.NOT_ANY,
-                        ).forEach { logic ->
-                            item(
-                                onClick = { onEdit(entry.copy(selectiveLogic = logic)) },
-                                headlineContent = {
-                                    Text(
-                                        when (logic) {
-                                            SelectiveLogic.AND_ANY -> stringResource(R.string.prompt_page_logic_and_any)
-                                            SelectiveLogic.AND_ALL -> stringResource(R.string.prompt_page_logic_and_all)
-                                            SelectiveLogic.NOT_ALL -> stringResource(R.string.prompt_page_logic_not_all)
-                                            SelectiveLogic.NOT_ANY -> stringResource(R.string.prompt_page_logic_not_any)
-                                            SelectiveLogic.OR_ANY -> stringResource(R.string.prompt_page_logic_or_any)
-                                        },
-                                        style = MaterialTheme.typography.bodyMedium,
-                                    )
-                                },
-                                trailingContent = {
-                                    RadioButton(
-                                        selected = entry.selectiveLogic == logic,
-                                        onClick = { onEdit(entry.copy(selectiveLogic = logic)) },
-                                    )
-                                },
-                            )
-                        }
-                    }
-                }
-
-                // 分组设置
-                OutlinedTextField(
-                    value = entry.group,
-                    onValueChange = { onEdit(entry.copy(group = it)) },
-                    label = { Text(stringResource(R.string.prompt_page_group)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    IntTextField(
-                        value = entry.groupWeight,
-                        onValueChange = { onEdit(entry.copy(groupWeight = it)) },
-                        label = { Text(stringResource(R.string.prompt_page_group_weight)) },
-                        modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true
-                    )
-                    FormItem(
-                        modifier = Modifier.weight(1f),
-                        label = { Text(stringResource(R.string.prompt_page_group_override)) },
-                        tail = {
-                            Switch(
-                                checked = entry.groupOverride,
-                                onCheckedChange = { onEdit(entry.copy(groupOverride = it)) }
-                            )
-                        }
-                    )
-                }
-
-                // 概率
-                FormItem(
-                    label = { Text(stringResource(R.string.prompt_page_probability_label)) },
-                    tail = {
-                        Switch(
-                            checked = entry.useProbability,
-                            onCheckedChange = { onEdit(entry.copy(useProbability = it)) }
-                        )
-                    }
-                )
-                AnimatedVisibility(visible = entry.useProbability) {
-                    Column {
-                        Text(
-                            stringResource(R.string.prompt_page_probability, entry.probability),
-                            style = MaterialTheme.typography.titleSmall
-                        )
-                        var localProb by remember { mutableFloatStateOf(entry.probability.toFloat()) }
-                        Slider(
-                            value = localProb,
-                            onValueChange = { localProb = it },
-                            onValueChangeFinished = { onEdit(entry.copy(probability = localProb.toInt())) },
-                            valueRange = 0f..100f,
-                            steps = 99
-                        )
-                    }
-                }
-
-                // 粘性 + 冷却
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    IntTextField(
-                        value = entry.sticky,
-                        onValueChange = { onEdit(entry.copy(sticky = it)) },
-                        label = { Text(stringResource(R.string.prompt_page_sticky)) },
-                        supportingText = { Text(stringResource(R.string.prompt_page_sticky_desc)) },
-                        suffix = { Text(stringResource(R.string.prompt_page_rounds_suffix), style = MaterialTheme.typography.bodySmall) },
-                        modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.bodySmall,
-                    )
-                    IntTextField(
-                        value = entry.cooldown,
-                        onValueChange = { onEdit(entry.copy(cooldown = it)) },
-                        label = { Text(stringResource(R.string.prompt_page_cooldown)) },
-                        modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                    )
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    IntTextField(
-                        value = entry.delay,
-                        onValueChange = { onEdit(entry.copy(delay = it)) },
-                        label = { Text(stringResource(R.string.prompt_page_delay)) },
-                        supportingText = { Text(stringResource(R.string.prompt_page_delay_until_recursion_desc)) },
-                        modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                    )
-                    Spacer(Modifier.weight(1f))
-                }
-
-                FormItem(
-                    label = { Text(stringResource(R.string.prompt_page_constant_active)) },
-                    description = { Text(stringResource(R.string.prompt_page_constant_active_desc)) },
-                    tail = {
-                        Switch(
-                            checked = entry.constantActive,
-                            onCheckedChange = { onEdit(entry.copy(constantActive = it)) }
-                        )
-                    }
-                )
-
-                // 向量检索激活（官方 vectorized）：开启后按语义相似度激活，无关键词也可
-                FormItem(
-                    label = { Text(stringResource(R.string.prompt_page_vectorized)) },
-                    description = { Text(stringResource(R.string.prompt_page_vectorized_desc)) },
-                    tail = {
-                        Switch(
-                            checked = entry.vectorized,
-                            onCheckedChange = { onEdit(entry.copy(vectorized = it)) }
-                        )
-                    }
-                )
-
-                NullableIntTextField(
-                    value = entry.scanDepth,
-                    onValueChange = { onEdit(entry.copy(scanDepth = it)) },
-                    label = { Text(stringResource(R.string.prompt_page_scan_depth)) },
-                    placeholder = { Text(stringResource(R.string.prompt_page_scan_depth_global)) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
-                // 条目级组评分开关（官方 extensions.use_group_scoring）
-                FormItem(
-                    label = { Text(stringResource(R.string.prompt_page_use_group_scoring)) },
-                    description = { Text(stringResource(R.string.prompt_page_use_group_scoring_desc)) },
-                    tail = {
-                        Switch(
-                            checked = entry.useGroupScoring,
-                            onCheckedChange = { onEdit(entry.copy(useGroupScoring = it)) }
-                        )
-                    }
-                )
-
-                // 忽略预算（官方 extensions.ignore_budget）：溢出时仍注入
-                FormItem(
-                    label = { Text(stringResource(R.string.prompt_page_ignore_budget)) },
-                    description = { Text(stringResource(R.string.prompt_page_ignore_budget_desc)) },
-                    tail = {
-                        Switch(
-                            checked = entry.ignoreBudget,
-                            onCheckedChange = { onEdit(entry.copy(ignoreBudget = it)) }
-                        )
-                    }
-                )
-
-                // Automation ID（官方 extensions.automation_id，仅保存透传）
-                OutlinedTextField(
-                    value = entry.automationId,
-                    onValueChange = { onEdit(entry.copy(automationId = it)) },
-                    label = { Text(stringResource(R.string.prompt_page_automation_id)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                // 扫描范围（官方 extensions.match_*：把角色卡/人设字段纳入关键词扫描源）
-                Text(stringResource(R.string.prompt_page_match_scope), style = MaterialTheme.typography.titleSmall)
-                listOf(
-                    "matchPersonaDescription" to stringResource(R.string.prompt_page_match_persona),
-                    "matchCharacterDescription" to stringResource(R.string.prompt_page_match_char_description),
-                    "matchCharacterPersonality" to stringResource(R.string.prompt_page_match_char_personality),
-                    "matchCharacterDepthPrompt" to stringResource(R.string.prompt_page_match_char_depth_prompt),
-                    "matchScenario" to stringResource(R.string.prompt_page_match_scenario),
-                    "matchCreatorNotes" to stringResource(R.string.prompt_page_match_creator_notes),
-                ).forEach { (field, label) ->
-                    val checked = when (field) {
-                        "matchPersonaDescription" -> entry.matchPersonaDescription
-                        "matchCharacterDescription" -> entry.matchCharacterDescription
-                        "matchCharacterPersonality" -> entry.matchCharacterPersonality
-                        "matchCharacterDepthPrompt" -> entry.matchCharacterDepthPrompt
-                        "matchScenario" -> entry.matchScenario
-                        else -> entry.matchCreatorNotes
-                    }
-                    FormItem(
-                        label = { Text(label) },
-                        tail = {
-                            Switch(
-                                checked = checked,
-                                onCheckedChange = {
-                                    onEdit(
-                                        when (field) {
-                                            "matchPersonaDescription" -> entry.copy(matchPersonaDescription = it)
-                                            "matchCharacterDescription" -> entry.copy(matchCharacterDescription = it)
-                                            "matchCharacterPersonality" -> entry.copy(matchCharacterPersonality = it)
-                                            "matchCharacterDepthPrompt" -> entry.copy(matchCharacterDepthPrompt = it)
-                                            "matchScenario" -> entry.copy(matchScenario = it)
-                                            else -> entry.copy(matchCreatorNotes = it)
-                                        }
-                                    )
-                                }
-                            )
-                        }
-                    )
-                }
-
-                AnimatedVisibility(visible = entry.position.usesStandaloneMessage()) {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(
-                            stringResource(R.string.prompt_page_injection_role),
-                            style = MaterialTheme.typography.titleSmall
-                        )
-                        InjectionRoleSelector(
-                            role = entry.role,
-                            onSelect = { onEdit(entry.copy(role = it)) },
-                            // 对话框底色和默认的按钮底色一样，换一个能分开的
-                            containerColor = MaterialTheme.colorScheme.surfaceBright,
-                        )
-                    }
-                }
-
-                OutlinedTextField(
-                    value = entry.content,
-                    onValueChange = { onEdit(entry.copy(content = it)) },
-                    label = { Text(stringResource(R.string.prompt_page_injection_content)) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(150.dp),
-                    minLines = 4
-                )
-            }
+            RegexEntryEditorFields(entry, onEdit)
         },
         confirmButton = {
             val canSave = entry.keywords.isNotEmpty() || entry.constantActive || entry.vectorized

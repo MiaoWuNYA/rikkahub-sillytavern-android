@@ -19,6 +19,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import me.rerere.rikkahub.data.model.AssistantAffectScope
 import me.rerere.rikkahub.data.model.AssistantRegex
 import me.rerere.rikkahub.data.model.InjectionPosition
+import me.rerere.rikkahub.data.model.withFreshIds
 import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.QuickMessage
@@ -157,14 +158,8 @@ object LorebookSerializer : ExportSerializer<Lorebook> {
                 json
             )
             if (exportData.type != type) return null
-            ExportSerializer.DefaultJson
-                .decodeFromJsonElement<Lorebook>(exportData.data)
-                .copy(
-                    id = Uuid.random(),
-                    entries = ExportSerializer.DefaultJson
-                        .decodeFromJsonElement<Lorebook>(exportData.data)
-                        .entries.map { it.copy(id = Uuid.random()) }
-                )
+            val book = ExportSerializer.DefaultJson.decodeFromJsonElement<Lorebook>(exportData.data)
+            book.withFreshIds()
         }.getOrNull()
     }
 

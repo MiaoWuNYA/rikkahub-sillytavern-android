@@ -224,7 +224,7 @@ class PromptInjectionTransformerTest {
     }
 
     @Test
-    fun `conversation mode injection should apply only when assistant allows it`() {
+    fun `deprecated conversation mode bindings are ignored regardless of legacy flag`() {
         val injectionId = Uuid.random()
         val injection = createModeInjection(
             id = injectionId,
@@ -251,11 +251,11 @@ class PromptInjectionTransformerTest {
         )
 
         assertEquals(messages, disabledResult)
-        assertTrue(getMessageText(enabledResult.first()).contains("Conversation content"))
+        assertEquals(messages, enabledResult)
     }
 
     @Test
-    fun `assistant mode injection should be ignored when conversation injection is allowed`() {
+    fun `assistant mode bindings remain active despite legacy conversation flag`() {
         val assistantInjectionId = Uuid.random()
         val conversationInjectionId = Uuid.random()
         val assistantInjection = createModeInjection(
@@ -283,12 +283,12 @@ class PromptInjectionTransformerTest {
         )
         val systemText = getMessageText(result.first())
 
-        assertFalse(systemText.contains("Assistant content"))
-        assertTrue(systemText.contains("Conversation content"))
+        assertTrue(systemText.contains("Assistant content"))
+        assertFalse(systemText.contains("Conversation content"))
     }
 
     @Test
-    fun `conversation lorebook should apply only when assistant allows it`() {
+    fun `deprecated conversation lorebook bindings are ignored regardless of legacy flag`() {
         val lorebookId = Uuid.random()
         val entry = createRegexInjection(
             keywords = listOf("Hello"),
@@ -319,11 +319,11 @@ class PromptInjectionTransformerTest {
         )
 
         assertEquals(messages, disabledResult)
-        assertTrue(getMessageText(enabledResult.first()).contains("Conversation lorebook content"))
+        assertEquals(messages, enabledResult)
     }
 
     @Test
-    fun `assistant lorebook should be ignored when conversation injection is allowed`() {
+    fun `assistant lorebook bindings remain active despite legacy conversation flag`() {
         val assistantLorebookId = Uuid.random()
         val conversationLorebookId = Uuid.random()
         val assistantLorebook = createLorebook(
@@ -361,8 +361,8 @@ class PromptInjectionTransformerTest {
         )
         val systemText = getMessageText(result.first())
 
-        assertFalse(systemText.contains("Assistant lorebook content"))
-        assertTrue(systemText.contains("Conversation lorebook content"))
+        assertTrue(systemText.contains("Assistant lorebook content"))
+        assertFalse(systemText.contains("Conversation lorebook content"))
     }
     // endregion
 
@@ -1514,7 +1514,7 @@ class PromptInjectionTransformerTest {
     }
 
     @Test
-    fun `world info budget should limit activated entries`() {
+    fun `legacy world info budget parameters do not prune matched entries`() {
         val highPriority = createRegexInjection(
             id = Uuid.random(),
             priority = 100,
@@ -1543,10 +1543,10 @@ class PromptInjectionTransformerTest {
             worldInfoBudgetCap = 6,
         )
 
-        // 预算 = min(100% of context ≈ 10, cap 6) = 6：高优先级条目(5 tokens)可接受，低优先级累计超预算被跳过
+        // 上游已取消按世界书预算裁剪；兼容参数不能使已命中条目消失。
         val injected = result.filter { getMessageText(it).contains("entry") }.joinToString { getMessageText(it) }
         assertTrue(injected.contains("High priority entry"))
-        assertFalse(injected.contains("Low priority entry"))
+        assertTrue(injected.contains("Low priority entry"))
     }
 
     @Test
