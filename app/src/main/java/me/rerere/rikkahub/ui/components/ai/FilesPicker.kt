@@ -118,6 +118,7 @@ internal fun FilesPicker(
     onSketch: () -> Unit,
     onStartVoiceMode: (() -> Unit)? = null,
     onToggleTavernMode: ((Boolean) -> Unit)? = null,
+    onUpdateConversationInjections: ((Set<Uuid>, Set<Uuid>) -> Unit)? = null,
 ) {
     val settings = LocalSettings.current
     val provider = chatModel?.findProvider(providers = settings.providers)
@@ -159,9 +160,11 @@ internal fun FilesPicker(
             )
 
             FilesPickerPage.EXTENSIONS -> ExtensionPickerPage(
+                conversation = conversation,
                 assistant = assistant,
                 settings = settings,
                 onUpdateAssistant = onUpdateAssistant,
+                onUpdateConversationInjections = onUpdateConversationInjections,
                 onBack = { page = FilesPickerPage.MAIN },
                 onDismissAll = onDismiss,
             )
@@ -255,8 +258,13 @@ internal fun FilesPicker(
                     }
 
                     // Extensions (Quick Messages + Prompt Injections + Skills)
-                    // 绑定跟随助手自身
-                    val modeAndLorebookCount = assistant.modeInjectionIds.size + assistant.lorebookIds.size
+                    // 会话级绑定开启时统计会话上的数量
+                    val byConversation = settings.huadengSettings.enableConversationPromptBinding
+                    val modeAndLorebookCount = if (byConversation) {
+                        conversation.modeInjectionIds.size + conversation.lorebookIds.size
+                    } else {
+                        assistant.modeInjectionIds.size + assistant.lorebookIds.size
+                    }
                     val activeCount =
                         assistant.quickMessageIds.size +
                             modeAndLorebookCount +
@@ -455,9 +463,11 @@ private fun WorkspacePickerListItem(
 // 扩展选择页，作为子页面嵌在加号 sheet 里
 @Composable
 private fun ExtensionPickerPage(
+    conversation: Conversation,
     assistant: Assistant,
     settings: Settings,
     onUpdateAssistant: (Assistant) -> Unit,
+    onUpdateConversationInjections: ((Set<Uuid>, Set<Uuid>) -> Unit)?,
     onBack: () -> Unit,
     onDismissAll: () -> Unit,
 ) {
@@ -482,6 +492,16 @@ private fun ExtensionPickerPage(
             settings = settings,
             onUpdate = onUpdateAssistant,
             modifier = Modifier.weight(1f),
+            conversationModeInjectionIds = conversation.modeInjectionIds,
+            conversationLorebookIds = conversation.lorebookIds,
+            onToggleConversationModeInjection = { id, checked ->
+                val ids = if (checked) conversation.modeInjectionIds + id else conversation.modeInjectionIds - id
+                onUpdateConversationInjections?.invoke(ids, conversation.lorebookIds)
+            },
+            onToggleConversationLorebook = { id, checked ->
+                val ids = if (checked) conversation.lorebookIds + id else conversation.lorebookIds - id
+                onUpdateConversationInjections?.invoke(conversation.modeInjectionIds, ids)
+            },
             onNavigateToQuickMessages = {
                 onDismissAll()
                 navController.navigate(Screen.QuickMessages)

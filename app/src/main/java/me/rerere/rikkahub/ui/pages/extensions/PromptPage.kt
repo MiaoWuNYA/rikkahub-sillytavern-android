@@ -9,6 +9,8 @@ import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.Book01
 import me.rerere.hugeicons.stroke.Cancel01
+import me.rerere.hugeicons.stroke.CancelCircle
+import me.rerere.hugeicons.stroke.CheckmarkCircle02
 import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.FileImport
 import me.rerere.hugeicons.stroke.Folder01
@@ -337,6 +339,14 @@ private fun ModeInjectionTab(
             leadingContent = {
                 IconButton(onClick = { importer.importFromFile() }) {
                     Icon(HugeIcons.FileImport, null)
+                }
+                if (currentModeInjections.isNotEmpty()) {
+                    IconButton(onClick = { onUpdate(currentModeInjections.map { it.copy(enabled = true) }) }) {
+                        Icon(HugeIcons.CheckmarkCircle02, stringResource(R.string.prompt_page_enable_all))
+                    }
+                    IconButton(onClick = { onUpdate(currentModeInjections.map { it.copy(enabled = false) }) }) {
+                        Icon(HugeIcons.CancelCircle, stringResource(R.string.prompt_page_disable_all))
+                    }
                 }
             },
         ) {
@@ -1175,6 +1185,14 @@ private fun LorebookTab(
             leadingContent = {
                 IconButton(onClick = { importer.launch(arrayOf("*/*")) }) {
                     Icon(HugeIcons.FileImport, null)
+                }
+                if (currentLorebooks.isNotEmpty()) {
+                    IconButton(onClick = { onUpdate(currentLorebooks.map { it.copy(enabled = true) }) }) {
+                        Icon(HugeIcons.CheckmarkCircle02, stringResource(R.string.prompt_page_enable_all))
+                    }
+                    IconButton(onClick = { onUpdate(currentLorebooks.map { it.copy(enabled = false) }) }) {
+                        Icon(HugeIcons.CancelCircle, stringResource(R.string.prompt_page_disable_all))
+                    }
                 }
             },
         ) {

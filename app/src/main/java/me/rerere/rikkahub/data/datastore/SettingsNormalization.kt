@@ -21,12 +21,8 @@ internal fun Settings.withBuiltInDefaults(): Settings {
     val kept = this.providers.filterNot {
         it.isRemovedGateway() && (it as? ProviderSetting.ApiKey)?.apiKey.isNullOrBlank()
     }
+    // 供应商允许用户自行删除，删掉的不能再补回来
     var providers = kept.ifEmpty { DEFAULT_PROVIDERS }.toMutableList()
-    DEFAULT_PROVIDERS.forEach { defaultProvider ->
-        if (providers.none { it.id == defaultProvider.id }) {
-            providers.add(defaultProvider.copyProvider())
-        }
-    }
     providers = providers.map { provider ->
         val defaultProvider = DEFAULT_PROVIDERS.find { it.id == provider.id }
         if (defaultProvider != null) {
@@ -35,21 +31,19 @@ internal fun Settings.withBuiltInDefaults(): Settings {
                 description = defaultProvider.description,
                 shortDescription = defaultProvider.shortDescription,
             )
-        } else provider
+        } else {
+            provider
+        }
     }.toMutableList()
     // 砂糖酒馆永远在供应商列表第一位（稳定排序，其余相对顺序不变）
     providers = providers.sortedBy { provider ->
         val baseUrl = (provider as? ProviderSetting.ApiKey)?.baseUrl ?: ""
         if (baseUrl.contains(SHATANG_HOST, ignoreCase = true)) 0 else 1
     }.toMutableList()
+    // 助手同样允许删除，只在列表被清空时补一个默认助手
     // 旧版的手机控制序列名换成现在的 Phone Use，别让老配置带着读不懂的选项继续存下去
     val assistants = this.assistants.map { it.withMigratedLocalTools() }
         .ifEmpty { DEFAULT_ASSISTANTS }.toMutableList()
-    DEFAULT_ASSISTANTS.forEach { defaultAssistant ->
-        if (assistants.none { it.id == defaultAssistant.id }) {
-            assistants.add(defaultAssistant.copy())
-        }
-    }
     val ttsProviders = this.ttsProviders.ifEmpty { DEFAULT_TTS_PROVIDERS }.toMutableList()
     DEFAULT_TTS_PROVIDERS.forEach { defaultTTSProvider ->
         if (ttsProviders.none { provider -> provider.id == defaultTTSProvider.id }) {

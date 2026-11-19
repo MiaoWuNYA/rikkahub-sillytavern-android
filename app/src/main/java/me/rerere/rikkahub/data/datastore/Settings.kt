@@ -302,6 +302,9 @@ data class HuaDengSettings(
     val preRequestHookToolName: String = "",
     // 工具入参模板，${last_user_message} 会替换成用户最新那句话
     val preRequestHookArgsTemplate: String = "{\"query\": \"\${last_user_message}\"}",
+
+    // 每个对话单独绑定模式注入与世界书（关闭时跟随角色卡）
+    val enableConversationPromptBinding: Boolean = false,
 )
 
 /**
@@ -501,6 +504,19 @@ data class DisplaySetting(
     // 侧边栏功能入口隐藏开关（true = 隐藏）
     val hideDrawerMediaCreation: Boolean = false,
     val hideDrawerAiTranslate: Boolean = false,
+    // 消息功能栏各按钮隐藏开关（true = 隐藏）
+    val hideMessageCopyButton: Boolean = false,
+    val hideMessageRegenerateButton: Boolean = false,
+    val hideMessageTtsButton: Boolean = false,
+    val hideMessageImpersonateButton: Boolean = false,
+    val hideMessageTranslateButton: Boolean = false,
+    val hideMessageMoreButton: Boolean = false,
+    val hideMessageBranchButton: Boolean = false,
+    val hideMessageTimeButton: Boolean = false,
+    // 一键隐藏整条功能栏，与上面各项互斥
+    val hideAllMessageActionBar: Boolean = false,
+    // 头像改用圆形
+    val circleAvatar: Boolean = false,
     // 一键添加符号：开启后输入框下方显示插入按钮
     val enableBracketButton: Boolean = false,
     val bracketButtonSymbol: String = "()",

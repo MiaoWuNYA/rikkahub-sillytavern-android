@@ -315,6 +315,16 @@ private fun ThemeContent(vm: SettingVM, contentPadding: PaddingValues) {
                         title = { Text(stringResource(R.string.setting_display_page_title)) },
                     ) {
                         switchItem(
+                            checked = settings.displaySetting.circleAvatar,
+                            onCheckedChange = { v ->
+                                vm.updateSettings {
+                                    it.copy(displaySetting = it.displaySetting.copy(circleAvatar = v))
+                                }
+                            },
+                            supportingContent = { Text(stringResource(R.string.setting_display_page_circle_avatar_desc)) },
+                            headlineContent = { Text(stringResource(R.string.setting_display_page_circle_avatar_title)) },
+                        )
+                        switchItem(
                             checked = settings.displaySetting.enableBlurEffect,
                             onCheckedChange = { v ->
                                 vm.updateSettings {

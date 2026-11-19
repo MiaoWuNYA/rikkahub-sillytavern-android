@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -56,7 +57,10 @@ import me.rerere.rikkahub.ui.components.ui.ItemAction
 import me.rerere.rikkahub.ui.components.ui.ItemActionMenu
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.theme.CustomColors
+import me.rerere.rikkahub.ui.components.ui.longPressReorder
 import me.rerere.rikkahub.utils.plus
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 import me.rerere.ui.components.RikkaConfirmDialog
 import org.koin.androidx.compose.koinViewModel
 
@@ -120,10 +124,15 @@ fun QuickMessagesPage(vm: QuickMessagesVM = koinViewModel()) {
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor,
     ) { innerPadding ->
+        val lazyListState = rememberLazyListState()
+        val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
+            vm.moveQuickMessage(from.index, to.index)
+        }
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = innerPadding + PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
+            state = lazyListState,
         ) {
             if (settings.quickMessages.isEmpty()) {
                 item {
@@ -136,11 +145,14 @@ fun QuickMessagesPage(vm: QuickMessagesVM = koinViewModel()) {
             }
 
             items(settings.quickMessages, key = { it.id }) { quickMessage ->
-                QuickMessageCard(
-                    quickMessage = quickMessage,
-                    onEdit = { editTarget = quickMessage },
-                    onDelete = { deleteTarget = quickMessage },
-                )
+                ReorderableItem(state = reorderableState, key = quickMessage.id) { isDragging ->
+                    QuickMessageCard(
+                        quickMessage = quickMessage,
+                        onEdit = { editTarget = quickMessage },
+                        onDelete = { deleteTarget = quickMessage },
+                        modifier = Modifier.then(longPressReorder(isDragging)),
+                    )
+                }
             }
         }
     }
@@ -194,10 +206,11 @@ private fun QuickMessageCard(
     quickMessage: QuickMessage,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Surface(
         onClick = onEdit,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         color = CustomColors.listItemColors.containerColor,
     ) {

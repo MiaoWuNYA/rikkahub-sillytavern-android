@@ -220,6 +220,12 @@ class ChatVM(
         }
     }
 
+    fun updateConversationInjections(modeInjectionIds: Set<Uuid>, lorebookIds: Set<Uuid>) {
+        viewModelScope.launch {
+            chatService.updateConversationInjections(_conversationId, modeInjectionIds, lorebookIds)
+        }
+    }
+
     fun updateWorkspaceCwd(workspaceCwd: String?) {
         viewModelScope.launch {
             chatService.updateWorkspaceCwd(_conversationId, workspaceCwd)

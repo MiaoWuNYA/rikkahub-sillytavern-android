@@ -10,13 +10,9 @@ import kotlin.uuid.Uuid
 
 internal val DEFAULT_ASSISTANT_ID = Uuid.parse("0950e2dc-9bd5-4801-afa3-aa887aa36b4e")
 internal val DEFAULT_ASSISTANTS = listOf(
+    // 只保留一个默认助手，内置提示词并进来，避免首次启动出现两个空助手
     Assistant(
         id = DEFAULT_ASSISTANT_ID,
-        name = "",
-        systemPrompt = ""
-    ),
-    Assistant(
-        id = Uuid.parse("3d47790c-c415-4b90-9388-751128adb0a0"),
         name = "",
         systemPrompt = """
             You are a helpful assistant, called {{char}}, based on model {{model_name}}.
@@ -53,8 +49,6 @@ internal val DEFAULT_TTS_PROVIDERS = listOf(
         voice = "alloy",
     )
 )
-
-internal val DEFAULT_ASSISTANTS_IDS = DEFAULT_ASSISTANTS.map { it.id }
 
 val DEFAULT_MODE_INJECTIONS = listOf(
     PromptInjection.ModeInjection(

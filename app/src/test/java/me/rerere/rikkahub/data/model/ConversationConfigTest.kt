@@ -43,6 +43,11 @@ class ConversationConfigTest {
         lorebooks = listOf(Lorebook(id = lorebook)),
     )
 
+    private fun bindingSettings(assistant: Assistant = this.assistant) =
+        settings(
+            assistant
+        ).copy(huadengSettings = Settings().huadengSettings.copy(enableConversationPromptBinding = true))
+
     private fun conversation(assistant: Assistant = this.assistant) = Conversation(
         assistantId = assistant.id,
         messageNodes = emptyList(),
@@ -89,7 +94,8 @@ class ConversationConfigTest {
 
     @Test
     fun `bound conversation ignores later assistant changes`() {
-        val bound = conversation().bindConfig(settings())
+        // 会话级绑定开启后，注入与世界书跟着会话，后续改助手不影响已开始的会话
+        val bound = conversation().bindConfig(bindingSettings())
         val changed = assistant.copy(
             chatModelId = modelB.id,
             reasoningLevel = ReasoningLevel.OFF,
@@ -102,10 +108,10 @@ class ConversationConfigTest {
             systemPrompt = "changed",
         )
 
-        val resolved = settings(changed).getAssistantOf(bound)
+        val resolved = bindingSettings(changed).getAssistantOf(bound)
 
         assertEquals(assistant.copy(systemPrompt = "changed"), resolved)
-        assertEquals(modelA, settings(changed).getChatModelOf(bound))
+        assertEquals(modelA, bindingSettings(changed).getChatModelOf(bound))
     }
 
     @Test
@@ -202,7 +208,10 @@ class ConversationConfigTest {
         val bound = conversation().bindConfig(settings()).copy(workspaceCwd = "/workspace/project")
         val assistantView = settings().getAssistantOf(bound)
 
-        val sameWorkspace = bound.withAssistantUpdate(assistantView.copy(reasoningLevel = ReasoningLevel.LOW), settings())
+        val sameWorkspace = bound.withAssistantUpdate(
+            assistantView.copy(reasoningLevel = ReasoningLevel.LOW),
+            settings()
+        )
         val otherWorkspace = bound.withAssistantUpdate(assistantView.copy(workspaceId = Uuid.random()), settings())
 
         assertEquals("/workspace/project", sameWorkspace.workspaceCwd)

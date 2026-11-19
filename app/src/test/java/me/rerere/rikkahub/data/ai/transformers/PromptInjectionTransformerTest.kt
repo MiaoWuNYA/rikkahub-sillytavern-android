@@ -5,8 +5,8 @@ import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.InjectionPosition
-import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.Lorebook
+import me.rerere.rikkahub.data.model.PromptInjection
 import me.rerere.rikkahub.data.model.SelectiveLogic
 import me.rerere.rikkahub.data.model.TavernBookEntry
 import me.rerere.rikkahub.data.model.TavernCharacterData
@@ -25,12 +25,10 @@ class PromptInjectionTransformerTest {
     private fun createAssistant(
         modeInjectionIds: Set<Uuid> = emptySet(),
         lorebookIds: Set<Uuid> = emptySet(),
-        allowConversationPromptInjection: Boolean = false,
         tavernData: TavernCharacterData? = null,
     ) = Assistant(
         modeInjectionIds = modeInjectionIds,
         lorebookIds = lorebookIds,
-        allowConversationPromptInjection = allowConversationPromptInjection,
         tavernData = tavernData,
     )
 
@@ -237,17 +235,19 @@ class PromptInjectionTransformerTest {
 
         val disabledResult = transformMessages(
             messages = messages,
-            assistant = createAssistant(allowConversationPromptInjection = false),
+            assistant = createAssistant(),
             modeInjections = listOf(injection),
             lorebooks = emptyList(),
-            conversationModeInjectionIds = setOf(injectionId)
+            conversationModeInjectionIds = setOf(injectionId),
+            allowConversationBinding = false,
         )
         val enabledResult = transformMessages(
             messages = messages,
-            assistant = createAssistant(allowConversationPromptInjection = true),
+            assistant = createAssistant(),
             modeInjections = listOf(injection),
             lorebooks = emptyList(),
-            conversationModeInjectionIds = setOf(injectionId)
+            conversationModeInjectionIds = setOf(injectionId),
+            allowConversationBinding = true,
         )
 
         assertEquals(messages, disabledResult)
@@ -275,11 +275,11 @@ class PromptInjectionTransformerTest {
             messages = messages,
             assistant = createAssistant(
                 modeInjectionIds = setOf(assistantInjectionId),
-                allowConversationPromptInjection = true
             ),
             modeInjections = listOf(assistantInjection, conversationInjection),
             lorebooks = emptyList(),
-            conversationModeInjectionIds = setOf(conversationInjectionId)
+            conversationModeInjectionIds = setOf(conversationInjectionId),
+            allowConversationBinding = true,
         )
         val systemText = getMessageText(result.first())
 
@@ -305,17 +305,19 @@ class PromptInjectionTransformerTest {
 
         val disabledResult = transformMessages(
             messages = messages,
-            assistant = createAssistant(allowConversationPromptInjection = false),
+            assistant = createAssistant(),
             modeInjections = emptyList(),
             lorebooks = listOf(lorebook),
-            conversationLorebookIds = setOf(lorebookId)
+            conversationLorebookIds = setOf(lorebookId),
+            allowConversationBinding = false,
         )
         val enabledResult = transformMessages(
             messages = messages,
-            assistant = createAssistant(allowConversationPromptInjection = true),
+            assistant = createAssistant(),
             modeInjections = emptyList(),
             lorebooks = listOf(lorebook),
-            conversationLorebookIds = setOf(lorebookId)
+            conversationLorebookIds = setOf(lorebookId),
+            allowConversationBinding = true,
         )
 
         assertEquals(messages, disabledResult)
@@ -353,11 +355,11 @@ class PromptInjectionTransformerTest {
             messages = messages,
             assistant = createAssistant(
                 lorebookIds = setOf(assistantLorebookId),
-                allowConversationPromptInjection = true
             ),
             modeInjections = emptyList(),
             lorebooks = listOf(assistantLorebook, conversationLorebook),
-            conversationLorebookIds = setOf(conversationLorebookId)
+            conversationLorebookIds = setOf(conversationLorebookId),
+            allowConversationBinding = true,
         )
         val systemText = getMessageText(result.first())
 

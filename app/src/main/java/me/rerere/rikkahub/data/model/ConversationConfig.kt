@@ -49,7 +49,7 @@ private fun Assistant.withConversationConfig(config: ConversationConfig) = copy(
 
 /**
  * 会话视角下的助手：会话开始后，模型/思考级别/搜索等字段以会话上固定的为准。
- * 模式注入与世界书的绑定跟随助手自身，开关改动对所有会话立即生效。
+ * 模式注入与世界书由会话级开关决定跟随角色卡还是会话自己的绑定。
  */
 fun Assistant.withConversation(conversation: Conversation): Assistant {
     val config = conversation.config ?: return this
@@ -64,6 +64,9 @@ fun Conversation.withAssistantUpdate(updated: Assistant, settings: Settings): Co
         this
     } else {
         copy(
+            // 注入与世界书跟着会话走，助手上的值不受聊天页改动影响
+            modeInjectionIds = updated.modeInjectionIds,
+            lorebookIds = updated.lorebookIds,
             config = updated.toConversationConfig().copy(
                 builtInSearch = if (updated.chatModelId == config.chatModelId) {
                     config.builtInSearch
@@ -83,7 +86,10 @@ fun Assistant.withoutConversationFields(conversation: Conversation, stored: Assi
     if (conversation.config == null) {
         this
     } else {
-        withConversationConfig(stored.toConversationConfig())
+        withConversationConfig(stored.toConversationConfig()).copy(
+            modeInjectionIds = stored.modeInjectionIds,
+            lorebookIds = stored.lorebookIds,
+        )
     }
 
 /** 会话所属助手自身的设置，不含会话上固定的配置；助手被删除后退回当前助手。 */
@@ -97,11 +103,27 @@ fun Settings.getAssistantOf(conversation: Conversation): Assistant {
     // 助手自身的失效引用在读取设置时已清理，会话上固定的这份在这里滤掉
     return assistant.copy(
         mcpServers = assistant.mcpServers.filterTo(mutableSetOf()) { id -> mcpServers.any { it.id == id } },
-        modeInjectionIds = assistant.modeInjectionIds
+        modeInjectionIds = boundModeInjectionIds(conversation)
             .filterTo(mutableSetOf()) { id -> modeInjections.any { it.id == id } },
-        lorebookIds = assistant.lorebookIds.filterTo(mutableSetOf()) { id -> lorebooks.any { it.id == id } },
+        lorebookIds = boundLorebookIds(conversation)
+            .filterTo(mutableSetOf()) { id -> lorebooks.any { it.id == id } },
     )
 }
+
+// 会话级开关关闭时注入与世界书跟随角色卡，打开后取会话自己的绑定
+private fun Settings.boundModeInjectionIds(conversation: Conversation): Set<Uuid> =
+    if (huadengSettings.enableConversationPromptBinding) {
+        conversation.modeInjectionIds
+    } else {
+        getStoredAssistantOf(conversation).modeInjectionIds
+    }
+
+private fun Settings.boundLorebookIds(conversation: Conversation): Set<Uuid> =
+    if (huadengSettings.enableConversationPromptBinding) {
+        conversation.lorebookIds
+    } else {
+        getStoredAssistantOf(conversation).lorebookIds
+    }
 
 /** 会话使用的聊天模型；会话开始后内置搜索以会话上固定的开关为准。 */
 fun Settings.getChatModelOf(conversation: Conversation): Model? {
@@ -128,6 +150,9 @@ fun Conversation.bindConfig(settings: Settings): Conversation {
     }
     val assistant = settings.getAssistantOf(this)
     return copy(
+        // 会话没绑定过注入时从助手继承一份，之后各会话各自独立
+        modeInjectionIds = modeInjectionIds.ifEmpty { assistant.modeInjectionIds },
+        lorebookIds = lorebookIds.ifEmpty { assistant.lorebookIds },
         config = assistant.toConversationConfig().copy(chatModelId = model?.id, builtInSearch = builtInSearch),
     )
 }

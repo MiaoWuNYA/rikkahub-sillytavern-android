@@ -36,8 +36,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.composables.icons.lucide.Link2
-import com.composables.icons.lucide.MessageSquare
-import com.composables.icons.lucide.Sparkles
 import com.composables.icons.lucide.Lucide
 import me.rerere.ui.toast.ToastType
 import me.rerere.ui.toast.ToasterState
@@ -143,18 +141,6 @@ private fun SillyTavernImporter(
     // 春水 AI 的对话导出走同一套 importFile——格式判定放在
     // importFromJson 里（靠 looksLikeConversation
     // 这样 URL 导入和拖文件两条路也能吃到它，不用各写一遍。
-    val chunshuiPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri?.let { importFile(context, uri, onImport, filesManager, toaster, scope, mergeGreetings) { isLoading = it } }
-    }
-
-    val fengyuePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri?.let { importFile(context, uri, onImport, filesManager, toaster, scope, mergeGreetings) { isLoading = it } }
-    }
-
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedButton(
             onClick = { pngPickerLauncher.launch(arrayOf("image/png")) },
@@ -171,36 +157,6 @@ private fun SillyTavernImporter(
             AutoAIIcon(name = "tavern", modifier = Modifier.padding(end = 8.dp))
             Text(if (isLoading) stringResource(R.string.assistant_importer_importing)
                  else stringResource(R.string.assistant_importer_import_tavern_json))
-        }
-        // 春水 AI 的导出是「一段对话」而不是角色卡，字段结构完全不同，
-        // 混在「导入酒馆角色卡 (JSON)」里会走到 V1 分支去读顶层 name 而报
-        // 单独给一个入口，让报错信息能对症。
-        //
-        // 不给额外的说明文字：这一行按钮旁边挂一段介绍会显得啰嗦，
-        // 而「导入角色卡」这个动作本身用户已经会了，不需要教。
-        OutlinedButton(
-            onClick = { chunshuiPickerLauncher.launch(arrayOf("application/json")) },
-            enabled = !isLoading
-        ) {
-            Icon(
-                imageVector = Lucide.MessageSquare,
-                contentDescription = null,
-                modifier = Modifier.padding(end = 8.dp),
-            )
-            Text(if (isLoading) stringResource(R.string.assistant_importer_importing)
-                 else stringResource(R.string.assistant_importer_import_chunshui))
-        }
-        OutlinedButton(
-            onClick = { fengyuePickerLauncher.launch(arrayOf("application/json")) },
-            enabled = !isLoading
-        ) {
-            Icon(
-                imageVector = Lucide.Sparkles,
-                contentDescription = null,
-                modifier = Modifier.padding(end = 8.dp),
-            )
-            Text(if (isLoading) stringResource(R.string.assistant_importer_importing)
-                 else stringResource(R.string.assistant_importer_import_fengyue))
         }
         OutlinedButton(
             onClick = { showUrlDialog = true },
@@ -488,45 +444,6 @@ private suspend fun importFromString(
 ) {
     val json = Json.parseToJsonElement(jsonString).jsonObject
 
-    // 先认风月 AI 的角色卡。
-    //
-    // 它有自己一整套字段（ttl / desc / pre_pt / world_bo
-    // spec、也没有 data，掉到 V1 分支会被当平铺卡读 name 而报错。
-    // 判定放在最前面：它的 messages 字段不存在，不会被上一条误判。
-    if (looksLikeFengyueCard(json)) {
-        val (assistant, lorebooks) = parseFengyueCard(
-            context = context,
-            json = json,
-            avatarUri = avatarUri,
-            mergeGreetings = mergeGreetings,
-        )
-        toaster.show(context.getString(R.string.assistant_importer_import_success))
-        val cardAssistant = applyFrontendCardPreference(context, assistant, lorebooks, toaster)
-        onImport(TavernImportResult(assistant = cardAssistant, newLorebooks = lorebooks))
-        return
-    }
-
-    // 先认「对话导出」格式。
-    //
-    // 这种 JSON 没有 spec、也没有 data
-    // character_name / conversation_id（春水 AI 等
-    // 是「一段已经聊过的对话」而不是角色卡：人物设定写在 messages[0]
-    // 那条 user 消息里，首条 assistant 是开场白。
-    //
-    // 不先认的话它会掉进 V1 分支，被当成平铺卡去读顶层 name 字段，
-    // 读不到就报错——用户手上明明有一份完好的设定，却导不进来。
-    if (looksLikeConversationExport(json)) {
-        val (assistant, lorebooks) = parseConversationExport(
-            context = context,
-            json = json,
-            avatarUri = avatarUri,
-            mergeGreetings = mergeGreetings,
-        )
-        toaster.show(context.getString(R.string.assistant_importer_import_success))
-        onImport(TavernImportResult(assistant = assistant, newLorebooks = lorebooks))
-        return
-    }
-
     // spec 缺失时按数据结构推断（V1 卡及部分社区导出没有 spec 字段）：
     // 有 data 对象视为 V2 结构，否则视为 V1 平铺结构
     val spec = json["spec"]?.jsonPrimitive?.contentOrNull
@@ -549,134 +466,6 @@ private suspend fun importFromString(
     )
 }
 
-// ==================== 风月 AI 角色卡 =========
-
-/**
- * 判断是不是风月 AI 的角色卡。
- *
- * 特征字段（同时具备才算）：ttl（名称）+ desc（HTML 界面）+
- * pre_pt（前置提示词）。这三个是它的核心结构，普通酒馆卡不会有。
- *
- * 不靠 type 字段：那个值是 1，含义不明确，拿它当判据太脆。
- */
-private fun looksLikeFengyueCard(json: JsonObject): Boolean {
-    if (json["spec"] != null || json["data"] != null) return false
-    val hasTtl = json["ttl"]?.jsonPrimitiveOrNull?.contentOrNull?.isNotBlank() == true
-    val hasDesc = json["desc"]?.jsonPrimitiveOrNull?.contentOrNull?.isNotBlank() == true
-    return hasTtl && hasDesc && json["pre_pt"] != null
-}
-
-/**
- * 把风月 AI 角色卡转成助手。
- *
- * 字段映射：
- *   · ttl       -> 助手名
- *   · pre_pt    -> 系统提示词（它的「前置提示词」，即角色设定与规则）
- *   · desc      -> 前端界面（HTML），作为开场白保留
- *   · world_book-> 世界书条目
- *
- * **desc 是完整 HTML 网页，原样保留。** 这是前端卡，界面由应用内的
- * 卡片渲染器（HtmlCardDocument + CardHostBridge）绘制；把标签剥掉
- * 等于把卡片毁了。
- *
- * 该卡没有独立的开场白字段（greet_st 只是 UI 上的提示文字），
- * 所以开场白取 desc —— 它本身就是一整个可交互界面。
- */
-private fun parseFengyueCard(
-    context: Context,
-    json: JsonObject,
-    avatarUri: String?,
-    mergeGreetings: Boolean = false,
-): Pair<Assistant, List<Lorebook>> {
-    fun str(key: String): String =
-        json[key]?.jsonPrimitiveOrNull?.contentOrNull.orEmpty()
-
-    val name = str("ttl").takeIf { it.isNotBlank() }
-        ?: context.getString(R.string.assistant_importer_unnamed_character)
-
-    val systemPrompt = str("pre_pt")
-    val greetingHtml = str("desc")
-
-    val presetMessages = if (greetingHtml.isBlank()) {
-        emptyList()
-    } else {
-        listOf(UIMessage.assistant(prompt = greetingHtml))
-    }
-
-    val lorebooks = parseFengyueWorldBook(context, json)
-
-    val assistant = Assistant(
-        name = name,
-        avatar = if (avatarUri != null) Avatar.Image(avatarUri) else Avatar.Dummy,
-        systemPrompt = systemPrompt,
-        presetMessages = presetMessages,
-        mergeGreetings = mergeGreetings,
-    )
-    return assistant to lorebooks
-}
-
-/**
- * 风月的世界书 -> Lorebook。
- *
- * 条目结构（实测）：
- *   key            触发关键词，多个用 @wb@ 分隔，前缀 _or_ 表示任一命中
- *   value          注入内容
- *   enable         是否启用
- *   probability    触发概率
- *   depth          扫描深度
- *   match_type     匹配方式（2 = 关键词）
- *   value_region   注入位置
- *
- * 解析失败一律跳过该条而不是整个导入失败：世界书条目是补充内容，
- * 少一条不影响角色能用，但整个导入失败会让用户什么都拿不到。
- */
-private fun parseFengyueWorldBook(context: Context, json: JsonObject): List<Lorebook> {
-    val raw = json["world_book"] as? JsonArray ?: return emptyList()
-    if (raw.isEmpty()) return emptyList()
-
-    val entries = raw.mapNotNull { element ->
-        val obj = element.jsonObjectOrNull ?: return@mapNotNull null
-        val content = obj["value"]?.jsonPrimitiveOrNull?.contentOrNull.orEmpty()
-        if (content.isBlank()) return@mapNotNull null
-
-        val rawKey = obj["key"]?.jsonPrimitiveOrNull?.contentOrNull.orEmpty()
-        // _or_ 前缀表示「任一命中」；@wb@ 是它自己的分隔符
-        val keywords = rawKey
-            .removePrefix("_or_")
-            .split("@wb@")
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
-
-        // 导入的世界书条目一律默认关闭，由用户按需逐条启用
-        val enabled = false
-        val probability = obj["probability"]?.jsonPrimitiveOrNull?.contentOrNull
-            ?.toIntOrNull()?.coerceIn(0, 100) ?: 100
-        val depth = obj["depth"]?.jsonPrimitiveOrNull?.contentOrNull?.toIntOrNull()
-        // 没有关键词的条目当作常驻，否则它永远不会被触发
-        val constant = keywords.isEmpty()
-
-        PromptInjection.RegexInjection(
-            name = keywords.firstOrNull().orEmpty(),
-            enabled = enabled,
-            content = content,
-            keywords = keywords,
-            scanDepth = depth,
-            constantActive = constant,
-            probability = probability,
-            position = InjectionPosition.AFTER_SYSTEM_PROMPT,
-        )
-    }
-
-    if (entries.isEmpty()) return emptyList()
-    return listOf(
-        Lorebook(
-            name = context.getString(R.string.assistant_importer_label_fengyue_worldbook),
-            enabled = true,
-            entries = entries,
-            isCharacterBook = true,
-        )
-    )
-}
 
 /**
  * 卡内嵌世界书物化成外置书，让扩展管理能看到、能逐条开关。
@@ -757,97 +546,6 @@ private fun mapEntryRole(role: String): MessageRole = when (role.lowercase()) {
     else -> MessageRole.SYSTEM
 }
 
-// ==================== 春水 AI 对话导出 ========
-
-/**
- * 判断是不是「对话导出」格式。
- *
- * 特征：没有 spec、没有 data，但有 messages 数组，且带 character_name
- * 或 conversation_id 里至少一个。春水 AI 等应用的导出都长这样。
- *
- * 之所以要和角色卡区分开：它其实是「一段已经聊过的对话」。人物设定
- * 写在第一条 user 消息里（用户自己贴进去的），首条 assistant 是开场白。
- * 直接当 V1 平铺卡解析会读不到顶层的 name 字段而报错——用户手上
- * 明明有一份完好的设定，却导不进来。
- */
-private fun looksLikeConversationExport(json: JsonObject): Boolean {
-    if (json["spec"] != null || json["data"] != null) return false
-    val messages = json["messages"] as? JsonArray ?: return false
-    if (messages.isEmpty()) return false
-    return json["character_name"] != null || json["conversation_id"] != null
-}
-
-/**
- * 把对话导出转成助手。
- *
- * 映射关系：
- *   · 第一条 user 消息        -> 角色设定（systemPrompt 的一部分）
- *   · 第一条 assistant 消息   -> 开场白（presetMessage）
- *   · title / character_name  -> 助手名
- *
- * 之所以把首条 user 当设定而不是当普通对话：那是这类导出的固定用法，
- * 用户把人物卡内容贴在开场之前，让模型先读到。当成历史消息塞进
- * presetMessages 反而会让每次新对话都重复一遍这段设定。
- */
-private fun parseConversationExport(
-    context: Context,
-    json: JsonObject,
-    avatarUri: String?,
-    mergeGreetings: Boolean = false,
-): Pair<Assistant, List<Lorebook>> {
-    val messages = json["messages"] as? JsonArray ?: JsonArray(emptyList())
-
-    fun textOf(element: JsonElement?): String =
-        element?.jsonObjectOrNull?.get("content")?.jsonPrimitiveOrNull?.contentOrNull.orEmpty()
-
-    fun roleOf(element: JsonElement?): String =
-        element?.jsonObjectOrNull?.get("role")?.jsonPrimitiveOrNull?.contentOrNull.orEmpty()
-
-    // 首条 user = 人物设定。若首条不是 user（有的导出直接以 assist
-    // 那就不当设定，避免把开场白误当成人设。
-    val firstIsUser = messages.firstOrNull()?.let { roleOf(it) == "user" } == true
-    // 同样保留原文：设定里也可能带样式标记，而且它是要给模型读的，
-    // 擅自删改用户写好的内容没有道理。
-    val setting = if (firstIsUser) textOf(messages.first()) else ""
-
-    // 第一条 assistant = 开场白。首条是 user 时取第二条
-    //
-    // **原文保留，不做任何清理。** 这类导出常常是「前端卡」——
-    // 开场白本身就是一段 HTML，由应用内的卡片渲染器（HtmlCardDocume
-    // + CardHostBridge）画成界面。把标签剥掉等于把卡片毁了，只剩一堆
-    // 散落的文字。
-    val greetingIndex = if (firstIsUser) 1 else 0
-    val greeting = messages.getOrNull(greetingIndex)
-        ?.takeIf { roleOf(it) == "assistant" }
-        ?.let { textOf(it) }
-        .orEmpty()
-
-    val name = json["character_name"]?.jsonPrimitiveOrNull?.contentOrNull
-        ?.takeIf { it.isNotBlank() }
-        ?: json["title"]?.jsonPrimitiveOrNull?.contentOrNull
-            ?.takeIf { it.isNotBlank() }
-        ?: context.getString(R.string.assistant_importer_unnamed_character)
-
-    // 设定整段作为系统提示词。
-    //
-    // 不额外拼模板：这种导出里的设定往往已经是完整的角色描述，
-    // 外面再套一层「你是……」的壳只会干扰原文的语气。
-    val systemPrompt = setting.ifBlank { "" }
-
-    val presetMessages = if (greeting.isBlank()) {
-        emptyList()
-    } else {
-        listOf(UIMessage.assistant(prompt = greeting))
-    }
-
-    val assistant = Assistant(
-        name = name,
-        avatar = if (avatarUri != null) Avatar.Image(avatarUri) else Avatar.Dummy,
-        systemPrompt = systemPrompt,
-        presetMessages = presetMessages,
-    )
-    return assistant to emptyList()
-}
 
 // 本地 PNG 抽出的图优先，其次远程 URL（仅认 http/https）
 private fun resolveCardAvatar(avatarUri: String?, remoteAvatar: String?): Avatar = when {

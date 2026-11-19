@@ -98,70 +98,81 @@ fun ColumnScope.ChatMessageActionButtons(
         }
     }
 
+    val display = settings.displaySetting
+    // 总开关打开时整条功能栏都不显示，单项开关再各自收掉一个按钮
+    fun hidden(flag: Boolean): Boolean = flag || display.hideAllMessageActionBar
+
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
-        ChatMessageActionButton(
-            icon = HugeIcons.Copy01,
-            contentDescription = stringResource(R.string.copy),
-            onClick = { context.copyMessageToClipboard(message) },
-        )
+        if (!hidden(display.hideMessageCopyButton)) {
+            ChatMessageActionButton(
+                icon = HugeIcons.Copy01,
+                contentDescription = stringResource(R.string.copy),
+                onClick = { context.copyMessageToClipboard(message) },
+            )
+        }
 
-        ChatMessageActionButton(
-            icon = HugeIcons.Refresh03,
-            contentDescription = stringResource(R.string.regenerate),
-            onClick = {
-                if (message.role == MessageRole.USER) {
-                    showRegenerateConfirm = true
-                } else {
-                    onRegenerate()
-                }
-            },
-        )
+        if (!hidden(display.hideMessageRegenerateButton)) {
+            ChatMessageActionButton(
+                icon = HugeIcons.Refresh03,
+                contentDescription = stringResource(R.string.regenerate),
+                onClick = {
+                    if (message.role == MessageRole.USER) {
+                        showRegenerateConfirm = true
+                    } else {
+                        onRegenerate()
+                    }
+                },
+            )
+        }
 
         if (message.role == MessageRole.ASSISTANT) {
             val tts = LocalTTSState.current
             val isSpeaking by tts.isSpeaking.collectAsState()
             val isAvailable by tts.isAvailable.collectAsState()
+
             // 朗读中换成带底色的方角按钮
-            CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
-                IconToggleButton(
-                    checked = isSpeaking,
-                    onCheckedChange = { speak ->
-                        if (speak) {
-                            val text = message.toText()
-                            var textToSpeak = text
-                            if (settings.displaySetting.ttsOnlyReadQuoted) {
-                                textToSpeak = textToSpeak.extractQuotedContentAsText() ?: textToSpeak
+            if (!hidden(display.hideMessageTtsButton)) {
+                CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+                    IconToggleButton(
+                        checked = isSpeaking,
+                        onCheckedChange = { speak ->
+                            if (speak) {
+                                val text = message.toText()
+                                var textToSpeak = text
+                                if (display.ttsOnlyReadQuoted) {
+                                    textToSpeak = textToSpeak.extractQuotedContentAsText() ?: textToSpeak
+                                }
+                                if (display.ttsOnlyReadOutsideBrackets) {
+                                    textToSpeak = textToSpeak.removeBracketedContent() ?: textToSpeak
+                                }
+                                tts.speak(textToSpeak)
+                            } else {
+                                tts.stop()
                             }
-                            if (settings.displaySetting.ttsOnlyReadOutsideBrackets) {
-                                textToSpeak = textToSpeak.removeBracketedContent() ?: textToSpeak
-                            }
-                            tts.speak(textToSpeak)
-                        } else {
-                            tts.stop()
-                        }
-                    },
-                    shapes = IconButtonDefaults.toggleableShapes(),
-                    modifier = Modifier.size(IconButtonDefaults.extraSmallContainerSize()),
-                    enabled = isAvailable,
-                    colors = IconButtonDefaults.iconToggleButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    ),
-                ) {
-                    Icon(
-                        imageVector = if (isSpeaking) HugeIcons.StopCircle else HugeIcons.VolumeHigh,
-                        contentDescription = stringResource(R.string.tts),
-                        modifier = Modifier.size(ActionIconSize),
-                    )
+                        },
+                        shapes = IconButtonDefaults.toggleableShapes(),
+                        modifier = Modifier.size(IconButtonDefaults.extraSmallContainerSize()),
+                        enabled = isAvailable,
+                        colors = IconButtonDefaults.iconToggleButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        ),
+                    ) {
+                        Icon(
+                            imageVector = if (isSpeaking) HugeIcons.StopCircle else HugeIcons.VolumeHigh,
+                            contentDescription = stringResource(R.string.tts),
+                            modifier = Modifier.size(ActionIconSize),
+                        )
+                    }
                 }
             }
 
             // 冒充按钮
-            if (onImpersonate != null) {
+            if (onImpersonate != null && !hidden(display.hideMessageImpersonateButton)) {
                 Icon(
                     imageVector = HugeIcons.ArrowRight01,
                     contentDescription = stringResource(R.string.impersonate),
@@ -179,7 +190,7 @@ fun ColumnScope.ChatMessageActionButtons(
             }
 
             // Translation button
-            if (onTranslate != null) {
+            if (onTranslate != null && !hidden(display.hideMessageTranslateButton)) {
                 ChatMessageActionButton(
                     icon = HugeIcons.Translate,
                     contentDescription = stringResource(R.string.translate),
@@ -188,18 +199,22 @@ fun ColumnScope.ChatMessageActionButtons(
             }
         }
 
-        ChatMessageActionButton(
-            icon = HugeIcons.MoreVertical,
-            contentDescription = stringResource(R.string.more_options),
-            onClick = onOpenActionSheet,
-        )
+        if (!hidden(display.hideMessageMoreButton)) {
+            ChatMessageActionButton(
+                icon = HugeIcons.MoreVertical,
+                contentDescription = stringResource(R.string.more_options),
+                onClick = onOpenActionSheet,
+            )
+        }
 
-        ChatMessageBranchSelector(
-            node = node,
-            onUpdate = onUpdate,
-        )
+        if (!hidden(display.hideMessageBranchButton) && node.messages.size > 1) {
+            ChatMessageBranchSelector(
+                node = node,
+                onUpdate = onUpdate,
+            )
+        }
 
-        if (settings.displaySetting.showDateTimeInMessage) {
+        if (display.showDateTimeInMessage && !hidden(display.hideMessageTimeButton)) {
             Text(
                 text = message.createdAt.toJavaLocalDateTime().toMessageTimeString(),
                 style = MaterialTheme.typography.labelSmall,

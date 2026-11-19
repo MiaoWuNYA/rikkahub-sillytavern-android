@@ -95,10 +95,10 @@ fun TavernRegexPage(vm: SettingVM = koinViewModel()) {
     var renameText by remember { mutableStateOf("") }
     var deleteTarget by remember { mutableStateOf<RegexGroup?>(null) }
 
-    // 「自定义」文件夹始终存在，作为手动新建/导入脚本的默认落点
+    // 首次进入时补一个可编辑的默认文件夹，用户手动删掉后不再回填
     LaunchedEffect(Unit) {
         vm.updateSettings { current ->
-            if (current.regexGroups.any { it.source == RegexGroupSource.CUSTOM }) {
+            if (current.regexGroups.isNotEmpty() && current.regexGroups.any { it.source == RegexGroupSource.CUSTOM }) {
                 current
             } else {
                 current.copy(
@@ -233,7 +233,6 @@ fun TavernRegexPage(vm: SettingVM = koinViewModel()) {
 
             items(settings.regexGroups, key = { it.id }) { group ->
                 val collapsed = group.id in collapsedGroups
-                val isCustom = group.source == RegexGroupSource.CUSTOM
                 CardGroup(modifier = Modifier.padding(horizontal = 8.dp)) {
                     item(
                         onClick = {
@@ -275,15 +274,13 @@ fun TavernRegexPage(vm: SettingVM = koinViewModel()) {
                                                 renameText = group.name
                                             },
                                         )
-                                        if (!isCustom) {
-                                            add(
-                                                ItemAction(
-                                                    text = stringResource(R.string.tavern_regex_folder_delete),
-                                                    icon = HugeIcons.Delete01,
-                                                    destructive = true,
-                                                ) { deleteTarget = group },
-                                            )
-                                        }
+                                        add(
+                                            ItemAction(
+                                                text = stringResource(R.string.tavern_regex_folder_delete),
+                                                icon = HugeIcons.Delete01,
+                                                destructive = true,
+                                            ) { deleteTarget = group },
+                                        )
                                     },
                                 )
                                 Icon(

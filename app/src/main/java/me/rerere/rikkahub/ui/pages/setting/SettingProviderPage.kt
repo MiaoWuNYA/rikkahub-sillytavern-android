@@ -663,6 +663,8 @@ private fun ProviderItem(
     onClick: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    // 只有置顶的砂糖酒馆不可删除，其余供应商都可以手动移除
+    val isShaTang = (provider as? ProviderSetting.ApiKey)?.baseUrl?.contains(SHATANG_HOST, ignoreCase = true) == true
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(20.dp),
@@ -707,7 +709,6 @@ private fun ProviderItem(
                         Text(stringResource(if (provider.enabled) R.string.setting_provider_page_enabled else R.string.setting_provider_page_disabled))
                     }
                     // 砂糖酒馆：没有模型列表，不显示模型数，标签换成酒馆专用 / Gemini
-                    val isShaTang = (provider as? ProviderSetting.ApiKey)?.baseUrl?.contains(SHATANG_HOST, ignoreCase = true) == true
                     if (!isShaTang) {
                         Tag(type = TagType.INFO) {
                             Text(
@@ -739,7 +740,7 @@ private fun ProviderItem(
                         text = stringResource(R.string.delete),
                         icon = HugeIcons.Delete01,
                         destructive = true,
-                        enabled = !provider.builtIn && provider.pluginOwner() == null,
+                        enabled = !isShaTang && provider.pluginOwner() == null,
                         onClick = onDelete,
                     ),
                 )

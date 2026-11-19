@@ -670,6 +670,155 @@ internal fun SettingPreferencesUIContent(vm: SettingVM, contentPadding: PaddingV
                         supportingContent = { Text(stringResource(R.string.huadeng_clean_mode_desc)) },
                         headlineContent = { Text(stringResource(R.string.huadeng_clean_mode)) },
                     )
+                    // 一键隐藏整条消息功能栏：打开时把下面所有单项一起打开，关掉任一项则总开关自动关闭
+                    switchItem(
+                        checked = displaySetting.hideAllMessageActionBar,
+                        onCheckedChange = { enabled ->
+                            updateDisplaySetting(
+                                displaySetting.copy(
+                                    hideAllMessageActionBar = enabled,
+                                    hideMessageCopyButton = enabled,
+                                    hideMessageRegenerateButton = enabled,
+                                    hideMessageTtsButton = enabled,
+                                    hideMessageImpersonateButton = enabled,
+                                    hideMessageTranslateButton = enabled,
+                                    hideMessageMoreButton = enabled,
+                                    hideMessageBranchButton = enabled,
+                                    hideMessageTimeButton = enabled,
+                                )
+                            )
+                        },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_hide_all_message_bar_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_hide_all_message_bar_title)) },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_hide_message_copy_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_hide_message_copy_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.hideMessageCopyButton,
+                                onCheckedChange = { hide ->
+                                    updateDisplaySetting(
+                                        displaySetting.copy(hideMessageCopyButton = hide).let {
+                                            if (hide) it else it.copy(hideAllMessageActionBar = false)
+                                        }
+                                    )
+                                }
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_hide_message_regenerate_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_hide_message_regenerate_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.hideMessageRegenerateButton,
+                                onCheckedChange = { hide ->
+                                    updateDisplaySetting(
+                                        displaySetting.copy(hideMessageRegenerateButton = hide).let {
+                                            if (hide) it else it.copy(hideAllMessageActionBar = false)
+                                        }
+                                    )
+                                }
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_hide_message_tts_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_hide_message_tts_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.hideMessageTtsButton,
+                                onCheckedChange = { hide ->
+                                    updateDisplaySetting(
+                                        displaySetting.copy(hideMessageTtsButton = hide).let {
+                                            if (hide) it else it.copy(hideAllMessageActionBar = false)
+                                        }
+                                    )
+                                }
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_hide_message_impersonate_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_hide_message_impersonate_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.hideMessageImpersonateButton,
+                                onCheckedChange = { hide ->
+                                    updateDisplaySetting(
+                                        displaySetting.copy(hideMessageImpersonateButton = hide).let {
+                                            if (hide) it else it.copy(hideAllMessageActionBar = false)
+                                        }
+                                    )
+                                }
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_hide_message_translate_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_hide_message_translate_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.hideMessageTranslateButton,
+                                onCheckedChange = { hide ->
+                                    updateDisplaySetting(
+                                        displaySetting.copy(hideMessageTranslateButton = hide).let {
+                                            if (hide) it else it.copy(hideAllMessageActionBar = false)
+                                        }
+                                    )
+                                }
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_hide_message_more_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_hide_message_more_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.hideMessageMoreButton,
+                                onCheckedChange = { hide ->
+                                    updateDisplaySetting(
+                                        displaySetting.copy(hideMessageMoreButton = hide).let {
+                                            if (hide) it else it.copy(hideAllMessageActionBar = false)
+                                        }
+                                    )
+                                }
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_hide_message_branch_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_hide_message_branch_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.hideMessageBranchButton,
+                                onCheckedChange = { hide ->
+                                    updateDisplaySetting(
+                                        displaySetting.copy(hideMessageBranchButton = hide).let {
+                                            if (hide) it else it.copy(hideAllMessageActionBar = false)
+                                        }
+                                    )
+                                }
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_hide_message_time_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_hide_message_time_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.hideMessageTimeButton,
+                                onCheckedChange = { hide ->
+                                    updateDisplaySetting(
+                                        displaySetting.copy(hideMessageTimeButton = hide).let {
+                                            if (hide) it else it.copy(hideAllMessageActionBar = false)
+                                        }
+                                    )
+                                }
+                            )
+                        },
+                    )
                 }
             }
         }

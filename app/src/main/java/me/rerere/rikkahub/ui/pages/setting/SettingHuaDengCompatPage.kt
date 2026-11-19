@@ -133,6 +133,26 @@ fun SettingHuaDengCompatPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
+                        headlineContent = { Text(stringResource(R.string.huadeng_conversation_prompt_binding)) },
+                        supportingContent = {
+                            Text(stringResource(R.string.huadeng_conversation_prompt_binding_desc))
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = settings.huadengSettings.enableConversationPromptBinding,
+                                onCheckedChange = { enabled ->
+                                    vm.updateSettings {
+                                        it.copy(
+                                            huadengSettings = it.huadengSettings.copy(
+                                                enableConversationPromptBinding = enabled,
+                                            ),
+                                        )
+                                    }
+                                },
+                            )
+                        },
+                    )
+                    item(
                         headlineContent = { Text(stringResource(R.string.huadeng_tavern_mode)) },
                         supportingContent = {
                             Text(stringResource(R.string.huadeng_tavern_mode_desc))

@@ -1669,6 +1669,8 @@ class ChatService(
                 assistant = assistant,
                 maxSteps = assistant.totalStepsLimit,
                 conversationSystemPrompt = conversation.customSystemPrompt,
+                conversationModeInjectionIds = conversation.modeInjectionIds,
+                conversationLorebookIds = conversation.lorebookIds,
                 workspaceCwd = conversation.workspaceCwd,
                 memories = memoryRepository.getFiles(assistant.memoryId),
                 inputTransformers = buildList {
@@ -2278,6 +2280,8 @@ class ChatService(
             }
         }
 
+        // 会话级绑定：只有传了会话 id 才按会话读取，否则留空走角色卡
+        val boundConversation = conversationId?.let { conversationRepo.getConversationById(it) }
         generationLoop.generateText(
             settings = settings,
             model = model,
@@ -2285,6 +2289,8 @@ class ChatService(
             assistant = assistant,
             generationType = generationType,
             conversationId = conversationId,
+            conversationModeInjectionIds = boundConversation?.modeInjectionIds ?: emptySet(),
+            conversationLorebookIds = boundConversation?.lorebookIds ?: emptySet(),
             memories = memoryRepository.getFiles(assistant.memoryId),
             tools = buildList {
                 // 酒馆模式：与 handleMessageComplete 走同一份裁剪实现。
@@ -2554,7 +2560,11 @@ class ChatService(
             val conversation = session.state.value
             val stored = settings.getStoredAssistantOf(conversation)
             val updated = update(settings.getAssistantOf(conversation))
-            val assistant = updated.withoutConversationFields(conversation, stored)
+            val assistant = updated.withoutConversationFields(conversation, stored).let {
+                // 会话级绑定关闭时注入与世界书仍然写回助手，所有会话共用
+                if (settings.huadengSettings.enableConversationPromptBinding) it
+                else it.copy(modeInjectionIds = updated.modeInjectionIds, lorebookIds = updated.lorebookIds)
+            }
             session.updateMetadata(
                 update = { it.withAssistantUpdate(updated, settings) },
                 persist = conversationRepo::updateConversationConfig,
@@ -2699,6 +2709,19 @@ class ChatService(
         updateConversationMetadata(
             conversationId = conversationId,
             update = { it.copy(workspaceCwd = workspaceCwd) },
+            persist = { conversationRepo.updateConversationConfig(it) },
+        )
+    }
+
+    /** 会话级绑定：单独指定这个对话使用的模式注入与世界书 */
+    suspend fun updateConversationInjections(
+        conversationId: Uuid,
+        modeInjectionIds: Set<Uuid>,
+        lorebookIds: Set<Uuid>,
+    ) {
+        updateConversationMetadata(
+            conversationId = conversationId,
+            update = { it.copy(modeInjectionIds = modeInjectionIds, lorebookIds = lorebookIds) },
             persist = { conversationRepo.updateConversationConfig(it) },
         )
     }

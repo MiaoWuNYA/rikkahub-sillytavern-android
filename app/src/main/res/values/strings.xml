@@ -35,9 +35,7 @@
   <string name="assistant_importer_download_failed">Download failed: %s</string>
   <string name="assistant_importer_downloading">Downloading...</string>
   <string name="assistant_importer_file_too_large">File too large (max %1$d MB)</string>
-  <string name="assistant_importer_import_chunshui">Import Chunshui AI card (JSON)</string>
   <string name="assistant_importer_import_failed">Import failed</string>
-  <string name="assistant_importer_import_fengyue">Import Fengyue AI card (JSON)</string>
   <string name="assistant_importer_import_from_url">Import from URL</string>
   <string name="assistant_importer_import_success">Character card imported successfully</string>
   <string name="assistant_importer_import_tavern_json">Import Tavern Character Card (JSON)</string>
@@ -707,6 +705,8 @@
   <string name="huadeng_rolling_compression">Rolling Context Compression</string>
   <string name="huadeng_rolling_compression_desc">Automatically compresses earlier messages into a summary when the conversation grows long. Turning this off disables auto compression (the per-character card switch still works); try disabling it if compression repeats every turn or breaks prompt caching</string>
   <string name="huadeng_section_integration">Integrations &amp; Automation</string>
+  <string name="huadeng_conversation_prompt_binding">Per-Conversation Prompt Binding</string>
+  <string name="huadeng_conversation_prompt_binding_desc">Each conversation gets its own mode injection and lorebook selection instead of following the assistant card. When disabled, binding follows the assistant</string>
   <string name="huadeng_system_prompt_escape">System Prompt Escaping</string>
   <string name="huadeng_system_prompt_escape_desc">Escapes &lt; and &gt; in system messages as HTML entities to bypass proxy WAF blocking (enable this if you see upstream_content_rejected errors). Usually not needed</string>
   <string name="huadeng_tavern_keep_tools">Tavern Mode · Keep Tools</string>
@@ -1273,6 +1273,7 @@
   <string name="prompt_page_delay_until_recursion_level_desc">Checked at recursion level N; opens level by level when nothing matches</string>
   <string name="prompt_page_delete">Delete</string>
   <string name="prompt_page_description">Description</string>
+  <string name="prompt_page_disable_all">Disable all</string>
   <string name="prompt_page_disabled">Disabled</string>
   <string name="prompt_page_display_index">Display Index</string>
   <string name="prompt_page_display_position">Display Position</string>
@@ -1282,6 +1283,7 @@
   <string name="prompt_page_edit_mode_injection">Edit Mode Injection</string>
   <string name="prompt_page_embedded_lorebook">Embedded Lorebook</string>
   <string name="prompt_page_empty_hint">Click the button below to add</string>
+  <string name="prompt_page_enable_all">Enable all</string>
   <string name="prompt_page_enabled">Enabled</string>
   <string name="prompt_page_entries_count_format">%d entries</string>
   <string name="prompt_page_entries_format">Entries (%d)</string>
@@ -1622,6 +1624,26 @@
   <string name="setting_display_page_amoled_dark_mode_title">AMOLED Dark Mode</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">Automatically collapse thinking content after thinking is complete</string>
   <string name="setting_display_page_auto_collapse_thinking_title">Auto Collapse Thinking</string>
+  <string name="setting_display_page_circle_avatar_desc">Use round avatars instead of the rotating flower shape.</string>
+  <string name="setting_display_page_circle_avatar_title">Circle avatars</string>
+  <string name="setting_display_page_hide_all_message_bar_desc">Turns on every switch below; turning any single one off clears this switch again.</string>
+  <string name="setting_display_page_hide_all_message_bar_title">Hide the whole action bar</string>
+  <string name="setting_display_page_hide_message_branch_desc">Hide the branch arrows under the message.</string>
+  <string name="setting_display_page_hide_message_branch_title">Hide branch switcher</string>
+  <string name="setting_display_page_hide_message_copy_desc">Hide the copy button under the message.</string>
+  <string name="setting_display_page_hide_message_copy_title">Hide copy</string>
+  <string name="setting_display_page_hide_message_impersonate_desc">Hide the reply-as-user button under the message.</string>
+  <string name="setting_display_page_hide_message_impersonate_title">Hide reply as user</string>
+  <string name="setting_display_page_hide_message_more_desc">Hide the more options button under the message.</string>
+  <string name="setting_display_page_hide_message_more_title">Hide more options</string>
+  <string name="setting_display_page_hide_message_regenerate_desc">Hide the regenerate button under the message.</string>
+  <string name="setting_display_page_hide_message_regenerate_title">Hide regenerate</string>
+  <string name="setting_display_page_hide_message_time_desc">Hide the timestamp under the message.</string>
+  <string name="setting_display_page_hide_message_time_title">Hide message time</string>
+  <string name="setting_display_page_hide_message_translate_desc">Hide the translate button under the message.</string>
+  <string name="setting_display_page_hide_message_translate_title">Hide translate</string>
+  <string name="setting_display_page_hide_message_tts_desc">Hide the read-aloud button under the message.</string>
+  <string name="setting_display_page_hide_message_tts_title">Hide read aloud</string>
   <string name="setting_display_page_voice_listen_while_replying_title">Keep listening during replies in voice mode</string>
   <string name="setting_display_page_voice_listen_while_replying_desc">Speech while the model is replying is queued and sent afterward. Turn off to pause the microphone until the reply finishes (and is read aloud), for one-question-one-answer conversations.</string>
   <string name="setting_display_page_auto_play_tts_desc">Automatically play TTS after character card message generation completes</string>
@@ -1898,6 +1920,8 @@
   <string name="setting_memory_title">Memory</string>
   <string name="setting_memory_unnamed_assistant">Unnamed Character Card</string>
   <string name="setting_memory_you">You</string>
+  <string name="setting_model_page_batch_clear">Reset All Model Slots</string>
+  <string name="setting_model_page_batch_clear_desc">Every model slot goes back to the default (chat, fast, translate, OCR and compress follow the built-in auto model; title, memory and proactive are cleared). Providers and their model lists are untouched.</string>
   <string name="setting_model_page_chat_model">Chat Model</string>
   <string name="setting_model_page_chat_model_desc">Global default chat model</string>
   <string name="setting_model_page_fast_model">Fast Model</string>
@@ -1965,6 +1989,8 @@
   <string name="setting_page_tavern_desc">Character cards, world info, extensions and compatibility switches</string>
   <string name="setting_page_tavern_regex">Message Regex</string>
   <string name="setting_page_tavern_regex_desc">View, import and edit the regex scripts of every character card in one place</string>
+  <string name="setting_provider_page_clear_all_models">Remove all models</string>
+  <string name="setting_provider_page_clear_all_models_confirm">All models of this provider will be removed. Providers and API settings are kept.</string>
   <string name="tavern_regex_intro">Global regex is organized into folders: global scripts apply to every card, manually added/imported ones land in "Custom", and importing a SillyTavern preset creates a folder named after it. Scripts bundled in a character card still live on that card.</string>
   <string name="tavern_regex_custom_folder">Custom</string>
   <string name="tavern_regex_preset_folder">Preset</string>
@@ -3465,7 +3491,6 @@
   <string name="assistant_importer_label_worldbook">Worldbook</string>
   <string name="assistant_importer_label_history_instruction">History instruction</string>
   <string name="assistant_importer_label_depth_prompt">Depth prompt</string>
-  <string name="assistant_importer_label_fengyue_worldbook">Fengyue worldbook</string>
   <string name="life_tab_today">Today</string>
   <string name="life_tab_todo">To-do</string>
   <string name="life_tab_ideas">Ideas</string>

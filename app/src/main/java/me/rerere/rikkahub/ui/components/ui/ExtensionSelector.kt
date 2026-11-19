@@ -32,6 +32,7 @@ import me.rerere.rikkahub.ui.components.ai.ModeInjectionsContent
 import me.rerere.rikkahub.ui.components.ai.QuickMessagesContent
 import me.rerere.rikkahub.ui.components.ai.SkillsContent
 import org.koin.compose.koinInject
+import kotlin.uuid.Uuid
 
 internal enum class ExtensionTab(
     override val icon: ImageVector,
@@ -56,7 +57,17 @@ fun ExtensionSelector(
     onNavigateToQuickMessages: () -> Unit = {},
     onNavigateToPrompts: () -> Unit = {},
     onNavigateToSkills: () -> Unit = {},
+    // 会话级绑定开启时传这两个集合，开关关闭仍按角色卡处理
+    conversationModeInjectionIds: Set<Uuid>? = null,
+    conversationLorebookIds: Set<Uuid>? = null,
+    onToggleConversationModeInjection: ((Uuid, Boolean) -> Unit)? = null,
+    onToggleConversationLorebook: ((Uuid, Boolean) -> Unit)? = null,
 ) {
+    val byConversation = settings.huadengSettings.enableConversationPromptBinding &&
+        conversationModeInjectionIds != null && conversationLorebookIds != null &&
+        onToggleConversationModeInjection != null && onToggleConversationLorebook != null
+    val boundModeInjectionIds = if (byConversation) conversationModeInjectionIds else assistant.modeInjectionIds
+    val boundLorebookIds = if (byConversation) conversationLorebookIds else assistant.lorebookIds
     val skillManager: SkillManager = koinInject()
     var skills by remember { mutableStateOf<List<SkillMetadata>>(emptyList()) }
 
@@ -114,14 +125,18 @@ fun ExtensionSelector(
                     if (settings.modeInjections.isNotEmpty()) {
                         ModeInjectionsContent(
                             modeInjections = settings.modeInjections,
-                            selectedIds = assistant.modeInjectionIds,
+                            selectedIds = boundModeInjectionIds,
                             onToggle = { id, checked ->
-                                val newIds = if (checked) {
-                                    assistant.modeInjectionIds + id
+                                if (byConversation) {
+                                    onToggleConversationModeInjection?.invoke(id, checked)
                                 } else {
-                                    assistant.modeInjectionIds - id
+                                    val newIds = if (checked) {
+                                        assistant.modeInjectionIds + id
+                                    } else {
+                                        assistant.modeInjectionIds - id
+                                    }
+                                    onUpdate(assistant.copy(modeInjectionIds = newIds))
                                 }
-                                onUpdate(assistant.copy(modeInjectionIds = newIds))
                             },
                             onManage = onNavigateToPrompts,
                         )
@@ -139,14 +154,18 @@ fun ExtensionSelector(
                     if (settings.lorebooks.isNotEmpty()) {
                         LorebooksContent(
                             lorebooks = settings.lorebooks,
-                            selectedIds = assistant.lorebookIds,
+                            selectedIds = boundLorebookIds,
                             onToggle = { id, checked ->
-                                val newIds = if (checked) {
-                                    assistant.lorebookIds + id
+                                if (byConversation) {
+                                    onToggleConversationLorebook?.invoke(id, checked)
                                 } else {
-                                    assistant.lorebookIds - id
+                                    val newIds = if (checked) {
+                                        assistant.lorebookIds + id
+                                    } else {
+                                        assistant.lorebookIds - id
+                                    }
+                                    onUpdate(assistant.copy(lorebookIds = newIds))
                                 }
-                                onUpdate(assistant.copy(lorebookIds = newIds))
                             },
                             onManage = onNavigateToPrompts,
                         )

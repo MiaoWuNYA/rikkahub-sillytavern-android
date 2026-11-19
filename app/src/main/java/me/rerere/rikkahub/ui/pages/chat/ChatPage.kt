@@ -1045,6 +1045,7 @@ private fun ChatFilesPickerSheet(
                     )
                 }
             },
+            onUpdateConversationInjections = vm::updateConversationInjections,
         )
     }
 }

@@ -68,13 +68,17 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
     private fun injectionFingerprint(ctx: TransformerContext): Int {
         val assistant = ctx.assistant
         val settings = ctx.settings
-        var h = assistant.modeInjectionIds.hashCode()
-        h = 31 * h + assistant.lorebookIds.hashCode()
-        for (id in assistant.modeInjectionIds) {
+        val allowConv = settings.huadengSettings.enableConversationPromptBinding
+        val modeIds = if (allowConv) ctx.conversationModeInjectionIds else assistant.modeInjectionIds
+        val lorebookIds = if (allowConv) ctx.conversationLorebookIds else assistant.lorebookIds
+        var h = modeIds.hashCode()
+        h = 31 * h + lorebookIds.hashCode()
+        h = 31 * h + allowConv.hashCode()
+        for (id in modeIds) {
             val injection = settings.modeInjections.firstOrNull { it.id == id } ?: continue
             h = 31 * h + injection.hashCode()
         }
-        for (id in assistant.lorebookIds) {
+        for (id in lorebookIds) {
             val book = settings.lorebooks.firstOrNull { it.id == id } ?: continue
             h = 31 * h + book.hashCode()
         }
@@ -120,6 +124,7 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
             lorebooks = ctx.settings.lorebooks,
             conversationModeInjectionIds = ctx.conversationModeInjectionIds,
             conversationLorebookIds = ctx.conversationLorebookIds,
+            allowConversationBinding = ctx.settings.huadengSettings.enableConversationPromptBinding,
             activeStickyEntries = stickyTracker.getOrPut(key) { java.util.concurrent.ConcurrentHashMap() },
             cooldownEntries = cooldownTracker.getOrPut(key) { java.util.concurrent.ConcurrentHashMap() },
             authorNotePosition = ctx.settings.authorNotePosition,
@@ -188,7 +193,11 @@ object PromptInjectionTransformer : InputMessageTransformer, KoinComponent {
 
             // 与 collectInjections 相同的书绑定过滤，只检索已绑定的书。
             // 角色卡内嵌书不在绑定列表里，单独从卡片构建（官方模型：内嵌书始终随卡生效）
-            val effectiveLorebookIds = ctx.assistant.lorebookIds
+            val effectiveLorebookIds = if (ctx.settings.huadengSettings.enableConversationPromptBinding) {
+                ctx.conversationLorebookIds
+            } else {
+                ctx.assistant.lorebookIds
+            }
             val vectorizedEntries = (
                 settings.lorebooks
                     .filter { it.enabled && it.id in effectiveLorebookIds }
@@ -393,6 +402,8 @@ internal fun transformMessages(
     lorebooks: List<Lorebook>,
     conversationModeInjectionIds: Set<Uuid> = emptySet(),
     conversationLorebookIds: Set<Uuid> = emptySet(),
+    // 会话绑定的注入/世界书是否覆盖角色卡绑定
+    allowConversationBinding: Boolean = false,
     activeStickyEntries: MutableMap<Uuid, Int> = mutableMapOf(),
     cooldownEntries: MutableMap<Uuid, Int> = mutableMapOf(),
     authorNotePosition: AuthorNotePosition = AuthorNotePosition.IN_CHAT,
@@ -426,6 +437,7 @@ internal fun transformMessages(
         lorebooks = lorebooks,
         conversationModeInjectionIds = conversationModeInjectionIds,
         conversationLorebookIds = conversationLorebookIds,
+        allowConversationBinding = allowConversationBinding,
         activeStickyEntries = activeStickyEntries,
         cooldownEntries = cooldownEntries,
         worldInfoBudget = worldInfoBudget,
@@ -539,6 +551,7 @@ internal fun collectInjections(
     lorebooks: List<Lorebook>,
     conversationModeInjectionIds: Set<Uuid> = emptySet(),
     conversationLorebookIds: Set<Uuid> = emptySet(),
+    allowConversationBinding: Boolean = false,
     activeStickyEntries: MutableMap<Uuid, Int> = mutableMapOf(),
     cooldownEntries: MutableMap<Uuid, Int> = mutableMapOf(),
     worldInfoBudget: Int = 25,
@@ -558,9 +571,11 @@ internal fun collectInjections(
     worldInfoEventSink: ((String, String) -> Unit)? = null,
 ): List<PromptInjection> {
     val injections = mutableListOf<PromptInjection>()
-    // 绑定跟随助手自身，会话级绑定已废弃（见 PreferenceStoreV4Migration）
-    val effectiveModeInjectionIds = assistant.modeInjectionIds
-    val effectiveLorebookIds = assistant.lorebookIds
+    // 会话级绑定开启时以会话为准，否则跟随角色卡
+    val effectiveModeInjectionIds =
+        if (allowConversationBinding) conversationModeInjectionIds else assistant.modeInjectionIds
+    val effectiveLorebookIds =
+        if (allowConversationBinding) conversationLorebookIds else assistant.lorebookIds
 
     // 1. 获取关联的 ModeInjection
     modeInjections
@@ -578,7 +593,7 @@ internal fun collectInjections(
     val characterEntries = buildCharacterBookEntries(assistant.tavernData)
     android.util.Log.d(
         "WorldInfo",
-        "assistant=${assistant.name}(${assistant.id}) allowConv=${assistant.allowConversationPromptInjection} " +
+        "assistant=${assistant.name}(${assistant.id}) allowConv=$allowConversationBinding " +
             "assistantBooks=${assistant.lorebookIds.size} convBooks=${conversationLorebookIds.size} " +
             "effective=${effectiveLorebookIds.size} allBooks=${lorebooks.size} " +
             "boundBooks=${boundLorebooks.map { it.name to it.entries.size }} " +

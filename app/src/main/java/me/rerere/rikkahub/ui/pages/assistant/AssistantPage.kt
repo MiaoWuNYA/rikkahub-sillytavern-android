@@ -63,7 +63,6 @@ import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.data.datastore.DEFAULT_ASSISTANTS_IDS
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.MemoryFile
@@ -221,6 +220,8 @@ fun AssistantPage(vm: AssistantVM = koinViewModel()) {
                         AssistantItem(
                             assistant = assistant,
                             settings = settings,
+                            // 至少保留一个助手
+                            canDelete = filteredAssistants.size > 1,
                             memories = memories,
                             onEdit = {
                                 navController.navigate(Screen.AssistantDetail(id = assistant.id.toString()))
@@ -435,6 +436,7 @@ private fun AssistantItem(
     assistant: Assistant,
     settings: Settings,
     modifier: Modifier = Modifier,
+    canDelete: Boolean,
     memories: List<MemoryFile>,
     onEdit: () -> Unit,
     onCopy: () -> Unit,
@@ -523,7 +525,7 @@ private fun AssistantItem(
                         text = stringResource(R.string.assistant_page_delete),
                         icon = HugeIcons.Delete01,
                         destructive = true,
-                        enabled = assistant.id !in DEFAULT_ASSISTANTS_IDS,
+                        enabled = canDelete,
                         onClick = onDelete,
                     ),
                 )

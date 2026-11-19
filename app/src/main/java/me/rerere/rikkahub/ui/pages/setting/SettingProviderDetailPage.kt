@@ -101,6 +101,7 @@ import me.rerere.hugeicons.stroke.ArrowDown01
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Connect
 import me.rerere.hugeicons.stroke.Delete01
+import me.rerere.hugeicons.stroke.Delete02
 import me.rerere.hugeicons.stroke.FloppyDisk
 import me.rerere.hugeicons.stroke.Package01
 import me.rerere.hugeicons.stroke.Settings03
@@ -514,6 +515,7 @@ private fun ModelList(
         }
     }
     var showPruneDialog by remember { mutableStateOf(false) }
+    var showClearAllDialog by remember { mutableStateOf(false) }
     var expanded by rememberSaveable { mutableStateOf(true) }
     val lazyListState = rememberLazyListState()
     val currentSetting by rememberUpdatedState(providerSetting)
@@ -572,6 +574,16 @@ private fun ModelList(
                 .align(Alignment.BottomCenter)
                 .offset(y = -ScreenOffset),
             leadingContent = {
+                if (providerSetting.models.isNotEmpty()) {
+                    Tooltip(tooltip = { Text(stringResource(R.string.setting_provider_page_clear_all_models)) }) {
+                        IconButton(onClick = { showClearAllDialog = true }) {
+                            Icon(
+                                HugeIcons.Delete02,
+                                stringResource(R.string.setting_provider_page_clear_all_models),
+                            )
+                        }
+                    }
+                }
                 if (staleModels.isNotEmpty()) {
                     Tooltip(
                         tooltip = {
@@ -604,6 +616,20 @@ private fun ModelList(
                 onUpdateProvider = onUpdateProvider
             )
         }
+    }
+
+    RikkaConfirmDialog(
+        show = showClearAllDialog,
+        title = stringResource(R.string.setting_provider_page_clear_all_models),
+        confirmText = stringResource(R.string.delete),
+        dismissText = stringResource(R.string.cancel),
+        onConfirm = {
+            showClearAllDialog = false
+            onUpdateProvider(providerSetting.copyProvider(models = emptyList()))
+        },
+        onDismiss = { showClearAllDialog = false },
+    ) {
+        Text(stringResource(R.string.setting_provider_page_clear_all_models_confirm))
     }
 
     RikkaConfirmDialog(

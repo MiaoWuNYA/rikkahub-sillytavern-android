@@ -1,20 +1,25 @@
 package me.rerere.rikkahub.ui.hooks
 
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Shape
+import me.rerere.rikkahub.ui.context.LocalDisplaySettings
 import kotlin.math.roundToInt
 
 @Composable
 fun rememberAvatarShape(loading: Boolean): Shape {
+    // 主题里可切回圆形头像，此时不参与花瓣旋转动画
+    if (LocalDisplaySettings.current.circleAvatar) return CircleShape
+
     val infiniteTransition = rememberInfiniteTransition()
     val spin by infiniteTransition.animateFloat(
         initialValue = 0f,

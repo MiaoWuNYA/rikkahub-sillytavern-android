@@ -19,6 +19,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -33,6 +36,7 @@ import me.rerere.hugeicons.stroke.AiEditing
 import me.rerere.hugeicons.stroke.ArrowShrink
 import me.rerere.hugeicons.stroke.Brain02
 import me.rerere.hugeicons.stroke.BubbleChat
+import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.GlobalSearch
 import me.rerere.hugeicons.stroke.Image02
 import me.rerere.hugeicons.stroke.Megaphone01
@@ -42,6 +46,7 @@ import me.rerere.hugeicons.stroke.Translate
 import me.rerere.hugeicons.stroke.Zap
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
+import me.rerere.rikkahub.data.datastore.DEFAULT_AUTO_MODEL_ID
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.ui.components.ai.ModelField
 import me.rerere.rikkahub.ui.components.ai.ModelListSheet
@@ -57,6 +62,7 @@ import me.rerere.rikkahub.ui.components.ui.PagerTabs
 import me.rerere.rikkahub.ui.components.ui.switchItem
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.theme.CustomColors
+import me.rerere.ui.components.RikkaConfirmDialog
 import org.koin.androidx.compose.koinViewModel
 
 private enum class ModelSettingTab(
@@ -80,6 +86,7 @@ fun SettingModelPage(vm: SettingVM = koinViewModel()) {
     val pagerState = rememberPagerState { ModelSettingTab.entries.size }
 
     val navController = LocalNavController.current
+    var showBatchClearDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = CustomColors.topBarColors.containerColor,
@@ -89,6 +96,13 @@ fun SettingModelPage(vm: SettingVM = koinViewModel()) {
                 navigationIcon = { BackButton() },
                 actions = {
                     when (ModelSettingTab.entries[pagerState.currentPage]) {
+                        ModelSettingTab.MODEL -> IconButton(onClick = { showBatchClearDialog = true }) {
+                            Icon(
+                                imageVector = HugeIcons.Delete01,
+                                contentDescription = stringResource(R.string.setting_model_page_batch_clear),
+                            )
+                        }
+
                         ModelSettingTab.SEARCH -> AddSearchProviderButton { options ->
                             vm.updateSettings { it.copy(searchServices = listOf(options) + it.searchServices) }
                         }
@@ -181,6 +195,31 @@ fun SettingModelPage(vm: SettingVM = koinViewModel()) {
                 }
             }
         }
+    }
+
+    RikkaConfirmDialog(
+        show = showBatchClearDialog,
+        title = stringResource(R.string.setting_model_page_batch_clear),
+        confirmText = stringResource(R.string.delete),
+        dismissText = stringResource(R.string.cancel),
+        onConfirm = {
+            showBatchClearDialog = false
+            vm.updateSettings { latest ->
+                latest.copy(
+                    chatModelId = DEFAULT_AUTO_MODEL_ID,
+                    fastModelId = DEFAULT_AUTO_MODEL_ID,
+                    titleModelId = null,
+                    memoryModelId = null,
+                    translateModeId = DEFAULT_AUTO_MODEL_ID,
+                    ocrModelId = DEFAULT_AUTO_MODEL_ID,
+                    compressModelId = DEFAULT_AUTO_MODEL_ID,
+                    proactiveMessageModelId = null,
+                )
+            }
+        },
+        onDismiss = { showBatchClearDialog = false },
+    ) {
+        Text(stringResource(R.string.setting_model_page_batch_clear_desc))
     }
 }
 

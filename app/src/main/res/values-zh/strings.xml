@@ -35,9 +35,7 @@
   <string name="assistant_importer_download_failed">下载失败：%s</string>
   <string name="assistant_importer_downloading">下载中...</string>
   <string name="assistant_importer_file_too_large">文件过大（最大 %1$d MB）</string>
-  <string name="assistant_importer_import_chunshui">导入春水 AI 角色卡 (JSON)</string>
   <string name="assistant_importer_import_failed">导入失败</string>
-  <string name="assistant_importer_import_fengyue">导入风月 AI 角色卡 (JSON)</string>
   <string name="assistant_importer_import_from_url">从 URL 导入</string>
   <string name="assistant_importer_import_success">角色卡导入成功</string>
   <string name="assistant_importer_import_tavern_json">导入酒馆角色卡 (JSON)</string>
@@ -706,6 +704,8 @@
   <string name="huadeng_rolling_compression">上下文滚动压缩</string>
   <string name="huadeng_rolling_compression_desc">对话过长时自动将早期消息压缩为摘要以节省 token。需要角色卡详情 → 记忆 → 「上下文滚动压缩」同时开启才生效（新角色卡默认开启，旧角色卡需手动打开）；若遇到每轮都重复压缩或缓存失效，可尝试关闭</string>
   <string name="huadeng_section_integration">接入与自动化</string>
+  <string name="huadeng_conversation_prompt_binding">每个对话单独绑定世界书与预设</string>
+  <string name="huadeng_conversation_prompt_binding_desc">每个对话各自选择模式注入与世界书，不再跟随角色卡。关闭时仍按角色卡上的绑定生效</string>
   <string name="huadeng_system_prompt_escape">系统提示词转义</string>
   <string name="huadeng_system_prompt_escape_desc">将系统消息中的 &lt; &gt; 转为 HTML 实体，绕过中转站 WAF 安全策略拦截（如遇到 upstream_content_rejected 错误可开启）。一般不需要开启</string>
   <string name="huadeng_tavern_keep_tools">酒馆模式·保留工具</string>
@@ -1268,6 +1268,7 @@
   <string name="prompt_page_delay_until_recursion_level_desc">第 N 级递归扫描才检查；当前级无命中时逐级开放</string>
   <string name="prompt_page_delete">删除</string>
   <string name="prompt_page_description">描述</string>
+  <string name="prompt_page_disable_all">全部停用</string>
   <string name="prompt_page_disabled">已禁用</string>
   <string name="prompt_page_display_index">显示序号</string>
   <string name="prompt_page_display_position">显示位置</string>
@@ -1277,6 +1278,7 @@
   <string name="prompt_page_edit_mode_injection">编辑模式注入</string>
   <string name="prompt_page_embedded_lorebook">内嵌世界书</string>
   <string name="prompt_page_empty_hint">点击下方按钮添加</string>
+  <string name="prompt_page_enable_all">全部启用</string>
   <string name="prompt_page_enabled">已启用</string>
   <string name="prompt_page_entries_count_format">%d 条目</string>
   <string name="prompt_page_entries_format">条目（%d）</string>
@@ -1615,6 +1617,26 @@
   <string name="setting_display_page_amoled_dark_mode_title">AMOLED 暗色模式</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">思考完成自动折叠思考内容</string>
   <string name="setting_display_page_auto_collapse_thinking_title">自动折叠思考</string>
+  <string name="setting_display_page_circle_avatar_desc">头像改用圆形，不再显示旋转花瓣形状。</string>
+  <string name="setting_display_page_circle_avatar_title">圆形头像</string>
+  <string name="setting_display_page_hide_all_message_bar_desc">打开时把下面每个单项一起打开；关掉任意一个单项，这个总开关自动关闭。</string>
+  <string name="setting_display_page_hide_all_message_bar_title">隐藏全部功能栏</string>
+  <string name="setting_display_page_hide_message_branch_desc">隐藏消息下方的分支切换箭头。</string>
+  <string name="setting_display_page_hide_message_branch_title">隐藏分支切换</string>
+  <string name="setting_display_page_hide_message_copy_desc">隐藏消息下方的复制按钮。</string>
+  <string name="setting_display_page_hide_message_copy_title">隐藏复制</string>
+  <string name="setting_display_page_hide_message_impersonate_desc">隐藏消息下方的以用户身份回复按钮。</string>
+  <string name="setting_display_page_hide_message_impersonate_title">隐藏以用户身份回复</string>
+  <string name="setting_display_page_hide_message_more_desc">隐藏消息下方的更多选项按钮。</string>
+  <string name="setting_display_page_hide_message_more_title">隐藏更多选项</string>
+  <string name="setting_display_page_hide_message_regenerate_desc">隐藏消息下方的重新生成按钮。</string>
+  <string name="setting_display_page_hide_message_regenerate_title">隐藏重新生成</string>
+  <string name="setting_display_page_hide_message_time_desc">隐藏消息下方的时间。</string>
+  <string name="setting_display_page_hide_message_time_title">隐藏消息时间</string>
+  <string name="setting_display_page_hide_message_translate_desc">隐藏消息下方的翻译按钮。</string>
+  <string name="setting_display_page_hide_message_translate_title">隐藏翻译</string>
+  <string name="setting_display_page_hide_message_tts_desc">隐藏消息下方的朗读按钮。</string>
+  <string name="setting_display_page_hide_message_tts_title">隐藏朗读</string>
   <string name="setting_display_page_voice_listen_while_replying_title">语音模式回复时继续聆听</string>
   <string name="setting_display_page_voice_listen_while_replying_desc">模型回复期间说的话会加入队列，回复结束后自动发送。关闭后，回复（及朗读）结束前麦克风保持关闭，适合一问一答的对话</string>
   <string name="setting_display_page_auto_play_tts_desc">角色卡消息生成完成后自动播放TTS</string>
@@ -1891,6 +1913,8 @@
   <string name="setting_memory_title">记忆</string>
   <string name="setting_memory_unnamed_assistant">未命名角色卡</string>
   <string name="setting_memory_you">你</string>
+  <string name="setting_model_page_batch_clear">批量清除</string>
+  <string name="setting_model_page_batch_clear_desc">所有模型槽位恢复默认：聊天、快速、翻译、OCR、压缩跟随内置自动模型，标题、记忆、主动消息清空。提供商与其模型列表不受影响。</string>
   <string name="setting_model_page_chat_model">聊天模型</string>
   <string name="setting_model_page_chat_model_desc">全局默认的聊天模型</string>
   <string name="setting_model_page_ocr_model">OCR 模型</string>
@@ -1956,6 +1980,8 @@
   <string name="setting_page_tavern_desc">角色卡、世界书、扩展与兼容开关</string>
   <string name="setting_page_tavern_regex">消息正则</string>
   <string name="setting_page_tavern_regex_desc">集中查看、导入与编辑各角色卡的正则脚本</string>
+  <string name="setting_provider_page_clear_all_models">清除全部模型</string>
+  <string name="setting_provider_page_clear_all_models_confirm">这个提供商下的所有模型都会被移除，提供商与 API 设置保留。</string>
   <string name="tavern_regex_intro">正则分文件夹管理：全局正则对所有角色卡生效，手动导入/新建的落在「自定义」，导入酒馆预设时会按预设名自动建文件夹。角色卡自带的正则仍随卡保存。</string>
   <string name="tavern_regex_custom_folder">自定义</string>
   <string name="tavern_regex_preset_folder">预设</string>
@@ -3456,7 +3482,6 @@
   <string name="assistant_importer_label_worldbook">世界书</string>
   <string name="assistant_importer_label_history_instruction">历史后续指令</string>
   <string name="assistant_importer_label_depth_prompt">深度提示</string>
-  <string name="assistant_importer_label_fengyue_worldbook">风月世界书</string>
   <string name="life_tab_today">今日</string>
   <string name="life_tab_todo">待办</string>
   <string name="life_tab_ideas">灵感</string>
