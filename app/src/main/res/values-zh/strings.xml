@@ -1269,6 +1269,7 @@
   <string name="prompt_page_delete">删除</string>
   <string name="prompt_page_description">描述</string>
   <string name="prompt_page_disable_all">全部停用</string>
+  <string name="prompt_page_disable_all_entries">条目全部停用</string>
   <string name="prompt_page_disabled">已禁用</string>
   <string name="prompt_page_display_index">显示序号</string>
   <string name="prompt_page_display_position">显示位置</string>
@@ -1279,6 +1280,7 @@
   <string name="prompt_page_embedded_lorebook">内嵌世界书</string>
   <string name="prompt_page_empty_hint">点击下方按钮添加</string>
   <string name="prompt_page_enable_all">全部启用</string>
+  <string name="prompt_page_enable_all_entries">条目全部启用</string>
   <string name="prompt_page_enabled">已启用</string>
   <string name="prompt_page_entries_count_format">%d 条目</string>
   <string name="prompt_page_entries_format">条目（%d）</string>

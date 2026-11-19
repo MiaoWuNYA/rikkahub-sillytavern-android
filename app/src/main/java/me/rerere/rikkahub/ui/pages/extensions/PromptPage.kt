@@ -1186,14 +1186,6 @@ private fun LorebookTab(
                 IconButton(onClick = { importer.launch(arrayOf("*/*")) }) {
                     Icon(HugeIcons.FileImport, null)
                 }
-                if (currentLorebooks.isNotEmpty()) {
-                    IconButton(onClick = { onUpdate(currentLorebooks.map { it.copy(enabled = true) }) }) {
-                        Icon(HugeIcons.CheckmarkCircle02, stringResource(R.string.prompt_page_enable_all))
-                    }
-                    IconButton(onClick = { onUpdate(currentLorebooks.map { it.copy(enabled = false) }) }) {
-                        Icon(HugeIcons.CancelCircle, stringResource(R.string.prompt_page_disable_all))
-                    }
-                }
             },
         ) {
             Button(onClick = { editState.open(Lorebook()) }) {
@@ -1458,13 +1450,36 @@ private fun LorebookEditSheet(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         stringResource(R.string.prompt_page_entries_format, book.entries.size),
-                        style = MaterialTheme.typography.titleSmall
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.weight(1f)
                     )
+                    if (book.entries.isNotEmpty()) {
+                        IconButton(
+                            onClick = { onEdit(book.copy(entries = book.entries.map { it.copy(enabled = true) })) },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                HugeIcons.CheckmarkCircle02,
+                                stringResource(R.string.prompt_page_enable_all_entries),
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                        IconButton(
+                            onClick = { onEdit(book.copy(entries = book.entries.map { it.copy(enabled = false) })) },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                HugeIcons.CancelCircle,
+                                stringResource(R.string.prompt_page_disable_all_entries),
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
                     FilledTonalIconButton(onClick = {
                         entryEditState.open(PromptInjection.RegexInjection())
                     }) {

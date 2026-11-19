@@ -1274,6 +1274,7 @@
   <string name="prompt_page_delete">Delete</string>
   <string name="prompt_page_description">Description</string>
   <string name="prompt_page_disable_all">Disable all</string>
+  <string name="prompt_page_disable_all_entries">Disable all entries</string>
   <string name="prompt_page_disabled">Disabled</string>
   <string name="prompt_page_display_index">Display Index</string>
   <string name="prompt_page_display_position">Display Position</string>
@@ -1284,6 +1285,7 @@
   <string name="prompt_page_embedded_lorebook">Embedded Lorebook</string>
   <string name="prompt_page_empty_hint">Click the button below to add</string>
   <string name="prompt_page_enable_all">Enable all</string>
+  <string name="prompt_page_enable_all_entries">Enable all entries</string>
   <string name="prompt_page_enabled">Enabled</string>
   <string name="prompt_page_entries_count_format">%d entries</string>
   <string name="prompt_page_entries_format">Entries (%d)</string>
