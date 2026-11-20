@@ -372,6 +372,30 @@ private fun MemorySettingsTab(
                     },
                 )
             }
+            switchItem(
+                checked = assistant.cacheFriendlyRandomMacros,
+                onCheckedChange = {
+                    onUpdateAssistant(
+                        assistant.copy(
+                            cacheFriendlyRandomMacros = it
+                        )
+                    )
+                },
+                supportingContent = { Text(stringResource(R.string.assistant_page_cache_friendly_random_desc)) },
+                headlineContent = { Text(stringResource(R.string.assistant_page_cache_friendly_random)) },
+            )
+            switchItem(
+                checked = assistant.cacheFriendlyTimeMacros,
+                onCheckedChange = {
+                    onUpdateAssistant(
+                        assistant.copy(
+                            cacheFriendlyTimeMacros = it
+                        )
+                    )
+                },
+                supportingContent = { Text(stringResource(R.string.assistant_page_cache_friendly_time_desc)) },
+                headlineContent = { Text(stringResource(R.string.assistant_page_cache_friendly_time)) },
+            )
         }
     }
 }

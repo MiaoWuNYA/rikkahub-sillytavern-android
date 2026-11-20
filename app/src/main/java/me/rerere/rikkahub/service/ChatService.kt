@@ -38,6 +38,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -113,6 +115,7 @@ import me.rerere.rikkahub.data.ai.tools.createCoupleSpaceTools
 import me.rerere.rikkahub.data.ai.transformers.DocumentAsPromptTransformer
 import me.rerere.rikkahub.data.ai.transformers.OcrTransformer
 import me.rerere.rikkahub.data.ai.transformers.PlaceholderTransformer
+import me.rerere.rikkahub.data.ai.transformers.InputMessageTransformer
 import me.rerere.rikkahub.data.ai.transformers.PromptInjectionTransformer
 import me.rerere.rikkahub.data.ai.transformers.RegexOutputTransformer
 import me.rerere.rikkahub.data.ai.transformers.TemplateTransformer
@@ -134,6 +137,7 @@ import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.memory.CrossWindowMemoryStore
 import me.rerere.rikkahub.data.model.Conversation
+import me.rerere.rikkahub.data.ai.HITL_TOOL_NAMES
 import me.rerere.rikkahub.data.model.toMergedMessageNode
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantAffectScope
@@ -1635,30 +1639,6 @@ class ChatService(
                 }
             } else null
 
-            // ── 生活 / 情侣空间工具 ──
-            // 清爽简洁模式开启时不注册娱乐类工具
-            // 生活空间 6 个工具：助手开启“生活空间”开关时加入
-            val lifeCompanionTools = if (assistant.localTools.contains(LocalToolOption.LifeCompanion) &&
-                !settings.huadengSettings.enableCleanMode
-            ) {
-                runCatching {
-                    createLifeCompanionTools(context, coupleRepository, assistant.id.toString())
-                }.getOrDefault(emptyList())
-            } else emptyList()
-            // 情侣空间 4 个工具：助手开启“情侣空间”开关、非清爽模式，且情侣空间已绑定且绑定角色是当前助手时加入
-            val coupleSpaceTools = if (settings.huadengSettings.enableCleanMode ||
-                !assistant.localTools.contains(LocalToolOption.CoupleSpace)
-            ) {
-                emptyList()
-            } else runCatching {
-                val relationship = coupleRepository.relationship.first()
-                if (relationship != null && relationship.assistantId == assistant.id.toString()) {
-                    createCoupleSpaceTools(coupleRepository, relationship.assistantId)
-                } else {
-                    emptyList()
-                }
-            }.getOrDefault(emptyList())
-
             generationLoop.generateText(
                 conversationId = conversationId,
                 settings = settings,
@@ -1673,158 +1653,15 @@ class ChatService(
                 conversationLorebookIds = conversation.lorebookIds,
                 workspaceCwd = conversation.workspaceCwd,
                 memories = memoryRepository.getFiles(assistant.memoryId),
-                inputTransformers = buildList {
-                    // 酒馆模式对齐原版酒馆的上下文构成；必须 addAll 打底再删减，
-                    // 手写白名单会静默漏掉文档/占位符等基础转换器
-                    addAll(inputTransformers)
-                    // PromptInjection/AuthorsNote 已在基础列表里，再 add 一次会让世界书、
-                    // 注入文档、作者笔记在同一个请求里拼两遍（实测 B 文档出现两份）
-                    add(templateTransformer)
-                    // 预请求 MCP Hook：开关关闭时内部直接短路
-                    add(preRequestMcpHookTransformer)
-
-                    if (settings.huadengSettings.enableTavernMode) {
-                        // 用户手动上传的文档和写的占位符照常处理，只去掉自动注入类
-                        removeAll { it === OcrTransformer }
-                        removeAll { it === SkillAutoTriggerTransformer }
-                        removeAll { it === TimeReminderTransformer }
-                    } else {
-                        add(workspaceReminderTransformer)
-                        // 跨窗口生活流：注入到最新 user 消息之前（不进 system，保前缀缓存）
-                        if (assistant.enableCrossWindowMemory) {
-                            add(crossWindowMemoryTransformer)
-                        }
-                    }
-                },
+                inputTransformers = buildGenerationInputTransformers(assistant, settings),
                 outputTransformers = outputTransformers,
-                tools = buildList {
-                    // ── 酒馆模式：只保留最小可用工具面 ──
-                    // 实现见 buildTavernModeTools：插件工具保留（用户主动安装的能力，
-                    // 与 App 自带工作流性质不同），其余只留文件/搜索/抓取/计算器，
-                    // 且受「允许调用工具」开关控制。记忆、技能、MCP、任务、
-                    // 生活/情侣空间等一律不注册。
-                    if (settings.huadengSettings.enableTavernMode) {
-                        addAll(buildTavernModeTools(assistant, settings, useExternalWebSearch))
-                        return@buildList
-                    }
-                    // 记忆工具：会和记忆库内容一起进请求，缺了它模型只能说自己没有写记忆的工具
-                    if (assistant.enableMemory) {
-                        addAll(buildMemoryTools(memoryRepository, assistant.memoryId))
-                    }
-                    if (assistant.localTools.contains(LocalToolOption.FileTools)) {
-                        addAll(createFileTools(context = context))
-                    }
-                    if (useExternalWebSearch) {
-                        addAll(createSearchTools(settings))
-                    }
-                    if (assistant.enableRecentChatsReference) {
-                        addAll(createConversationTools(conversationRepo, assistant.id))
-                    }
-                    // 华灯：瞬态内容裁剪的配套取回工具——占位说明里带消息 ID，AI 按需取回原文。
-                    // 模型支持视觉时回灌真实图片，否则回灌 OCR 文本
-                    if (settings.huadengSettings.enableTransientContentPrune) {
-                        add(
-                            createHistoryMessageTool(
-                                conversationRepo = conversationRepo,
-                                conversationId = conversation.id,
-                                supportsImageInput = model.inputModalities.contains(Modality.IMAGE),
-                            )
-                        )
-                    }
-                    addAll(createWorkspaceToolsIfReady(assistant.workspaceId?.toString(), conversation.workspaceCwd))
-                    addAll(localTools.getTools(assistant.localTools))
-                    LazyToolGroups.register(localTools.getToolGroups(assistant.localTools))
-                    add(buildLoadToolsTool(conversation.id.toString()))
-                    if (assistant.localTools.contains(LocalToolOption.ShellTools)) {
-                        addAll(createShellTools())
-                    }
-                    if (assistant.localTools.contains(LocalToolOption.PythonEngine)) {
-                        add(
-                            createPythonTool(
-                                context = context,
-                                timeoutSec = assistant.toolExecTimeout,
-                                includeLibraryHints = settings.huadengSettings.enablePythonLibraryHints,
-                            )
-                        )
-                    }
-                    if (assistant.localTools.contains(LocalToolOption.DatabaseQuery)) {
-                        add(createDatabaseQueryTool(database))
-                    }
-                    if (assistant.localTools.contains(LocalToolOption.Calculator)) {
-                        add(createCalculatorTool(context))
-                    }
-                    if (settings.huadengSettings.jevJudgeTool) {
-                        add(createJudgeTool(jevClient))
-                    }
-                    if (assistant.localTools.contains(LocalToolOption.SubAgent)) {
-                        add(
-                            createSubAgentTool(
-                                hub = subAgentHub,
-                                scope = appScope,
-                                conversationId = conversationId.toString(),
-                                onFinished = ::onSubAgentRunFinished,
-                                generationLoop = generationLoop,
-                                settings = settings,
-                                assistant = assistant,
-                                model = model,
-                                memories = memoryRepository.getFiles(assistant.memoryId),
-                                inputTransformers = inputTransformers,
-                                outputTransformers = outputTransformers,
-                                localTools = localTools,
-                            )
-                        )
-                        add(createSubAgentCheckTool(subAgentHub, conversationId.toString()))
-                    }
-                    add(createWebFetchTool())
-                    if (assistant.localTools.contains(LocalToolOption.TaskTools)) {
-                        addAll(createTaskTools())
-                    }
-                    if (assistant.enabledSkills.isNotEmpty()) {
-                        addAll(
-                            createSkillTools(
-                                enabledSkills = assistant.enabledSkills,
-                                allSkills = skillManager.listSkills(),
-                                skillManager = skillManager,
-                            )
-                        )
-                    }
-                    // 生活空间 / 情侣空间工具
-                    addAll(lifeCompanionTools)
-                    addAll(coupleSpaceTools)
-                    // 插件工具（自动放行）
-                    addAll(pluginToolProvider.getTools())
-                    // 对齐上游：MCP 工具名带服务器名前缀，且校验服务器名（仅字母数字），非法名直接报错返回
-                    mcpManager.getAllAvailableTools(assistant).also { allTools ->
-                        val invalidNames = allTools
-                            .map { it.second }
-                            .distinct()
-                            .filter { name -> name.isEmpty() || !name.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' } }
-                        if (invalidNames.isNotEmpty()) {
-                            addError(
-                                error = IllegalStateException(
-                                    context.getString(
-                                        R.string.error_mcp_invalid_server_name,
-                                        invalidNames.joinToString(", ")
-                                    )
-                                ),
-                                conversationId = conversationId,
-                            )
-                            return
-                        }
-                    }.forEach { (serverId, serverName, tool) ->
-                        add(
-                            Tool(
-                                name = "mcp__${serverName}__${tool.name}",
-                                description = tool.description ?: "",
-                                parameters = { tool.inputSchema },
-                                needsApproval = { tool.needsApproval },
-                                execute = {
-                                    mcpManager.callTool(serverId, tool.name, it.jsonObject)
-                                },
-                            )
-                        )
-                    }
-                },
+                tools = buildGenerationTools(
+                    conversation = conversation,
+                    assistant = assistant,
+                    settings = settings,
+                    model = model,
+                    useExternalWebSearch = useExternalWebSearch,
+                ),
             ).onCompletion {
                 // 取消前台服务；通知由 ChatNotificationManager 通过 AppEventBus 消费
                 fgJob?.cancel()
@@ -1961,6 +1798,246 @@ class ChatService(
                 )
             )
         )
+    }
+
+    /**
+     * 生成路径共用的工具装配：聊天页与主动消息走同一份实现，
+     * 工具面对齐后请求前缀才有机会命中同一份缓存。
+     */
+    private suspend fun buildGenerationTools(
+        conversation: Conversation,
+        assistant: Assistant,
+        settings: Settings,
+        model: Model,
+        useExternalWebSearch: Boolean,
+        conversationId: Uuid = conversation.id,
+    ): List<Tool> {
+        // ── 生活 / 情侣空间工具 ──
+        // 清爽简洁模式开启时不注册娱乐类工具
+        // 生活空间 6 个工具：助手开启“生活空间”开关时加入
+        val lifeCompanionTools = if (assistant.localTools.contains(LocalToolOption.LifeCompanion) &&
+            !settings.huadengSettings.enableCleanMode
+        ) {
+            runCatching {
+                createLifeCompanionTools(context, coupleRepository, assistant.id.toString())
+            }.getOrDefault(emptyList())
+        } else emptyList()
+        // 情侣空间 4 个工具：助手开启“情侣空间”开关、非清爽模式，且情侣空间已绑定且绑定角色是当前助手时加入
+        val coupleSpaceTools = if (settings.huadengSettings.enableCleanMode ||
+            !assistant.localTools.contains(LocalToolOption.CoupleSpace)
+        ) {
+            emptyList()
+        } else runCatching {
+            val relationship = coupleRepository.relationship.first()
+            if (relationship != null && relationship.assistantId == assistant.id.toString()) {
+                createCoupleSpaceTools(coupleRepository, relationship.assistantId)
+            } else {
+                emptyList()
+            }
+        }.getOrDefault(emptyList())
+        return buildList {
+            // ── 酒馆模式：只保留最小可用工具面 ──
+            // 实现见 buildTavernModeTools：插件工具保留（用户主动安装的能力，
+            // 与 App 自带工作流性质不同），其余只留文件/搜索/抓取/计算器，
+            // 且受「允许调用工具」开关控制。记忆、技能、MCP、任务、
+            // 生活/情侣空间等一律不注册。
+            if (settings.huadengSettings.enableTavernMode) {
+                addAll(buildTavernModeTools(assistant, settings, useExternalWebSearch))
+                return@buildList
+            }
+            // 记忆工具：会和记忆库内容一起进请求，缺了它模型只能说自己没有写记忆的工具
+            if (assistant.enableMemory) {
+                addAll(buildMemoryTools(memoryRepository, assistant.memoryId))
+            }
+            if (assistant.localTools.contains(LocalToolOption.FileTools)) {
+                addAll(createFileTools(context = context))
+            }
+            if (useExternalWebSearch) {
+                addAll(createSearchTools(settings))
+            }
+            if (assistant.enableRecentChatsReference) {
+                addAll(createConversationTools(conversationRepo, assistant.id))
+            }
+            // 华灯：瞬态内容裁剪的配套取回工具——占位说明里带消息 ID，AI 按需取回原文。
+            // 模型支持视觉时回灌真实图片，否则回灌 OCR 文本
+            if (settings.huadengSettings.enableTransientContentPrune) {
+                add(
+                    createHistoryMessageTool(
+                        conversationRepo = conversationRepo,
+                        conversationId = conversation.id,
+                        supportsImageInput = model.inputModalities.contains(Modality.IMAGE),
+                    )
+                )
+            }
+            addAll(createWorkspaceToolsIfReady(assistant.workspaceId?.toString(), conversation.workspaceCwd))
+            addAll(localTools.getTools(assistant.localTools))
+            LazyToolGroups.register(localTools.getToolGroups(assistant.localTools))
+            add(buildLoadToolsTool(conversation.id.toString()))
+            if (assistant.localTools.contains(LocalToolOption.ShellTools)) {
+                addAll(createShellTools())
+            }
+            if (assistant.localTools.contains(LocalToolOption.PythonEngine)) {
+                add(
+                    createPythonTool(
+                        context = context,
+                        timeoutSec = assistant.toolExecTimeout,
+                        includeLibraryHints = settings.huadengSettings.enablePythonLibraryHints,
+                    )
+                )
+            }
+            if (assistant.localTools.contains(LocalToolOption.DatabaseQuery)) {
+                add(createDatabaseQueryTool(database))
+            }
+            if (assistant.localTools.contains(LocalToolOption.Calculator)) {
+                add(createCalculatorTool(context))
+            }
+            if (settings.huadengSettings.jevJudgeTool) {
+                add(createJudgeTool(jevClient))
+            }
+            if (assistant.localTools.contains(LocalToolOption.SubAgent)) {
+                add(
+                    createSubAgentTool(
+                        hub = subAgentHub,
+                        scope = appScope,
+                        conversationId = conversationId.toString(),
+                        onFinished = ::onSubAgentRunFinished,
+                        generationLoop = generationLoop,
+                        settings = settings,
+                        assistant = assistant,
+                        model = model,
+                        memories = memoryRepository.getFiles(assistant.memoryId),
+                        inputTransformers = inputTransformers,
+                        outputTransformers = outputTransformers,
+                        localTools = localTools,
+                    )
+                )
+                add(createSubAgentCheckTool(subAgentHub, conversationId.toString()))
+            }
+            add(createWebFetchTool())
+            if (assistant.localTools.contains(LocalToolOption.TaskTools)) {
+                addAll(createTaskTools())
+            }
+            if (assistant.enabledSkills.isNotEmpty()) {
+                addAll(
+                    createSkillTools(
+                        enabledSkills = assistant.enabledSkills,
+                        allSkills = skillManager.listSkills(),
+                        skillManager = skillManager,
+                    )
+                )
+            }
+            // 生活空间 / 情侣空间工具
+            addAll(lifeCompanionTools)
+            addAll(coupleSpaceTools)
+            // 插件工具（自动放行）
+            addAll(pluginToolProvider.getTools())
+            // 对齐上游：MCP 工具名带服务器名前缀，且校验服务器名（仅字母数字），非法名直接报错返回
+            mcpManager.getAllAvailableTools(assistant).also { allTools ->
+                val invalidNames = allTools
+                    .map { it.second }
+                    .distinct()
+                    .filter { name -> name.isEmpty() || !name.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' } }
+                if (invalidNames.isNotEmpty()) {
+                    addError(
+                        error = IllegalStateException(
+                            context.getString(
+                                R.string.error_mcp_invalid_server_name,
+                                invalidNames.joinToString(", ")
+                            )
+                        ),
+                        conversationId = conversationId,
+                    )
+                    return emptyList()
+                }
+            }.forEach { (serverId, serverName, tool) ->
+                add(
+                    Tool(
+                        name = "mcp__${serverName}__${tool.name}",
+                        description = tool.description ?: "",
+                        parameters = { tool.inputSchema },
+                        needsApproval = { tool.needsApproval },
+                        execute = {
+                            mcpManager.callTool(serverId, tool.name, it.jsonObject)
+                        },
+                    )
+                )
+            }
+        }
+    }
+
+    /**
+     * 主动消息生成：与前台聊天共用同一份装配（system、工具面、转换器、sessionId）。
+     *
+     * 前缀一致才能命中提示词缓存；变动的触发说明由调用方作为最后一条 user 消息追加。
+     * （主动消息跑在 WorkManager 里，不进入 session，所以只读不写。）
+     */
+    fun generateProactiveMessage(
+        conversation: Conversation,
+        messages: List<UIMessage>,
+        maxSteps: Int = 8,
+    ): Flow<GenerationChunk> {
+        return flow {
+            val settings = settingsStore.awaitLoaded()
+            val assistant = settings.getAssistantOf(conversation)
+            val model = settings.getChatModelOf(conversation)
+                ?: error("No chat model selected")
+            val useExternalWebSearch = shouldUseExternalWebSearch(assistant, model)
+            val tools = buildGenerationTools(
+                conversation = conversation,
+                assistant = assistant,
+                settings = settings,
+                model = model,
+                useExternalWebSearch = useExternalWebSearch,
+            ).filterNot { it.name in HITL_TOOL_NAMES }
+            emitAll(
+                generationLoop.generateText(
+                    conversationId = conversation.id,
+                    settings = settings,
+                    model = model,
+                    messages = messages,
+                    assistant = assistant,
+                    maxSteps = maxSteps,
+                    conversationSystemPrompt = conversation.customSystemPrompt,
+                    conversationModeInjectionIds = conversation.modeInjectionIds,
+                    conversationLorebookIds = conversation.lorebookIds,
+                    workspaceCwd = conversation.workspaceCwd,
+                    memories = memoryRepository.getFiles(assistant.memoryId),
+                    inputTransformers = buildGenerationInputTransformers(assistant, settings),
+                    outputTransformers = outputTransformers,
+                    tools = tools,
+                )
+            )
+        }
+    }
+
+    /**
+     * 生成路径共用的输入转换器装配（酒馆模式的裁剪口径也在这里，只此一份）。
+     */
+    private fun buildGenerationInputTransformers(
+        assistant: Assistant,
+        settings: Settings,
+    ): List<InputMessageTransformer> = buildList {
+        // 酒馆模式对齐原版酒馆的上下文构成；必须 addAll 打底再删减，
+        // 手写白名单会静默漏掉文档/占位符等基础转换器
+        addAll(inputTransformers)
+        // PromptInjection/AuthorsNote 已在基础列表里，再 add 一次会让世界书、
+        // 注入文档、作者笔记在同一个请求里拼两遍（实测 B 文档出现两份）
+        add(templateTransformer)
+        // 预请求 MCP Hook：开关关闭时内部直接短路
+        add(preRequestMcpHookTransformer)
+
+        if (settings.huadengSettings.enableTavernMode) {
+            // 用户手动上传的文档和写的占位符照常处理，只去掉自动注入类
+            removeAll { it === OcrTransformer }
+            removeAll { it === SkillAutoTriggerTransformer }
+            removeAll { it === TimeReminderTransformer }
+        } else {
+            add(workspaceReminderTransformer)
+            // 跨窗口生活流：注入到最新 user 消息之前（不进 system，保前缀缓存）
+            if (assistant.enableCrossWindowMemory) {
+                add(crossWindowMemoryTransformer)
+            }
+        }
     }
 
     private suspend fun finishInterruptedPendingTools(conversationId: Uuid) {

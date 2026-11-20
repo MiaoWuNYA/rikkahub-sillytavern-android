@@ -8,58 +8,28 @@ import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonObject
 import me.rerere.ai.core.MessageRole
-import me.rerere.ai.core.Tool
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.Provider
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.ai.provider.ProviderManager
-import me.rerere.ai.provider.TextGenerationParams
-import me.rerere.ai.ui.StreamChunkHandler
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.ui.ToolApprovalState
 import me.rerere.ai.ui.canResumeToolExecution
 import me.rerere.rikkahub.CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID
-import me.rerere.rikkahub.R
 import me.rerere.rikkahub.RouteActivity
-import me.rerere.rikkahub.data.ai.transformers.DocumentAsPromptTransformer
-import me.rerere.rikkahub.data.ai.transformers.OcrTransformer
-import me.rerere.rikkahub.data.ai.transformers.PlaceholderTransformer
-import me.rerere.rikkahub.data.ai.transformers.PromptInjectionTransformer
-import me.rerere.rikkahub.data.ai.transformers.TemplateTransformer
-import me.rerere.rikkahub.data.ai.transformers.TimeReminderTransformer
-import me.rerere.rikkahub.data.ai.transformers.ThinkTagTransformer
-import me.rerere.rikkahub.data.ai.transformers.transforms
-import me.rerere.rikkahub.data.ai.mcp.McpManager
-import me.rerere.rikkahub.data.ai.tools.LocalTools
+import me.rerere.rikkahub.data.ai.GenerationChunk
 import me.rerere.rikkahub.data.datastore.ProactiveMessageSetting
-import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.findModelById
 import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.toMessageNode
 import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.data.repository.MemoryRepository
-import me.rerere.rikkahub.data.repository.memoryId
 import me.rerere.rikkahub.service.ChatService
 import me.rerere.rikkahub.utils.sendNotification
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.coroutines.cancellation.CancellationException
-import kotlin.coroutines.coroutineContext
 import kotlin.uuid.Uuid
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -90,12 +60,6 @@ class ProactiveMessageRunner(
 ) : KoinComponent {
     private val settingsStore: SettingsStore by inject()
     private val conversationRepository: ConversationRepository by inject()
-    private val memoryRepository: MemoryRepository by inject()
-    private val providerManager: ProviderManager by inject()
-    private val templateTransformer: TemplateTransformer by inject()
-    private val localTools: LocalTools by inject()
-    private val mcpManager: McpManager by inject()
-    private val json: Json by inject()
 
     // 惰性解析：ChatService 构造时会注册 ProcessLifecycleOwner 观察者，
     // 首次解析必须在主线程完成（本服务由闹钟/WorkManager 在后台线程拉起，直接注入会崩溃）。
@@ -152,24 +116,6 @@ class ProactiveMessageRunner(
 
         // 判定沉默时忽略的标记与标点：正文里顺口提到 [PASS] 不该算作放弃
         private val MARKER_NOISE_REGEX = Regex("[\\s\\p{Punct}。，、！？；：…—－“”‘’（）【】《》]+")
-    }
-
-    // 输入转换器（与 ChatService 保持一致的子集）
-    private val inputTransformers by lazy {
-        listOf(
-            TimeReminderTransformer,
-            PromptInjectionTransformer,
-            PlaceholderTransformer,
-            DocumentAsPromptTransformer,
-            OcrTransformer,
-        )
-    }
-
-    // 输出转换器（与 ChatService 保持一致的子集）
-    private val outputTransformers by lazy {
-        listOf(
-            ThinkTagTransformer,
-        )
     }
 
     /**
@@ -277,6 +223,18 @@ class ProactiveMessageRunner(
                     ProactiveMessageService.scheduleNext(appContext, proactiveSetting)
                     return false
                 }
+                // 供应商可能已被删除或改名；提前查一次，否则后台只能看到一个笼统的异常
+                if (model.findProvider(settings.providers) == null) {
+                    Log.e(TAG, "No provider found for model ${model.modelId}")
+                    ProactiveMessageLog.log(
+                        appContext, ProactiveMessageLog.Outcome.FAILED, "供应商检查",
+                        "模型「${model.modelId}」找不到对应的供应商配置，" +
+                            "可能是该供应商已被删除或改名。",
+                    )
+                    markAttempt(appContext)
+                    ProactiveMessageService.scheduleNext(appContext, proactiveSetting)
+                    return false
+                }
 
                 // 找到目标对话：优先设置里指定的固定对话，没有就退回该助手最近的对话。
                 // 主动消息会写进这个对话的历史，指定错误等于污染别处，所以由用户决定。
@@ -356,107 +314,49 @@ class ProactiveMessageRunner(
                     assistantUuid,
                 )
 
-                // 获取历史消息（先过滤掉悬空的工具调用消息，避免 tool_use 结构不完整触发 400）
-                val historyMessages = filterInvalidToolMessages(
-                    conversation.currentMessages.let {
-                        if (assistant.contextMessageLimit > 0) {
-                            it.takeLast(assistant.contextMessageLimit)
-                        } else it
-                    }
-                )
-
-                // 系统提示词只放稳定内容（人设 + 记忆），保证前缀缓存命中
-                val systemPrompt = buildSystemPrompt(assistant = assistant)
-
-                // 每次都变的触发说明与上下文追加到最末尾，不破坏前缀
-                val userMessage = UIMessage(
+                // 触发说明作为最后一条 user 消息追加；历史、系统提示词与工具面全部交给 ChatService
+                // 的共用装配，请求前缀才与前台聊天一致，前缀缓存才命得中。
+                val triggerMessage = UIMessage(
                     role = MessageRole.USER,
                     parts = listOf(UIMessagePart.Text(buildTriggerPrompt(idleMinutes, contextStr)))
                 )
+                // 不做 takeLast 硬滑窗：交给 GenerationLoop 的 limitContext 滞回裁剪，裁剪点才与前台相同
+                val requestMessages = filterInvalidToolMessages(conversation.currentMessages) + triggerMessage
 
-                // 应用输入转换器
-                val processedUserMessage = listOf(userMessage).transforms(
-                    transformers = inputTransformers + templateTransformer,
-                    context = appContext,
-                    model = model,
-                    assistant = assistant,
-                    settings = settings,
-                ).first()
-
-                // 组合完整消息列表：System + History + User，合并相邻同角色消息避免 API 400
-                val messages = mergeAdjacentSameRoleMessages(
-                    buildList {
-                        add(UIMessage(
-                            role = MessageRole.SYSTEM,
-                            parts = listOf(UIMessagePart.Text(systemPrompt))
-                        ))
-                        addAll(historyMessages)
-                        add(processedUserMessage)
+                var aiMessage: UIMessage? = null
+                chatService.generateProactiveMessage(
+                    conversation = conversation,
+                    messages = requestMessages,
+                    maxSteps = MAX_TOOL_STEPS,
+                ).collect { chunk ->
+                    when (chunk) {
+                        is GenerationChunk.Messages -> {
+                            val last = chunk.messages.lastOrNull()
+                            if (last != null && last.role == MessageRole.ASSISTANT) {
+                                aiMessage = last
+                                updateOrAppendAiMessage(last)
+                            }
+                        }
                     }
-                )
-
-                val providerSetting = model.findProvider(settings.providers)
-                if (providerSetting == null) {
-                    Log.e(TAG, "No provider found for proactive message")
-                    ProactiveMessageLog.log(
-                        appContext, ProactiveMessageLog.Outcome.FAILED, "供应商检查",
-                        "模型「${model.modelId}」找不到对应的供应商配置，" +
-                            "可能是该供应商已被删除或改名。",
-                    )
-                    return false
                 }
-                val providerImpl = providerManager.getProviderByType(providerSetting)
 
-                // 构建工具列表（主动消息场景精简版：本地工具 + MCP 工具）
-                val tools = buildTools(settings, assistant, model)
-
-                val params = TextGenerationParams(
-                    model = model,
-                    temperature = assistant.temperature,
-                    topP = assistant.topP,
-                    topK = assistant.topK,
-                    maxTokens = assistant.maxTokens,
-                    tools = tools,
-                    reasoningLevel = assistant.reasoningLevel,
-                    customHeaders = assistant.customHeaders + model.customHeaders,
-                    customBody = assistant.customBodies + model.customBodies,
-                )
-
-                Log.d(
-                    TAG,
-                    "Calling AI API for proactive message with ${historyMessages.size} history messages, " +
-                        "${tools.size} tools (model=${model.modelId})"
-                )
-
-                // 执行生成，支持工具调用（流式写入会话）
-                val (finalMessages, hasJumpFlag) = generateWithTools(
-                    conversationId = conversationId,
-                    providerImpl = providerImpl,
-                    providerSetting = providerSetting,
-                    initialMessages = messages,
-                    params = params,
-                    tools = tools,
-                    model = model,
-                    assistant = assistant,
-                    settings = settings,
-                )
-
-                // 提取 AI 消息
-                val aiMessage = finalMessages.lastOrNull()
+                val finalAiMessage = aiMessage
                     ?: UIMessage(role = MessageRole.ASSISTANT, parts = emptyList())
 
                 // 解析 [JUMP] 标记
-                val rawText = aiMessage.parts.filterIsInstance<UIMessagePart.Text>()
+                val rawText = finalAiMessage.parts.filterIsInstance<UIMessagePart.Text>()
                     .joinToString("\n") { it.text }.trim()
+                val hasJumpFlag = rawText.contains("[JUMP]", ignoreCase = true)
+
                 val replyText = rawText.replace("\\[JUMP]".toRegex(RegexOption.IGNORE_CASE), "").trim()
                 val shouldJump = hasJumpFlag &&
                     proactiveSetting.allowForceJump &&
                     idleMinutes >= proactiveSetting.jumpIdleThresholdMinutes
 
-                // 若移除了标记，同步更新 session 里 aiMessage 的文本 parts
+                // 去掉标记后的正文写回本地节点；标记只用于跳转，不该留在聊天记录里
                 if (rawText != replyText) {
-                    val cleanedAiMessage = aiMessage.copy(
-                        parts = aiMessage.parts.map { part ->
+                    val cleanedAiMessage = finalAiMessage.copy(
+                        parts = finalAiMessage.parts.map { part ->
                             if (part is UIMessagePart.Text) {
                                 UIMessagePart.Text(part.text.replace("\\[JUMP]".toRegex(RegexOption.IGNORE_CASE), "").trim())
                             } else {
@@ -472,7 +372,7 @@ class ProactiveMessageRunner(
                 if (replyText.isBlank() || isPassReply(rawText)) {
                     // AI 选择跳过，移除本次生成的 aiMessage node（基于 id 匹配，不误删历史）
                     Log.d(TAG, "AI chose to skip proactive message")
-                    val aiId = aiMessage.id
+                    val aiId = finalAiMessage.id
                     // AI 选择沉默：把本次追加的 AI 节点从**本地维护的列表**里去掉。
                     // 因为整个生成过程都在内存里进行（见 generateWithTools 的注释），
                     // 这里连数据库都不用碰——直接把节点从本轮的 messageNodes 里删掉即可。
@@ -654,31 +554,6 @@ class ProactiveMessageRunner(
     }
 
     /**
-     * 构建系统提示词：只放助手人设 + 记忆，逐字稳定以命中前缀缓存。
-     */
-    private suspend fun buildSystemPrompt(assistant: Assistant): String {
-        return buildString {
-            if (assistant.systemPrompt.isNotBlank()) {
-                append(assistant.systemPrompt)
-            }
-
-            // 记忆
-            if (assistant.enableMemory) {
-                val memories = memoryRepository.getFiles(assistant.memoryId)
-                if (memories.isNotEmpty()) {
-                    appendLine()
-                    appendLine()
-                    appendLine("## 记忆")
-                    memories.forEach { memory ->
-                        appendLine("- ${memory.content}")
-                    }
-                }
-            }
-
-        }
-    }
-
-    /**
      * 构建当轮触发提示：时间、上下文等每次都变的内容只出现在最后一条 user 消息里。
      */
     private fun buildTriggerPrompt(idleMinutes: Int, context: String): String {
@@ -801,32 +676,6 @@ class ProactiveMessageRunner(
     }
 
     /**
-     * 构建工具列表（主动消息场景精简版）：本地工具 + MCP 工具。
-     * 不加载搜索/Skill 工具，避免工具过多导致请求体过大触发 API 400。
-     */
-    private suspend fun buildTools(settings: Settings, assistant: Assistant, model: Model): List<Tool> {
-        return buildList {
-            // 本地工具（助手已启用的）
-            addAll(localTools.getTools(assistant.localTools))
-
-            // MCP 工具：对齐 ChatService，工具名带服务器名前缀
-            mcpManager.getAllAvailableTools(assistant).forEach { (serverId, serverName, tool) ->
-                add(
-                    Tool(
-                        name = "mcp__${serverName}__${tool.name}",
-                        description = tool.description ?: "",
-                        parameters = { tool.inputSchema },
-                        needsApproval = { tool.needsApproval },
-                        execute = {
-                            mcpManager.callTool(serverId, tool.name, it.jsonObject)
-                        },
-                    )
-                )
-            }
-        }
-    }
-
-    /**
      * 基于 AI 消息 id 在对话里就地更新（保留 MessageNode.id，避免 Compose 重建/状态丢失）
      * 或追加新 node。synchronized(session) 保护 read-modify-write，防止并发覆盖。
      */
@@ -908,168 +757,6 @@ class ProactiveMessageRunner(
             .replace(Regex("\\[PASS]", RegexOption.IGNORE_CASE), "")
             .replace(MARKER_NOISE_REGEX, "")
         return stripped.isEmpty()
-    }
-
-    /**
-     * 合并相邻同角色消息（ASSISTANT-ASSISTANT / USER-USER 都要合并），
-     * 避免相邻同角色消息触发 Anthropic 等 API 的 400 错误。
-     */
-    private fun mergeAdjacentSameRoleMessages(messages: List<UIMessage>): List<UIMessage> {
-        if (messages.size < 2) return messages
-        return messages.fold(emptyList()) { acc, msg ->
-            val prev = acc.lastOrNull()
-            if (prev != null && prev.role == msg.role) {
-                acc.dropLast(1) + prev.copy(parts = prev.parts + msg.parts)
-            } else {
-                acc + msg
-            }
-        }
-    }
-
-    /**
-     * 生成消息，支持工具调用。流式写入会话（打开的聊天界面可实时看到）。
-     * 返回最终消息列表和 AI 原始输出是否含 [JUMP] 标记。
-     */
-    private suspend fun generateWithTools(
-        conversationId: Uuid,
-        providerImpl: Provider<ProviderSetting>,
-        providerSetting: ProviderSetting,
-        initialMessages: List<UIMessage>,
-        params: TextGenerationParams,
-        tools: List<Tool>,
-        model: Model,
-        assistant: Assistant,
-        settings: Settings,
-    ): Pair<List<UIMessage>, Boolean> {
-        var messages = initialMessages.toMutableList()
-        var hasJumpFlag = false // AI 原始输出是否含 [JUMP] 标记（在输出转换器处理前检测）
-
-        for (step in 0 until MAX_TOOL_STEPS) {
-            Log.d(TAG, "generateWithTools: step $step/$MAX_TOOL_STEPS")
-
-            // 防御性：每轮调用前合并相邻同角色消息，避免多步工具调用产生相邻 assistant 消息触发 400
-            messages = mergeAdjacentSameRoleMessages(messages).toMutableList()
-
-            // 流式调用 AI
-            var streamMessages = messages.toList()
-            val chunkHandler = StreamChunkHandler(model)
-            providerImpl.streamText(
-                providerSetting = providerSetting,
-                messages = messages,
-                params = params
-            ).collect { chunk ->
-                streamMessages = chunkHandler.handle(streamMessages, chunk)
-
-                // 实时更新 session 状态，让打开的聊天界面能看到消息生成
-                val currentAiMessage = streamMessages.lastOrNull { it.role == MessageRole.ASSISTANT }
-                if (currentAiMessage != null) {
-                    // 用 id 匹配就地更新（保留 node id，避免覆盖上一条 assistant）
-                    updateOrAppendAiMessage(currentAiMessage)
-                }
-            }
-
-            // 流式结束，更新 messages
-            messages = streamMessages.toMutableList()
-            val aiMessage = streamMessages.lastOrNull() ?: run {
-                Log.w(TAG, "No message in AI response")
-                break
-            }
-
-            // 在输出转换器处理前，检测 AI 原始输出是否含 [JUMP] 标记
-            val rawAiText = aiMessage.parts.filterIsInstance<UIMessagePart.Text>().joinToString("\n") { it.text }
-            if (rawAiText.contains("[JUMP]")) {
-                hasJumpFlag = true
-                Log.d(TAG, "[JUMP] flag detected in raw AI output")
-            }
-            // 应用输出转换器
-            val processedMessage = listOf(aiMessage).transforms(
-                transformers = outputTransformers,
-                context = appContext,
-                model = model,
-                assistant = assistant,
-                settings = settings,
-            ).first()
-            messages[messages.lastIndex] = processedMessage
-
-            // 检查是否有工具调用
-            val toolCalls = processedMessage.getTools().filter { !it.isExecuted }
-
-            if (toolCalls.isEmpty()) {
-                // 没有工具调用，生成完成
-                // 设置 Reasoning 的 finishedAt，否则 UI 会一直显示"思考中"
-                val now = kotlin.time.Clock.System.now()
-                val finalMessage = processedMessage.copy(
-                    parts = processedMessage.parts.map { part ->
-                        if (part is UIMessagePart.Reasoning && part.finishedAt == null) {
-                            part.copy(finishedAt = now)
-                        } else {
-                            part
-                        }
-                    }
-                )
-                messages[messages.lastIndex] = finalMessage
-                // 最终更新 session 状态（用 id 匹配就地更新）
-                updateOrAppendAiMessage(finalMessage)
-                break
-            }
-
-            Log.d(TAG, "Tool calls detected: ${toolCalls.size}")
-
-            // 执行工具（后台模式下自动执行；需要审批的工具自动拒绝）
-            val executedTools = mutableListOf<UIMessagePart.Tool>()
-            for (toolCall in toolCalls) {
-                val toolDef = tools.find { it.name == toolCall.toolName }
-                if (toolDef == null) {
-                    Log.w(TAG, "Tool ${toolCall.toolName} not found")
-                    executedTools.add(toolCall.copy(
-                        output = listOf(UIMessagePart.Text("""{"error":"Tool not found"}"""))
-                    ))
-                    continue
-                }
-
-                // toolCall.input 可能因为流式截断而是不完整的 JSON, 回退为空对象
-                val args = try {
-                    json.parseToJsonElement(toolCall.input.ifBlank { "{}" })
-                } catch (e: Exception) {
-                    Log.w(TAG, "Tool ${toolCall.toolName} input JSON is incomplete, falling back to empty object")
-                    JsonObject(emptyMap())
-                }
-
-                if (toolDef.needsApproval(args)) {
-                    // 后台模式下，需要审批的工具自动拒绝
-                    Log.w(TAG, "Tool ${toolCall.toolName} needs approval, auto-denying in proactive mode")
-                    executedTools.add(toolCall.copy(
-                        output = listOf(UIMessagePart.Text("""{"error":"Tool execution denied: requires user approval in proactive mode"}""")),
-                        approvalState = ToolApprovalState.Denied("Proactive mode: requires approval")
-                    ))
-                } else {
-                    try {
-                        val result = toolDef.execute(args)
-                        executedTools.add(toolCall.copy(output = result))
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Tool execution failed: ${toolCall.toolName}", e)
-                        executedTools.add(toolCall.copy(
-                            output = listOf(UIMessagePart.Text("""{"error":"${e.message}"}"""))
-                        ))
-                    }
-                }
-            }
-
-            // 更新消息中的工具状态
-            val updatedParts = processedMessage.parts.map { part ->
-                if (part is UIMessagePart.Tool) {
-                    executedTools.find { it.toolCallId == part.toolCallId } ?: part
-                } else {
-                    part
-                }
-            }
-            val updatedMessage = processedMessage.copy(parts = updatedParts)
-            messages[messages.lastIndex] = updatedMessage
-            // 更新 session 状态（带工具结果的消息，用 id 匹配就地更新）
-            updateOrAppendAiMessage(updatedMessage)
-        }
-
-        return messages to hasJumpFlag
     }
 
 }

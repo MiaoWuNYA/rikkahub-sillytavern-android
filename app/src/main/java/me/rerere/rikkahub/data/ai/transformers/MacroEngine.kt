@@ -860,12 +860,14 @@ class MacroEngine(
     }
 
     /**
-     * 稳定随机种子：同一对话 + 同一消息内容 + 同一位置 → 同一结果。
+     * 稳定随机种子：同一对话 + 同一回合 + 同一消息内容 + 同一位置 → 同一结果。
+     * 回合维度来自本轮冻结快照，因此常驻提示词里的骰子每回合换值、回合内各步稳定。
      * /reroll-pick 修改本对话保留变量 __pick_reroll_seed，从而让所有随机宏换一批结果。
      */
     private fun stableSeed(state: EvalState, macro: String): Long {
         val rerollSeed = vars.get(state.ctx.conversationId?.toString(), "__pick_reroll_seed")?.toLongOrNull() ?: 0L
-        val seed = "${state.ctx.conversationId ?: "global"}|$rerollSeed|${state.contentHash}|${state.position}|$macro"
+        val turn = state.ctx.turnFrozen?.frozenLastIndex ?: -1
+        val seed = "${state.ctx.conversationId ?: "global"}|$rerollSeed|${state.contentHash}|${state.position}|$turn|$macro"
         state.position++
         val hash = MessageDigest.getInstance("MD5").digest(seed.toByteArray())
         return ((hash[0].toLong() and 0xff) shl 56) or
@@ -883,12 +885,13 @@ class MacroEngine(
 
     /**
      * 旧单花括号 {random} 的缓存友好取值：与 {{random}} 对齐，
-     * 种子 = 对话 + 重掷种子 + 整段文本 hash + 出现序号。
+     * 种子 = 对话 + 回合 + 重掷种子 + 整段文本 hash + 出现序号。
      * 同一条消息每步/每轮渲染结果一致，不打断前缀缓存。
      */
     private fun legacyStableRandom(ctx: PlaceholderCtx, text: String, occurrence: Int): String {
         val rerollSeed = vars.get(ctx.conversationId?.toString(), "__pick_reroll_seed")?.toLongOrNull() ?: 0L
-        val seed = "${ctx.conversationId ?: "global"}|$rerollSeed|${text.hashCode()}|$occurrence|legacy_random"
+        val turn = ctx.turnFrozen?.frozenLastIndex ?: -1
+        val seed = "${ctx.conversationId ?: "global"}|$rerollSeed|${text.hashCode()}|$occurrence|$turn|legacy_random"
         val hash = MessageDigest.getInstance("MD5").digest(seed.toByteArray())
         val value = ((hash[0].toLong() and 0xff) shl 24) or
             ((hash[1].toLong() and 0xff) shl 16) or
