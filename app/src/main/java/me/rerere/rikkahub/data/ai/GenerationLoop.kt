@@ -149,6 +149,8 @@ class GenerationLoop(
         workspaceCwd: String? = null,
         generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
         maxTokensOverride: Int? = null,
+        // 后台生成（主动消息）：没有界面等用户回答，HITL 工具不挂起而是直接判为拒绝
+        headless: Boolean = false,
     ): Flow<GenerationChunk> = flow {
         val provider = model.findProvider(settings.providers) ?: error("Provider not found")
         val providerImpl = providerManager.getProviderByType(provider)
@@ -262,7 +264,12 @@ class GenerationLoop(
             add("❌ Do NOT fabricate results — if a tool fails, say so")
             if (hasShell) add("❌ Do NOT use shell when a dedicated tool exists")
             if (hasPython && hasCalculator) add("❌ Do NOT use execute_python for math (use calculator)")
-            if (hasTool("ask_user")) add("✅ If you need user input, use ask_user directly")
+            // 注意：这里不要再按「某个工具是否存在」拼提示行。
+            // 主动消息会剔除 HITL 工具（见 ChatService.generateProactiveMessage 的
+            // filterNot { it.name in HITL_TOOL_NAMES }），若此处随工具出现/消失而变化，
+            // 系统提示词就会在中间某一点分叉，把后面全部历史挤出上游前缀缓存
+            // （实测：公共前缀只剩 1207 token / 全文 ~25000 token）。
+            // ask_user 的用途由工具自身 description 说明，系统提示词不需要重复。
         }
         val assemblerContext = me.rerere.rikkahub.data.ai.prompts.PromptContext(
             identitySection = mainIdentity,
@@ -290,9 +297,16 @@ class GenerationLoop(
             append(system)
             // 酒馆模式：工具的 systemPrompt 段全部不发，工具仍有 JSON schema 可用
             if (!tavernMode) {
+                // 只拼接真正有内容的工具说明。
+                // 原写法对每个工具都先 appendLine()，工具返回空说明时就会留下一个纯空行——
+                // 空行数量随工具个数变化，工具集一变（如主动消息剔除 ask_user）系统提示词
+                // 就从这里分叉，把后面的全部历史挤出前缀缓存。
                 tools.forEach { tool ->
-                    appendLine()
-                    append(tool.systemPrompt(model, messages))
+                    val toolPrompt = tool.systemPrompt(model, messages)
+                    if (toolPrompt.isNotBlank()) {
+                        appendLine()
+                        append(toolPrompt)
+                    }
                 }
             }
         }
@@ -536,6 +550,15 @@ class GenerationLoop(
                 val updatedTools = uniqueTools.map { tool ->
                     val toolDef = statusTrackedTools.find { it.name == tool.toolName }
                     when {
+                        // 后台生成没有界面可以回答：HITL 工具直接拒掉并回一条理由，
+                        // 让模型自己继续，而不是把整轮挂死。
+                        // 注意必须放在 mustWaitForUser 之前，否则会先被判成 Pending 卡住。
+                        headless && tool.toolName in HITL_TOOL_NAMES -> tool.copy(
+                            approvalState = ToolApprovalState.Denied(
+                                "当前为后台自动生成，用户不在线，无法回答问题。" +
+                                    "请直接根据已有信息继续，不要等待用户确认。"
+                            )
+                        )
                         // HITL 工具（ask_user）必须等用户回答：优先于"自动批准"判定，
                         // 否则自动批准会把它当普通工具放行，问答流被打断
                         mustWaitForUser(tool.toolName, tool.approvalState) -> {
@@ -766,9 +789,16 @@ class GenerationLoop(
             // tavernMode 判断的，这里此前漏了，导致走 fallback 路径时酒馆模式
             // 仍会把全部工具的系统提示词拼进 system，纯净请求不成立。
             if (!tavernMode) {
+                // 只拼接真正有内容的工具说明。
+                // 原写法对每个工具都先 appendLine()，工具返回空说明时就会留下一个纯空行——
+                // 空行数量随工具个数变化，工具集一变（如主动消息剔除 ask_user）系统提示词
+                // 就从这里分叉，把后面的全部历史挤出前缀缓存。
                 tools.forEach { tool ->
-                    appendLine()
-                    append(tool.systemPrompt(model, messages))
+                    val toolPrompt = tool.systemPrompt(model, messages)
+                    if (toolPrompt.isNotBlank()) {
+                        appendLine()
+                        append(toolPrompt)
+                    }
                 }
             }
             }
