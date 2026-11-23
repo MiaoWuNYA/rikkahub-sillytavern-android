@@ -315,7 +315,7 @@ private const val COLLAPSED_VISIBLE_STEPS = 2
 
 @OptIn(FlowPreview::class)
 @Composable
-private fun MessagePartsBlock(
+internal fun MessagePartsBlock(
     assistant: Assistant?,
     extraModeInjectionIds: Set<Uuid> = emptySet(),
     messageDepth: Int,
@@ -369,7 +369,16 @@ private fun MessagePartsBlock(
     }
 
     // Render parts in original order (group thinking/tool as chain-of-thought)
-    val groupedParts = remember(parts) { parts.groupMessageParts() }
+    val thoughtSettings = settings.displaySetting.customThought
+    // 独立于原生思考块的挂载位置，隐藏原生窗时不会重置民用窗的折叠状态。
+    val customThoughtExpanded = remember { mutableStateOf(false) }
+    val groupedParts = remember(parts, settings.displaySetting.hideNativeReasoning, thoughtSettings, role) {
+        parts.groupMessageParts(
+            hideNativeReasoning = settings.displaySetting.hideNativeReasoning,
+            customThought = if (role == MessageRole.ASSISTANT) thoughtSettings
+                else me.rerere.rikkahub.data.model.CustomThoughtSettings(),
+        )
+    }
 
     // 三源合并的 ST 正则（全局 + 预设内嵌 + 卡内嵌）：显示层在此统一收口
     val stRegexScripts = remember(
@@ -389,6 +398,9 @@ private fun MessagePartsBlock(
     }
     groupedParts.fastForEach { block ->
         when (block) {
+            is MessagePartBlock.CustomThoughtBlock -> key("custom-thought", block.index) {
+                CustomThoughtCard(text = block.text, loading = loading, expandedState = customThoughtExpanded)
+            }
             is MessagePartBlock.ThinkingBlock -> {
                 if (block.steps.isNotEmpty()) {
                     val isReasoningOnlyBlock = block.steps.fastAll { it is ThinkingStep.ReasoningStep }
@@ -962,8 +974,9 @@ private fun displayStRegexedText(
     loading: Boolean,
 ): String {
     // 流式期间整条重算会卡，生成结束后再一次性生效
-    if (loading) return raw
-    return rememberStRegexedText(
+    val thoughtSettings = LocalSettings.current.displaySetting.customThought
+    if (loading) return me.rerere.rikkahub.data.ai.visibleThoughtTags(raw, thoughtSettings)
+    val rendered = rememberStRegexedText(
         text = raw,
         scripts = scripts,
         assistant = assistant,
@@ -973,4 +986,5 @@ private fun displayStRegexedText(
         userName = userName,
         conversationId = TavernRuntimeManager.activeConversationId,
     )
+    return me.rerere.rikkahub.data.ai.visibleThoughtTags(rendered, thoughtSettings)
 }

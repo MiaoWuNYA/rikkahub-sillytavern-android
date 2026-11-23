@@ -563,6 +563,9 @@ private fun ExportedChatMessage(
         ) {
             groupedParts.forEach { block ->
                 when (block) {
+                    is MessagePartBlock.CustomThoughtBlock -> {
+                        me.rerere.rikkahub.ui.components.message.CustomThoughtCard(block.text)
+                    }
                     is MessagePartBlock.ThinkingBlock -> {
                         if (block.steps.isNotEmpty()) {
                             ChainOfThought(
