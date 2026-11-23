@@ -137,7 +137,6 @@ import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.memory.CrossWindowMemoryStore
 import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.ai.HITL_TOOL_NAMES
 import me.rerere.rikkahub.data.model.toMergedMessageNode
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantAffectScope
@@ -1988,7 +1987,7 @@ class ChatService(
                 settings = settings,
                 model = model,
                 useExternalWebSearch = useExternalWebSearch,
-            ).filterNot { it.name in HITL_TOOL_NAMES }
+            )
             emitAll(
                 generationLoop.generateText(
                     conversationId = conversation.id,
@@ -2005,6 +2004,9 @@ class ChatService(
                     inputTransformers = buildGenerationInputTransformers(assistant, settings),
                     outputTransformers = outputTransformers,
                     tools = tools,
+                    // 工具集必须与前台完全一致，否则 tools 段一变，上游前缀缓存整段失效；
+                    // ask_user 由 headless 负责"拒答"，不再从工具列表里剔除
+                    headless = true,
                 )
             )
         }

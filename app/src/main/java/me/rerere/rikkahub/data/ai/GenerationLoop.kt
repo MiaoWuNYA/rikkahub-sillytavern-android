@@ -13,13 +13,22 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.addJsonObject
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
+import me.rerere.ai.core.InputSchema
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.core.Tool
 import me.rerere.ai.core.sum
@@ -47,6 +56,7 @@ import me.rerere.rikkahub.data.files.FileFolders
 import me.rerere.rikkahub.data.ai.transformers.onGenerationFinish
 import me.rerere.rikkahub.data.ai.transformers.transforms
 import me.rerere.rikkahub.data.ai.PromptDebugCache
+import me.rerere.rikkahub.data.ai.debug.RequestSnapshotStore
 import me.rerere.rikkahub.data.ai.tools.buildMemoryTools
 import me.rerere.rikkahub.data.ai.tools.truncateForToolResult
 import me.rerere.rikkahub.data.ai.transformers.visualTransforms
@@ -139,6 +149,8 @@ class GenerationLoop(
         workspaceCwd: String? = null,
         generationType: me.rerere.rikkahub.data.model.GenerationType = me.rerere.rikkahub.data.model.GenerationType.NORMAL,
         maxTokensOverride: Int? = null,
+        // 后台生成（主动消息）：没有界面等用户回答，HITL 工具不挂起而是直接判为拒绝
+        headless: Boolean = false,
     ): Flow<GenerationChunk> = flow {
         val provider = model.findProvider(settings.providers) ?: error("Provider not found")
         val providerImpl = providerManager.getProviderByType(provider)
@@ -252,7 +264,12 @@ class GenerationLoop(
             add("❌ Do NOT fabricate results — if a tool fails, say so")
             if (hasShell) add("❌ Do NOT use shell when a dedicated tool exists")
             if (hasPython && hasCalculator) add("❌ Do NOT use execute_python for math (use calculator)")
-            if (hasTool("ask_user")) add("✅ If you need user input, use ask_user directly")
+            // 注意：这里不要再按「某个工具是否存在」拼提示行。
+            // 主动消息会剔除 HITL 工具（见 ChatService.generateProactiveMessage 的
+            // filterNot { it.name in HITL_TOOL_NAMES }），若此处随工具出现/消失而变化，
+            // 系统提示词就会在中间某一点分叉，把后面全部历史挤出上游前缀缓存
+            // （实测：公共前缀只剩 1207 token / 全文 ~25000 token）。
+            // ask_user 的用途由工具自身 description 说明，系统提示词不需要重复。
         }
         val assemblerContext = me.rerere.rikkahub.data.ai.prompts.PromptContext(
             identitySection = mainIdentity,
@@ -280,9 +297,16 @@ class GenerationLoop(
             append(system)
             // 酒馆模式：工具的 systemPrompt 段全部不发，工具仍有 JSON schema 可用
             if (!tavernMode) {
+                // 只拼接真正有内容的工具说明。
+                // 原写法对每个工具都先 appendLine()，工具返回空说明时就会留下一个纯空行——
+                // 空行数量随工具个数变化，工具集一变（如主动消息剔除 ask_user）系统提示词
+                // 就从这里分叉，把后面的全部历史挤出前缀缓存。
                 tools.forEach { tool ->
-                    appendLine()
-                    append(tool.systemPrompt(model, messages))
+                    val toolPrompt = tool.systemPrompt(model, messages)
+                    if (toolPrompt.isNotBlank()) {
+                        appendLine()
+                        append(toolPrompt)
+                    }
                 }
             }
         }
@@ -526,6 +550,15 @@ class GenerationLoop(
                 val updatedTools = uniqueTools.map { tool ->
                     val toolDef = statusTrackedTools.find { it.name == tool.toolName }
                     when {
+                        // 后台生成没有界面可以回答：HITL 工具直接拒掉并回一条理由，
+                        // 让模型自己继续，而不是把整轮挂死。
+                        // 注意必须放在 mustWaitForUser 之前，否则会先被判成 Pending 卡住。
+                        headless && tool.toolName in HITL_TOOL_NAMES -> tool.copy(
+                            approvalState = ToolApprovalState.Denied(
+                                "当前为后台自动生成，用户不在线，无法回答问题。" +
+                                    "请直接根据已有信息继续，不要等待用户确认。"
+                            )
+                        )
                         // HITL 工具（ask_user）必须等用户回答：优先于"自动批准"判定，
                         // 否则自动批准会把它当普通工具放行，问答流被打断
                         mustWaitForUser(tool.toolName, tool.approvalState) -> {
@@ -756,9 +789,16 @@ class GenerationLoop(
             // tavernMode 判断的，这里此前漏了，导致走 fallback 路径时酒馆模式
             // 仍会把全部工具的系统提示词拼进 system，纯净请求不成立。
             if (!tavernMode) {
+                // 只拼接真正有内容的工具说明。
+                // 原写法对每个工具都先 appendLine()，工具返回空说明时就会留下一个纯空行——
+                // 空行数量随工具个数变化，工具集一变（如主动消息剔除 ask_user）系统提示词
+                // 就从这里分叉，把后面的全部历史挤出前缀缓存。
                 tools.forEach { tool ->
-                    appendLine()
-                    append(tool.systemPrompt(model, messages))
+                    val toolPrompt = tool.systemPrompt(model, messages)
+                    if (toolPrompt.isNotBlank()) {
+                        appendLine()
+                        append(toolPrompt)
+                    }
                 }
             }
             }
@@ -1099,6 +1139,19 @@ class GenerationLoop(
                         if (emptyRetryCount > 0) escapedMessages.perturbForEmptyRetry(emptyRetryCount)
                         else escapedMessages
                     try {
+                        // 调试快照：只记本步骤的第一次尝试，避免重试把上一轮请求挤出保留窗口
+                        if (retryCount == 0 && emptyRetryCount == 0) {
+                            recordRequestSnapshot(
+                                context = context,
+                                json = json,
+                                conversationId = conversationId,
+                                generationType = generationType.name,
+                                provider = provider,
+                                model = model,
+                                params = params,
+                                messages = requestMessages,
+                            )
+                        }
                         recordingProvider.streamText(
                             providerSetting = provider,
                             messages = requestMessages,
@@ -1696,3 +1749,99 @@ private fun UIMessage.withStepStats(stepBase: UIMessage?, stepTime: Duration): U
     generationTimeMs = (stepBase?.generationTimeMs ?: 0L) + stepTime.inWholeMilliseconds,
     stepCount = (stepBase?.stepCount ?: 0) + 1,
 )
+
+/**
+ * 把本次请求落盘成调试快照（同会话只保留最近两份，见 RequestSnapshotStore）。
+ *
+ * 抓取点选在 streamText 调用前，这样拿到的是尚未序列化的 messages/tools，
+ * 比 OkHttp 拦截器更贴近「实际将要发送的内容」，也能顺带记录生成类型等元信息。
+ *
+ * 调试功能绝不能影响正常生成，因此整体包在 runCatching 里：写盘失败只吞掉异常，不抛给调用方。
+ *
+ * @param context 用于定位应用私有目录
+ * @param json 工程统一的 Json 实例，保证序列化结果与实际请求一致
+ * @param conversationId 会话 id，用于按会话保留最近两份；为空时归入 nocid 组
+ * @param generationType 生成类型名称（NORMAL / PROACTIVE / REGENERATE 等）
+ * @param provider 当前供应商设置，取 baseUrl 与自定义头
+ * @param model 当前模型，取 modelId 便于人工辨认
+ * @param params 本次请求参数，工具清单位于 TextGenerationParams.tools
+ * @param messages 本次实际发送的消息列表（已转义、已裁剪）
+ */
+private suspend fun recordRequestSnapshot(
+    context: Context,
+    json: Json,
+    conversationId: Uuid?,
+    generationType: String,
+    provider: ProviderSetting,
+    model: Model,
+    params: TextGenerationParams,
+    messages: List<UIMessage>,
+) {
+    // 开关默认关闭：关闭时立刻返回，连 JSON 序列化都不做——整份请求序列化约几十毫秒，
+    // 挂在每次生成的必经路径上会直接影响出字手感（2026-11-23 实测反馈「不如原版流畅」）
+    if (!RequestSnapshotStore.isEnabled(context)) return
+    // 开启后也不占用生成协程：序列化 + 写盘整体切到 IO
+    withContext(Dispatchers.IO) {
+        runCatching {
+    // 消息整体序列化：UIMessage 自带 @Serializable，这里用显式 List 序列化器，
+    // 避免依赖 reified 推断在某些编译环境下取不到序列化器。
+    val messagesJson = json.encodeToJsonElement(
+        ListSerializer(UIMessage.serializer()),
+        messages,
+    ) as? JsonArray ?: JsonArray(emptyList())
+
+    // 工具清单：只记录名称、说明与参数 schema（Tool 自带 lambda，不能整体序列化）
+    val toolsJson = buildJsonArray {
+        params.tools.forEach { tool ->
+            addJsonObject {
+                put("name", tool.name)
+                put("description", tool.description)
+                when (val schema = tool.parameters()) {
+                    is InputSchema.Obj -> put(
+                        "parameters",
+                        buildJsonObject {
+                            put("type", "object")
+                            put("properties", schema.properties)
+                            schema.required?.let { required ->
+                                putJsonArray("required") { required.forEach { item -> add(item) } }
+                            }
+                        },
+                    )
+
+                    null -> {}
+                }
+            }
+        }
+    }
+
+    // 实际会带上的自定义头：鉴权类一律掩码，快照可能被导出或分享
+    val headers = buildList {
+        (provider.customHeaders + params.customHeaders).forEach { header ->
+            add(header.name to maskSnapshotHeader(header.name, header.value))
+        }
+        val apiKeySetting = provider as? ProviderSetting.ApiKey
+        if (apiKeySetting != null && apiKeySetting.apiKey.isNotBlank()) {
+            add("Authorization" to "Bearer ***")
+        }
+    }
+
+    RequestSnapshotStore.record(
+        context = context,
+        conversationId = conversationId?.toString(),
+        generationType = generationType,
+        modelId = model.modelId,
+        baseUrl = (provider as? ProviderSetting.ApiKey)?.baseUrl.orEmpty(),
+        headers = headers,
+        tools = toolsJson,
+            messages = messagesJson,
+        )
+        }.getOrNull()
+    }
+}
+
+/** 快照里的鉴权头做掩码，其余原样保留 */
+private fun maskSnapshotHeader(name: String, value: String): String = when (name.lowercase()) {
+    "authorization", "x-api-key", "x-goog-api-key" -> "***"
+    else -> value
+}
+
