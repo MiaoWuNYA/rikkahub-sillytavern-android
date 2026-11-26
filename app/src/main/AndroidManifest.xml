@@ -217,6 +217,11 @@
         <action android:name="me.rerere.rikkahub.action.MEDIA_CREATION" />
         <category android:name="android.intent.category.DEFAULT" />
       </intent-filter>
+      <!-- 桌面快捷方式靠这个 filter 解析，缺了桌面会报「快捷方式已失效」 -->
+      <intent-filter>
+        <action android:name="me.rerere.rikkahub.action.DATA_RESCUE" />
+        <category android:name="android.intent.category.DEFAULT" />
+      </intent-filter>
 
       <meta-data
         android:name="android.app.shortcuts"
