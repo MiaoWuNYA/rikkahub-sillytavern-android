@@ -477,6 +477,16 @@ def hw_32_33(conn):
     align_to_target(conn)
 
 
+def hw_33_34(conn):
+    """对应 Kotlin 的 Migration_33_34：message_node 换成 (conversation_id, node_index) 复合索引。"""
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS `index_message_node_conversation_id_node_index` "
+        "ON `message_node` (`conversation_id`, `node_index`)"
+    )
+    conn.execute("DROP INDEX IF EXISTS `index_message_node_conversation_id`")
+    align_to_target(conn)
+
+
 HANDWRITTEN = {
     (6, 7): hw_6_7,
     (11, 12): hw_11_12,
@@ -496,6 +506,7 @@ HANDWRITTEN = {
     (30, 31): hw_30_31,
     (31, 32): hw_31_32,
     (32, 33): hw_32_33,
+    (33, 34): hw_33_34,
 }
 
 

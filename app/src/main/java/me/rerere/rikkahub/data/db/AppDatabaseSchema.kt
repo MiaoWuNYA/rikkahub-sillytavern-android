@@ -1,16 +1,16 @@
 package me.rerere.rikkahub.data.db
 
 /**
- * 由 tools/generate_db_schema.py 从 app/schemas/.../33.json 生成，请勿手改。
+ * 由 tools/generate_db_schema.py 从 app/schemas/.../34.json 生成，请勿手改。
  *
  * 恢复旧备份时用它把暂存库的结构对齐到当前版本：迁移链只保证「能升上来的库」结构正确，
  * 上游备份或脏库仍可能缺表缺列，对齐之后 Room 的 schema 校验才会通过。
  */
 internal object AppDatabaseSchema {
-    const val VERSION = 33
+    const val VERSION = 34
 
     /** Room 为这个版本生成的 identity hash，结构对齐后写回 room_master_table。 */
-    const val IDENTITY_HASH = "500db313414dc3e55f1da6c8c085806e"
+    const val IDENTITY_HASH = "22de108f89f9fcd4880cc27f032991cf"
 
     class Table(
         val name: String,
@@ -87,7 +87,7 @@ internal object AppDatabaseSchema {
                 "select_index" to "INTEGER NOT NULL",
             ),
             indices = listOf(
-                "index_message_node_conversation_id" to "CREATE INDEX IF NOT EXISTS `index_message_node_conversation_id` ON `message_node` (`conversation_id`)",
+                "index_message_node_conversation_id_node_index" to "CREATE INDEX IF NOT EXISTS `index_message_node_conversation_id_node_index` ON `message_node` (`conversation_id`, `node_index`)",
             ),
         ),
         Table(
