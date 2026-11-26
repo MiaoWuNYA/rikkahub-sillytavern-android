@@ -182,7 +182,11 @@ class RescueVM(
                     if (uris.isNotEmpty()) filesManager.deleteChatFiles(uris)
 
                     settingsStore.update { settings ->
+                        if (settings.assistants.size <= 1) return@update settings
                         settings.copy(assistants = settings.assistants.filter { it.id != assistant.id })
+                    }
+                    if (settingsStore.settingsFlow.value.assistants.any { it.id == assistant.id }) {
+                        return@runCatching
                     }
                     memoryRepository.deleteFilesOfAssistant(assistant.id.toString())
                     conversationRepository.deleteConversationOfAssistant(assistant.id)

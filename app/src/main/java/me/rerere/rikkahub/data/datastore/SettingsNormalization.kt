@@ -67,6 +67,11 @@ internal fun Settings.withoutInvalidReferences(): Settings {
     val validModelIds by lazy { settings.providers.flatMap { it.models }.mapTo(HashSet()) { it.id } }
     val asrProviders = settings.asrProviders.distinctBy { it.id }
     return settings.copy(
+        // 选中助手被删后改选第一个，避免读 assistantId 的地方拿到失效 ID
+        assistantId = settings.assistantId
+            .takeIf { id -> settings.assistants.any { it.id == id } }
+            ?: settings.assistants.firstOrNull()?.id
+            ?: settings.assistantId,
         providers = settings.providers.distinctBy { it.id }.map { provider ->
             provider.copyProvider(models = provider.models.distinctBy { model -> model.id })
         },
