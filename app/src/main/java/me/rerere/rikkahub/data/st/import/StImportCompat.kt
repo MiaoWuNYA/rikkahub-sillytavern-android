@@ -83,6 +83,8 @@ internal fun applyPresetBundleToSettings(
             current.regexGroups + RegexGroup(
                 name = bundle.presetGroup,
                 source = RegexGroupSource.PRESET,
+                // 导入的预设默认总开关关闭，用户确认后再开
+                enabled = false,
                 regexes = bundle.regexScripts,
             )
         }

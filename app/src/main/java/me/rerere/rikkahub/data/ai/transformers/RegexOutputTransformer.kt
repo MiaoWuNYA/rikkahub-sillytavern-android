@@ -20,7 +20,7 @@ internal fun List<UIMessage>.replaceRegexesForDisplay(
     visual: Boolean,
     globalRegexes: List<AssistantRegex> = emptyList(),
 ): List<UIMessage> {
-    val regexes = assistant.regexes + globalRegexes
+    val regexes = assistant.effectiveRegexes + globalRegexes
     if (regexes.isEmpty()) return this
     val lastUserMsgId = lastOrNull { it.role == MessageRole.USER }?.id?.toString()
     val memo = if (lastUserMsgId != null) {

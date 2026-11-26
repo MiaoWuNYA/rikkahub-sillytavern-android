@@ -754,7 +754,13 @@ private fun LorebookTab(
                     val groups = if (existing != null) {
                         settings.regexGroups.map { if (it.id == existing.id) it.copy(regexes = regexes) else it }
                     } else {
-                        settings.regexGroups + RegexGroup(name = name, source = RegexGroupSource.PRESET, regexes = regexes)
+                        // 导入的预设默认总开关关闭，确认后再开
+                        settings.regexGroups + RegexGroup(
+                            name = name,
+                            source = RegexGroupSource.PRESET,
+                            enabled = false,
+                            regexes = regexes,
+                        )
                     }
                     onSettingsUpdate { it.copy(regexGroups = groups) }
                 }

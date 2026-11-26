@@ -1692,7 +1692,7 @@ internal fun buildChatSlashHost(
                 // ---- 7. 正则补充命令与标签命令 ----
                 "regex-state", "regex-preset" -> {
                     val q = unnamed.trim()
-                    val hit = (s.regexGroups.flatMap { it.regexes } + assistant.regexes).firstOrNull {
+                    val hit = (s.globalRegexes + assistant.effectiveRegexes).firstOrNull {
                         it.id.toString() == q || it.name.equals(q, ignoreCase = true)
                     }
                     hit?.enabled?.toString() ?: "true"

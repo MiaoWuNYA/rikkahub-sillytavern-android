@@ -252,17 +252,14 @@ fun TavernRegexPage(vm: SettingVM = koinViewModel()) {
                         },
                         trailingContent = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (group.regexes.isNotEmpty()) {
-                                    Switch(
-                                        checked = group.regexes.all { it.enabled },
-                                        onCheckedChange = { enabled ->
-                                            updateGroupRegexes(
-                                                group.id,
-                                                group.regexes.map { it.copy(enabled = enabled) },
-                                            )
-                                        },
-                                    )
-                                }
+                                Switch(
+                                    checked = group.enabled,
+                                    onCheckedChange = { enabled ->
+                                        updateGroups { groups ->
+                                            groups.map { if (it.id == group.id) it.copy(enabled = enabled) else it }
+                                        }
+                                    },
+                                )
                                 ItemActionMenu(
                                     actions = buildList {
                                         add(
@@ -361,17 +358,22 @@ fun TavernRegexPage(vm: SettingVM = koinViewModel()) {
                         },
                         trailingContent = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (card.regexes.isNotEmpty()) {
-                                    Switch(
-                                        checked = card.regexes.all { it.enabled },
-                                        onCheckedChange = { enabled ->
-                                            applyRegexes(
-                                                card.id,
-                                                card.regexes.map { it.copy(enabled = enabled) },
+                                Switch(
+                                    checked = card.regexesEnabled,
+                                    onCheckedChange = { enabled ->
+                                        vm.updateSettings { current ->
+                                            current.copy(
+                                                assistants = current.assistants.map { card2 ->
+                                                    if (card2.id == card.id) {
+                                                        card2.copy(regexesEnabled = enabled)
+                                                    } else {
+                                                        card2
+                                                    }
+                                                },
                                             )
-                                        },
-                                    )
-                                }
+                                        }
+                                    },
+                                )
                                 Icon(
                                     imageVector = HugeIcons.ArrowDown01,
                                     contentDescription = null,

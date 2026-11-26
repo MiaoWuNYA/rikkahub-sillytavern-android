@@ -275,6 +275,8 @@ internal fun applyStSettingsPatch(current: Settings, patch: StSettingsPatch): Se
                 s.regexGroups + RegexGroup(
                     name = ST_SETTINGS_REGEX_GROUP,
                     source = RegexGroupSource.PRESET,
+                    // 导入的预设默认总开关关闭，用户确认后再开
+                    enabled = false,
                     regexes = importedGlobal,
                 )
             },
