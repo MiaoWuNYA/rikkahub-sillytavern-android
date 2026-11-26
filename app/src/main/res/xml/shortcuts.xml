@@ -32,4 +32,14 @@
             android:action="me.rerere.rikkahub.action.MEDIA_CREATION"
             android:targetClass="me.rerere.rikkahub.RouteActivity" />
     </shortcut>
+    <shortcut
+        android:shortcutId="data_rescue"
+        android:enabled="true"
+        android:icon="@drawable/ic_data_rescue"
+        android:shortcutShortLabel="@string/shortcut_data_rescue"
+        android:shortcutLongLabel="@string/rescue_page_title">
+        <intent
+            android:action="me.rerere.rikkahub.action.DATA_RESCUE"
+            android:targetClass="me.rerere.rikkahub.RouteActivity" />
+    </shortcut>
 </shortcuts>

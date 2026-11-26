@@ -96,6 +96,7 @@ import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantPromptPage
 import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantRequestPage
 import me.rerere.rikkahub.ui.pages.backup.BackupPage
 import me.rerere.rikkahub.ui.pages.chat.ChatPage
+import me.rerere.rikkahub.ui.pages.rescue.DataRescuePage
 import me.rerere.rikkahub.ui.pages.couple.CoupleAnniversaryBookPage
 import me.rerere.rikkahub.ui.pages.couple.CoupleDiaryPage
 import me.rerere.rikkahub.ui.pages.couple.CoupleMomentsPage
@@ -190,6 +191,7 @@ import me.rerere.rikkahub.utils.l10n
 private const val TAG = "RouteActivity"
 private const val ACTION_TRANSLATE = "me.rerere.rikkahub.action.TRANSLATE"
 private const val ACTION_MEDIA_CREATION = "me.rerere.rikkahub.action.MEDIA_CREATION"
+private const val ACTION_DATA_RESCUE = "me.rerere.rikkahub.action.DATA_RESCUE"
 internal const val ACTION_MINI_APP = "me.rerere.rikkahub.action.MINI_APP"
 internal const val EXTRA_MINI_APP_PLUGIN_ID = "miniAppPluginId"
 internal const val EXTRA_MINI_APP_ID = "miniAppId"
@@ -285,6 +287,7 @@ class RouteActivity : ComponentActivity() {
                 openNewMediaCreation(backStack)
                 null
             }
+            ACTION_DATA_RESCUE -> Screen.DataRescue
             ACTION_MINI_APP -> Screen.PluginMiniApp(
                 pluginId = intent.getStringExtra(EXTRA_MINI_APP_PLUGIN_ID).orEmpty(),
                 miniAppId = intent.getStringExtra(EXTRA_MINI_APP_ID).orEmpty(),
@@ -576,6 +579,10 @@ class RouteActivity : ComponentActivity() {
 
                             entry<Screen.Backup> {
                                 BackupPage()
+                            }
+
+                            entry<Screen.DataRescue> {
+                                DataRescuePage()
                             }
 
                             
@@ -1062,6 +1069,10 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object Backup : Screen
+
+    /** 数据救助：桌面长按图标可直达，出问题时它是唯一还能进的页 */
+    @Serializable
+    data object DataRescue : Screen
 
     @Serializable
     data object MediaCreationSessions : Screen

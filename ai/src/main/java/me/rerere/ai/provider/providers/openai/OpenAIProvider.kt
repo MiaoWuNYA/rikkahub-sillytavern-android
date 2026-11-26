@@ -1,6 +1,7 @@
 package me.rerere.ai.provider.providers.openai
 
 import android.content.Context
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -352,7 +353,7 @@ class OpenAIProvider(
             }.mergeCustomBody(params.customBody)
         )
 
-        Log.i(TAG, "generateImageViaChat: $requestBody")
+        logRequestBody(TAG, "generateImageViaChat") { requestBody.toString() }
 
         val request = Request.Builder()
             .url("${providerSetting.baseUrl}${providerSetting.chatCompletionsPath}")
@@ -409,7 +410,7 @@ class OpenAIProvider(
             }.mergeCustomBody(params.customBody)
         )
 
-        Log.i(TAG, "generateImageViaChat(edit): ${params.images.size} reference image(s)")
+        logRequestBody(TAG, "generateImageViaChat(edit)") { "${params.images.size} reference image(s)" }
 
         val request = Request.Builder()
             .url("${providerSetting.baseUrl}${providerSetting.chatCompletionsPath}")

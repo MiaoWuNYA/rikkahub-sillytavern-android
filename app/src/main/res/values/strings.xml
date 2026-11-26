@@ -3771,4 +3771,27 @@
   <string name="history_page_selected_count">%1$d selected</string>
   <string name="history_page_exit_selection">Exit selection</string>
   <string name="history_page_delete_selected_text">The %1$d selected conversations will be deleted. This can\'t be undone.</string>
+  <string name="shortcut_data_rescue">Data Rescue</string>
+  <string name="rescue_page_title">Data Rescue</string>
+  <string name="rescue_page_desc">Backup, restore and repair data without loading any character card.</string>
+  <string name="rescue_page_backup_title">Backup &amp; Restore</string>
+  <string name="rescue_page_assistant_title">Character Cards</string>
+  <string name="rescue_page_assistant_desc">Delete a character card together with its conversations and memory files.</string>
+  <string name="rescue_page_assistant_count">%1$d conversations</string>
+  <string name="rescue_page_assistant_delete_confirm">Delete %1$s and its %2$d conversations? This can\'t be undone.</string>
+  <string name="rescue_page_chat_repair_title">Conversation Repair</string>
+  <string name="rescue_page_chat_repair_desc">Delete the message that crashes a conversation, or clear all of its messages.</string>
+  <string name="rescue_page_chat_repair_empty">No conversation found.</string>
+  <string name="rescue_page_chat_empty">No readable message in this conversation.</string>
+  <string name="rescue_page_chat_clear">Clear all messages</string>
+  <string name="rescue_page_chat_clear_confirm">All messages of this conversation will be deleted. This can\'t be undone.</string>
+  <string name="rescue_page_message_delete_confirm">Delete this message?</string>
+  <string name="rescue_page_crash_title">Last Crash</string>
+  <string name="rescue_page_crash_desc">Clear the crash flag so the app opens normally again.</string>
+  <string name="rescue_page_crash_view">View crash stack</string>
+  <string name="rescue_page_crash_clear">Clear crash flag</string>
+  <string name="rescue_page_crash_none">No crash record.</string>
+  <string name="rescue_page_action_success">Done</string>
+  <string name="rescue_page_action_failed">Operation failed</string>
+  <string name="backup_page_import_cherry_desc">Import providers from a Cherry Studio backup ZIP.</string>
 </resources>

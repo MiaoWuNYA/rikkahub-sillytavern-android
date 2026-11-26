@@ -3767,4 +3767,27 @@
   <string name="history_page_selected_count">已选择 %1$d 项</string>
   <string name="history_page_exit_selection">退出选择</string>
   <string name="history_page_delete_selected_text">选中的 %1$d 个对话将被删除。此操作无法撤销。</string>
+  <string name="shortcut_data_rescue">数据救助</string>
+  <string name="rescue_page_title">数据救助</string>
+  <string name="rescue_page_desc">不加载任何角色卡数据，直接备份、恢复和修复。</string>
+  <string name="rescue_page_backup_title">备份与恢复</string>
+  <string name="rescue_page_assistant_title">角色卡</string>
+  <string name="rescue_page_assistant_desc">删除角色卡，连同它的对话和记忆文件一起清理。</string>
+  <string name="rescue_page_assistant_count">%1$d 个对话</string>
+  <string name="rescue_page_assistant_delete_confirm">删除 %1$s 及其 %2$d 个对话？此操作无法撤销。</string>
+  <string name="rescue_page_chat_repair_title">对话修复</string>
+  <string name="rescue_page_chat_repair_desc">删掉让对话闪退的那条消息，或清空它的全部消息。</string>
+  <string name="rescue_page_chat_repair_empty">没有找到对话。</string>
+  <string name="rescue_page_chat_empty">这个对话里没有能读出来的消息。</string>
+  <string name="rescue_page_chat_clear">清空全部消息</string>
+  <string name="rescue_page_chat_clear_confirm">这个对话的全部消息将被删除。此操作无法撤销。</string>
+  <string name="rescue_page_message_delete_confirm">删除这条消息？</string>
+  <string name="rescue_page_crash_title">上次崩溃</string>
+  <string name="rescue_page_crash_desc">清掉崩溃标记，让应用下次能正常进入。</string>
+  <string name="rescue_page_crash_view">查看崩溃堆栈</string>
+  <string name="rescue_page_crash_clear">清除崩溃标记</string>
+  <string name="rescue_page_crash_none">没有崩溃记录。</string>
+  <string name="rescue_page_action_success">已完成</string>
+  <string name="rescue_page_action_failed">操作失败</string>
+  <string name="backup_page_import_cherry_desc">从 Cherry Studio 备份 ZIP 导入服务商配置。</string>
 </resources>

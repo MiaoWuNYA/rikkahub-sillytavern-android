@@ -23,6 +23,7 @@ import me.rerere.rikkahub.ui.pages.extensions.QuickMessagesVM
 import me.rerere.rikkahub.ui.pages.extensions.SkillDetailVM
 import me.rerere.rikkahub.ui.pages.extensions.SkillsVM
 import me.rerere.rikkahub.ui.pages.setting.SettingVM
+import me.rerere.rikkahub.ui.pages.rescue.RescueVM
 import me.rerere.rikkahub.ui.pages.share.handler.ShareHandlerVM
 import me.rerere.rikkahub.ui.pages.translator.TranslatorVM
 import org.koin.core.module.dsl.viewModel
@@ -75,6 +76,7 @@ val viewModelModule = module {
         )
     }
     viewModelOf(::BackupVM)
+    viewModelOf(::RescueVM)
     viewModelOf(::OnboardingVM)
     viewModelOf(::MediaCreationSessionsVM)
     viewModel<MediaCreationVM> {
