@@ -1717,7 +1717,15 @@ class ChatService(
             stopGenerationForeground()
 
             it.printStackTrace()
-            addError(it, conversationId, title = context.getString(R.string.error_title_generation))
+            // 组装请求时一次性分配上百 MB（多张大图 base64）会 OOM，它不是 Exception，要给明确提示
+            val error = if (it is OutOfMemoryError) {
+                IllegalStateException(
+                    "Out of memory while building the request. The conversation likely contains too many " +
+                        "or too large images; remove some of them or start a new conversation.",
+                    it
+                )
+            } else it
+            addError(error, conversationId, title = context.getString(R.string.error_title_generation))
             Logging.log(TAG, "handleMessageComplete: $it")
             Logging.log(TAG, it.stackTraceToString())
         }.onSuccess {
