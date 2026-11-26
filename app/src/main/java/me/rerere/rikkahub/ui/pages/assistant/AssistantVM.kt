@@ -13,11 +13,11 @@ import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Avatar
+import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.data.repository.MemoryRepository
-import kotlin.uuid.Uuid
-import me.rerere.rikkahub.data.model.Lorebook
 import me.rerere.rikkahub.data.repository.memoryId
+import kotlin.uuid.Uuid
 
 class AssistantVM(
     private val settingsStore: SettingsStore,
@@ -94,7 +94,7 @@ class AssistantVM(
             val copiedAssistant = assistant.copy(
                 id = kotlin.uuid.Uuid.random(),
                 name = "${assistant.name} (Clone)",
-                avatar = if(assistant.avatar is Avatar.Image) Avatar.Dummy else assistant.avatar,
+                avatar = if (assistant.avatar is Avatar.Image) Avatar.Dummy else assistant.avatar,
             )
             settingsStore.update { it.copy(assistants = it.assistants.plus(copiedAssistant)) }
             if (copyMemories) {

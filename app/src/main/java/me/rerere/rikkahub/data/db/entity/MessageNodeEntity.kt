@@ -27,7 +27,7 @@ data class MessageNodeEntity(
     @ColumnInfo("node_index")
     val nodeIndex: Int,
     @ColumnInfo("messages")
-    val messages: String,  // JSON serialized List<UIMessage>
+    val messages: String, // JSON serialized List<UIMessage>
     @ColumnInfo("select_index")
     val selectIndex: Int
 )

@@ -9,16 +9,16 @@ import me.rerere.ai.core.TokenUsage
 import me.rerere.rikkahub.data.db.dao.ConversationDAO
 import me.rerere.rikkahub.data.db.dao.CoupleDAO
 import me.rerere.rikkahub.data.db.dao.FavoriteDAO
+import me.rerere.rikkahub.data.db.dao.FolderDAO
 import me.rerere.rikkahub.data.db.dao.GenMediaDAO
 import me.rerere.rikkahub.data.db.dao.ManagedFileDAO
 import me.rerere.rikkahub.data.db.dao.MediaCreationDAO
 import me.rerere.rikkahub.data.db.dao.MemoryConsolidationDAO
 import me.rerere.rikkahub.data.db.dao.MemoryDAO
+import me.rerere.rikkahub.data.db.dao.MessageNodeDAO
 import me.rerere.rikkahub.data.db.dao.TranslationHistoryDAO
 import me.rerere.rikkahub.data.db.dao.UsageRecordDAO
 import me.rerere.rikkahub.data.db.dao.WorkspaceDAO
-import me.rerere.rikkahub.data.db.dao.FolderDAO
-import me.rerere.rikkahub.data.db.dao.MessageNodeDAO
 import me.rerere.rikkahub.data.db.entity.ConversationEntity
 import me.rerere.rikkahub.data.db.entity.CoupleAnniversaryEntity
 import me.rerere.rikkahub.data.db.entity.CoupleCommentEntity
@@ -27,6 +27,7 @@ import me.rerere.rikkahub.data.db.entity.CoupleDiaryFolderEntity
 import me.rerere.rikkahub.data.db.entity.CouplePostEntity
 import me.rerere.rikkahub.data.db.entity.CoupleRelationshipEntity
 import me.rerere.rikkahub.data.db.entity.FavoriteEntity
+import me.rerere.rikkahub.data.db.entity.FolderEntity
 import me.rerere.rikkahub.data.db.entity.GenMediaEntity
 import me.rerere.rikkahub.data.db.entity.ManagedFileEntity
 import me.rerere.rikkahub.data.db.entity.MediaCreationNodeEntity
@@ -38,7 +39,6 @@ import me.rerere.rikkahub.data.db.entity.MessageNodeEntity
 import me.rerere.rikkahub.data.db.entity.TranslationHistoryEntity
 import me.rerere.rikkahub.data.db.entity.UsageRecordEntity
 import me.rerere.rikkahub.data.db.entity.WorkspaceEntity
-import me.rerere.rikkahub.data.db.entity.FolderEntity
 import me.rerere.rikkahub.data.db.migrations.Migration_16_17
 import me.rerere.rikkahub.data.db.migrations.Migration_8_9
 import me.rerere.rikkahub.utils.JsonInstant
@@ -50,8 +50,8 @@ import me.rerere.rikkahub.utils.JsonInstant
         MemoryConsolidationEntity::class,
         GenMediaEntity::class,
         MessageNodeEntity::class,
-    WorkspaceEntity::class,
-    FolderEntity::class,
+        WorkspaceEntity::class,
+        FolderEntity::class,
         ManagedFileEntity::class,
         FavoriteEntity::class,
         CoupleRelationshipEntity::class,
@@ -95,7 +95,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun genMediaDao(): GenMediaDAO
 
     abstract fun messageNodeDao(): MessageNodeDAO
-
 
     abstract fun managedFileDao(): ManagedFileDAO
 

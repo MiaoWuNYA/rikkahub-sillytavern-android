@@ -1,7 +1,6 @@
 package me.rerere.rikkahub.ui.pages.chat
 
 import android.annotation.SuppressLint
-import android.graphics.Color as AndroidColor
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -14,13 +13,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import java.security.MessageDigest
+import kotlinx.coroutines.launch
+import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -28,22 +28,22 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import me.rerere.ai.core.MessageRole
-import me.rerere.rikkahub.R
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
+import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Avatar
+import me.rerere.rikkahub.data.model.MessageNode
 import me.rerere.rikkahub.ui.components.message.tools.toolDisplayName
-import me.rerere.rikkahub.ui.components.richtext.parseCardDocument
+import me.rerere.rikkahub.ui.components.richtext.TrackWebViewPresence
 import me.rerere.rikkahub.ui.components.richtext.decodeEscapedCardHtml
+import me.rerere.rikkahub.ui.components.richtext.parseCardDocument
 import me.rerere.rikkahub.ui.components.richtext.splitCardSegments
-import kotlinx.datetime.toJavaLocalDateTime
 import me.rerere.rikkahub.utils.computeAIIconByName
 import me.rerere.rikkahub.utils.toMessageTimeString
-import me.rerere.rikkahub.ui.components.richtext.TrackWebViewPresence
-import me.rerere.rikkahub.data.model.MessageNode
-import androidx.compose.ui.unit.dp
+import java.security.MessageDigest
+import android.graphics.Color as AndroidColor
 
 internal fun androidx.compose.ui.graphics.Color.toCssHex(): String =
     String.format("#%06X", toArgb() and 0xFFFFFF)
@@ -55,17 +55,28 @@ internal class RikkaNativeBridge {
     @Volatile var pageApi: String = "rikka"
 
     @Volatile var onSend: ((String) -> Unit)? = null
+
     @Volatile var onStop: (() -> Unit)? = null
+
     @Volatile var onRegenerate: (() -> Unit)? = null
+
     @Volatile var onOpenLink: ((String) -> Unit)? = null
+
     @Volatile var onSlash: ((String) -> Unit)? = null
+
     @Volatile var onRequestMenu: ((String) -> Unit)? = null
+
     @Volatile var onInsertSymbol: ((String) -> Unit)? = null
+
     @Volatile var onMessageAction: ((String) -> Unit)? = null
+
     @Volatile var onOpenImage: ((String) -> Unit)? = null
+
     @Volatile var onClipboard: ((String) -> Unit)? = null
+
     // 同步读取类请求：返回 null 表示自己没有实现，交给异步分支
     @Volatile var onSyncRequest: ((method: String, payload: String) -> String?)? = null
+
     // 需要落盘/改状态类请求：处理完自行调用 [resolve]
     @Volatile var onAsyncRequest: ((method: String, requestId: String, payload: String) -> Unit)? = null
 

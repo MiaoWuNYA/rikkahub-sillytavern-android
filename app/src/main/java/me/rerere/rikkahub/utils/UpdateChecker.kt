@@ -22,11 +22,11 @@ import kotlinx.serialization.json.Json
 import me.rerere.common.http.await
 import me.rerere.rikkahub.AppScope
 import me.rerere.rikkahub.BuildConfig
+import me.rerere.rikkahub.utils.l10n
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.Locale
 import java.util.concurrent.TimeUnit
-import me.rerere.rikkahub.utils.l10n
 
 /** 本定制版的仓库。GitHub Release 是权威来源，仓库根目录的 update.json 是兜底快照。 */
 private const val REPO = "MiaoWuNYA/rikkahub-sillytavern-android"
@@ -153,7 +153,9 @@ class UpdateChecker(
         if (v.contains("nightly") || v.contains("daily")) return true
         if (info.changelog.contains("Nightly", ignoreCase = true) ||
             info.changelog.contains("每日自动构建")
-        ) return true
+        ) {
+            return true
+        }
         if (info.downloads.any { it.url.contains("/nightly/") }) return true
         // 版本段比本地多 → 每日构建
         val local = parseVersion(BuildConfig.VERSION_NAME)
@@ -432,8 +434,14 @@ value class Version(val value: String) : Comparable<Version> {
                 val maxLen = maxOf(x.size, y.size)
                 for (i in 0 until maxLen) {
                     // 字段少的优先级更低：1.0.0-alpha < 1.0.0-alpha.1
-                    if (i >= x.size) { result = -1; break }
-                    if (i >= y.size) { result = 1; break }
+                    if (i >= x.size) {
+                        result = -1
+                        break
+                    }
+                    if (i >= y.size) {
+                        result = 1
+                        break
+                    }
                     val xn = x[i].toIntOrNull()
                     val yn = y[i].toIntOrNull()
                     val cmp = when {
@@ -442,7 +450,10 @@ value class Version(val value: String) : Comparable<Version> {
                         yn != null -> 1
                         else -> x[i].compareTo(y[i])
                     }
-                    if (cmp != 0) { result = cmp; break }
+                    if (cmp != 0) {
+                        result = cmp
+                        break
+                    }
                 }
                 result
             }
