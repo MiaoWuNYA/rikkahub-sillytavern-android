@@ -91,6 +91,10 @@
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
+      <!-- 桌面图标是 activity-alias，静态快捷方式必须声明在实际的启动入口上 -->
+      <meta-data
+        android:name="android.app.shortcuts"
+        android:resource="@xml/shortcuts" />
     </activity-alias>
     <activity-alias
       android:name=".IconCatBody"
@@ -102,6 +106,10 @@
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
+      <!-- 桌面图标是 activity-alias，静态快捷方式必须声明在实际的启动入口上 -->
+      <meta-data
+        android:name="android.app.shortcuts"
+        android:resource="@xml/shortcuts" />
     </activity-alias>
     <activity-alias
       android:name=".IconCatHead"
@@ -113,6 +121,10 @@
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
+      <!-- 桌面图标是 activity-alias，静态快捷方式必须声明在实际的启动入口上 -->
+      <meta-data
+        android:name="android.app.shortcuts"
+        android:resource="@xml/shortcuts" />
     </activity-alias>
     <activity-alias
       android:name=".IconEarth"
@@ -124,6 +136,10 @@
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
+      <!-- 桌面图标是 activity-alias，静态快捷方式必须声明在实际的启动入口上 -->
+      <meta-data
+        android:name="android.app.shortcuts"
+        android:resource="@xml/shortcuts" />
     </activity-alias>
     <activity-alias
       android:name=".IconCatCute"
@@ -135,6 +151,10 @@
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
+      <!-- 桌面图标是 activity-alias，静态快捷方式必须声明在实际的启动入口上 -->
+      <meta-data
+        android:name="android.app.shortcuts"
+        android:resource="@xml/shortcuts" />
     </activity-alias>
     <activity-alias
       android:name=".IconGoogle"
@@ -146,6 +166,10 @@
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
+      <!-- 桌面图标是 activity-alias，静态快捷方式必须声明在实际的启动入口上 -->
+      <meta-data
+        android:name="android.app.shortcuts"
+        android:resource="@xml/shortcuts" />
     </activity-alias>
     <!-- AI 浏览器代理：独立全屏 Activity，主界面零布局侵入 -->
     <activity
