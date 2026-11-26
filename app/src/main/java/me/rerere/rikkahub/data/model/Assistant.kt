@@ -21,17 +21,23 @@ import me.rerere.rikkahub.utils.SimpleCache
 import java.util.concurrent.TimeUnit
 import kotlin.uuid.Uuid
 
-// 华灯兼容模式开卡片渲染，纯原生只渲染文本；旧 AUTO/ALWAYS/TAVERN 一律落 COMPAT
+// COMPAT = 华灯兼容模式（逐条消息内嵌卡片），CONVERSATION = 对话兼容模式（整页 WebView），NATIVE = 纯原生文本。
+// 旧 AUTO/ALWAYS/TAVERN 一律落 COMPAT，NEVER 落 NATIVE
 @Serializable(with = FrontendCardModeSerializer::class)
 enum class FrontendCardMode {
     COMPAT,
+    CONVERSATION,
     NATIVE,
 }
 
 object FrontendCardModeSerializer : KSerializer<FrontendCardMode> {
     override val descriptor = PrimitiveSerialDescriptor("FrontendCardMode", PrimitiveKind.STRING)
     override fun deserialize(decoder: Decoder): FrontendCardMode =
-        if (decoder.decodeString().equals("NEVER", ignoreCase = true)) FrontendCardMode.NATIVE else FrontendCardMode.COMPAT
+        when (val raw = decoder.decodeString()) {
+            "NEVER" -> FrontendCardMode.NATIVE
+            "CONVERSATION", "WEBVIEW", "WHOLE" -> FrontendCardMode.CONVERSATION
+            else -> if (raw == "NATIVE") FrontendCardMode.NATIVE else FrontendCardMode.COMPAT
+        }
 
     override fun serialize(encoder: Encoder, value: FrontendCardMode) = encoder.encodeString(value.name)
 }
@@ -81,6 +87,8 @@ data class Assistant(
     val frontendCardMode: FrontendCardMode = FrontendCardMode.COMPAT,
     val quickMessageIds: Set<Uuid> = emptySet(),
     val regexes: List<AssistantRegex> = emptyList(),
+    // 正则总开关：关掉后这张卡的正则全部不生效，子项保留各自开关
+    val regexesEnabled: Boolean = true,
     val reasoningLevel: ReasoningLevel = ReasoningLevel.AUTO,
     val maxTokens: Int? = null,
     val customHeaders: List<CustomHeader> = emptyList(),
@@ -147,7 +155,11 @@ data class Assistant(
     val crossWindowMemoryCompressionThresholdChars: Int = 12000,
     // 压缩时保留的最近原文条数
     val crossWindowMemoryTailEntries: Int = 16,
-)
+) {
+    /** 总开关关闭时整张卡的正则都不生效 */
+    val effectiveRegexes: List<AssistantRegex>
+        get() = if (regexesEnabled) regexes else emptyList()
+}
 
 @Serializable
 data class QuickMessage(
@@ -202,6 +214,8 @@ data class RegexGroup(
     val id: Uuid = Uuid.random(),
     val name: String = "",
     val source: RegexGroupSource = RegexGroupSource.CUSTOM,
+    // 分组总开关：关闭后组内正则全部跳过，子项开关保留原状
+    val enabled: Boolean = true,
     val regexes: List<AssistantRegex> = emptyList(),
 )
 
@@ -246,7 +260,7 @@ fun String.replaceRegexes(
     scope: AssistantAffectScope,
     visual: Boolean = false,
     depth: Int = 0, // 官方酒馆深度语义：1 = 最新一条消息；0/未知 = 不按深度过滤
-): String = replaceRegexes(assistant?.regexes.orEmpty(), scope, visual, depth)
+): String = replaceRegexes(assistant?.effectiveRegexes.orEmpty(), scope, visual, depth)
 
 /** 对用户输入的文本应用助手作用于用户消息的正则替换 */
 fun List<UIMessagePart>.replaceUserRegexes(assistant: Assistant): List<UIMessagePart> = map { part ->

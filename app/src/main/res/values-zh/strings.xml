@@ -717,8 +717,9 @@
   <string name="huadeng_sub_agent">子 agent</string>
   <string name="huadeng_sub_agent_desc">允许 AI 把子任务派给独立的子 agent 执行（不产生会话历史），完成后取回结果</string>
   <string name="huadeng_frontend_card_mode">华灯兼容模式</string>
-  <string name="huadeng_frontend_card_mode_desc">开启卡片渲染；纯原生界面只显示文本</string>
+  <string name="huadeng_frontend_card_mode_desc">逐条内嵌卡片、整页 WebView，或纯原生只显示文本</string>
   <string name="huadeng_frontend_card_mode_compat">华灯兼容模式</string>
+  <string name="huadeng_frontend_card_mode_conversation">对话兼容模式</string>
   <string name="huadeng_frontend_card_mode_native">纯原生界面</string>
   <string name="huadeng_frontend_card_auto_switched">已自动切换前端模式</string>
   <string name="huadeng_frontend_card_slash_unsupported">前端卡命令 %1$s 暂未支持</string>

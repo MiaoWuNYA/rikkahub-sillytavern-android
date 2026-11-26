@@ -2202,9 +2202,9 @@ private fun GreetingPickerDialog(
 // 前端卡动作名，页面回传时据此分流到原生能力
 private val WEB_ACTIONS = setOf("copy", "delete", "regenerate", "translate", "favorite", "share", "edit", "speak", "menu")
 
-// ChatPage 与 ChatPageContent 共用同一份判定：前者据此决定要不要关掉抽屉手势
+// ChatPage 与 ChatPageContent 共用同一份判定：只有「对话兼容模式」整页交给 WebView
 private fun resolveFrontendCardMode(setting: Settings, conversation: Conversation): Boolean =
-    setting.getAssistantOf(conversation).frontendCardMode == FrontendCardMode.COMPAT
+    setting.getAssistantOf(conversation).frontendCardMode == FrontendCardMode.CONVERSATION
 
 // WebView 变量域：从设置里取出各个作用域
 private fun buildVariablesJson(settings: Settings): String =

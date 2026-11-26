@@ -221,6 +221,9 @@ internal fun AssistantBasicContent(
                             me.rerere.rikkahub.data.model.FrontendCardMode.COMPAT ->
                                 stringResource(R.string.huadeng_frontend_card_mode_compat)
 
+                            me.rerere.rikkahub.data.model.FrontendCardMode.CONVERSATION ->
+                                stringResource(R.string.huadeng_frontend_card_mode_conversation)
+
                             me.rerere.rikkahub.data.model.FrontendCardMode.NATIVE ->
                                 stringResource(R.string.huadeng_frontend_card_mode_native)
                         }
